@@ -14,12 +14,14 @@ the block nearest the camera that produced that silhouette — which is how you
 cross large distances. The camera rotates in 90° steps, and choosing *which*
 axis to collapse is most of the puzzle.
 
-The player-facing name for the verb is not settled. It lives in one table
-(`VERBS` in `js/05-state.js`) with three wordings — `GO 2D / GO 3D` (default),
-`FOLD / UNFOLD`, `FLATTEN / UNFLATTEN` — and a menu row switches between them
-so it can be decided by feel rather than in the abstract. The code and comments
-still say "fold" throughout; that is deliberate, it is a good word for the
-mechanic even if it does not end up on the button.
+**The player-facing name for the verb is settled: `GO 2D / GO 3D`.** It was
+auditioned against `FOLD / UNFOLD` and `FLATTEN / UNFLATTEN` from a menu row,
+decided by feel, and that row is now gone — the wording is no longer a setting.
+It still lives in one table (`VERBS` in `js/11-sound.js`, reached through
+`VB()`) so changing it stays a data edit. Settings saved before the decision may
+carry a `verbs` key; `loadSettings` ignores it, which is the migration. The code
+and comments still say "fold" throughout; that is deliberate, it is a good word
+for the mechanic even though it did not end up on the button.
 
 ---
 
@@ -55,13 +57,13 @@ anything; everything before it only declares.
 | `js/02-levels.js` | 66 levels. 3 tutorial + 63 campaign in nine chapters. |
 | `js/03-rules.js` | `resolveStep()`, block kinds, `makeRules()`. |
 | `js/04-solver.js` | `solve()` — BFS over game states, capped at 250k. |
-| `js/05-state.js` | Mutable state, `VERBS`, `applyUI()`, tutorial counters. |
+| `js/05-state.js` | Mutable state, tutorial counters. |
 | `js/06-persistence.js` | Progress, settings, session, library, wardrobe. |
 | `js/07-difficulty.js` | `statsFor()`, `tierOf()`, stars, `statsCached()`. |
 | `js/08-minimizer.js` | Delete each block, re-solve, find what is load-bearing. |
 | `js/09-wardrobe.js` | Skins, palettes, the star economy. |
 | `js/10-render.js` | three.js scene, depth shading, the animation loop. |
-| `js/11-sound.js` | Web Audio oscillator blips. No assets. |
+| `js/11-sound.js` | Web Audio oscillator blips. No assets. Also `settings`, `VERBS`, `applyUI()`. |
 | `js/12-play.js` | The verbs: move, shove, collapse, restore, die, win. |
 | `js/13-gestures.js` | Swipe / tap / two-finger tap on the world. |
 | `js/14-editor.js` | Tap-to-place editor, verify, minimize. |
@@ -175,6 +177,18 @@ exclusive — every gesture also has a key and, unless hidden, a button:
   against 189 earnable by perfect play (67%), and the gap is what a rewarded ad
   is meant to sell. `grantShards(n)` is the single hook an ad SDK calls. No ad
   code exists and the button is deliberately disabled rather than faked.
+- **`UNLIMITED_SHARDS` in `js/09-wardrobe.js` is currently `true`** so the whole
+  wardrobe can be walked during playtesting — the catalogue costs more than
+  perfect play earns, so it is otherwise unreachable. It short-circuits
+  `shards()` only; `starsEarned()` and `wardrobe.spent` still do their real
+  work, so buying exercises the true purchase path. **Set it back to `false`
+  before shipping.**
+- **Sound is scaled once at the master**, by `MIX` in `js/11-sound.js`
+  (currently 3) via `masterLevel()`. The per-blip gains are a deliberate mix — a
+  footstep sits well under the win chord — so correcting overall loudness there
+  instead of editing each value keeps that balance. Every write to
+  `masterGain.gain.value` must go through `masterLevel()` or the boost is lost
+  the first time the volume slider moves.
 - **`statsCached()`** wraps `statsFor` — the level picker would otherwise run
   BFS on all 66 levels every time it opens.
 - A parsing regex over the levels file must match `rotate:(true|false)` — level

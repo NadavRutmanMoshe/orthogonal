@@ -46,7 +46,8 @@ function loadSettings(){
         if(typeof o.volume==="number")settings.volume=o.volume;
         if(typeof o.brightness==="number")settings.brightness=o.brightness;
         if(o.ui&&["full","compact","none"].indexOf(o.ui)>=0)settings.ui=o.ui;
-        if(o.verbs&&VERBS[o.verbs])settings.verbs=o.verbs;
+        // o.verbs may exist in settings saved before the wording was settled.
+        // Ignoring it is the migration: everyone lands on GO 2D / GO 3D.
       }catch(e){}
     }
     muted=settings.volume<=0;

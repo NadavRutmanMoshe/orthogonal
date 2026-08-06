@@ -9,17 +9,24 @@
    can only start after a gesture, so it's created lazily.
    ============================================================ */
 var actx=null, masterGain=null;
-var settings={volume:.7,brightness:1,ui:"full",verbs:"dim"};
+var settings={volume:.7,brightness:1,ui:"full"};
 
-// The one verb has no settled name yet, so it lives in one table instead of
-// being sprinkled through the file as string literals. Changing the wording
-// is then a data edit, and the player can audition all three in the menu.
+// The individual blip gains below are a balanced mix - a footstep is meant to
+// sit well under the win chord - so loudness is corrected once here at the
+// master rather than by editing eleven numbers and losing that balance.
+// Headroom check: the loudest moment is win(), four .05 notes overlapping,
+// plus reverb wet, which lands near .72 at full volume. Under 1.0, so no clip.
+var MIX=3;
+function masterLevel(){return settings.volume*MIX;}
+
+// The verb's wording is settled: GO 2D / GO 3D. It stays in one table rather
+// than as string literals sprinkled through the file, so it is still a data
+// edit if that ever changes - but it is no longer a player-facing setting, and
+// the menu row that let you audition FOLD and FLATTEN is gone.
 var VERBS={
-  dim :{to2:"GO 2D",   to3:"GO 3D",     n2:"2D",       n3:"3D",       tag:"2D / 3D"},
-  fold:{to2:"FOLD",    to3:"UNFOLD",    n2:"the plane",n3:"the volume",tag:"FOLD"},
-  flat:{to2:"FLATTEN", to3:"UNFLATTEN", n2:"the plane",n3:"the volume",tag:"FLATTEN"}
+  dim:{to2:"GO 2D", to3:"GO 3D", n2:"2D", n3:"3D", tag:"2D / 3D"}
 };
-function VB(){return VERBS[settings.verbs]||VERBS.dim;}
+function VB(){return VERBS.dim;}
 
 // Three control layouts. "full" is the d-pad you already had; "compact" drops
 // the pad but keeps the verb; "none" clears the screen entirely and leans on
@@ -39,7 +46,7 @@ function audio(){
   if(actx.state==="suspended")actx.resume();
   if(!masterGain){
     masterGain=actx.createGain();
-    masterGain.gain.value=settings.volume;
+    masterGain.gain.value=masterLevel();
     masterGain.connect(actx.destination);
   }
   return actx;

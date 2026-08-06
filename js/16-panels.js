@@ -97,10 +97,6 @@ function menuPanel(){
       seg("mUi","full","ON-SCREEN",settings.ui)+
       seg("mUi","compact","COMPACT",settings.ui)+
       seg("mUi","none","HIDDEN",settings.ui)+"</span></div>"+
-    "<div class='crow'><label>The verb</label><span class='seg'>"+
-      seg("mVb","dim","2D / 3D",settings.verbs)+
-      seg("mVb","fold","FOLD",settings.verbs)+
-      seg("mVb","flat","FLATTEN",settings.verbs)+"</span></div>"+
     "<div class='note'>COMPACT drops the d-pad; HIDDEN clears the screen. "+
       "Either way: <code>swipe</code> or arrows/WASD to move, "+
       "<code>space</code> to change dimension, <code>Q</code>/<code>E</code> to turn. "+
@@ -115,7 +111,7 @@ function menuPanel(){
   v.addEventListener("input",function(){
     settings.volume=v.value/100;
     $("mVolV").textContent=v.value+"%";
-    if(masterGain)masterGain.gain.value=settings.volume;
+    if(masterGain)masterGain.gain.value=masterLevel();
     muted=settings.volume<=0;
     saveSettings();
   });
@@ -131,18 +127,13 @@ function menuPanel(){
       settings.ui=m;applyUI();saveSettings();syncHud();onResize();menuPanel();
     });
   });
-  ["dim","fold","flat"].forEach(function(m){
-    bind("mVb_"+m,function(){
-      settings.verbs=m;saveSettings();syncHud();menuPanel();
-    });
-  });
   bind("mTut",function(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
   });
   bind("mReset",function(){
-    settings.volume=.7;settings.brightness=1;settings.ui="full";settings.verbs="dim";
+    settings.volume=.7;settings.brightness=1;settings.ui="full";
     muted=false;
-    if(masterGain)masterGain.gain.value=settings.volume;
+    if(masterGain)masterGain.gain.value=masterLevel();
     applyBrightness();applyUI();saveSettings();syncHud();
     flash("settings reset");menuPanel();
   });

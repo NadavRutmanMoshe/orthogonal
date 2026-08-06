@@ -58,7 +58,18 @@ function starsEarned(){
   }
   return t;
 }
-function shards(){return Math.max(0,starsEarned()-wardrobe.spent);}
+// TESTING SWITCH - set back to false before shipping.
+// The catalogue totals 283 against 189 earnable by perfect play, so buying
+// every item is normally impossible; this hands over enough to walk the whole
+// wardrobe. Buying still runs the real code path - it pushes to owned and
+// charges wardrobe.spent - so what gets tested is the actual purchase flow,
+// not a bypass of it. Flip this to false and the true balance returns, since
+// starsEarned() and wardrobe.spent are both untouched by it.
+var UNLIMITED_SHARDS=true;
+function shards(){
+  if(UNLIMITED_SHARDS)return 9999;
+  return Math.max(0,starsEarned()-wardrobe.spent);
+}
 
 function playerGeometry(id){
   switch(id){
