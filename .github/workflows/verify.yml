@@ -11,6 +11,9 @@ name: verify
 on:
   push:
   pull_request:
+  # Lets you re-run the check by hand from the GitHub app or the web UI,
+  # without needing a commit to hang it on.
+  workflow_dispatch:
 
 jobs:
   levels:

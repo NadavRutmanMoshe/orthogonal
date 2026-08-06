@@ -1,5 +1,9 @@
 # Orthogonal
 
+[![verify](https://github.com/NadavRutmanMoshe/orthogonal/actions/workflows/verify.yml/badge.svg)](https://github.com/NadavRutmanMoshe/orthogonal/actions/workflows/verify.yml)
+
+**[Play it](https://nadavrutmanmoshe.github.io/orthogonal/)**
+
 A grid puzzle game about projection. You are a cube in a voxel world with one
 verb: collapse the world to 2D along your line of sight. Blocks far apart in
 depth merge into one surface, gaps close, unreachable stairs become climbable.
