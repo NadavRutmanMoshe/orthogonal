@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Orthogonal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Fonts are a progressive enhancement: the game falls back to
+     system mono/sans if they fail to load (offline, or a strict WebView). -->
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="corner tl">
+  <button class="rnd" id="bMenu" aria-label="Menu"><svg viewBox="0 0 24 24">
+    <path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <button class="rnd" id="bWard" aria-label="Wardrobe"><svg viewBox="0 0 24 24">
+    <path d="M12 5.5a1.7 1.7 0 1 1 1.7 1.7c-.9 0-1.7.6-1.7 1.6v.9"/>
+    <path d="M12 9.7 4 15.4c-.9.6-.5 2 .6 2h14.8c1.1 0 1.5-1.4.6-2L12 9.7z"/></svg></button>
+  <button class="rnd" id="bHint" aria-label="Hint"><svg viewBox="0 0 24 24">
+    <path d="M9 18h6M10 21h4"/>
+    <path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1.1 2h5c.1-.8.5-1.5 1.1-2A6 6 0 0 0 12 3z"/></svg></button>
+</div>
+<div class="corner tr">
+  <button class="rnd" id="bRestart" aria-label="Restart level"><svg viewBox="0 0 24 24">
+    <path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/></svg></button>
+  <button class="rnd" id="bLook" aria-label="Look around"><svg viewBox="0 0 24 24">
+    <path d="M2 12s3.8-6 10-6 10 6 10 6-3.8 6-10 6-10-6-10-6z"/>
+    <circle cx="12" cy="12" r="2.6"/></svg></button>
+</div>
+
+<div class="hud">
+  <div>
+    <div class="title" id="lvName">—</div>
+    <div class="hint" id="lvHint"></div>
+  </div>
+  <div class="axis"><div class="moves" id="moveLabel"></div></div>
+</div>
+
+<div class="coach" id="coach"></div>
+
+<div class="bar on" id="playBarWrap">
+  <div id="playBar" class="on">
+    <div class="dpad">
+      <span></span><button id="bUp">&#9650;</button><span></span>
+      <button id="bLeft">&#9664;</button><span></span><button id="bRight">&#9654;</button>
+      <span></span><button id="bDown">&#9660;</button><span></span>
+    </div>
+    <div class="rcol">
+      <div class="rot">
+        <button id="bRotL">&#8630;</button>
+        <button id="bRotR">&#8631;</button>
+      </div>
+      <button class="flatbtn" id="bFlat">FLATTEN</button>
+    </div>
+  </div>
+</div>
+
+<div class="bar" id="editBarWrap">
+  <div id="editBar">
+    <div class="row rowTop">
+      <button class="tiny" id="eLevels">&#8592; LEVELS</button>
+      <span class="spacer"></span>
+      <button class="tiny" id="eLib">LIBRARY</button>
+    </div>
+    <div class="row">
+      <button class="chip sel" id="tAdd">SOLID</button>
+      <button class="chip" id="tGlass">GLASS</button>
+      <button class="chip" id="tAnchor">ANCHOR</button>
+      <button class="chip" id="tCrate">CRATE</button>
+      <button class="chip" id="tKey">KEY</button>
+      <button class="chip" id="tSpike">SPIKE</button>
+      <button class="chip" id="tErase">ERASE</button>
+      <button class="chip" id="tStart">START</button>
+      <button class="chip" id="tGoal">GOAL</button>
+    </div>
+    <div class="row row2">
+      <button class="ico" id="eRotL">&#8630;</button>
+      <button class="ico" id="eRotR">&#8631;</button>
+      <button class="ico" id="eUndo">&#8634;</button>
+      <button class="verify" id="eVerify">VERIFY</button>
+      <button style="width:52px" id="eTest">TEST</button>
+      <button class="ico" id="eFile">&#8943;</button>
+    </div>
+  </div>
+</div>
+
+<div class="bar" id="composeBarWrap">
+  <div id="composeBar">
+    <div class="row">
+      <button class="chip" id="cU">&#9650;</button>
+      <button class="chip" id="cL">&#9664;</button>
+      <button class="chip" id="cR">&#9654;</button>
+      <button class="chip" id="cD">&#9660;</button>
+    </div>
+    <div class="row row2">
+      <button class="ico" id="cRotL">&#8630;</button>
+      <button class="ico" id="cRotR">&#8631;</button>
+      <button style="flex:1" id="cFlat">FLATTEN</button>
+      <button style="flex:1" id="cPop">POP</button>
+    </div>
+    <div class="row row2">
+      <button class="ico" id="cDel">&#9003;</button>
+      <button class="verify" id="cBuild">BUILD LEVEL</button>
+      <button style="width:52px" id="cExit">EXIT</button>
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="panel"></div>
+<div class="toast" id="toast"></div>
+
+<div class="won" id="intro">
+  <h2 style="font-size:30px;letter-spacing:-.03em">Orthogonal</h2>
+  <p style="max-width:80vw;text-align:center;line-height:1.7">
+    A cube, a world, and one verb.<br>
+    Drop the world to 2D and things far apart in depth<br>land side by side.
+  </p>
+  <button id="bResume" style="display:none">CONTINUE</button>
+  <button id="bBegin">BEGIN</button>
+  <button class="tiny" id="bSkipTo" style="height:30px;padding:0 14px">PICK A LEVEL</button>
+</div>
+
+<div class="won" id="won">
+  <h2 id="wonTitle">Solved</h2>
+  <p id="wonSub"></p>
+  <div class="wonrow">
+    <button id="bRetry"><svg viewBox="0 0 24 24">
+      <path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/></svg>TRY AGAIN</button>
+    <button id="bNext">NEXT</button>
+  </div>
+</div>
+
+<script src="vendor/three.min.js"></script>
+<!-- Load order matters: these are classic scripts sharing one global
+     scope, and 20-boot.js is the only file that runs anything. -->
+<script src="js/00-storage.js"></script>
+<script src="js/01-coords.js"></script>
+<script src="js/02-levels.js"></script>
+<script src="js/03-rules.js"></script>
+<script src="js/04-solver.js"></script>
+<script src="js/05-state.js"></script>
+<script src="js/06-persistence.js"></script>
+<script src="js/07-difficulty.js"></script>
+<script src="js/08-minimizer.js"></script>
+<script src="js/09-wardrobe.js"></script>
+<script src="js/10-render.js"></script>
+<script src="js/11-sound.js"></script>
+<script src="js/12-play.js"></script>
+<script src="js/13-gestures.js"></script>
+<script src="js/14-editor.js"></script>
+<script src="js/15-tutorial.js"></script>
+<script src="js/16-panels.js"></script>
+<script src="js/17-composer.js"></script>
+<script src="js/18-ui.js"></script>
+<script src="js/19-bindings.js"></script>
+<script src="js/20-boot.js"></script>
+</body>
+</html>

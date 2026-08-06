@@ -1,0 +1,63 @@
+"use strict";
+/* Orthogonal — 07-difficulty.js
+   Par, stars and difficulty tiers, derived from solver output.
+   Loaded as a classic script: everything here shares one global scope,
+   in the order listed in index.html. */
+
+/* ============================================================
+   DIFFICULTY — derived from what the solver actually found,
+   not from a guess. Longer optimal paths, forced rotations and
+   extra flattens all mean more for the player to hold in mind.
+   ============================================================ */
+var statsCache={};
+function statsCached(level){
+  var k=level.name+"|"+level.blocks.length+"|"+level.goal.join(",");
+  if(statsCache[k])return statsCache[k];
+  var r=statsFor(level);
+  statsCache[k]=r;
+  return r;
+}
+function statsFor(level){
+  var full=solve(level,true);
+  if(full.status!=="solved")return {ok:false,status:full.status};
+  var noRot=solve(level,false);
+  var flattens=0,rots=0;
+  for(var i=0;i<full.path.length;i++){
+    if(full.path[i]==="FLAT")flattens++;
+    if(full.path[i].indexOf("rot")===0)rots++;
+  }
+  var needsRot=noRot.status!=="solved";
+  // Weights calibrated against the three built-in levels: a single-flatten
+  // walk should read gentle, and each extra flatten is the big jump because
+  // the player has to hold two projections in mind at once.
+  var score=full.path.length*2+(needsRot?4:0)+Math.max(0,flattens-1)*8+rots;
+  return {ok:true,moves:full.path.length,path:full.path.join(" "),
+          flattens:flattens,rots:rots,needsRot:needsRot,score:score,
+          blocks:level.blocks.length};
+}
+// 3 stars is the solver's own answer; anything longer costs you.
+// Hints are free and unlimited so nobody gets stuck, but each one costs you
+// rating - and rating is the currency. A player who wants skins solves it
+// properly; a player who is stuck still gets to move on.
+function capForHints(n){
+  if(n<=0)return 3;
+  if(n<=2)return 2;
+  if(n<=4)return 1;
+  return 0;
+}
+function starsFor(moves,par){
+  if(!par||moves<=0)return 0;
+  if(moves<=par)return 3;
+  if(moves<=Math.floor(par*1.2))return 2;
+  if(moves<=Math.floor(par*1.4))return 1;
+  return 0;
+}
+function starGlyphs(n){
+  return "\u2605\u2605\u2605".slice(0,n)+"\u2606\u2606\u2606".slice(0,3-n);
+}
+function tierOf(score){
+  if(score<=18)return "gentle";
+  if(score<=24)return "moderate";
+  if(score<=32)return "hard";
+  return "brutal";
+}

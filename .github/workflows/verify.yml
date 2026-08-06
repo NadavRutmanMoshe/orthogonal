@@ -1,0 +1,23 @@
+# Runs the solver over every level on every push and pull request.
+#
+# This exists because of the rule in CLAUDE.md: after any change to levels,
+# rules or the solver, run `node tools/verify.js`. From a phone you cannot
+# reasonably eyeball a diff across 66 levels, so the machine does it and
+# GitHub shows a green tick or a red cross on the pull request instead.
+#
+# No install step: the project has no dependencies and no build.
+name: verify
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  levels:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node tools/verify.js

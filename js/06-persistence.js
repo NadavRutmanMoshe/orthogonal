@@ -1,0 +1,124 @@
+"use strict";
+/* Orthogonal — 06-persistence.js
+   Progress, settings, session, library and wardrobe storage.
+   Loaded as a classic script: everything here shares one global scope,
+   in the order listed in index.html. */
+
+/* ============================================================
+   PERSISTENCE — one key holds the whole library, so saving
+   costs a single write instead of one per level.
+   ============================================================ */
+var LIB_KEY="orthogonal:library";
+var PROG_KEY="orthogonal:progress";
+var SET_KEY="orthogonal:settings";
+var SESS_KEY="orthogonal:session";
+var WARD_KEY="orthogonal:wardrobe";
+function saveWardrobe(){
+  if(!window.storage)return;
+  window.storage.set(WARD_KEY,JSON.stringify(wardrobe)).catch(function(){});
+}
+function loadWardrobe(){
+  if(!window.storage)return Promise.resolve();
+  return window.storage.get(WARD_KEY).then(function(r){
+    if(r&&r.value){
+      try{
+        var o=JSON.parse(r.value);
+        if(o.owned)wardrobe.owned=o.owned;
+        if(o.color)wardrobe.color=o.color;
+        if(o.shape)wardrobe.shape=o.shape;
+        if(o.palette)wardrobe.palette=o.palette;
+        if(typeof o.spent==="number")wardrobe.spent=o.spent;
+      }catch(e){}
+    }
+    applyPalette();applySkin();
+  }).catch(function(){});
+}
+function saveSettings(){
+  if(!window.storage)return;
+  window.storage.set(SET_KEY,JSON.stringify(settings)).catch(function(){});
+}
+function loadSettings(){
+  if(!window.storage)return Promise.resolve();
+  return window.storage.get(SET_KEY).then(function(r){
+    if(r&&r.value){
+      try{
+        var o=JSON.parse(r.value);
+        if(typeof o.volume==="number")settings.volume=o.volume;
+        if(typeof o.brightness==="number")settings.brightness=o.brightness;
+        if(o.ui&&["full","compact","none"].indexOf(o.ui)>=0)settings.ui=o.ui;
+        if(o.verbs&&VERBS[o.verbs])settings.verbs=o.verbs;
+      }catch(e){}
+    }
+    muted=settings.volume<=0;
+    applyBrightness();applyUI();syncHud();
+  }).catch(function(){});
+}
+// Resume where you stopped, mid-level, not just at the last level you finished.
+var pendingSession=null;
+function saveSession(){
+  if(!window.storage||app!=="play"||playSource!=="builtin"||dying)return;
+  if(L&&L.tutorial)return;
+  var body={i:lvIndex,n:LEVELS[lvIndex]?LEVELS[lvIndex].name:"",mv:moveCount,
+    p:[player.x,player.y,player.z],flat:flat,fu:flatPos.u,fy:flatPos.y,
+    view:view,cr:gCrates.map(function(c){return c.slice();}),
+    hist:moveHistory.slice(-60)};
+  window.storage.set(SESS_KEY,JSON.stringify(body)).catch(function(){});
+}
+function clearSession(){
+  if(!window.storage)return;
+  window.storage.delete(SESS_KEY).catch(function(){});
+}
+function loadSession(){
+  if(!window.storage)return Promise.resolve();
+  return window.storage.get(SESS_KEY).then(function(r){
+    if(r&&r.value){try{pendingSession=JSON.parse(r.value);}catch(e){}}
+  }).catch(function(){});
+}
+// Levels can be inserted ahead of you between builds, so the stored index is
+// only a hint - the name is what actually identifies the level.
+function sessionIndex(){
+  var b=pendingSession;
+  if(!b)return -1;
+  if(b.n){for(var q=0;q<LEVELS.length;q++)if(LEVELS[q].name===b.n)return q;}
+  return LEVELS[b.i]?b.i:-1;
+}
+function resumeSession(){
+  var b=pendingSession, i=sessionIndex();
+  if(!b||i<0)return false;
+  playSource="builtin";
+  enterPlay(LEVELS[i],i,false);
+  player={x:b.p[0],y:b.p[1],z:b.p[2]};
+  flat=!!b.flat;flatTarget=flat?1:0;flatT=flatTarget;
+  flatPos={u:b.fu,y:b.fy};
+  view=b.view||0;viewAngle=viewAngleTarget=view*90;
+  if(b.cr&&b.cr.length===gCrates.length)gCrates=b.cr.map(function(c){return c.slice();});
+  moveCount=b.mv||0;
+  moveHistory=b.hist||[];
+  buildDynamic();buildGrid();syncHud();
+  playerMesh.position.set(player.x,player.y,player.z);
+  return true;
+}
+function progLoad(){
+  if(!window.storage)return Promise.resolve();
+  return window.storage.get(PROG_KEY).then(function(r){
+    if(r&&r.value){try{progress=JSON.parse(r.value)||{};}catch(e){progress={};}}
+  }).catch(function(){progress={};});
+}
+function progSave(){
+  if(!window.storage)return Promise.resolve();
+  return window.storage.set(PROG_KEY,JSON.stringify(progress)).catch(function(){});
+}
+function libLoad(){
+  if(!window.storage)return Promise.resolve();
+  return window.storage.get(LIB_KEY).then(function(res){
+    if(res&&res.value){
+      try{library=JSON.parse(res.value)||[];}catch(e){library=[];}
+    }
+  }).catch(function(){library=[];});
+}
+function libSave(){
+  if(!window.storage){flash("storage unavailable — use export");return Promise.resolve();}
+  return window.storage.set(LIB_KEY,JSON.stringify(library)).catch(function(){
+    flash("couldn't save");
+  });
+}

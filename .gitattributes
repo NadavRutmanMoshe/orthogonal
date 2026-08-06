@@ -1,0 +1,6 @@
+# Keep line endings LF everywhere.
+#
+# This repo gets edited from Windows and from a Linux cloud sandbox. Without
+# this, a file touched on one side comes back as "every line changed" on the
+# other, which makes a diff on a phone screen unreadable.
+* text=auto eol=lf

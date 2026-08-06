@@ -1,0 +1,394 @@
+"use strict";
+/* Orthogonal — 16-panels.js
+   Chapters and every slide-up panel: menu, levels, wardrobe, library.
+   Loaded as a classic script: everything here shares one global scope,
+   in the order listed in index.html. */
+
+var CHAPTERS=[
+  {at:0,  name:"0 \u00b7 TUTORIAL",   sub:"one new verb at a time, no scoring"},
+  {at:3,  name:"I \u00b7 FOLDING",     sub:"collapse the world and cross the gap"},
+  {at:6,  name:"II \u00b7 TURNING",    sub:"which axis you fold along is the puzzle"},
+  {at:14, name:"III \u00b7 GLASS",     sub:"solid in the volume, absent from the plane"},
+  {at:19, name:"IV \u00b7 SPIKES",     sub:"a hazard you cannot see until you fold"},
+  {at:26, name:"V \u00b7 CRATES",      sub:"change the plane by moving the volume"},
+  {at:33, name:"VI \u00b7 ANCHORS",    sub:"reach the middle of a column, not its ends"},
+  {at:40, name:"VII \u00b7 CONFLUENCE",sub:"glass, spikes and crates in the same breath"},
+  {at:49, name:"VIII \u00b7 AMBER",    sub:"park a crate on amber and it never moves again"},
+  {at:58, name:"IX \u00b7 BONUS",      sub:"long ones, for afterwards"}
+];
+function wardrobePanel(tab){
+  tab=tab||"shape";
+  var bal=shards();
+  var html="<h3>WARDROBE \u00b7 "+bal+" \u2605 TO SPEND</h3>"+
+    "<div class='tabs'>"+
+      "<button class='tab"+(tab==="shape"?" on":"")+"' id='wS'>SHAPE</button>"+
+      "<button class='tab"+(tab==="color"?" on":"")+"' id='wC'>COLOUR</button>"+
+      "<button class='tab"+(tab==="palette"?" on":"")+"' id='wP'>WORLD</button>"+
+    "</div><div class='grid'>";
+  var list=tab==="shape"?SKIN_SHAPES:tab==="color"?SKIN_COLORS:PALETTES;
+  var cur=tab==="shape"?wardrobe.shape:tab==="color"?wardrobe.color:wardrobe.palette;
+  for(var i=0;i<list.length;i++){
+    var it=list[i], have=owns(it.id), on=cur===it.id;
+    var swatch = tab==="color"
+      ? "background:#"+it.hex.toString(16).padStart(6,"0")
+      : tab==="palette"
+        ? "background:linear-gradient(135deg,#"+it.void.toString(16).padStart(6,"0")+
+          " 0 50%,#"+it.paper.toString(16).padStart(6,"0")+" 50% 100%)"
+        : "background:var(--rule)";
+    html+="<div class='item"+(on?" on":"")+"' data-id='"+it.id+"' data-tab='"+tab+"'>"+
+      "<i style='"+swatch+"'>"+(tab==="shape"?shapeGlyph(it.id):"")+"</i>"+
+      "<b>"+it.name+"</b>"+
+      "<span>"+(on?"equipped":have?"owned":it.cost+" \u2605")+"</span></div>";
+  }
+  html+="</div>"+
+    "<div class='prow'><button id='wAd' disabled>WATCH AN AD \u00b7 +10 \u2605</button></div>"+
+    "<div class='note'>Rewarded video is not wired up in this build \u2014 it needs "+
+    "an ad SDK, which only exists once the game is wrapped for a store. "+
+    "<code>grantShards(n)</code> is the hook.</div>"+
+    "<div class='prow'><button id='wBack'>BACK</button></div>";
+  showPanel(html,"wardrobe");
+  bind("wS",function(){wardrobePanel("shape");});
+  bind("wC",function(){wardrobePanel("color");});
+  bind("wP",function(){wardrobePanel("palette");});
+  bind("wBack",hidePanel);
+  $("panel").querySelectorAll(".item").forEach(function(el){
+    tap(el,function(){
+      var id=el.getAttribute("data-id"), t=el.getAttribute("data-tab");
+      var list=t==="shape"?SKIN_SHAPES:t==="color"?SKIN_COLORS:PALETTES;
+      var it=findBy(list,id);
+      if(!owns(id)){
+        if(shards()<it.cost){flash("you need "+(it.cost-shards())+" more");SFX.bump();return;}
+        wardrobe.owned.push(id);wardrobe.spent+=it.cost;SFX.key();
+      }
+      if(t==="shape")wardrobe.shape=id;
+      else if(t==="color")wardrobe.color=id;
+      else wardrobe.palette=id;
+      applyPalette();applySkin();saveWardrobe();
+      wardrobePanel(t);
+    });
+  });
+}
+// Called by the rewarded-video callback once an ad completes. Kept separate so
+// wiring an SDK later is a one-line change and never touches the star maths.
+function grantShards(n){
+  wardrobe.spent=Math.max(0,wardrobe.spent-n);
+  saveWardrobe();
+}
+function shapeGlyph(id){
+  return {cube:"\u25a0",sphere:"\u25cf",pyramid:"\u25b2",diamond:"\u25c6",
+          barrel:"\u25ac",donut:"\u25ce",star:"\u2726",pup:"\u25d0"}[id]||"\u25a0";
+}
+
+function seg(pre,val,label,cur){
+  return "<button id='"+pre+"_"+val+"'"+(cur===val?" class='on'":"")+">"+label+"</button>";
+}
+function menuPanel(){
+  var vol=Math.round(settings.volume*100), bri=Math.round(settings.brightness*100);
+  showPanel("<h3>MENU</h3>"+
+    "<div class='prow'><button id='mRestart'>RESTART LEVEL</button>"+
+    "<button id='mLevels'>LEVELS</button></div>"+
+    "<div class='srow'><label>Volume</label>"+
+      "<input type='range' id='mVol' min='0' max='100' value='"+vol+"'>"+
+      "<span id='mVolV'>"+vol+"%</span></div>"+
+    "<div class='srow'><label>Brightness</label>"+
+      "<input type='range' id='mBri' min='60' max='140' value='"+bri+"'>"+
+      "<span id='mBriV'>"+bri+"%</span></div>"+
+    "<div class='crow'><label>Controls</label><span class='seg'>"+
+      seg("mUi","full","ON-SCREEN",settings.ui)+
+      seg("mUi","compact","COMPACT",settings.ui)+
+      seg("mUi","none","HIDDEN",settings.ui)+"</span></div>"+
+    "<div class='crow'><label>The verb</label><span class='seg'>"+
+      seg("mVb","dim","2D / 3D",settings.verbs)+
+      seg("mVb","fold","FOLD",settings.verbs)+
+      seg("mVb","flat","FLATTEN",settings.verbs)+"</span></div>"+
+    "<div class='note'>COMPACT drops the d-pad; HIDDEN clears the screen. "+
+      "Either way: <code>swipe</code> or arrows/WASD to move, "+
+      "<code>space</code> to change dimension, <code>Q</code>/<code>E</code> to turn. "+
+      "With the bar hidden, <code>tap</code> the world to change dimension and "+
+      "<code>two-finger tap</code> to turn.</div>"+
+    "<div class='prow'><button id='mLegend'>WHAT THE PIECES DO</button>"+
+    "<button id='mTut'>REPLAY TUTORIAL</button></div>"+
+    "<div class='prow'><button id='mReset'>RESET SETTINGS</button></div>"+
+    "<div class='prow'><button id='mEditor'>LEVEL EDITOR</button>"+
+    "<button id='mClose'>CLOSE</button></div>","menu");
+  var v=$("mVol"), b=$("mBri");
+  v.addEventListener("input",function(){
+    settings.volume=v.value/100;
+    $("mVolV").textContent=v.value+"%";
+    if(masterGain)masterGain.gain.value=settings.volume;
+    muted=settings.volume<=0;
+    saveSettings();
+  });
+  v.addEventListener("change",function(){if(!muted)SFX.turn();});
+  b.addEventListener("input",function(){
+    settings.brightness=b.value/100;
+    $("mBriV").textContent=b.value+"%";
+    applyBrightness();saveSettings();
+  });
+  bind("mRestart",function(){hidePanel();resetLevel();});
+  ["full","compact","none"].forEach(function(m){
+    bind("mUi_"+m,function(){
+      settings.ui=m;applyUI();saveSettings();syncHud();onResize();menuPanel();
+    });
+  });
+  ["dim","fold","flat"].forEach(function(m){
+    bind("mVb_"+m,function(){
+      settings.verbs=m;saveSettings();syncHud();menuPanel();
+    });
+  });
+  bind("mTut",function(){
+    hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
+  });
+  bind("mReset",function(){
+    settings.volume=.7;settings.brightness=1;settings.ui="full";settings.verbs="dim";
+    muted=false;
+    if(masterGain)masterGain.gain.value=settings.volume;
+    applyBrightness();applyUI();saveSettings();syncHud();
+    flash("settings reset");menuPanel();
+  });
+  bind("mLevels",levelPicker);
+  bind("mLegend",legendPanel);
+  bind("mEditor",function(){hidePanel();enterEditor();});
+  bind("mClose",hidePanel);
+}
+
+function levelPicker(){
+  var solved=0;
+  for(var q=0;q<LEVELS.length;q++) if(progress[LEVELS[q].name]!==undefined) solved++;
+  var html="<h3>SELECT LEVEL \u00b7 "+solved+"/"+LEVELS.length+" SOLVED</h3>";
+  for(var i=0;i<LEVELS.length;i++){
+    for(var ci=0;ci<CHAPTERS.length;ci++)
+      if(CHAPTERS[ci].at===i)
+        html+="<div class='chap'>"+CHAPTERS[ci].name+
+              "<span>"+CHAPTERS[ci].sub+"</span></div>";
+    var tut=!!LEVELS[i].tutorial;
+    var st=tut?{ok:false}:statsCached(LEVELS[i]);
+    var mark=(playSource==="builtin"&&i===lvIndex)?" \u25c0":"";
+    var done=progress[LEVELS[i].name];
+    var badge=done===undefined?"":
+      (tut?"<span class='ok'>\u2713</span>"
+         :"<span class='ok'>"+starGlyphs(st.ok?starsFor(done,st.moves):0)+"</span>");
+    html+="<div class='lrow"+(mark?" here":"")+"'><span class='lname'>"+
+      esc(LEVELS[i].name)+mark+"</span>"+
+      "<span class='mono'>"+(tut?"tutorial":(st.ok?st.flattens+(st.flattens===1?" fold":" folds"):"?"))+
+      (badge?" &middot; ":"")+badge+"</span>"+
+      "<span class='lbtns'><button class='mini' data-lv='"+i+"'>PLAY</button></span></div>";
+  }
+  html+="<div class='prow'><button id='pkBack'>BACK</button>"+
+        "<button id='pkClose'>CLOSE</button></div>";
+  showPanel(html);
+  bind("pkBack",menuPanel);
+  // jump to the level you're actually on instead of making you scroll
+  setTimeout(function(){
+    var here=$("panel").querySelector(".lrow.here");
+    if(here&&here.scrollIntoView)
+      here.scrollIntoView({block:"center"});
+  },0);
+  $("panel").querySelectorAll("[data-lv]").forEach(function(el){
+    tap(el,function(){
+      var i=+el.getAttribute("data-lv");
+      hidePanel();playSource="builtin";enterPlay(LEVELS[i],i,false);
+    });
+  });
+  bind("pkClose",hidePanel);
+}
+
+function legendPanel(){
+  showPanel("<h3>THE PIECES</h3>"+
+    "<div class='leg'><i style='background:#5a6d94'></i><span><b>Stone</b> \u2014 "+
+      "solid, and it casts into the plane when you fold.</span></div>"+
+    "<div class='leg'><i style='background:#7fc4d8;opacity:.65'></i><span><b>Glass</b> \u00b7 ring \u2014 "+
+      "solid to stand on, but casts nothing. Ground in the volume, a hole in the plane.</span></div>"+
+    "<div class='leg'><i style='background:#d9a441'></i><span><b>Anchor</b> \u00b7 gem \u2014 "+
+      "claims you when you unfold, instead of the block nearest the camera. "+
+      "Turning reaches either <i>end</i> of a column of candidates; only an "+
+      "anchor reaches one in the <i>middle</i>. It also holds a <b>crate</b> "+
+      "fast: once a crate rests on amber it can never be shoved again, so "+
+      "where you park one is a decision you cannot take back.</span></div>"+
+    "<div class='leg'><i style='background:#9b7fd4'></i><span><b>Crate</b> \u00b7 cross \u2014 "+
+      "walk into it and it slides. It casts like stone, so moving it in the volume "+
+      "changes the shape of the plane. The only thing here you can change.</span></div>"+
+    "<div class='leg'><i style='background:#8a3040'></i><span><b>Spikes</b> \u00b7 four points \u2014 "+
+      "solid, and they cast like stone, but standing on one kills you. A spike "+
+      "buried deep in the world poisons the whole column it folds into: ground "+
+      "that is safe in the volume can be lethal in the plane.</span></div>"+
+    "<div class='leg'><i style='background:#f2d16b'></i><span><b>Key</b> \u2014 "+
+      "collected in the <i>plane</i>, on the square it folds into. Which axis "+
+      "you fold along decides which keys you can reach.</span></div>"+
+    "<div class='leg'><i style='background:#d6336c'></i><span><b>You</b> \u2014 "+
+      "the plate underneath shows what you're standing on.</span></div>"+
+    "<div class='leg'><i style='background:#35c2a5'></i><span><b>Goal</b> \u2014 "+
+      "you must arrive in the volume, not the plane.</span></div>"+
+    "<div class='leg'><i style='background:transparent;border:1px solid var(--rule)'></i>"+
+      "<span><b>The eye button</b> \u2014 hold it (or Shift) to lean the camera "+
+      "and read depth. It costs no move. Blocks sharing your depth stay bright; "+
+      "everything further back fades.</span></div>"+
+    "<div class='prow'><button id='lgBack'>BACK</button></div>");
+  bind("lgBack",menuPanel);
+}
+
+function libraryPanel(){
+  var sorted=library.slice().sort(function(a,b){return a.score-b.score;});
+  var html="<h3>LIBRARY \u2014 "+library.length+" LEVEL"+(library.length===1?"":"S")+"</h3>";
+  if(!library.length){
+    html+="Nothing saved yet. Build a level, hit VERIFY, then SAVE.<br><br>";
+  } else {
+    html+="Sorted easiest first, by the solver's own numbers.<br>";
+    for(var i=0;i<sorted.length;i++){
+      var lv=sorted[i];
+      html+="<div class='lrow'><span class='lname'>"+esc(lv.name)+"</span>"+
+        "<span class='mono'>"+tierOf(lv.score)+" &middot; "+lv.moves+" moves"+
+        (lv.needsRot?" &middot; rot":"")+"</span>"+
+        "<span class='lbtns'>"+
+          "<button class='mini' data-play='"+lv.id+"'>PLAY</button>"+
+          "<button class='mini' data-edit='"+lv.id+"'>EDIT</button>"+
+          "<button class='mini' data-del='"+lv.id+"'>\u00d7</button>"+
+        "</span></div>";
+    }
+    html+="<div class='prow'><button id='pCampaign'>PLAY ALL IN ORDER</button></div>";
+  }
+  html+="<div class='prow'><button id='pCompose'>COMPOSE FROM A SOLUTION</button></div>";
+  html+="<div class='prow'><button id='pProj'>PROJECT FILE (ALL LEVELS)</button></div>";
+  html+="<div class='prow'><button id='pIO'>THIS LEVEL</button>"+
+        "<button id='pNew'>NEW LEVEL</button>"+
+        "<button id='pClose4'>CLOSE</button></div>";
+  showPanel(html);
+
+  var p=$("panel");
+  p.querySelectorAll("[data-play]").forEach(function(el){
+    tap(el,function(){startLibrary(el.getAttribute("data-play"));});
+  });
+  p.querySelectorAll("[data-edit]").forEach(function(el){
+    tap(el,function(){
+      var lv=findLevel(el.getAttribute("data-edit"));
+      if(!lv)return;
+      snapshot();
+      custom.name=lv.name;custom.blocks=lv.blocks.map(function(v){return v.slice();});
+      custom.start=lv.start.slice();custom.goal=lv.goal.slice();
+      custom.rotate=lv.rotate;
+      ghosted.clear();R=makeRules(custom);syncMeshes();hidePanel();
+      flash("loaded "+lv.name);
+    });
+  });
+  p.querySelectorAll("[data-del]").forEach(function(el){
+    tap(el,function(){
+      var id=el.getAttribute("data-del");
+      library=library.filter(function(x){return x.id!==id;});
+      libSave().then(libraryPanel);
+    });
+  });
+  bind("pCampaign",function(){startLibrary(null);});
+  bind("pCompose",enterCompose);
+  bind("pProj",projectPanel);
+  bind("pIO",ioPanel);
+  bind("pNew",function(){
+    snapshot();custom.blocks=[];custom.start=[0,1,0];custom.goal=[3,1,0];
+    custom.name="Untitled";ghosted.clear();
+    R=makeRules(custom);syncMeshes();hidePanel();
+  });
+  bind("pClose4",hidePanel);
+}
+
+function findLevel(id){
+  for(var i=0;i<library.length;i++) if(library[i].id===id) return library[i];
+  return null;
+}
+function sortedLibrary(){
+  return library.slice().sort(function(a,b){return a.score-b.score;});
+}
+function startLibrary(id){
+  var s=sortedLibrary();
+  if(!s.length){flash("library is empty");return;}
+  libIndex=0;
+  if(id){ for(var i=0;i<s.length;i++) if(s[i].id===id) libIndex=i; }
+  playSource="library";
+  var lv=s[libIndex];
+  enterPlay({name:lv.name,hint:tierOf(lv.score)+" \u00b7 "+lv.moves+" moves",
+    blocks:lv.blocks,keys:lv.keys||[],start:lv.start,goal:lv.goal,rotate:lv.rotate},undefined,false);
+}
+
+function projectPanel(){
+  showPanel("<h3>PROJECT FILE</h3>"+
+    "Your whole library as one block of text. Copy it somewhere safe — "+
+    "this is what carries the project between sessions or devices."+
+    "<textarea id='pj'></textarea>"+
+    "<div class='prow'><button id='pjAdd'>IMPORT (ADD)</button>"+
+    "<button id='pjRep'>IMPORT (REPLACE)</button>"+
+    "<button id='pjBack'>BACK</button></div>");
+  $("pj").value=JSON.stringify({format:"orthogonal-project-1",levels:library});
+  function take(replace){
+    try{
+      var o=JSON.parse($("pj").value);
+      var incoming=o.levels||o;
+      if(!incoming.length)throw 0;
+      for(var i=0;i<incoming.length;i++)
+        if(!incoming[i].blocks||!incoming[i].start||!incoming[i].goal)throw 0;
+      // recompute stats so imported levels sort correctly alongside yours
+      for(var j=0;j<incoming.length;j++){
+        var st=statsFor(incoming[j]);
+        if(st.ok){incoming[j].score=st.score;incoming[j].moves=st.moves;
+          incoming[j].needsRot=st.needsRot;incoming[j].flattens=st.flattens;}
+        if(!incoming[j].id)incoming[j].id="l"+Date.now()+"_"+j;
+      }
+      library=replace?incoming:library.concat(incoming);
+      libSave().then(function(){libraryPanel();flash("library: "+library.length+" levels");});
+    }catch(e){flash("that isn't a valid project file");}
+  }
+  bind("pjAdd",function(){take(false);});
+  bind("pjRep",function(){take(true);});
+  bind("pjBack",libraryPanel);
+}
+
+function ioPanel(){
+  var data=JSON.stringify({name:custom.name,hint:custom.hint,blocks:custom.blocks,
+    keys:custom.keys||[],start:custom.start,goal:custom.goal,rotate:custom.rotate});
+  showPanel("<h3>IMPORT / EXPORT</h3>"+
+    "Text for the level you're editing. Paste one in and press LOAD."+
+    "<textarea id='io'></textarea>"+
+    "<div class='prow'><button id='pLoad'>LOAD</button>"+
+    "<button id='pBack'>BACK</button></div>");
+  $("io").value=data;
+  bind("pLoad",function(){
+    try{
+      var o=JSON.parse($("io").value);
+      if(!o.blocks||!o.start||!o.goal)throw 0;
+      snapshot();
+      custom.blocks=o.blocks;custom.start=o.start;custom.goal=o.goal;
+      custom.keys=o.keys||[];
+      custom.name=o.name||"Untitled";custom.hint=o.hint||"";
+      custom.rotate=o.rotate!==false;
+      ghosted.clear();R=makeRules(custom);initDynamic();syncMeshes();hidePanel();flash("loaded");
+    }catch(err){flash("that isn't valid level data");}
+  });
+  bind("pBack",libraryPanel);
+}
+
+function esc(s){
+  return String(s).replace(/[&<>"]/g,function(c){
+    return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c];
+  });
+}
+
+function enterEditor(){
+  app="edit";fromEditor=false;
+  L=custom;R=makeRules(custom);
+  initDynamic();
+  flat=false;flatTarget=0;flatT=0;
+  $("won").classList.remove("on");
+  $("playBarWrap").classList.remove("on");
+  $("playBar").classList.remove("on");
+  $("composeBarWrap").classList.remove("on");$("composeBar").classList.remove("on");
+  $("editBarWrap").classList.add("on");
+  $("editBar").classList.add("on");
+  syncMeshes();buildGrid();syncHud();onResize();
+}
+function enterPlay(level,idx,fromEd){
+  app="play";fromEditor=!!fromEd;
+  hidePanel();ghosted.clear();
+  $("editBarWrap").classList.remove("on");
+  $("editBar").classList.remove("on");
+  $("composeBarWrap").classList.remove("on");$("composeBar").classList.remove("on");
+  $("playBarWrap").classList.add("on");
+  $("playBar").classList.add("on");
+  loadLevel(level,idx);onResize();
+}
