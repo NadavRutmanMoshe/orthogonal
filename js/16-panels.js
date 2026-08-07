@@ -16,57 +16,156 @@ var CHAPTERS=[
   {at:49, name:"VIII \u00b7 AMBER",    sub:"park a crate on amber and it never moves again"},
   {at:58, name:"IX \u00b7 BONUS",      sub:"long ones, for afterwards"}
 ];
+/* ---- the wardrobe ----------------------------------------------------
+   Items on the left, a display case on the right. Tapping an item only
+   ever *selects* it - it goes on the stand and nothing is spent and
+   nothing is equipped. Both of those are deliberate second acts, on
+   buttons under the case, and buying is armed-then-confirmed on top of
+   that. The old panel bought and equipped on a single tap of the grid,
+   which meant a mis-tap while scrolling the list spent stars.
+
+   The shell is built once per opening and then refreshed in place. It
+   would be simpler to re-run showPanel on every tap, but that replaces
+   the panel's innerHTML, and with it the case's canvas - so every tap
+   would burn a WebGL context. See the note above previewStop().
+   ---------------------------------------------------------------------- */
+var wardTab="shape";
+var wardSel={shape:null,color:null,palette:null};
+var buyArmed=null;   // the id whose BUY has been tapped once, awaiting a second
+
+function wardList(t){
+  return t==="shape"?SKIN_SHAPES:t==="color"?SKIN_COLORS:PALETTES;
+}
+function wardEquipped(t){
+  return t==="shape"?wardrobe.shape:t==="color"?wardrobe.color:wardrobe.palette;
+}
+function wardSelected(t){
+  if(!wardSel[t])wardSel[t]=wardEquipped(t);
+  return wardSel[t];
+}
 function wardrobePanel(tab){
-  tab=tab||"shape";
-  var bal=shards();
-  var html="<h3>WARDROBE \u00b7 "+bal+" \u2605 TO SPEND</h3>"+
+  wardTab=tab||"shape";
+  buyArmed=null;
+  showPanel(
+    "<h3 id='wHead'></h3>"+
     "<div class='tabs'>"+
-      "<button class='tab"+(tab==="shape"?" on":"")+"' id='wS'>SHAPE</button>"+
-      "<button class='tab"+(tab==="color"?" on":"")+"' id='wC'>COLOUR</button>"+
-      "<button class='tab"+(tab==="palette"?" on":"")+"' id='wP'>WORLD</button>"+
-    "</div><div class='grid'>";
-  var list=tab==="shape"?SKIN_SHAPES:tab==="color"?SKIN_COLORS:PALETTES;
-  var cur=tab==="shape"?wardrobe.shape:tab==="color"?wardrobe.color:wardrobe.palette;
+      "<button class='tab' id='wS'>SHAPE</button>"+
+      "<button class='tab' id='wC'>COLOUR</button>"+
+      "<button class='tab' id='wP'>WORLD</button>"+
+    "</div>"+
+    "<div class='wbody'>"+
+      "<div class='wlist'><div class='grid' id='wGrid'></div></div>"+
+      "<div class='wcase'>"+
+        "<canvas id='wCase3d' class='wcanvas'></canvas>"+
+        "<div class='wturn'>DRAG TO TURN</div>"+
+        "<div id='wMeta'></div>"+
+      "</div>"+
+    "</div>"+
+    "<div class='prow'><button id='wBack'>BACK</button></div>","wardrobe");
+  bind("wS",function(){wardTabTo("shape");});
+  bind("wC",function(){wardTabTo("color");});
+  bind("wP",function(){wardTabTo("palette");});
+  bind("wBack",hidePanel);
+  wardRefresh();
+  // The canvas has no measurable size until the panel has been laid out, so
+  // the case starts a frame late. Re-check the panel on the way in: closing
+  // the wardrobe inside that frame would otherwise start a context that the
+  // already-finished previewStop() never gets the chance to release.
+  requestAnimationFrame(function(){
+    var cv=$("wCase3d");
+    if(!cv||panelKind!=="wardrobe"||!panelOpen())return;
+    previewStart(cv);
+    wardPreview();
+  });
+}
+function wardTabTo(t){
+  wardTab=t;buyArmed=null;
+  wardRefresh();wardPreview();
+}
+function wardPreview(){
+  var sel=wardSelected(wardTab);
+  previewShow(
+    wardTab==="shape"  ?sel:wardrobe.shape,
+    wardTab==="color"  ?sel:wardrobe.color,
+    wardTab==="palette"?sel:wardrobe.palette);
+}
+function wardRefresh(){
+  var t=wardTab, list=wardList(t), cur=wardEquipped(t), sel=wardSelected(t);
+  $("wHead").textContent="WARDROBE \u00b7 "+shards()+" \u2605 TO SPEND";
+  $("wS").classList.toggle("on",t==="shape");
+  $("wC").classList.toggle("on",t==="color");
+  $("wP").classList.toggle("on",t==="palette");
+  var html="";
   for(var i=0;i<list.length;i++){
     var it=list[i], have=owns(it.id), on=cur===it.id;
-    var swatch = tab==="color"
+    var swatch = t==="color"
       ? "background:#"+it.hex.toString(16).padStart(6,"0")
-      : tab==="palette"
+      : t==="palette"
         ? "background:linear-gradient(135deg,#"+it.void.toString(16).padStart(6,"0")+
           " 0 50%,#"+it.paper.toString(16).padStart(6,"0")+" 50% 100%)"
         : "background:var(--rule)";
-    html+="<div class='item"+(on?" on":"")+"' data-id='"+it.id+"' data-tab='"+tab+"'>"+
-      "<i style='"+swatch+"'>"+(tab==="shape"?shapeGlyph(it.id):"")+"</i>"+
+    html+="<div class='item"+(on?" on":"")+(sel===it.id?" sel":"")+
+      "' data-id='"+it.id+"'>"+
+      "<i style='"+swatch+"'>"+(t==="shape"?shapeGlyph(it.id):"")+"</i>"+
       "<b>"+it.name+"</b>"+
       "<span>"+(on?"equipped":have?"owned":it.cost+" \u2605")+"</span></div>";
   }
-  html+="</div>"+
-    "<div class='prow'><button id='wAd' disabled>WATCH AN AD \u00b7 +10 \u2605</button></div>"+
-    "<div class='note'>Rewarded video is not wired up in this build \u2014 it needs "+
-    "an ad SDK, which only exists once the game is wrapped for a store. "+
-    "<code>grantShards(n)</code> is the hook.</div>"+
-    "<div class='prow'><button id='wBack'>BACK</button></div>";
-  showPanel(html,"wardrobe");
-  bind("wS",function(){wardrobePanel("shape");});
-  bind("wC",function(){wardrobePanel("color");});
-  bind("wP",function(){wardrobePanel("palette");});
-  bind("wBack",hidePanel);
-  $("panel").querySelectorAll(".item").forEach(function(el){
+  $("wGrid").innerHTML=html;
+  $("wGrid").querySelectorAll(".item").forEach(function(el){
     tap(el,function(){
-      var id=el.getAttribute("data-id"), t=el.getAttribute("data-tab");
-      var list=t==="shape"?SKIN_SHAPES:t==="color"?SKIN_COLORS:PALETTES;
-      var it=findBy(list,id);
-      if(!owns(id)){
-        if(shards()<it.cost){flash("you need "+(it.cost-shards())+" more");SFX.bump();return;}
-        wardrobe.owned.push(id);wardrobe.spent+=it.cost;SFX.key();
-      }
-      if(t==="shape")wardrobe.shape=id;
-      else if(t==="color")wardrobe.color=id;
-      else wardrobe.palette=id;
-      applyPalette();applySkin();saveWardrobe();
-      wardrobePanel(t);
+      var id=el.getAttribute("data-id");
+      if(wardSel[wardTab]===id)return;
+      wardSel[wardTab]=id;
+      buyArmed=null;                 // a new selection disarms the old confirm
+      SFX.turn();
+      wardRefresh();wardPreview();
     });
   });
+  wardMeta();
+}
+function wardMeta(){
+  var t=wardTab, id=wardSelected(t), it=findBy(wardList(t),id);
+  var have=owns(id), on=wardEquipped(t)===id, bal=shards();
+  var s="<div class='wname'>"+it.name+"</div>"+
+        "<div class='wcost'>"+(on?"equipped":have?"owned":it.cost+" \u2605")+"</div>"+
+        "<div class='wact'>";
+  if(on)              s+="<button disabled>EQUIPPED</button>";
+  else if(have)       s+="<button id='wEquip' class='wgo'>EQUIP</button>";
+  else if(bal<it.cost)s+="<button disabled>NEED "+(it.cost-bal)+" MORE \u2605</button>";
+  else if(buyArmed===id)
+                      s+="<button id='wBuy' class='wsure'>SURE? \u00b7 "+it.cost+" \u2605</button>";
+  else                s+="<button id='wBuy' class='wgo'>BUY \u00b7 "+it.cost+" \u2605</button>";
+  if(!have)           s+="<button id='wAd' disabled>WATCH AN AD</button>";
+  s+="</div>";
+  // The hook name belongs in the code and in CLAUDE.md, not in a player's
+  // narrow sidebar; all this has to say is why the button does nothing.
+  if(!have)s+="<div class='note'>Ads need an SDK, so the button is dead "+
+    "until the game is wrapped for a store.</div>";
+  $("wMeta").innerHTML=s;
+  bind("wEquip",function(){wardEquip(t,id);SFX.key();wardRefresh();});
+  bind("wBuy",function(){
+    if(buyArmed!==id){buyArmed=id;SFX.turn();wardMeta();return;}
+    buyArmed=null;
+    if(shards()<it.cost){flash("not enough stars");SFX.bump();wardRefresh();return;}
+    wardrobe.owned.push(id);wardrobe.spent+=it.cost;
+    wardEquip(t,id);                 // you confirmed a purchase; wear it
+    SFX.key();flash(it.name+" unlocked");
+    wardRefresh();
+  });
+}
+function wardEquip(t,id){
+  if(t==="shape")wardrobe.shape=id;
+  else if(t==="color")wardrobe.color=id;
+  else wardrobe.palette=id;
+  applyPalette();applySkin();saveWardrobe();
+}
+// The hook a rewarded-video callback calls to unlock one specific item, as
+// opposed to grantShards(), which tops up the balance. Neither is wired.
+function unlockByAd(id){
+  if(owns(id))return;
+  wardrobe.owned.push(id);
+  saveWardrobe();
+  if(panelKind==="wardrobe")wardRefresh();
 }
 // Called by the rewarded-video callback once an ad completes. Kept separate so
 // wiring an SDK later is a one-line change and never touches the star maths.

@@ -209,6 +209,7 @@ function updateFrustum(){
 function onResize(){
   renderer.setSize(window.innerWidth,window.innerHeight);
   updateFrustum();
+  previewSize();   // the display case is sized in % and needs to be re-measured
 }
 
 // Depth is the hard thing to read in an orthographic view: a block six deep

@@ -61,7 +61,7 @@ anything; everything before it only declares.
 | `js/06-persistence.js` | Progress, settings, session, library, wardrobe. |
 | `js/07-difficulty.js` | `statsFor()`, `tierOf()`, stars, `statsCached()`. |
 | `js/08-minimizer.js` | Delete each block, re-solve, find what is load-bearing. |
-| `js/09-wardrobe.js` | Skins, palettes, the star economy. |
+| `js/09-wardrobe.js` | Skins, palettes, the star economy, the display case. |
 | `js/10-render.js` | three.js scene, depth shading, the animation loop. |
 | `js/11-sound.js` | Web Audio oscillator blips. No assets. Also `settings`, `VERBS`, `applyUI()`. |
 | `js/12-play.js` | The verbs: move, shove, collapse, restore, die, win. |
@@ -189,6 +189,28 @@ exclusive — every gesture also has a key and, unless hidden, a button:
   instead of editing each value keeps that balance. Every write to
   `masterGain.gain.value` must go through `masterLevel()` or the boost is lost
   the first time the volume slider moves.
+- **The wardrobe's display case is a second WebGL context**, created when the
+  panel opens and explicitly released — `loseContext()`, not just GC — when it
+  closes. Browsers cap live contexts (commonly 16) and evict the oldest, which
+  would be the game's own renderer, so the teardown lives in `showPanel` and
+  `hidePanel` rather than at call sites, and no path may leave one running. For
+  the same reason the panel shell is built once per opening and refreshed in
+  place: re-running `showPanel` on every tap would burn a context per tap.
+  Verified by cycling the panel 25 times and checking the game's context
+  survives. It lights the item with Lambert + ambient, unlike the flat
+  `MeshBasicMaterial` game, because a flat-shaded sphere is a circle and
+  rotation — the whole point of the case — would be invisible.
+- **Selecting, buying and equipping are three separate acts.** Tapping a tile
+  only puts it on the stand. Buying is armed-then-confirmed on a button under
+  the case, and only a confirmed purchase equips. Previously one tap of the
+  grid bought *and* equipped, so a mis-tap while scrolling spent stars. A
+  consequence worth keeping: a palette does not touch the world until it is
+  equipped — the case previews it instead.
+- **`body>canvas` in the CSS is load-bearing.** It was a bare `canvas` selector,
+  which also caught the wardrobe's preview canvas and pinned it `position:fixed`
+  over the whole viewport. The game's renderer is the only canvas that is a
+  direct child of `body`; any future in-panel canvas depends on that staying
+  scoped.
 - **`statsCached()`** wraps `statsFor` — the level picker would otherwise run
   BFS on all 66 levels every time it opens.
 - A parsing regex over the levels file must match `rotate:(true|false)` — level

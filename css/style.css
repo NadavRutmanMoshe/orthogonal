@@ -10,7 +10,12 @@
   html,body{margin:0;height:100%;overflow:hidden;background:var(--void);
     touch-action:none;transition:background .5s ease}
   body.flat{background:var(--paper)}
-  canvas{display:block;position:fixed;inset:0;z-index:0}
+  /* The game's canvas, and only it. This used to be a bare `canvas` selector,
+     which also caught the wardrobe's preview canvas and pinned it over the
+     whole viewport - the game's renderer is the only one that is a direct
+     child of body, so the child combinator is the thing that distinguishes
+     them. Any future in-panel canvas depends on this staying scoped. */
+  body>canvas{display:block;position:fixed;inset:0;z-index:0}
 
   .hud{position:fixed;top:60px;left:0;right:0;padding:0 16px;z-index:10;
     display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
@@ -133,6 +138,41 @@
   .item{border:1px solid var(--rule);border-radius:3px;padding:8px 4px;
     text-align:center;cursor:pointer;transition:border-color .2s}
   .item.on{border-color:var(--goal)}
+  /* Selected is what is on the stand; equipped is what you are wearing. They
+     are different things and an item is often both, so selection is drawn
+     with outline and a tint - using border-color for both would mean one
+     silently overwriting the other depending on rule order. */
+  .item.sel{outline:1px solid var(--player);outline-offset:-1px;
+    background:rgba(214,51,108,.11)}
+
+  /* The wardrobe is a browsing UI rather than a block of text: it owns its
+     height, and the item list scrolls inside it instead of the whole panel
+     scrolling, so the display case stays put while you look through. */
+  .panel.ward.on{display:flex;flex-direction:column;overflow:hidden;
+    max-height:min(56vh,calc(100vh - 250px))}
+  .wbody{display:flex;gap:9px;flex:1;min-height:0}
+  .wlist{flex:1 1 0;min-width:0;overflow-y:auto;overflow-x:hidden}
+  .wlist .grid{grid-template-columns:repeat(2,1fr)}
+  .wcase{flex:0 0 40%;min-width:0;display:flex;flex-direction:column}
+  .wcanvas{position:relative;inset:auto;width:100%;aspect-ratio:1/1;display:block;
+    border:1px solid var(--rule);border-radius:3px;background:var(--void);
+    touch-action:none;cursor:grab}
+  .wcanvas:active{cursor:grabbing}
+  .wturn{font-size:8px;letter-spacing:.11em;color:var(--fg-dim);
+    text-align:center;margin:4px 0 6px}
+  .wname{font-size:11.5px;color:var(--fg);font-weight:500;line-height:1.3}
+  .wcost{font-size:9px;color:var(--fg-dim);margin-top:1px}
+  .wact{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+  .wact button{height:30px;width:100%;font-size:9.5px}
+  .wact .wgo{border-color:var(--goal);color:var(--goal)}
+  .wact .wsure{border-color:var(--player);color:var(--player)}
+  .wcase .note{margin-top:5px}
+  /* The list scrolls under this row, so it needs a hard edge of its own -
+     without one, a half-scrolled tile reads as though it is behind the
+     button rather than clipped by the list. */
+  .panel.ward.on>.prow{border-top:1px solid var(--rule);padding-top:8px;
+    margin-top:0;flex-shrink:0}
+  .wlist{padding-bottom:2px}
   .item i{display:block;width:30px;height:30px;margin:0 auto 5px;border-radius:4px;
     font-style:normal;font-size:16px;line-height:30px;color:var(--fg)}
   .item b{display:block;font-size:9.5px;font-weight:500;color:var(--fg)}

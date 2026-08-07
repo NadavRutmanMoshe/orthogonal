@@ -16,12 +16,19 @@ function flash(m){
 }
 var panelKind=null;
 function showPanel(html,kind){
+  // Both of these replace or hide whatever was in the panel, which for the
+  // wardrobe includes a live WebGL canvas. Stopping it here rather than at
+  // each call site means no path can leave a context running against a
+  // canvas that is no longer in the document.
+  previewStop();
   $("panel").innerHTML=html;
   $("panel").classList.add("on");
+  $("panel").classList.toggle("ward",kind==="wardrobe");
   panelKind=kind||null;
   syncCorners();
 }
 function hidePanel(){
+  previewStop();
   $("panel").classList.remove("on");
   panelKind=null;
   syncCorners();

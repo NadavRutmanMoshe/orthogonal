@@ -82,11 +82,16 @@ function playerGeometry(id){
     default:        return new THREE.BoxGeometry(.62,.62,.62);
   }
 }
-function buildPlayerMesh(){
-  var col=findBy(SKIN_COLORS,wardrobe.color).hex;
-  var mat=new THREE.MeshBasicMaterial({color:col});
+// Takes the shape, colour and material explicitly, defaulting to whatever is
+// equipped. The wardrobe's display case needs to build an item the player does
+// not own and has not equipped, which reading the globals directly could never
+// do; the game still calls this with no arguments and gets what it always got.
+function buildPlayerMesh(shape,col,mat){
+  shape=shape||wardrobe.shape;
+  if(col===undefined)col=findBy(SKIN_COLORS,wardrobe.color).hex;
+  mat=mat||new THREE.MeshBasicMaterial({color:col});
   var g;
-  if(wardrobe.shape==="pup"){
+  if(shape==="pup"){
     // a few boxes is enough to read as a creature at this size
     g=new THREE.Group();
     var body=new THREE.Mesh(new THREE.BoxGeometry(.5,.32,.34),mat);
@@ -105,7 +110,7 @@ function buildPlayerMesh(){
       leg.position.set(o[0],-.24,o[1]);g.add(leg);
     });
   } else {
-    g=new THREE.Mesh(playerGeometry(wardrobe.shape),mat);
+    g=new THREE.Mesh(playerGeometry(shape),mat);
   }
   return g;
 }
@@ -130,6 +135,140 @@ function applySkin(){
   document.documentElement.style.setProperty("--player",
     "#"+col.toString(16).padStart(6,"0"));
 }
+/* ============================================================
+   THE DISPLAY CASE
+   A second, small WebGL context living inside the wardrobe panel, showing
+   one item turning on a stand so you can look at it before you pay for it.
+
+   Two things worth knowing before changing this:
+
+   * It must be torn down when the panel closes. Browsers cap how many live
+     WebGL contexts a page may hold (commonly 16) and silently kill the
+     oldest past that - which would be the game's own renderer. Opening the
+     wardrobe a dozen times in a session is entirely normal, so previewStop()
+     explicitly loses the context rather than trusting the GC.
+   * It lights the item, unlike the game, which is flat MeshBasicMaterial
+     throughout. A flat-shaded sphere is a circle and a flat-shaded turning
+     cube barely reads, so rotation would be invisible - the one thing the
+     display case exists to show. Ambient is kept high and the directional
+     low so the item still reads as the flat colour you are buying.
+   ============================================================ */
+var pv=null;
+var PV_IDLE=0.0042;   // gentle unattended turn, so the case never looks frozen
+
+function previewStop(){
+  if(!pv)return;
+  cancelAnimationFrame(pv.raf);
+  try{
+    var gl=pv.renderer.getContext();
+    var ext=gl&&gl.getExtension("WEBGL_lose_context");
+    if(ext)ext.loseContext();
+  }catch(e){}
+  pv.renderer.dispose();
+  pv=null;
+}
+function previewStart(cv){
+  previewStop();
+  var r=new THREE.WebGLRenderer({antialias:true,canvas:cv,alpha:false});
+  r.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  var sc=new THREE.Scene();
+  var cam=new THREE.PerspectiveCamera(34,1,.1,50);
+  cam.position.set(0,.72,3.05);
+  cam.lookAt(0,-.05,0);
+  sc.add(new THREE.AmbientLight(0xffffff,.72));
+  var key=new THREE.DirectionalLight(0xffffff,.46);
+  key.position.set(2.4,3.2,2.6);sc.add(key);
+  var fill=new THREE.DirectionalLight(0xffffff,.16);
+  fill.position.set(-2.2,.6,-1.8);sc.add(fill);
+  var root=new THREE.Group();sc.add(root);
+  var reduce=window.matchMedia&&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  pv={renderer:r,scene:sc,camera:cam,root:root,canvas:cv,
+      yaw:-0.62,pitch:0.13,vel:0,raf:0,idle:reduce?0:PV_IDLE,drag:false};
+  previewSize();
+  previewDrag(cv);
+  (function loop(){
+    if(!pv)return;
+    pv.raf=requestAnimationFrame(loop);
+    if(!pv.drag){
+      pv.yaw+=pv.vel+pv.idle;
+      pv.vel*=.93;
+      if(Math.abs(pv.vel)<1e-4)pv.vel=0;
+    }
+    pv.root.rotation.y=pv.yaw;
+    pv.root.rotation.x=pv.pitch;
+    pv.renderer.render(pv.scene,pv.camera);
+  })();
+}
+function previewSize(){
+  if(!pv)return;
+  var w=pv.canvas.clientWidth||160, h=pv.canvas.clientHeight||160;
+  pv.renderer.setSize(w,h,false);
+  pv.camera.aspect=w/h;
+  pv.camera.updateProjectionMatrix();
+}
+// Drag to spin, with the throw carried into inertia on release. Pointer events
+// cover mouse-drag and touch-swipe in one path, and the capture keeps a fast
+// swipe that leaves the canvas from stranding the item mid-turn.
+function previewDrag(cv){
+  var lx=0,ly=0,id=null;
+  cv.addEventListener("pointerdown",function(e){
+    if(!pv)return;
+    pv.drag=true;pv.vel=0;id=e.pointerId;
+    lx=e.clientX;ly=e.clientY;
+    try{cv.setPointerCapture(id);}catch(err){}
+    e.preventDefault();e.stopPropagation();
+  });
+  cv.addEventListener("pointermove",function(e){
+    if(!pv||!pv.drag||e.pointerId!==id)return;
+    var dx=(e.clientX-lx)*.0115, dy=(e.clientY-ly)*.0115;
+    lx=e.clientX;ly=e.clientY;
+    pv.yaw+=dx;
+    // clamped so you can tip the item to look at its top or underside but
+    // never roll it past vertical into a confusing upside-down pose
+    pv.pitch=Math.max(-.85,Math.min(.85,pv.pitch+dy));
+    pv.vel=dx;
+    e.preventDefault();e.stopPropagation();
+  });
+  function up(e){
+    if(!pv||e.pointerId!==id)return;
+    pv.drag=false;id=null;
+    e.preventDefault();e.stopPropagation();
+  }
+  cv.addEventListener("pointerup",up);
+  cv.addEventListener("pointercancel",up);
+}
+// Rebuild what is on the stand. Every tab shows the same scene - an item on a
+// slab, against a world - with the tab's candidate substituted in, so choosing
+// a colour shows it on your shape and choosing a world shows your actual cube
+// standing in it. Nothing here touches the equipped state.
+function previewShow(shape,colorId,paletteId){
+  if(!pv)return;
+  var root=pv.root;
+  while(root.children.length)root.remove(root.children[0]);
+  var col=findBy(SKIN_COLORS,colorId).hex;
+  var pal=findBy(PALETTES,paletteId);
+  pv.scene.background=new THREE.Color(pal.void);
+
+  var slabMat=new THREE.MeshLambertMaterial({color:pal.block});
+  var slab=new THREE.Mesh(new THREE.BoxGeometry(1,.5,1),slabMat);
+  slab.position.y=-.62;root.add(slab);
+  // two neighbours at depth, so a world's block colour reads as a world and
+  // not as a single lonely brick
+  [[-1,-.35],[1,-.35]].forEach(function(o){
+    var b=new THREE.Mesh(new THREE.BoxGeometry(1,.5,1),slabMat);
+    b.position.set(o[0],-1.12,o[1]);root.add(b);
+  });
+  var edges=new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(1,.5,1)),
+    new THREE.LineBasicMaterial({color:pal.ink,transparent:true,opacity:.55}));
+  edges.position.copy(slab.position);root.add(edges);
+
+  var item=buildPlayerMesh(shape,col,new THREE.MeshLambertMaterial({color:col}));
+  item.position.y=-.06;
+  root.add(item);
+}
+
 var colGlass=new THREE.Color(0x7fc4d8);
 var colAnchor=new THREE.Color(0xd9a441);
 var colCrate=new THREE.Color(0x9b7fd4);
