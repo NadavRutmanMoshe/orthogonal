@@ -55,6 +55,15 @@ function starsFor(moves,par){
 function starGlyphs(n){
   return "\u2605\u2605\u2605".slice(0,n)+"\u2606\u2606\u2606".slice(0,3-n);
 }
+// The same three stars, but each in its own element. The win screen needs
+// that: a star flies to the counter from where its glyph actually sits, and
+// you cannot measure the third character of a text node.
+function starGlyphsEls(n){
+  var s="";
+  for(var i=0;i<3;i++)
+    s+="<i class='sg' data-i='"+i+"'>"+(i<n?"\u2605":"\u2606")+"</i>";
+  return s;
+}
 function tierOf(score){
   if(score<=18)return "gentle";
   if(score<=24)return "moderate";

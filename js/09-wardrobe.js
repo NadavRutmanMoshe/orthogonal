@@ -7,43 +7,86 @@
 /* ============================================================
    WARDROBE — what you look like, and what the world looks like.
 
-   Palettes only ever change the world (background, stone, ink).
+   Worlds only ever change the world (background, stone, ink).
    The pieces keep their own colours and their shape markers, so
-   no palette can make a mechanic unreadable.
+   no world can make a mechanic unreadable.
+
+   PRICING. Shapes cost most, then colours, then worlds. That is
+   the order players are said to care about them in, and price
+   should track desire rather than how much work a thing was.
+   Nothing costs over 30, which is what keeps the ad tiers whole:
+   adsFor() charges one ad per 10, so 30 is exactly three ads and
+   no item is unreachable by watching.
    ============================================================ */
 var SKIN_COLORS=[
   {id:"rose",   name:"Rose",      hex:0xd6336c, cost:0},
-  {id:"amberc", name:"Amber",     hex:0xe89b3c, cost:5},
-  {id:"lime",   name:"Lime",      hex:0x9ecb3a, cost:5},
-  {id:"jade",   name:"Jade",      hex:0x35c2a5, cost:5},
-  {id:"sky",    name:"Sky",       hex:0x4bb3e8, cost:5},
-  {id:"violet", name:"Violet",    hex:0x9b7fd4, cost:5},
-  {id:"coral",  name:"Coral",     hex:0xf2705d, cost:8},
-  {id:"bubble", name:"Bubblegum", hex:0xf58fc2, cost:8},
-  {id:"mint",   name:"Mint",      hex:0x7fe3b8, cost:8},
-  {id:"gold",   name:"Gold",      hex:0xf2d16b, cost:10},
-  {id:"ice",    name:"Ice",       hex:0xc8e6f5, cost:10},
-  {id:"ember",  name:"Ember",     hex:0xff5a3c, cost:12}
+  // The plain ones people actually ask for, priced cheapest. "Black" and
+  // "White" are a charcoal and an off-white rather than #000 and #fff: the
+  // player is drawn against the void in 3D and against paper in 2D, and a
+  // true black vanishes into the first while a true white vanishes into the
+  // second. The adaptive outline in buildPlayerMesh does the rest.
+  {id:"black",  name:"Black",     hex:0x2b2f3a, cost:6},
+  {id:"white",  name:"White",     hex:0xf4f6fa, cost:6},
+  {id:"red",    name:"Red",       hex:0xe03131, cost:6},
+  {id:"blue",   name:"Blue",      hex:0x3b7dd8, cost:6},
+  {id:"green",  name:"Green",     hex:0x37b24d, cost:6},
+  {id:"yellow", name:"Yellow",    hex:0xf5c518, cost:6},
+  {id:"brown",  name:"Brown",     hex:0x8b5e3c, cost:8},
+  {id:"pink",   name:"Pink",      hex:0xff6fae, cost:8},
+  {id:"grey",   name:"Grey",      hex:0x93a0b8, cost:6},
+  {id:"amberc", name:"Amber",     hex:0xe89b3c, cost:8},
+  {id:"lime",   name:"Lime",      hex:0x9ecb3a, cost:8},
+  {id:"jade",   name:"Jade",      hex:0x35c2a5, cost:8},
+  {id:"sky",    name:"Sky",       hex:0x4bb3e8, cost:8},
+  {id:"violet", name:"Violet",    hex:0x9b7fd4, cost:8},
+  {id:"coral",  name:"Coral",     hex:0xf2705d, cost:10},
+  {id:"bubble", name:"Bubblegum", hex:0xf58fc2, cost:10},
+  {id:"mint",   name:"Mint",      hex:0x7fe3b8, cost:10},
+  {id:"gold",   name:"Gold",      hex:0xf2d16b, cost:12},
+  {id:"ice",    name:"Ice",       hex:0xc8e6f5, cost:12},
+  {id:"ember",  name:"Ember",     hex:0xff5a3c, cost:14}
 ];
 var SKIN_SHAPES=[
   {id:"cube",    name:"Cube",     cost:0},
-  {id:"sphere",  name:"Ball",     cost:10},
-  {id:"pyramid", name:"Pyramid",  cost:10},
-  {id:"diamond", name:"Diamond",  cost:12},
-  {id:"barrel",  name:"Barrel",   cost:12},
-  {id:"donut",   name:"Donut",    cost:15},
-  {id:"star",    name:"Shard",    cost:15},
-  {id:"pup",     name:"Pup",      cost:25}
+  {id:"sphere",  name:"Ball",     cost:16},
+  {id:"pyramid", name:"Pyramid",  cost:16},
+  {id:"diamond", name:"Diamond",  cost:18},
+  {id:"barrel",  name:"Barrel",   cost:18},
+  {id:"donut",   name:"Donut",    cost:22},
+  {id:"star",    name:"Shard",    cost:24},
+  {id:"pup",     name:"Pup",      cost:30}
 ];
-var PALETTES=[
-  {id:"indigo",   name:"Indigo",    cost:0,  void:0x0f1424, paper:0xe6e1d3, block:0x5a6d94, ink:0x1a1c2b},
-  {id:"blueprint",name:"Blueprint", cost:18, void:0x0d2b45, paper:0xf2f6fb, block:0x4a7fb5, ink:0x12304a},
-  {id:"newsprint",name:"Newsprint", cost:18, void:0x2a2622, paper:0xefe9dc, block:0x7d7466, ink:0x221f1b},
-  {id:"moss",     name:"Moss",      cost:20, void:0x101c16, paper:0xe6ecdc, block:0x557a5e, ink:0x14201a},
-  {id:"nocturne", name:"Nocturne",  cost:22, void:0x07070c, paper:0xd8d4e8, block:0x4a4763, ink:0x12111c},
-  {id:"rust",     name:"Rust",      cost:25, void:0x241512, paper:0xf0e2d2, block:0x9a5f45, ink:0x1d100d}
+/* The world used to be one purchase covering both dimensions, which meant
+   buying a look for the volume silently bought a look for the plane you had
+   never seen. They are two different pictures - you spend the whole game
+   switching between them - so they are now two catalogues, bought apart.
+   Ids carry a v_/p_ prefix because wardrobe.owned is one flat list and the
+   two halves of a world would otherwise collide on the same id. */
+var WORLDS3D=[
+  {id:"v_indigo",   name:"Indigo",    cost:0,  void:0x0f1424, block:0x5a6d94},
+  {id:"v_blueprint",name:"Blueprint", cost:6,  void:0x0d2b45, block:0x4a7fb5},
+  {id:"v_newsprint",name:"Charcoal",  cost:6,  void:0x2a2622, block:0x7d7466},
+  {id:"v_moss",     name:"Moss",      cost:8,  void:0x101c16, block:0x557a5e},
+  {id:"v_nocturne", name:"Nocturne",  cost:10, void:0x07070c, block:0x4a4763},
+  {id:"v_rust",     name:"Rust",      cost:12, void:0x241512, block:0x9a5f45}
 ];
-var wardrobe={owned:["rose","cube","indigo"],color:"rose",shape:"cube",palette:"indigo",spent:0};
+var WORLDS2D=[
+  {id:"p_indigo",   name:"Bone",      cost:0,  paper:0xe6e1d3, ink:0x1a1c2b},
+  {id:"p_blueprint",name:"Blueprint", cost:6,  paper:0xf2f6fb, ink:0x12304a},
+  {id:"p_newsprint",name:"Newsprint", cost:6,  paper:0xefe9dc, ink:0x221f1b},
+  {id:"p_moss",     name:"Sage",      cost:8,  paper:0xe6ecdc, ink:0x14201a},
+  {id:"p_nocturne", name:"Lilac",     cost:10, paper:0xd8d4e8, ink:0x12111c},
+  {id:"p_rust",     name:"Terracotta",cost:12, paper:0xf0e2d2, ink:0x1d100d}
+];
+var wardrobe={owned:["rose","cube","v_indigo","p_indigo"],
+              color:"rose",shape:"cube",world3:"v_indigo",world2:"p_indigo",
+              spent:0,ads:{}};
+
+// One ad per 10 stars of price, so 10 or less is one ad, 11-20 is two and
+// 21-30 is three. Price and effort stay in step without a second table to
+// keep in sync when a cost changes.
+function adsFor(cost){return cost<=0?0:Math.ceil(cost/10);}
+function adsWatched(id){return (wardrobe.ads&&wardrobe.ads[id])||0;}
 
 function findBy(list,id){for(var i=0;i<list.length;i++)if(list[i].id===id)return list[i];return list[0];}
 function owns(id){return wardrobe.owned.indexOf(id)>=0;}
@@ -112,14 +155,35 @@ function buildPlayerMesh(shape,col,mat){
   } else {
     g=new THREE.Mesh(playerGeometry(shape),mat);
   }
+  addOutline(g);
   return g;
 }
+/* A rim on the player, kept in contrast with whatever is behind it.
+
+   Colours like Black and White exist because players ask for them, but the
+   player is drawn against the void in 3D and against paper in 2D - two
+   backgrounds at opposite ends of the range - so any single colour choice
+   is invisible against one of them. Rather than refusing the colours or
+   fudging them to mid-grey, the silhouette is drawn explicitly and its
+   colour is re-picked from the background every frame in animate().
+   Blocks already carry edge lines, so this reads as of a piece with them. */
+function addOutline(obj){
+  var outs=[];
+  obj.traverse(function(c){
+    if(!c.isMesh)return;
+    var e=new THREE.LineSegments(
+      new THREE.EdgesGeometry(c.geometry,28),
+      new THREE.LineBasicMaterial({transparent:true,opacity:.5}));
+    c.add(e);outs.push(e);
+  });
+  obj.userData.outlines=outs;
+}
 function applyPalette(){
-  var p=findBy(PALETTES,wardrobe.palette);
-  colVoid.setHex(p.void);colPaper.setHex(p.paper);
-  colBlock.setHex(p.block);colInk.setHex(p.ink);
+  var v=findBy(WORLDS3D,wardrobe.world3), p=findBy(WORLDS2D,wardrobe.world2);
+  colVoid.setHex(v.void);colBlock.setHex(v.block);
+  colPaper.setHex(p.paper);colInk.setHex(p.ink);
   var css=document.documentElement.style;
-  css.setProperty("--void","#"+p.void.toString(16).padStart(6,"0"));
+  css.setProperty("--void","#"+v.void.toString(16).padStart(6,"0"));
   css.setProperty("--paper","#"+p.paper.toString(16).padStart(6,"0"));
   css.setProperty("--ink","#"+p.ink.toString(16).padStart(6,"0"));
 }
@@ -242,15 +306,21 @@ function previewDrag(cv){
 // slab, against a world - with the tab's candidate substituted in, so choosing
 // a colour shows it on your shape and choosing a world shows your actual cube
 // standing in it. Nothing here touches the equipped state.
-function previewShow(shape,colorId,paletteId){
+// `plane` picks which of the two worlds is being shown: the volume, lit and
+// coloured by the 3D world, or the plane, which is what the same geometry
+// looks like after a fold. Showing the 2D catalogue as a 3D scene would be
+// previewing the wrong picture entirely - it is bought precisely for how the
+// flattened world reads.
+function previewShow(shape,colorId,w3,w2,plane){
   if(!pv)return;
   var root=pv.root;
   while(root.children.length)root.remove(root.children[0]);
   var col=findBy(SKIN_COLORS,colorId).hex;
-  var pal=findBy(PALETTES,paletteId);
-  pv.scene.background=new THREE.Color(pal.void);
+  var v=findBy(WORLDS3D,w3), p=findBy(WORLDS2D,w2);
+  var bg=plane?p.paper:v.void, blockCol=plane?p.ink:v.block;
+  pv.scene.background=new THREE.Color(bg);
 
-  var slabMat=new THREE.MeshLambertMaterial({color:pal.block});
+  var slabMat=new THREE.MeshLambertMaterial({color:blockCol});
   var slab=new THREE.Mesh(new THREE.BoxGeometry(1,.5,1),slabMat);
   slab.position.y=-.62;root.add(slab);
   // two neighbours at depth, so a world's block colour reads as a world and
@@ -261,12 +331,23 @@ function previewShow(shape,colorId,paletteId){
   });
   var edges=new THREE.LineSegments(
     new THREE.EdgesGeometry(new THREE.BoxGeometry(1,.5,1)),
-    new THREE.LineBasicMaterial({color:pal.ink,transparent:true,opacity:.55}));
+    new THREE.LineBasicMaterial({color:plane?p.paper:p.ink,
+      transparent:true,opacity:.55}));
   edges.position.copy(slab.position);root.add(edges);
 
   var item=buildPlayerMesh(shape,col,new THREE.MeshLambertMaterial({color:col}));
   item.position.y=-.06;
+  outlineFor(item,new THREE.Color(bg));
   root.add(item);
+}
+// Pick the rim colour that separates a silhouette from its background: light
+// on a dark ground, dark on a light one.
+var outlineCol=new THREE.Color();
+function outlineFor(obj,bg){
+  if(!obj||!obj.userData.outlines)return;
+  var lum=bg.r*.299+bg.g*.587+bg.b*.114;
+  outlineCol.setRGB(lum>.5?.06:.94,lum>.5?.07:.95,lum>.5?.09:1);
+  obj.userData.outlines.forEach(function(e){e.material.color.copy(outlineCol);});
 }
 
 var colGlass=new THREE.Color(0x7fc4d8);

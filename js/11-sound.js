@@ -112,5 +112,12 @@ var SFX={
     [523,659,784,1047].forEach(function(f,i){
       setTimeout(function(){blip(f,.4,"sine",.05);},i*95);
     });
+  },
+  // One per star landing on the counter, climbing as they arrive, so three
+  // stars resolve upward instead of repeating the same note three times.
+  star:function(i){
+    var f=[784,988,1245][Math.min(i,2)];
+    blip(f,.2,"sine",.055,f*1.5);
+    blip(f/2,.26,"triangle",.022);
   }
 };

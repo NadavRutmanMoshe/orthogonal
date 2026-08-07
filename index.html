@@ -30,6 +30,12 @@
     <path d="M2 12s3.8-6 10-6 10 6 10 6-3.8 6-10 6-10-6-10-6z"/>
     <circle cx="12" cy="12" r="2.6"/></svg></button>
 </div>
+<!-- Deliberately outside .corner: stars land here from the win screen, which
+     is a full-bleed overlay above it, so this needs its own stacking context
+     over that overlay. Putting it in .corner would drag the buttons up too. -->
+<div class="startotal" id="starTotal" aria-label="Stars earned">
+  <b id="starTotalN">0</b><i>&#9733;</i>
+</div>
 
 <div class="hud">
   <div>

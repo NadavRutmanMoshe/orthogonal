@@ -170,13 +170,45 @@ exclusive — every gesture also has a key and, unless hidden, a button:
   *effective* move count so hints cannot be laundered into currency.
 - **Stars.** 3★ = the solver's own move count, 2★ ≤ 120%, 1★ ≤ 140%. Par is
   optimal, so 3★ genuinely means optimal.
-- **Palettes only change the world** (background, stone, ink). Piece colours and
-  their shape markers never change, so no palette can make a mechanic unreadable.
+- **Worlds only change the world** (background, stone, ink). Piece colours and
+  their shape markers never change, so no world can make a mechanic unreadable.
+- **A world is two purchases, not one.** `WORLDS3D` sets void + block, `WORLDS2D`
+  sets paper + ink; you spend the whole game switching between the two pictures,
+  and buying one used to silently buy a look for the other you had never seen.
+  Ids are prefixed `v_` / `p_` because `wardrobe.owned` is one flat list and the
+  halves would otherwise collide. **A save from before the split carries
+  `palette:"rust"`** — `migrateWorlds()` grants both halves for the one purchase
+  already made, and the prefixes are what make that decidable. Don't remove it
+  while any old save might exist.
+- **Pricing tracks desire, not effort**: shapes dearest (max 30), then colours
+  (max 14), then worlds (max 12). Nothing exceeds 30, which is what keeps
+  `adsFor()` whole — it charges one ad per 10 of price, so 30 is exactly three
+  ads and no item is unreachable by watching. Change a cost above 30 and an item
+  silently needs a fourth ad.
 - **Economy.** `starsEarned()` sums the best result per level and skips
-  tutorials; `shards()` subtracts what has been spent. Catalogue totals 283
-  against 189 earnable by perfect play (67%), and the gap is what a rewarded ad
-  is meant to sell. `grantShards(n)` is the single hook an ad SDK calls. No ad
-  code exists and the button is deliberately disabled rather than faked.
+  tutorials; `shards()` subtracts what has been spent. Catalogue totals 394
+  against 189 earnable by perfect play (48%), and the gap is what a rewarded ad
+  is meant to sell. Two hooks, neither wired: `grantShards(n)` tops up the
+  balance, `grantAdView(id)` credits one video against one item and unlocks it
+  at `adsFor(cost)`, keeping part-way progress so three ads need not be watched
+  in one sitting.
+- **The HUD star total counts stars *earned*, not stars left to spend.** They
+  are different numbers — the wardrobe's balance falls when you buy something,
+  and a total that dropped after a purchase would make the flight from the win
+  screen read as a transaction rather than an achievement. The wardrobe labels
+  its own "TO SPEND" to keep them apart. It lives outside `.corner` at z-index
+  30 so it sits *over* the win overlay: the count has to be visible at the
+  moment it goes up.
+- **Only newly gained stars fly.** `win()` records `starsBefore`/`starsAfter`
+  around the progress write, so replaying a 3★ level pays nothing and 2★→3★
+  flies exactly one. Glyphs `[before, after)` are the ones that animate, which
+  is why the win card emits `starGlyphsEls()` — you cannot measure the third
+  character of a text node to fly it from where it sits.
+- **The player carries an adaptive outline** (`addOutline`, recoloured by
+  `outlineFor` every frame). Black and White exist because players ask for them,
+  but the player is drawn against the void in 3D and paper in 2D — opposite ends
+  of the range — so no single colour reads against both. The rim is re-picked
+  from the current background instead of fudging the colours to mid-grey.
 - **`UNLIMITED_SHARDS` in `js/09-wardrobe.js` is currently `true`** so the whole
   wardrobe can be walked during playtesting — the catalogue costs more than
   perfect play earns, so it is otherwise unreachable. It short-circuits

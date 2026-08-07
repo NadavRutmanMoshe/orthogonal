@@ -30,14 +30,18 @@ var CHAPTERS=[
    would burn a WebGL context. See the note above previewStop().
    ---------------------------------------------------------------------- */
 var wardTab="shape";
-var wardSel={shape:null,color:null,palette:null};
+var wardSel={shape:null,color:null,world3:null,world2:null};
 var buyArmed=null;   // the id whose BUY has been tapped once, awaiting a second
 
 function wardList(t){
-  return t==="shape"?SKIN_SHAPES:t==="color"?SKIN_COLORS:PALETTES;
+  return t==="shape" ?SKIN_SHAPES:
+         t==="color" ?SKIN_COLORS:
+         t==="world3"?WORLDS3D:WORLDS2D;
 }
 function wardEquipped(t){
-  return t==="shape"?wardrobe.shape:t==="color"?wardrobe.color:wardrobe.palette;
+  return t==="shape" ?wardrobe.shape:
+         t==="color" ?wardrobe.color:
+         t==="world3"?wardrobe.world3:wardrobe.world2;
 }
 function wardSelected(t){
   if(!wardSel[t])wardSel[t]=wardEquipped(t);
@@ -51,7 +55,8 @@ function wardrobePanel(tab){
     "<div class='tabs'>"+
       "<button class='tab' id='wS'>SHAPE</button>"+
       "<button class='tab' id='wC'>COLOUR</button>"+
-      "<button class='tab' id='wP'>WORLD</button>"+
+      "<button class='tab' id='wV'>3D</button>"+
+      "<button class='tab' id='wP'>2D</button>"+
     "</div>"+
     "<div class='wbody'>"+
       "<div class='wlist'><div class='grid' id='wGrid'></div></div>"+
@@ -64,7 +69,8 @@ function wardrobePanel(tab){
     "<div class='prow'><button id='wBack'>BACK</button></div>","wardrobe");
   bind("wS",function(){wardTabTo("shape");});
   bind("wC",function(){wardTabTo("color");});
-  bind("wP",function(){wardTabTo("palette");});
+  bind("wV",function(){wardTabTo("world3");});
+  bind("wP",function(){wardTabTo("world2");});
   bind("wBack",hidePanel);
   wardRefresh();
   // The canvas has no measurable size until the panel has been laid out, so
@@ -85,24 +91,31 @@ function wardTabTo(t){
 function wardPreview(){
   var sel=wardSelected(wardTab);
   previewShow(
-    wardTab==="shape"  ?sel:wardrobe.shape,
-    wardTab==="color"  ?sel:wardrobe.color,
-    wardTab==="palette"?sel:wardrobe.palette);
+    wardTab==="shape" ?sel:wardrobe.shape,
+    wardTab==="color" ?sel:wardrobe.color,
+    wardTab==="world3"?sel:wardrobe.world3,
+    wardTab==="world2"?sel:wardrobe.world2,
+    wardTab==="world2");
 }
 function wardRefresh(){
   var t=wardTab, list=wardList(t), cur=wardEquipped(t), sel=wardSelected(t);
   $("wHead").textContent="WARDROBE \u00b7 "+shards()+" \u2605 TO SPEND";
   $("wS").classList.toggle("on",t==="shape");
   $("wC").classList.toggle("on",t==="color");
-  $("wP").classList.toggle("on",t==="palette");
+  $("wV").classList.toggle("on",t==="world3");
+  $("wP").classList.toggle("on",t==="world2");
   var html="";
   for(var i=0;i<list.length;i++){
     var it=list[i], have=owns(it.id), on=cur===it.id;
+    // each swatch shows the two colours that item actually sets
     var swatch = t==="color"
       ? "background:#"+it.hex.toString(16).padStart(6,"0")
-      : t==="palette"
+      : t==="world3"
         ? "background:linear-gradient(135deg,#"+it.void.toString(16).padStart(6,"0")+
-          " 0 50%,#"+it.paper.toString(16).padStart(6,"0")+" 50% 100%)"
+          " 0 50%,#"+it.block.toString(16).padStart(6,"0")+" 50% 100%)"
+      : t==="world2"
+        ? "background:linear-gradient(135deg,#"+it.paper.toString(16).padStart(6,"0")+
+          " 0 50%,#"+it.ink.toString(16).padStart(6,"0")+" 50% 100%)"
         : "background:var(--rule)";
     html+="<div class='item"+(on?" on":"")+(sel===it.id?" sel":"")+
       "' data-id='"+it.id+"'>"+
@@ -135,7 +148,11 @@ function wardMeta(){
   else if(buyArmed===id)
                       s+="<button id='wBuy' class='wsure'>SURE? \u00b7 "+it.cost+" \u2605</button>";
   else                s+="<button id='wBuy' class='wgo'>BUY \u00b7 "+it.cost+" \u2605</button>";
-  if(!have)           s+="<button id='wAd' disabled>WATCH AN AD</button>";
+  if(!have){
+    var need=adsFor(it.cost), got=adsWatched(id);
+    s+="<button id='wAd' disabled>WATCH "+need+" AD"+(need===1?"":"S")+
+       (got?" ("+got+"/"+need+")":"")+"</button>";
+  }
   s+="</div>";
   // The hook name belongs in the code and in CLAUDE.md, not in a player's
   // narrow sidebar; all this has to say is why the button does nothing.
@@ -156,14 +173,29 @@ function wardMeta(){
 function wardEquip(t,id){
   if(t==="shape")wardrobe.shape=id;
   else if(t==="color")wardrobe.color=id;
-  else wardrobe.palette=id;
+  else if(t==="world3")wardrobe.world3=id;
+  else wardrobe.world2=id;
   applyPalette();applySkin();saveWardrobe();
 }
-// The hook a rewarded-video callback calls to unlock one specific item, as
-// opposed to grantShards(), which tops up the balance. Neither is wired.
-function unlockByAd(id){
+/* The hook a rewarded-video callback calls when one video finishes playing
+   against a specific item, as opposed to grantShards(), which tops up the
+   balance instead. An item needs adsFor(cost) of them, and progress is kept
+   so watching two of the three does not have to happen in one sitting.
+   Neither hook is wired to anything; there is no ad SDK in this build. */
+function grantAdView(id){
   if(owns(id))return;
-  wardrobe.owned.push(id);
+  var it=null, tabs=["shape","color","world3","world2"];
+  for(var i=0;i<tabs.length&&!it;i++){
+    var l=wardList(tabs[i]);
+    for(var j=0;j<l.length;j++) if(l[j].id===id){it=l[j];break;}
+  }
+  if(!it)return;
+  if(!wardrobe.ads)wardrobe.ads={};
+  wardrobe.ads[id]=adsWatched(id)+1;
+  if(wardrobe.ads[id]>=adsFor(it.cost)){
+    wardrobe.owned.push(id);
+    delete wardrobe.ads[id];
+  }
   saveWardrobe();
   if(panelKind==="wardrobe")wardRefresh();
 }

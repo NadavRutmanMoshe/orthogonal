@@ -254,4 +254,32 @@
   #intro{display:flex}
   #intro.gone{display:none}
   #intro .tiny{border-color:var(--rule);color:var(--fg-dim)}
+
+  /* Your running star total, and the target the win screen's stars fly to.
+     z-index 30 puts it over the win overlay (20) on purpose - the count has
+     to be visible at the moment it goes up, or the flight has nothing to
+     arrive at. Sits to the left of the two round buttons in that corner. */
+  .startotal{position:fixed;top:14px;right:101px;z-index:30;height:40px;
+    display:none;align-items:center;gap:5px;padding:0 12px;
+    border:1px solid var(--rule);border-radius:20px;
+    background:var(--panel);backdrop-filter:blur(6px);
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    color:var(--fg);transition:color .35s ease,transform .18s ease,
+      border-color .35s ease}
+  .startotal.on{display:flex}
+  .startotal b{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+  .startotal i{font-style:normal;font-size:12px;color:var(--goal)}
+  .startotal.pop{transform:scale(1.16);border-color:var(--goal)}
+
+  /* A star in flight. The wrapper carries the horizontal leg and the inner
+     glyph the vertical one, on different easings - that mismatch is what
+     bends the path into an arc instead of a straight diagonal slide. */
+  .flystar{position:fixed;z-index:40;pointer-events:none;
+    transition:transform .62s cubic-bezier(.32,.5,.5,1)}
+  .flystar i{display:block;font-style:normal;font-size:24px;line-height:1;
+    color:var(--goal);text-shadow:0 0 14px rgba(53,194,165,.6);
+    transition:transform .62s cubic-bezier(.6,.02,.72,.5),opacity .62s ease}
+  .sg{display:inline-block;transition:transform .22s ease,opacity .22s ease}
+  .sg.launch{transform:translateY(-6px) scale(1.3)}
+
   @media (prefers-reduced-motion:reduce){*{transition-duration:.01ms !important}}

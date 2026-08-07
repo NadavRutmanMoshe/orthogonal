@@ -377,6 +377,9 @@ function animate(){
   dir1.intensity=.85*(1-flatT);
   dir2.intensity=.35*(1-flatT);
   scene.background.copy(colVoid).lerp(colPaper,flatT);
+  // The ground swings from the void to paper as the world folds, so the
+  // player's rim has to be re-picked against it rather than set once.
+  outlineFor(playerMesh,scene.background);
   if(gridLines) gridLines.material.opacity=(app==="edit"?.09:0)+.16*flatT;
 
   renderer.render(scene,camera);

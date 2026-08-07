@@ -26,13 +26,39 @@ function loadWardrobe(){
         if(o.owned)wardrobe.owned=o.owned;
         if(o.color)wardrobe.color=o.color;
         if(o.shape)wardrobe.shape=o.shape;
-        if(o.palette)wardrobe.palette=o.palette;
+        if(o.world3)wardrobe.world3=o.world3;
+        if(o.world2)wardrobe.world2=o.world2;
         if(typeof o.spent==="number")wardrobe.spent=o.spent;
+        if(o.ads)wardrobe.ads=o.ads;
+        migrateWorlds(o);
       }catch(e){}
     }
     applyPalette();applySkin();
   }).catch(function(){});
 }
+/* A world used to be one item covering both dimensions; it is now two. A save
+   written before the split carries `palette:"rust"` and an owned list holding
+   bare `"rust"`, neither of which resolves any more.
+
+   Both halves are granted for the one purchase that was made, rather than
+   charging again for something already paid for or quietly taking half of it
+   away. The prefixes are what make this decidable: an unprefixed id in the
+   owned list can only have come from the old single-catalogue save. */
+function migrateWorlds(o){
+  if(!o.palette)return;
+  if(!o.world3)wardrobe.world3="v_"+o.palette;
+  if(!o.world2)wardrobe.world2="p_"+o.palette;
+  var ids=[];
+  for(var i=0;i<PALETTE_IDS.length;i++){
+    var old=PALETTE_IDS[i];
+    if(wardrobe.owned.indexOf(old)<0)continue;
+    if(wardrobe.owned.indexOf("v_"+old)<0)ids.push("v_"+old);
+    if(wardrobe.owned.indexOf("p_"+old)<0)ids.push("p_"+old);
+  }
+  wardrobe.owned=wardrobe.owned.concat(ids);
+  if(ids.length)saveWardrobe();
+}
+var PALETTE_IDS=["indigo","blueprint","newsprint","moss","nocturne","rust"];
 function saveSettings(){
   if(!window.storage)return;
   window.storage.set(SET_KEY,JSON.stringify(settings)).catch(function(){});

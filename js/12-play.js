@@ -146,9 +146,11 @@ function checkWin(){
   if(keysLeft()){flash("still sealed \u2014 "+keysLeft()+" to collect");SFX.bump();return;}
   win();
 }
+var starsBefore=0,starsAfter=0,starsGained=0;
 function win(){
   SFX.win();
   clearSession();
+  starsBefore=starsAfter=starsGained=0;
   if(levelKey&&playSource==="builtin"){
     // store the move count that reflects the stars actually earned, so hints
     // can't be laundered into currency
@@ -159,8 +161,15 @@ function win(){
       else if(capped===1)effective=Math.max(effective,Math.floor(levelPar*1.2)+1);
       else effective=Math.max(effective,Math.floor(levelPar*1.4)+1);
     }
+    // Stars gained is the *improvement*, not the stars just scored: replaying
+    // a 3-star level pays nothing, and going 2 -> 3 pays exactly the one new
+    // star. starsEarned() already sums best-per-level, so this keeps the
+    // flight and the total telling the same story.
     var prev=progress[levelKey];
+    starsBefore=(prev===undefined||levelPar===null)?0:starsFor(prev,levelPar);
     if(prev===undefined||effective<prev){progress[levelKey]=effective;progSave();}
+    starsAfter=levelPar===null?0:starsFor(progress[levelKey],levelPar);
+    starsGained=Math.max(0,starsAfter-starsBefore);
   }
   var last=lvIndex>=LEVELS.length-1;
   if(fromEditor){
@@ -181,7 +190,7 @@ function win(){
   } else {
     var stw=Math.min(levelPar!==null?starsFor(moveCount,levelPar):3,hintCap());
     $("wonTitle").innerHTML=(last?"Campaign complete":(stw===3?"Perfect":"Solved"))+
-      "<div class='bigstars'>"+starGlyphs(stw)+"</div>";
+      "<div class='bigstars'>"+starGlyphsEls(stw)+"</div>";
     var sub=L.name+"  \u00b7  "+moveCount+" moves"+
       (levelPar!==null?(stw===3?" (optimal)":", best possible is "+levelPar):"");
     if(hintsUsed)sub+="  \u00b7  "+hintsUsed+" hint"+(hintsUsed===1?"":"s")+
@@ -192,6 +201,23 @@ function win(){
   }
   if(fromEditor||playSource!=="builtin")$("bRetry").style.display="none";
   setTimeout(function(){$("won").classList.add("on");},380);
+  // The stars that are new are the rightmost ones: you had starsBefore, you
+  // now have starsAfter, so glyphs [starsBefore, starsAfter) are the ones
+  // that just arrived and the only ones that fly. Nothing gained, nothing
+  // flies. Held until the win card is up and settled, so they leave from a
+  // card the player has actually seen.
+  if(starsGained>0){
+    var base=starsEarned()-starsGained;
+    setTimeout(function(){
+      // dismissed already: there is nothing on screen to fly from, and
+      // syncHud has since put the true total in the counter anyway
+      if(!$("won").classList.contains("on")){syncStarTotal();return;}
+      var all=$("won").querySelectorAll(".bigstars .sg");
+      var fly=[];
+      for(var i=starsBefore;i<starsAfter&&i<all.length;i++)fly.push(all[i]);
+      flyStars(fly,base,starsGained);
+    },900);
+  }
 }
 function rotateView(dir){
   if(flat||dying)return;
