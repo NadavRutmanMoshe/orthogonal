@@ -1,6 +1,12 @@
 # Orthogonal
 
-Read this before changing anything. It is the memory of the project.
+Read this before changing anything. It is the memory of how the game works
+**now**: the rules, the invariants, and the things that will bite you.
+
+**`docs/HISTORY.md` holds the design history** — every version of a mechanic
+that was tried and dropped, and what it cost to find that out. Read it before
+*redesigning* something, not before editing it. Most of what is in there
+looked correct on paper and will look attractive again.
 
 ---
 
@@ -14,14 +20,11 @@ the block nearest the camera that produced that silhouette — which is how you
 cross large distances. The camera rotates in 90° steps, and choosing *which*
 axis to collapse is most of the puzzle.
 
-**The player-facing name for the verb is settled: `GO 2D / GO 3D`.** It was
-auditioned against `FOLD / UNFOLD` and `FLATTEN / UNFLATTEN` from a menu row,
-decided by feel, and that row is now gone — the wording is no longer a setting.
-It still lives in one table (`VERBS` in `js/11-sound.js`, reached through
-`VB()`) so changing it stays a data edit. Settings saved before the decision may
-carry a `verbs` key; `loadSettings` ignores it, which is the migration. The code
-and comments still say "fold" throughout; that is deliberate, it is a good word
-for the mechanic even though it did not end up on the button.
+**The player-facing name for the verb is settled: `GO 2D / GO 3D`.** It lives
+in one table (`VERBS` in `js/11-sound.js`, reached through `VB()`) so changing
+it stays a data edit, but it is no longer a setting. The code and comments say
+"fold" throughout; that is deliberate — it is a good word for the mechanic even
+though it did not end up on the button.
 
 ---
 
@@ -60,16 +63,16 @@ anything; everything before it only declares.
 | `js/00-storage.js` | `window.storage` over `localStorage`. The game was born inside a Claude artifact where the host supplied this API; the shim lets identical code run from `file://`, itch.io and a Capacitor WebView. Defines itself only if absent. Falls back to an in-memory map if storage is denied (private browsing). |
 | `js/01-coords.js` | `AX[]` — the four camera views, each with `r` (screen-right) and `d` (depth, pointing at the camera). Nearly every coordinate calculation goes through these. Also `K()` and `box()`. |
 | `js/02-levels.js` | 72 levels + `SECTIONS` + `LEVEL_RENAMES`. |
-| `js/03-rules.js` | `resolveStep()`, block kinds, `makeRules()`, `makeBoss()`, `bossNext()`, `bossLine()`, `foldKills()`, `makeTrial()`, `trialSafety()`. |
+| `js/03-rules.js` | `resolveStep()`, block kinds, `makeRules()`, `makeBoss()`, `bossNext()`, `bossLine()`, `foldKills()`, `bossArena()`, `makeTrial()`, `trialSafety()`. |
 | `js/04-solver.js` | `solve()` — BFS over game states. Solves trials; knows nothing of bosses, on purpose. |
 | `js/05-state.js` | Mutable state, the pack, the trial clock, tutorial counters. |
 | `js/06-persistence.js` | Progress, settings, session, library, wardrobe. |
-| `js/07-difficulty.js` | `statsFor()`, `tierOf()`, stars, `statsCached()`, `starsForRecord()`. |
+| `js/07-difficulty.js` | `statsFor()`, `tierOf()`, stars, `statsCached()`, `starsForRecord()`, `onTheClock()`. |
 | `js/08-minimizer.js` | Delete each block, re-solve, find what is load-bearing. |
 | `js/09-wardrobe.js` | Skins, palettes, the star economy, the display case. |
 | `js/10-render.js` | three.js scene, depth shading, the animation loop. |
-| `js/11-sound.js` | Web Audio oscillator blips. No assets. Also `settings`, `VERBS`, `applyUI()`. |
-| `js/12-play.js` | The verbs: move, shove, collapse, restore, die, win. |
+| `js/11-sound.js` | Web Audio oscillator blips and the master limiter. No assets. Also `settings`, `VERBS`, `applyUI()`. |
+| `js/12-play.js` | The verbs: move, shove, collapse, restore, die, win. Also the fight and the trial clock. |
 | `js/13-gestures.js` | Swipe / tap / two-finger tap on the world. |
 | `js/14-editor.js` | Tap-to-place editor, verify, minimize. |
 | `js/15-tutorial.js` | Button cues, the tutorial coach, the hint button. |
@@ -109,7 +112,7 @@ Block format is `[x,y,z,k]` where k is 0 stone, 1 glass, 2 anchor, 3 crate,
 **The campaign is four sections plus a locked shelf**, listed in `SECTIONS` in
 `js/02-levels.js`. Each teaches one mechanic gently, hardens it, then ends on
 levels that combine it with everything already taught, then a boss. Four or
-five levels in, each section is interrupted by a **trial** — see below:
+five levels in, each section is interrupted by a **trial**:
 
 | | | |
 |---|---|---|
@@ -117,36 +120,22 @@ five levels in, each section is interrupted by a **trial** — see below:
 | II · SPIKES | 7 + trial + boss | spikes before glass — a hazard reads faster than an absence |
 | III · GLASS | 8 + trial + boss | ends on glass + spikes |
 | IV · CRATES | 10 + trial + boss | ends on crate + glass + spikes |
-| V · EXTRA | 27, locked | opens when every boss is down |
+| V · EXTRA | 27, locked | opens when every boss is down; anchors and amber live here |
 
 `SECTIONS[].at` holds array indices, so inserting a level means shifting every
 marker after it. A section with `locked:true` stays shut until
 `sectionsUnlocked()` — which checks the **bosses only**, not every level,
 because gating a bonus on 100% turns a reward into a chore.
 
-**Nothing was deleted to get from 62 campaign levels to 34** except one. Anchors and amber
-are shelved whole in EXTRA, so turning that section back on is a data move, not
-a rebuild. The judgement was that 40 good levels beat 60 that repeat
-themselves.
+**Bosses and trials carry no number**, only a numeral: `BOSS I …`, `TRIAL II
+…`. Progress is keyed by name, so a numbered landmark in the middle of a
+section would renumber every level after it and cost a `LEVEL_RENAMES` entry
+each. A landmark must not be able to break a save.
 
-The exception is `01 — Fill the gap`, which is gone for good: its solution was
-`→ → FLAT → → → → POP` against the tutorial's `→ FLAT → → → POP` — the same
-verbs in the same order, rotation locked in both, starting from the same
-square. It was the tutorial with a wider gap. **When a level duplicates a
-tutorial step, the tutorial wins**, because the tutorial is unscored and
-teaching a thing twice costs a player their first impression of the campaign.
-
-Levels have been renumbered three times. `LEVEL_RENAMES` maps every old name
-to its **current** one and `migrateNames()` applies it on load — progress is
-keyed by name, so without it every solved level would read unsolved.
-
-**Compose that table, never rewrite it.** A reshuffle regenerated it from
-scratch once, which silently broke the oldest saves: names from the original
-numbering stopped resolving, because the map only knew the *previous* names.
-The fix was to recover the lost map from git and compose the chains, so an
-original name still lands on the current one in a single lookup. Verified by
-loading a save written in the original numbering and watching every star
-survive.
+`LEVEL_RENAMES` maps every old level name to its **current** one and
+`migrateNames()` applies it on load. **Compose that table, never rewrite it** —
+regenerating it from scratch once silently broke the oldest saves. The story is
+in `docs/HISTORY.md`.
 
 Every special piece is verified load-bearing; every anchor level is verified
 **impossible** without its anchor; every crate is verified to be shoved in the
@@ -163,60 +152,43 @@ sight for most of a beat and going live for the last `fire` milliseconds.
 Reach the goal in the volume, as always. Three lives, and three intact lives
 is three stars.
 
-**This is the second boss design, brought back where it belongs.** It failed
-as a boss for a reason still worth keeping — an objective wearing a boss
-costume is not a fight, and the vulnerability has to come out of the
-opponent's own behaviour. But that is an argument about what a *boss* is, and
-it says nothing against the sweep itself. As a change of pace in the middle of
-a section it is exactly right, and it costs the fight nothing.
-
 The reason the attack is a plane, and the reason a trial is about the fold
 rather than about reflexes: **a sweep down the axis you are looking along
 cannot be dodged in the plane at all.** Flattened you are the projection of
 every depth at once, so you stand in every slice of that axis simultaneously.
 The same sweep is one step to dodge in the volume, and rotating re-labels
 which sweeps are survivable. So the question is the one the whole game asks —
-which axis, and is this the moment — only now with a metronome running. The
-`GO 2D` button carries the warning, pulsing red whenever the charging slice is
-one the plane has no answer to; because that is a fact about the clock rather
-than about geometry, it is re-judged every frame in the render loop instead of
-in `syncHud`, which is the one place a button class is not owned by `syncHud`.
+which axis, and is this the moment — only now with a metronome running.
 
 ### Details that are load-bearing
 
-- **A trial keeps its section's numbering out of it.** Like a boss it is
-  named `TRIAL I …` rather than given a number, because progress is keyed by
-  name: inserting `05` in the middle would renumber every level after it and
-  cost a `LEVEL_RENAMES` entry each. A landmark should not be able to break a
-  save.
-- **Two platforms that share a row of z can be joined by one turn and one
-  fold.** The first four arenas were solved in three or four moves flat —
-  rotate, collapse, land on the goal — because the far side sat at the same
-  depth as the start. Offsetting the far side in *both* axes is what makes the
-  crossing real. A trial that ends before its second beat is not a trial, and
-  `solve()` is the only thing that will tell you.
+- **A hit costs a life and nothing else.** You keep your square, the clock
+  keeps its count, and you get one beat of grace, spent visibly as a blink.
+  Resetting the clock on a hit is what made the arena appear to switch off;
+  see `docs/HISTORY.md`. If you were flat you are pulled back into the
+  volume, because the plane is where being caught means being caught
+  everywhere.
+- **The charge ramp starts high**, not at nothing (slab .15, outline .5). The
+  ramp is for *how long you have left*, not for whether there is a slice at
+  all. Every beat also ticks, so the rhythm can be heard as well as watched.
 - **The clock stops the moment you reach the goal**, not when the win card
-  appears 380ms later (`levelDone`). Without that a slice could still land on
-  a level you had already finished — and the same gap existed for the boss's
-  last shot, so the flag guards both.
-- **A hit sends you back to the start with the clock restarted**, so you are
-  never dropped in front of a slice already halfway to landing. Moves are left
-  alone, because moves are not the score here.
-- Scored like a boss, through the same two functions: `progress[name]` holds
-  lives, read through `starsForRecord()` and written through `betterRecord()`,
-  both of which now ask `onTheClock(level)` rather than `level.boss`.
+  appears 380ms later (`levelDone`). The same flag guards the boss.
+- **Offset the far platform in both axes.** Two platforms sharing a row of z
+  are joined by one turn and one fold, and the level ends in four moves. Only
+  `solve()` will tell you.
+- Scored like a boss: `progress[name]` holds lives, read through
+  `starsForRecord()` and written through `betterRecord()`, both of which ask
+  `onTheClock(level)`.
 
 ### Verification
 
 `solve()` is allowed a full opinion here, unlike on a boss: a trial is a real
 level underneath, so BFS proves the geometry admits a route. What BFS cannot
-speak to is the clock, and `trialSafety()` stands in for it: for every square
-you can stand on and every beat, either that square is safe or one a step away
-is — the arena never corners you. It also checks that you do not respawn
-inside the beat that is charging. `node tools/verify.js` runs both on every
-trial, and the safety check has already earned its keep: it rejected a catwalk
-two squares wide, where the sweep that owns that height leaves the middle
-square with nowhere to go.
+speak to is the clock, and `trialSafety()` stands in: for every square you can
+stand on and every beat, either that square is safe or one a step away is —
+the arena never corners you. `node tools/verify.js` runs both. The safety
+check has already earned its keep, rejecting a catwalk two squares wide where
+the sweep that owns that height leaves the middle square nowhere to go.
 
 ---
 
@@ -225,8 +197,7 @@ square with nowhere to go.
 **A pack of hunters, and one line that belongs to both of you.**
 
 Three or four hunters walk the volume toward you on a real clock. Touching
-you costs a life. There is no gun, no window to wait for, and nothing to
-farm.
+you costs a life. There is no gun, no window to wait for, and nothing to farm.
 
 | | |
 |---|---|
@@ -239,8 +210,8 @@ Being lined up is not an opening you wait for; it is a knife-edge you are
 already standing on. And which axis you collapse decides *which* line you can
 win: a hunter locked onto your row is only in your silhouette column when you
 are facing along that row, so the answer to "it is charging me" is often a
-rotation first — which costs you the beat you had. That is the fight. It is
-the game's one question, asked while something is running at you.
+rotation first — which costs you the beat you had. That is the fight: the
+game's one question, asked while something is running at you.
 
 **The pillars are their cover, not your weapon.** Rule 4 is unchanged and
 still applies to you: fold from a column that already holds a block and it
@@ -250,52 +221,10 @@ geometry, both jobs, opposite signs — which is why `Through Glass` is the
 arena it is. Glass casts nothing, so the columns that *look* blocked are
 precisely the ones you can attack from.
 
-### Five designs, and why the first four failed
-
-1. **Turn-based, walk to a marker.** Provably fair — `solve()` could prune hit
-   states — but it did not feel like a fight.
-2. **Real-time, walk to a marker.** Better pressure, still an objective
-   wearing a boss costume. *It is now the trial, where it belongs.*
-3. **Crush it on a static line.** A real attack, but the vulnerability was a
-   property of the *floor*, so the fight became manipulating the floor: stand
-   still, wait, fold. Making it avoid the lines only taught it to freeze.
-4. **A gun, and an OPEN beat after each shot.** Fair and machine-checkable,
-   and it read as a duel with a machine that spent most of the fight walking
-   into position. The opening was something you waited for rather than
-   something you made, and one opponent shuffling for an angle cannot be
-   fast. This is the one the owner called "weird", and that is the word for
-   it: correct, and inert.
-
-**The lesson, paid for four times: a vulnerability that does not come out of
-the boss's own behaviour is a condition to farm.** Here it *is* its attack —
-the same event, the same square — so there is no opening to wait for and none
-to decline, because declining is what being hit is.
-
-### What the simulator found, which nothing else would have
-
-The fifth design took three passes, and `tools/bosssim.js` rejected the first
-two before a human ever saw them. Each failure is worth keeping because each
-looked fine on paper:
-
-- **Crush them against the pillars** (fold, and anything in any filled column
-  dies). A prettier rule, and it does not work: a pillar's shadow is a whole
-  *line* across the arena, so every approach has to cross one, and a player
-  who never moves collects them as they arrive. The idle policy won all four
-  arenas standing in a corner. Making the kill require *your* column is what
-  put the player back in the fight — the one thing you cannot harvest from a
-  corner is alignment you did not go and get.
-- **Hunters that dodge your fold.** Two ways to get this wrong and both were
-  measured. Weight avoidance heavily and they circle forever rather than
-  cross a line: against a player standing where every approach was covered,
-  both sides simply stopped — design 3's freeze in a new costume, found in
-  one run at three lives, no kills, nobody within reach of anybody. Weight it
-  as a tie-break and they walk into a shadow on the way to a player who never
-  moved. In the end they stopped dodging altogether, because with the lunge
-  the square they want and the square that can kill them are the same square.
-- **Kills that were too cheap.** Anything adjacent to you shares a line with
-  you, so every arrival was a free kill; a perfect player cleared every arena
-  in under five seconds. The charge is what made a line cost something to
-  stand on.
+This is the fifth boss design. The four that failed, and the two versions of
+this one the simulator rejected, are in `docs/HISTORY.md` — **read it before
+changing the kill rule**, because the two most obvious alternatives have both
+already been built and measured.
 
 ### Details that are load-bearing
 
@@ -309,21 +238,20 @@ looked fine on paper:
   whole tension is that the axis you must fold along to answer it may not be
   the one you are facing. Swinging the line around with the camera would tell
   that lie.
-- **`bossNext` scores alignment far above distance.** Purely closing made a
-  hunter shuffle diagonally for six seconds looking for an angle, which reads
-  as a wander rather than a hunt.
+- **`bossNext` scores alignment far above distance**, and does not avoid
+  anything. Purely closing made a hunter shuffle diagonally for six seconds
+  looking for an angle, which reads as a wander rather than a hunt; avoidance
+  made it freeze.
 - **Two escalations, because nothing else stops a kite.** `rage` is what the
   survivors of a fold get for surviving it, so a fold that kills nothing is
   worse than free; `creep` tightens the whole pack every few seconds whatever
   you do. Both floor out at `floorStep` so it stays human.
-- **A hit throws the pack back to its spawns and does not move you.** The
-  gunfight sent the player home, which cost you the position you had spent
-  twenty seconds building — a punishment for being hit *and* for having
-  played well.
+- **A hit throws the pack back to its spawns and does not move you.** Sending
+  the player home costs the position they spent twenty seconds building — a
+  punishment for being hit *and* for having played well.
 - **No two hunters may spawn sharing a silhouette column.** They respawn
-  together after every hit, so a pair that shares one there was a standing
-  gift, renewed. `bossArena()` checks it; the simulator found it by winning a
-  fight without moving.
+  together after every hit, so a pair that shares one there is a standing
+  gift, renewed. `bossArena()` checks it.
 - **On a clock, the `GO 2D` button is re-judged every frame** in the render
   loop rather than in `syncHud`. It is the one place a button class is not
   owned by `syncHud`, and it has to be: hunters move while you do not, so a
@@ -339,24 +267,21 @@ looked fine on paper:
 ### Verification
 
 `solve()` knows nothing about bosses and must not: none of this is a function
-of a move sequence. Two checks stand in, and both have caught real errors:
+of a move sequence. Two checks stand in.
 
-- **`bossArena()`** (`js/03-rules.js`) — the stage works: every hunter can
-  reach you, none spawns inside a block or in another's column, and enough of
-  the floor is under a pillar's shadow to make position matter without
-  leaving nowhere to fight from. It rejected two arenas with a hunter inside
-  a pillar and two more where new pillars had swallowed the spawns.
-- **`tools/bosssim.js`**, run by `verify.js` — **it plays each fight twice.**
-  An IDLE policy that never moves and takes every free kill must **lose**; a
+- **`bossArena()`** — the stage works: every hunter can reach you, none spawns
+  inside a block or in another's column, and enough of the floor is under a
+  pillar's shadow to make position matter without leaving nowhere to fight
+  from.
+- **`tools/bosssim.js`**, run by `verify.js` — it plays each fight twice. An
+  IDLE policy that never moves and takes every free kill must **lose**; a
   DUELLIST that lines up, turns to re-aim and folds must **win**. Neither is
   a good player — the duellist never *herds*, which is the actual skill — so
-  a fight it wins is winnable by doing considerably less than the design
-  asks. Everything in the section above came out of it.
+  a fight it wins is winnable by doing considerably less than the design asks.
 
-**`tools/bossgen.js` is gone.** It searched for arenas for the walk-to-a-
-marker boss, and its authored configs emitted a boss format the game no
-longer understands. The four arenas are authored in `js/02-levels.js` and
-checked by the two functions above.
+**Both of these are optional when the owner is playtesting a fight** — see
+Working notes. They are worth running when the *rules* change; they are not
+worth running to tune a number the owner is about to feel out anyway.
 
 ---
 
@@ -400,10 +325,10 @@ exclusive — every gesture also has a key and, unless hidden, a button:
 
 ## Things worth knowing before you change them
 
-- **Verify claims with the solver rather than asserting them.** Every level in
-  the file has been machine-checked. `node tools/verify.js` — which now covers
-  bosses too, where "solved" means a run exists that is never hit.
-  `node tools/curve.js` dumps the difficulty curve.
+- **Verify claims with the solver rather than asserting them.** `node
+  tools/verify.js` checks every level: BFS on ordinary levels and trials,
+  `trialSafety()` on trials, `bossArena()` + `bosssim` on bosses. `node
+  tools/curve.js` dumps the difficulty curve.
 - **`resolveStep()` is shared by the game and the solver**, so they can never
   disagree. Keep it that way. Its optional `occHere` argument checks headroom in
   *both* columns; without it you can slide diagonally past a ceiling.
@@ -436,7 +361,8 @@ exclusive — every gesture also has a key and, unless hidden, a button:
   the app, which is the opposite of what a free game needs. `win()` writes an
   *effective* move count so hints cannot be laundered into currency.
 - **Stars.** 3★ = the solver's own move count, 2★ ≤ 120%, 1★ ≤ 140%. Par is
-  optimal, so 3★ genuinely means optimal.
+  optimal, so 3★ genuinely means optimal. Levels on a clock ignore all of this
+  and score on lives.
 - **Worlds only change the world** (background, stone, ink). Piece colours and
   their shape markers never change, so no world can make a mechanic unreadable.
 - **A world is two purchases, not one.** `WORLDS3D` sets void + block, `WORLDS2D`
@@ -482,10 +408,13 @@ exclusive — every gesture also has a key and, unless hidden, a button:
   `shards()` only; `starsEarned()` and `wardrobe.spent` still do their real
   work, so buying exercises the true purchase path. **Set it back to `false`
   before shipping.**
-- **Sound is scaled once at the master**, by `MIX` in `js/11-sound.js`
-  (currently 3) via `masterLevel()`. The per-blip gains are a deliberate mix — a
-  footstep sits well under the win chord — so correcting overall loudness there
-  instead of editing each value keeps that balance. Every write to
+- **Sound goes through a limiter on the master bus** (`js/11-sound.js`):
+  blips → `masterGain` (`MIX` × the volume setting) → limiter → `POST` →
+  destination. The per-blip gains are a deliberate mix — a footstep sits well
+  under the win chord — so loudness is corrected at the master rather than by
+  editing eleven numbers. **If you change `MIX`, re-measure the stacked worst
+  case** (the win chord ringing while a shot, a strike and a step land on it);
+  a limiter makes clipping quiet rather than obvious. Every write to
   `masterGain.gain.value` must go through `masterLevel()` or the boost is lost
   the first time the volume slider moves.
 - **The wardrobe's display case is a second WebGL context**, created when the
@@ -501,15 +430,12 @@ exclusive — every gesture also has a key and, unless hidden, a button:
   rotation — the whole point of the case — would be invisible.
 - **Selecting, buying and equipping are three separate acts.** Tapping a tile
   only puts it on the stand. Buying is armed-then-confirmed on a button under
-  the case, and only a confirmed purchase equips. Previously one tap of the
-  grid bought *and* equipped, so a mis-tap while scrolling spent stars. A
-  consequence worth keeping: a palette does not touch the world until it is
-  equipped — the case previews it instead.
-- **`body>canvas` in the CSS is load-bearing.** It was a bare `canvas` selector,
-  which also caught the wardrobe's preview canvas and pinned it `position:fixed`
-  over the whole viewport. The game's renderer is the only canvas that is a
-  direct child of `body`; any future in-panel canvas depends on that staying
-  scoped.
+  the case, and only a confirmed purchase equips. A consequence worth keeping:
+  a palette does not touch the world until it is equipped — the case previews
+  it instead.
+- **`body>canvas` in the CSS is load-bearing.** The game's renderer is the only
+  canvas that is a direct child of `body`; any future in-panel canvas depends
+  on that staying scoped.
 - **`statsCached()`** wraps `statsFor` — the level picker would otherwise run
   BFS on every level each time it opens.
 - A parsing regex over the levels file must match `rotate:(true|false)` — level
@@ -531,44 +457,19 @@ You dictate a move sequence; the level is built to fit it.
 4. **Repair** — trace the shortcut, find a square only *it* stands on, fill it.
 5. **Reroll** — up to 150 seeds.
 
-This is the generate-and-test family from procedural content generation. Known
-relatives: Taylor & Parberry's reverse Sokoban generation (2011); MCTS-based
-Sokoban generators; and the rigorous version, Smith & Mateas on Answer Set
-Programming for PCG (2011). The exact problem of excluding unwanted solutions is
-Smith, Butler & Popović, *Quantifying over play* (2013).
-
 **Measured success rate: 59%** on reversal-free random sequences, 14% if you
-allow sequences that double back. That gap is the single most useful thing
-learned about the composer: *a sequence that reverses direction can never be
-forced*, because returning where you came from means a shorter route always
-exists, and "forced" is defined as "the solver agrees this is shortest." The
-composer warns about this now. Two hypotheses that were tested and **failed**:
-letting the composer place glass (5 → 6 of 90, noise) and letting it place
-anchors so landings need not march away from the camera (13% → 12%, noise).
-
-Highest-leverage dials in `synthesize()`: the depth-choice heuristic (currently
-`lastDepth ± 2..6`) and the step-up probabilities (0.25 in 3D, 0.3 in 2D).
+allow sequences that double back — *a sequence that reverses direction can
+never be forced*, because returning where you came from means a shorter route
+always exists. The composer warns about this. Highest-leverage dials in
+`synthesize()`: the depth-choice heuristic (currently `lastDepth ± 2..6`) and
+the step-up probabilities (0.25 in 3D, 0.3 in 2D). Two hypotheses that were
+tested and failed, plus where this sits in the PCG literature, are in
+`docs/HISTORY.md`.
 
 ---
 
 ## Known limitations
 
-- **A cautionary note about my own evidence.** I once claimed, from 6,004 random
-  placements, that an anchor can never make a level impossible without it. That
-  claim was **false**, and it was disproved by a single hand-built level. The
-  shape that does it: a column with three or more landing candidates where the
-  one you need is strictly in the **middle**. Turning 180° reaches either *end*
-  of a column and never the middle, so only an anchor gets you there. The
-  generator built connected shelves and picked goals on existing blocks, so it
-  essentially never produced that topology — the wrong space had been sampled
-  thousands of times and mistaken for proof. **Absence of evidence from a biased
-  generator is not evidence of absence.** Chapter VI still reads as contrived:
-  the anchor is *necessary* there but the level is built around proving that
-  rather than around an idea. The fix came from the same player: **let amber
-  hold crates too.** Pinning a crate is irreversible, so where you park it is a
-  real decision. That is chapter VIII, and it is what the anchor should have
-  been from the start. A piece that only redirects is weak; a piece that
-  *removes an option* has teeth.
 - **The crates section's trial has no crate in it.** Every other trial uses
   the piece its section teaches — spikes take away the squares you would have
   dodged into, glass is the fold platform, and `TRIAL IV` mixes all three
@@ -581,11 +482,25 @@ Highest-leverage dials in `synthesize()`: the depth-choice heuristic (currently
   been built yet.
 - **`trialSafety()` checks the volume only.** In the plane a sweep down the
   view axis is unsurvivable, which is the mechanic and not a bug, so there is
-  nothing there to check — but it does mean the machine has no opinion at all
-  about the state you spend the crossing in.
-- **Sweep pacing is guesswork, exactly like the boss's.** `period` 2500 → 2000
-  and `fire` 340 → 300 across the four trials. Nothing says those numbers are
-  fun, or that the window to fold, cross and land is one a human can hit.
+  nothing there to check — but the machine has no opinion at all about the
+  state you spend the crossing in.
+- **Boss and sweep pacing are both guesswork.** Trials: `period` 2500 → 2000,
+  `fire` 340 → 300. Bosses: `step` 640 → 520ms, `aim` 780 → 620ms, three
+  hunters rising to four. The checks bracket each fight; they say nothing
+  about whether the numbers are *fun*, or whether a human can read a line,
+  decide the axis, rotate and fold inside one beat.
+- **`bosssim`'s duellist is not a good player.** It never herds — it does not
+  pick a square in order to put a hunter on a line — and it reacts every
+  200ms with perfect knowledge. It cleared the four arenas in 3 to 33
+  seconds, which says the fights are winnable, not that they are the right
+  length.
+- **The lunge is instant and unblockable once the beat ends.** It is
+  telegraphed for `aim` milliseconds and breaking the line cancels it, so it
+  is fair — but there is no partial answer, no grazing hit, and a player who
+  misreads the axis simply takes it.
+- **Real time is the one thing the game is not.** Bosses and trials mean it no
+  longer plays entirely at your own pace, and an accessibility option to slow
+  both clocks is the obvious missing setting.
 - **The composer cannot generate crates or keys.** It synthesises geometry move
   by move from a solution; a push changes the world, so the geometry cannot be
   derived that way without re-deriving everything downstream. Crate and key
@@ -602,47 +517,20 @@ Highest-leverage dials in `synthesize()`: the depth-choice heuristic (currently
   `HIDDEN`, every hint cue points at an invisible button. Both want the same
   fix — `cue()` should fall back to a `flash()` when its target is not on screen.
 - **Two-finger tap only rotates right.** There is no left-rotate gesture.
-- **Boss fairness is not proved, only sampled.** `bossArena()` says the stage
-  works and `bosssim` says the fight sits between "idle loses" and "a
-  competent policy wins"; neither says it is winnable at a *human* reaction
-  speed, or that `step`, `aim` and `creep` are tuned. That is a playtesting
-  question and nothing else can answer it.
-- **`bosssim`'s duellist is not a good player.** It never herds — it does not
-  pick a square in order to put a hunter on a line — and it reacts every
-  200ms with perfect knowledge. It cleared the four arenas in 3 to 33
-  seconds, which says the fights are winnable, not that they are the right
-  length. A human will be slower at everything except knowing what to do.
-- **The boss is the one real-time thing in a turn-based game.** It works, but
-  it means the game no longer plays entirely at your own pace, and an
-  accessibility option to slow `period` is the obvious missing setting.
-- **Boss pacing is guesswork.** `step` 640→520ms, `aim` 780→620ms, three
-  hunters rising to four. The simulator brackets each fight; it says nothing
-  about whether the numbers are *fun*, or whether a human can read a line,
-  decide the axis, rotate and fold inside one beat.
-- **The lunge is instant and unblockable once the beat ends.** It is
-  telegraphed for `aim` milliseconds and breaking the line cancels it, so it
-  is fair — but there is no partial answer, no grazing hit, and a player who
-  misreads which axis to fold along simply takes it. Whether that reads as
-  tight or as unfair is the first thing to watch in playtesting.
 
 ---
 
 ## Agreed next steps
 
-0. **Playtest the new boss, and the trials.** Both are new and both are
-   real-time, which is the one thing no tool here can judge. The specific
-   questions: can a human read which axis to fold along while a line is
-   lit, is `aim` long enough to rotate first, and does the trial's grace beat
-   after a hit feel like mercy or like being let off?
-1. **Playtest the sections.** The reorder was driven by `statsFor()` and the
-   sections now climb, but a machine score is not a feel. The two soft spots to
-   watch: the tutorial → section I handoff (16, still the gentlest scored level
-   available, and there is no cheaper one to put there), and section IX, which
-   is 11 levels and may be two sections wearing one hat.
-2. **More gentle levels.** The real gap the curve exposes and the reorder could
-   not fix: after the tutorial there is nothing between 16 and 31. The composer
-   can make them, but it cannot make crate or key levels, and its 59% hit rate
-   means hand-checking a batch. This is the highest-value content work left.
+0. **Playtest the boss and the trials.** Both are real-time, which is the one
+   thing no tool here can judge. The questions: can a human read which axis to
+   fold along while a line is lit, is `aim` long enough to rotate first, and
+   does the trial's beat of grace read as mercy or as being let off?
+1. **More gentle levels.** The real gap the curve exposes: after the tutorial
+   there is nothing between 16 and 31. The composer can make them, but not
+   crate or key levels, and its 59% hit rate means hand-checking a batch. This
+   is the highest-value content work left.
+2. **A crate trial**, per the limitation above.
 3. **Negative constraint tracking in the composer.** Synthesis is still greedy
    and violations are only caught at verification. Recording "this silhouette
    column must stay empty" as each move demands it would fail fast. The one
@@ -660,10 +548,6 @@ Highest-leverage dials in `synthesize()`: the depth-choice heuristic (currently
    rewarded-video callback should call `grantShards(n)`. Rewarded-only by
    design: skip a level, or buy shards. No interstitials — they pay poorly on a
    slow puzzle game and are the main cause of uninstalls.
-8. **Playtest feedback.** The solver can prove a level is tight; it cannot tell
-   whether the insight lands — and, as the anchor episode shows, it cannot tell
-   when the generator is failing to imagine the right shape. Both corrections to
-   the anchor mechanic came from a person playing, not from search.
 
 ### Before mobile
 
@@ -681,4 +565,27 @@ Highest-leverage dials in `synthesize()`: the depth-choice heuristic (currently
 - The owner is learning, not shipping. Explanations of *why* are wanted, not
   just working code.
 - Levels can be pasted in and out as JSON from the editor's ⋯ menu.
-- After any change to levels, rules or the solver: `node tools/verify.js`.
+
+### How to work on this, agreed with the owner
+
+- **Propose before building, whenever the ask is open-ended.** A few options,
+  two paragraphs each, no code. The owner picks one — or two, if more than one
+  is interesting. Designing three fights at full fidelity and discarding two
+  is the expensive way to arrive at the same answer, and it happened once.
+- **Feel beats simulation on anything real-time.** For bosses and trials the
+  owner playtests and says what is wrong immediately, which is faster and
+  truer than tuning against `bosssim` — and the fight may be scrapped anyway.
+  Run the checks when the *rules* change or when something must be proved
+  possible; do not run them to tune a number.
+- **Ordinary levels are the opposite: always machine-verify.** `node
+  tools/verify.js` before handing over any new or edited non-boss level. A
+  level that cannot be solved, or that falls in four moves, is not something
+  playtesting should have to discover.
+- **One job per session where possible.** Unrelated work in one pass re-reads
+  the same files several times over.
+- **Edit files with the editing tools, not by patching them from a shell.**
+  Out-of-band writes make the whole file reappear in context each time.
+- **Put post-mortems in `docs/HISTORY.md`, not here.** This file is loaded
+  every session; it should hold what is true now. The reasoning behind a
+  decision belongs in the history unless you need it to avoid breaking
+  something today.
