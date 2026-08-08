@@ -26,28 +26,55 @@ function die(kind){
 }
 
 /* ============================================================
-   THE BOSS'S HALF OF A MOVE
+   THE FIGHT
 
-   Called once after every action that counted - step, fold, unfold, turn.
-   Order matters and mirrors the solver exactly: the clock advances, the
-   sweep that lands on that tick is checked against where you now are, and
-   only then does arriving on the core count as a strike. Get that order
-   wrong and you could trade a life for a hit the solver said was avoidable.
+   Everything here runs off the animation loop, and is paused whenever the
+   fight is not actually in front of you - panel open, win card up,
+   mid-death, intro showing - because a clock that runs while you read the
+   menu is not difficulty. dt is clamped because a backgrounded tab hands
+   back one enormous frame on return, and without the clamp that single
+   frame marches the whole pack across the arena at once.
    ============================================================ */
 function bossReset(){
-  bossHp=B?B.hp:0;bossFlash=0;bossHitFlash=0;
-  bossMoveMs=0;bossStunMs=0;
-  bossPhase="aim";bossPhaseMs=0;bossAim=null;shots=[];shotMs=0;
-  bossAt=B&&B.at?{x:B.at[0],y:B.at[1],z:B.at[2]}:null;
+  bossHp=B?B.hp:0;bossFlash=0;bossHitFlash=0;bossCreepMs=0;bossGraceMs=0;
+  hunters=[];
+  if(B)for(var i=0;i<B.at.length;i++){
+    var a=B.at[i];
+    // Staggered clocks. Identical ones make the pack move as one animal,
+    // which is both easier to dodge and much less alarming.
+    hunters.push({x:a[0],y:a[1],z:a[2],ms:i*B.step/Math.max(1,B.at.length),
+                  step:B.step,doom:false,lock:0,line:null});
+  }
   lives=B?BOSS_LIVES:0;
 }
-/* The fight, driven off the animation loop.
-
-   Paused whenever it is not in front of you - panel open, win card up,
-   mid-death, intro showing - because a clock that runs while you read the
-   menu is not difficulty. dt is clamped because a backgrounded tab hands back
-   one enormous frame on return, and without the clamp that frame would march
-   the boss and every projectile across the arena at once. */
+// The square a hunter is heading for. While you are flat it can only see
+// your silhouette column, so it walks to the nearest square that shares it -
+// which is why folding does not hide you, it just makes you wider.
+function huntGoal(h){
+  if(!flat)return player;
+  var best=null, bd=1e9;
+  for(var i=0;i<L.blocks.length;i++){
+    var b=L.blocks[i];
+    if(R.uOf(view,b[0],b[2])!==flatPos.u)continue;
+    var d=Math.abs(b[0]-h.x)+Math.abs(b[2]-h.z);
+    if(d<bd){bd=d;best={x:b[0],y:b[1]+1,z:b[2]};}
+  }
+  return best||player;
+}
+// Would folding right now kill something standing here?
+function doomedCell(x,y,z,cr){
+  return foldKills(R,view,player,{x:x,y:y,z:z},cr);
+}
+/* Is this hunter on a line it can charge down? While you are flat you are a
+   whole silhouette column rather than a square, so every hunter sharing it
+   has a line on you - which is why standing in the plane is the most
+   dangerous thing in the fight, and why the fold has to be a moment rather
+   than a place to hide. */
+function huntLine(h,cr){
+  if(flat)
+    return (R.uOf(view,h.x,h.z)===flatPos.u&&h.y===flatPos.y)?{dx:0,dz:0}:null;
+  return bossLine(R,h,player,cr);
+}
 function bossFrame(dt){
   if(!B||app!=="play")return;
   if(dying||levelDone||panelOpen()||!$("intro").classList.contains("gone")||
@@ -55,157 +82,152 @@ function bossFrame(dt){
   dt=Math.min(dt,90);
   if(bossHitFlash>0)bossHitFlash=Math.max(0,bossHitFlash-dt/380);
   if(bossFlash>0)bossFlash=Math.max(0,bossFlash-dt/300);
-  if(!bossAt)return;
+  if(bossGraceMs>0)bossGraceMs=Math.max(0,bossGraceMs-dt);
+  if(!hunters.length)return;
 
-  moveShots(dt);
+  /* The creep. Nothing about this fight stops you from running in circles,
+     so the circles get smaller: every creepEvery the whole pack speeds up a
+     little, and there is no upper bound on how long you may take, only on
+     how pleasant it stays. */
+  bossCreepMs+=dt;
+  if(bossCreepMs>=B.creepEvery){
+    bossCreepMs=0;
+    for(var c=0;c<hunters.length;c++)
+      hunters[c].step=Math.max(B.floorStep,hunters[c].step*B.creep);
+  }
 
-  if(bossStunMs>0){bossStunMs-=dt;return;}   // reeling: it does not aim or walk
-
-  var goal=flat?planeGoalFor():player;
-
-  /* It plants to shoot. While a lock is held it does not walk, so the line
-     you are shown is the line that fires - a telegraph that drifts is not a
-     telegraph. Stopping is also the tell: it freezing is what tells you a
-     shot is coming, before the line has even brightened. */
-  if(bossPhase==="aim"&&!bossAim){
-    bossMoveMs+=dt;
-    if(bossMoveMs>=B.step){
-      bossMoveMs=0;
-      var nx=bossNext(R,bossAt,goal,liveCrates());
-      if(nx)bossAt=nx;
-      if(bossTouching()){bossHurt("it reached you");return;}
+  var cr=liveCrates();
+  for(var i=0;i<hunters.length;i++){
+    var h=hunters[i];
+    /* Planted. It does not walk while a lock is held, so the line you are
+       shown is the line that fires - a telegraph that drifts is not a
+       telegraph - and stepping off the line is what breaks it. That is the
+       dodge, and folding is the other answer to the same question. */
+    if(h.lock>0){
+      h.line=huntLine(h,cr);
+      if(!h.line){h.lock=0;continue;}          // you broke the line: it walks
+      h.lock-=dt;
+      if(h.lock<=0){
+        h.lock=0;h.line=null;
+        h.x=player.x;h.y=player.y;h.z=player.z;   // the charge, all at once
+        SFX.shot();shakeT=1;
+        bossHurt("it came down the line");
+        return;
+      }
+      continue;
     }
+    h.ms+=dt;
+    if(h.ms<h.step)continue;
+    h.ms=0;
+    var goal=huntGoal(h);
+    var nx=bossNext(R,h,goal,cr,function(c){
+      return !!(flat?(R.uOf(view,c.x,c.z)===flatPos.u&&c.y===flatPos.y)
+                    :bossLine(R,c,goal,cr));
+    });
+    // Never onto another hunter's square: two of them in one cell reads as
+    // one of them, and the pack should look like a pack.
+    if(nx&&!hunterAt(nx.x,nx.y,nx.z,i)){h.x=nx.x;h.y=nx.y;h.z=nx.z;}
+    if(hunterTouching(h)){bossHurt("it reached you");return;}
+    // Lined up, so it plants. The beat that follows is the whole fight.
+    h.line=huntLine(h,cr);
+    if(h.line){h.lock=B.aim;bossFlash=1;}
   }
+  // Recomputed once a frame for the renderer and for the GO 2D button, so
+  // "this one dies if you fold" is answered in exactly one place.
+  for(var d2=0;d2<hunters.length;d2++)
+    hunters[d2].doom=!flat&&
+      doomedCell(hunters[d2].x,hunters[d2].y,hunters[d2].z,cr);
+}
+function hunterAt(x,y,z,skip){
+  for(var i=0;i<hunters.length;i++)
+    if(i!==skip&&hunters[i].x===x&&hunters[i].y===y&&hunters[i].z===z)return true;
+  return false;
+}
+// Called after any move you make. They are not solid - you can walk through
+// the square one is standing in - because a body you cannot pass is a body
+// that can trap you against a wall, and the fight is about position, not
+// about being cornered. Walking into one simply costs the same as being
+// walked into.
+function bossContact(){
+  if(!B||dying||levelDone)return false;
+  for(var i=0;i<hunters.length;i++)
+    if(hunterTouching(hunters[i])){bossHurt("you walked into it");return true;}
+  return false;
+}
+function hunterTouching(h){
+  if(bossGraceMs>0)return false;
+  if(flat)return R.uOf(view,h.x,h.z)===flatPos.u&&h.y===flatPos.y;
+  return h.x===player.x&&h.y===player.y&&h.z===player.z;
+}
+/* Folding, from the pack's point of view. Called from doFlatten() before
+   flatPos is set, so `player` still holds the square you folded from - which
+   is the square the attack is measured from.
 
-  bossPhaseMs+=dt;
-  if(bossPhase==="aim"){
-    // Lock only when actually lined up. Once locked it commits: break the
-    // line all you like, the shot still goes where it was aimed.
-    if(!bossAim){
-      bossAim=bossAimDir(R,bossAt,goal,liveCrates());
-      if(bossAim)bossPhaseMs=0;
-      else return;                  // no line yet - keep walking, no countdown
-    }
-    if(bossPhaseMs>=B.aim){
-      shots.push({x:bossAt.x,y:bossAt.y,z:bossAt.z,dx:bossAim.dx,dz:bossAim.dz});
-      SFX.shot();bossFlash=1;
-      // "fire", not "open" - see resolveShot(). The window comes after the
-      // bullet, never during it.
-      bossPhase="fire";bossPhaseMs=0;bossAim=null;
-    }
-  } else if(bossPhase==="open"&&bossPhaseMs>=B.open){
-    bossPhase="aim";bossPhaseMs=0;
-  }
-}
-function moveShots(dt){
-  if(!shots.length)return;
-  shotMs+=dt;
-  if(shotMs<B.shotStep)return;
-  shotMs=0;
-  var cr=liveCrates(), keep=[];
-  for(var i=0;i<shots.length;i++){
-    var n=shotNext(R,shots[i],cr);
-    if(!n)continue;                        // hit cover and died there
-    if(Math.abs(n.x)>40||Math.abs(n.z)>40)continue;
-    if(shotHits(n)){bossHurt("shot");return;}
-    keep.push(n);
-  }
-  shots=keep;
-  resolveShot();
-}
-/* The exposed beat starts when the bullet is spent, not when it leaves the
-   barrel.
-
-   That single ordering is what killed the last exploit. With the window
-   opening at the muzzle, a motionless player could fold the instant it fired
-   and land a hit while the shot was still crossing the floor - trading one
-   life for one hit point, which against three lives and three hit points is
-   exactly enough to win by doing nothing. Now the shot has to miss you
-   before there is anything to punish. */
-function resolveShot(){
-  if(bossPhase==="fire"&&!shots.length){bossPhase="open";bossPhaseMs=0;}
-}
-function shotHits(s){
-  if(flat)return R.uOf(view,s.x,s.z)===flatPos.u&&s.y===flatPos.y;
-  return s.x===player.x&&s.y===player.y&&s.z===player.z;
-}
-// Where the boss aims while you are flat: it only knows your silhouette
-// column, so it walks to the nearest square sharing it.
-function planeGoalFor(){
-  var best=null, bd=1e9;
-  for(var i=0;i<L.blocks.length;i++){
-    var b=L.blocks[i], y=b[1]+1;
-    if(R.uOf(view,b[0],b[2])!==flatPos.u)continue;
-    var d=Math.abs(b[0]-bossAt.x)+Math.abs(b[2]-bossAt.z);
-    if(d<bd){bd=d;best={x:b[0],y:y,z:b[2]};}
-  }
-  return best||player;
-}
-function bossTouching(){
-  if(!bossAt)return false;
-  if(flat)return R.uOf(view,bossAt.x,bossAt.z)===flatPos.u&&bossAt.y===flatPos.y;
-  return bossAt.x===player.x&&bossAt.y===player.y&&bossAt.z===player.z;
-}
-/* The strike window. It is OPEN only in the beat after it fires, and you can
-   only reach it by folding while you share its silhouette column - so you
-   have to survive the shot and then be lined up, and rotating decides what
-   "lined up" means.
-
-   Outside OPEN the identical input kills you: it is solid in the plane, so
-   folding into its column is folding into a wall. The strike and the suicide
-   are one button apart in timing, which is the whole fight. */
-function bossOpen(){
-  return !!(B&&bossAt&&bossPhase==="open"&&bossStunMs<=0&&!dying);
-}
-function bossAligned(){
-  if(!B||!bossAt)return false;
-  return R.uOf(view,bossAt.x,bossAt.z)===R.uOf(view,player.x,player.z)&&
-         bossAt.y===player.y;
-}
-function bossCrushable(){
-  return !flat&&app==="play"&&bossOpen()&&bossAligned();
-}
-function bossFoldStrike(){
-  if(!B||!bossAt||!bossAligned())return false;
-  if(bossOpen()){bossDamage("caught it open");return true;}
-  /* Aligned but not open: in the plane it is solid, and you have just folded
-     into it. Same input, same geometry, one beat early - which is what makes
-     the OPEN window worth waiting for instead of a light to react to. */
-  setTimeout(function(){if(!dying)bossHurt("you folded into it");},380);
-  return true;
-}
-/* One hit, however it was landed. Knocked away and stunned, which is the
-   window to reposition and the reason one lucky fold cannot chain. */
-function bossDamage(why){
-  bossHp--;
-  bossStunMs=B.stun;bossHitFlash=1;
-  bossPhase="aim";bossPhaseMs=0;bossAim=null;
+   Everything sharing that square in the plane goes, which will usually be
+   one of them and is occasionally three, because depth is gone and they were
+   only ever apart in it. */
+function bossFoldCrush(){
+  if(!B||!hunters.length)return;
+  var cr=liveCrates(), doomed=[];
+  for(var i=0;i<hunters.length;i++)
+    if(doomedCell(hunters[i].x,hunters[i].y,hunters[i].z,cr))doomed.push(i);
+  if(!doomed.length)return;
+  for(var d=doomed.length-1;d>=0;d--)hunters.splice(doomed[d],1);
+  bossHp=hunters.length;bossHitFlash=1;
   SFX.strike();shakeT=1;
-  var away=bossNext(R,bossAt,
-    {x:bossAt.x+(bossAt.x-player.x)*3,y:bossAt.y,z:bossAt.z+(bossAt.z-player.z)*3},
-    liveCrates());
-  if(away)bossAt=away;
-  if(bossHp<=0){buildGrid();win();return;}
-  flash(why+" \u00b7 "+bossHp+(bossHp===1?" hit left":" hits left"));
-  buildGrid();syncHud();
+  /* What the survivors get for surviving. A fold that kills nothing is now
+     worse than free, and a fold that kills one of three leaves the other two
+     angrier - so the fight accelerates toward its own end rather than
+     thinning out into a mop-up. */
+  for(var s=0;s<hunters.length;s++)
+    hunters[s].step=Math.max(B.floorStep,hunters[s].step*B.rage);
+  if(!hunters.length){buildGrid();win();return;}
+  flash(doomed.length>1?(doomed.length+" in one square · "+hunters.length+" left"):
+        ("folded onto it · "+hunters.length+" left"));
+  syncHud();
 }
-function bossTakeCrate(){bossDamage("crate");return true;}
+// True when folding right now would kill at least one of them - what turns
+// the GO 2D button green. foldKills() already refuses a column with a pillar
+// in it, so this can never be true at the same moment peril is.
+function bossCrushable(){
+  if(!B||flat||app!=="play"||!hunters.length)return false;
+  var cr=liveCrates();
+  for(var i=0;i<hunters.length;i++)
+    if(doomedCell(hunters[i].x,hunters[i].y,hunters[i].z,cr))return true;
+  return false;
+}
 function bossHurt(why){
   lives--;
   SFX.die();shakeT=1;
+  bossGraceMs=B.grace;
   var bar=$("bossBar");
   if(bar){bar.classList.remove("hurt");void bar.offsetWidth;bar.classList.add("hurt");}
   if(lives<=0){die("boss");return;}
-  flash(why+" \u00b7 "+lives+" "+(lives===1?"life":"lives")+" left");
-  // Both back to your corners; its damage stands, and it starts a fresh
-  // wind-up so you are never respawned into a shot already in the air.
-  moveHistory=[];
-  initDynamic();buildDynamic();
-  player={x:L.start[0],y:L.start[1],z:L.start[2]};
-  bossAt=B.at?{x:B.at[0],y:B.at[1],z:B.at[2]}:null;
-  flat=false;flatTarget=0;flatT=0;
-  shots=[];bossPhase="aim";bossPhaseMs=0;bossAim=null;bossStunMs=B.stun;
-  buildGrid();syncHud();
+  flash(why+" · "+lives+" "+(lives===1?"life":"lives")+" left");
+  /* They are thrown back to where they started and you are not moved at all.
+     Sending the player home was what the gunfight did, and it made every hit
+     cost the position you had spent twenty seconds building - which is a
+     punishment for being hit *and* for having played well. The pack losing
+     its ground is punishment enough, and it buys you the beat of grace to
+     use it. */
+  for(var i=0;i<hunters.length;i++){
+    var a=B.at[i%B.at.length];
+    hunters[i].x=a[0];hunters[i].y=a[1];hunters[i].z=a[2];
+    hunters[i].ms=0;hunters[i].lock=0;hunters[i].line=null;
+  }
+  syncHud();
+}
+// A crate shoved onto a hunter is the other way to kill one, and it costs a
+// move rather than a fold. It stays because it is the one attack that works
+// while the geometry is against you.
+function bossTakeCrate(idx){
+  hunters.splice(idx,1);
+  bossHp=hunters.length;bossHitFlash=1;
+  SFX.strike();shakeT=1;
+  if(!hunters.length){buildGrid();win();return true;}
+  flash("crushed under the crate · "+hunters.length+" left");
+  syncHud();
+  return true;
 }
 
 /* ============================================================
@@ -219,7 +241,7 @@ function bossHurt(why){
    flat along the axis it sweeps, where every depth is your depth.
    ============================================================ */
 function trialReset(){
-  trialMs=0;trialBeat=-1;trialFlash=0;
+  trialMs=0;trialBeat=-1;trialFlash=0;trialGrace=0;trialTicked=-1;
   if(TR)lives=BOSS_LIVES;
 }
 function trialFrame(dt){
@@ -228,37 +250,56 @@ function trialFrame(dt){
      $("won").classList.contains("on"))return;
   dt=Math.min(dt,90);          // a backgrounded tab returns one enormous frame
   if(trialFlash>0)trialFlash=Math.max(0,trialFlash-dt/300);
+  if(trialGrace>0)trialGrace=Math.max(0,trialGrace-dt);
   var was=TR.live(trialMs);
   trialMs+=dt;
   var live=TR.live(trialMs);
+  var beat=TR.beatNo(trialMs);
+  // A tick on the turn of every beat. The level is called a metronome and it
+  // should sound like one: the charge is a thing you can hear coming, not
+  // only a thing you have to keep looking at.
+  if(beat!==trialTicked){trialTicked=beat;SFX.tick();}
   if(live&&!was){trialFlash=1;SFX.sweep();}
   if(!live)return;
   // One beat can only take one life, however long you stand in it: the sweep
   // lands once, it is not a floor that stays lethal.
-  var beat=TR.beatNo(trialMs);
-  if(trialBeat===beat)return;
+  if(trialBeat===beat||trialGrace>0)return;
   var sw=TR.beatAt(trialMs);
   var hit=flat ? TR.hits(sw,view,"2",flatPos.u,flatPos.y,0)
                : TR.hits(sw,view,"3",player.x,player.y,player.z);
   if(hit){trialBeat=beat;trialHurt();}
 }
+/* Being caught costs a life and nothing else.
+
+   It used to send you back to the start and restart the clock, which is what
+   a boss does - and on a trial it was wrong twice over. The clock *is* the
+   level, so resetting it threw away the rhythm you had just learned, and
+   being put back on a safe square meant the next two slices landed nowhere
+   near you: the arena appeared to switch off for four seconds every time it
+   touched you. Now you keep your square, the metronome keeps its count, and
+   what you get is a beat of grace to move. The plane is the one thing you
+   are pulled out of, because it is where being caught means being caught
+   everywhere. */
 function trialHurt(){
   lives--;
   SFX.die();shakeT=1;
+  trialGrace=TR.period;
   var bar=$("bossBar");
   if(bar){bar.classList.remove("hurt");void bar.offsetWidth;bar.classList.add("hurt");}
   if(lives<=0){die("trial");return;}
   flash((flat?"flat in the slice":"caught by the sweep")+" · "+
         lives+" "+(lives===1?"life":"lives")+" left");
-  // Back to the start with the clock restarted, so you are never dropped
-  // back in front of a slice that is already halfway to landing. Moves are
-  // not the score here, so moveCount is left alone.
-  moveHistory=[];
-  initDynamic();buildDynamic();
-  player={x:L.start[0],y:L.start[1],z:L.start[2]};
-  flat=false;flatTarget=0;flatT=0;
-  trialMs=0;trialBeat=-1;
-  buildGrid();syncHud();
+  if(flat){
+    var land=R.landings(view,flatPos.u,flatPos.y,liveCrates());
+    var b=land.length?R.pick(land):null;
+    // Nowhere to stand behind you, or a spike waiting there: better to leave
+    // you flat with a beat of grace than to drop you onto a second death.
+    if(b&&!R.deadly3(b.x,flatPos.y,b.z)){
+      player.x=b.x;player.z=b.z;player.y=flatPos.y;
+      flat=false;flatTarget=0;SFX.unfold();
+    }
+  }
+  syncHud();
 }
 // Would folding right now put you inside the charging slice? True only for a
 // sweep down the axis you are looking along, where the plane is every depth
@@ -320,14 +361,16 @@ function move3(dx,dz,dir){
   if(moved){
     gCrates[moved.i]=[moved.to.x,moved.to.y,moved.to.z];SFX.shove();
     // did that crate land on the boss?
-    if(B&&bossAt&&moved.to.x===bossAt.x&&moved.to.y===bossAt.y&&
-       moved.to.z===bossAt.z&&bossTakeCrate())return;
+    if(B)for(var hi=0;hi<hunters.length;hi++)
+      if(moved.to.x===hunters[hi].x&&moved.to.y===hunters[hi].y&&
+         moved.to.z===hunters[hi].z&&bossTakeCrate(hi))return;
   }
   if(ny===FELL){player.x=nx;player.z=nz;die("fall");return;}
   player.x=nx;player.z=nz;player.y=ny;
   if(R.deadly3(nx,ny,nz)){die("spike");return;}
   if(!moved)SFX.step();
   if(tutC){tutC.m3++;if(dir)tutC.d[dir]++;if(ny>oldY)tutC.climb++;}
+  if(bossContact())return;
   syncHud();saveSession();checkWin();
 }
 function move2(du){
@@ -344,6 +387,7 @@ function move2(du){
   if(R.deadly2(view,nu,ny)){die("spike");return;}
   SFX.step();collectHere();
   if(tutC)tutC.m2++;
+  if(bossContact())return;
   syncHud();saveSession();
 }
 /* What would folding from right here do to you, and which blocks are to blame?
@@ -366,17 +410,9 @@ function foldPeril(){
   var u=R.uOf(view,player.x,player.z), cr=liveCrates();
   var crush=R.siloSolid(view,u,player.y,cr);
   var spike=R.deadly2(view,u,player.y);
-  var onBoss=!!(B&&bossAt&&!bossOpen()&&
-    R.uOf(view,bossAt.x,bossAt.z)===u&&bossAt.y===player.y);
-  if(!crush&&!spike&&!onBoss)return null;
+  if(!crush&&!spike)return null;
   // the guilty are whatever shares your silhouette square: for a crush the
   // blocks at your height, for a spike the ones directly beneath it
-  // The boss is solid in the plane too, and folding into it while it is not
-  // open is the most expensive mistake in the fight - so it is reported here
-  // like any other thing that fills your square.
-  if(B&&bossAt&&!bossOpen()&&
-     R.uOf(view,bossAt.x,bossAt.z)===u&&bossAt.y===player.y)
-    return {kind:"boss",cells:[[bossAt.x,bossAt.y,bossAt.z]]};
   var wantY=crush?player.y:player.y-1, cells=[];
   for(var i=0;i<L.blocks.length;i++){
     var b=L.blocks[i];
@@ -405,7 +441,7 @@ function doFlatten(){
   flatPos={u:pu,y:player.y};
   flat=true;flatTarget=1;SFX.fold();collectHere();
   if(tutC)tutC.flat++;
-  bossFoldStrike();
+  bossFoldCrush();
   syncHud();saveSession();
   // Something else already occupies that square in the plane. Let the fold
   // play out, then close on the player.
@@ -423,6 +459,7 @@ function doUnflatten(){
   flat=false;flatTarget=0;SFX.unfold();
   if(tutC)tutC.unflat++;
   if(R.deadly3(player.x,player.y,player.z)){die("spike");return;}
+  if(bossContact())return;         // you came back down on top of one
   syncHud();saveSession();
   checkWin();
 }
@@ -442,8 +479,8 @@ function keysLeft(){
   return n;
 }
 function checkWin(){
-  // A boss has no goal square at all: the fight ends when its last hit point
-  // goes, in bossTakeCrate(), never by arriving somewhere.
+  // A boss has no goal square at all: the fight ends when the last hunter
+  // goes, in bossFoldCrush() or bossTakeCrate(), never by arriving anywhere.
   if(B)return;
   if(player.x!==L.goal[0]||player.y!==L.goal[1]||player.z!==L.goal[2])return;
   if(keysLeft()){flash("still sealed \u2014 "+keysLeft()+" to collect");SFX.bump();return;}

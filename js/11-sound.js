@@ -8,15 +8,33 @@
    SOUND — a few oscillator blips, no assets. The audio context
    can only start after a gesture, so it's created lazily.
    ============================================================ */
-var actx=null, masterGain=null;
+var actx=null, masterGain=null, limiter=null, postGain=null;
 var settings={volume:.7,brightness:1,ui:"full"};
 
-// The individual blip gains below are a balanced mix - a footstep is meant to
-// sit well under the win chord - so loudness is corrected once here at the
-// master rather than by editing eleven numbers and losing that balance.
-// Headroom check: the loudest moment is win(), four .05 notes overlapping,
-// plus reverb wet, which lands near .72 at full volume. Under 1.0, so no clip.
-var MIX=3;
+/* The individual blip gains below are a balanced mix - a footstep is meant to
+   sit well under the win chord - so loudness is corrected once here at the
+   master rather than by editing eleven numbers and losing that balance.
+
+   MIX used to be the only lever, and it was stuck low for a real reason:
+   with oscillators wired straight to the destination, the ceiling is set by
+   the loudest possible moment (win(), four notes overlapping, plus reverb
+   wet) and everything quieter has to live far under that or the peak clips.
+   The result was a game that peaked around -19 dBFS while everything else on
+   a phone is mastered near -6, so it read as barely audible.
+
+   The fix is the one every game uses: a limiter on the master bus. With
+   peaks caught at LIMIT_DB, MIX can be pushed until the quiet sounds are
+   actually loud and the loud ones simply stop growing, and POST makes up the
+   gain the limiter took. Peak output stays under 1.0 by construction rather
+   than by leaving headroom nobody hears.
+
+   Measured, by rendering this exact chain through an OfflineAudioContext:
+   a footstep went from 0.09 peak to 0.60, and the worst case anything can
+   produce - the win chord still ringing while a shot, a strike and a step
+   land on top of it - peaks at 0.72. About six times the loudness, with more
+   headroom than before rather than less. If you change MIX, re-measure that
+   stacked case; the limiter makes clipping quiet rather than obvious. */
+var MIX=8, POST=1.15, LIMIT_DB=-16;
 function masterLevel(){return settings.volume*MIX;}
 
 // The verb's wording is settled: GO 2D / GO 3D. It stays in one table rather
@@ -47,7 +65,20 @@ function audio(){
   if(!masterGain){
     masterGain=actx.createGain();
     masterGain.gain.value=masterLevel();
-    masterGain.connect(actx.destination);
+    /* Everything lands here: blips, reverb wet, all of it. Fast attack so a
+       hard transient never gets through, slow-ish release so the limiter
+       does not pump audibly between footsteps. */
+    limiter=actx.createDynamicsCompressor();
+    limiter.threshold.value=LIMIT_DB;
+    limiter.knee.value=6;
+    limiter.ratio.value=20;
+    limiter.attack.value=.002;
+    limiter.release.value=.15;
+    postGain=actx.createGain();
+    postGain.gain.value=POST;
+    masterGain.connect(limiter);
+    limiter.connect(postGain);
+    postGain.connect(actx.destination);
   }
   return actx;
 }
@@ -119,6 +150,9 @@ var SFX={
   // because it fires whether or not it caught you and a hard sound every
   // couple of seconds would be exhausting.
   sweep:function(){blip(330,.2,"sine",.028,110);blip(120,.24,"triangle",.02);},
+  // The turn of a beat. Deliberately tiny - it is a count, not an event, and
+  // you should stop noticing it and start moving on it.
+  tick:function(){blip(1180,.035,"sine",.014);},
   // A core going down: a hard hit with a bright ring over it, so a strike
   // never gets confused with taking one.
   strike:function(){

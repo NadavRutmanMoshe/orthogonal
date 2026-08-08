@@ -88,17 +88,16 @@ function syncHud(){
   var pf=(typeof foldPeril==="function")?foldPeril():null;
   var strike=(typeof bossCrushable==="function")&&bossCrushable();
   $("bFlat").classList.toggle("peril",!!pf);
-  // A fold that would land a hit is worth saying out loud, and it can be true
-  // at the same time as peril - the boss's column being blocked says nothing
-  // about yours. Peril wins the colour, because dying costs more than a
-  // missed hit; the label still tells you the hit is there.
+  // A fold that would kill one of them turns the button green. It can never
+  // be true at the same moment peril is - foldKills() refuses a column with
+  // a pillar in it - but peril still wins the colour if they ever disagree.
+  // On a clock these classes are re-judged every frame in the render loop;
+  // see the note there.
   $("bFlat").classList.toggle("strike",!!strike&&!pf);
   $("bFlat").title=pf?(pf.kind==="crush"
     ?"something already fills that square in the plane"
-    :pf.kind==="boss"
-    ?"it is not open - folding into it now kills you"
     :"a spike folds into the square under you")
-    :(strike?"it is open: fold now":"");
+    :(strike?"one of them is in your column: fold now":"");
   $("bUp").disabled=flat;$("bDown").disabled=flat;
   var noRot=flat||(app==="play"&&L&&L.rotate===false);
   $("bRotL").disabled=noRot;$("bRotR").disabled=noRot;

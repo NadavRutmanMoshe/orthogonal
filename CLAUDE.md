@@ -37,11 +37,11 @@ for the mechanic even though it did not end up on the button.
    **unless** an anchor is among the candidates — then the anchor wins.
 6. You must reach the goal in the volume. Standing on its projection is not
    enough.
-7. On a boss level there is no goal: there is an opponent with a gun, and you
-   hurt it by folding while you share its column in the one beat it is
-   exposed. On a **trial** there is a goal like any other level, and a lethal
-   plane sweeping one slice of the world. Both run **on a real clock**, and
-   that clock is the one place the game is not turn-based.
+7. On a boss level there is no goal: a pack of hunters walks at you, and you
+   kill one by folding while it shares your silhouette column — the same line
+   it charges down. On a **trial** there is a goal like any other level, and
+   a lethal plane sweeping one slice of the world. Both run **on a real
+   clock**, and that clock is the one place the game is not turn-based.
 
 Death is solver-equivalent to a blocked move — neither leads anywhere, so no
 shortest path routes through it. Adding death changed nothing about any puzzle;
@@ -60,9 +60,9 @@ anything; everything before it only declares.
 | `js/00-storage.js` | `window.storage` over `localStorage`. The game was born inside a Claude artifact where the host supplied this API; the shim lets identical code run from `file://`, itch.io and a Capacitor WebView. Defines itself only if absent. Falls back to an in-memory map if storage is denied (private browsing). |
 | `js/01-coords.js` | `AX[]` — the four camera views, each with `r` (screen-right) and `d` (depth, pointing at the camera). Nearly every coordinate calculation goes through these. Also `K()` and `box()`. |
 | `js/02-levels.js` | 72 levels + `SECTIONS` + `LEVEL_RENAMES`. |
-| `js/03-rules.js` | `resolveStep()`, block kinds, `makeRules()`, `makeBoss()`, `makeTrial()`, `trialSafety()`. |
-| `js/04-solver.js` | `solve()` — BFS over game states; reaches boss cores but does **not** model sweeps. |
-| `js/05-state.js` | Mutable state, boss state, tutorial counters. |
+| `js/03-rules.js` | `resolveStep()`, block kinds, `makeRules()`, `makeBoss()`, `bossNext()`, `bossLine()`, `foldKills()`, `makeTrial()`, `trialSafety()`. |
+| `js/04-solver.js` | `solve()` — BFS over game states. Solves trials; knows nothing of bosses, on purpose. |
+| `js/05-state.js` | Mutable state, the pack, the trial clock, tutorial counters. |
 | `js/06-persistence.js` | Progress, settings, session, library, wardrobe. |
 | `js/07-difficulty.js` | `statsFor()`, `tierOf()`, stars, `statsCached()`, `starsForRecord()`. |
 | `js/08-minimizer.js` | Delete each block, re-solve, find what is load-bearing. |
@@ -222,74 +222,141 @@ square with nowhere to go.
 
 ## Bosses
 
-**An opponent with a gun, and a rhythm you fight inside.**
+**A pack of hunters, and one line that belongs to both of you.**
+
+Three or four hunters walk the volume toward you on a real clock. Touching
+you costs a life. There is no gun, no window to wait for, and nothing to
+farm.
 
 | | |
 |---|---|
-| **AIM** | it manoeuvres onto your row or column, **plants**, and the line lights up |
-| **SHOT** | a projectile crosses the arena a cell at a time. Blocks stop it, so pillars are cover |
-| **OPEN** | with the shot spent, it is exposed — the only moment it can be hurt |
+| **THE LINE** | a hunter that gets onto your row or column **plants**, and the line lights up |
+| **THE CHARGE** | at the end of that beat it comes down the line — the whole distance at once, because distance is what this game does not respect |
+| **THE FOLD** | fold while it shares your silhouette column and it dies there instead |
 
-**You hurt it by folding while you share its silhouette column, during OPEN.**
-Outside that window the identical input kills *you*: in the plane it is solid,
-so folding into its column is folding into a wall. The strike and the suicide
-are the same button, separated only by timing. That is the fight.
+**The same line is its attack and yours, and whoever acts first wins it.**
+Being lined up is not an opening you wait for; it is a knife-edge you are
+already standing on. And which axis you collapse decides *which* line you can
+win: a hunter locked onto your row is only in your silhouette column when you
+are facing along that row, so the answer to "it is charging me" is often a
+rotation first — which costs you the beat you had. That is the fight. It is
+the game's one question, asked while something is running at you.
 
-### Four designs, and why the first three failed
+**The pillars are their cover, not your weapon.** Rule 4 is unchanged and
+still applies to you: fold from a column that already holds a block and it
+kills you. So a hunter standing in a column with a pillar in it cannot be
+folded on, and blocks stop a charge exactly as they stop you. One piece of
+geometry, both jobs, opposite signs — which is why `Through Glass` is the
+arena it is. Glass casts nothing, so the columns that *look* blocked are
+precisely the ones you can attack from.
+
+### Five designs, and why the first four failed
 
 1. **Turn-based, walk to a marker.** Provably fair — `solve()` could prune hit
    states — but it did not feel like a fight.
-2. **Real-time, walk to a marker.** Better pressure, still an objective wearing
-   a boss costume.
+2. **Real-time, walk to a marker.** Better pressure, still an objective
+   wearing a boss costume. *It is now the trial, where it belongs.*
 3. **Crush it on a static line.** A real attack, but the vulnerability was a
    property of the *floor*, so the fight became manipulating the floor: stand
-   still, wait, fold. Making it avoid the lines only taught it to freeze —
-   which reads as broken AI — and produced a fresh two-button loop.
+   still, wait, fold. Making it avoid the lines only taught it to freeze.
+4. **A gun, and an OPEN beat after each shot.** Fair and machine-checkable,
+   and it read as a duel with a machine that spent most of the fight walking
+   into position. The opening was something you waited for rather than
+   something you made, and one opponent shuffling for an angle cannot be
+   fast. This is the one the owner called "weird", and that is the word for
+   it: correct, and inert.
 
-**The lesson, paid for three times: a vulnerability that does not come out of
-the boss's own behaviour is a condition to farm, not a fight to win.** OPEN is
-a consequence of it shooting, so the only way to get one is to make it shoot,
-which means being somewhere worth shooting at.
+**The lesson, paid for four times: a vulnerability that does not come out of
+the boss's own behaviour is a condition to farm.** Here it *is* its attack —
+the same event, the same square — so there is no opening to wait for and none
+to decline, because declining is what being hit is.
+
+### What the simulator found, which nothing else would have
+
+The fifth design took three passes, and `tools/bosssim.js` rejected the first
+two before a human ever saw them. Each failure is worth keeping because each
+looked fine on paper:
+
+- **Crush them against the pillars** (fold, and anything in any filled column
+  dies). A prettier rule, and it does not work: a pillar's shadow is a whole
+  *line* across the arena, so every approach has to cross one, and a player
+  who never moves collects them as they arrive. The idle policy won all four
+  arenas standing in a corner. Making the kill require *your* column is what
+  put the player back in the fight — the one thing you cannot harvest from a
+  corner is alignment you did not go and get.
+- **Hunters that dodge your fold.** Two ways to get this wrong and both were
+  measured. Weight avoidance heavily and they circle forever rather than
+  cross a line: against a player standing where every approach was covered,
+  both sides simply stopped — design 3's freeze in a new costume, found in
+  one run at three lives, no kills, nobody within reach of anybody. Weight it
+  as a tie-break and they walk into a shadow on the way to a player who never
+  moved. In the end they stopped dodging altogether, because with the lunge
+  the square they want and the square that can kill them are the same square.
+- **Kills that were too cheap.** Anything adjacent to you shares a line with
+  you, so every arrival was a free kill; a perfect player cleared every arena
+  in under five seconds. The charge is what made a line cost something to
+  stand on.
 
 ### Details that are load-bearing
 
-- **It plants to shoot.** While a lock is held it does not walk, so the line
+- **It plants to charge.** While a lock is held it does not walk, so the line
   you are shown is the line that fires — a telegraph that drifts is not a
-  telegraph — and freezing is the tell that a shot is coming.
-- **It only fires down a clear row or column.** An early version fired along
-  whichever axis you were further away on, which meant it shot past you almost
-  every time and a motionless player was never in danger. It also **will not
-  fire into cover**: a blocked shot would hand over the OPEN beat for free,
-  and that window is payment for surviving a bullet, not for owning a wall.
-  Blocked, it keeps walking until it has an angle — so hiding makes it come.
-- **OPEN starts when the bullet is spent, not when it leaves the barrel.**
-  This single ordering killed the last exploit: with the window opening at the
-  muzzle, a motionless player folded the instant it fired and traded one life
-  for one hit point, which against three lives and three hp is exactly enough
-  to win by doing nothing.
-- **`bossNext` scores alignment above distance.** Purely closing made it
-  shuffle diagonally for six seconds looking for an angle, which reads as a
-  wander rather than a hunt.
+  telegraph — and its stillness is the tell before the line even brightens.
+  Stepping off the line breaks the lock; that is the dodge, and folding is
+  the other answer to the same question.
+- **The telegraph is drawn in the volume and does not fold with the world.**
+  The charge happens along that row whichever way you are looking, and the
+  whole tension is that the axis you must fold along to answer it may not be
+  the one you are facing. Swinging the line around with the camera would tell
+  that lie.
+- **`bossNext` scores alignment far above distance.** Purely closing made a
+  hunter shuffle diagonally for six seconds looking for an angle, which reads
+  as a wander rather than a hunt.
+- **Two escalations, because nothing else stops a kite.** `rage` is what the
+  survivors of a fold get for surviving it, so a fold that kills nothing is
+  worse than free; `creep` tightens the whole pack every few seconds whatever
+  you do. Both floor out at `floorStep` so it stays human.
+- **A hit throws the pack back to its spawns and does not move you.** The
+  gunfight sent the player home, which cost you the position you had spent
+  twenty seconds building — a punishment for being hit *and* for having
+  played well.
+- **No two hunters may spawn sharing a silhouette column.** They respawn
+  together after every hit, so a pair that shares one there was a standing
+  gift, renewed. `bossArena()` checks it; the simulator found it by winning a
+  fight without moving.
+- **On a clock, the `GO 2D` button is re-judged every frame** in the render
+  loop rather than in `syncHud`. It is the one place a button class is not
+  owned by `syncHud`, and it has to be: hunters move while you do not, so a
+  cue computed at your last keypress describes a board that has moved on.
 - Scored on lives, three stars for three intact. `progress[name]` holds lives
-  for a boss and a move count for everything else — opposite senses in one
-  slot — so reads go through `starsForRecord()`, writes through
-  `betterRecord()`.
+  for a boss or a trial and a move count for everything else — opposite
+  senses in one slot — so reads go through `starsForRecord()`, writes through
+  `betterRecord()`, and both ask `onTheClock()`.
+- **Undo does not touch a fight at all.** It cannot: there is no tick to step
+  back to, and rewinding a kill while they kept walking would produce a state
+  that never happened.
 
 ### Verification
 
 `solve()` knows nothing about bosses and must not: none of this is a function
 of a move sequence. Two checks stand in, and both have caught real errors:
 
-- **`bossArena()`** (`js/03-rules.js`, shared by `verify.js` and `bossgen.js`)
-  — the stage works: the boss can reach you, there is cover to break a firing
-  line with, and not so much that the arena is a maze. It rejected two arenas
-  where I had spawned the boss **inside a pillar**.
-- **`tools/bosssim.js`**, run by `verify.js` — **it plays each fight twice**.
-  An IDLE policy that never moves must **lose**; a DUELLIST that breaks the
-  line and folds on the opening must **win**. Neither is a good player; they
-  are a floor and a ceiling. This exists because a playtester broke two
-  designs in about a minute each while every static property still passed —
-  none of them was about *play*.
+- **`bossArena()`** (`js/03-rules.js`) — the stage works: every hunter can
+  reach you, none spawns inside a block or in another's column, and enough of
+  the floor is under a pillar's shadow to make position matter without
+  leaving nowhere to fight from. It rejected two arenas with a hunter inside
+  a pillar and two more where new pillars had swallowed the spawns.
+- **`tools/bosssim.js`**, run by `verify.js` — **it plays each fight twice.**
+  An IDLE policy that never moves and takes every free kill must **lose**; a
+  DUELLIST that lines up, turns to re-aim and folds must **win**. Neither is
+  a good player — the duellist never *herds*, which is the actual skill — so
+  a fight it wins is winnable by doing considerably less than the design
+  asks. Everything in the section above came out of it.
+
+**`tools/bossgen.js` is gone.** It searched for arenas for the walk-to-a-
+marker boss, and its authored configs emitted a boss format the game no
+longer understands. The four arenas are authored in `js/02-levels.js` and
+checked by the two functions above.
 
 ---
 
@@ -336,8 +403,7 @@ exclusive — every gesture also has a key and, unless hidden, a button:
 - **Verify claims with the solver rather than asserting them.** Every level in
   the file has been machine-checked. `node tools/verify.js` — which now covers
   bosses too, where "solved" means a run exists that is never hit.
-  `node tools/curve.js` dumps the difficulty curve; `node tools/bossgen.js`
-  searches for boss arenas.
+  `node tools/curve.js` dumps the difficulty curve.
 - **`resolveStep()` is shared by the game and the solver**, so they can never
   disagree. Keep it that way. Its optional `occHere` argument checks headroom in
   *both* columns; without it you can slide diagonally past a ceiling.
@@ -536,31 +602,38 @@ Highest-leverage dials in `synthesize()`: the depth-choice heuristic (currently
   `HIDDEN`, every hint cue points at an invisible button. Both want the same
   fix — `cue()` should fall back to a `flash()` when its target is not on screen.
 - **Two-finger tap only rotates right.** There is no left-rotate gesture.
-- **Difficulty tiers say "brutal" for every boss** — `statsFor` weights folds
-  and path length, and a 20-move three-core fight trips both. Bosses are scored
-  on lives and never ask for a par, so this only shows up in `tools/curve.js`.
-- **Boss fairness is no longer proved, only sampled.** `bossSafety()` says you
-  are never cornered and `bossArena()` says the stage works; neither says the
-  fight is winnable at a given reaction speed, or that `step` and `stun` are
-  tuned. That is a playtesting question and nothing else can answer it.
+- **Boss fairness is not proved, only sampled.** `bossArena()` says the stage
+  works and `bosssim` says the fight sits between "idle loses" and "a
+  competent policy wins"; neither says it is winnable at a *human* reaction
+  speed, or that `step`, `aim` and `creep` are tuned. That is a playtesting
+  question and nothing else can answer it.
+- **`bosssim`'s duellist is not a good player.** It never herds — it does not
+  pick a square in order to put a hunter on a line — and it reacts every
+  200ms with perfect knowledge. It cleared the four arenas in 3 to 33
+  seconds, which says the fights are winnable, not that they are the right
+  length. A human will be slower at everything except knowing what to do.
 - **The boss is the one real-time thing in a turn-based game.** It works, but
   it means the game no longer plays entirely at your own pace, and an
   accessibility option to slow `period` is the obvious missing setting.
-- **Boss pacing is guesswork.** `step` 950→780ms, `aim` 1000→750ms, `open`
-  1500→1100ms. `bosssim` proves each fight sits between "idle loses" and
-  "active play wins"; it says nothing about whether the numbers are *fun*, or
-  whether a human can line up and fold inside the OPEN window.
-- **The opening approach is slow** — the boss spends a few seconds walking
-  into its first firing line. Mid-fight it re-engages quickly, but the first
-  few seconds of an arena are quiet.
-- **`bosssim`'s herder is not a good player.** It looks one boss-step ahead
-  and never plans. A real exploit subtler than standing still would slip
-  past it exactly the way the last one slipped past the static checks.
+- **Boss pacing is guesswork.** `step` 640→520ms, `aim` 780→620ms, three
+  hunters rising to four. The simulator brackets each fight; it says nothing
+  about whether the numbers are *fun*, or whether a human can read a line,
+  decide the axis, rotate and fold inside one beat.
+- **The lunge is instant and unblockable once the beat ends.** It is
+  telegraphed for `aim` milliseconds and breaking the line cancels it, so it
+  is fair — but there is no partial answer, no grazing hit, and a player who
+  misreads which axis to fold along simply takes it. Whether that reads as
+  tight or as unfair is the first thing to watch in playtesting.
 
 ---
 
 ## Agreed next steps
 
+0. **Playtest the new boss, and the trials.** Both are new and both are
+   real-time, which is the one thing no tool here can judge. The specific
+   questions: can a human read which axis to fold along while a line is
+   lit, is `aim` long enough to rotate first, and does the trial's grace beat
+   after a hit feel like mercy or like being let off?
 1. **Playtest the sections.** The reorder was driven by `statsFor()` and the
    sections now climb, but a machine score is not a feel. The two soft spots to
    watch: the tutorial → section I handoff (16, still the gentlest scored level

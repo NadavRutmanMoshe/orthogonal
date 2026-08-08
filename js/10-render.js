@@ -8,7 +8,7 @@
    THREE
    ============================================================ */
 var scene,camera,renderer,meshes={},playerMesh,goalMesh,gridLines,groundPlane,footMesh;
-var sweepMesh,sweepEdge,bossMesh,shotMeshes=[];
+var huntMeshes=[],lineMeshes=[];
 var trialSlab,trialEdge;
 var colPeril=new THREE.Color(0x8f3b52);
 var perilSet=null,perilCleanup=[],perilPulse=0;
@@ -66,24 +66,10 @@ function initGL(){
   goalGhost.renderOrder=999;
   scene.add(goalGhost);
 
-  /* The sweep: one translucent slab covering the slice that is about to
-     become lethal. Drawn as a single box rather than one marker per cell
-     because the attack *is* a slice - showing it whole is both cheaper and
-     truer to what the rule actually says. It brightens as the beat lands. */
-  sweepMesh=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),
-    new THREE.MeshBasicMaterial({color:0xff4d5e,transparent:true,
-      opacity:.16,depthWrite:false}));
-  sweepMesh.visible=false;sweepMesh.renderOrder=900;
-  scene.add(sweepMesh);
-  sweepEdge=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,1)),
-    new THREE.LineBasicMaterial({color:0xff6b7a,transparent:true,opacity:.5}));
-  sweepEdge.visible=false;scene.add(sweepEdge);
-
   /* A trial's sweep: one translucent slab over the slice that is about to
      become lethal. Drawn as a single box rather than a marker per cell
      because the attack *is* a slice - showing it whole is cheaper and truer
-     to what the rule says. It has to be its own mesh: the pair above now
-     draws the boss's firing line, and a level never has both. */
+     to what the rule says. */
   trialSlab=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),
     new THREE.MeshBasicMaterial({color:0xff4d5e,transparent:true,
       opacity:.12,depthWrite:false}));
@@ -93,22 +79,6 @@ function initGL(){
     new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,1)),
     new THREE.LineBasicMaterial({color:0xff6b7a,transparent:true,opacity:.4}));
   trialEdge.visible=false;scene.add(trialEdge);
-
-  /* The opponent. Angular and dark against the blocks so it never reads as
-     terrain, with a bright core that dims as it loses hits - the health bar
-     you actually look at is the thing itself. */
-  bossMesh=new THREE.Group();
-  var bShell=new THREE.Mesh(new THREE.OctahedronGeometry(.52),
-    new THREE.MeshLambertMaterial({color:0x24141c}));
-  var bCore=new THREE.Mesh(new THREE.OctahedronGeometry(.24),
-    new THREE.MeshBasicMaterial({color:0xff4d5e}));
-  var bCage=new THREE.LineSegments(
-    new THREE.EdgesGeometry(new THREE.OctahedronGeometry(.56)),
-    new THREE.LineBasicMaterial({color:0xff6b7a,transparent:true,opacity:.85}));
-  bossMesh.add(bShell);bossMesh.add(bCore);bossMesh.add(bCage);
-  bossMesh.userData.core=bCore;bossMesh.userData.cage=bCage;
-  bossMesh.visible=false;
-  scene.add(bossMesh);
 
   groundPlane=new THREE.Mesh(new THREE.PlaneGeometry(200,200),
     new THREE.MeshBasicMaterial({visible:false}));
@@ -237,79 +207,98 @@ function recomputeBounds(){
   centerT.set((a[0]+b[0])/2,(a[1]+b[1])/2+.5,(a[2]+b[2])/2);
   viewSizeT=Math.max(b[0]-a[0],b[2]-a[2],b[1]-a[1])*.72+3.4;
 }
-/* The boss folds like the world does: flattened it slides onto its silhouette
-   column, which is what makes "share its column to strike" legible rather
-   than a rule you have to be told. */
-function drawBoss(rx,rz,tdvx,tdvz){
-  if(!bossMesh)return;
-  if(!B||!bossAt||app!=="play"){bossMesh.visible=false;return;}
-  bossMesh.visible=true;
-  var bu=bossAt.x*rx+bossAt.z*rz, bd=bossAt.x*tdvx+bossAt.z*tdvz;
-  var bx=bu*rx+bd*.012*tdvx, bz=bu*rz+bd*.012*tdvz;
-  tmp.set(bossAt.x+(bx-bossAt.x)*flatT, bossAt.y, bossAt.z+(bz-bossAt.z)*flatT);
-  bossMesh.position.lerp(tmp,.35);
-  var reeling=bossStunMs>0;
-  bossMesh.rotation.y+=reeling?.005:(bossPhase==="aim"&&bossAim?.05:.02);
-  /* Three states, all readable at a glance because you act on them inside a
-     second: reeling (dim), open (green - it just spent its shot and can be
-     hit), winding up (red, brightening as the lock completes). Lined up AND
-     open is brighter still, because that is the instant the fold is a strike
-     rather than a way to die. */
-  var open=(typeof bossOpen==="function")&&bossOpen();
-  var lined=open&&(typeof bossAligned==="function")&&bossAligned()&&!flat;
-  bossMesh.userData.core.material.color.setHex(
-    reeling?0x6a3540:(open?0x35c2a5:0xff4d5e));
-  bossMesh.userData.cage.material.color.setHex(open?0x35c2a5:0xff6b7a);
-  bossMesh.userData.cage.material.opacity=reeling?.3:
-    (lined?(.85+perilPulse*.15):open?.6:(.45+bossFlash*.5));
-  bossMesh.userData.core.scale.setScalar(lined?1.4:1);
-  bossMesh.scale.setScalar((1+bossHitFlash*.35)*(reeling?.86:1));
-}
-/* The telegraph and the shots.
+/* The pack.
 
-   The aim line is drawn from the boss along the axis it has locked, brightening
-   as the wind-up completes, so "where is it about to shoot" is answerable at a
-   glance and the dodge is always sideways. Projectiles are their own small
-   meshes, pooled rather than rebuilt, and they fold with the world like
-   everything else - flattened, a shot at another depth is suddenly in your
-   column, which is the risk folding buys you. */
-function drawSweep(rx,rz,tdvx,tdvz){
-  if(!sweepMesh)return;
-  if(!B||!bossAt||app!=="play"||bossPhase!=="aim"||bossStunMs>0||!bossAim){
-    sweepMesh.visible=sweepEdge.visible=false;
-  } else {
-    var reach=18;
-    var mx=bossAt.x+bossAim.dx*reach/2, mz=bossAt.z+bossAim.dz*reach/2;
-    sweepMesh.scale.set(bossAim.dx?reach:.5, .5, bossAim.dz?reach:.5);
-    sweepMesh.position.set(mx,bossAt.y,mz);
-    sweepEdge.scale.copy(sweepMesh.scale);
-    sweepEdge.position.copy(sweepMesh.position);
-    var t=Math.min(1,bossPhaseMs/Math.max(1,B.aim));
-    sweepMesh.material.opacity=.10+t*t*.36;
-    sweepEdge.material.opacity=.25+t*.6;
-    sweepMesh.visible=sweepEdge.visible=true;
-  }
-  drawShots(rx,rz,tdvx,tdvz);
+   One mesh per hunter, built on demand and pooled, each folding with the
+   world exactly like a block does - which is what makes the attack legible
+   without a word of explanation: flatten, and you can see them slide into
+   the columns that are about to kill them.
+
+   Two states, and you act on them inside a second, so they are colour rather
+   than shape. Red is a hunter that is simply hunting you. Green is a hunter
+   standing in a column something else already fills, which means the fold
+   you are one button from will crush it. The player's own peril highlight
+   uses the same red the blocks do, so the board reads as one sentence: green
+   is what you do to them, red is what the world does to you. */
+function huntMesh(){
+  var g=new THREE.Group();
+  var shell=new THREE.Mesh(new THREE.OctahedronGeometry(.46),
+    new THREE.MeshLambertMaterial({color:0x24141c}));
+  var core=new THREE.Mesh(new THREE.OctahedronGeometry(.22),
+    new THREE.MeshBasicMaterial({color:0xff4d5e}));
+  var cage=new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.OctahedronGeometry(.5)),
+    new THREE.LineBasicMaterial({color:0xff6b7a,transparent:true,opacity:.85}));
+  g.add(shell);g.add(core);g.add(cage);
+  g.userData.core=core;g.userData.cage=cage;
+  scene.add(g);
+  return g;
 }
-function drawShots(rx,rz,tdvx,tdvz){
-  var want=(B&&app==="play")?shots.length:0;
-  while(shotMeshes.length<want){
-    var m=new THREE.Mesh(new THREE.OctahedronGeometry(.2),
-      new THREE.MeshBasicMaterial({color:0xff4d5e}));
-    m.add(new THREE.Mesh(new THREE.OctahedronGeometry(.32),
-      new THREE.MeshBasicMaterial({color:0xff8a96,transparent:true,opacity:.35})));
-    scene.add(m);shotMeshes.push(m);
+/* The telegraph. A charge you cannot see coming is not a fight, so a planted
+   hunter draws the line it is about to come down, brightening as the beat
+   closes. It is drawn in the volume rather than folded with the world,
+   because it is a fact about the world: the charge happens along that row
+   whichever way you are looking, and the whole tension of the fight is that
+   the axis you must *fold* along to answer it may not be the one you are
+   facing. Showing it swing around with the camera would tell that lie. */
+function lineMesh(){
+  var g=new THREE.Mesh(new THREE.BoxGeometry(1,.06,.06),
+    new THREE.MeshBasicMaterial({color:0xff4d5e,transparent:true,opacity:.5,
+      depthWrite:false}));
+  g.renderOrder=880;
+  scene.add(g);
+  return g;
+}
+function drawLines(){
+  var want=0;
+  if(B&&app==="play")for(var q=0;q<hunters.length;q++)if(hunters[q].lock>0)want++;
+  while(lineMeshes.length<want)lineMeshes.push(lineMesh());
+  var n=0;
+  for(var i=0;i<hunters.length&&B&&app==="play";i++){
+    var h=hunters[i];
+    if(h.lock<=0||!h.line)continue;
+    var m=lineMeshes[n++];
+    var tx=flat?h.x:player.x, tz=flat?h.z:player.z;
+    if(flat){ // a flat player is the whole column, so the line runs its length
+      tx=h.x+(h.line.dx||0)*14;tz=h.z+(h.line.dz||0)*14;
+    }
+    var mx=(h.x+tx)/2, mz=(h.z+tz)/2;
+    var lx=Math.abs(tx-h.x)+.25, lz=Math.abs(tz-h.z)+.25;
+    m.scale.set(lx,1,lz);
+    m.position.set(mx,h.y-.2,mz);
+    // full bright as the beat closes: this is the last thing you see before
+    // it is standing on you
+    var t=1-Math.min(1,h.lock/Math.max(1,B.aim));
+    m.material.opacity=.28+t*t*.62;
+    m.material.color.setHex(h.doom?0x35c2a5:0xff4d5e);
+    m.visible=true;
   }
-  for(var i=0;i<shotMeshes.length;i++){
-    var sm=shotMeshes[i];
-    if(i>=want){sm.visible=false;continue;}
-    var sh=shots[i];
-    var su=sh.x*rx+sh.z*rz, sd=sh.x*tdvx+sh.z*tdvz;
-    var px=su*rx+sd*.012*tdvx, pz=su*rz+sd*.012*tdvz;
-    sm.position.set(sh.x+(px-sh.x)*flatT, sh.y, sh.z+(pz-sh.z)*flatT);
-    sm.rotation.y+=.25;sm.rotation.x+=.18;
-    sm.visible=true;
+  for(var k=n;k<lineMeshes.length;k++)lineMeshes[k].visible=false;
+}
+function drawBoss(rx,rz,tdvx,tdvz){
+  var want=(B&&app==="play")?hunters.length:0;
+  while(huntMeshes.length<want)huntMeshes.push(huntMesh());
+  for(var i=0;i<huntMeshes.length;i++){
+    var m=huntMeshes[i];
+    if(i>=want){m.visible=false;continue;}
+    var h=hunters[i];
+    m.visible=true;
+    var hu=h.x*rx+h.z*rz, hd=h.x*tdvx+h.z*tdvz;
+    var px=hu*rx+hd*.012*tdvx, pz=hu*rz+hd*.012*tdvz;
+    tmp.set(h.x+(px-h.x)*flatT, h.y, h.z+(pz-h.z)*flatT);
+    // Snapped rather than eased when it is a long way off: a hunter thrown
+    // back to its spawn should arrive there, not glide across the arena.
+    m.position.lerp(tmp, m.position.distanceTo(tmp)>2.5?1:.35);
+    // Planted, so it stops turning: the stillness is the tell, before the
+    // line has even brightened.
+    m.rotation.y+=h.lock>0?.004:(h.doom?.09:.035);
+    m.userData.core.material.color.setHex(h.doom?0x35c2a5:0xff4d5e);
+    m.userData.cage.material.color.setHex(h.doom?0x35c2a5:0xff6b7a);
+    m.userData.cage.material.opacity=h.doom?(.7+perilPulse*.3):(.5+bossFlash*.4);
+    m.userData.core.scale.setScalar(h.doom?1.35:1);
+    m.scale.setScalar((1+bossHitFlash*.3)*(h.doom?1.06:(h.lock>0?1.12:1)));
   }
+  drawLines();
 }
 /* The charging slice.
 
@@ -353,8 +342,14 @@ function drawTrial(rx,rz){
   trialSlab.position.set(px,py,pz);
   trialEdge.scale.copy(trialSlab.scale);
   trialEdge.position.copy(trialSlab.position);
-  trialSlab.material.opacity=live?(.40+trialFlash*.34):(.07+ph*ph*.21);
-  trialEdge.material.opacity=live?(.75+trialFlash*.25):(.20+ph*.35);
+  /* The ramp starts high, not at nothing. It used to open each beat at .07,
+     which against the void is invisible - so the slice appeared to arrive
+     from nowhere a beat and a half later, and a player who had just been hit
+     read the whole arena as having switched off. Being *told* early is the
+     entire bargain a telegraph makes; the ramp is for how long you have
+     left, not for whether there is a slice at all. */
+  trialSlab.material.opacity=live?(.62+trialFlash*.3):(.15+ph*ph*.3);
+  trialEdge.material.opacity=live?1:(.5+ph*.4);
   trialSlab.visible=trialEdge.visible=true;
 }
 function buildGrid(){
@@ -554,6 +549,9 @@ function animate(now){
     playerMesh.scale.set(1+squash*.55,1-squash,1+squash*.55);
   }
   playerMesh.rotation.y=a;
+  // Blinking through the beat of grace after a trial hit. Invulnerability
+  // you cannot see is invulnerability you will not use.
+  playerMesh.visible=!(trialGrace>0&&Math.floor(Date.now()/85)%2===0);
   if(footMesh){
     footMesh.visible=!dying;
     footMesh.position.set(playerMesh.position.x,
@@ -592,15 +590,21 @@ function animate(now){
   var timed=B||TR;
   goalMesh.material.color.set(timed?0xff8a3c:(sealed?0x4a5a6a:0x35c2a5));
   goalMesh.scale.setScalar(sealed?.8:1+Math.sin(Date.now()*.004)*(timed?.14:.06));
-  drawSweep(rx,rz,tdvx,tdvz);
   drawBoss(rx,rz,tdvx,tdvz);
   drawTrial(rx,rz);
-  // Whether folding is fatal in a trial is a question about the clock, not
-  // about geometry, so the button has to be re-judged every frame rather than
-  // only when a move happens. syncHud still owns the class on every other
-  // level; this only ever runs where TR is set.
-  if(TR&&app==="play"&&$("bFlat"))
-    $("bFlat").classList.toggle("peril",!!peril||trialFoldPeril());
+  /* On a clock, what the GO 2D button means changes without you touching
+     anything - a hunter walks into your column, a slice starts charging -
+     so it has to be re-judged every frame rather than only when a move
+     happens. syncHud still owns the class everywhere else; this runs only
+     where there is a clock to keep up with, and it was a real bug before it
+     existed: the green "fold now" cue was computed at your last keypress and
+     was therefore always describing a board that had moved on. */
+  if((TR||B)&&app==="play"&&$("bFlat")){
+    var pk=!!peril||(TR?trialFoldPeril():false);
+    var hit=(typeof bossCrushable==="function")&&bossCrushable();
+    $("bFlat").classList.toggle("peril",pk);
+    $("bFlat").classList.toggle("strike",!!hit&&!pk);
+  }
 
   if(bossFlash>0)bossFlash=Math.max(0,bossFlash-.055);
   bossFrame(dtMs);trialFrame(dtMs);
