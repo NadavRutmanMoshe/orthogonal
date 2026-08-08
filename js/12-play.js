@@ -36,63 +36,102 @@ function die(kind){
    ============================================================ */
 function bossReset(){
   bossHp=B?B.hp:0;bossMs=0;bossFlash=0;bossStruckBeat=-1;
+  bossMoveMs=0;bossStunMs=0;bossHitFlash=0;
+  bossAt=B&&B.at?{x:B.at[0],y:B.at[1],z:B.at[2]}:null;
   lives=B?BOSS_LIVES:0;
 }
-/* The boss runs off the animation loop, not off your moves.
+/* The fight, driven off the animation loop rather than off your moves.
 
-   Paused whenever the fight is not actually in front of you - a panel open,
-   the win card up, mid-death, the intro still showing - because a clock that
-   runs while you read the menu is not difficulty, it is a bug you cannot see.
-   dt is clamped for the same reason: a backgrounded tab hands back one huge
-   frame on return, and without the clamp that single frame skips whole beats
-   and kills you for having switched apps. */
+   Paused whenever it is not actually in front of you - panel open, win card
+   up, mid-death, intro showing - because a clock that runs while you read the
+   menu is not difficulty. dt is clamped for the same reason: a backgrounded
+   tab hands back one enormous frame on return, and without the clamp that
+   single frame would march the boss across the arena and kill you for having
+   switched apps. */
 function bossFrame(dt){
   if(!B||app!=="play")return;
   if(dying||panelOpen()||!$("intro").classList.contains("gone")||
      $("won").classList.contains("on"))return;
   dt=Math.min(dt,90);
-  var was=B.live(bossMs);
-  bossMs+=dt;
-  var now=B.live(bossMs);
-  var beat=Math.floor(bossMs/B.period);
-  if(now&&!was)bossFlash=1;
-  if(!now)return;
-  if(bossStruckBeat===beat)return;        // this sweep already took its due
-  var sw=B.beatAt(bossMs);
-  var hit=flat ? B.hits(sw,view,"2",flatPos.u,flatPos.y,0)
-               : B.hits(sw,view,"3",player.x,player.y,player.z);
-  if(hit){bossStruckBeat=beat;bossHurt();}
+  if(bossHitFlash>0)bossHitFlash=Math.max(0,bossHitFlash-dt/380);
+
+  // --- the sweep, unchanged: charges in plain sight, lands on the last ms
+  if(B.beats.length){
+    var was=B.live(bossMs);
+    bossMs+=dt;
+    var now=B.live(bossMs), beat=Math.floor(bossMs/B.period);
+    if(now&&!was)bossFlash=1;
+    if(now&&bossStruckBeat!==beat){
+      var sw=B.beatAt(bossMs);
+      var swHit=flat ? B.hits(sw,view,"2",flatPos.u,flatPos.y,0)
+                     : B.hits(sw,view,"3",player.x,player.y,player.z);
+      if(swHit){bossStruckBeat=beat;bossHurt("the slice caught you");return;}
+    }
+  }
+
+  // --- the hunt
+  if(!bossAt)return;
+  if(bossStunMs>0){bossStunMs-=dt;return;}   // reeling: it neither moves nor bites
+  bossMoveMs+=dt;
+  if(bossMoveMs>=B.step){
+    bossMoveMs=0;
+    // In the plane it chases your column, because that is all of you there is
+    // to chase; in the volume it comes for the cell you are standing in.
+    var goal=flat?planeGoalFor():player;
+    var nx=bossNext(R,bossAt,goal,liveCrates());
+    if(nx)bossAt=nx;
+  }
+  if(bossTouching())bossHurt("it reached you");
 }
-// Standing on the live core is still a move-driven act: you have to arrive
-// there, in the volume, which is the one part of the fight that stayed a
-// puzzle rather than becoming a reflex.
-function bossCheckStrike(){
-  if(!B||dying||flat)return;
-  var core=B.coreAt(bossHp);
-  if(core&&player.x===core[0]&&player.y===core[1]&&player.z===core[2])
-    bossStrike();
+// Where the boss aims while you are flat. It only knows your silhouette
+// column, so it walks to the nearest square that shares it - which is why
+// folding buys distance without ever quite losing it.
+function planeGoalFor(){
+  var best=null, bd=1e9;
+  for(var i=0;i<L.blocks.length;i++){
+    var b=L.blocks[i], y=b[1]+1;
+    if(R.uOf(view,b[0],b[2])!==flatPos.u)continue;
+    var d=Math.abs(b[0]-bossAt.x)+Math.abs(b[2]-bossAt.z);
+    if(d<bd){bd=d;best={x:b[0],y:y,z:b[2]};}
+  }
+  return best||player;
 }
-function bossHurt(){
+function bossTouching(){
+  if(!bossAt)return false;
+  if(flat)return R.uOf(view,bossAt.x,bossAt.z)===flatPos.u&&bossAt.y===flatPos.y;
+  return bossAt.x===player.x&&bossAt.y===player.y&&bossAt.z===player.z;
+}
+/* A crate has been shoved into it. This is the only way to do damage: you
+   cannot shove in the plane, so every hit is landed in the volume, which is
+   also the only place it can reach you. Knocked back so the crate has
+   somewhere to land and you are not instantly touching it again. */
+function bossTakeCrate(dx,dz){
+  bossHp--;
+  bossStunMs=B.stun;bossHitFlash=1;
+  SFX.strike();shakeT=1;
+  var back=bossNext(R,bossAt,{x:bossAt.x+dx*3,y:bossAt.y,z:bossAt.z+dz*3},liveCrates());
+  if(back)bossAt=back;
+  if(bossHp<=0){buildGrid();win();return true;}
+  flash(bossHp===1?"one hit left":bossHp+" hits left");
+  buildGrid();syncHud();
+  return true;
+}
+function bossHurt(why){
   lives--;
   SFX.die();shakeT=1;
   var bar=$("bossBar");
   if(bar){bar.classList.remove("hurt");void bar.offsetWidth;bar.classList.add("hurt");}
   if(lives<=0){die("boss");return;}
-  flash(lives+" "+(lives===1?"life":"lives")+" left");
-  // Back to the start, but the fight keeps the cores you already broke, and
-  // the clock restarts on a fresh charge so you are not respawned into a
-  // sweep that is already halfway to landing.
+  flash(why+" \u00b7 "+lives+" "+(lives===1?"life":"lives")+" left");
+  // Both of you go back to your corners. Its damage stands - a late mistake
+  // should not cost you the whole fight - and the clock restarts on a fresh
+  // charge so you are not respawned into a sweep already about to land.
   moveHistory=[];
   initDynamic();buildDynamic();
   player={x:L.start[0],y:L.start[1],z:L.start[2]};
-  flat=false;flatTarget=0;flatT=0;bossMs=0;bossStruckBeat=-1;
-  buildGrid();syncHud();
-}
-function bossStrike(){
-  bossHp--;
-  SFX.strike();shakeT=1;
-  if(bossHp<=0){buildGrid();win();return;}
-  flash(bossHp===1?"one core left":bossHp+" cores left");
+  bossAt=B.at?{x:B.at[0],y:B.at[1],z:B.at[2]}:null;
+  flat=false;flatTarget=0;flatT=0;
+  bossMs=0;bossStruckBeat=-1;bossMoveMs=0;bossStunMs=B.stun;
   buildGrid();syncHud();
 }
 
@@ -143,13 +182,17 @@ function move3(dx,dz,dir){
                      function(h){return R.solid(here.x,h,here.z,cr);});
   if(ny===null){flash("blocked");SFX.bump();return;}
   pushHistory();moveCount++;
-  if(moved){gCrates[moved.i]=[moved.to.x,moved.to.y,moved.to.z];SFX.shove();}
+  if(moved){
+    gCrates[moved.i]=[moved.to.x,moved.to.y,moved.to.z];SFX.shove();
+    // did that crate land on the boss?
+    if(B&&bossAt&&moved.to.x===bossAt.x&&moved.to.y===bossAt.y&&
+       moved.to.z===bossAt.z&&bossTakeCrate(dx,dz))return;
+  }
   if(ny===FELL){player.x=nx;player.z=nz;die("fall");return;}
   player.x=nx;player.z=nz;player.y=ny;
   if(R.deadly3(nx,ny,nz)){die("spike");return;}
   if(!moved)SFX.step();
   if(tutC){tutC.m3++;if(dir)tutC.d[dir]++;if(ny>oldY)tutC.climb++;}
-  bossCheckStrike();
   syncHud();saveSession();checkWin();
 }
 function move2(du){
@@ -166,7 +209,6 @@ function move2(du){
   if(R.deadly2(view,nu,ny)){die("spike");return;}
   SFX.step();collectHere();
   if(tutC)tutC.m2++;
-  bossCheckStrike();
   syncHud();saveSession();
 }
 /* What would folding from right here do to you, and which blocks are to blame?
@@ -220,7 +262,6 @@ function doFlatten(){
   flatPos={u:pu,y:player.y};
   flat=true;flatTarget=1;SFX.fold();collectHere();
   if(tutC)tutC.flat++;
-  bossCheckStrike();
   syncHud();saveSession();
   // Something else already occupies that square in the plane. Let the fold
   // play out, then close on the player.
@@ -238,7 +279,6 @@ function doUnflatten(){
   flat=false;flatTarget=0;SFX.unfold();
   if(tutC)tutC.unflat++;
   if(R.deadly3(player.x,player.y,player.z)){die("spike");return;}
-  bossCheckStrike();
   syncHud();saveSession();
   checkWin();
 }
@@ -258,8 +298,8 @@ function keysLeft(){
   return n;
 }
 function checkWin(){
-  // A boss carries a goal only so the marker has somewhere to draw; the fight
-  // ends when the last core is struck, in bossStrike(), not by arriving.
+  // A boss has no goal square at all: the fight ends when its last hit point
+  // goes, in bossTakeCrate(), never by arriving somewhere.
   if(B)return;
   if(player.x!==L.goal[0]||player.y!==L.goal[1]||player.z!==L.goal[2])return;
   if(keysLeft()){flash("still sealed \u2014 "+keysLeft()+" to collect");SFX.bump();return;}

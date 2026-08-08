@@ -37,13 +37,15 @@ var muted=false;
 // Boss fights. B is null on every ordinary level and every check below is
 // guarded on it, so a level without a boss runs the code it always ran.
 var B=null, bossHp=0, bossMs=0, lives=0, bossFlash=0, bossStruckBeat=-1;
+var bossAt=null, bossMoveMs=0, bossStunMs=0, bossHitFlash=0;
 var BOSS_LIVES=3;
 
 function snapState(){
   return {x:player.x,y:player.y,z:player.z,flat:flat,
           fu:flatPos.u,fy:flatPos.y,view:view,ang:viewAngleTarget,
           cr:gCrates.map(function(c){return c.slice();}),keys:gKeys,
-          hp:bossHp,lives:lives};
+          hp:bossHp,lives:lives,
+          bat:bossAt?{x:bossAt.x,y:bossAt.y,z:bossAt.z}:null};
 }
 function pushHistory(){
   moveHistory.push(snapState());
@@ -61,6 +63,7 @@ function undoMove(){
   // and cannot be rewound - and never hands back a spent life. Undo is for
   // rethinking a move, not for erasing a hit.
   bossHp=st.hp;
+  if(st.bat)bossAt={x:st.bat.x,y:st.bat.y,z:st.bat.z};
   flatTarget=flat?1:0;
   moveCount=Math.max(0,moveCount-1);
   buildGrid();syncHud();

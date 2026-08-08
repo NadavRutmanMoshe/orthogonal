@@ -61,51 +61,127 @@ function parseK(k){var p=k.split(",");return [+p[0],+p[1],+p[2]];}
 /* ============================================================
    BOSSES
 
-   A boss runs on the wall clock. The attack is a lethal plane that sweeps one
-   slice: it charges in plain sight for most of the beat, then goes live for
-   the last `fire` milliseconds, and if you are standing in it when it lands
-   you lose a life. Dodging is a real-time act - you have the charge window to
-   get off the slice, and nothing waits for you to decide.
+   A boss is an opponent, not an objective. It hunts you across the arena in
+   real time, and you hurt it by shoving a crate into it - the game's own
+   verb, aimed. Standing somewhere is not an attack; the first version of
+   this asked you to walk onto a marker three times, which is a puzzle
+   objective wearing a boss costume.
 
-   This is the second design. The first was turn-based, where every step
-   advanced the boss exactly one tick, and it had one large advantage: solve()
-   could prove a run existed that was never hit, so "solvable" and "fair" were
-   the same question. That is gone now and it is a real cost, recorded here so
-   nobody re-discovers it the hard way. What replaces it is a weaker but still
-   machine-checkable property - see `bossSafety()` below - plus playtesting.
+   The fight has a rhythm, and the rhythm is the fold:
 
-   What survives from the first design, and the reason the boss is worth
-   having at all, is the fold. A sweep down the axis you are *looking along*
-   cannot be dodged in the plane: flattened, you are the projection of every
-   depth at once, so you stand in every slice of that axis simultaneously.
-   The same sweep is one step to dodge in the volume. Rotating the camera
-   re-labels which sweeps are survivable. So the fight asks the question the
-   whole game asks: which axis are you collapsing, and is this the moment?
+     - In the VOLUME you can shove, so the volume is the only place you can
+       hurt it. It is also where it can reach you.
+     - In the PLANE you cannot shove, so you cannot win there - but the whole
+       silhouette is one corridor, so you cross the arena in a couple of moves
+       and it cannot lay a hand on you off your own column.
+
+   So folding is retreat and unfolding is commitment, which is the same
+   decision the puzzles ask, made against something that is moving.
+
+   On top of that it sweeps: a lethal plane charges in plain sight and lands
+   on the last `fire` ms of each beat. A sweep down the axis you are *looking
+   along* cannot be dodged in the plane at all - flattened you are the
+   projection of every depth at once - so retreat has a cost and the axis you
+   picked decides what it is.
+
+   The turn-based first draft could be proved fair by search: solve() pruned
+   hit states, so "solvable" and "fair" were one question. Real time gave that
+   up on purpose. bossSafety() below is the weaker thing that replaced it.
    ============================================================ */
 function makeBoss(level){
   if(!level.boss)return null;
   var b=level.boss;
-  var beats=b.beats, period=b.period||2200, fire=b.fire||280, hp=b.cores.length;
+  var beats=b.beats||[], period=b.period||2600, fire=b.fire||300;
   return {
-    hp:hp, cores:b.cores, period:period, fire:fire, beats:beats,
-    cycle:period*beats.length,
-    // cores are consumed in order, so the fight moves you around the arena
-    coreAt:function(hpLeft){return b.cores[hp-hpLeft];},
-    beatAt:function(ms){return beats[Math.floor(ms/period)%beats.length];},
-    phase:function(ms){return (ms%period)/period;},          // 0..1 through it
-    live:function(ms){return (ms%period)>=period-fire;},     // lethal right now
-    /* Does sweep `sw` catch someone at this position?
-       In the volume, a,c are x,z. In the plane, a is u and c is ignored -
-       there is no depth to be at. */
+    hp:b.hp||3, at:b.at, period:period, fire:fire, beats:beats,
+    step:b.step||950,          // ms between its moves
+    stun:b.stun||1400,         // ms it reels for after taking a crate
+    cycle:period*Math.max(1,beats.length),
+    beatAt:function(ms){return beats.length?beats[Math.floor(ms/period)%beats.length]:null;},
+    phase:function(ms){return (ms%period)/period;},
+    live:function(ms){return beats.length&&(ms%period)>=period-fire;},
     hits:function(sw,v,mode,a,y,c){
       if(!sw)return false;
       if(sw.axis==="y")return y===sw.at;
       if(mode==="3")return (sw.axis==="x"?a:c)===sw.at;
       var comp=sw.axis==="x"?AX[v].r[0]:AX[v].r[2];
       if(comp===0)return true;          // the view axis: no depth to hide at
-      return a===sw.at*comp;            // u = x*r0 + z*r2, so on-axis u = at*comp
+      return a===sw.at*comp;
     }
   };
+}
+/* Where does it go next? One cell, greedily, toward the player, preferring
+   whichever axis it is further away on. Deliberately greedy rather than a
+   real path search: geometry it cannot round is exactly where you get to
+   out-manoeuvre it, and a boss that always finds the perfect route is a
+   boss you can only out-run, never outplay. */
+function bossNext(R,from,to,cr){
+  var dx=to.x-from.x, dz=to.z-from.z;
+  var tries=[];
+  if(Math.abs(dx)>=Math.abs(dz)){
+    if(dx)tries.push([Math.sign(dx),0]);
+    if(dz)tries.push([0,Math.sign(dz)]);
+  } else {
+    if(dz)tries.push([0,Math.sign(dz)]);
+    if(dx)tries.push([Math.sign(dx),0]);
+  }
+  for(var i=0;i<tries.length;i++){
+    var nx=from.x+tries[i][0], nz=from.z+tries[i][1];
+    var ny=resolveStep(function(h){return R.solid(nx,h,nz,cr);},from.y,
+                       function(h){return R.solid(from.x,h,from.z,cr);});
+    if(ny===null||ny===FELL)continue;
+    if(R.deadly3(nx,ny,nz))continue;      // it will not walk onto spikes either
+    return {x:nx,y:ny,z:nz};
+  }
+  return null;
+}
+
+/* Is this arena a stage a fight can happen on?
+
+   Shared by tools/verify.js and tools/bossgen.js rather than written twice.
+   The bar the generated arenas failed on, and the reason this exists: a boss
+   walks, so an arena split by a chasm is a boss that can never reach you. */
+function bossArena(level){
+  var B=makeBoss(level); if(!B)return {ok:true};
+  var R=makeRules(level), cr=crateSet(crateKeys(level)), fail=[];
+  var stand=new Set(), q=[level.start.slice()];
+  stand.add(K(level.start[0],level.start[1],level.start[2]));
+  while(q.length){
+    var p=q.shift(), d=[[1,0],[-1,0],[0,1],[0,-1]];
+    for(var i=0;i<4;i++){
+      var nx=p[0]+d[i][0], nz=p[2]+d[i][1];
+      var ny=resolveStep(
+        (function(a,b){return function(h){return R.solid(a,h,b,cr);};})(nx,nz), p[1],
+        (function(a,b){return function(h){return R.solid(a,h,b,cr);};})(p[0],p[2]));
+      if(ny===null||ny===FELL)continue;
+      if(R.deadly3(nx,ny,nz))continue;
+      var k=K(nx,ny,nz);
+      if(stand.has(k))continue;
+      stand.add(k);q.push([nx,ny,nz]);
+    }
+  }
+  if(!stand.has(K(B.at[0],B.at[1],B.at[2])))
+    fail.push("boss cannot reach you: its ground is not connected to yours");
+  var crates=[],lanes=0;
+  for(var c=0;c<level.blocks.length;c++)
+    if(isCrate(level.blocks[c]))crates.push(level.blocks[c]);
+  crates.forEach(function(cb){
+    var dirs=[[1,0],[-1,0],[0,1],[0,-1]], ok=false;
+    for(var j=0;j<4;j++){
+      // to shove it you stand on the far side, so that square must be walkable
+      if(!stand.has(K(cb[0]-dirs[j][0],cb[1],cb[2]-dirs[j][1])))continue;
+      if(R.push(cb[0],cb[1],cb[2],dirs[j][0],dirs[j][1],cr))ok=true;
+    }
+    if(ok)lanes++;
+  });
+  if(crates.length<B.hp)fail.push("only "+crates.length+" crates for "+B.hp+" hits");
+  if(lanes<B.hp)fail.push("only "+lanes+" crates can actually be swung");
+  var depths={},nd=0;
+  for(var q2=0;q2<level.blocks.length;q2++)
+    if(!depths[level.blocks[q2][2]]){depths[level.blocks[q2][2]]=1;nd++;}
+  if(nd<4)fail.push("too flat for folding to buy anything");
+  return {ok:!fail.length,fail:fail,squares:stand.size,
+          crates:crates.length,lanes:lanes};
 }
 
 /* The fairness property that replaced the solver's proof.
@@ -118,7 +194,7 @@ function makeBoss(level){
    failure that actually matters, which is dying with no move that would have
    saved you. Run by tools/verify.js over every boss level. */
 function bossSafety(level){
-  var B=makeBoss(level); if(!B)return {ok:true};
+  var B=makeBoss(level); if(!B||!B.beats.length)return {ok:true};
   var R=makeRules(level), cr=crateSet(crateKeys(level));
   var stand=[], seen={};
   for(var i=0;i<level.blocks.length;i++){

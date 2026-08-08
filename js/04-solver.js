@@ -17,22 +17,21 @@
    Crates multiply the state space, so levels using them need
    to stay small.
    ============================================================ */
-/* Boss levels widen this same search rather than getting a second solver: one
-   extra field rides along in the packed state, the strikes left, and reaching
-   the live core spends one. Draining the queue without spending them all
-   proves an arena is uncompletable.
+/* The solver knows nothing about bosses, and that is deliberate.
 
-   It deliberately does NOT model the sweeps. It used to, back when the boss
-   ran on move ticks: hit states were pruned, so the path it returned was a
-   path that was never hit and "solvable" and "fair" were one question. The
-   boss now runs on the wall clock, and a search over moves cannot say
-   anything about a clock that advances while you think. Pretending otherwise
-   would be worse than not trying - it would return paths whose safety it has
-   no standing to claim. Fairness is checked separately and more weakly by
-   bossSafety(), and beyond that by playing it. */
+   A boss is a real-time opponent that hunts you and takes damage from shoved
+   crates. None of that is a function of your move sequence: the clock runs
+   while you think and the boss moves in response to where you are, so a
+   breadth-first search over moves has nothing true to say about it. An
+   earlier draft did model a turn-based boss and could prove a run existed
+   that was never hit; that is gone, and pretending otherwise would return
+   paths whose safety it has no standing to claim.
+
+   What still holds for a boss level is geometry: verify.js checks the arena
+   is connected and has shove lanes (see tools/bossgen.js), and bossSafety()
+   checks the sweeps never corner you. Everything else is playtesting. */
 function solve(level,allowRotate,cap,from){
   var R=makeRules(level);
-  var B=makeBoss(level);
   cap=cap||400000;
   var nKeys=R.keys.length;
   var allKeys=(1<<nKeys)-1;
@@ -48,33 +47,20 @@ function solve(level,allowRotate,cap,from){
     }
     return kb;
   }
-  function pack(mode,x,y,z,v,cr,kb,hp){
-    return mode+"|"+x+"|"+y+"|"+z+"|"+v+"|"+cr.join(";")+"|"+kb+"|"+(hp||0);
+  function pack(mode,x,y,z,v,cr,kb){
+    return mode+"|"+x+"|"+y+"|"+z+"|"+v+"|"+cr.join(";")+"|"+kb;
   }
-  var hp0=B?B.hp:0;
 
   var c0=crateKeys(level);
   var s0;
   if(from){
     s0=pack(from.mode||"3",from.x,from.y,from.z,from.view||0,
-            from.crates||c0, from.keys||0, from.hp===undefined?hp0:from.hp);
+            from.crates||c0, from.keys||0);
     if(from.mode==="2")
       s0="2|"+from.u+"|"+from.y+"|0|"+(from.view||0)+"|"+
-         (from.crates||c0).join(";")+"|"+(from.keys||0)+
-         "|"+(from.hp===undefined?hp0:from.hp);
+         (from.crates||c0).join(";")+"|"+(from.keys||0);
   } else {
-    s0=pack("3",level.start[0],level.start[1],level.start[2],0,c0,0,hp0);
-  }
-
-  // Spend a strike when a successor lands on the live core, in the volume -
-  // standing on its projection is not enough, same as an ordinary goal.
-  function advance(st){
-    if(!B)return st;
-    var f=st.split("|");
-    if(f[0]!=="3")return st;
-    var hp=+f[7], core=B.coreAt(hp);
-    if(core&&+f[1]===core[0]&&+f[2]===core[1]&&+f[3]===core[2])f[7]=hp-1;
-    return f.join("|");
+    s0=pack("3",level.start[0],level.start[1],level.start[2],0,c0,0);
   }
 
   var q=[{s:s0,p:[]}],head=0,seen=new Set([s0]),n=0;
@@ -86,13 +72,10 @@ function solve(level,allowRotate,cap,from){
     var crList=f[5]?f[5].split(";"):[];
     var cr=crateSet(crList);
     var kb=+f[6];
-    var hp=+f[7];
-
-    if(B&&hp===0)return {status:"solved",path:cur.p};
 
     if(f[0]==="3"){
       var x=+f[1],y=+f[2],z=+f[3];
-      if(!B&&x===level.goal[0]&&y===level.goal[1]&&z===level.goal[2]&&kb===allKeys)
+      if(x===level.goal[0]&&y===level.goal[1]&&z===level.goal[2]&&kb===allKeys)
         return {status:"solved",path:cur.p};
       var dirs=[[AX[v].r[0],AX[v].r[2],"\u2192"],[-AX[v].r[0],-AX[v].r[2],"\u2190"],
                 [AX[v].d[0],AX[v].d[2],"\u2193"],[-AX[v].d[0],-AX[v].d[2],"\u2191"]];
@@ -120,16 +103,16 @@ function solve(level,allowRotate,cap,from){
           (function(a,b,cc){return function(h){return R.solid(a,h,b,cc);};})(x,z,crAfter));
         if(ny===null||ny===FELL)continue;
         if(R.deadly3(nx,ny,nz))continue;                 // standing on spikes kills
-        next.push([pack("3",nx,ny,nz,v,nCr,kb,hp),
+        next.push([pack("3",nx,ny,nz,v,nCr,kb),
                    pushed?(dirs[i][2]+"\u2739"):dirs[i][2]]);
       }
       if(allowRotate&&level.rotate!==false){
-        next.push([pack("3",x,y,z,(v+1)%4,crList,kb,hp),"rot+"]);
-        next.push([pack("3",x,y,z,(v+3)%4,crList,kb,hp),"rot-"]);
+        next.push([pack("3",x,y,z,(v+1)%4,crList,kb),"rot+"]);
+        next.push([pack("3",x,y,z,(v+3)%4,crList,kb),"rot-"]);
       }
       var fu=R.uOf(v,x,z);
       if(!R.siloSolid(v,fu,y,cr)&&!R.deadly2(v,fu,y))
-        next.push(["2|"+fu+"|"+y+"|0|"+v+"|"+crList.join(";")+"|"+collect2(v,fu,y,kb)+"|"+hp,"FLAT"]);
+        next.push(["2|"+fu+"|"+y+"|0|"+v+"|"+crList.join(";")+"|"+collect2(v,fu,y,kb),"FLAT"]);
     } else {
       var u=+f[1],hy=+f[2];
       for(var du=-1;du<=1;du+=2){
@@ -140,21 +123,20 @@ function solve(level,allowRotate,cap,from){
           (function(a,b,cc){return function(h){return R.siloSolid(a,b,h,cc);};})(v,u,cr));
         if(nh===null||nh===FELL)continue;
         if(R.deadly2(v,nu,nh))continue;                  // a spike anywhere in depth
-        next.push(["2|"+nu+"|"+nh+"|0|"+v+"|"+crList.join(";")+"|"+collect2(v,nu,nh,kb)+"|"+hp, du>0?"\u2192":"\u2190"]);
+        next.push(["2|"+nu+"|"+nh+"|0|"+v+"|"+crList.join(";")+"|"+collect2(v,nu,nh,kb), du>0?"\u2192":"\u2190"]);
       }
       var land=R.landings(v,u,hy,cr);
       if(land.length){
         var b=R.pick(land);
         if(!R.deadly3(b.x,hy,b.z))
-          next.push([pack("3",b.x,hy,b.z,v,crList,kb,hp),"POP"]);
+          next.push([pack("3",b.x,hy,b.z,v,crList,kb),"POP"]);
       }
     }
 
     for(var j=0;j<next.length;j++){
-      var ns=advance(next[j][0]);
-      if(!seen.has(ns)){
-        seen.add(ns);
-        q.push({s:ns,p:cur.p.concat(next[j][1])});
+      if(!seen.has(next[j][0])){
+        seen.add(next[j][0]);
+        q.push({s:next[j][0],p:cur.p.concat(next[j][1])});
       }
     }
   }

@@ -153,59 +153,73 @@ optimal solution.
 
 ## Bosses
 
-**A boss runs on the wall clock.** A lethal plane charges in plain sight for
-most of a beat, then goes live for the last ~300ms; if you are standing in it
-you lose a life. Dodging is a reflex act, not a move you plan. Everything else
-about the game stays turn-based.
+**A boss is an opponent, not an objective.** It hunts you across the arena in
+real time and you hurt it by **shoving a crate into it** — the game's own verb,
+aimed. The first two drafts both failed, and both failures are worth keeping:
 
-**This is the second design, and the first one is worth knowing about.** The
-boss was originally turn-based: every step advanced it exactly one tick, which
-meant `solve()` could prune hit states and prove a run existed that was never
-hit — "solvable" and "fair" were one question. It was rejected in playtesting
-for not feeling like a fight. That proof is gone and **that is a real cost**,
-recorded here so nobody rediscovers it the hard way. Do not reintroduce sweep
-modelling into `solve()`: a search over moves cannot say anything about a clock
-that advances while the player thinks, and a path it claimed was safe would be
-a lie.
+1. *Turn-based, walk to a marker.* Every step advanced it one tick, so
+   `solve()` could prune hit states and prove a run existed that was never hit
+   — "solvable" and "fair" were one question. Rejected in playtesting for not
+   feeling like a fight.
+2. *Real-time, walk to a marker.* Better pressure, still not a fight: standing
+   somewhere three times is a puzzle objective wearing a boss costume.
 
-What replaces it is `bossSafety()` in `js/03-rules.js`: for every standable
-square and every beat, either that square is safe or a square one step away is.
-Weaker than a clean-run proof — it says nothing about dodging *and* making
-progress — but it rules out the failure that actually matters, dying with no
-move that would have saved you. `tools/verify.js` runs it on every boss.
+What makes it a fight is that damage is a thing you *do to it*, and it can do
+things back.
 
-**Why a plane, and why this is still about the fold.** A sweep down the axis
-you are *looking along* cannot be dodged in the plane at all — flattened, you
-are the projection of every depth at once, so you stand in every slice of that
-axis simultaneously. The same sweep is one step to dodge in the volume, and
-rotating the camera re-labels which sweeps are survivable. So even as a reflex
-test the fight asks the game's question: which axis, and is this the moment?
+**The rhythm is the fold.** In the volume you can shove, so the volume is the
+only place you can hurt it — and the only place it can reach you. In the plane
+you cannot shove, so you cannot win there, but the whole silhouette is one
+corridor: you cross the arena in two moves and it can only chase your column.
+**Folding is retreat, unfolding is commitment.** That is the same decision the
+puzzles ask, made against something that is moving.
 
-- Data: `boss:{period, fire, cores:[[x,y,z]…], beats:[{axis,at}…]}`. `period`
-  and `fire` are **milliseconds**. One core per strike, consumed in order,
-  which is what walks you around the arena. Sweep axes `"x"`/`"z"` are world
-  axes, so their meaning changes with the camera; `"y"` is a height slab, which
-  folding preserves.
-- **`bossFrame(dt)` drives it from the animation loop** and is paused whenever
-  the fight is not in front of you — panel open, win card up, mid-death, intro
-  showing. A clock that runs while you read the menu is not difficulty. `dt` is
-  clamped to 90ms because a backgrounded tab returns one enormous frame, which
-  would otherwise skip whole beats and kill you for switching apps.
-- **Striking is still move-driven** (`bossCheckStrike`), in the volume only.
-  That half of the fight stayed a puzzle.
-- **The core marker must follow the live core.** It drew the static `L.goal`
-  once, so after the first strike it pointed at a dead square and the boss
-  became unkillable. Playtesting found it in a minute; the solver never could,
-  because the solver does not read markers.
+On top of that it sweeps: a lethal plane charges in plain sight and lands on
+the last `fire` ms of a beat. A sweep down the axis you are *looking along*
+cannot be dodged in the plane at all — flattened you are the projection of
+every depth at once — so retreat has a cost, and the axis you picked decides
+what it is.
+
+- Data: `boss:{hp, at:[x,y,z], step, stun, period, fire, beats:[{axis,at}…]}`.
+  All times in **milliseconds**. `step` is how often it moves, `stun` how long
+  it reels after taking a crate.
+- **It paths greedily, not perfectly** (`bossNext`). Geometry it cannot round
+  is where you outplay it; a boss that always finds the route is one you can
+  only outrun.
+- **`bossFrame(dt)`** drives everything from the animation loop, paused
+  whenever the fight is not in front of you — panel open, win card up,
+  mid-death, intro showing. `dt` is clamped to 90ms: a backgrounded tab returns
+  one enormous frame, which would otherwise march the boss across the arena
+  and kill you for switching apps.
 - **Scored on lives, not moves.** Three lives, three stars for three intact.
-  `progress[name]` therefore holds lives for a boss and a move count for
-  everything else — opposite senses in one slot — so reads go through
-  `starsForRecord()` and writes through `betterRecord()`.
-- Undo rewinds strikes but not the clock (wall time cannot be rewound) and
-  never hands back a life.
-- Arenas come from `node tools/bossgen.js`, generate-and-test. Four bars:
-  **completable**, **folded**, **safe** (`bossSafety`), and **threatening** —
-  a sweep nobody could ever be caught by is scenery.
+  A hit sends you both back to your corners but its damage stands.
+  `progress[name]` holds lives for a boss and a move count for everything else
+  — opposite senses in one slot — so reads go through `starsForRecord()` and
+  writes through `betterRecord()`.
+- Undo rewinds its position and hit points but not the clock, and never hands
+  back a life.
+
+**The solver knows nothing about bosses, deliberately.** None of this is a
+function of your move sequence: the clock runs while you think and the boss
+moves in response to where you are. Do not reintroduce boss modelling into
+`solve()` — a path it claimed was safe would be a lie.
+
+Two checks stand in for it, both in `js/03-rules.js` so `tools/verify.js` and
+`tools/bossgen.js` share one implementation:
+
+- **`bossArena()`** — the stage works: it can reach you (**an arena split by a
+  chasm is a boss that can never fight**, which is exactly what the generated
+  arenas were), there are at least `hp` crates you can actually get behind and
+  swing, and there is enough depth for folding to buy anything.
+- **`bossSafety()`** — no sweep ever corners you: every threatened square has a
+  safe one a step away. This is why the height sweep sits at `y:2` and not
+  `y:1` — at 1 it catches everyone standing on the floor at once, which is not
+  an attack, it is a cutscene, and the check refuses it.
+
+**The four arenas are authored, not searched.** Generate-and-test found arenas
+that were *completable*, which was the whole question for a walk-to-a-marker
+boss and is barely a question for a fight. `tools/bossgen.js` now builds the
+four by hand and runs the checks above on them.
 
 ---
 
@@ -434,14 +448,15 @@ Highest-leverage dials in `synthesize()`: the depth-choice heuristic (currently
   and path length, and a 20-move three-core fight trips both. Bosses are scored
   on lives and never ask for a par, so this only shows up in `tools/curve.js`.
 - **Boss fairness is no longer proved, only sampled.** `bossSafety()` says you
-  are never cornered; it does not say the fight is winnable at a given reaction
-  speed. That is now a playtesting question and nothing else can answer it.
+  are never cornered and `bossArena()` says the stage works; neither says the
+  fight is winnable at a given reaction speed, or that `step` and `stun` are
+  tuned. That is a playtesting question and nothing else can answer it.
 - **The boss is the one real-time thing in a turn-based game.** It works, but
   it means the game no longer plays entirely at your own pace, and an
   accessibility option to slow `period` is the obvious missing setting.
-- **Boss arenas are generated, not authored** — two plateaus and a chasm every
-  time. Four rhyme less than nine did, but a hand-built arena would still beat
-  any of them.
+- **Boss pacing is guesswork.** `step` runs 1050ms down to 800ms and `stun`
+  1600ms down to 1200ms across the four. Those numbers came from reasoning
+  about reaction time, not from anyone playing them.
 
 ---
 

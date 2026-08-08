@@ -8,7 +8,7 @@
    THREE
    ============================================================ */
 var scene,camera,renderer,meshes={},playerMesh,goalMesh,gridLines,groundPlane,footMesh;
-var sweepMesh,sweepEdge;
+var sweepMesh,sweepEdge,bossMesh;
 var colPeril=new THREE.Color(0x8f3b52);
 var perilSet=null,perilCleanup=[],perilPulse=0;
 var crateMeshes=[],keyMeshes=[],goalGhost=null;
@@ -77,6 +77,22 @@ function initGL(){
   sweepEdge=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,1)),
     new THREE.LineBasicMaterial({color:0xff6b7a,transparent:true,opacity:.5}));
   sweepEdge.visible=false;scene.add(sweepEdge);
+
+  /* The opponent. Angular and dark against the blocks so it never reads as
+     terrain, with a bright core that dims as it loses hits - the health bar
+     you actually look at is the thing itself. */
+  bossMesh=new THREE.Group();
+  var bShell=new THREE.Mesh(new THREE.OctahedronGeometry(.52),
+    new THREE.MeshLambertMaterial({color:0x24141c}));
+  var bCore=new THREE.Mesh(new THREE.OctahedronGeometry(.24),
+    new THREE.MeshBasicMaterial({color:0xff4d5e}));
+  var bCage=new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.OctahedronGeometry(.56)),
+    new THREE.LineBasicMaterial({color:0xff6b7a,transparent:true,opacity:.85}));
+  bossMesh.add(bShell);bossMesh.add(bCore);bossMesh.add(bCage);
+  bossMesh.userData.core=bCore;bossMesh.userData.cage=bCage;
+  bossMesh.visible=false;
+  scene.add(bossMesh);
 
   groundPlane=new THREE.Mesh(new THREE.PlaneGeometry(200,200),
     new THREE.MeshBasicMaterial({visible:false}));
@@ -212,6 +228,25 @@ function recomputeBounds(){
    including the important case: flattened, a sweep down the view axis covers
    the entire plane, because flattened you are at every depth at once. Seeing
    the whole board go red is the correct answer there, not a bug. */
+/* The boss folds like the world does: flattened it slides onto its
+   silhouette column, which is what makes "it can still reach your column in
+   the plane" legible rather than a rule you have to be told. */
+function drawBoss(rx,rz,tdvx,tdvz){
+  if(!bossMesh)return;
+  if(!B||!bossAt||app!=="play"){bossMesh.visible=false;return;}
+  bossMesh.visible=true;
+  var bu=bossAt.x*rx+bossAt.z*rz, bd=bossAt.x*tdvx+bossAt.z*tdvz;
+  var bx=bu*rx+bd*.012*tdvx, bz=bu*rz+bd*.012*tdvz;
+  tmp.set(bossAt.x+(bx-bossAt.x)*flatT, bossAt.y, bossAt.z+(bz-bossAt.z)*flatT);
+  bossMesh.position.lerp(tmp,.35);
+  bossMesh.rotation.y+=bossStunMs>0?.005:.02;
+  var reeling=bossStunMs>0;
+  // stunned it goes dim and slow, which is the window you get to reposition
+  bossMesh.userData.core.material.color.setHex(reeling?0x6a3540:0xff4d5e);
+  bossMesh.userData.cage.material.opacity=reeling?.3:(.6+bossHitFlash*.4);
+  var puff=1+bossHitFlash*.35;
+  bossMesh.scale.setScalar(puff*(reeling?.86:1));
+}
 function drawSweep(){
   if(!sweepMesh)return;
   if(!B||app!=="play"){sweepMesh.visible=sweepEdge.visible=false;return;}
@@ -439,11 +474,10 @@ function animate(now){
     footMesh.material.opacity=.42*(1-flatT*.7);
   }
 
-  // On a boss the marker has to follow the live core. It used to draw the
-  // static L.goal, so after the first strike it pointed at a spot that was no
-  // longer the core - you could hit the boss once and then had nothing to aim
-  // at. The solver never caught it because the solver does not read markers.
-  var g=(B&&B.coreAt(bossHp))||L.goal;
+  // A boss arena has no goal square - the target is the boss itself, which
+  // draws itself in drawBoss() - so the marker is simply hidden there.
+  goalMesh.visible=goalGhost.visible=!B;
+  var g=L.goal||[0,0,0];
   var gu=g[0]*rx+g[2]*rz, gd=g[0]*tdvx+g[2]*tdvz;
   var gx=gu*rx+gd*.012*tdvx, gz=gu*rz+gd*.012*tdvz;
   goalMesh.position.set(g[0]+(gx-g[0])*flatT,g[1],g[2]+(gz-g[2])*flatT);
@@ -469,6 +503,7 @@ function animate(now){
   goalMesh.material.color.set(B?0xff8a3c:(sealed?0x4a5a6a:0x35c2a5));
   goalMesh.scale.setScalar(sealed?.8:1+Math.sin(Date.now()*.004)*(B?.14:.06));
   drawSweep();
+  drawBoss(rx,rz,tdvx,tdvz);
 
   if(bossFlash>0)bossFlash=Math.max(0,bossFlash-.055);
   bossFrame(dtMs);

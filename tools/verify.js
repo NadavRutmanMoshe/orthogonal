@@ -16,32 +16,36 @@ const ctx=vm.createContext({console,Set,Map,Math,JSON});
 ["01-coords.js","02-levels.js","03-rules.js","04-solver.js"].forEach(f=>{
   vm.runInContext(fs.readFileSync(path.join(JS,f),"utf8"),ctx,{filename:f});
 });
-const {LEVELS,solve,makeRules,resolveStep,AX,bossSafety}=ctx;
+const {LEVELS,solve,makeRules,resolveStep,AX,bossSafety,bossArena}=ctx;
 
 const only=process.argv[2];
 let bad=0, checked=0;
 LEVELS.forEach((lv,i)=>{
   if(only!==undefined && String(i)!==only && lv.name.indexOf(only)!==0) return;
   checked++;
+  if(lv.boss){
+    /* A boss has no goal square and no move sequence that finishes it - it is
+       a real-time opponent, so there is nothing for BFS to search. What is
+       checkable is the stage: that it can reach you, that there are enough
+       crates you can actually swing, and that no sweep ever corners you. */
+    const a=bossArena(lv), safe=bossSafety(lv);
+    const why=(a.fail||[]).concat(safe.ok?[]:[safe.trapped.length+" cells cornered by a sweep"]);
+    if(why.length){
+      bad++;
+      console.log("  ARENA ["+i+"] "+lv.name+"  ->  "+why.join("; "));
+    } else if(only!==undefined || process.env.VERBOSE){
+      console.log("  ok    ["+i+"] "+lv.name+"  arena "+a.squares+" squares, "+
+        a.lanes+"/"+a.crates+" crates swingable, sweeps fair");
+    }
+    return;
+  }
   const r=solve(lv, lv.rotate!==false, 250000);
   if(r.status!=="solved"){
     bad++;
     console.log("  FAIL  ["+i+"] "+lv.name+"  ->  "+r.status);
-  } else if(lv.boss){
-    // A real-time boss cannot be proved fair by search - the clock advances
-    // while you think. What is checkable is that the arena never corners
-    // you: every square a sweep threatens has a safe square one step away.
-    const safe=bossSafety(lv);
-    if(!safe.ok){
-      bad++;
-      console.log("  UNFAIR["+i+"] "+lv.name+"  ->  "+safe.trapped.length+
-        " trapped cell(s), e.g. ["+safe.trapped[0].cell+"] vs "+
-        safe.trapped[0].beat.axis+safe.trapped[0].beat.at);
-    }
-  }
-  if(r.status==="solved" && (only!==undefined || process.env.VERBOSE)){
+  } else if(only!==undefined || process.env.VERBOSE){
     console.log("  ok    ["+i+"] "+lv.name+"  "+r.path.length+" moves:  "+r.path.join(" "));
   }
 });
-console.log((bad?"FAIL":"PASS")+"  "+checked+" level(s) checked, "+bad+" unsolvable");
+console.log((bad?"FAIL":"PASS")+"  "+checked+" level(s) checked, "+bad+" bad");
 process.exit(bad?1:0);
