@@ -257,6 +257,18 @@ exclusive — every gesture also has a key and, unless hidden, a button:
 - **`resolveStep()` is shared by the game and the solver**, so they can never
   disagree. Keep it that way. Its optional `occHere` argument checks headroom in
   *both* columns; without it you can slide diagonally past a ceiling.
+- **Folding into a wall is telegraphed, not blocked.** `foldPeril()` in
+  `js/12-play.js` answers "would flattening from here kill me, and which blocks
+  are to blame" — the guilty ones are tinted and outlined red in the world and
+  the `GO 2D` button pulses. It came from playtesting `08 — Far Side`, where
+  the block that crushes you sits one square to your *left* in world space and
+  shares your silhouette column only because the view is rotated: nothing on
+  screen said so. The move stays legal — dying to it is a real outcome and the
+  puzzles still turn on picking the right axis — it just stops being a gotcha.
+  Fires on 222 crush and 88 spike positions across 44 levels, so it is a
+  general fix rather than a patch for one level. The block loop restores edge
+  colours through `perilCleanup`; without that a block stays red after the
+  danger passes.
 - **Depth reading.** Orthographic views make a block six deep look adjacent.
   Two fixes: blocks sharing the player's depth stay full colour while others
   desaturate with distance (`applyDepth`), and the eye button (or Shift) leans

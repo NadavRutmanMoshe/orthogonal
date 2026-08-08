@@ -72,6 +72,11 @@
   .par{color:var(--goal)}
   .flatbtn{height:50px;padding:0 14px;font-weight:600;letter-spacing:.14em;
     border-color:var(--player);color:var(--player)}
+  /* Folding from here would kill you. Marked, not disabled - it is still a
+     legal move and some players will want to see what happens. */
+  .flatbtn.peril{border-color:#ff4d5e;color:#ff4d5e;
+    animation:perilpulse 1.15s ease-in-out infinite}
+  @keyframes perilpulse{50%{background:rgba(255,77,94,.16)}}
   .tiny{height:28px;font-size:9.5px;letter-spacing:.1em;color:var(--fg-dim);padding:0 8px}
   .tinyrow{display:flex;gap:4px;justify-content:flex-end}
 

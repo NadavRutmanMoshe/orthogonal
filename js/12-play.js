@@ -169,6 +169,46 @@ function move2(du){
   bossCheckStrike();
   syncHud();saveSession();
 }
+/* What would folding from right here do to you, and which blocks are to blame?
+
+   The rule has always been that a fold crushes you if something already
+   projects into your square. What the screen never said was *which* something.
+   In an orthographic view a block many cells away in depth sits in your column
+   the moment you flatten, but it reads as unrelated scenery until it kills
+   you - and worse, in a rotated view a block one step to your left can share
+   your silhouette square while looking nowhere near you.
+
+   This is the same problem the eye button solves for landings, so it gets the
+   same answer: show it, for free, before it costs a move. The fold is not
+   blocked - dying to it stays a legal outcome and the puzzles still turn on
+   picking the right axis. It just stops being a gotcha and becomes a choice.
+
+   Returns null when the fold is safe, otherwise {kind, cells}. */
+function foldPeril(){
+  if(!L||app!=="play"||flat||dying||!R||!canShift())return null;
+  var u=R.uOf(view,player.x,player.z), cr=liveCrates();
+  var crush=R.siloSolid(view,u,player.y,cr);
+  var spike=R.deadly2(view,u,player.y);
+  if(!crush&&!spike)return null;
+  // the guilty are whatever shares your silhouette square: for a crush the
+  // blocks at your height, for a spike the ones directly beneath it
+  var wantY=crush?player.y:player.y-1, cells=[];
+  for(var i=0;i<L.blocks.length;i++){
+    var b=L.blocks[i];
+    if(b[1]!==wantY)continue;
+    if(isGlass(b)||isCrate(b))continue;         // neither casts a silhouette
+    if(crush&&isSpike(b)&&!R.solid(b[0],b[1],b[2],cr))continue;
+    if(spike&&!isSpike(b))continue;
+    if(R.uOf(view,b[0],b[2])!==u)continue;
+    cells.push(b);
+  }
+  if(crush)
+    for(var c=0;c<gCrates.length;c++){
+      var g=gCrates[c];
+      if(g[1]===wantY&&R.uOf(view,g[0],g[2])===u)cells.push(g);
+    }
+  return {kind:crush?"crush":"spike",cells:cells};
+}
 // A tutorial level may withhold a verb so the lesson stays about one thing.
 function canShift(){return !(app==="play"&&L&&L.lockFlat);}
 function doFlatten(){

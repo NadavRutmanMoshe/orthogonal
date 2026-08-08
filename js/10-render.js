@@ -9,6 +9,8 @@
    ============================================================ */
 var scene,camera,renderer,meshes={},playerMesh,goalMesh,gridLines,groundPlane,footMesh;
 var sweepMesh,sweepEdge;
+var colPeril=new THREE.Color(0x8f3b52);
+var perilSet=null,perilCleanup=[],perilPulse=0;
 var crateMeshes=[],keyMeshes=[],goalGhost=null;
 var amb,dir1,dir2;
 var center=new THREE.Vector3(),centerT=new THREE.Vector3();
@@ -321,6 +323,18 @@ function animate(now){
   // the depth the player currently occupies, in the current view
   var pdepth=flat ? lastSolidDepth
                   : (player.x*tdvx+player.z*tdvz);
+  // One peril lookup per frame, keyed so the block loop can test it in O(1).
+  var peril=(typeof foldPeril==="function")?foldPeril():null;
+  perilSet=null;
+  if(peril){
+    perilSet={};
+    for(var pi=0;pi<peril.cells.length;pi++){
+      var pcell=peril.cells[pi], pkey=K(pcell[0],pcell[1],pcell[2]);
+      perilSet[pkey]=1;
+      if(perilCleanup.indexOf(pkey)<0)perilCleanup.push(pkey);
+    }
+  }
+  perilPulse=.5+.5*Math.sin(Date.now()*.006);
   for(var k in meshes){
     var m=meshes[k],b=m.userData.base;
     if(m.userData.mark)m.userData.mark.visible=flatT<.45;
@@ -329,7 +343,15 @@ function animate(now){
     m.position.set(b[0]+(px-b[0])*flatT,b[1],b[2]+(pz-b[2])*flatT);
     var s=1-.96*flatT;
     m.scale.set(1-(1-s)*Math.abs(tdvx),1,1-(1-s)*Math.abs(tdvz));
-    if(m.userData.glass){
+    if(perilSet&&perilSet[k]){
+      // Marked as the thing that will crush you. Drawn after the normal
+      // colouring below would be simpler, but the branches each set their
+      // own colour, so it is easier to claim the block here and skip them.
+      m.material.color.copy(colPeril).lerp(colInk,flatT);
+      m.userData.edge.material.color.set(0xff4d5e);
+      m.userData.edge.material.opacity=.55+perilPulse*.45;
+      applyDepth(m,b,pdepth,tdvx,tdvz,flatT);
+    } else if(m.userData.glass){
       // glass has no place in the plane, so it dissolves as the world folds
       var o=Math.max(0,.5*(1-flatT*1.9));
       m.material.opacity=o;
@@ -431,6 +453,17 @@ function animate(now){
     goalGhost.rotation.copy(goalMesh.rotation);
     goalGhost.scale.copy(goalMesh.scale);
     goalGhost.material.color.copy(goalMesh.material.color);
+  }
+  if(perilCleanup.length){
+    for(var pc=0;pc<perilCleanup.length;pc++){
+      var pm=meshes[perilCleanup[pc]];
+      if(!pm||(perilSet&&perilSet[perilCleanup[pc]]))continue;
+      var pk=pm.userData.kind;
+      pm.userData.edge.material.color.set(
+        pk===1?0xbdeaf7:pk===2?0xffd98a:pk===4?0xff8a72:0x0f1424);
+      pm.userData.edge.material.opacity=pk===1?.95:(pk===2||pk===4?.85:.35);
+    }
+    perilCleanup=perilCleanup.filter(function(kk){return perilSet&&perilSet[kk];});
   }
   var sealed=app==="play"&&keyMeshes.length&&keysLeft()>0;
   goalMesh.material.color.set(B?0xff8a3c:(sealed?0x4a5a6a:0x35c2a5));

@@ -82,6 +82,14 @@ function syncHud(){
   }
   $("bFlat").textContent=flat?VB().to3:VB().to2;
   $("bFlat").disabled=!canShift();
+  // The button carries the warning as well as the world does, because the
+  // block that will crush you can easily be off-screen or behind something.
+  // Marked, never disabled: folding into a wall stays a legal way to die.
+  var pf=(typeof foldPeril==="function")?foldPeril():null;
+  $("bFlat").classList.toggle("peril",!!pf);
+  $("bFlat").title=pf?(pf.kind==="crush"
+    ?"something already fills that square in the plane"
+    :"a spike folds into the square under you"):"";
   $("bUp").disabled=flat;$("bDown").disabled=flat;
   var noRot=flat||(app==="play"&&L&&L.rotate===false);
   $("bRotL").disabled=noRot;$("bRotR").disabled=noRot;
