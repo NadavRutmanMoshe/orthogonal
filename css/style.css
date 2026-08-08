@@ -77,6 +77,11 @@
   .flatbtn.peril{border-color:#ff4d5e;color:#ff4d5e;
     animation:perilpulse 1.15s ease-in-out infinite}
   @keyframes perilpulse{50%{background:rgba(255,77,94,.16)}}
+  /* Folding right now would crush the boss. The one moment the fold is an
+     attack rather than a risk, so it gets the goal colour. */
+  .flatbtn.strike{border-color:var(--goal);color:var(--goal);
+    animation:strikepulse .9s ease-in-out infinite}
+  @keyframes strikepulse{50%{background:rgba(53,194,165,.2)}}
   .tiny{height:28px;font-size:9.5px;letter-spacing:.1em;color:var(--fg-dim);padding:0 8px}
   .tinyrow{display:flex;gap:4px;justify-content:flex-end}
 

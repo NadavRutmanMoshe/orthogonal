@@ -35,7 +35,7 @@ LEVELS.forEach((lv,i)=>{
       console.log("  ARENA ["+i+"] "+lv.name+"  ->  "+why.join("; "));
     } else if(only!==undefined || process.env.VERBOSE){
       console.log("  ok    ["+i+"] "+lv.name+"  arena "+a.squares+" squares, "+
-        a.lanes+"/"+a.crates+" crates swingable, sweeps fair");
+        a.kills+" crush spots, "+a.crates+" crates, sweeps fair");
     }
     return;
   }

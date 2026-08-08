@@ -154,8 +154,13 @@ optimal solution.
 ## Bosses
 
 **A boss is an opponent, not an objective.** It hunts you across the arena in
-real time and you hurt it by **shoving a crate into it** — the game's own verb,
-aimed. The first two drafts both failed, and both failures are worth keeping:
+real time, and **you kill it with the fold** — by turning the rule that kills
+*you* against it. Rule 4 says a fold crushes you if something already projects
+into your square; the boss is subject to exactly the same thing. So you lead
+it (it is chasing you) until it stands at a depth whose silhouette column is
+already occupied, and then you fold.
+
+Three drafts got here, and all three failures are worth keeping:
 
 1. *Turn-based, walk to a marker.* Every step advanced it one tick, so
    `solve()` could prune hit states and prove a run existed that was never hit
@@ -163,9 +168,17 @@ aimed. The first two drafts both failed, and both failures are worth keeping:
    feeling like a fight.
 2. *Real-time, walk to a marker.* Better pressure, still not a fight: standing
    somewhere three times is a puzzle objective wearing a boss costume.
+3. *Damage by shoving a crate into it.* A real attack, but **crates are not
+   taught until section IV**, so the first three bosses were unkillable with
+   anything the player had been shown. A boss whose only weapon is a piece
+   you have never seen is not a hard fight, it is a broken one.
 
-What makes it a fight is that damage is a thing you *do to it*, and it can do
-things back.
+Crushing needs nothing but the fold, so it works from the first fight, and
+each section then changes what a blocked column *means*: pillars are the plain
+rule, spikes poison columns the boss will not walk into on foot, glass is
+floor that casts nothing so half the lines are lies, and crates finally let
+you build a column where there wasn't one — or just shove one into it, which
+still works and is the only way to hit it while it is stunned.
 
 **The rhythm is the fold.** In the volume you can shove, so the volume is the
 only place you can hurt it — and the only place it can reach you. In the plane
@@ -180,6 +193,12 @@ cannot be dodged in the plane at all — flattened you are the projection of
 every depth at once — so retreat has a cost, and the axis you picked decides
 what it is.
 
+- **The game says when a fold would land.** `bossCrushable()` drives the boss's
+  core and cage to the goal colour and puts the `GO 2D` button in `.strike`.
+  Without it the mechanic is invisible — nothing on screen tells you a column
+  is blocked — and "I'm not sure how to kill it" is the only possible
+  reaction. Peril still wins the colour when both are true: dying costs more
+  than a missed hit.
 - Data: `boss:{hp, at:[x,y,z], step, stun, period, fire, beats:[{axis,at}…]}`.
   All times in **milliseconds**. `step` is how often it moves, `stun` how long
   it reels after taking a crate.
@@ -209,8 +228,9 @@ Two checks stand in for it, both in `js/03-rules.js` so `tools/verify.js` and
 
 - **`bossArena()`** — the stage works: it can reach you (**an arena split by a
   chasm is a boss that can never fight**, which is exactly what the generated
-  arenas were), there are at least `hp` crates you can actually get behind and
-  swing, and there is enough depth for folding to buy anything.
+  arenas were), there are far more squares it can be crushed on than hits
+  needed, and there is enough depth for folding to buy anything. Crush spots
+  are the real content of an arena, so pillars are what an arena is made of.
 - **`bossSafety()`** — no sweep ever corners you: every threatened square has a
   safe one a step away. This is why the height sweep sits at `y:2` and not
   `y:1` — at 1 it catches everyone standing on the floor at once, which is not
@@ -283,6 +303,11 @@ exclusive — every gesture also has a key and, unless hidden, a button:
   general fix rather than a patch for one level. The block loop restores edge
   colours through `perilCleanup`; without that a block stays red after the
   danger passes.
+- **A peril-marked block ignores depth shading, on purpose.** Depth shading
+  exists to push far blocks back, and the block that crushes you on a fold is
+  usually the far one — fading it is the exact mistake the warning is there to
+  correct. Crates get the same treatment, and needed it separately: they live
+  in `crateMeshes`, not `meshes`, so the block loop never saw them.
 - **Depth reading.** Orthographic views make a block six deep look adjacent.
   Two fixes: blocks sharing the player's depth stay full colour while others
   desaturate with distance (`applyDepth`), and the eye button (or Shift) leans

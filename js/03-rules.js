@@ -162,26 +162,30 @@ function bossArena(level){
   }
   if(!stand.has(K(B.at[0],B.at[1],B.at[2])))
     fail.push("boss cannot reach you: its ground is not connected to yours");
-  var crates=[],lanes=0;
-  for(var c=0;c<level.blocks.length;c++)
-    if(isCrate(level.blocks[c]))crates.push(level.blocks[c]);
-  crates.forEach(function(cb){
-    var dirs=[[1,0],[-1,0],[0,1],[0,-1]], ok=false;
-    for(var j=0;j<4;j++){
-      // to shove it you stand on the far side, so that square must be walkable
-      if(!stand.has(K(cb[0]-dirs[j][0],cb[1],cb[2]-dirs[j][1])))continue;
-      if(R.push(cb[0],cb[1],cb[2],dirs[j][0],dirs[j][1],cr))ok=true;
+  /* How many squares can it actually be killed on? A kill needs the boss
+     standing where some rotation's silhouette column is already occupied.
+     Counting them is the arena's real content: an arena with a handful is a
+     fight you win by luck, and one with none cannot be won at all. */
+  var kills=0, it=stand.values(), n;
+  while(!(n=it.next()).done){
+    var c=parseK(n.value), any=false;
+    for(var v=0;v<4&&!any;v++){
+      var u=c[0]*AX[v].r[0]+c[2]*AX[v].r[2];
+      if(R.siloSolid(v,u,c[1],cr)||R.deadly2(v,u,c[1]))any=true;
     }
-    if(ok)lanes++;
-  });
-  if(crates.length<B.hp)fail.push("only "+crates.length+" crates for "+B.hp+" hits");
-  if(lanes<B.hp)fail.push("only "+lanes+" crates can actually be swung");
+    if(any)kills++;
+  }
+  if(kills<B.hp*3)
+    fail.push("only "+kills+" squares it can be crushed on, for "+B.hp+" hits");
+  var crates=[];
+  for(var c2=0;c2<level.blocks.length;c2++)
+    if(isCrate(level.blocks[c2]))crates.push(level.blocks[c2]);
   var depths={},nd=0;
   for(var q2=0;q2<level.blocks.length;q2++)
     if(!depths[level.blocks[q2][2]]){depths[level.blocks[q2][2]]=1;nd++;}
   if(nd<4)fail.push("too flat for folding to buy anything");
   return {ok:!fail.length,fail:fail,squares:stand.size,
-          crates:crates.length,lanes:lanes};
+          kills:kills,crates:crates.length};
 }
 
 /* The fairness property that replaced the solver's proof.

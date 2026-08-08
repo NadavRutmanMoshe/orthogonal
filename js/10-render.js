@@ -241,9 +241,16 @@ function drawBoss(rx,rz,tdvx,tdvz){
   bossMesh.position.lerp(tmp,.35);
   bossMesh.rotation.y+=bossStunMs>0?.005:.02;
   var reeling=bossStunMs>0;
-  // stunned it goes dim and slow, which is the window you get to reposition
-  bossMesh.userData.core.material.color.setHex(reeling?0x6a3540:0xff4d5e);
-  bossMesh.userData.cage.material.opacity=reeling?.3:(.6+bossHitFlash*.4);
+  /* Open: folding right now would crush it. This is the answer to "how do I
+     hurt this thing" - the game says so, in the moment, rather than in a hint
+     line you read once. Without it the mechanic is invisible: nothing on
+     screen tells you the boss's column is blocked. */
+  var open=(typeof bossCrushable==="function")&&bossCrushable();
+  var coreCol=reeling?0x6a3540:(open?0x35c2a5:0xff4d5e);
+  bossMesh.userData.core.material.color.setHex(coreCol);
+  bossMesh.userData.cage.material.color.setHex(open?0x35c2a5:0xff6b7a);
+  bossMesh.userData.cage.material.opacity=reeling?.3:
+    (open?(.7+perilPulse*.3):(.6+bossHitFlash*.4));
   var puff=1+bossHitFlash*.35;
   bossMesh.scale.setScalar(puff*(reeling?.86:1));
 }
@@ -379,13 +386,15 @@ function animate(now){
     var s=1-.96*flatT;
     m.scale.set(1-(1-s)*Math.abs(tdvx),1,1-(1-s)*Math.abs(tdvz));
     if(perilSet&&perilSet[k]){
-      // Marked as the thing that will crush you. Drawn after the normal
-      // colouring below would be simpler, but the branches each set their
-      // own colour, so it is easier to claim the block here and skip them.
+      /* Marked as the thing that will crush you. Deliberately NOT passed
+         through applyDepth: depth shading exists to push far blocks back, and
+         the block that kills you on a fold is usually the far one - fading it
+         is exactly the mistake this warning is here to correct. It stays
+         vivid at any depth. */
       m.material.color.copy(colPeril).lerp(colInk,flatT);
       m.userData.edge.material.color.set(0xff4d5e);
       m.userData.edge.material.opacity=.55+perilPulse*.45;
-      applyDepth(m,b,pdepth,tdvx,tdvz,flatT);
+      m.material.opacity=1;
     } else if(m.userData.glass){
       // glass has no place in the plane, so it dissolves as the world folds
       var o=Math.max(0,.5*(1-flatT*1.9));
@@ -421,9 +430,16 @@ function animate(now){
     cm.scale.set(1-(1-cs)*Math.abs(tdvx),1,1-(1-cs)*Math.abs(tdvz));
     if(cm.userData.mark)cm.userData.mark.visible=flatT<.45;
     var held=R&&R.heldFast&&R.heldFast(cb[0],cb[1],cb[2]);
-    cm.material.color.copy(held?colCrateHeld:colCrate).lerp(colInk,flatT*.75);
+    // A crate casts a silhouette exactly like stone, so it can be the thing
+    // that crushes you on a fold. It lives outside `meshes`, so the peril
+    // highlight in the block loop above never saw it.
+    var cperil=perilSet&&perilSet[K(cb[0],cb[1],cb[2])];
+    cm.material.color.copy(cperil?colPeril:(held?colCrateHeld:colCrate))
+      .lerp(colInk,flatT*.75);
     if(cm.children[0])
-      cm.children[0].material.color.set(held?0xffd98a:0xe0d4ff);
+      cm.children[0].material.color.set(
+        cperil?0xff4d5e:(held?0xffd98a:0xe0d4ff));
+    if(cperil){cm.material.opacity=1;continue;}   // vivid at any depth
     applyDepth(cm,cb,pdepth,tdvx,tdvz,flatT);
   }
   for(var ki=0;ki<keyMeshes.length;ki++){

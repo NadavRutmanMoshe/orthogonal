@@ -101,19 +101,54 @@ function bossTouching(){
   if(flat)return R.uOf(view,bossAt.x,bossAt.z)===flatPos.u&&bossAt.y===flatPos.y;
   return bossAt.x===player.x&&bossAt.y===player.y&&bossAt.z===player.z;
 }
-/* A crate has been shoved into it. This is the only way to do damage: you
-   cannot shove in the plane, so every hit is landed in the volume, which is
-   also the only place it can reach you. Knocked back so the crate has
-   somewhere to land and you are not instantly touching it again. */
-function bossTakeCrate(dx,dz){
+/* Would folding right now crush the boss?
+
+   This is the game's own rule turned on the enemy. Rule 4 says a fold kills
+   you if something already projects into your square; the boss is subject to
+   exactly the same thing. So the way to hurt it is to manoeuvre it - it is
+   chasing you, so you lead it - until it stands at a depth whose silhouette
+   column is already occupied, and then fold.
+
+   This had to exist because damage used to be "shove a crate into it", and
+   crates are not taught until section IV. A boss whose only weapon is a piece
+   the player has never seen is not a difficulty problem, it is an unsolvable
+   one. Crushing needs nothing but the fold, so it works from the first fight,
+   and each section then changes what a blocked column means: spikes poison
+   more of them, glass removes them silently, crates let you build one.
+
+   Rotating re-labels every column, which is the same question the puzzles
+   ask, now aimed at something that moves. */
+function bossCrushable(){
+  if(!B||!bossAt||flat||dying||bossStunMs>0||app!=="play")return false;
+  var u=R.uOf(view,bossAt.x,bossAt.z), cr=liveCrates();
+  return !!(R.siloSolid(view,u,bossAt.y,cr)||R.deadly2(view,u,bossAt.y));
+}
+function bossFoldCrush(){
+  if(!B||!bossAt)return;
+  if(bossStunMs>0)return;
+  var u=R.uOf(view,bossAt.x,bossAt.z), cr=liveCrates();
+  if(!(R.siloSolid(view,u,bossAt.y,cr)||R.deadly2(view,u,bossAt.y)))return;
+  bossDamage("the fold closed on it");
+}
+/* One hit, however it was landed. Knocked away from you and stunned, which
+   is both the window you get to reposition and the reason a single lucky
+   fold cannot chain into a whole fight. */
+function bossDamage(why){
   bossHp--;
   bossStunMs=B.stun;bossHitFlash=1;
   SFX.strike();shakeT=1;
-  var back=bossNext(R,bossAt,{x:bossAt.x+dx*3,y:bossAt.y,z:bossAt.z+dz*3},liveCrates());
-  if(back)bossAt=back;
-  if(bossHp<=0){buildGrid();win();return true;}
-  flash(bossHp===1?"one hit left":bossHp+" hits left");
+  var away=bossNext(R,bossAt,
+    {x:bossAt.x+(bossAt.x-player.x)*3,y:bossAt.y,z:bossAt.z+(bossAt.z-player.z)*3},
+    liveCrates());
+  if(away)bossAt=away;
+  if(bossHp<=0){buildGrid();win();return;}
+  flash(why+" \u00b7 "+bossHp+(bossHp===1?" hit left":" hits left"));
   buildGrid();syncHud();
+}
+/* A crate has been shoved into it - the section IV way, and the only one that
+   works while it is stunned and therefore uncrushable. */
+function bossTakeCrate(){
+  bossDamage("crate");
   return true;
 }
 function bossHurt(why){
@@ -186,7 +221,7 @@ function move3(dx,dz,dir){
     gCrates[moved.i]=[moved.to.x,moved.to.y,moved.to.z];SFX.shove();
     // did that crate land on the boss?
     if(B&&bossAt&&moved.to.x===bossAt.x&&moved.to.y===bossAt.y&&
-       moved.to.z===bossAt.z&&bossTakeCrate(dx,dz))return;
+       moved.to.z===bossAt.z&&bossTakeCrate())return;
   }
   if(ny===FELL){player.x=nx;player.z=nz;die("fall");return;}
   player.x=nx;player.z=nz;player.y=ny;
@@ -262,6 +297,7 @@ function doFlatten(){
   flatPos={u:pu,y:player.y};
   flat=true;flatTarget=1;SFX.fold();collectHere();
   if(tutC)tutC.flat++;
+  bossFoldCrush();
   syncHud();saveSession();
   // Something else already occupies that square in the plane. Let the fold
   // play out, then close on the player.

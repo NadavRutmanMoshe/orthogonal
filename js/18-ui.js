@@ -86,10 +86,17 @@ function syncHud(){
   // block that will crush you can easily be off-screen or behind something.
   // Marked, never disabled: folding into a wall stays a legal way to die.
   var pf=(typeof foldPeril==="function")?foldPeril():null;
+  var strike=(typeof bossCrushable==="function")&&bossCrushable();
   $("bFlat").classList.toggle("peril",!!pf);
+  // A fold that would land a hit is worth saying out loud, and it can be true
+  // at the same time as peril - the boss's column being blocked says nothing
+  // about yours. Peril wins the colour, because dying costs more than a
+  // missed hit; the label still tells you the hit is there.
+  $("bFlat").classList.toggle("strike",!!strike&&!pf);
   $("bFlat").title=pf?(pf.kind==="crush"
     ?"something already fills that square in the plane"
-    :"a spike folds into the square under you"):"";
+    :"a spike folds into the square under you")
+    :(strike?"folding now would crush it":"");
   $("bUp").disabled=flat;$("bDown").disabled=flat;
   var noRot=flat||(app==="play"&&L&&L.rotate===false);
   $("bRotL").disabled=noRot;$("bRotR").disabled=noRot;

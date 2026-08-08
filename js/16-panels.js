@@ -320,7 +320,7 @@ function levelPicker(){
       (tut?"<span class='ok'>\u2713</span>"
          :"<span class='ok'>"+starGlyphs(starsForRecord(LEVELS[i],done))+"</span>");
     var note=tut?"tutorial":
-      boss?(LEVELS[i].boss.cores.length+" cores"):
+      boss?(LEVELS[i].boss.hp+" hits"):
       (st.ok?st.flattens+(st.flattens===1?" fold":" folds"):"?");
     html+="<div class='lrow"+(mark?" here":"")+(boss?" bossrow":"")+
       "'><span class='lname'>"+
