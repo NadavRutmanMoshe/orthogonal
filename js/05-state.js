@@ -36,8 +36,9 @@ function tutReset(){
 var muted=false;
 // Boss fights. B is null on every ordinary level and every check below is
 // guarded on it, so a level without a boss runs the code it always ran.
-var B=null, bossHp=0, bossMs=0, lives=0, bossFlash=0, bossStruckBeat=-1;
-var bossAt=null, bossMoveMs=0, bossStunMs=0, bossHitFlash=0, bossHoldMs=0;
+var B=null, bossHp=0, lives=0, bossFlash=0;
+var bossAt=null, bossMoveMs=0, bossStunMs=0, bossHitFlash=0;
+var bossPhase="aim", bossPhaseMs=0, bossAim=null, shots=[], shotMs=0;
 var BOSS_LIVES=3;
 
 function snapState(){

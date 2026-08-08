@@ -113,6 +113,8 @@ var SFX={
       setTimeout(function(){blip(f,.4,"sine",.05);},i*95);
     });
   },
+  // The gun: a short hard crack, low enough not to be confused with a hit.
+  shot:function(){blip(210,.13,"square",.05,90);blip(620,.09,"sawtooth",.02);},
   // A core going down: a hard hit with a bright ring over it, so a strike
   // never gets confused with taking one.
   strike:function(){

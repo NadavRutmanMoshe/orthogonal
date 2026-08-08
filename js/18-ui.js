@@ -95,8 +95,10 @@ function syncHud(){
   $("bFlat").classList.toggle("strike",!!strike&&!pf);
   $("bFlat").title=pf?(pf.kind==="crush"
     ?"something already fills that square in the plane"
+    :pf.kind==="boss"
+    ?"it is not open - folding into it now kills you"
     :"a spike folds into the square under you")
-    :(strike?"folding now would crush it":"");
+    :(strike?"it is open: fold now":"");
   $("bUp").disabled=flat;$("bDown").disabled=flat;
   var noRot=flat||(app==="play"&&L&&L.rotate===false);
   $("bRotL").disabled=noRot;$("bRotR").disabled=noRot;

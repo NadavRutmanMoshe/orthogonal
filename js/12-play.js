@@ -35,62 +35,102 @@ function die(kind){
    wrong and you could trade a life for a hit the solver said was avoidable.
    ============================================================ */
 function bossReset(){
-  bossHp=B?B.hp:0;bossMs=0;bossFlash=0;bossStruckBeat=-1;
-  bossMoveMs=0;bossStunMs=0;bossHitFlash=0;bossHoldMs=0;
+  bossHp=B?B.hp:0;bossFlash=0;bossHitFlash=0;
+  bossMoveMs=0;bossStunMs=0;
+  bossPhase="aim";bossPhaseMs=0;bossAim=null;shots=[];shotMs=0;
   bossAt=B&&B.at?{x:B.at[0],y:B.at[1],z:B.at[2]}:null;
   lives=B?BOSS_LIVES:0;
 }
-/* The fight, driven off the animation loop rather than off your moves.
+/* The fight, driven off the animation loop.
 
-   Paused whenever it is not actually in front of you - panel open, win card
-   up, mid-death, intro showing - because a clock that runs while you read the
-   menu is not difficulty. dt is clamped for the same reason: a backgrounded
-   tab hands back one enormous frame on return, and without the clamp that
-   single frame would march the boss across the arena and kill you for having
-   switched apps. */
+   Paused whenever it is not in front of you - panel open, win card up,
+   mid-death, intro showing - because a clock that runs while you read the
+   menu is not difficulty. dt is clamped because a backgrounded tab hands back
+   one enormous frame on return, and without the clamp that frame would march
+   the boss and every projectile across the arena at once. */
 function bossFrame(dt){
   if(!B||app!=="play")return;
   if(dying||panelOpen()||!$("intro").classList.contains("gone")||
      $("won").classList.contains("on"))return;
   dt=Math.min(dt,90);
   if(bossHitFlash>0)bossHitFlash=Math.max(0,bossHitFlash-dt/380);
+  if(bossFlash>0)bossFlash=Math.max(0,bossFlash-dt/300);
+  if(!bossAt)return;
 
-  // --- the sweep, unchanged: charges in plain sight, lands on the last ms
-  if(B.beats.length){
-    var was=B.live(bossMs);
-    bossMs+=dt;
-    var now=B.live(bossMs), beat=Math.floor(bossMs/B.period);
-    if(now&&!was)bossFlash=1;
-    if(now&&bossStruckBeat!==beat){
-      var sw=B.beatAt(bossMs);
-      var swHit=flat ? B.hits(sw,view,"2",flatPos.u,flatPos.y,0)
-                     : B.hits(sw,view,"3",player.x,player.y,player.z);
-      if(swHit){bossStruckBeat=beat;bossHurt("the slice caught you");return;}
+  moveShots(dt);
+
+  if(bossStunMs>0){bossStunMs-=dt;return;}   // reeling: it does not aim or walk
+
+  var goal=flat?planeGoalFor():player;
+
+  /* It plants to shoot. While a lock is held it does not walk, so the line
+     you are shown is the line that fires - a telegraph that drifts is not a
+     telegraph. Stopping is also the tell: it freezing is what tells you a
+     shot is coming, before the line has even brightened. */
+  if(bossPhase==="aim"&&!bossAim){
+    bossMoveMs+=dt;
+    if(bossMoveMs>=B.step){
+      bossMoveMs=0;
+      var nx=bossNext(R,bossAt,goal,liveCrates());
+      if(nx)bossAt=nx;
+      if(bossTouching()){bossHurt("it reached you");return;}
     }
   }
 
-  // --- the hunt
-  if(!bossAt)return;
-  if(bossStunMs>0){bossStunMs-=dt;return;}   // reeling: it neither moves nor bites
-  bossMoveMs+=dt;
-  // Faster while you are flat. The plane is a retreat - you cross the arena
-  // in two moves there and it cannot touch anything off your column - so
-  // without this, folding is somewhere to sit and think for free, and the
-  // fight becomes a series of pauses. It closes the distance you just bought.
-  var interval=flat?B.step*.62:B.step;
-  if(bossMoveMs>=interval){
-    bossMoveMs=0;
-    // In the plane it chases your column, because that is all of you there is
-    // to chase; in the volume it comes for the cell you are standing in.
-    var goal=flat?planeGoalFor():player;
-    var nx=bossNext(R,bossAt,goal,liveCrates(),view);
-    if(nx)bossAt=nx;
+  bossPhaseMs+=dt;
+  if(bossPhase==="aim"){
+    // Lock only when actually lined up. Once locked it commits: break the
+    // line all you like, the shot still goes where it was aimed.
+    if(!bossAim){
+      bossAim=bossAimDir(R,bossAt,goal,liveCrates());
+      if(bossAim)bossPhaseMs=0;
+      else return;                  // no line yet - keep walking, no countdown
+    }
+    if(bossPhaseMs>=B.aim){
+      shots.push({x:bossAt.x,y:bossAt.y,z:bossAt.z,dx:bossAim.dx,dz:bossAim.dz});
+      SFX.shot();bossFlash=1;
+      // "fire", not "open" - see resolveShot(). The window comes after the
+      // bullet, never during it.
+      bossPhase="fire";bossPhaseMs=0;bossAim=null;
+    }
+  } else if(bossPhase==="open"&&bossPhaseMs>=B.open){
+    bossPhase="aim";bossPhaseMs=0;
   }
-  if(bossTouching())bossHurt("it reached you");
 }
-// Where the boss aims while you are flat. It only knows your silhouette
-// column, so it walks to the nearest square that shares it - which is why
-// folding buys distance without ever quite losing it.
+function moveShots(dt){
+  if(!shots.length)return;
+  shotMs+=dt;
+  if(shotMs<B.shotStep)return;
+  shotMs=0;
+  var cr=liveCrates(), keep=[];
+  for(var i=0;i<shots.length;i++){
+    var n=shotNext(R,shots[i],cr);
+    if(!n)continue;                        // hit cover and died there
+    if(Math.abs(n.x)>40||Math.abs(n.z)>40)continue;
+    if(shotHits(n)){bossHurt("shot");return;}
+    keep.push(n);
+  }
+  shots=keep;
+  resolveShot();
+}
+/* The exposed beat starts when the bullet is spent, not when it leaves the
+   barrel.
+
+   That single ordering is what killed the last exploit. With the window
+   opening at the muzzle, a motionless player could fold the instant it fired
+   and land a hit while the shot was still crossing the floor - trading one
+   life for one hit point, which against three lives and three hit points is
+   exactly enough to win by doing nothing. Now the shot has to miss you
+   before there is anything to punish. */
+function resolveShot(){
+  if(bossPhase==="fire"&&!shots.length){bossPhase="open";bossPhaseMs=0;}
+}
+function shotHits(s){
+  if(flat)return R.uOf(view,s.x,s.z)===flatPos.u&&s.y===flatPos.y;
+  return s.x===player.x&&s.y===player.y&&s.z===player.z;
+}
+// Where the boss aims while you are flat: it only knows your silhouette
+// column, so it walks to the nearest square sharing it.
 function planeGoalFor(){
   var best=null, bd=1e9;
   for(var i=0;i<L.blocks.length;i++){
@@ -106,41 +146,40 @@ function bossTouching(){
   if(flat)return R.uOf(view,bossAt.x,bossAt.z)===flatPos.u&&bossAt.y===flatPos.y;
   return bossAt.x===player.x&&bossAt.y===player.y&&bossAt.z===player.z;
 }
-/* Would folding right now crush the boss?
+/* The strike window. It is OPEN only in the beat after it fires, and you can
+   only reach it by folding while you share its silhouette column - so you
+   have to survive the shot and then be lined up, and rotating decides what
+   "lined up" means.
 
-   This is the game's own rule turned on the enemy. Rule 4 says a fold kills
-   you if something already projects into your square; the boss is subject to
-   exactly the same thing. So the way to hurt it is to manoeuvre it - it is
-   chasing you, so you lead it - until it stands at a depth whose silhouette
-   column is already occupied, and then fold.
-
-   This had to exist because damage used to be "shove a crate into it", and
-   crates are not taught until section IV. A boss whose only weapon is a piece
-   the player has never seen is not a difficulty problem, it is an unsolvable
-   one. Crushing needs nothing but the fold, so it works from the first fight,
-   and each section then changes what a blocked column means: spikes poison
-   more of them, glass removes them silently, crates let you build one.
-
-   Rotating re-labels every column, which is the same question the puzzles
-   ask, now aimed at something that moves. */
+   Outside OPEN the identical input kills you: it is solid in the plane, so
+   folding into its column is folding into a wall. The strike and the suicide
+   are one button apart in timing, which is the whole fight. */
+function bossOpen(){
+  return !!(B&&bossAt&&bossPhase==="open"&&bossStunMs<=0&&!dying);
+}
+function bossAligned(){
+  if(!B||!bossAt)return false;
+  return R.uOf(view,bossAt.x,bossAt.z)===R.uOf(view,player.x,player.z)&&
+         bossAt.y===player.y;
+}
 function bossCrushable(){
-  if(!B||!bossAt||flat||dying||bossStunMs>0||app!=="play")return false;
-  var u=R.uOf(view,bossAt.x,bossAt.z), cr=liveCrates();
-  return !!(R.siloSolid(view,u,bossAt.y,cr)||R.deadly2(view,u,bossAt.y));
+  return !flat&&app==="play"&&bossOpen()&&bossAligned();
 }
-function bossFoldCrush(){
-  if(!B||!bossAt)return;
-  if(bossStunMs>0)return;
-  var u=R.uOf(view,bossAt.x,bossAt.z), cr=liveCrates();
-  if(!(R.siloSolid(view,u,bossAt.y,cr)||R.deadly2(view,u,bossAt.y)))return;
-  bossDamage("the fold closed on it");
+function bossFoldStrike(){
+  if(!B||!bossAt||!bossAligned())return false;
+  if(bossOpen()){bossDamage("caught it open");return true;}
+  /* Aligned but not open: in the plane it is solid, and you have just folded
+     into it. Same input, same geometry, one beat early - which is what makes
+     the OPEN window worth waiting for instead of a light to react to. */
+  setTimeout(function(){if(!dying)bossHurt("you folded into it");},380);
+  return true;
 }
-/* One hit, however it was landed. Knocked away from you and stunned, which
-   is both the window you get to reposition and the reason a single lucky
-   fold cannot chain into a whole fight. */
+/* One hit, however it was landed. Knocked away and stunned, which is the
+   window to reposition and the reason one lucky fold cannot chain. */
 function bossDamage(why){
   bossHp--;
   bossStunMs=B.stun;bossHitFlash=1;
+  bossPhase="aim";bossPhaseMs=0;bossAim=null;
   SFX.strike();shakeT=1;
   var away=bossNext(R,bossAt,
     {x:bossAt.x+(bossAt.x-player.x)*3,y:bossAt.y,z:bossAt.z+(bossAt.z-player.z)*3},
@@ -150,12 +189,7 @@ function bossDamage(why){
   flash(why+" \u00b7 "+bossHp+(bossHp===1?" hit left":" hits left"));
   buildGrid();syncHud();
 }
-/* A crate has been shoved into it - the section IV way, and the only one that
-   works while it is stunned and therefore uncrushable. */
-function bossTakeCrate(){
-  bossDamage("crate");
-  return true;
-}
+function bossTakeCrate(){bossDamage("crate");return true;}
 function bossHurt(why){
   lives--;
   SFX.die();shakeT=1;
@@ -163,15 +197,14 @@ function bossHurt(why){
   if(bar){bar.classList.remove("hurt");void bar.offsetWidth;bar.classList.add("hurt");}
   if(lives<=0){die("boss");return;}
   flash(why+" \u00b7 "+lives+" "+(lives===1?"life":"lives")+" left");
-  // Both of you go back to your corners. Its damage stands - a late mistake
-  // should not cost you the whole fight - and the clock restarts on a fresh
-  // charge so you are not respawned into a sweep already about to land.
+  // Both back to your corners; its damage stands, and it starts a fresh
+  // wind-up so you are never respawned into a shot already in the air.
   moveHistory=[];
   initDynamic();buildDynamic();
   player={x:L.start[0],y:L.start[1],z:L.start[2]};
   bossAt=B.at?{x:B.at[0],y:B.at[1],z:B.at[2]}:null;
   flat=false;flatTarget=0;flatT=0;
-  bossMs=0;bossStruckBeat=-1;bossMoveMs=0;bossStunMs=B.stun;bossHoldMs=0;
+  shots=[];bossPhase="aim";bossPhaseMs=0;bossAim=null;bossStunMs=B.stun;
   buildGrid();syncHud();
 }
 
@@ -271,9 +304,17 @@ function foldPeril(){
   var u=R.uOf(view,player.x,player.z), cr=liveCrates();
   var crush=R.siloSolid(view,u,player.y,cr);
   var spike=R.deadly2(view,u,player.y);
-  if(!crush&&!spike)return null;
+  var onBoss=!!(B&&bossAt&&!bossOpen()&&
+    R.uOf(view,bossAt.x,bossAt.z)===u&&bossAt.y===player.y);
+  if(!crush&&!spike&&!onBoss)return null;
   // the guilty are whatever shares your silhouette square: for a crush the
   // blocks at your height, for a spike the ones directly beneath it
+  // The boss is solid in the plane too, and folding into it while it is not
+  // open is the most expensive mistake in the fight - so it is reported here
+  // like any other thing that fills your square.
+  if(B&&bossAt&&!bossOpen()&&
+     R.uOf(view,bossAt.x,bossAt.z)===u&&bossAt.y===player.y)
+    return {kind:"boss",cells:[[bossAt.x,bossAt.y,bossAt.z]]};
   var wantY=crush?player.y:player.y-1, cells=[];
   for(var i=0;i<L.blocks.length;i++){
     var b=L.blocks[i];
@@ -302,7 +343,7 @@ function doFlatten(){
   flatPos={u:pu,y:player.y};
   flat=true;flatTarget=1;SFX.fold();collectHere();
   if(tutC)tutC.flat++;
-  bossFoldCrush();
+  bossFoldStrike();
   syncHud();saveSession();
   // Something else already occupies that square in the plane. Let the fold
   // play out, then close on the player.

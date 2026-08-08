@@ -61,130 +61,106 @@ function parseK(k){var p=k.split(",");return [+p[0],+p[1],+p[2]];}
 /* ============================================================
    BOSSES
 
-   A boss is an opponent, not an objective. It hunts you across the arena in
-   real time, and you hurt it by shoving a crate into it - the game's own
-   verb, aimed. Standing somewhere is not an attack; the first version of
-   this asked you to walk onto a marker three times, which is a puzzle
-   objective wearing a boss costume.
+   An opponent with a gun, and a rhythm you fight inside:
 
-   The fight has a rhythm, and the rhythm is the fold:
+     AIM    it locks onto your row or column and the line lights up
+     SHOT   a projectile crosses the arena, one cell at a time. Blocks stop
+            it, so the pillars are cover and where you stand is the fight
+     OPEN   having just fired, it is exposed for a beat - and this is the
+            only moment it can be hurt
 
-     - In the VOLUME you can shove, so the volume is the only place you can
-       hurt it. It is also where it can reach you.
-     - In the PLANE you cannot shove, so you cannot win there - but the whole
-       silhouette is one corridor, so you cross the arena in a couple of moves
-       and it cannot lay a hand on you off your own column.
+   You hurt it by FOLDING while you share its silhouette column, during OPEN.
+   Outside that window the same fold kills *you*, because in the plane it is
+   solid and you would be folding into it. So the strike and the suicide are
+   the same input, separated only by timing - which is what a boss fight is.
 
-   So folding is retreat and unfolding is commitment, which is the same
-   decision the puzzles ask, made against something that is moving.
+   THIS IS THE FOURTH DESIGN and the first three are worth keeping, because
+   each failed for a reason that looks obvious only afterwards:
 
-   On top of that it sweeps: a lethal plane charges in plain sight and lands
-   on the last `fire` ms of each beat. A sweep down the axis you are *looking
-   along* cannot be dodged in the plane at all - flattened you are the
-   projection of every depth at once - so retreat has a cost and the axis you
-   picked decides what it is.
+     1. Turn-based, walk to a marker. Provably fair - solve() could prune hit
+        states - but it did not feel like a fight.
+     2. Real-time, walk to a marker. Better pressure, still an objective
+        wearing a boss costume.
+     3. Crush it on a static line. A real attack, but the vulnerability was a
+        property of the *floor*, so the fight became manipulating the floor:
+        stand still, wait, fold. Making it avoid the lines only taught it to
+        freeze, which reads as broken, and produced a new two-button loop.
 
-   The turn-based first draft could be proved fair by search: solve() pruned
-   hit states, so "solvable" and "fair" were one question. Real time gave that
-   up on purpose. bossSafety() below is the weaker thing that replaced it.
+   The lesson each time: a vulnerability that does not come out of the boss's
+   own behaviour is a condition to farm, not a fight to win. OPEN is a
+   consequence of it shooting, so the only way to get one is to make it shoot,
+   which means being somewhere worth shooting at.
    ============================================================ */
 function makeBoss(level){
   if(!level.boss)return null;
   var b=level.boss;
-  var beats=b.beats||[], period=b.period||2600, fire=b.fire||300;
   return {
-    hp:b.hp||3, at:b.at, period:period, fire:fire, beats:beats,
-    step:b.step||950,          // ms between its moves
-    stun:b.stun||1400,         // ms it reels for after taking a crate
-    cycle:period*Math.max(1,beats.length),
-    beatAt:function(ms){return beats.length?beats[Math.floor(ms/period)%beats.length]:null;},
-    phase:function(ms){return (ms%period)/period;},
-    live:function(ms){return beats.length&&(ms%period)>=period-fire;},
-    hits:function(sw,v,mode,a,y,c){
-      if(!sw)return false;
-      if(sw.axis==="y")return y===sw.at;
-      if(mode==="3")return (sw.axis==="x"?a:c)===sw.at;
-      var comp=sw.axis==="x"?AX[v].r[0]:AX[v].r[2];
-      if(comp===0)return true;          // the view axis: no depth to hide at
-      return a===sw.at*comp;
-    }
+    hp:b.hp||3,
+    at:b.at,
+    step:b.step||1000,        // ms between its walking steps
+    aim:b.aim||900,           // ms of telegraph before it fires
+    open:b.open||1300,        // ms it is exposed afterwards
+    shotStep:b.shotStep||110, // ms per cell of projectile travel
+    stun:b.stun||900          // ms it reels after taking a hit
   };
 }
-// Is this square one the fold would crush it on, in the view being looked
-// along right now? Shared by the boss's own pathing and by the affordance
-// that lights the button, so what it flees is exactly what you are shown.
-function bossCrushAt(R,c,v,cr){
-  var u=c.x*AX[v].r[0]+c.z*AX[v].r[2];
-  return !!(R.siloSolid(v,u,c.y,cr)||R.deadly2(v,u,c.y));
+/* Which way does it shoot? Only ever straight down a row or a column, and
+   only once it actually shares one with you - so it has to manoeuvre into
+   line before it can fire at all, and stepping off that line is the dodge.
+
+   An earlier version fired along whichever axis you were further away on,
+   which meant it shot down its own row and past you almost every time. The
+   gun was decorative and a motionless player was never in danger, which is
+   exactly the hole the idle policy walked through. */
+function bossAimDir(R,from,to,cr){
+  var d=null;
+  if(from.z===to.z&&from.x!==to.x)d={dx:Math.sign(to.x-from.x),dz:0};
+  else if(from.x===to.x&&from.z!==to.z)d={dx:0,dz:Math.sign(to.z-from.z)};
+  if(!d)return null;                 // not lined up: hold fire and keep moving
+  /* And it will not fire into cover. Shooting a pillar wastes the shot, and
+     worse, it hands over the exposed beat for free - the window is supposed
+     to be payment for surviving a bullet, not for owning a wall. Blocked, it
+     keeps walking until it has an angle, so hiding makes it come to you. */
+  for(var x=from.x+d.dx,z=from.z+d.dz;;x+=d.dx,z+=d.dz){
+    if(x===to.x&&z===to.z)return d;
+    if(R.solid(x,from.y,z,cr))return null;
+    if(Math.abs(x-from.x)>40||Math.abs(z-from.z)>40)return null;
+  }
 }
-/* Where does it go next?
+/* One cell of projectile travel. Blocks stop it, which is what makes cover
+   real: a pillar is not decoration, it is the thing you put between you. */
+function shotNext(R,s,cr){
+  var nx=s.x+s.dx, nz=s.z+s.dz;
+  if(R.solid(nx,s.y,nz,cr))return null;     // absorbed by geometry
+  return {x:nx,y:s.y,z:nz,dx:s.dx,dz:s.dz};
+}
+/* It manoeuvres for a shot, not just toward you.
 
-   One cell toward you, preferring the axis it is further away on - but it
-   will not walk onto a square the fold could crush it on if it has any other
-   way to close. That single rule is what turns the fight from a wait into a
-   hunt. Without it the boss strolls onto a kill line unprompted, and the
-   whole fight collapses into: stand still, wait for green, fold, repeat.
-
-   When every closing step is dangerous it takes one anyway. It has to: a
-   boss that always refuses is a boss that can never be killed, and the point
-   of the avoidance is to make you *force* the moment, not to deny it. So the
-   fight is herding - cut off its safe approaches, using geometry and the
-   camera, until the only way it can come at you is across a line.
-
-   Rotating re-labels every line at once, which makes the camera a weapon
-   rather than a convenience: turn, and the square it just fled to is the one
-   that kills it. */
-function bossNext(R,from,to,cr,v){
-  var dirs=[[1,0],[-1,0],[0,1],[0,-1]], safe=[], risky=[];
+   Closing the distance is worth something, but getting onto your row or
+   column is worth more, because that is the only state it can fire from.
+   Purely closing made it shuffle diagonally and take six seconds to find an
+   angle, which reads as a wander rather than a hunt. Scoring alignment above
+   distance makes it stride into line and plant, which is legible as intent. */
+function bossNext(R,from,to,cr){
+  var dirs=[[1,0],[-1,0],[0,1],[0,-1]], best=null;
+  var here=Math.abs(from.x-to.x)+Math.abs(from.z-to.z);
   for(var i=0;i<4;i++){
     var nx=from.x+dirs[i][0], nz=from.z+dirs[i][1];
     var ny=resolveStep(
       (function(a,b){return function(h){return R.solid(a,h,b,cr);};})(nx,nz), from.y,
       (function(a,b){return function(h){return R.solid(a,h,b,cr);};})(from.x,from.z));
     if(ny===null||ny===FELL)continue;
-    if(R.deadly3(nx,ny,nz))continue;        // it will not walk onto spikes either
-    var cand={x:nx,y:ny,z:nz};
-    cand.d=Math.abs(nx-to.x)+Math.abs(ny-to.y)+Math.abs(nz-to.z);
-    ((v!==undefined&&bossCrushAt(R,cand,v,cr))?risky:safe).push(cand);
+    if(R.deadly3(nx,ny,nz))continue;
+    var d=Math.abs(nx-to.x)+Math.abs(nz-to.z);
+    var lined=bossAimDir(R,{x:nx,y:ny,z:nz},to,cr)?1:0;
+    var score=lined*40-d-(d>here?6:0);
+    if(!best||score>best.score)best={x:nx,y:ny,z:nz,score:score};
   }
-  function nearest(list){
-    var best=null;
-    for(var j=0;j<list.length;j++) if(!best||list[j].d<best.d) best=list[j];
-    return best;
-  }
-  /* Every neighbour is considered, not just the two that close the distance.
-     That is what lets it walk *around* a line instead of through one, and it
-     is the difference between a boss you have to corner and a boss that
-     corners itself. With only closing steps on the table it would take a
-     lethal one whenever both happened to be lethal, which is how the
-     do-nothing strategy kept working even on arenas with few lines. */
-  /* It would rather wait than die.
-
-     A crush line is not a square, it is a wall clean across the arena, so if
-     one lies between you it CANNOT approach without crossing - and every
-     crossing is a free hit to anyone standing still. Letting it hold instead
-     is what finally kills the do-nothing strategy: park yourself behind a
-     line and it simply stops coming, and you have won nothing.
-
-     It never crosses. An earlier version let it charge through after stalling
-     for a few seconds, as a valve against stalemate, and that single
-     concession handed the whole exploit straight back: wait four beats, take
-     a free hit, repeat. Nothing it does on its own will ever kill it.
-
-     Which means a hit has to be *made*. Two ways, both of which require you
-     to act: rotate, and the square it is standing on becomes a line - every
-     line in the arena is re-labelled at once by a quarter turn - or move, and
-     change which squares it is willing to approach through.
-
-     Standing behind a line is therefore safe, and worth nothing: it waits,
-     you gain nothing, and the sweeps come for you regardless. That is the
-     answer to a standoff, not a charge. */
-  var here=Math.abs(from.x-to.x)+Math.abs(from.y-to.y)+Math.abs(from.z-to.z);
-  var s=nearest(safe);
-  if(s&&s.d<here)return s;                  // safe progress: take it
-  if(s&&s.d<=here)return s;                 // safe sidestep, looking for a way in
-  return null;                              // hold position rather than walk into it
+  return (best&&best.score>-40*0-here-7)?best:null;
 }
+// Sweeps are gone: the projectile is the ranged attack now. Kept as a no-op
+// so any level data still carrying `beats` loads without special-casing.
+function bossSafety(level){return {ok:true};}
 
 /* Is this arena a stage a fight can happen on?
 
@@ -212,71 +188,23 @@ function bossArena(level){
   }
   if(!stand.has(K(B.at[0],B.at[1],B.at[2])))
     fail.push("boss cannot reach you: its ground is not connected to yours");
-  /* How many squares can it actually be killed on? A kill needs the boss
-     standing where some rotation's silhouette column is already occupied.
-     Counting them is the arena's real content: an arena with a handful is a
-     fight you win by luck, and one with none cannot be won at all. */
-  var kills=0, it=stand.values(), n;
-  while(!(n=it.next()).done){
-    var c=parseK(n.value), any=false;
-    for(var v=0;v<4&&!any;v++){
-      var u=c[0]*AX[v].r[0]+c[2]*AX[v].r[2];
-      if(R.siloSolid(v,u,c[1],cr)||R.deadly2(v,u,c[1]))any=true;
-    }
-    if(any)kills++;
+  /* Cover: blocks standing proud of the floor, which is what stops a shot.
+     Too little and the arena is a shooting gallery; too much and the boss
+     cannot path to you and the fight stalls. */
+  var cover=0, crates=[];
+  for(var c2=0;c2<level.blocks.length;c2++){
+    var bb=level.blocks[c2];
+    if(isCrate(bb)){crates.push(bb);continue;}
+    if(bb[1]>0)cover++;
   }
-  if(kills<B.hp*3)
-    fail.push("only "+kills+" squares it can be crushed on, for "+B.hp+" hits");
-  var crates=[];
-  for(var c2=0;c2<level.blocks.length;c2++)
-    if(isCrate(level.blocks[c2]))crates.push(level.blocks[c2]);
+  if(cover<2)fail.push("no cover: nothing to break the firing line with");
+  if(cover>stand.size*.2)fail.push(cover+" pieces of cover is a maze, not an arena");
   var depths={},nd=0;
   for(var q2=0;q2<level.blocks.length;q2++)
     if(!depths[level.blocks[q2][2]]){depths[level.blocks[q2][2]]=1;nd++;}
   if(nd<4)fail.push("too flat for folding to buy anything");
   return {ok:!fail.length,fail:fail,squares:stand.size,
-          kills:kills,crates:crates.length};
-}
-
-/* The fairness property that replaced the solver's proof.
-
-   For every square you can stand on, and every beat the boss has, either that
-   square is safe from the beat or a square one step away is. In other words
-   the arena never corners you: there is always somewhere to be. It is weaker
-   than "a clean run exists" - it says nothing about whether you can dodge and
-   make progress at the same time - but it is checkable, and it rules out the
-   failure that actually matters, which is dying with no move that would have
-   saved you. Run by tools/verify.js over every boss level. */
-function bossSafety(level){
-  var B=makeBoss(level); if(!B||!B.beats.length)return {ok:true};
-  var R=makeRules(level), cr=crateSet(crateKeys(level));
-  var stand=[], seen={};
-  for(var i=0;i<level.blocks.length;i++){
-    var bl=level.blocks[i], x=bl[0], y=bl[1]+1, z=bl[2];
-    if(R.solid(x,y,z,cr))continue;
-    var k=K(x,y,z); if(seen[k])continue; seen[k]=1;
-    stand.push([x,y,z]);
-  }
-  var bad=[];
-  for(var bi=0;bi<B.beats.length;bi++){
-    var sw=B.beats[bi];
-    for(var si=0;si<stand.length;si++){
-      var c=stand[si];
-      if(!B.hits(sw,0,"3",c[0],c[1],c[2]))continue;    // already safe here
-      var out=false;
-      var nb=[[1,0],[-1,0],[0,1],[0,-1]];
-      for(var ni=0;ni<nb.length&&!out;ni++){
-        var nx=c[0]+nb[ni][0], nz=c[2]+nb[ni][1];
-        var ny=resolveStep(function(h){return R.solid(nx,h,nz,cr);},c[1],
-                           function(h){return R.solid(c[0],h,c[2],cr);});
-        if(ny===null||ny===FELL)continue;
-        if(R.deadly3(nx,ny,nz))continue;
-        if(!B.hits(sw,0,"3",nx,ny,nz))out=true;
-      }
-      if(!out)bad.push({cell:c,beat:sw});
-    }
-  }
-  return {ok:!bad.length,trapped:bad};
+          cover:cover,crates:crates.length};
 }
 
 function makeRules(level){

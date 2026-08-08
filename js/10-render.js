@@ -8,7 +8,7 @@
    THREE
    ============================================================ */
 var scene,camera,renderer,meshes={},playerMesh,goalMesh,gridLines,groundPlane,footMesh;
-var sweepMesh,sweepEdge,bossMesh;
+var sweepMesh,sweepEdge,bossMesh,shotMeshes=[];
 var colPeril=new THREE.Color(0x8f3b52);
 var perilSet=null,perilCleanup=[],perilPulse=0;
 var crateMeshes=[],keyMeshes=[],goalGhost=null;
@@ -221,16 +221,9 @@ function recomputeBounds(){
   centerT.set((a[0]+b[0])/2,(a[1]+b[1])/2+.5,(a[2]+b[2])/2);
   viewSizeT=Math.max(b[0]-a[0],b[2]-a[2],b[1]-a[1])*.72+3.4;
 }
-/* Show the slice that is charging, and flash it as it lands.
-
-   Only the charging beat is drawn - drawing all of them at once would be
-   honest and unreadable. Placement follows the same rule the hit test uses,
-   including the important case: flattened, a sweep down the view axis covers
-   the entire plane, because flattened you are at every depth at once. Seeing
-   the whole board go red is the correct answer there, not a bug. */
-/* The boss folds like the world does: flattened it slides onto its
-   silhouette column, which is what makes "it can still reach your column in
-   the plane" legible rather than a rule you have to be told. */
+/* The boss folds like the world does: flattened it slides onto its silhouette
+   column, which is what makes "share its column to strike" legible rather
+   than a rule you have to be told. */
 function drawBoss(rx,rz,tdvx,tdvz){
   if(!bossMesh)return;
   if(!B||!bossAt||app!=="play"){bossMesh.visible=false;return;}
@@ -239,52 +232,68 @@ function drawBoss(rx,rz,tdvx,tdvz){
   var bx=bu*rx+bd*.012*tdvx, bz=bu*rz+bd*.012*tdvz;
   tmp.set(bossAt.x+(bx-bossAt.x)*flatT, bossAt.y, bossAt.z+(bz-bossAt.z)*flatT);
   bossMesh.position.lerp(tmp,.35);
-  bossMesh.rotation.y+=bossStunMs>0?.005:.02;
   var reeling=bossStunMs>0;
-  /* Open: folding right now would crush it. This is the answer to "how do I
-     hurt this thing" - the game says so, in the moment, rather than in a hint
-     line you read once. Without it the mechanic is invisible: nothing on
-     screen tells you the boss's column is blocked. */
-  var open=(typeof bossCrushable==="function")&&bossCrushable();
-  var coreCol=reeling?0x6a3540:(open?0x35c2a5:0xff4d5e);
-  bossMesh.userData.core.material.color.setHex(coreCol);
+  bossMesh.rotation.y+=reeling?.005:(bossPhase==="aim"&&bossAim?.05:.02);
+  /* Three states, all readable at a glance because you act on them inside a
+     second: reeling (dim), open (green - it just spent its shot and can be
+     hit), winding up (red, brightening as the lock completes). Lined up AND
+     open is brighter still, because that is the instant the fold is a strike
+     rather than a way to die. */
+  var open=(typeof bossOpen==="function")&&bossOpen();
+  var lined=open&&(typeof bossAligned==="function")&&bossAligned()&&!flat;
+  bossMesh.userData.core.material.color.setHex(
+    reeling?0x6a3540:(open?0x35c2a5:0xff4d5e));
   bossMesh.userData.cage.material.color.setHex(open?0x35c2a5:0xff6b7a);
   bossMesh.userData.cage.material.opacity=reeling?.3:
-    (open?(.7+perilPulse*.3):(.6+bossHitFlash*.4));
-  var puff=1+bossHitFlash*.35;
-  bossMesh.scale.setScalar(puff*(reeling?.86:1));
+    (lined?(.85+perilPulse*.15):open?.6:(.45+bossFlash*.5));
+  bossMesh.userData.core.scale.setScalar(lined?1.4:1);
+  bossMesh.scale.setScalar((1+bossHitFlash*.35)*(reeling?.86:1));
 }
-function drawSweep(){
+/* The telegraph and the shots.
+
+   The aim line is drawn from the boss along the axis it has locked, brightening
+   as the wind-up completes, so "where is it about to shoot" is answerable at a
+   glance and the dodge is always sideways. Projectiles are their own small
+   meshes, pooled rather than rebuilt, and they fold with the world like
+   everything else - flattened, a shot at another depth is suddenly in your
+   column, which is the risk folding buys you. */
+function drawSweep(rx,rz,tdvx,tdvz){
   if(!sweepMesh)return;
-  if(!B||app!=="play"){sweepMesh.visible=sweepEdge.visible=false;return;}
-  var sw=B.beatAt(bossMs), span=16;
-  var ph=B.phase(bossMs), live=B.live(bossMs);
-  // Sized and centred on the arena rather than the origin: a slab hung off
-  // world zero trails halfway across the screen and reads as scenery.
-  var cx=centerT.x, cy=centerT.y, cz=centerT.z;
-  var sx=span,sy=span,sz=span, px=cx,py=cy,pz=cz;
-  var whole=false;
-  if(sw.axis==="y"){ sy=1; py=sw.at; }
-  else if(flatT>.5){
-    // `view` is the true fold axis; the peek camera must never change this
-    var comp=sw.axis==="x"?AX[view].r[0]:AX[view].r[2];
-    if(comp===0)whole=true;                 // the view axis: nowhere is safe
-    else { sx=1; px=sw.at*comp; }
+  if(!B||!bossAt||app!=="play"||bossPhase!=="aim"||bossStunMs>0||!bossAim){
+    sweepMesh.visible=sweepEdge.visible=false;
+  } else {
+    var reach=18;
+    var mx=bossAt.x+bossAim.dx*reach/2, mz=bossAt.z+bossAim.dz*reach/2;
+    sweepMesh.scale.set(bossAim.dx?reach:.5, .5, bossAim.dz?reach:.5);
+    sweepMesh.position.set(mx,bossAt.y,mz);
+    sweepEdge.scale.copy(sweepMesh.scale);
+    sweepEdge.position.copy(sweepMesh.position);
+    var t=Math.min(1,bossPhaseMs/Math.max(1,B.aim));
+    sweepMesh.material.opacity=.10+t*t*.36;
+    sweepEdge.material.opacity=.25+t*.6;
+    sweepMesh.visible=sweepEdge.visible=true;
   }
-  else if(sw.axis==="x"){ sx=1; px=sw.at; }
-  else { sz=1; pz=sw.at; }
-  if(whole){ sx=span;sz=span;sy=span;px=cx;py=cy;pz=cz; }
-  sweepMesh.scale.set(sx,sy,sz);
-  sweepMesh.position.set(px,py,pz);
-  sweepEdge.scale.copy(sweepMesh.scale);
-  sweepEdge.position.copy(sweepMesh.position);
-  // The charge has to read as a countdown, not a warning light: opacity ramps
-  // with how far through the beat you are, so "how long have I got" is
-  // legible at a glance instead of needing a number.
-  var heat=live?(.42+bossFlash*.35):(.08+ph*ph*.2);
-  sweepMesh.material.opacity=heat;
-  sweepEdge.material.opacity=live?(.75+bossFlash*.25):(.22+ph*.35);
-  sweepMesh.visible=sweepEdge.visible=true;
+  drawShots(rx,rz,tdvx,tdvz);
+}
+function drawShots(rx,rz,tdvx,tdvz){
+  var want=(B&&app==="play")?shots.length:0;
+  while(shotMeshes.length<want){
+    var m=new THREE.Mesh(new THREE.OctahedronGeometry(.2),
+      new THREE.MeshBasicMaterial({color:0xff4d5e}));
+    m.add(new THREE.Mesh(new THREE.OctahedronGeometry(.32),
+      new THREE.MeshBasicMaterial({color:0xff8a96,transparent:true,opacity:.35})));
+    scene.add(m);shotMeshes.push(m);
+  }
+  for(var i=0;i<shotMeshes.length;i++){
+    var sm=shotMeshes[i];
+    if(i>=want){sm.visible=false;continue;}
+    var sh=shots[i];
+    var su=sh.x*rx+sh.z*rz, sd=sh.x*tdvx+sh.z*tdvz;
+    var px=su*rx+sd*.012*tdvx, pz=su*rz+sd*.012*tdvz;
+    sm.position.set(sh.x+(px-sh.x)*flatT, sh.y, sh.z+(pz-sh.z)*flatT);
+    sm.rotation.y+=.25;sm.rotation.x+=.18;
+    sm.visible=true;
+  }
 }
 function buildGrid(){
   if(gridLines){scene.remove(gridLines);gridLines.geometry.dispose();gridLines.material.dispose();}
@@ -518,7 +527,7 @@ function animate(now){
   var sealed=app==="play"&&keyMeshes.length&&keysLeft()>0;
   goalMesh.material.color.set(B?0xff8a3c:(sealed?0x4a5a6a:0x35c2a5));
   goalMesh.scale.setScalar(sealed?.8:1+Math.sin(Date.now()*.004)*(B?.14:.06));
-  drawSweep();
+  drawSweep(rx,rz,tdvx,tdvz);
   drawBoss(rx,rz,tdvx,tdvz);
 
   if(bossFlash>0)bossFlash=Math.max(0,bossFlash-.055);

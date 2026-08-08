@@ -153,134 +153,74 @@ optimal solution.
 
 ## Bosses
 
-**A boss is an opponent, not an objective.** It hunts you across the arena in
-real time, and **you kill it with the fold** — by turning the rule that kills
-*you* against it. Rule 4 says a fold crushes you if something already projects
-into your square; the boss is subject to exactly the same thing. So you lead
-it (it is chasing you) until it stands at a depth whose silhouette column is
-already occupied, and then you fold.
+**An opponent with a gun, and a rhythm you fight inside.**
 
-Three drafts got here, and all three failures are worth keeping:
+| | |
+|---|---|
+| **AIM** | it manoeuvres onto your row or column, **plants**, and the line lights up |
+| **SHOT** | a projectile crosses the arena a cell at a time. Blocks stop it, so pillars are cover |
+| **OPEN** | with the shot spent, it is exposed — the only moment it can be hurt |
 
-1. *Turn-based, walk to a marker.* Every step advanced it one tick, so
-   `solve()` could prune hit states and prove a run existed that was never hit
-   — "solvable" and "fair" were one question. Rejected in playtesting for not
-   feeling like a fight.
-2. *Real-time, walk to a marker.* Better pressure, still not a fight: standing
-   somewhere three times is a puzzle objective wearing a boss costume.
-3. *Damage by shoving a crate into it.* A real attack, but **crates are not
-   taught until section IV**, so the first three bosses were unkillable with
-   anything the player had been shown. A boss whose only weapon is a piece
-   you have never seen is not a hard fight, it is a broken one.
+**You hurt it by folding while you share its silhouette column, during OPEN.**
+Outside that window the identical input kills *you*: in the plane it is solid,
+so folding into its column is folding into a wall. The strike and the suicide
+are the same button, separated only by timing. That is the fight.
 
-Crushing needs nothing but the fold, so it works from the first fight, and
-each section then changes what a blocked column *means*: pillars are the plain
-rule, spikes poison columns the boss will not walk into on foot, glass is
-floor that casts nothing so half the lines are lies, and crates finally let
-you build a column where there wasn't one — or just shove one into it, which
-still works and is the only way to hit it while it is stunned.
+### Four designs, and why the first three failed
 
-**The rhythm is the fold.** In the volume you can shove, so the volume is the
-only place you can hurt it — and the only place it can reach you. In the plane
-you cannot shove, so you cannot win there, but the whole silhouette is one
-corridor: you cross the arena in two moves and it can only chase your column.
-**Folding is retreat, unfolding is commitment.** That is the same decision the
-puzzles ask, made against something that is moving.
+1. **Turn-based, walk to a marker.** Provably fair — `solve()` could prune hit
+   states — but it did not feel like a fight.
+2. **Real-time, walk to a marker.** Better pressure, still an objective wearing
+   a boss costume.
+3. **Crush it on a static line.** A real attack, but the vulnerability was a
+   property of the *floor*, so the fight became manipulating the floor: stand
+   still, wait, fold. Making it avoid the lines only taught it to freeze —
+   which reads as broken AI — and produced a fresh two-button loop.
 
-On top of that it sweeps: a lethal plane charges in plain sight and lands on
-the last `fire` ms of a beat. A sweep down the axis you are *looking along*
-cannot be dodged in the plane at all — flattened you are the projection of
-every depth at once — so retreat has a cost, and the axis you picked decides
-what it is.
+**The lesson, paid for three times: a vulnerability that does not come out of
+the boss's own behaviour is a condition to farm, not a fight to win.** OPEN is
+a consequence of it shooting, so the only way to get one is to make it shoot,
+which means being somewhere worth shooting at.
 
-**How you actually land a hit, and why it is not free.** The boss *will not
-walk onto a line it can be crushed on* — it detours, and if a line lies
-between you it simply holds position rather than crossing. So nothing it does
-on its own will ever kill it. A hit has to be made, two ways:
+### Details that are load-bearing
 
-- **Turn.** A quarter turn re-labels every line in the arena at once, so the
-  square it is safely standing on becomes lethal. Fold before it steps off.
-  This makes the camera the weapon rather than a convenience.
-- **Move.** Reposition so the safe approaches run out and it has to come at
-  you across one.
+- **It plants to shoot.** While a lock is held it does not walk, so the line
+  you are shown is the line that fires — a telegraph that drifts is not a
+  telegraph — and freezing is the tell that a shot is coming.
+- **It only fires down a clear row or column.** An early version fired along
+  whichever axis you were further away on, which meant it shot past you almost
+  every time and a motionless player was never in danger. It also **will not
+  fire into cover**: a blocked shot would hand over the OPEN beat for free,
+  and that window is payment for surviving a bullet, not for owning a wall.
+  Blocked, it keeps walking until it has an angle — so hiding makes it come.
+- **OPEN starts when the bullet is spent, not when it leaves the barrel.**
+  This single ordering killed the last exploit: with the window opening at the
+  muzzle, a motionless player folded the instant it fired and traded one life
+  for one hit point, which against three lives and three hp is exactly enough
+  to win by doing nothing.
+- **`bossNext` scores alignment above distance.** Purely closing made it
+  shuffle diagonally for six seconds looking for an angle, which reads as a
+  wander rather than a hunt.
+- Scored on lives, three stars for three intact. `progress[name]` holds lives
+  for a boss and a move count for everything else — opposite senses in one
+  slot — so reads go through `starsForRecord()`, writes through
+  `betterRecord()`.
 
-And **standing still is fatal**, because the sweeps travel: a beat written
-`{axis,from,to}` expands at build time into one static beat per coordinate, so
-the plane marches the length of the arena and reaches every square. A single
-fixed slice is dodged once and ignored forever; a travelling one means there
-is no square to camp on. `bossSafety()` still checks each position separately,
-so "never cornered" holds the whole way across.
+### Verification
 
-**This is the design's third and worst near-miss, and the checks could not see
-it.** A playtester broke the fight in about a minute — stand still, wait for
-the boss to wander onto a line, fold, repeat — while every static property
-still passed: the arena was connected, the sweeps never cornered anyone, the
-boss was killable. None of them was about *play*. Two things came out of it:
+`solve()` knows nothing about bosses and must not: none of this is a function
+of a move sequence. Two checks stand in, and both have caught real errors:
 
-- **`tools/bosssim.js`, run by `verify.js`, plays each fight twice.** An IDLE
-  policy that never moves must **lose**, and a HERDER policy that dodges and
-  turns must **win**. Neither is a good player; they are a floor and a
-  ceiling, and a boss has to sit between them.
-- **Pillar count is the difficulty dial and it is far more sensitive than it
-  looks.** A pillar does not block a square, it blocks a *line* — every square
-  sharing its `u` in that view, right through the arena. Coverage is roughly
-  (distinct pillar coordinates) / (arena width), so five scattered pillars put
-  50–70% of the floor under threat, and above about a third the boss cannot
-  avoid the lines however hard it tries and walks onto one unprompted. **Two
-  or three distinct lines per axis is the number**; `bossgen` prints coverage.
-
-An earlier fix let it charge through a line after stalling a few seconds, as a
-valve against standoffs. That one concession handed the whole exploit straight
-back — wait four beats, take a free hit, repeat — so it is gone. A standoff is
-answered by the sweeps, not by the boss losing patience.
-
-- **The game says when a fold would land.** `bossCrushable()` drives the boss's
-  core and cage to the goal colour and puts the `GO 2D` button in `.strike`.
-  Without it the mechanic is invisible — nothing on screen tells you a column
-  is blocked — and "I'm not sure how to kill it" is the only possible
-  reaction. Peril still wins the colour when both are true: dying costs more
-  than a missed hit.
-- Data: `boss:{hp, at:[x,y,z], step, stun, period, fire, beats:[{axis,at}…]}`.
-  All times in **milliseconds**. `step` is how often it moves, `stun` how long
-  it reels after taking a crate.
-- **It paths greedily, not perfectly** (`bossNext`). Geometry it cannot round
-  is where you outplay it; a boss that always finds the route is one you can
-  only outrun.
-- **`bossFrame(dt)`** drives everything from the animation loop, paused
-  whenever the fight is not in front of you — panel open, win card up,
-  mid-death, intro showing. `dt` is clamped to 90ms: a backgrounded tab returns
-  one enormous frame, which would otherwise march the boss across the arena
-  and kill you for switching apps.
-- **Scored on lives, not moves.** Three lives, three stars for three intact.
-  A hit sends you both back to your corners but its damage stands.
-  `progress[name]` holds lives for a boss and a move count for everything else
-  — opposite senses in one slot — so reads go through `starsForRecord()` and
-  writes through `betterRecord()`.
-- Undo rewinds its position and hit points but not the clock, and never hands
-  back a life.
-
-**The solver knows nothing about bosses, deliberately.** None of this is a
-function of your move sequence: the clock runs while you think and the boss
-moves in response to where you are. Do not reintroduce boss modelling into
-`solve()` — a path it claimed was safe would be a lie.
-
-Two checks stand in for it, both in `js/03-rules.js` so `tools/verify.js` and
-`tools/bossgen.js` share one implementation:
-
-- **`bossArena()`** — the stage works: it can reach you (**an arena split by a
-  chasm is a boss that can never fight**, which is exactly what the generated
-  arenas were), there are far more squares it can be crushed on than hits
-  needed, and there is enough depth for folding to buy anything. Crush spots
-  are the real content of an arena, so pillars are what an arena is made of.
-- **`bossSafety()`** — no sweep ever corners you: every threatened square has a
-  safe one a step away. This is why the height sweep sits at `y:2` and not
-  `y:1` — at 1 it catches everyone standing on the floor at once, which is not
-  an attack, it is a cutscene, and the check refuses it.
-
-**The four arenas are authored, not searched.** Generate-and-test found arenas
-that were *completable*, which was the whole question for a walk-to-a-marker
-boss and is barely a question for a fight. `tools/bossgen.js` now builds the
-four by hand and runs the checks above on them.
+- **`bossArena()`** (`js/03-rules.js`, shared by `verify.js` and `bossgen.js`)
+  — the stage works: the boss can reach you, there is cover to break a firing
+  line with, and not so much that the arena is a maze. It rejected two arenas
+  where I had spawned the boss **inside a pillar**.
+- **`tools/bosssim.js`**, run by `verify.js` — **it plays each fight twice**.
+  An IDLE policy that never moves must **lose**; a DUELLIST that breaks the
+  line and folds on the opening must **win**. Neither is a good player; they
+  are a floor and a ceiling. This exists because a playtester broke two
+  designs in about a minute each while every static property still passed —
+  none of them was about *play*.
 
 ---
 
@@ -520,11 +460,13 @@ Highest-leverage dials in `synthesize()`: the depth-choice heuristic (currently
 - **The boss is the one real-time thing in a turn-based game.** It works, but
   it means the game no longer plays entirely at your own pace, and an
   accessibility option to slow `period` is the obvious missing setting.
-- **Boss pacing is guesswork.** `step` runs 1100ms down to 900ms, `period`
-  1500ms down to 1150ms, `stun` 1700ms down to 1400ms. `bosssim` proves the
-  fights sit between "idle loses" and "active play wins"; it says nothing
-  about whether they are *fun* at those numbers, or whether a human has time
-  to turn and fold inside one boss step.
+- **Boss pacing is guesswork.** `step` 950→780ms, `aim` 1000→750ms, `open`
+  1500→1100ms. `bosssim` proves each fight sits between "idle loses" and
+  "active play wins"; it says nothing about whether the numbers are *fun*, or
+  whether a human can line up and fold inside the OPEN window.
+- **The opening approach is slow** — the boss spends a few seconds walking
+  into its first firing line. Mid-fight it re-engages quickly, but the first
+  few seconds of an arena are quiet.
 - **`bosssim`'s herder is not a good player.** It looks one boss-step ahead
   and never plans. A real exploit subtler than standing still would slip
   past it exactly the way the last one slipped past the static checks.
