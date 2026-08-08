@@ -313,7 +313,8 @@ function levelPicker(){
     }
     var tut=!!LEVELS[i].tutorial;
     var boss=!!LEVELS[i].boss;
-    var st=(tut||boss)?{ok:false}:statsCached(LEVELS[i]);
+    var trial=!!LEVELS[i].trial;
+    var st=(tut||boss||trial)?{ok:false}:statsCached(LEVELS[i]);
     var mark=(playSource==="builtin"&&i===lvIndex)?" \u25c0":"";
     var done=progress[LEVELS[i].name];
     var badge=done===undefined?"":
@@ -321,8 +322,10 @@ function levelPicker(){
          :"<span class='ok'>"+starGlyphs(starsForRecord(LEVELS[i],done))+"</span>");
     var note=tut?"tutorial":
       boss?(LEVELS[i].boss.hp+" hits"):
+      trial?(LEVELS[i].trial.beats.length+" sweeps"):
       (st.ok?st.flattens+(st.flattens===1?" fold":" folds"):"?");
     html+="<div class='lrow"+(mark?" here":"")+(boss?" bossrow":"")+
+      (trial?" trialrow":"")+
       "'><span class='lname'>"+
       esc(LEVELS[i].name)+mark+"</span>"+
       "<span class='mono'>"+note+

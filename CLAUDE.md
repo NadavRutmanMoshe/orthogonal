@@ -37,9 +37,11 @@ for the mechanic even though it did not end up on the button.
    **unless** an anchor is among the candidates — then the anchor wins.
 6. You must reach the goal in the volume. Standing on its projection is not
    enough.
-7. On a boss level there is no goal: you strike each core in turn, in the
-   volume, while a lethal plane sweeps one slice of the world **on a real
-   clock**. That clock is the one place the game is not turn-based.
+7. On a boss level there is no goal: there is an opponent with a gun, and you
+   hurt it by folding while you share its column in the one beat it is
+   exposed. On a **trial** there is a goal like any other level, and a lethal
+   plane sweeping one slice of the world. Both run **on a real clock**, and
+   that clock is the one place the game is not turn-based.
 
 Death is solver-equivalent to a blocked move — neither leads anywhere, so no
 shortest path routes through it. Adding death changed nothing about any puzzle;
@@ -57,8 +59,8 @@ anything; everything before it only declares.
 |---|---|
 | `js/00-storage.js` | `window.storage` over `localStorage`. The game was born inside a Claude artifact where the host supplied this API; the shim lets identical code run from `file://`, itch.io and a Capacitor WebView. Defines itself only if absent. Falls back to an in-memory map if storage is denied (private browsing). |
 | `js/01-coords.js` | `AX[]` — the four camera views, each with `r` (screen-right) and `d` (depth, pointing at the camera). Nearly every coordinate calculation goes through these. Also `K()` and `box()`. |
-| `js/02-levels.js` | 68 levels + `SECTIONS` + `LEVEL_RENAMES`. |
-| `js/03-rules.js` | `resolveStep()`, block kinds, `makeRules()`, `makeBoss()`, `bossSafety()`. |
+| `js/02-levels.js` | 72 levels + `SECTIONS` + `LEVEL_RENAMES`. |
+| `js/03-rules.js` | `resolveStep()`, block kinds, `makeRules()`, `makeBoss()`, `makeTrial()`, `trialSafety()`. |
 | `js/04-solver.js` | `solve()` — BFS over game states; reaches boss cores but does **not** model sweeps. |
 | `js/05-state.js` | Mutable state, boss state, tutorial counters. |
 | `js/06-persistence.js` | Progress, settings, session, library, wardrobe. |
@@ -106,14 +108,15 @@ Block format is `[x,y,z,k]` where k is 0 stone, 1 glass, 2 anchor, 3 crate,
 
 **The campaign is four sections plus a locked shelf**, listed in `SECTIONS` in
 `js/02-levels.js`. Each teaches one mechanic gently, hardens it, then ends on
-levels that combine it with everything already taught, then a boss:
+levels that combine it with everything already taught, then a boss. Four or
+five levels in, each section is interrupted by a **trial** — see below:
 
 | | | |
 |---|---|---|
-| I · FUNDAMENTALS | 9 + boss | turn, depth — the fold itself is the tutorial's job |
-| II · SPIKES | 7 + boss | spikes before glass — a hazard reads faster than an absence |
-| III · GLASS | 8 + boss | ends on glass + spikes |
-| IV · CRATES | 10 + boss | ends on crate + glass + spikes |
+| I · FUNDAMENTALS | 9 + trial + boss | turn, depth — the fold itself is the tutorial's job |
+| II · SPIKES | 7 + trial + boss | spikes before glass — a hazard reads faster than an absence |
+| III · GLASS | 8 + trial + boss | ends on glass + spikes |
+| IV · CRATES | 10 + trial + boss | ends on crate + glass + spikes |
 | V · EXTRA | 27, locked | opens when every boss is down |
 
 `SECTIONS[].at` holds array indices, so inserting a level means shifting every
@@ -148,6 +151,72 @@ survive.
 Every special piece is verified load-bearing; every anchor level is verified
 **impossible** without its anchor; every crate is verified to be shoved in the
 optimal solution.
+
+---
+
+## Trials
+
+**An ordinary level, on a clock.** Four or five turn-based puzzles into a
+section, one arrives that will not wait: the goal is drawn amber instead of
+green, and a lethal plane sweeps one slice of the world, charging in plain
+sight for most of a beat and going live for the last `fire` milliseconds.
+Reach the goal in the volume, as always. Three lives, and three intact lives
+is three stars.
+
+**This is the second boss design, brought back where it belongs.** It failed
+as a boss for a reason still worth keeping — an objective wearing a boss
+costume is not a fight, and the vulnerability has to come out of the
+opponent's own behaviour. But that is an argument about what a *boss* is, and
+it says nothing against the sweep itself. As a change of pace in the middle of
+a section it is exactly right, and it costs the fight nothing.
+
+The reason the attack is a plane, and the reason a trial is about the fold
+rather than about reflexes: **a sweep down the axis you are looking along
+cannot be dodged in the plane at all.** Flattened you are the projection of
+every depth at once, so you stand in every slice of that axis simultaneously.
+The same sweep is one step to dodge in the volume, and rotating re-labels
+which sweeps are survivable. So the question is the one the whole game asks —
+which axis, and is this the moment — only now with a metronome running. The
+`GO 2D` button carries the warning, pulsing red whenever the charging slice is
+one the plane has no answer to; because that is a fact about the clock rather
+than about geometry, it is re-judged every frame in the render loop instead of
+in `syncHud`, which is the one place a button class is not owned by `syncHud`.
+
+### Details that are load-bearing
+
+- **A trial keeps its section's numbering out of it.** Like a boss it is
+  named `TRIAL I …` rather than given a number, because progress is keyed by
+  name: inserting `05` in the middle would renumber every level after it and
+  cost a `LEVEL_RENAMES` entry each. A landmark should not be able to break a
+  save.
+- **Two platforms that share a row of z can be joined by one turn and one
+  fold.** The first four arenas were solved in three or four moves flat —
+  rotate, collapse, land on the goal — because the far side sat at the same
+  depth as the start. Offsetting the far side in *both* axes is what makes the
+  crossing real. A trial that ends before its second beat is not a trial, and
+  `solve()` is the only thing that will tell you.
+- **The clock stops the moment you reach the goal**, not when the win card
+  appears 380ms later (`levelDone`). Without that a slice could still land on
+  a level you had already finished — and the same gap existed for the boss's
+  last shot, so the flag guards both.
+- **A hit sends you back to the start with the clock restarted**, so you are
+  never dropped in front of a slice already halfway to landing. Moves are left
+  alone, because moves are not the score here.
+- Scored like a boss, through the same two functions: `progress[name]` holds
+  lives, read through `starsForRecord()` and written through `betterRecord()`,
+  both of which now ask `onTheClock(level)` rather than `level.boss`.
+
+### Verification
+
+`solve()` is allowed a full opinion here, unlike on a boss: a trial is a real
+level underneath, so BFS proves the geometry admits a route. What BFS cannot
+speak to is the clock, and `trialSafety()` stands in for it: for every square
+you can stand on and every beat, either that square is safe or one a step away
+is — the arena never corners you. It also checks that you do not respawn
+inside the beat that is charging. `node tools/verify.js` runs both on every
+trial, and the safety check has already earned its keep: it rejected a catwalk
+two squares wide, where the sweep that owns that height leaves the middle
+square with nowhere to go.
 
 ---
 
@@ -434,6 +503,23 @@ Highest-leverage dials in `synthesize()`: the depth-choice heuristic (currently
   real decision. That is chapter VIII, and it is what the anchor should have
   been from the start. A piece that only redirects is weak; a piece that
   *removes an option* has teeth.
+- **The crates section's trial has no crate in it.** Every other trial uses
+  the piece its section teaches — spikes take away the squares you would have
+  dodged into, glass is the fold platform, and `TRIAL IV` mixes all three
+  sweep axes — but a crate needs somewhere to be shoved *to*, and every
+  arrangement tried either left the crate unshovable (you can only push it
+  along the row you are standing in, so a crate on a one-wide catwalk can
+  never leave its column) or made it decoration. The shape that would work is
+  a crate that supplies a silhouette column no stone supplies, which needs a
+  lane at another depth to shove it along; that is a real level and it has not
+  been built yet.
+- **`trialSafety()` checks the volume only.** In the plane a sweep down the
+  view axis is unsurvivable, which is the mechanic and not a bug, so there is
+  nothing there to check — but it does mean the machine has no opinion at all
+  about the state you spend the crossing in.
+- **Sweep pacing is guesswork, exactly like the boss's.** `period` 2500 → 2000
+  and `fire` 340 → 300 across the four trials. Nothing says those numbers are
+  fun, or that the window to fold, cross and land is one a human can hit.
 - **The composer cannot generate crates or keys.** It synthesises geometry move
   by move from a solution; a push changes the world, so the geometry cannot be
   derived that way without re-deriving everything downstream. Crate and key

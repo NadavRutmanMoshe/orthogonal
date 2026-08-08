@@ -16,7 +16,7 @@ const ctx=vm.createContext({console,Set,Map,Math,JSON});
 ["01-coords.js","02-levels.js","03-rules.js","04-solver.js"].forEach(f=>{
   vm.runInContext(fs.readFileSync(path.join(JS,f),"utf8"),ctx,{filename:f});
 });
-const {LEVELS,solve,makeRules,resolveStep,AX,bossSafety,bossArena}=ctx;
+const {LEVELS,solve,makeRules,resolveStep,AX,bossSafety,bossArena,trialSafety}=ctx;
 
 const only=process.argv[2];
 let bad=0, checked=0;
@@ -43,8 +43,26 @@ LEVELS.forEach((lv,i)=>{
   if(r.status!=="solved"){
     bad++;
     console.log("  FAIL  ["+i+"] "+lv.name+"  ->  "+r.status);
-  } else if(only!==undefined || process.env.VERBOSE){
-    console.log("  ok    ["+i+"] "+lv.name+"  "+r.path.length+" moves:  "+r.path.join(" "));
+    return;
+  }
+  /* A trial is an ordinary level with a clock bolted on, so it gets the
+     ordinary proof - BFS says the geometry admits a route - and then one
+     more that BFS has no standing to give: that no beat can corner you.
+     Both matter. The first says the puzzle is a puzzle; the second says the
+     clock is an opponent rather than a coin toss. */
+  if(lv.trial){
+    const s=trialSafety(lv);
+    if(!s.ok){
+      bad++;
+      console.log("  SWEEP ["+i+"] "+lv.name+"  ->  "+
+        [].concat(s.trapped.length?[s.trapped.length+" cells cornered by a sweep"]:[],
+                  s.born?["you respawn inside the first beat"]:[]).join("; "));
+      return;
+    }
+  }
+  if(only!==undefined || process.env.VERBOSE){
+    console.log("  ok    ["+i+"] "+lv.name+"  "+r.path.length+" moves:  "+r.path.join(" ")+
+      (lv.trial?"  ·  sweeps fair":""));
   }
 });
 // Static checks cannot see a degenerate strategy, so the fights get played.

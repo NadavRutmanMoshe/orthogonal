@@ -1,6 +1,7 @@
 "use strict";
 /* Orthogonal — 02-levels.js
-   The campaign. 66 levels in ten chapters, plus the tutorial scripts.
+   The campaign: four sections and a locked shelf, each section a run of
+   levels around a trial and closed by a boss, plus the tutorial scripts.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
 
@@ -61,6 +62,22 @@ var LEVELS=[
    hint:"One of the four views is the one you need. It is not a near one.",
    blocks:[[0,0,0],[0,1,1],[-1,2,-3],[-1,2,-6],[-3,2,-6]],
    start:[0,1,0],goal:[-3,3,-6],rotate:true},
+/* A trial sits in the middle of a section, not at the end of one: four or
+   five levels that wait for you, and then one that does not. It carries no
+   number for the same reason a boss doesn't - the campaign's numbering is
+   the run of ordinary levels, and a landmark that renumbered everything
+   after it would cost every saved star to insert (see LEVEL_RENAMES). */
+{name:"TRIAL I — The Metronome",
+   hint:"The red slice lands on the beat. Cross in the gaps between.",
+   trial:{period:2500,fire:340,
+          beats:[{axis:"x",at:6},{axis:"x",at:2},{axis:"x",at:4}]},
+   /* The far side is offset in depth as well as across, and that is
+      structural rather than decorative: two platforms sharing a row of z can
+      be joined by one turn and one fold, and the solver finds that in four
+      moves flat. A trial that ends before its second beat is not a trial. */
+   blocks:(function(){var b=[];box(0,2,0,0,0,2,b);box(5,7,0,0,4,6,b);
+     b.push([3,0,9]);b.push([4,0,9]);return b;})(),
+   start:[0,1,0],goal:[7,1,4],rotate:true},
 {name:"05 — The Last Step",
    hint:"You arrive in the plane, but you finish in the volume.",
    blocks:[[0,0,0],[-4,0,1],[-2,0,1],[-2,1,2],[-7,2,1],[4,2,0],[5,2,0]],
@@ -102,6 +119,20 @@ var LEVELS=[
    hint:"Look along the axis before you commit to it.",
    blocks:[[0,0,0],[3,3,-2,4],[-2,0,0],[-2,0,1],[-4,1,2],[-2,1,2],[-5,0,1,4]],
    start:[0,1,0],goal:[-4,2,2],rotate:true},
+{name:"TRIAL II — Sharp Rhythm",
+   hint:"Spikes take the squares you would have dodged into. Walk to the edge before you fold — the near columns are poisoned.",
+   trial:{period:2200,fire:320,
+          beats:[{axis:"x",at:3},{axis:"x",at:1},{axis:"x",at:5}]},
+   blocks:(function(){var b=[];box(0,4,0,0,0,2,b);box(7,9,0,0,4,6,b);
+     b.push([5,0,9]);b.push([6,0,9]);
+     /* Three floor squares bite, and they are the ones the sweeps would
+        otherwise have left you. Replaced rather than removed, so the floor
+        stays whole: a hole you fall through is a different lesson. */
+     var sharp={"1,0,1":1,"3,0,0":1,"3,0,2":1};
+     for(var i=0;i<b.length;i++)
+       if(sharp[b[i].join(",")])b[i]=[b[i][0],b[i][1],b[i][2],4];
+     return b;})(),
+   start:[0,1,0],goal:[9,1,4],rotate:true},
 {name:"14 — Two Threats",
    hint:"Two spikes, four views, one that works.",
    blocks:[[0,0,0],[0,0,-3],[2,0,-3],[-1,3,6,4],[1,0,-5,4]],
@@ -135,6 +166,18 @@ var LEVELS=[
    hint:"Turn first. The glass hides a different hole from every side.",
    blocks:[[0,0,0],[-2,0,1],[-3,0,1],[-2,1,1,1],[-8,2,0],[-11,2,0,1]],
    start:[0,1,0],goal:[-11,3,0],rotate:true},
+{name:"TRIAL III — The Depth Slice",
+   hint:"A slice down the axis you are looking along cannot be dodged flat — there, you are at every depth. Fold between those beats, or turn until it is one you can step out of.",
+   trial:{period:2100,fire:300,
+          beats:[{axis:"x",at:1},{axis:"z",at:1},{axis:"x",at:6}]},
+   /* The glass is the fold platform, and it is load-bearing twice over: it
+      carries you in the volume, and because it casts nothing, folding from
+      the stone behind it drops you into a column with no floor. You have to
+      walk out onto the thing that is not there. */
+   blocks:(function(){var b=[];box(0,2,0,0,0,2,b);
+     b.push([3,0,0,1]);b.push([3,0,1,1]);b.push([3,0,2,1]);
+     b.push([4,0,9]);box(5,7,0,0,4,6,b);return b;})(),
+   start:[0,1,0],goal:[7,1,4],rotate:true},
 {name:"21 — Invisible Architecture",
    hint:"Most of this structure never reaches the page.",
    blocks:[[0,0,0],[0,0,-1,1],[3,0,-2],[-5,0,-3],[-3,0,-3],[-4,1,-3,1],[-8,2,-2],[-10,2,-1],[-9,2,-1,1]],
@@ -176,6 +219,26 @@ var LEVELS=[
    hint:"Fold, land, move it, fold again.",
    blocks:[[4,2,1],[1,0,4],[2,0,4],[3,0,4],[0,0,0],[2,1,4,3]],
    start:[0,1,0],goal:[4,3,1],rotate:true},
+{name:"TRIAL IV — Every Slice",
+   hint:"Three axes now, and the high ground is one of them. The crossing happens up here — so does the slice that owns this height.",
+   trial:{period:2000,fire:320,
+          beats:[{axis:"y",at:2},{axis:"x",at:2},{axis:"x",at:6},
+                 {axis:"z",at:1}]},
+   blocks:(function(){var b=[];
+     box(0,0,0,0,0,2,b);                       // the island you start on
+     /* A catwalk one square wide, with a lane under each side. The width is
+        load-bearing: the sweep that takes this height has to be dodgeable by
+        stepping off it, and two squares of high ground would corner you in
+        the middle of it - which is exactly what trialSafety() checks. */
+     b.push([1,1,1]);b.push([2,1,1]);b.push([3,1,1]);
+     box(1,3,0,0,0,0,b);box(1,3,0,0,2,2,b);
+     // The bridge, deep behind, with a step down beside it for the same
+     // reason the catwalk has lanes.
+     b.push([4,1,8]);b.push([5,1,8]);b.push([4,0,9]);b.push([5,0,9]);
+     b.push([6,1,5]);b.push([7,1,5]);          // the far catwalk
+     box(6,7,0,0,4,4,b);box(6,7,0,0,6,6,b);
+     return b;})(),
+   start:[0,1,0],goal:[7,1,4],rotate:true},
 {name:"30 — Push Through Nothing",
    hint:"The crate makes the plane; the glass unmakes the volume.",
    blocks:[[0,0,0],[1,2,-3,1],[3,2,-3],[4,0,-5],[4,0,-4],[4,0,-3],[1,1,1],[2,1,1,1],[4,1,-4,3]],
@@ -316,10 +379,10 @@ var LEVELS=[
    proper is finished - see sectionsUnlocked() in 16-panels.js. */
 var SECTIONS=[
   {at:3, name:"I · FUNDAMENTALS", sub:"one verb: collapse the world and cross the gap"},
-  {at:13, name:"II · SPIKES", sub:"a hazard you cannot see until you fold"},
-  {at:21, name:"III · GLASS", sub:"solid in the volume, absent from the plane"},
-  {at:30, name:"IV · CRATES", sub:"change the plane by moving the volume"},
-  {at:41, name:"V · EXTRA", sub:"unlocked by the Orthogon — the long ones", locked:true}
+  {at:14, name:"II · SPIKES", sub:"a hazard you cannot see until you fold"},
+  {at:23, name:"III · GLASS", sub:"solid in the volume, absent from the plane"},
+  {at:33, name:"IV · CRATES", sub:"change the plane by moving the volume"},
+  {at:45, name:"V · EXTRA", sub:"unlocked by the Orthogon — the long ones", locked:true}
 ];
 
 /* Levels have been renumbered more than once. Progress is keyed by name,

@@ -9,6 +9,7 @@
    ============================================================ */
 var scene,camera,renderer,meshes={},playerMesh,goalMesh,gridLines,groundPlane,footMesh;
 var sweepMesh,sweepEdge,bossMesh,shotMeshes=[];
+var trialSlab,trialEdge;
 var colPeril=new THREE.Color(0x8f3b52);
 var perilSet=null,perilCleanup=[],perilPulse=0;
 var crateMeshes=[],keyMeshes=[],goalGhost=null;
@@ -77,6 +78,21 @@ function initGL(){
   sweepEdge=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,1)),
     new THREE.LineBasicMaterial({color:0xff6b7a,transparent:true,opacity:.5}));
   sweepEdge.visible=false;scene.add(sweepEdge);
+
+  /* A trial's sweep: one translucent slab over the slice that is about to
+     become lethal. Drawn as a single box rather than a marker per cell
+     because the attack *is* a slice - showing it whole is cheaper and truer
+     to what the rule says. It has to be its own mesh: the pair above now
+     draws the boss's firing line, and a level never has both. */
+  trialSlab=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),
+    new THREE.MeshBasicMaterial({color:0xff4d5e,transparent:true,
+      opacity:.12,depthWrite:false}));
+  trialSlab.visible=false;trialSlab.renderOrder=900;
+  scene.add(trialSlab);
+  trialEdge=new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,1)),
+    new THREE.LineBasicMaterial({color:0xff6b7a,transparent:true,opacity:.4}));
+  trialEdge.visible=false;scene.add(trialEdge);
 
   /* The opponent. Angular and dark against the blocks so it never reads as
      terrain, with a bright core that dims as it loses hits - the health bar
@@ -294,6 +310,52 @@ function drawShots(rx,rz,tdvx,tdvz){
     sm.rotation.y+=.25;sm.rotation.x+=.18;
     sm.visible=true;
   }
+}
+/* The charging slice.
+
+   Only the beat that is charging gets drawn - showing all of them at once
+   would be honest and unreadable. Placement follows exactly the rule the hit
+   test uses, including the case that matters most: flattened, a sweep down
+   the view axis covers the whole plane, because flattened you are at every
+   depth at once. The entire board going red is the correct answer there, and
+   it is the only warning you get that the fold you are in is the wrong one.
+
+   The charge has to read as a countdown rather than a warning light, so
+   opacity ramps with how far through the beat it is - "how long have I got"
+   is then legible at a glance instead of needing a number. */
+function drawTrial(rx,rz){
+  if(!trialSlab)return;
+  if(!TR||app!=="play"||!TR.beats.length){
+    trialSlab.visible=trialEdge.visible=false;return;
+  }
+  var sw=TR.beatAt(trialMs), span=20;
+  var ph=TR.phase(trialMs), live=TR.live(trialMs);
+  // Centred on the arena rather than the origin: a slab hung off world zero
+  // trails halfway across the screen and reads as scenery.
+  var sx=span,sy=span,sz=span, px=centerT.x,py=centerT.y,pz=centerT.z;
+  if(sw.axis==="y"){ sy=1; py=sw.at; }
+  else if(flatT>.5){
+    var comp=sw.axis==="x"?AX[view].r[0]:AX[view].r[2];
+    if(comp!==0){
+      // The slice survives the fold as a single silhouette column, and in the
+      // plane a column lies along the screen-right direction - so which world
+      // axis it is thin along depends on which way you are facing.
+      var u=sw.at*comp;
+      px=u*rx; pz=u*rz;
+      if(Math.abs(rx)>.5)sx=1; else sz=1;
+    }
+    // comp===0 is the view axis: the whole plane is the slice, so the slab
+    // stays at full span in every direction and swallows the board.
+  }
+  else if(sw.axis==="x"){ sx=1; px=sw.at; }
+  else { sz=1; pz=sw.at; }
+  trialSlab.scale.set(sx,sy,sz);
+  trialSlab.position.set(px,py,pz);
+  trialEdge.scale.copy(trialSlab.scale);
+  trialEdge.position.copy(trialSlab.position);
+  trialSlab.material.opacity=live?(.40+trialFlash*.34):(.07+ph*ph*.21);
+  trialEdge.material.opacity=live?(.75+trialFlash*.25):(.20+ph*.35);
+  trialSlab.visible=trialEdge.visible=true;
 }
 function buildGrid(){
   if(gridLines){scene.remove(gridLines);gridLines.geometry.dispose();gridLines.material.dispose();}
@@ -525,13 +587,23 @@ function animate(now){
     perilCleanup=perilCleanup.filter(function(kk){return perilSet&&perilSet[kk];});
   }
   var sealed=app==="play"&&keyMeshes.length&&keysLeft()>0;
-  goalMesh.material.color.set(B?0xff8a3c:(sealed?0x4a5a6a:0x35c2a5));
-  goalMesh.scale.setScalar(sealed?.8:1+Math.sin(Date.now()*.004)*(B?.14:.06));
+  // Amber, not green, on anything with a clock: the colour is the promise
+  // that this one will not wait for you.
+  var timed=B||TR;
+  goalMesh.material.color.set(timed?0xff8a3c:(sealed?0x4a5a6a:0x35c2a5));
+  goalMesh.scale.setScalar(sealed?.8:1+Math.sin(Date.now()*.004)*(timed?.14:.06));
   drawSweep(rx,rz,tdvx,tdvz);
   drawBoss(rx,rz,tdvx,tdvz);
+  drawTrial(rx,rz);
+  // Whether folding is fatal in a trial is a question about the clock, not
+  // about geometry, so the button has to be re-judged every frame rather than
+  // only when a move happens. syncHud still owns the class on every other
+  // level; this only ever runs where TR is set.
+  if(TR&&app==="play"&&$("bFlat"))
+    $("bFlat").classList.toggle("peril",!!peril||trialFoldPeril());
 
   if(bossFlash>0)bossFlash=Math.max(0,bossFlash-.055);
-  bossFrame(dtMs);
+  bossFrame(dtMs);trialFrame(dtMs);
   amb.intensity=.45+.55*flatT;
   dir1.intensity=.85*(1-flatT);
   dir2.intensity=.35*(1-flatT);

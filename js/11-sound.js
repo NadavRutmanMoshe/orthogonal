@@ -115,6 +115,10 @@ var SFX={
   },
   // The gun: a short hard crack, low enough not to be confused with a hit.
   shot:function(){blip(210,.13,"square",.05,90);blip(620,.09,"sawtooth",.02);},
+  // A slice landing: a downward sweep, wide and soft rather than sharp,
+  // because it fires whether or not it caught you and a hard sound every
+  // couple of seconds would be exhausting.
+  sweep:function(){blip(330,.2,"sine",.028,110);blip(120,.24,"triangle",.02);},
   // A core going down: a hard hit with a bright ring over it, so a strike
   // never gets confused with taking one.
   strike:function(){

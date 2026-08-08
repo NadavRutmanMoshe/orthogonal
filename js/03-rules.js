@@ -158,9 +158,116 @@ function bossNext(R,from,to,cr){
   }
   return (best&&best.score>-40*0-here-7)?best:null;
 }
-// Sweeps are gone: the projectile is the ranged attack now. Kept as a no-op
-// so any level data still carrying `beats` loads without special-casing.
+// The boss's own sweeps are gone: the projectile is its ranged attack now.
+// Kept as a no-op so any boss data still carrying `beats` loads without
+// special-casing. Sweeps themselves live on, in the trials below.
 function bossSafety(level){return {ok:true};}
+
+/* ============================================================
+   TRIALS — a clock, and somewhere to be
+
+   A trial is the boss stripped back to the one thing the boss was always
+   best at. There is no opponent: the arena attacks. A lethal plane sweeps
+   one slice of the world, charging in plain sight for most of a beat and
+   going live for the last `fire` milliseconds, and the level is an ordinary
+   level otherwise - reach the goal, in the volume, as rule 6 has always said.
+   The goal is drawn amber rather than green to say that out loud: this one
+   is on a clock.
+
+   This is the second boss design, brought back where it belongs. As a boss
+   it failed for a reason worth keeping in view: an objective wearing a boss
+   costume is not a fight. But that is only an argument about what a *boss*
+   is. As a change of pace in the middle of a section - after four or five
+   turn-based puzzles, one that will not wait for you - it is exactly what it
+   should have been all along, and it costs nothing that the fight needed.
+
+   The reason a plane is the right attack, and the reason a trial is about
+   the fold rather than about reflexes: a sweep down the axis you are
+   *looking along* cannot be dodged in the plane at all. Flattened you are
+   the projection of every depth at once, so you stand in every slice of that
+   axis simultaneously. The same sweep is one step to dodge in the volume,
+   and rotating the camera re-labels which sweeps are survivable. So the
+   question is the one the whole game asks - which axis, and is this the
+   moment - only now it is asked with a metronome running.
+   ============================================================ */
+function makeTrial(level){
+  if(!level.trial)return null;
+  var t=level.trial;
+  var beats=t.beats, period=t.period||2300, fire=t.fire||320;
+  return {
+    beats:beats, period:period, fire:fire,
+    cycle:period*beats.length,
+    // which slice is charging right now, how far through its beat it is, and
+    // whether it is lethal this instant
+    beatAt:function(ms){return beats[Math.floor(ms/period)%beats.length];},
+    beatNo:function(ms){return Math.floor(ms/period);},
+    phase:function(ms){return (ms%period)/period;},
+    live:function(ms){return (ms%period)>=period-fire;},
+    /* Does sweep `sw` catch someone at this position?
+       In the volume, a,c are x,z. In the plane, a is u and c is ignored -
+       there is no depth left to be at. */
+    hits:function(sw,v,mode,a,y,c){
+      if(!sw)return false;
+      if(sw.axis==="y")return y===sw.at;
+      if(mode==="3")return (sw.axis==="x"?a:c)===sw.at;
+      var comp=sw.axis==="x"?AX[v].r[0]:AX[v].r[2];
+      if(comp===0)return true;          // the view axis: nowhere is safe
+      return a===sw.at*comp;            // u = x*r0 + z*r2, so on-axis u = at*comp
+    }
+  };
+}
+/* The fairness property, and the reason `solve()` is still allowed to have an
+   opinion about a trial.
+
+   BFS proves the geometry is solvable; it cannot say anything about a clock
+   that advances while you think. What stands in for a proof is this: for
+   every square you can stand on and every beat the arena has, either that
+   square is safe or a square one step away is. The arena never corners you -
+   there is always somewhere to be. It is weaker than "a clean run exists",
+   because it says nothing about dodging and making progress at the same
+   time, but it rules out the failure that actually matters, which is dying
+   with no move that would have saved you.
+
+   It also checks the square you respawn on against the beat you respawn
+   into, because the clock restarts at zero after a hit and being dropped
+   back into a slice that is already charging is not a mistake you made.
+
+   Deliberately a check on the volume only. The plane is where a sweep down
+   the view axis is unsurvivable, and that is the mechanic, not a bug: it is
+   the reason folding is a decision here rather than a free verb. */
+function trialSafety(level){
+  var T=makeTrial(level); if(!T)return {ok:true};
+  var R=makeRules(level), cr=crateSet(crateKeys(level));
+  var stand=[], seen={};
+  for(var i=0;i<level.blocks.length;i++){
+    var bl=level.blocks[i], x=bl[0], y=bl[1]+1, z=bl[2];
+    if(R.solid(x,y,z,cr))continue;
+    if(R.deadly3(x,y,z))continue;                    // a spike: not standable
+    var k=K(x,y,z); if(seen[k])continue; seen[k]=1;
+    stand.push([x,y,z]);
+  }
+  var bad=[];
+  for(var bi=0;bi<T.beats.length;bi++){
+    var sw=T.beats[bi];
+    for(var si=0;si<stand.length;si++){
+      var c=stand[si];
+      if(!T.hits(sw,0,"3",c[0],c[1],c[2]))continue;  // already safe here
+      var out=false, nb=[[1,0],[-1,0],[0,1],[0,-1]];
+      for(var ni=0;ni<nb.length&&!out;ni++){
+        var nx=c[0]+nb[ni][0], nz=c[2]+nb[ni][1];
+        var ny=resolveStep(
+          (function(a,b){return function(h){return R.solid(a,h,b,cr);};})(nx,nz), c[1],
+          (function(a,b){return function(h){return R.solid(a,h,b,cr);};})(c[0],c[2]));
+        if(ny===null||ny===FELL)continue;
+        if(R.deadly3(nx,ny,nz))continue;
+        if(!T.hits(sw,0,"3",nx,ny,nz))out=true;
+      }
+      if(!out)bad.push({cell:c,beat:sw});
+    }
+  }
+  var s=level.start, born=T.hits(T.beats[0],0,"3",s[0],s[1],s[2]);
+  return {ok:!bad.length&&!born,trapped:bad,born:born};
+}
 
 /* Is this arena a stage a fight can happen on?
 

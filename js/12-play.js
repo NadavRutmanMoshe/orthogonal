@@ -15,7 +15,7 @@ function die(kind){
   dying=kind;dyingT=0;
   flash(kind==="fall"?"you fell":
         kind==="spike"?"something sharp was in that column":
-        kind==="boss"?"out of lives":
+        kind==="boss"||kind==="trial"?"out of lives":
         "the world closed on you");
   SFX.die();
   setTimeout(function(){
@@ -50,7 +50,7 @@ function bossReset(){
    the boss and every projectile across the arena at once. */
 function bossFrame(dt){
   if(!B||app!=="play")return;
-  if(dying||panelOpen()||!$("intro").classList.contains("gone")||
+  if(dying||levelDone||panelOpen()||!$("intro").classList.contains("gone")||
      $("won").classList.contains("on"))return;
   dt=Math.min(dt,90);
   if(bossHitFlash>0)bossHitFlash=Math.max(0,bossHitFlash-dt/380);
@@ -206,6 +206,68 @@ function bossHurt(why){
   flat=false;flatTarget=0;flatT=0;
   shots=[];bossPhase="aim";bossPhaseMs=0;bossAim=null;bossStunMs=B.stun;
   buildGrid();syncHud();
+}
+
+/* ============================================================
+   THE TRIAL'S CLOCK
+
+   Same shape as bossFrame and paused by the same conditions, for the same
+   reason: a clock that runs while you read the menu is not difficulty. What
+   is different is that there is nobody driving it. The arena has a rhythm,
+   it charges in plain sight, and the only question it asks you is whether
+   you are standing in the wrong slice when it lands - which includes being
+   flat along the axis it sweeps, where every depth is your depth.
+   ============================================================ */
+function trialReset(){
+  trialMs=0;trialBeat=-1;trialFlash=0;
+  if(TR)lives=BOSS_LIVES;
+}
+function trialFrame(dt){
+  if(!TR||app!=="play")return;
+  if(dying||levelDone||panelOpen()||!$("intro").classList.contains("gone")||
+     $("won").classList.contains("on"))return;
+  dt=Math.min(dt,90);          // a backgrounded tab returns one enormous frame
+  if(trialFlash>0)trialFlash=Math.max(0,trialFlash-dt/300);
+  var was=TR.live(trialMs);
+  trialMs+=dt;
+  var live=TR.live(trialMs);
+  if(live&&!was){trialFlash=1;SFX.sweep();}
+  if(!live)return;
+  // One beat can only take one life, however long you stand in it: the sweep
+  // lands once, it is not a floor that stays lethal.
+  var beat=TR.beatNo(trialMs);
+  if(trialBeat===beat)return;
+  var sw=TR.beatAt(trialMs);
+  var hit=flat ? TR.hits(sw,view,"2",flatPos.u,flatPos.y,0)
+               : TR.hits(sw,view,"3",player.x,player.y,player.z);
+  if(hit){trialBeat=beat;trialHurt();}
+}
+function trialHurt(){
+  lives--;
+  SFX.die();shakeT=1;
+  var bar=$("bossBar");
+  if(bar){bar.classList.remove("hurt");void bar.offsetWidth;bar.classList.add("hurt");}
+  if(lives<=0){die("trial");return;}
+  flash((flat?"flat in the slice":"caught by the sweep")+" · "+
+        lives+" "+(lives===1?"life":"lives")+" left");
+  // Back to the start with the clock restarted, so you are never dropped
+  // back in front of a slice that is already halfway to landing. Moves are
+  // not the score here, so moveCount is left alone.
+  moveHistory=[];
+  initDynamic();buildDynamic();
+  player={x:L.start[0],y:L.start[1],z:L.start[2]};
+  flat=false;flatTarget=0;flatT=0;
+  trialMs=0;trialBeat=-1;
+  buildGrid();syncHud();
+}
+// Would folding right now put you inside the charging slice? True only for a
+// sweep down the axis you are looking along, where the plane is every depth
+// at once and there is nowhere in it to stand. Timing, not geometry, so it
+// is answered per frame by the render loop rather than by foldPeril().
+function trialFoldPeril(){
+  if(!TR||flat||dying||app!=="play")return false;
+  var sw=TR.beatAt(trialMs);
+  return TR.hits(sw,view,"2",R.uOf(view,player.x,player.z),player.y,0);
 }
 
 function liveCrates(){
@@ -389,6 +451,7 @@ function checkWin(){
 }
 var starsBefore=0,starsAfter=0,starsGained=0;
 function win(){
+  levelDone=true;
   SFX.win();
   clearSession();
   starsBefore=starsAfter=starsGained=0;
@@ -406,7 +469,8 @@ function win(){
     // a 3-star level pays nothing, and going 2 -> 3 pays exactly the one new
     // star. starsEarned() already sums best-per-level, so this keeps the
     // flight and the total telling the same story.
-    var rec=B?lives:effective;
+    // A level with a clock is scored on lives, not moves - see betterRecord().
+    var rec=(B||TR)?lives:effective;
     var prev=progress[levelKey];
     starsBefore=starsForRecord(L,prev);
     if(betterRecord(L,rec,prev)){progress[levelKey]=rec;progSave();}
@@ -429,10 +493,10 @@ function win(){
       moveCount+" moves  \u00b7  not scored";
     $("bNext").textContent="NEXT LEVEL";
     $("bRetry").style.display="none";
-  } else if(B){
+  } else if(B||TR){
     // Scored on lives, so hints cost nothing here and moves are not the point.
     var stb=Math.max(0,Math.min(3,lives));
-    $("wonTitle").innerHTML=(stb===3?"Untouched":"Down")+
+    $("wonTitle").innerHTML=(stb===3?"Untouched":TR?"Through":"Down")+
       "<div class='bigstars'>"+starGlyphsEls(stb)+"</div>";
     $("wonSub").textContent=L.name+"  \u00b7  "+
       (stb===3?"never hit":(BOSS_LIVES-lives)+" hit"+(BOSS_LIVES-lives===1?"":"s")+
@@ -487,8 +551,8 @@ function initDynamic(){
   nKeysTotal=(L.keys||[]).length;
 }
 function resetLevel(){
-  moveHistory=[];moveCount=0;hintsUsed=0;tutReset();
-  bossReset();
+  moveHistory=[];moveCount=0;hintsUsed=0;levelDone=false;tutReset();
+  bossReset();trialReset();
   initDynamic();buildDynamic();
   player={x:L.start[0],y:L.start[1],z:L.start[2]};
   flat=false;flatTarget=0;flatT=0;view=0;viewAngle=0;viewAngleTarget=0;
@@ -503,15 +567,19 @@ function loadLevel(level,idx){
   $("won").classList.remove("on");
   player={x:L.start[0],y:L.start[1],z:L.start[2]};
   flat=false;flatTarget=0;flatT=0;view=0;viewAngle=0;viewAngleTarget=0;
-  moveHistory=[];moveCount=0;hintsUsed=0;dying=null;tutReset();
+  moveHistory=[];moveCount=0;hintsUsed=0;dying=null;levelDone=false;tutReset();
   B=makeBoss(L);bossReset();
+  TR=makeTrial(L);trialReset();
   playerMesh.scale.set(1,1,1);
   initDynamic();
   levelKey=L.name;
   // Tutorials are deliberately unscored, so we don't even ask the solver:
   // its answer for a teaching level is often a clever route the lesson is
   // not about, and showing that as par would be punishing the student.
-  var pst=(L.tutorial||L.boss)?{ok:false}:statsCached(L);
+  // A trial is scored on lives, and its par would be a lie for a different
+  // reason: the solver's route ignores the clock, and every step you spend
+  // dodging is a step it never counted.
+  var pst=(L.tutorial||L.boss||L.trial)?{ok:false}:statsCached(L);
   levelPar=pst.ok?pst.moves:null;
   syncMeshes();buildGrid();syncHud();
   center.copy(centerT);viewSize=viewSizeT;onResize();

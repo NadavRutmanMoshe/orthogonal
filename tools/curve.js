@@ -18,6 +18,13 @@ const {LEVELS,statsFor,tierOf}=ctx;
 const KINDS={0:"",1:"glass",2:"anchor",3:"crate",4:"spike"};
 let prev=null;
 LEVELS.forEach((lv,i)=>{
+  // A boss has no goal square, so there is nothing for BFS to search for and
+  // statsFor would read level.goal[0] off undefined. It is not scored on
+  // moves anyway - its row here is the fight, not a par.
+  if(!lv.goal){
+    console.log(String(i).padStart(2)+"  "+lv.name.padEnd(28)+"  --        boss");
+    return;
+  }
   const s=statsFor(lv);
   const kinds=new Set();
   lv.blocks.forEach(b=>{ if(b[3])kinds.add(KINDS[b[3]]); });

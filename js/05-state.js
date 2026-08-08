@@ -40,6 +40,20 @@ var B=null, bossHp=0, lives=0, bossFlash=0;
 var bossAt=null, bossMoveMs=0, bossStunMs=0, bossHitFlash=0;
 var bossPhase="aim", bossPhaseMs=0, bossAim=null, shots=[], shotMs=0;
 var BOSS_LIVES=3;
+/* Trials. T is null on every level that isn't one, and like B every check is
+   guarded on it. It deliberately spends the same `lives` a boss does: a level
+   is either on a clock or it isn't, never both, and one counter means the HUD,
+   the win card and progress[] all keep working without learning a new word.
+   `trialBeat` is the index of the beat that has already taken its due, so one
+   sweep cannot charge you twice for standing still through it. */
+var TR=null, trialMs=0, trialBeat=-1, trialFlash=0;
+/* The level is over and the win card is on its way. Both clocks stop here.
+   Without it there is a real gap - win() takes 380ms to raise the card, and
+   until it is up the boss's last shot is still in the air and the next slice
+   still lands, so you could be knocked down by a level you had already
+   finished. Nothing that happens after the goal should be able to change
+   what happened before it. */
+var levelDone=false;
 
 function snapState(){
   return {x:player.x,y:player.y,z:player.z,flat:flat,
