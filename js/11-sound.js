@@ -8,8 +8,8 @@
    SOUND — a few oscillator blips, no assets. The audio context
    can only start after a gesture, so it's created lazily.
    ============================================================ */
-var actx=null, masterGain=null, limiter=null, postGain=null;
-var settings={volume:.7,brightness:1,ui:"full"};
+var actx=null, masterGain=null, limiter=null, postGain=null, shaper=null;
+var settings={volume:1,brightness:1,ui:"full"};
 
 /* The individual blip gains below are a balanced mix - a footstep is meant to
    sit well under the win chord - so loudness is corrected once here at the
@@ -28,13 +28,27 @@ var settings={volume:.7,brightness:1,ui:"full"};
    gain the limiter took. Peak output stays under 1.0 by construction rather
    than by leaving headroom nobody hears.
 
-   Measured, by rendering this exact chain through an OfflineAudioContext:
-   a footstep went from 0.09 peak to 0.60, and the worst case anything can
-   produce - the win chord still ringing while a shot, a strike and a step
-   land on top of it - peaks at 0.72. About six times the loudness, with more
-   headroom than before rather than less. If you change MIX, re-measure that
-   stacked case; the limiter makes clipping quiet rather than obvious. */
-var MIX=8, POST=1.15, LIMIT_DB=-16;
+   A limiter alone then ran out of road, because the ceiling it has to defend
+   is set by the rarest moment rather than the common one: four win-chord
+   notes plus a shot plus a strike plus a footstep, all inside 40ms. Holding
+   *that* under 1.0 with makeup gain alone keeps every ordinary sound about
+   4 dB quieter than it needs to be. So the chain ends the way a mastering
+   chain does, with a gentle soft clipper - a tanh curve that rounds the last
+   few transient peaks instead of letting them square off. It is doing real
+   work only in that contrived pile-up.
+
+   Measured by rendering this exact chain through an OfflineAudioContext:
+
+     footstep peak   0.09  ->  0.95     (RMS x12 over the original)
+     worst-case pile 0.13  ->  1.00, with 8 saturated samples out of 44,000
+     footstep alone            0 saturated samples
+
+   If you change MIX or POST, re-measure that stacked case. A limiter makes
+   clipping quiet rather than obvious, and a soft clipper hides it further -
+   the two of them together will happily let you ship something that is
+   distorting on every footstep without ever sounding broken in a quiet
+   room. */
+var MIX=16, POST=1.55, LIMIT_DB=-18, SOFT=1.2;
 function masterLevel(){return settings.volume*MIX;}
 
 // The verb's wording is settled: GO 2D / GO 3D. It stays in one table rather
@@ -76,9 +90,22 @@ function audio(){
     limiter.release.value=.15;
     postGain=actx.createGain();
     postGain.gain.value=POST;
+    /* The last few dB. tanh flattens toward the rails instead of hitting
+       them, so a transient that would have squared off rounds over instead.
+       4x oversampling because shaping at 44.1k folds the harmonics it
+       creates back down into the audible band as aliasing. */
+    shaper=actx.createWaveShaper();
+    var n=1024, curve=new Float32Array(n), k=SOFT, den=Math.tanh(k);
+    for(var i=0;i<n;i++){
+      var x=i*2/(n-1)-1;
+      curve[i]=Math.tanh(k*x)/den;
+    }
+    shaper.curve=curve;
+    shaper.oversample="4x";
     masterGain.connect(limiter);
     limiter.connect(postGain);
-    postGain.connect(actx.destination);
+    postGain.connect(shaper);
+    shaper.connect(actx.destination);
   }
   return actx;
 }

@@ -408,15 +408,23 @@ exclusive — every gesture also has a key and, unless hidden, a button:
   `shards()` only; `starsEarned()` and `wardrobe.spent` still do their real
   work, so buying exercises the true purchase path. **Set it back to `false`
   before shipping.**
-- **Sound goes through a limiter on the master bus** (`js/11-sound.js`):
-  blips → `masterGain` (`MIX` × the volume setting) → limiter → `POST` →
-  destination. The per-blip gains are a deliberate mix — a footstep sits well
-  under the win chord — so loudness is corrected at the master rather than by
-  editing eleven numbers. **If you change `MIX`, re-measure the stacked worst
-  case** (the win chord ringing while a shot, a strike and a step land on it);
-  a limiter makes clipping quiet rather than obvious. Every write to
+- **Sound goes through a mastering chain** (`js/11-sound.js`): blips →
+  `masterGain` (`MIX` × the volume setting) → limiter → `POST` → soft clipper
+  → destination. The per-blip gains are a deliberate mix — a footstep sits
+  well under the win chord — so loudness is corrected at the master rather
+  than by editing eleven numbers. The limiter defends the ceiling against the
+  rarest moment (win chord + shot + strike + step inside 40ms), which alone
+  would keep every ordinary sound about 4 dB quieter than it needs to be; the
+  soft clipper rounds off the last transient peaks so that moment does not
+  set the level for everything else. **If you change `MIX` or `POST`,
+  re-measure that stacked case** — a limiter makes clipping quiet rather than
+  obvious and a soft clipper hides it further, so the pair will happily let
+  you ship something distorting on every footstep. Every write to
   `masterGain.gain.value` must go through `masterLevel()` or the boost is lost
   the first time the volume slider moves.
+- **The default volume is 1.0**, and a save written earlier keeps whatever it
+  had (0.7 was the old default). If the game sounds quiet on a device that has
+  played before, check the slider in the menu before touching `MIX`.
 - **The wardrobe's display case is a second WebGL context**, created when the
   panel opens and explicitly released — `loseContext()`, not just GC — when it
   closes. Browsers cap live contexts (commonly 16) and evict the oldest, which
