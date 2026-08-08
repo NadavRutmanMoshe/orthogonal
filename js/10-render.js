@@ -8,6 +8,7 @@
    THREE
    ============================================================ */
 var scene,camera,renderer,meshes={},playerMesh,goalMesh,gridLines,groundPlane,footMesh;
+var sweepMesh,sweepEdge;
 var crateMeshes=[],keyMeshes=[],goalGhost=null;
 var amb,dir1,dir2;
 var center=new THREE.Vector3(),centerT=new THREE.Vector3();
@@ -61,6 +62,19 @@ function initGL(){
       transparent:true,opacity:.32,depthTest:false}));
   goalGhost.renderOrder=999;
   scene.add(goalGhost);
+
+  /* The sweep: one translucent slab covering the slice that is about to
+     become lethal. Drawn as a single box rather than one marker per cell
+     because the attack *is* a slice - showing it whole is both cheaper and
+     truer to what the rule actually says. It brightens as the beat lands. */
+  sweepMesh=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),
+    new THREE.MeshBasicMaterial({color:0xff4d5e,transparent:true,
+      opacity:.16,depthWrite:false}));
+  sweepMesh.visible=false;sweepMesh.renderOrder=900;
+  scene.add(sweepMesh);
+  sweepEdge=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,1)),
+    new THREE.LineBasicMaterial({color:0xff6b7a,transparent:true,opacity:.5}));
+  sweepEdge.visible=false;scene.add(sweepEdge);
 
   groundPlane=new THREE.Mesh(new THREE.PlaneGeometry(200,200),
     new THREE.MeshBasicMaterial({visible:false}));
@@ -188,6 +202,43 @@ function recomputeBounds(){
   }
   centerT.set((a[0]+b[0])/2,(a[1]+b[1])/2+.5,(a[2]+b[2])/2);
   viewSizeT=Math.max(b[0]-a[0],b[2]-a[2],b[1]-a[1])*.72+3.4;
+}
+/* Show the slice that is charging, and flash it as it lands.
+
+   Only the charging beat is drawn - drawing all of them at once would be
+   honest and unreadable. Placement follows the same rule the hit test uses,
+   including the important case: flattened, a sweep down the view axis covers
+   the entire plane, because flattened you are at every depth at once. Seeing
+   the whole board go red is the correct answer there, not a bug. */
+function drawSweep(){
+  if(!sweepMesh)return;
+  if(!B||app!=="play"){sweepMesh.visible=sweepEdge.visible=false;return;}
+  var sw=B.charging(bossTick), span=16;
+  var near=B.untilFire(bossTick);
+  // Sized and centred on the arena rather than the origin: a slab hung off
+  // world zero trails halfway across the screen and reads as scenery.
+  var cx=centerT.x, cy=centerT.y, cz=centerT.z;
+  var sx=span,sy=span,sz=span, px=cx,py=cy,pz=cz;
+  var whole=false;
+  if(sw.axis==="y"){ sy=1; py=sw.at; }
+  else if(flatT>.5){
+    // `view` is the true fold axis; the peek camera must never change this
+    var comp=sw.axis==="x"?AX[view].r[0]:AX[view].r[2];
+    if(comp===0)whole=true;                 // the view axis: nowhere is safe
+    else { sx=1; px=sw.at*comp; }
+  }
+  else if(sw.axis==="x"){ sx=1; px=sw.at; }
+  else { sz=1; pz=sw.at; }
+  if(whole){ sx=span;sz=span;sy=span;px=cx;py=cy;pz=cz; }
+  sweepMesh.scale.set(sx,sy,sz);
+  sweepMesh.position.set(px,py,pz);
+  sweepEdge.scale.copy(sweepMesh.scale);
+  sweepEdge.position.copy(sweepMesh.position);
+  // dim while it charges, bright on the tick it lands
+  var heat=(near<=1?.34:near<=2?.2:.12)+bossFlash*.5;
+  sweepMesh.material.opacity=heat;
+  sweepEdge.material.opacity=.35+bossFlash*.6;
+  sweepMesh.visible=sweepEdge.visible=true;
 }
 function buildGrid(){
   if(gridLines){scene.remove(gridLines);gridLines.geometry.dispose();gridLines.material.dispose();}
@@ -370,9 +421,11 @@ function animate(){
     goalGhost.material.color.copy(goalMesh.material.color);
   }
   var sealed=app==="play"&&keyMeshes.length&&keysLeft()>0;
-  goalMesh.material.color.set(sealed?0x4a5a6a:0x35c2a5);
-  goalMesh.scale.setScalar(sealed?.8:1+Math.sin(Date.now()*.004)*.06);
+  goalMesh.material.color.set(B?0xff8a3c:(sealed?0x4a5a6a:0x35c2a5));
+  goalMesh.scale.setScalar(sealed?.8:1+Math.sin(Date.now()*.004)*(B?.14:.06));
+  drawSweep();
 
+  if(bossFlash>0)bossFlash=Math.max(0,bossFlash-.055);
   amb.intensity=.45+.55*flatT;
   dir1.intensity=.85*(1-flatT);
   dir2.intensity=.35*(1-flatT);

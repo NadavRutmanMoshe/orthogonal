@@ -57,6 +57,7 @@ function syncHud(){
   });
   $("starTotal").classList.toggle("on",inPlay);
   syncStarTotal();
+  syncBossBar();
 
   if(app==="edit"){
     $("lvName").textContent="EDITOR";
@@ -106,6 +107,21 @@ function syncHud(){
    from the win screen read as a transaction rather than an achievement.
    The wardrobe labels its own number "TO SPEND" to keep them apart.
    ============================================================ */
+/* Lives above, cores below. Both are dots rather than numbers because they
+   are glanced at mid-move, and a boss level's whole score is "how many of
+   these did you keep" - three intact lives is three stars. */
+function syncBossBar(){
+  var bar=$("bossBar");
+  if(!bar)return;
+  var on=!!(B&&app==="play");
+  bar.classList.toggle("on",on);
+  if(!on)return;
+  var lv="",co="";
+  for(var i=0;i<BOSS_LIVES;i++)lv+="<i class='"+(i<lives?"":"gone")+"'></i>";
+  for(var j=0;j<B.hp;j++)co+="<i class='"+(j<bossHp?"":"gone")+"'></i>";
+  $("bossLives").innerHTML=lv;
+  $("bossCores").innerHTML=co;
+}
 function syncStarTotal(){
   var n=$("starTotalN");
   if(n)n.textContent=starsEarned();

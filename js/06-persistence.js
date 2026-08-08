@@ -129,7 +129,26 @@ function progLoad(){
   if(!window.storage)return Promise.resolve();
   return window.storage.get(PROG_KEY).then(function(r){
     if(r&&r.value){try{progress=JSON.parse(r.value)||{};}catch(e){progress={};}}
+    migrateNames();
   }).catch(function(){progress={};});
+}
+/* Levels were renumbered when the campaign was cut into sections, and
+   progress is keyed by level name, so without this every solved level would
+   silently read unsolved and every star already earned would vanish from the
+   wardrobe. Keyed by name rather than index because index is exactly what
+   the reshuffle changed. Runs once; the new names are already correct on a
+   fresh save, so it finds nothing and does nothing. */
+function migrateNames(){
+  if(typeof LEVEL_RENAMES==="undefined")return;
+  var moved=0;
+  for(var old in LEVEL_RENAMES){
+    if(!LEVEL_RENAMES.hasOwnProperty(old))continue;
+    var now=LEVEL_RENAMES[old];
+    if(progress[old]===undefined||old===now)continue;
+    if(progress[now]===undefined)progress[now]=progress[old];
+    delete progress[old];moved++;
+  }
+  if(moved)progSave();
 }
 function progSave(){
   if(!window.storage)return Promise.resolve();

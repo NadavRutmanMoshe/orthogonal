@@ -113,6 +113,12 @@ var SFX={
       setTimeout(function(){blip(f,.4,"sine",.05);},i*95);
     });
   },
+  // A core going down: a hard hit with a bright ring over it, so a strike
+  // never gets confused with taking one.
+  strike:function(){
+    blip(150,.22,"square",.055,70);
+    blip(900,.3,"sine",.04,1400);
+  },
   // One per star landing on the counter, climbing as they arrive, so three
   // stars resolve upward instead of repeating the same note three times.
   star:function(i){

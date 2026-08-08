@@ -37,6 +37,8 @@ for the mechanic even though it did not end up on the button.
    **unless** an anchor is among the candidates — then the anchor wins.
 6. You must reach the goal in the volume. Standing on its projection is not
    enough.
+7. On a boss level there is no goal: you strike each core in turn, in the
+   volume, while a lethal plane sweeps one slice of the world every few moves.
 
 Death is solver-equivalent to a blocked move — neither leads anywhere, so no
 shortest path routes through it. Adding death changed nothing about any puzzle;
@@ -54,12 +56,12 @@ anything; everything before it only declares.
 |---|---|
 | `js/00-storage.js` | `window.storage` over `localStorage`. The game was born inside a Claude artifact where the host supplied this API; the shim lets identical code run from `file://`, itch.io and a Capacitor WebView. Defines itself only if absent. Falls back to an in-memory map if storage is denied (private browsing). |
 | `js/01-coords.js` | `AX[]` — the four camera views, each with `r` (screen-right) and `d` (depth, pointing at the camera). Nearly every coordinate calculation goes through these. Also `K()` and `box()`. |
-| `js/02-levels.js` | 66 levels. 3 tutorial + 63 campaign in nine chapters. |
-| `js/03-rules.js` | `resolveStep()`, block kinds, `makeRules()`. |
-| `js/04-solver.js` | `solve()` — BFS over game states, capped at 250k. |
-| `js/05-state.js` | Mutable state, tutorial counters. |
+| `js/02-levels.js` | 74 levels + `SECTIONS` + `LEVEL_RENAMES`. |
+| `js/03-rules.js` | `resolveStep()`, block kinds, `makeRules()`, `makeBoss()`. |
+| `js/04-solver.js` | `solve()` — BFS over game states, bosses included, capped at 250k. |
+| `js/05-state.js` | Mutable state, boss state, tutorial counters. |
 | `js/06-persistence.js` | Progress, settings, session, library, wardrobe. |
-| `js/07-difficulty.js` | `statsFor()`, `tierOf()`, stars, `statsCached()`. |
+| `js/07-difficulty.js` | `statsFor()`, `tierOf()`, stars, `statsCached()`, `starsForRecord()`. |
 | `js/08-minimizer.js` | Delete each block, re-solve, find what is load-bearing. |
 | `js/09-wardrobe.js` | Skins, palettes, the star economy, the display case. |
 | `js/10-render.js` | three.js scene, depth shading, the animation loop. |
@@ -68,7 +70,7 @@ anything; everything before it only declares.
 | `js/13-gestures.js` | Swipe / tap / two-finger tap on the world. |
 | `js/14-editor.js` | Tap-to-place editor, verify, minimize. |
 | `js/15-tutorial.js` | Button cues, the tutorial coach, the hint button. |
-| `js/16-panels.js` | `CHAPTERS` and every slide-up panel. |
+| `js/16-panels.js` | Every slide-up panel; `sectionSpans()` for the picker. |
 | `js/17-composer.js` | Solution-first level generation. |
 | `js/18-ui.js` | `$`, toasts, panel plumbing, `syncHud()`. |
 | `js/19-bindings.js` | Every button and key binding. |
@@ -101,14 +103,76 @@ Block format is `[x,y,z,k]` where k is 0 stone, 1 glass, 2 anchor, 3 crate,
   which axis you fold along decides which keys you can reach. They exist in code
   and in the editor but no campaign level uses them.
 
-Chapters: 0 Tutorial (0–2), I Folding (3–5), II Turning (6–13), III Glass
-(14–18), IV Spikes (19–25), V Crates (26–32), VI Anchors (33–39),
-VII Confluence (40–48), VIII Amber (49–57), IX Bonus (58–65). **`CHAPTERS[].at`
-holds array indices — inserting a level means shifting every marker after it.**
+**The campaign is nine sections, each ending in a boss**, listed in
+`SECTIONS` in `js/02-levels.js`. `SECTIONS[].at` holds array indices, so
+inserting a level means shifting every marker after it. The loop is: teach a
+mechanic on gentle ground, harden it, combine it with what came before, then
+fight. Sections are 6–8 levels plus their boss; IX is 11 plus the Orthogon.
+
+The sawtooth in the difficulty curve is now **deliberate**. It used to be an
+accident of building chapter by chapter — the game climbed to brutal and reset
+to gentle nine times with nothing marking the boundary. A new mechanic must
+start gentle, so the reset stays; what changed is that a boss now sits on each
+peak and the picker draws the section it closes. Dump the curve before moving
+anything: `node tools/curve.js`.
 
 Every special piece is verified load-bearing; every anchor level is verified
 **impossible** without its anchor; every crate is verified to be shoved in the
 optimal solution.
+
+---
+
+## Bosses
+
+**A boss is a puzzle with a clock, not a reflex test.** Every action you take —
+step, fold, unfold, turn — advances it exactly one tick. Nothing reads the wall
+clock, so you can still think for as long as you like, it still plays one-handed
+on a phone, and it stays machine-verifiable. A real-time boss was the obvious
+alternative and it would have been a different game: it breaks the solver, and
+the solver is the only reason anything here is known to be fair.
+
+The attack is a **lethal plane sweeping one slice**. It charges in plain sight
+for `period-1` ticks and lands on the period-th, so a hit is always a decision,
+never a reaction you missed.
+
+**Why a plane, and why this is about the fold.** A sweep down the axis you are
+*looking along* cannot be dodged in the plane at all — flattened, you are the
+projection of every depth at once, so you stand in every slice of that axis
+simultaneously. The same sweep is trivial to dodge in the volume by stepping
+one square. Rotating the camera re-labels which sweeps are survivable, for
+free. So the boss asks the same question the whole game asks: which axis are
+you collapsing, and is this the moment? You can watch the solver discover this
+— its clean lines rotate twice before folding, to turn a fatal depth sweep into
+a dodgeable one.
+
+- Data: `boss:{period, cores:[[x,y,z]…], beats:[{axis,at}…]}`. One core per
+  strike, consumed in order, which is what walks you around the arena.
+  `hp` is `cores.length`. Sweep axes are `"x"`, `"z"` (world axes, so their
+  meaning changes with the camera) and `"y"` (a height slab, which folding
+  preserves).
+- **Scored on lives, not moves.** Three lives; a hit costs one and returns you
+  to the start with the fight's progress intact. Three intact lives is three
+  stars. Bosses never ask the solver for a par and hints cost them nothing.
+- `progress[name]` therefore holds **lives for a boss and a move count for
+  everything else — opposite senses in one slot.** Nothing compares them by
+  hand: reads go through `starsForRecord()`, writes through `betterRecord()`.
+- Undo rewinds the clock and strikes but **never hands back a life**. Undo is
+  for rethinking a move, not for erasing a hit.
+- **`solve()` was widened rather than duplicated.** Two fields ride along in the
+  packed state — strikes left and the clock — and any successor a sweep would
+  land on is dropped. So the path it returns is a path that is never hit:
+  proving a boss *solvable* and proving it *fair* are the same question. A
+  level with no boss packs 0 into both fields forever and searches exactly the
+  space it always did.
+- **Anything the boss does on a strike must be mirrored in `advance()`.** This
+  is not hypothetical: `bossStrike()` used to reset the clock, the solver did
+  not, and a path proven never-hit walked straight into a sweep in the real
+  game. The clock now runs continuously, which is also easier to count.
+- Arenas come from `node tools/bossgen.js`, generate-and-test like the
+  composer. Four bars: **fair** (a never-hit run exists), **long**, **folded**,
+  and **forced** — the arena with its sweeps switched off must have a strictly
+  shorter answer. Without that last bar you get an ordinary level wearing a
+  health bar, which is the whole failure mode to avoid.
 
 ---
 
@@ -153,7 +217,10 @@ exclusive — every gesture also has a key and, unless hidden, a button:
 ## Things worth knowing before you change them
 
 - **Verify claims with the solver rather than asserting them.** Every level in
-  the file has been machine-checked. `node tools/verify.js`.
+  the file has been machine-checked. `node tools/verify.js` — which now covers
+  bosses too, where "solved" means a run exists that is never hit.
+  `node tools/curve.js` dumps the difficulty curve; `node tools/bossgen.js`
+  searches for boss arenas.
 - **`resolveStep()` is shared by the game and the solver**, so they can never
   disagree. Keep it that way. Its optional `occHere` argument checks headroom in
   *both* columns; without it you can slide diagonally past a ceiling.
@@ -318,21 +385,27 @@ Highest-leverage dials in `synthesize()`: the depth-choice heuristic (currently
   `HIDDEN`, every hint cue points at an invisible button. Both want the same
   fix — `cue()` should fall back to a `flash()` when its target is not on screen.
 - **Two-finger tap only rotates right.** There is no left-rotate gesture.
+- **Boss arenas are generated, not authored.** They pass all four bars, but
+  they are two plateaus and a chasm every time, so nine of them will start to
+  rhyme. The bars are the floor, not the ceiling; a hand-built arena that says
+  something specific would beat any of them.
+- **Difficulty tiers say "brutal" for every boss** — `statsFor` weights folds
+  and path length, and a 20-move three-core fight trips both. Bosses are scored
+  on lives and never ask for a par, so this only shows up in `tools/curve.js`.
 
 ---
 
 ## Agreed next steps
 
-1. **Level progression.** The current order is chapter-by-mechanic, which is how
-   the levels were *built*, not necessarily how they should be *played*.
-   Difficulty inside a chapter is uneven and the tutorial-to-chapter-I step is
-   probably still too large. `statsFor()` gives a machine-readable score for
-   every level — start by dumping it and looking at the curve before moving
-   anything.
-2. **A boss.** Nothing structurally exists for this yet. The honest version is
-   probably a long level that demands every mechanic in sequence rather than a
-   new enemy type; the game has no adversary and inventing one would be a
-   different game. Worth deciding what "boss" means here before building it.
+1. **Playtest the sections.** The reorder was driven by `statsFor()` and the
+   sections now climb, but a machine score is not a feel. The two soft spots to
+   watch: the tutorial → section I handoff (16, still the gentlest scored level
+   available, and there is no cheaper one to put there), and section IX, which
+   is 11 levels and may be two sections wearing one hat.
+2. **More gentle levels.** The real gap the curve exposes and the reorder could
+   not fix: after the tutorial there is nothing between 16 and 31. The composer
+   can make them, but it cannot make crate or key levels, and its 59% hit rate
+   means hand-checking a batch. This is the highest-value content work left.
 3. **Negative constraint tracking in the composer.** Synthesis is still greedy
    and violations are only caught at verification. Recording "this silhouette
    column must stay empty" as each move demands it would fail fast. The one

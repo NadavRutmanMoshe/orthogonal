@@ -58,6 +58,56 @@ function crateKeys(level){
 function crateSet(list){var s=new Set();for(var i=0;i<list.length;i++)s.add(list[i]);return s;}
 function parseK(k){var p=k.split(",");return [+p[0],+p[1],+p[2]];}
 
+/* ============================================================
+   BOSSES
+
+   A boss is a puzzle with a clock, not a reflex test. Every action you take -
+   step, fold, turn - advances it exactly one tick, so you can still sit and
+   think for as long as you like. Nothing here reads the wall clock.
+
+   The attack is a lethal plane sweeping one slice of the world. It charges
+   for `period-1` ticks in plain sight and lands on the period-th, so being
+   hit is always a decision you made rather than a reaction you missed.
+
+   The reason a plane is the right attack: it makes the boss a puzzle about
+   the fold rather than a fight bolted onto one. A sweep down the axis you
+   are *looking along* cannot be dodged in the plane at all - flattened, you
+   are the projection of every depth at once, so you are standing in every
+   slice of that axis simultaneously. The same sweep is trivial to dodge in
+   the volume by stepping one square. So the boss asks the question the whole
+   game asks: which axis are you collapsing, and is this the moment for it?
+   Rotating the camera re-labels which sweeps are survivable, for free.
+   ============================================================ */
+function makeBoss(level){
+  if(!level.boss)return null;
+  var b=level.boss;
+  var beats=b.beats, period=b.period||3, hp=b.cores.length;
+  return {
+    hp:hp, cores:b.cores, period:period, beats:beats,
+    cycle:period*beats.length,
+    // cores are consumed in order, so the fight moves you around the arena
+    coreAt:function(hpLeft){return b.cores[hp-hpLeft];},
+    // the beat currently charging, and how many ticks are left before it lands
+    charging:function(t){return beats[Math.floor(t/period)%beats.length];},
+    untilFire:function(t){return period-(t%period);},
+    // the beat that lands as tick t completes, if any
+    firing:function(t){
+      return (t>0&&t%period===0)?beats[Math.floor((t-1)/period)%beats.length]:null;
+    },
+    /* Does sweep `sw` catch someone at this position?
+       In the volume, a,c are x,z. In the plane, a is u and c is ignored -
+       there is no depth to be at. */
+    hits:function(sw,v,mode,a,y,c){
+      if(!sw)return false;
+      if(sw.axis==="y")return y===sw.at;
+      if(mode==="3")return (sw.axis==="x"?a:c)===sw.at;
+      var comp=sw.axis==="x"?AX[v].r[0]:AX[v].r[2];
+      if(comp===0)return true;          // the view axis: no depth to hide at
+      return a===sw.at*comp;            // u = x*r0 + z*r2, so on-axis u = at*comp
+    }
+  };
+}
+
 function makeRules(level){
   var S=new Set(),A=new Set(),SP=new Set();
   for(var i=0;i<level.blocks.length;i++){

@@ -4,18 +4,6 @@
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
 
-var CHAPTERS=[
-  {at:0,  name:"0 \u00b7 TUTORIAL",   sub:"one new verb at a time, no scoring"},
-  {at:3,  name:"I \u00b7 FOLDING",     sub:"collapse the world and cross the gap"},
-  {at:6,  name:"II \u00b7 TURNING",    sub:"which axis you fold along is the puzzle"},
-  {at:14, name:"III \u00b7 GLASS",     sub:"solid in the volume, absent from the plane"},
-  {at:19, name:"IV \u00b7 SPIKES",     sub:"a hazard you cannot see until you fold"},
-  {at:26, name:"V \u00b7 CRATES",      sub:"change the plane by moving the volume"},
-  {at:33, name:"VI \u00b7 ANCHORS",    sub:"reach the middle of a column, not its ends"},
-  {at:40, name:"VII \u00b7 CONFLUENCE",sub:"glass, spikes and crates in the same breath"},
-  {at:49, name:"VIII \u00b7 AMBER",    sub:"park a crate on amber and it never moves again"},
-  {at:58, name:"IX \u00b7 BONUS",      sub:"long ones, for afterwards"}
-];
 /* ---- the wardrobe ----------------------------------------------------
    Items on the left, a display case on the right. Tapping an item only
    ever *selects* it - it goes on the stand and nothing is spent and
@@ -274,25 +262,57 @@ function menuPanel(){
   bind("mClose",hidePanel);
 }
 
+/* Where each section starts and ends, and how much of it is done. The
+   picker is the only place the campaign's shape is visible, so it has to
+   show the shape: a run of levels, then the boss that closes it, and how
+   many stars of the section's total you are carrying. */
+function sectionSpans(){
+  var out=[];
+  for(var i=0;i<SECTIONS.length;i++){
+    var from=SECTIONS[i].at;
+    var to=(i+1<SECTIONS.length?SECTIONS[i+1].at:LEVELS.length)-1;
+    var got=0,max=0,done=0,n=0;
+    for(var j=from;j<=to;j++){
+      if(LEVELS[j].tutorial)continue;
+      n++;max+=3;
+      got+=starsForRecord(LEVELS[j],progress[LEVELS[j].name]);
+      if(progress[LEVELS[j].name]!==undefined)done++;
+    }
+    out.push({i:i,from:from,to:to,got:got,max:max,done:done,n:n,
+              sec:SECTIONS[i]});
+  }
+  return out;
+}
 function levelPicker(){
   var solved=0;
   for(var q=0;q<LEVELS.length;q++) if(progress[LEVELS[q].name]!==undefined) solved++;
   var html="<h3>SELECT LEVEL \u00b7 "+solved+"/"+LEVELS.length+" SOLVED</h3>";
+  var spans=sectionSpans(), spanAt={};
+  spans.forEach(function(sp){spanAt[sp.from]=sp;});
   for(var i=0;i<LEVELS.length;i++){
-    for(var ci=0;ci<CHAPTERS.length;ci++)
-      if(CHAPTERS[ci].at===i)
-        html+="<div class='chap'>"+CHAPTERS[ci].name+
-              "<span>"+CHAPTERS[ci].sub+"</span></div>";
+    var sp=spanAt[i];
+    if(sp){
+      var pct=sp.max?Math.round(sp.got/sp.max*100):0;
+      html+="<div class='chap'>"+sp.sec.name+
+        "<b class='secbar'><i style='width:"+pct+"%'></i></b>"+
+        "<span>"+sp.sec.sub+"  \u00b7  "+sp.done+"/"+sp.n+" solved, "+
+        sp.got+"/"+sp.max+" \u2605</span></div>";
+    }
     var tut=!!LEVELS[i].tutorial;
-    var st=tut?{ok:false}:statsCached(LEVELS[i]);
+    var boss=!!LEVELS[i].boss;
+    var st=(tut||boss)?{ok:false}:statsCached(LEVELS[i]);
     var mark=(playSource==="builtin"&&i===lvIndex)?" \u25c0":"";
     var done=progress[LEVELS[i].name];
     var badge=done===undefined?"":
       (tut?"<span class='ok'>\u2713</span>"
-         :"<span class='ok'>"+starGlyphs(st.ok?starsFor(done,st.moves):0)+"</span>");
-    html+="<div class='lrow"+(mark?" here":"")+"'><span class='lname'>"+
+         :"<span class='ok'>"+starGlyphs(starsForRecord(LEVELS[i],done))+"</span>");
+    var note=tut?"tutorial":
+      boss?(LEVELS[i].boss.cores.length+" cores"):
+      (st.ok?st.flattens+(st.flattens===1?" fold":" folds"):"?");
+    html+="<div class='lrow"+(mark?" here":"")+(boss?" bossrow":"")+
+      "'><span class='lname'>"+
       esc(LEVELS[i].name)+mark+"</span>"+
-      "<span class='mono'>"+(tut?"tutorial":(st.ok?st.flattens+(st.flattens===1?" fold":" folds"):"?"))+
+      "<span class='mono'>"+note+
       (badge?" &middot; ":"")+badge+"</span>"+
       "<span class='lbtns'><button class='mini' data-lv='"+i+"'>PLAY</button></span></div>";
   }

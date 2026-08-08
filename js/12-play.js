@@ -15,6 +15,7 @@ function die(kind){
   dying=kind;dyingT=0;
   flash(kind==="fall"?"you fell":
         kind==="spike"?"something sharp was in that column":
+        kind==="boss"?"out of lives":
         "the world closed on you");
   SFX.die();
   setTimeout(function(){
@@ -22,6 +23,62 @@ function die(kind){
     playerMesh.scale.set(1,1,1);
     resetLevel();
   },kind==="crush"?1050:820);
+}
+
+/* ============================================================
+   THE BOSS'S HALF OF A MOVE
+
+   Called once after every action that counted - step, fold, unfold, turn.
+   Order matters and mirrors the solver exactly: the clock advances, the
+   sweep that lands on that tick is checked against where you now are, and
+   only then does arriving on the core count as a strike. Get that order
+   wrong and you could trade a life for a hit the solver said was avoidable.
+   ============================================================ */
+function bossReset(){
+  bossHp=B?B.hp:0;bossTick=0;bossFlash=0;
+  lives=B?BOSS_LIVES:0;
+}
+function bossTickNow(){
+  if(!B||dying)return;
+  bossTick++;
+  var sw=B.firing(bossTick);
+  var hit=flat ? B.hits(sw,view,"2",flatPos.u,flatPos.y,0)
+               : B.hits(sw,view,"3",player.x,player.y,player.z);
+  if(sw)bossFlash=1;
+  bossTick%=B.cycle;
+  if(hit){bossHurt();return;}
+  if(!flat){
+    var core=B.coreAt(bossHp);
+    if(core&&player.x===core[0]&&player.y===core[1]&&player.z===core[2])
+      bossStrike();
+  }
+}
+function bossHurt(){
+  lives--;
+  SFX.die();shakeT=1;
+  if(lives<=0){die("boss");return;}
+  flash(lives+" "+(lives===1?"life":"lives")+" left");
+  // Back to the start, but the fight keeps its progress. Rewinding strikes
+  // as well would make a late mistake cost the whole arena, and the star
+  // rating already carries the cost of being hit.
+  moveHistory=[];
+  initDynamic();buildDynamic();
+  player={x:L.start[0],y:L.start[1],z:L.start[2]};
+  flat=false;flatTarget=0;flatT=0;bossTick=0;
+  buildGrid();syncHud();
+}
+function bossStrike(){
+  bossHp--;
+  SFX.strike();shakeT=1;
+  if(bossHp<=0){buildGrid();win();return;}
+  flash(bossHp===1?"one core left":bossHp+" cores left");
+  // The clock deliberately does NOT restart here. It did once, and it made
+  // the game disagree with the solver: solve() only decrements hp when a
+  // strike lands, so a path it had proved was never hit walked straight into
+  // a sweep in the real game. Anything the boss does on a strike has to be
+  // mirrored in advance(), and a rhythm that stutters is worse to read
+  // anyway - the beat should be something you can count on.
+  buildGrid();syncHud();
 }
 
 function liveCrates(){
@@ -77,6 +134,7 @@ function move3(dx,dz,dir){
   if(R.deadly3(nx,ny,nz)){die("spike");return;}
   if(!moved)SFX.step();
   if(tutC){tutC.m3++;if(dir)tutC.d[dir]++;if(ny>oldY)tutC.climb++;}
+  bossTickNow();
   syncHud();saveSession();checkWin();
 }
 function move2(du){
@@ -93,6 +151,7 @@ function move2(du){
   if(R.deadly2(view,nu,ny)){die("spike");return;}
   SFX.step();collectHere();
   if(tutC)tutC.m2++;
+  bossTickNow();
   syncHud();saveSession();
 }
 // A tutorial level may withhold a verb so the lesson stays about one thing.
@@ -106,6 +165,7 @@ function doFlatten(){
   flatPos={u:pu,y:player.y};
   flat=true;flatTarget=1;SFX.fold();collectHere();
   if(tutC)tutC.flat++;
+  bossTickNow();
   syncHud();saveSession();
   // Something else already occupies that square in the plane. Let the fold
   // play out, then close on the player.
@@ -122,8 +182,9 @@ function doUnflatten(){
   player.x=b.x;player.z=b.z;player.y=flatPos.y;
   flat=false;flatTarget=0;SFX.unfold();
   if(tutC)tutC.unflat++;
-  syncHud();saveSession();
   if(R.deadly3(player.x,player.y,player.z)){die("spike");return;}
+  bossTickNow();
+  syncHud();saveSession();
   checkWin();
 }
 function press(dir){
@@ -142,6 +203,9 @@ function keysLeft(){
   return n;
 }
 function checkWin(){
+  // A boss carries a goal only so the marker has somewhere to draw; the fight
+  // ends when the last core is struck, in bossStrike(), not by arriving.
+  if(B)return;
   if(player.x!==L.goal[0]||player.y!==L.goal[1]||player.z!==L.goal[2])return;
   if(keysLeft()){flash("still sealed \u2014 "+keysLeft()+" to collect");SFX.bump();return;}
   win();
@@ -165,10 +229,11 @@ function win(){
     // a 3-star level pays nothing, and going 2 -> 3 pays exactly the one new
     // star. starsEarned() already sums best-per-level, so this keeps the
     // flight and the total telling the same story.
+    var rec=B?lives:effective;
     var prev=progress[levelKey];
-    starsBefore=(prev===undefined||levelPar===null)?0:starsFor(prev,levelPar);
-    if(prev===undefined||effective<prev){progress[levelKey]=effective;progSave();}
-    starsAfter=levelPar===null?0:starsFor(progress[levelKey],levelPar);
+    starsBefore=starsForRecord(L,prev);
+    if(betterRecord(L,rec,prev)){progress[levelKey]=rec;progSave();}
+    starsAfter=starsForRecord(L,progress[levelKey]);
     starsGained=Math.max(0,starsAfter-starsBefore);
   }
   var last=lvIndex>=LEVELS.length-1;
@@ -187,6 +252,16 @@ function win(){
       moveCount+" moves  \u00b7  not scored";
     $("bNext").textContent="NEXT LEVEL";
     $("bRetry").style.display="none";
+  } else if(B){
+    // Scored on lives, so hints cost nothing here and moves are not the point.
+    var stb=Math.max(0,Math.min(3,lives));
+    $("wonTitle").innerHTML=(stb===3?"Untouched":"Down")+
+      "<div class='bigstars'>"+starGlyphsEls(stb)+"</div>";
+    $("wonSub").textContent=L.name+"  \u00b7  "+
+      (stb===3?"never hit":(BOSS_LIVES-lives)+" hit"+(BOSS_LIVES-lives===1?"":"s")+
+       " taken")+"  \u00b7  "+moveCount+" moves";
+    $("bNext").textContent=last?"PLAY AGAIN":"NEXT LEVEL";
+    $("bRetry").style.display=stb>=3?"none":"flex";
   } else {
     var stw=Math.min(levelPar!==null?starsFor(moveCount,levelPar):3,hintCap());
     $("wonTitle").innerHTML=(last?"Campaign complete":(stw===3?"Perfect":"Solved"))+
@@ -225,6 +300,7 @@ function rotateView(dir){
   if(app==="play"&&L.rotate===false)return;
   if(app==="play"){pushHistory();moveCount++;SFX.turn();if(tutC)tutC.rot++;}
   view=(view+dir+4)%4;viewAngleTarget+=dir*90;
+  if(app==="play")bossTickNow();
   buildGrid();syncHud();saveSession();
 }
 function initDynamic(){
@@ -236,6 +312,7 @@ function initDynamic(){
 }
 function resetLevel(){
   moveHistory=[];moveCount=0;hintsUsed=0;tutReset();
+  bossReset();
   initDynamic();buildDynamic();
   player={x:L.start[0],y:L.start[1],z:L.start[2]};
   flat=false;flatTarget=0;flatT=0;view=0;viewAngle=0;viewAngleTarget=0;
@@ -251,13 +328,14 @@ function loadLevel(level,idx){
   player={x:L.start[0],y:L.start[1],z:L.start[2]};
   flat=false;flatTarget=0;flatT=0;view=0;viewAngle=0;viewAngleTarget=0;
   moveHistory=[];moveCount=0;hintsUsed=0;dying=null;tutReset();
+  B=makeBoss(L);bossReset();
   playerMesh.scale.set(1,1,1);
   initDynamic();
   levelKey=L.name;
   // Tutorials are deliberately unscored, so we don't even ask the solver:
   // its answer for a teaching level is often a clever route the lesson is
   // not about, and showing that as par would be punishing the student.
-  var pst=L.tutorial?{ok:false}:statsCached(L);
+  var pst=(L.tutorial||L.boss)?{ok:false}:statsCached(L);
   levelPar=pst.ok?pst.moves:null;
   syncMeshes();buildGrid();syncHud();
   center.copy(centerT);viewSize=viewSizeT;onResize();

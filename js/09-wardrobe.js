@@ -94,10 +94,7 @@ function starsEarned(){
   var t=0;
   for(var i=0;i<LEVELS.length;i++){
     if(LEVELS[i].tutorial)continue;      // teaching levels pay no shards
-    var best=progress[LEVELS[i].name];
-    if(best===undefined)continue;
-    var st=statsCached(LEVELS[i]);
-    t+=starsFor(best,st.ok?st.moves:0);
+    t+=starsForRecord(LEVELS[i],progress[LEVELS[i].name]);
   }
   return t;
 }
