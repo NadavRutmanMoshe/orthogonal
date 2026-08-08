@@ -266,6 +266,15 @@ function menuPanel(){
    picker is the only place the campaign's shape is visible, so it has to
    show the shape: a run of levels, then the boss that closes it, and how
    many stars of the section's total you are carrying. */
+/* A locked section opens when everything before it is finished. "Finished"
+   is deliberately the bosses only, not every level: the Extra shelf is a
+   reward for beating the game, and gating it on 100% would turn a bonus into
+   a chore nobody collects. */
+function sectionsUnlocked(){
+  for(var i=0;i<LEVELS.length;i++)
+    if(LEVELS[i].boss&&progress[LEVELS[i].name]===undefined)return false;
+  return true;
+}
 function sectionSpans(){
   var out=[];
   for(var i=0;i<SECTIONS.length;i++){
@@ -279,7 +288,7 @@ function sectionSpans(){
       if(progress[LEVELS[j].name]!==undefined)done++;
     }
     out.push({i:i,from:from,to:to,got:got,max:max,done:done,n:n,
-              sec:SECTIONS[i]});
+              sec:SECTIONS[i],locked:!!SECTIONS[i].locked&&!sectionsUnlocked()});
   }
   return out;
 }
@@ -293,10 +302,14 @@ function levelPicker(){
     var sp=spanAt[i];
     if(sp){
       var pct=sp.max?Math.round(sp.got/sp.max*100):0;
-      html+="<div class='chap'>"+sp.sec.name+
-        "<b class='secbar'><i style='width:"+pct+"%'></i></b>"+
-        "<span>"+sp.sec.sub+"  \u00b7  "+sp.done+"/"+sp.n+" solved, "+
-        sp.got+"/"+sp.max+" \u2605</span></div>";
+      html+="<div class='chap"+(sp.locked?" locked":"")+"'>"+sp.sec.name+
+        (sp.locked?" \u00b7 LOCKED":"")+
+        "<b class='secbar'><i style='width:"+(sp.locked?0:pct)+"%'></i></b>"+
+        "<span>"+(sp.locked
+          ? "beat every boss to open these"
+          : sp.sec.sub+"  \u00b7  "+sp.done+"/"+sp.n+" solved, "+
+            sp.got+"/"+sp.max+" \u2605")+"</span></div>";
+      if(sp.locked){i=sp.to;continue;}      // draw the header, hide the rows
     }
     var tut=!!LEVELS[i].tutorial;
     var boss=!!LEVELS[i].boss;

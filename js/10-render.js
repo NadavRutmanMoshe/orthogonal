@@ -213,8 +213,8 @@ function recomputeBounds(){
 function drawSweep(){
   if(!sweepMesh)return;
   if(!B||app!=="play"){sweepMesh.visible=sweepEdge.visible=false;return;}
-  var sw=B.charging(bossTick), span=16;
-  var near=B.untilFire(bossTick);
+  var sw=B.beatAt(bossMs), span=16;
+  var ph=B.phase(bossMs), live=B.live(bossMs);
   // Sized and centred on the arena rather than the origin: a slab hung off
   // world zero trails halfway across the screen and reads as scenery.
   var cx=centerT.x, cy=centerT.y, cz=centerT.z;
@@ -234,10 +234,12 @@ function drawSweep(){
   sweepMesh.position.set(px,py,pz);
   sweepEdge.scale.copy(sweepMesh.scale);
   sweepEdge.position.copy(sweepMesh.position);
-  // dim while it charges, bright on the tick it lands
-  var heat=(near<=1?.34:near<=2?.2:.12)+bossFlash*.5;
+  // The charge has to read as a countdown, not a warning light: opacity ramps
+  // with how far through the beat you are, so "how long have I got" is
+  // legible at a glance instead of needing a number.
+  var heat=live?(.42+bossFlash*.35):(.08+ph*ph*.2);
   sweepMesh.material.opacity=heat;
-  sweepEdge.material.opacity=.35+bossFlash*.6;
+  sweepEdge.material.opacity=live?(.75+bossFlash*.25):(.22+ph*.35);
   sweepMesh.visible=sweepEdge.visible=true;
 }
 function buildGrid(){
@@ -286,8 +288,13 @@ function applyDepth(mesh,base,pd,dvx,dvz,ft){
 }
 
 var tmp=new THREE.Vector3();
-function animate(){
+var lastFrame=0;
+function animate(now){
   requestAnimationFrame(animate);
+  // Real frame time, because the boss clock is wall time and a fixed 16ms
+  // guess would run fast on a 120Hz phone and slow on a loaded one.
+  var dtMs=lastFrame?Math.max(0,(now||0)-lastFrame):16;
+  lastFrame=now||0;
   if(!L)return;
   flatT+=(flatTarget-flatT)*.14;
   if(Math.abs(flatTarget-flatT)<.002)flatT=flatTarget;
@@ -410,7 +417,12 @@ function animate(){
     footMesh.material.opacity=.42*(1-flatT*.7);
   }
 
-  var g=L.goal, gu=g[0]*rx+g[2]*rz, gd=g[0]*tdvx+g[2]*tdvz;
+  // On a boss the marker has to follow the live core. It used to draw the
+  // static L.goal, so after the first strike it pointed at a spot that was no
+  // longer the core - you could hit the boss once and then had nothing to aim
+  // at. The solver never caught it because the solver does not read markers.
+  var g=(B&&B.coreAt(bossHp))||L.goal;
+  var gu=g[0]*rx+g[2]*rz, gd=g[0]*tdvx+g[2]*tdvz;
   var gx=gu*rx+gd*.012*tdvx, gz=gu*rz+gd*.012*tdvz;
   goalMesh.position.set(g[0]+(gx-g[0])*flatT,g[1],g[2]+(gz-g[2])*flatT);
   goalMesh.rotation.y+=.012;goalMesh.rotation.x+=.008;
@@ -426,6 +438,7 @@ function animate(){
   drawSweep();
 
   if(bossFlash>0)bossFlash=Math.max(0,bossFlash-.055);
+  bossFrame(dtMs);
   amb.intensity=.45+.55*flatT;
   dir1.intensity=.85*(1-flatT);
   dir2.intensity=.35*(1-flatT);

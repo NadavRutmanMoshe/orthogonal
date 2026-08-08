@@ -16,7 +16,7 @@ const ctx=vm.createContext({console,Set,Map,Math,JSON});
 ["01-coords.js","02-levels.js","03-rules.js","04-solver.js"].forEach(f=>{
   vm.runInContext(fs.readFileSync(path.join(JS,f),"utf8"),ctx,{filename:f});
 });
-const {LEVELS,solve,makeRules,resolveStep,AX}=ctx;
+const {LEVELS,solve,makeRules,resolveStep,AX,bossSafety}=ctx;
 
 const only=process.argv[2];
 let bad=0, checked=0;
@@ -27,7 +27,19 @@ LEVELS.forEach((lv,i)=>{
   if(r.status!=="solved"){
     bad++;
     console.log("  FAIL  ["+i+"] "+lv.name+"  ->  "+r.status);
-  } else if(only!==undefined || process.env.VERBOSE){
+  } else if(lv.boss){
+    // A real-time boss cannot be proved fair by search - the clock advances
+    // while you think. What is checkable is that the arena never corners
+    // you: every square a sweep threatens has a safe square one step away.
+    const safe=bossSafety(lv);
+    if(!safe.ok){
+      bad++;
+      console.log("  UNFAIR["+i+"] "+lv.name+"  ->  "+safe.trapped.length+
+        " trapped cell(s), e.g. ["+safe.trapped[0].cell+"] vs "+
+        safe.trapped[0].beat.axis+safe.trapped[0].beat.at);
+    }
+  }
+  if(r.status==="solved" && (only!==undefined || process.env.VERBOSE)){
     console.log("  ok    ["+i+"] "+lv.name+"  "+r.path.length+" moves:  "+r.path.join(" "));
   }
 });

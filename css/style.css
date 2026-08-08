@@ -190,6 +190,8 @@
      clear of the levels above it. */
   .lrow.bossrow{border-bottom-color:#ff8a3c55;margin-top:3px}
   .lrow.bossrow .lname{color:#ff8a3c;letter-spacing:.06em}
+  .chap.locked{color:var(--fg-dim)}
+  .chap.locked .secbar{opacity:.5}
   .chap{margin:12px 0 4px;font-size:9.5px;letter-spacing:.16em;color:var(--player)}
   .chap:first-child{margin-top:2px}
   .chap span{display:block;color:var(--fg-dim);letter-spacing:.03em;

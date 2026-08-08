@@ -38,7 +38,8 @@ for the mechanic even though it did not end up on the button.
 6. You must reach the goal in the volume. Standing on its projection is not
    enough.
 7. On a boss level there is no goal: you strike each core in turn, in the
-   volume, while a lethal plane sweeps one slice of the world every few moves.
+   volume, while a lethal plane sweeps one slice of the world **on a real
+   clock**. That clock is the one place the game is not turn-based.
 
 Death is solver-equivalent to a blocked move — neither leads anywhere, so no
 shortest path routes through it. Adding death changed nothing about any puzzle;
@@ -56,9 +57,9 @@ anything; everything before it only declares.
 |---|---|
 | `js/00-storage.js` | `window.storage` over `localStorage`. The game was born inside a Claude artifact where the host supplied this API; the shim lets identical code run from `file://`, itch.io and a Capacitor WebView. Defines itself only if absent. Falls back to an in-memory map if storage is denied (private browsing). |
 | `js/01-coords.js` | `AX[]` — the four camera views, each with `r` (screen-right) and `d` (depth, pointing at the camera). Nearly every coordinate calculation goes through these. Also `K()` and `box()`. |
-| `js/02-levels.js` | 74 levels + `SECTIONS` + `LEVEL_RENAMES`. |
-| `js/03-rules.js` | `resolveStep()`, block kinds, `makeRules()`, `makeBoss()`. |
-| `js/04-solver.js` | `solve()` — BFS over game states, bosses included, capped at 250k. |
+| `js/02-levels.js` | 69 levels + `SECTIONS` + `LEVEL_RENAMES`. |
+| `js/03-rules.js` | `resolveStep()`, block kinds, `makeRules()`, `makeBoss()`, `bossSafety()`. |
+| `js/04-solver.js` | `solve()` — BFS over game states; reaches boss cores but does **not** model sweeps. |
 | `js/05-state.js` | Mutable state, boss state, tutorial counters. |
 | `js/06-persistence.js` | Progress, settings, session, library, wardrobe. |
 | `js/07-difficulty.js` | `statsFor()`, `tierOf()`, stars, `statsCached()`, `starsForRecord()`. |
@@ -103,18 +104,32 @@ Block format is `[x,y,z,k]` where k is 0 stone, 1 glass, 2 anchor, 3 crate,
   which axis you fold along decides which keys you can reach. They exist in code
   and in the editor but no campaign level uses them.
 
-**The campaign is nine sections, each ending in a boss**, listed in
-`SECTIONS` in `js/02-levels.js`. `SECTIONS[].at` holds array indices, so
-inserting a level means shifting every marker after it. The loop is: teach a
-mechanic on gentle ground, harden it, combine it with what came before, then
-fight. Sections are 6–8 levels plus their boss; IX is 11 plus the Orthogon.
+**The campaign is four sections plus a locked shelf**, listed in `SECTIONS` in
+`js/02-levels.js`. Each teaches one mechanic gently, hardens it, then ends on
+levels that combine it with everything already taught, then a boss:
 
-The sawtooth in the difficulty curve is now **deliberate**. It used to be an
-accident of building chapter by chapter — the game climbed to brutal and reset
-to gentle nine times with nothing marking the boundary. A new mechanic must
-start gentle, so the reset stays; what changed is that a boss now sits on each
-peak and the picker draws the section it closes. Dump the curve before moving
-anything: `node tools/curve.js`.
+| | | |
+|---|---|---|
+| I · FUNDAMENTALS | 10 + boss | fold, turn, depth |
+| II · SPIKES | 7 + boss | spikes before glass — a hazard reads faster than an absence |
+| III · GLASS | 8 + boss | ends on glass + spikes |
+| IV · CRATES | 10 + boss | ends on crate + glass + spikes |
+| V · EXTRA | 27, locked | opens when every boss is down |
+
+`SECTIONS[].at` holds array indices, so inserting a level means shifting every
+marker after it. A section with `locked:true` stays shut until
+`sectionsUnlocked()` — which checks the **bosses only**, not every level,
+because gating a bonus on 100% turns a reward into a chore.
+
+**Nothing was deleted to get from 62 campaign levels to 35.** Anchors and amber
+are shelved whole in EXTRA, so turning that section back on is a data move, not
+a rebuild. The judgement was that 40 good levels beat 60 that repeat
+themselves.
+
+Levels have been renumbered twice. `LEVEL_RENAMES` maps every old name to its
+current one and `migrateNames()` applies it on load — progress is keyed by
+name, so without it every solved level would read unsolved. **Entries
+accumulate; never rewrite that table.**
 
 Every special piece is verified load-bearing; every anchor level is verified
 **impossible** without its anchor; every crate is verified to be shoved in the
@@ -124,55 +139,59 @@ optimal solution.
 
 ## Bosses
 
-**A boss is a puzzle with a clock, not a reflex test.** Every action you take —
-step, fold, unfold, turn — advances it exactly one tick. Nothing reads the wall
-clock, so you can still think for as long as you like, it still plays one-handed
-on a phone, and it stays machine-verifiable. A real-time boss was the obvious
-alternative and it would have been a different game: it breaks the solver, and
-the solver is the only reason anything here is known to be fair.
+**A boss runs on the wall clock.** A lethal plane charges in plain sight for
+most of a beat, then goes live for the last ~300ms; if you are standing in it
+you lose a life. Dodging is a reflex act, not a move you plan. Everything else
+about the game stays turn-based.
 
-The attack is a **lethal plane sweeping one slice**. It charges in plain sight
-for `period-1` ticks and lands on the period-th, so a hit is always a decision,
-never a reaction you missed.
+**This is the second design, and the first one is worth knowing about.** The
+boss was originally turn-based: every step advanced it exactly one tick, which
+meant `solve()` could prune hit states and prove a run existed that was never
+hit — "solvable" and "fair" were one question. It was rejected in playtesting
+for not feeling like a fight. That proof is gone and **that is a real cost**,
+recorded here so nobody rediscovers it the hard way. Do not reintroduce sweep
+modelling into `solve()`: a search over moves cannot say anything about a clock
+that advances while the player thinks, and a path it claimed was safe would be
+a lie.
 
-**Why a plane, and why this is about the fold.** A sweep down the axis you are
-*looking along* cannot be dodged in the plane at all — flattened, you are the
-projection of every depth at once, so you stand in every slice of that axis
-simultaneously. The same sweep is trivial to dodge in the volume by stepping
-one square. Rotating the camera re-labels which sweeps are survivable, for
-free. So the boss asks the same question the whole game asks: which axis are
-you collapsing, and is this the moment? You can watch the solver discover this
-— its clean lines rotate twice before folding, to turn a fatal depth sweep into
-a dodgeable one.
+What replaces it is `bossSafety()` in `js/03-rules.js`: for every standable
+square and every beat, either that square is safe or a square one step away is.
+Weaker than a clean-run proof — it says nothing about dodging *and* making
+progress — but it rules out the failure that actually matters, dying with no
+move that would have saved you. `tools/verify.js` runs it on every boss.
 
-- Data: `boss:{period, cores:[[x,y,z]…], beats:[{axis,at}…]}`. One core per
-  strike, consumed in order, which is what walks you around the arena.
-  `hp` is `cores.length`. Sweep axes are `"x"`, `"z"` (world axes, so their
-  meaning changes with the camera) and `"y"` (a height slab, which folding
-  preserves).
-- **Scored on lives, not moves.** Three lives; a hit costs one and returns you
-  to the start with the fight's progress intact. Three intact lives is three
-  stars. Bosses never ask the solver for a par and hints cost them nothing.
-- `progress[name]` therefore holds **lives for a boss and a move count for
-  everything else — opposite senses in one slot.** Nothing compares them by
-  hand: reads go through `starsForRecord()`, writes through `betterRecord()`.
-- Undo rewinds the clock and strikes but **never hands back a life**. Undo is
-  for rethinking a move, not for erasing a hit.
-- **`solve()` was widened rather than duplicated.** Two fields ride along in the
-  packed state — strikes left and the clock — and any successor a sweep would
-  land on is dropped. So the path it returns is a path that is never hit:
-  proving a boss *solvable* and proving it *fair* are the same question. A
-  level with no boss packs 0 into both fields forever and searches exactly the
-  space it always did.
-- **Anything the boss does on a strike must be mirrored in `advance()`.** This
-  is not hypothetical: `bossStrike()` used to reset the clock, the solver did
-  not, and a path proven never-hit walked straight into a sweep in the real
-  game. The clock now runs continuously, which is also easier to count.
-- Arenas come from `node tools/bossgen.js`, generate-and-test like the
-  composer. Four bars: **fair** (a never-hit run exists), **long**, **folded**,
-  and **forced** — the arena with its sweeps switched off must have a strictly
-  shorter answer. Without that last bar you get an ordinary level wearing a
-  health bar, which is the whole failure mode to avoid.
+**Why a plane, and why this is still about the fold.** A sweep down the axis
+you are *looking along* cannot be dodged in the plane at all — flattened, you
+are the projection of every depth at once, so you stand in every slice of that
+axis simultaneously. The same sweep is one step to dodge in the volume, and
+rotating the camera re-labels which sweeps are survivable. So even as a reflex
+test the fight asks the game's question: which axis, and is this the moment?
+
+- Data: `boss:{period, fire, cores:[[x,y,z]…], beats:[{axis,at}…]}`. `period`
+  and `fire` are **milliseconds**. One core per strike, consumed in order,
+  which is what walks you around the arena. Sweep axes `"x"`/`"z"` are world
+  axes, so their meaning changes with the camera; `"y"` is a height slab, which
+  folding preserves.
+- **`bossFrame(dt)` drives it from the animation loop** and is paused whenever
+  the fight is not in front of you — panel open, win card up, mid-death, intro
+  showing. A clock that runs while you read the menu is not difficulty. `dt` is
+  clamped to 90ms because a backgrounded tab returns one enormous frame, which
+  would otherwise skip whole beats and kill you for switching apps.
+- **Striking is still move-driven** (`bossCheckStrike`), in the volume only.
+  That half of the fight stayed a puzzle.
+- **The core marker must follow the live core.** It drew the static `L.goal`
+  once, so after the first strike it pointed at a dead square and the boss
+  became unkillable. Playtesting found it in a minute; the solver never could,
+  because the solver does not read markers.
+- **Scored on lives, not moves.** Three lives, three stars for three intact.
+  `progress[name]` therefore holds lives for a boss and a move count for
+  everything else — opposite senses in one slot — so reads go through
+  `starsForRecord()` and writes through `betterRecord()`.
+- Undo rewinds strikes but not the clock (wall time cannot be rewound) and
+  never hands back a life.
+- Arenas come from `node tools/bossgen.js`, generate-and-test. Four bars:
+  **completable**, **folded**, **safe** (`bossSafety`), and **threatening** —
+  a sweep nobody could ever be caught by is scenery.
 
 ---
 
@@ -311,7 +330,7 @@ exclusive — every gesture also has a key and, unless hidden, a button:
   direct child of `body`; any future in-panel canvas depends on that staying
   scoped.
 - **`statsCached()`** wraps `statsFor` — the level picker would otherwise run
-  BFS on all 66 levels every time it opens.
+  BFS on every level each time it opens.
 - A parsing regex over the levels file must match `rotate:(true|false)` — level
   01 has rotation locked, and a regex expecting only `true` silently swallows it
   into its neighbour. That bug cost two rounds of miscounting.
@@ -385,13 +404,18 @@ Highest-leverage dials in `synthesize()`: the depth-choice heuristic (currently
   `HIDDEN`, every hint cue points at an invisible button. Both want the same
   fix — `cue()` should fall back to a `flash()` when its target is not on screen.
 - **Two-finger tap only rotates right.** There is no left-rotate gesture.
-- **Boss arenas are generated, not authored.** They pass all four bars, but
-  they are two plateaus and a chasm every time, so nine of them will start to
-  rhyme. The bars are the floor, not the ceiling; a hand-built arena that says
-  something specific would beat any of them.
 - **Difficulty tiers say "brutal" for every boss** — `statsFor` weights folds
   and path length, and a 20-move three-core fight trips both. Bosses are scored
   on lives and never ask for a par, so this only shows up in `tools/curve.js`.
+- **Boss fairness is no longer proved, only sampled.** `bossSafety()` says you
+  are never cornered; it does not say the fight is winnable at a given reaction
+  speed. That is now a playtesting question and nothing else can answer it.
+- **The boss is the one real-time thing in a turn-based game.** It works, but
+  it means the game no longer plays entirely at your own pace, and an
+  accessibility option to slow `period` is the obvious missing setting.
+- **Boss arenas are generated, not authored** — two plateaus and a chasm every
+  time. Four rhyme less than nine did, but a hand-built arena would still beat
+  any of them.
 
 ---
 

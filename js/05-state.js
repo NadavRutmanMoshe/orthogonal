@@ -36,14 +36,14 @@ function tutReset(){
 var muted=false;
 // Boss fights. B is null on every ordinary level and every check below is
 // guarded on it, so a level without a boss runs the code it always ran.
-var B=null, bossHp=0, bossTick=0, lives=0, bossFlash=0;
+var B=null, bossHp=0, bossMs=0, lives=0, bossFlash=0, bossStruckBeat=-1;
 var BOSS_LIVES=3;
 
 function snapState(){
   return {x:player.x,y:player.y,z:player.z,flat:flat,
           fu:flatPos.u,fy:flatPos.y,view:view,ang:viewAngleTarget,
           cr:gCrates.map(function(c){return c.slice();}),keys:gKeys,
-          hp:bossHp,tick:bossTick,lives:lives};
+          hp:bossHp,lives:lives};
 }
 function pushHistory(){
   moveHistory.push(snapState());
@@ -57,10 +57,10 @@ function undoMove(){
   flat=st.flat;flatPos={u:st.fu,y:st.fy};
   view=st.view;viewAngleTarget=st.ang;
   gCrates=st.cr.map(function(c){return c.slice();});gKeys=st.keys;
-  // Undo rewinds the boss too, clock and strikes alike. It deliberately does
-  // not hand back a spent life: undo is for rethinking a move, not for
-  // erasing a hit, and giving lives back would make the star rating free.
-  bossHp=st.hp;bossTick=st.tick;
+  // Undo rewinds the strikes but not the clock - the clock is wall time now
+  // and cannot be rewound - and never hands back a spent life. Undo is for
+  // rethinking a move, not for erasing a hit.
+  bossHp=st.hp;
   flatTarget=flat?1:0;
   moveCount=Math.max(0,moveCount-1);
   buildGrid();syncHud();

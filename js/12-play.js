@@ -35,36 +35,57 @@ function die(kind){
    wrong and you could trade a life for a hit the solver said was avoidable.
    ============================================================ */
 function bossReset(){
-  bossHp=B?B.hp:0;bossTick=0;bossFlash=0;
+  bossHp=B?B.hp:0;bossMs=0;bossFlash=0;bossStruckBeat=-1;
   lives=B?BOSS_LIVES:0;
 }
-function bossTickNow(){
-  if(!B||dying)return;
-  bossTick++;
-  var sw=B.firing(bossTick);
+/* The boss runs off the animation loop, not off your moves.
+
+   Paused whenever the fight is not actually in front of you - a panel open,
+   the win card up, mid-death, the intro still showing - because a clock that
+   runs while you read the menu is not difficulty, it is a bug you cannot see.
+   dt is clamped for the same reason: a backgrounded tab hands back one huge
+   frame on return, and without the clamp that single frame skips whole beats
+   and kills you for having switched apps. */
+function bossFrame(dt){
+  if(!B||app!=="play")return;
+  if(dying||panelOpen()||!$("intro").classList.contains("gone")||
+     $("won").classList.contains("on"))return;
+  dt=Math.min(dt,90);
+  var was=B.live(bossMs);
+  bossMs+=dt;
+  var now=B.live(bossMs);
+  var beat=Math.floor(bossMs/B.period);
+  if(now&&!was)bossFlash=1;
+  if(!now)return;
+  if(bossStruckBeat===beat)return;        // this sweep already took its due
+  var sw=B.beatAt(bossMs);
   var hit=flat ? B.hits(sw,view,"2",flatPos.u,flatPos.y,0)
                : B.hits(sw,view,"3",player.x,player.y,player.z);
-  if(sw)bossFlash=1;
-  bossTick%=B.cycle;
-  if(hit){bossHurt();return;}
-  if(!flat){
-    var core=B.coreAt(bossHp);
-    if(core&&player.x===core[0]&&player.y===core[1]&&player.z===core[2])
-      bossStrike();
-  }
+  if(hit){bossStruckBeat=beat;bossHurt();}
+}
+// Standing on the live core is still a move-driven act: you have to arrive
+// there, in the volume, which is the one part of the fight that stayed a
+// puzzle rather than becoming a reflex.
+function bossCheckStrike(){
+  if(!B||dying||flat)return;
+  var core=B.coreAt(bossHp);
+  if(core&&player.x===core[0]&&player.y===core[1]&&player.z===core[2])
+    bossStrike();
 }
 function bossHurt(){
   lives--;
   SFX.die();shakeT=1;
+  var bar=$("bossBar");
+  if(bar){bar.classList.remove("hurt");void bar.offsetWidth;bar.classList.add("hurt");}
   if(lives<=0){die("boss");return;}
   flash(lives+" "+(lives===1?"life":"lives")+" left");
-  // Back to the start, but the fight keeps its progress. Rewinding strikes
-  // as well would make a late mistake cost the whole arena, and the star
-  // rating already carries the cost of being hit.
+  // Back to the start, but the fight keeps the cores you already broke, and
+  // the clock restarts on a fresh charge so you are not respawned into a
+  // sweep that is already halfway to landing.
   moveHistory=[];
   initDynamic();buildDynamic();
   player={x:L.start[0],y:L.start[1],z:L.start[2]};
-  flat=false;flatTarget=0;flatT=0;bossTick=0;
+  flat=false;flatTarget=0;flatT=0;bossMs=0;bossStruckBeat=-1;
   buildGrid();syncHud();
 }
 function bossStrike(){
@@ -72,12 +93,6 @@ function bossStrike(){
   SFX.strike();shakeT=1;
   if(bossHp<=0){buildGrid();win();return;}
   flash(bossHp===1?"one core left":bossHp+" cores left");
-  // The clock deliberately does NOT restart here. It did once, and it made
-  // the game disagree with the solver: solve() only decrements hp when a
-  // strike lands, so a path it had proved was never hit walked straight into
-  // a sweep in the real game. Anything the boss does on a strike has to be
-  // mirrored in advance(), and a rhythm that stutters is worse to read
-  // anyway - the beat should be something you can count on.
   buildGrid();syncHud();
 }
 
@@ -134,7 +149,7 @@ function move3(dx,dz,dir){
   if(R.deadly3(nx,ny,nz)){die("spike");return;}
   if(!moved)SFX.step();
   if(tutC){tutC.m3++;if(dir)tutC.d[dir]++;if(ny>oldY)tutC.climb++;}
-  bossTickNow();
+  bossCheckStrike();
   syncHud();saveSession();checkWin();
 }
 function move2(du){
@@ -151,7 +166,7 @@ function move2(du){
   if(R.deadly2(view,nu,ny)){die("spike");return;}
   SFX.step();collectHere();
   if(tutC)tutC.m2++;
-  bossTickNow();
+  bossCheckStrike();
   syncHud();saveSession();
 }
 // A tutorial level may withhold a verb so the lesson stays about one thing.
@@ -165,7 +180,7 @@ function doFlatten(){
   flatPos={u:pu,y:player.y};
   flat=true;flatTarget=1;SFX.fold();collectHere();
   if(tutC)tutC.flat++;
-  bossTickNow();
+  bossCheckStrike();
   syncHud();saveSession();
   // Something else already occupies that square in the plane. Let the fold
   // play out, then close on the player.
@@ -183,7 +198,7 @@ function doUnflatten(){
   flat=false;flatTarget=0;SFX.unfold();
   if(tutC)tutC.unflat++;
   if(R.deadly3(player.x,player.y,player.z)){die("spike");return;}
-  bossTickNow();
+  bossCheckStrike();
   syncHud();saveSession();
   checkWin();
 }
@@ -300,7 +315,6 @@ function rotateView(dir){
   if(app==="play"&&L.rotate===false)return;
   if(app==="play"){pushHistory();moveCount++;SFX.turn();if(tutC)tutC.rot++;}
   view=(view+dir+4)%4;viewAngleTarget+=dir*90;
-  if(app==="play")bossTickNow();
   buildGrid();syncHud();saveSession();
 }
 function initDynamic(){

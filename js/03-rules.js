@@ -61,39 +61,39 @@ function parseK(k){var p=k.split(",");return [+p[0],+p[1],+p[2]];}
 /* ============================================================
    BOSSES
 
-   A boss is a puzzle with a clock, not a reflex test. Every action you take -
-   step, fold, turn - advances it exactly one tick, so you can still sit and
-   think for as long as you like. Nothing here reads the wall clock.
+   A boss runs on the wall clock. The attack is a lethal plane that sweeps one
+   slice: it charges in plain sight for most of the beat, then goes live for
+   the last `fire` milliseconds, and if you are standing in it when it lands
+   you lose a life. Dodging is a real-time act - you have the charge window to
+   get off the slice, and nothing waits for you to decide.
 
-   The attack is a lethal plane sweeping one slice of the world. It charges
-   for `period-1` ticks in plain sight and lands on the period-th, so being
-   hit is always a decision you made rather than a reaction you missed.
+   This is the second design. The first was turn-based, where every step
+   advanced the boss exactly one tick, and it had one large advantage: solve()
+   could prove a run existed that was never hit, so "solvable" and "fair" were
+   the same question. That is gone now and it is a real cost, recorded here so
+   nobody re-discovers it the hard way. What replaces it is a weaker but still
+   machine-checkable property - see `bossSafety()` below - plus playtesting.
 
-   The reason a plane is the right attack: it makes the boss a puzzle about
-   the fold rather than a fight bolted onto one. A sweep down the axis you
-   are *looking along* cannot be dodged in the plane at all - flattened, you
-   are the projection of every depth at once, so you are standing in every
-   slice of that axis simultaneously. The same sweep is trivial to dodge in
-   the volume by stepping one square. So the boss asks the question the whole
-   game asks: which axis are you collapsing, and is this the moment for it?
-   Rotating the camera re-labels which sweeps are survivable, for free.
+   What survives from the first design, and the reason the boss is worth
+   having at all, is the fold. A sweep down the axis you are *looking along*
+   cannot be dodged in the plane: flattened, you are the projection of every
+   depth at once, so you stand in every slice of that axis simultaneously.
+   The same sweep is one step to dodge in the volume. Rotating the camera
+   re-labels which sweeps are survivable. So the fight asks the question the
+   whole game asks: which axis are you collapsing, and is this the moment?
    ============================================================ */
 function makeBoss(level){
   if(!level.boss)return null;
   var b=level.boss;
-  var beats=b.beats, period=b.period||3, hp=b.cores.length;
+  var beats=b.beats, period=b.period||2200, fire=b.fire||280, hp=b.cores.length;
   return {
-    hp:hp, cores:b.cores, period:period, beats:beats,
+    hp:hp, cores:b.cores, period:period, fire:fire, beats:beats,
     cycle:period*beats.length,
     // cores are consumed in order, so the fight moves you around the arena
     coreAt:function(hpLeft){return b.cores[hp-hpLeft];},
-    // the beat currently charging, and how many ticks are left before it lands
-    charging:function(t){return beats[Math.floor(t/period)%beats.length];},
-    untilFire:function(t){return period-(t%period);},
-    // the beat that lands as tick t completes, if any
-    firing:function(t){
-      return (t>0&&t%period===0)?beats[Math.floor((t-1)/period)%beats.length]:null;
-    },
+    beatAt:function(ms){return beats[Math.floor(ms/period)%beats.length];},
+    phase:function(ms){return (ms%period)/period;},          // 0..1 through it
+    live:function(ms){return (ms%period)>=period-fire;},     // lethal right now
     /* Does sweep `sw` catch someone at this position?
        In the volume, a,c are x,z. In the plane, a is u and c is ignored -
        there is no depth to be at. */
@@ -106,6 +106,47 @@ function makeBoss(level){
       return a===sw.at*comp;            // u = x*r0 + z*r2, so on-axis u = at*comp
     }
   };
+}
+
+/* The fairness property that replaced the solver's proof.
+
+   For every square you can stand on, and every beat the boss has, either that
+   square is safe from the beat or a square one step away is. In other words
+   the arena never corners you: there is always somewhere to be. It is weaker
+   than "a clean run exists" - it says nothing about whether you can dodge and
+   make progress at the same time - but it is checkable, and it rules out the
+   failure that actually matters, which is dying with no move that would have
+   saved you. Run by tools/verify.js over every boss level. */
+function bossSafety(level){
+  var B=makeBoss(level); if(!B)return {ok:true};
+  var R=makeRules(level), cr=crateSet(crateKeys(level));
+  var stand=[], seen={};
+  for(var i=0;i<level.blocks.length;i++){
+    var bl=level.blocks[i], x=bl[0], y=bl[1]+1, z=bl[2];
+    if(R.solid(x,y,z,cr))continue;
+    var k=K(x,y,z); if(seen[k])continue; seen[k]=1;
+    stand.push([x,y,z]);
+  }
+  var bad=[];
+  for(var bi=0;bi<B.beats.length;bi++){
+    var sw=B.beats[bi];
+    for(var si=0;si<stand.length;si++){
+      var c=stand[si];
+      if(!B.hits(sw,0,"3",c[0],c[1],c[2]))continue;    // already safe here
+      var out=false;
+      var nb=[[1,0],[-1,0],[0,1],[0,-1]];
+      for(var ni=0;ni<nb.length&&!out;ni++){
+        var nx=c[0]+nb[ni][0], nz=c[2]+nb[ni][1];
+        var ny=resolveStep(function(h){return R.solid(nx,h,nz,cr);},c[1],
+                           function(h){return R.solid(c[0],h,c[2],cr);});
+        if(ny===null||ny===FELL)continue;
+        if(R.deadly3(nx,ny,nz))continue;
+        if(!B.hits(sw,0,"3",nx,ny,nz))out=true;
+      }
+      if(!out)bad.push({cell:c,beat:sw});
+    }
+  }
+  return {ok:!bad.length,trapped:bad};
 }
 
 function makeRules(level){
