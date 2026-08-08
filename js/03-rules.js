@@ -110,30 +110,80 @@ function makeBoss(level){
     }
   };
 }
-/* Where does it go next? One cell, greedily, toward the player, preferring
-   whichever axis it is further away on. Deliberately greedy rather than a
-   real path search: geometry it cannot round is exactly where you get to
-   out-manoeuvre it, and a boss that always finds the perfect route is a
-   boss you can only out-run, never outplay. */
-function bossNext(R,from,to,cr){
-  var dx=to.x-from.x, dz=to.z-from.z;
-  var tries=[];
-  if(Math.abs(dx)>=Math.abs(dz)){
-    if(dx)tries.push([Math.sign(dx),0]);
-    if(dz)tries.push([0,Math.sign(dz)]);
-  } else {
-    if(dz)tries.push([0,Math.sign(dz)]);
-    if(dx)tries.push([Math.sign(dx),0]);
-  }
-  for(var i=0;i<tries.length;i++){
-    var nx=from.x+tries[i][0], nz=from.z+tries[i][1];
-    var ny=resolveStep(function(h){return R.solid(nx,h,nz,cr);},from.y,
-                       function(h){return R.solid(from.x,h,from.z,cr);});
+// Is this square one the fold would crush it on, in the view being looked
+// along right now? Shared by the boss's own pathing and by the affordance
+// that lights the button, so what it flees is exactly what you are shown.
+function bossCrushAt(R,c,v,cr){
+  var u=c.x*AX[v].r[0]+c.z*AX[v].r[2];
+  return !!(R.siloSolid(v,u,c.y,cr)||R.deadly2(v,u,c.y));
+}
+/* Where does it go next?
+
+   One cell toward you, preferring the axis it is further away on - but it
+   will not walk onto a square the fold could crush it on if it has any other
+   way to close. That single rule is what turns the fight from a wait into a
+   hunt. Without it the boss strolls onto a kill line unprompted, and the
+   whole fight collapses into: stand still, wait for green, fold, repeat.
+
+   When every closing step is dangerous it takes one anyway. It has to: a
+   boss that always refuses is a boss that can never be killed, and the point
+   of the avoidance is to make you *force* the moment, not to deny it. So the
+   fight is herding - cut off its safe approaches, using geometry and the
+   camera, until the only way it can come at you is across a line.
+
+   Rotating re-labels every line at once, which makes the camera a weapon
+   rather than a convenience: turn, and the square it just fled to is the one
+   that kills it. */
+function bossNext(R,from,to,cr,v){
+  var dirs=[[1,0],[-1,0],[0,1],[0,-1]], safe=[], risky=[];
+  for(var i=0;i<4;i++){
+    var nx=from.x+dirs[i][0], nz=from.z+dirs[i][1];
+    var ny=resolveStep(
+      (function(a,b){return function(h){return R.solid(a,h,b,cr);};})(nx,nz), from.y,
+      (function(a,b){return function(h){return R.solid(a,h,b,cr);};})(from.x,from.z));
     if(ny===null||ny===FELL)continue;
-    if(R.deadly3(nx,ny,nz))continue;      // it will not walk onto spikes either
-    return {x:nx,y:ny,z:nz};
+    if(R.deadly3(nx,ny,nz))continue;        // it will not walk onto spikes either
+    var cand={x:nx,y:ny,z:nz};
+    cand.d=Math.abs(nx-to.x)+Math.abs(ny-to.y)+Math.abs(nz-to.z);
+    ((v!==undefined&&bossCrushAt(R,cand,v,cr))?risky:safe).push(cand);
   }
-  return null;
+  function nearest(list){
+    var best=null;
+    for(var j=0;j<list.length;j++) if(!best||list[j].d<best.d) best=list[j];
+    return best;
+  }
+  /* Every neighbour is considered, not just the two that close the distance.
+     That is what lets it walk *around* a line instead of through one, and it
+     is the difference between a boss you have to corner and a boss that
+     corners itself. With only closing steps on the table it would take a
+     lethal one whenever both happened to be lethal, which is how the
+     do-nothing strategy kept working even on arenas with few lines. */
+  /* It would rather wait than die.
+
+     A crush line is not a square, it is a wall clean across the arena, so if
+     one lies between you it CANNOT approach without crossing - and every
+     crossing is a free hit to anyone standing still. Letting it hold instead
+     is what finally kills the do-nothing strategy: park yourself behind a
+     line and it simply stops coming, and you have won nothing.
+
+     It never crosses. An earlier version let it charge through after stalling
+     for a few seconds, as a valve against stalemate, and that single
+     concession handed the whole exploit straight back: wait four beats, take
+     a free hit, repeat. Nothing it does on its own will ever kill it.
+
+     Which means a hit has to be *made*. Two ways, both of which require you
+     to act: rotate, and the square it is standing on becomes a line - every
+     line in the arena is re-labelled at once by a quarter turn - or move, and
+     change which squares it is willing to approach through.
+
+     Standing behind a line is therefore safe, and worth nothing: it waits,
+     you gain nothing, and the sweeps come for you regardless. That is the
+     answer to a standoff, not a charge. */
+  var here=Math.abs(from.x-to.x)+Math.abs(from.y-to.y)+Math.abs(from.z-to.z);
+  var s=nearest(safe);
+  if(s&&s.d<here)return s;                  // safe progress: take it
+  if(s&&s.d<=here)return s;                 // safe sidestep, looking for a way in
+  return null;                              // hold position rather than walk into it
 }
 
 /* Is this arena a stage a fight can happen on?

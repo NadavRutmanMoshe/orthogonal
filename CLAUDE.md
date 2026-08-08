@@ -193,6 +193,47 @@ cannot be dodged in the plane at all — flattened you are the projection of
 every depth at once — so retreat has a cost, and the axis you picked decides
 what it is.
 
+**How you actually land a hit, and why it is not free.** The boss *will not
+walk onto a line it can be crushed on* — it detours, and if a line lies
+between you it simply holds position rather than crossing. So nothing it does
+on its own will ever kill it. A hit has to be made, two ways:
+
+- **Turn.** A quarter turn re-labels every line in the arena at once, so the
+  square it is safely standing on becomes lethal. Fold before it steps off.
+  This makes the camera the weapon rather than a convenience.
+- **Move.** Reposition so the safe approaches run out and it has to come at
+  you across one.
+
+And **standing still is fatal**, because the sweeps travel: a beat written
+`{axis,from,to}` expands at build time into one static beat per coordinate, so
+the plane marches the length of the arena and reaches every square. A single
+fixed slice is dodged once and ignored forever; a travelling one means there
+is no square to camp on. `bossSafety()` still checks each position separately,
+so "never cornered" holds the whole way across.
+
+**This is the design's third and worst near-miss, and the checks could not see
+it.** A playtester broke the fight in about a minute — stand still, wait for
+the boss to wander onto a line, fold, repeat — while every static property
+still passed: the arena was connected, the sweeps never cornered anyone, the
+boss was killable. None of them was about *play*. Two things came out of it:
+
+- **`tools/bosssim.js`, run by `verify.js`, plays each fight twice.** An IDLE
+  policy that never moves must **lose**, and a HERDER policy that dodges and
+  turns must **win**. Neither is a good player; they are a floor and a
+  ceiling, and a boss has to sit between them.
+- **Pillar count is the difficulty dial and it is far more sensitive than it
+  looks.** A pillar does not block a square, it blocks a *line* — every square
+  sharing its `u` in that view, right through the arena. Coverage is roughly
+  (distinct pillar coordinates) / (arena width), so five scattered pillars put
+  50–70% of the floor under threat, and above about a third the boss cannot
+  avoid the lines however hard it tries and walks onto one unprompted. **Two
+  or three distinct lines per axis is the number**; `bossgen` prints coverage.
+
+An earlier fix let it charge through a line after stalling a few seconds, as a
+valve against standoffs. That one concession handed the whole exploit straight
+back — wait four beats, take a free hit, repeat — so it is gone. A standoff is
+answered by the sweeps, not by the boss losing patience.
+
 - **The game says when a fold would land.** `bossCrushable()` drives the boss's
   core and cage to the goal colour and puts the `GO 2D` button in `.strike`.
   Without it the mechanic is invisible — nothing on screen tells you a column
@@ -479,9 +520,14 @@ Highest-leverage dials in `synthesize()`: the depth-choice heuristic (currently
 - **The boss is the one real-time thing in a turn-based game.** It works, but
   it means the game no longer plays entirely at your own pace, and an
   accessibility option to slow `period` is the obvious missing setting.
-- **Boss pacing is guesswork.** `step` runs 1050ms down to 800ms and `stun`
-  1600ms down to 1200ms across the four. Those numbers came from reasoning
-  about reaction time, not from anyone playing them.
+- **Boss pacing is guesswork.** `step` runs 1100ms down to 900ms, `period`
+  1500ms down to 1150ms, `stun` 1700ms down to 1400ms. `bosssim` proves the
+  fights sit between "idle loses" and "active play wins"; it says nothing
+  about whether they are *fun* at those numbers, or whether a human has time
+  to turn and fold inside one boss step.
+- **`bosssim`'s herder is not a good player.** It looks one boss-step ahead
+  and never plans. A real exploit subtler than standing still would slip
+  past it exactly the way the last one slipped past the static checks.
 
 ---
 

@@ -36,7 +36,7 @@ function die(kind){
    ============================================================ */
 function bossReset(){
   bossHp=B?B.hp:0;bossMs=0;bossFlash=0;bossStruckBeat=-1;
-  bossMoveMs=0;bossStunMs=0;bossHitFlash=0;
+  bossMoveMs=0;bossStunMs=0;bossHitFlash=0;bossHoldMs=0;
   bossAt=B&&B.at?{x:B.at[0],y:B.at[1],z:B.at[2]}:null;
   lives=B?BOSS_LIVES:0;
 }
@@ -73,12 +73,17 @@ function bossFrame(dt){
   if(!bossAt)return;
   if(bossStunMs>0){bossStunMs-=dt;return;}   // reeling: it neither moves nor bites
   bossMoveMs+=dt;
-  if(bossMoveMs>=B.step){
+  // Faster while you are flat. The plane is a retreat - you cross the arena
+  // in two moves there and it cannot touch anything off your column - so
+  // without this, folding is somewhere to sit and think for free, and the
+  // fight becomes a series of pauses. It closes the distance you just bought.
+  var interval=flat?B.step*.62:B.step;
+  if(bossMoveMs>=interval){
     bossMoveMs=0;
     // In the plane it chases your column, because that is all of you there is
     // to chase; in the volume it comes for the cell you are standing in.
     var goal=flat?planeGoalFor():player;
-    var nx=bossNext(R,bossAt,goal,liveCrates());
+    var nx=bossNext(R,bossAt,goal,liveCrates(),view);
     if(nx)bossAt=nx;
   }
   if(bossTouching())bossHurt("it reached you");
@@ -166,7 +171,7 @@ function bossHurt(why){
   player={x:L.start[0],y:L.start[1],z:L.start[2]};
   bossAt=B.at?{x:B.at[0],y:B.at[1],z:B.at[2]}:null;
   flat=false;flatTarget=0;flatT=0;
-  bossMs=0;bossStruckBeat=-1;bossMoveMs=0;bossStunMs=B.stun;
+  bossMs=0;bossStruckBeat=-1;bossMoveMs=0;bossStunMs=B.stun;bossHoldMs=0;
   buildGrid();syncHud();
 }
 

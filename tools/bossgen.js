@@ -65,56 +65,86 @@ function floor(x0,x1,z0,z1,y,kind,out){
    Pillars matter for a second reason: a height sweep at y=1 catches every
    square of a flat floor at once, which is not an attack, it is a cutscene.
    Somewhere to climb is the dodge, and bossSafety() fails the arena without it. */
+/* Stages, not puzzles. One connected floor: the boss walks, so a chasm it
+   cannot cross is a boss that cannot fight.
+
+   PILLAR COUNT IS THE DIFFICULTY DIAL, and it is far more sensitive than it
+   looks. A pillar does not block a square, it blocks a whole LINE - in the
+   view where screen-right is x, a pillar at x=3 makes every square with x=3
+   lethal, all the way through the arena. So coverage is roughly
+   (distinct pillar x's) / (arena width), and five scattered pillars put 50-70%
+   of the floor under threat.
+
+   That is what broke the first version of the fight. Above about a third
+   coverage the boss cannot avoid the lines however hard it tries, so it walks
+   onto one unprompted and the fight collapses into: stand still, wait for
+   green, fold, repeat. Two or three distinct lines per axis is the number.
+   tools/bossgen.js prints coverage and the simulation in bossgen refuses an
+   arena the do-nothing strategy can beat. */
+/* A beat may be written as a travelling sweep, {axis,from,to}, and is
+   expanded here into one static beat per coordinate. That is what stops
+   standing still from being safe: a single fixed slice is dodged once and
+   then ignored forever, but a plane that marches the length of the arena
+   reaches every square eventually, so there is no square to camp on.
+   bossSafety() still checks each position separately, so "never cornered"
+   holds the whole way across. */
+function expand(beats){
+  const out=[];
+  beats.forEach(b=>{
+    if(b.at!==undefined){out.push(b);return;}
+    const step=b.to>=b.from?1:-1;
+    for(let c=b.from;;c+=step){ out.push({axis:b.axis,at:c}); if(c===b.to)break; }
+  });
+  return out;
+}
 const ARENAS=[
 { name:"BOSS I — The Sentinel",
-  hint:"Lead it across a pillar's line, then fold. The fold crushes it the same way it would crush you.",
-  hp:3, step:1100, stun:1700, period:3400, fire:300,
-  beats:[{axis:"x",at:4}],
+  hint:"It will not walk onto a line it can be crushed on. Corner it so it has no choice.",
+  hp:3, step:1100, stun:1700, period:1500, fire:330,
+  beats:[{axis:"x",from:0,to:8}],
   build(){
     const b=[];
     floor(0,8,0,6,0,S,b);
-    // pillars spread over both axes, so every rotation offers a line
-    [[2,1],[6,1],[2,5],[6,5],[4,3]].forEach(p=>b.push([p[0],1,p[1],S]));
+    // two x-lines, two z-lines. That is the whole arena's vocabulary.
+    [[3,2],[6,4]].forEach(p=>b.push([p[0],1,p[1],S]));
     return {blocks:b,start:[0,1,0],at:[8,1,6]};
   }},
 { name:"BOSS II — Sharp Ground",
-  hint:"It will not step on spikes — but a spike still poisons the whole column it folds into.",
-  hp:3, step:1000, stun:1600, period:3000, fire:300,
-  beats:[{axis:"z",at:3},{axis:"x",at:6}],
+  hint:"Spikes poison a column too — and it will not step on one. Herd it.",
+  hp:3, step:1000, stun:1600, period:1400, fire:330,
+  beats:[{axis:"x",from:9,to:0},{axis:"z",from:0,to:6}],
   build(){
     const b=[];
     floor(0,9,0,6,0,S,b);
-    [[4,1],[4,5],[7,3]].forEach(p=>b.push([p[0],1,p[1],SP]));
-    [[2,2],[7,1],[2,5],[6,5]].forEach(p=>b.push([p[0],1,p[1],S]));
+    // a spike is a line as well as a hazard, so two of them is already a lot
+    [[4,2]].forEach(p=>b.push([p[0],1,p[1],SP]));
+    [[7,4]].forEach(p=>b.push([p[0],1,p[1],S]));
     return {blocks:b,start:[0,1,0],at:[9,1,6]};
   }},
 { name:"BOSS III — Through Glass",
-  hint:"Glass is floor, and casts nothing. Half the lines here are not lines at all.",
-  hp:4, step:950, stun:1500, period:2800, fire:320,
-  beats:[{axis:"x",at:3},{axis:"z",at:5}],
+  hint:"Glass is floor and casts nothing. The line you were counting on is not there.",
+  hp:4, step:950, stun:1500, period:1300, fire:340,
+  beats:[{axis:"z",from:6,to:0},{axis:"x",from:0,to:9}],
   build(){
     const b=[];
     floor(0,9,0,6,0,S,b);
-    // glass pillars: they look like cover and cast no silhouette at all
-    [[3,2],[6,4],[8,2]].forEach(p=>b.push([p[0],1,p[1],G]));
-    [[1,4],[5,1],[7,5],[3,6]].forEach(p=>b.push([p[0],1,p[1],S]));
-    [[4,3],[4,4]].forEach(p=>{
-      const i=b.findIndex(q=>q[0]===p[0]&&q[2]===p[1]&&q[1]===0);
-      if(i>=0)b[i][3]=G;
-    });
+    [[3,2],[7,4]].forEach(p=>b.push([p[0],1,p[1],S]));
+    // glass pillars look exactly like the real ones and block nothing at all
+    [[5,1],[5,5],[1,3]].forEach(p=>b.push([p[0],1,p[1],G]));
     return {blocks:b,start:[0,1,0],at:[9,1,6]};
   }},
 { name:"BOSS IV — The Orthogon",
-  hint:"Five hits. Now you can build the line yourself — or just shove a crate into it.",
-  hp:5, step:850, stun:1300, period:2500, fire:340,
-  beats:[{axis:"x",at:4},{axis:"z",at:2},{axis:"y",at:2}],
+  hint:"Five hits. Three slices. And the crates let you build a line where there wasn't one.",
+  hp:5, step:900, stun:1400, period:1150, fire:350,
+  beats:[{axis:"x",from:0,to:10},{axis:"y",at:2},{axis:"z",from:7,to:0}],
   build(){
     const b=[];
     floor(0,10,0,7,0,S,b);
-    [[5,2],[5,6],[8,4]].forEach(p=>b.push([p[0],1,p[1],SP]));
-    [[2,1],[7,1],[3,6],[9,6],[0,4]].forEach(p=>b.push([p[0],1,p[1],S]));
-    [[6,3]].forEach(p=>b.push([p[0],1,p[1],G]));
-    b.push([1,1,2,C],[9,1,1,C],[1,1,6,C],[8,1,6,C],[4,1,4,C]);
+    [[3,2],[8,5]].forEach(p=>b.push([p[0],1,p[1],S]));
+    [[6,3]].forEach(p=>b.push([p[0],1,p[1],SP]));
+    [[5,6],[9,1]].forEach(p=>b.push([p[0],1,p[1],G]));
+    // crates are lines you can put where you need one
+    b.push([1,1,2,C],[9,1,6,C],[4,1,5,C]);
     return {blocks:b,start:[0,1,0],at:[10,1,7]};
   }}
 ];
@@ -131,7 +161,7 @@ ARENAS.forEach(cfg=>{
   const g=cfg.build();
   const lv={name:cfg.name,hint:cfg.hint,blocks:g.blocks,start:g.start,
     boss:{hp:cfg.hp,at:g.at,step:cfg.step,stun:cfg.stun,
-          period:cfg.period,fire:cfg.fire,beats:cfg.beats}};
+          period:cfg.period,fire:cfg.fire,beats:expand(cfg.beats)}};
   const r=check(lv);
   console.log(cfg.name.padEnd(26)+
     " hp "+cfg.hp+"  step "+cfg.step+"ms  "+r.squares+" squares  "+

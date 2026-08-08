@@ -47,5 +47,10 @@ LEVELS.forEach((lv,i)=>{
     console.log("  ok    ["+i+"] "+lv.name+"  "+r.path.length+" moves:  "+r.path.join(" "));
   }
 });
+// Static checks cannot see a degenerate strategy, so the fights get played.
+if(only===undefined){
+  console.log("");
+  bad+=require("./bosssim.js").run();
+}
 console.log((bad?"FAIL":"PASS")+"  "+checked+" level(s) checked, "+bad+" bad");
 process.exit(bad?1:0);
