@@ -57,7 +57,7 @@ anything; everything before it only declares.
 |---|---|
 | `js/00-storage.js` | `window.storage` over `localStorage`. The game was born inside a Claude artifact where the host supplied this API; the shim lets identical code run from `file://`, itch.io and a Capacitor WebView. Defines itself only if absent. Falls back to an in-memory map if storage is denied (private browsing). |
 | `js/01-coords.js` | `AX[]` — the four camera views, each with `r` (screen-right) and `d` (depth, pointing at the camera). Nearly every coordinate calculation goes through these. Also `K()` and `box()`. |
-| `js/02-levels.js` | 69 levels + `SECTIONS` + `LEVEL_RENAMES`. |
+| `js/02-levels.js` | 68 levels + `SECTIONS` + `LEVEL_RENAMES`. |
 | `js/03-rules.js` | `resolveStep()`, block kinds, `makeRules()`, `makeBoss()`, `bossSafety()`. |
 | `js/04-solver.js` | `solve()` — BFS over game states; reaches boss cores but does **not** model sweeps. |
 | `js/05-state.js` | Mutable state, boss state, tutorial counters. |
@@ -110,7 +110,7 @@ levels that combine it with everything already taught, then a boss:
 
 | | | |
 |---|---|---|
-| I · FUNDAMENTALS | 10 + boss | fold, turn, depth |
+| I · FUNDAMENTALS | 9 + boss | turn, depth — the fold itself is the tutorial's job |
 | II · SPIKES | 7 + boss | spikes before glass — a hazard reads faster than an absence |
 | III · GLASS | 8 + boss | ends on glass + spikes |
 | IV · CRATES | 10 + boss | ends on crate + glass + spikes |
@@ -121,15 +121,29 @@ marker after it. A section with `locked:true` stays shut until
 `sectionsUnlocked()` — which checks the **bosses only**, not every level,
 because gating a bonus on 100% turns a reward into a chore.
 
-**Nothing was deleted to get from 62 campaign levels to 35.** Anchors and amber
+**Nothing was deleted to get from 62 campaign levels to 34** except one. Anchors and amber
 are shelved whole in EXTRA, so turning that section back on is a data move, not
 a rebuild. The judgement was that 40 good levels beat 60 that repeat
 themselves.
 
-Levels have been renumbered twice. `LEVEL_RENAMES` maps every old name to its
-current one and `migrateNames()` applies it on load — progress is keyed by
-name, so without it every solved level would read unsolved. **Entries
-accumulate; never rewrite that table.**
+The exception is `01 — Fill the gap`, which is gone for good: its solution was
+`→ → FLAT → → → → POP` against the tutorial's `→ FLAT → → → POP` — the same
+verbs in the same order, rotation locked in both, starting from the same
+square. It was the tutorial with a wider gap. **When a level duplicates a
+tutorial step, the tutorial wins**, because the tutorial is unscored and
+teaching a thing twice costs a player their first impression of the campaign.
+
+Levels have been renumbered three times. `LEVEL_RENAMES` maps every old name
+to its **current** one and `migrateNames()` applies it on load — progress is
+keyed by name, so without it every solved level would read unsolved.
+
+**Compose that table, never rewrite it.** A reshuffle regenerated it from
+scratch once, which silently broke the oldest saves: names from the original
+numbering stopped resolving, because the map only knew the *previous* names.
+The fix was to recover the lost map from git and compose the chains, so an
+original name still lands on the current one in a single lookup. Verified by
+loading a save written in the original numbering and watching every star
+survive.
 
 Every special piece is verified load-bearing; every anchor level is verified
 **impossible** without its anchor; every crate is verified to be shoved in the
