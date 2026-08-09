@@ -9,7 +9,26 @@
    can only start after a gesture, so it's created lazily.
    ============================================================ */
 var actx=null, masterGain=null, limiter=null, postGain=null, shaper=null;
-var settings={volume:1,brightness:1,ui:"full"};
+/* The same digital level is not the same loudness on every device. A phone's
+   speaker is small and quiet and wants everything the chain can give it; a
+   desktop is usually running powered speakers or headphones with their own
+   amplification, and the setting that is right on the phone is painful there.
+
+   So the *default* differs by device and nothing else does - the chain, the
+   limiter and the ceiling are identical, and the slider in the menu still
+   goes to the top. A coarse pointer is the signal: it means a finger, which
+   means a phone or a tablet, and it is a far better proxy for "small speaker"
+   than sniffing the user agent for device names that change every year.
+
+   A save keeps whatever volume it already had, so this only sets where a
+   device starts. If it is still wrong on yours, the slider is the answer -
+   that is what it is for, and it is a one-tap fix rather than a compromise
+   baked into everybody's mix. */
+function defaultVolume(){
+  var coarse=window.matchMedia&&window.matchMedia("(pointer: coarse)").matches;
+  return coarse?1:.5;
+}
+var settings={volume:defaultVolume(),brightness:1,ui:"full"};
 
 /* The individual blip gains below are a balanced mix - a footstep is meant to
    sit well under the win chord - so loudness is corrected once here at the

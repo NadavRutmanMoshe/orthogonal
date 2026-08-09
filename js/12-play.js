@@ -10,9 +10,21 @@
 // A move that kills you and a move that's impossible are the same move as far
 // as the solver is concerned - neither leads anywhere. So letting the player
 // die costs nothing in puzzle terms; it only changes what they're told.
+/* Dying on a level with a clock spends a life, not the level.
+
+   Falling out of the world, standing on a spike, folding into a wall - on an
+   ordinary level each of those restarts the puzzle, which costs nothing but
+   the moves you had made. On a trial it was costing the cores you had already
+   reached and the rhythm you had already learned, which is the whole level:
+   being sent back to zero for a mistimed step is a punishment out of all
+   proportion, and it made the three cores feel like one long tightrope
+   instead of three crossings. A life is what these levels are scored on and
+   a life is what they should charge. Running out is still a real reset -
+   `die("boss")` and `die("trial")` are that path, and they do not recurse. */
 function die(kind){
   if(dying)return;
   dying=kind;dyingT=0;
+  var spend=(B||TR)&&kind!=="boss"&&kind!=="trial";
   flash(kind==="fall"?"you fell":
         kind==="spike"?"something sharp was in that column":
         kind==="boss"||kind==="trial"?"out of lives":
@@ -21,8 +33,26 @@ function die(kind){
   setTimeout(function(){
     dying=null;dyingT=0;
     playerMesh.scale.set(1,1,1);
+    if(spend){spendLife();return;}
     resetLevel();
   },kind==="crush"?1050:820);
+}
+/* One life, and back to the start with everything else intact: the cores you
+   have taken, the clock, the pack's damage. You are put back at the start
+   rather than left where you were, because you got here by falling out of
+   the world or being crushed - there is nowhere to leave you. */
+function spendLife(){
+  lives--;
+  if(lives<=0){die(TR?"trial":"boss");return;}
+  flash(lives+" "+(lives===1?"life":"lives")+" left");
+  if(TR)trialGrace=TR.period;
+  if(B)bossGraceMs=B.grace;
+  moveHistory=[];
+  initDynamic();buildDynamic();
+  player={x:L.start[0],y:L.start[1],z:L.start[2]};
+  flat=false;flatTarget=0;flatT=0;
+  buildGrid();syncHud();
+  playerMesh.position.set(player.x,player.y,player.z);
 }
 
 /* ============================================================

@@ -33,7 +33,9 @@ though it did not end up on the button.
 1. You occupy one cell. You may walk level, step up exactly one, or fall.
 2. Stepping up needs clearance above **both** where you stand and where you are
    going. Without the first check you can slide diagonally past a ceiling.
-3. Falling out of the world kills you and resets the level.
+3. Falling out of the world kills you and resets the level — except on a
+   clock, where it spends a life instead and the cores you have already
+   reached stay reached.
 4. Collapsing projects everything along the current view axis. If something
    already projects into your square, the fold plays out and then crushes you.
 5. Returning to 3D puts you on the supporting block nearest the camera,
@@ -176,7 +178,12 @@ which axis, and is this the moment — only now with a metronome running.
 
 ### Details that are load-bearing
 
-- **A hit costs a life and nothing else.** You keep your square, the clock
+- **Every death costs a life, not the level.** Falling, spikes and folding
+  into a wall all spend a life and put you back at the start with your cores,
+  your clock and the pack's damage intact; only running out is a real reset.
+  Restarting the level for a mistimed step took back the rhythm you had spent
+  two crossings learning, which turned three crossings into one tightrope.
+- **A sweep hit costs a life and nothing else.** You keep your square, the clock
   keeps its count, and you get one beat of grace, spent visibly as a blink.
   Resetting the clock on a hit is what made the arena appear to switch off;
   see `docs/HISTORY.md`. If you were flat you are pulled back into the
@@ -479,9 +486,13 @@ exclusive — every gesture also has a key and, unless hidden, a button:
   you ship something distorting on every footstep. Every write to
   `masterGain.gain.value` must go through `masterLevel()` or the boost is lost
   the first time the volume slider moves.
-- **The default volume is 1.0**, and a save written earlier keeps whatever it
-  had (0.7 was the old default). If the game sounds quiet on a device that has
-  played before, check the slider in the menu before touching `MIX`.
+- **The default volume differs by device**: 1.0 where the pointer is coarse
+  (a finger, so a phone or tablet — small speaker), 0.5 elsewhere (a desktop,
+  usually with its own amplification, where the phone setting is painful).
+  Only the default differs; the chain and the ceiling are identical, and the
+  slider still goes to the top. A save keeps whatever volume it already had.
+  If it sounds wrong on a device that has played before, the slider is the
+  answer before `MIX` is.
 - **The wardrobe's display case is a second WebGL context**, created when the
   panel opens and explicitly released — `loseContext()`, not just GC — when it
   closes. Browsers cap live contexts (commonly 16) and evict the oldest, which
