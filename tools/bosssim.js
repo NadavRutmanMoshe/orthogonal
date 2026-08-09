@@ -226,7 +226,18 @@ function duellist({R,B,cr,hs,p,v,flat,doomed,stepTo,uOf,doomedIn,crushedBy}){
 
 function run(){
   let bad=0;
-  const bosses=LEVELS.filter(l=>l.boss);
+  /* The twin is deliberately not simulated. This file models one fight - the
+     pack, its lines and its charges - and the twin is a different animal
+     with a different kill rule, so running it through here does not measure
+     the twin, it measures a fiction. Writing a second simulator to bracket a
+     fight that is still being felt out would be building the expensive kind
+     of confidence about something that may not survive the week. bossArena()
+     still checks its stage in verify.js; the rest is playtesting, on
+     purpose. */
+  const bosses=LEVELS.filter(l=>l.boss&&!l.boss.twin);
+  const skipped=LEVELS.filter(l=>l.boss&&l.boss.twin);
+  skipped.forEach(lv=>console.log("  (not simulated: "+lv.name+
+    " - different fight, played by hand)"));
   console.log("A. idle - never move, take every free kill (must LOSE):");
   bosses.forEach(lv=>{
     const r=sim(lv,idle,90000);

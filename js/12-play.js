@@ -37,8 +37,9 @@ function die(kind){
    ============================================================ */
 function bossReset(){
   bossHp=B?B.hp:0;bossFlash=0;bossHitFlash=0;bossCreepMs=0;bossGraceMs=0;
-  hunters=[];
-  if(B)for(var i=0;i<B.at.length;i++){
+  hunters=[];twinCore=0;twinAt=null;
+  if(B&&B.twin)twinSpawn(0);
+  else if(B)for(var i=0;i<B.at.length;i++){
     var a=B.at[i];
     // Staggered clocks. Identical ones make the pack move as one animal,
     // which is both easier to dodge and much less alarming.
@@ -46,6 +47,32 @@ function bossReset(){
                   step:B.step,doom:false,lock:0,line:null});
   }
   lives=B?BOSS_LIVES:0;
+}
+/* Put the two halves down mirrored about core `i`'s centre. Both clocks run
+   together on purpose - the halves are one animal and should move as one, so
+   the staggering that gives the pack its texture is exactly wrong here. */
+function twinSpawn(i,keepStep){
+  var p=B.pairs[i], st=keepStep||B.step;
+  twinCore=i;twinAt={x:p.c[0],y:p.c[1],z:p.c[2]};
+  hunters=[{x:p.a[0],y:p.a[1],z:p.a[2],ms:0,step:st,doom:false,lock:0,
+            line:null,hold:B.hold},
+           {x:p.b[0],y:p.b[1],z:p.b[2],ms:0,step:st,doom:false,lock:0,
+            line:null,hold:B.hold}];
+}
+// Your reflection through the centre: the square the far half is hunting
+// while the near one hunts you. This is the entire coupling - there is no
+// code that copies one half's move onto the other, because both are simply
+// walking at a target, and the targets are reflections.
+function twinMirror(g){
+  if(!twinAt)return g;
+  return {x:2*twinAt.x-g.x, y:g.y, z:2*twinAt.z-g.z};
+}
+// Do the two halves share a square in the plane? The kill, and the one thing
+// the whole fight is arranging.
+function twinAligned(){
+  if(!B||!B.twin||hunters.length<2)return false;
+  var a=hunters[0], b=hunters[1];
+  return a.y===b.y&&R.uOf(view,a.x,a.z)===R.uOf(view,b.x,b.z);
 }
 // The square a hunter is heading for. While you are flat it can only see
 // your silhouette column, so it walks to the nearest square that shares it -
@@ -97,6 +124,36 @@ function bossFrame(dt){
   }
 
   var cr=liveCrates();
+  /* The twin walks and nothing else - no line, no charge. It does not need
+     one: the halves come from opposite sides by construction, so dodging the
+     near one steps you toward the far one, and the pinch is the pressure. */
+  if(B.twin){
+    for(var t=0;t<hunters.length;t++){
+      var th=hunters[t];
+      th.ms+=dt;
+      if(th.ms<th.step)continue;
+      th.ms=0;
+      var tg=t===0?huntGoal(th):twinMirror(huntGoal(th));
+      /* It skirts the live arm of its own cross, because standing there is
+         what kills it - and since the halves are reflections, "the pair is
+         in one column" is exactly "this half shares a column with the
+         centre", which is a cheap and exact test rather than a guess about
+         where the other half will be after it moves.
+
+         Same patience rule as the pack: it dodges only while dodging is
+         free, and after two steps that fail to close it comes straight
+         through. Without the avoidance the halves crossed the arm on their
+         way to anybody, and three cores fell in under three seconds. */
+      var tn=bossNext(R,th,tg,cr,function(c){
+        return R.uOf(view,c.x,c.z)===R.uOf(view,twinAt.x,twinAt.z);
+      },true);
+      if(tn&&!hunterAt(tn.x,tn.y,tn.z,t)){th.x=tn.x;th.y=tn.y;th.z=tn.z;}
+      if(hunterTouching(th)){bossHurt("it closed on you");return;}
+    }
+    var al=twinAligned();
+    hunters[0].doom=hunters[1].doom=al&&!flat;
+    return;
+  }
   for(var i=0;i<hunters.length;i++){
     var h=hunters[i];
     /* Planted. It does not walk while a lock is held, so the line you are
@@ -138,6 +195,18 @@ function bossFrame(dt){
     hunters[d2].doom=!flat&&
       doomedCell(hunters[d2].x,hunters[d2].y,hunters[d2].z,cr);
 }
+/* The half standing in your silhouette column, if there is one. In the twin
+   fight they are solid in the plane like everything else, so this is a wall
+   you are about to fold into - and it is usually the same wall you were
+   trying to line them up on, which is the knife-edge of that fight. */
+function twinOnPlayerColumn(){
+  if(!B||!B.twin||flat)return null;
+  var u=R.uOf(view,player.x,player.z);
+  for(var i=0;i<hunters.length;i++)
+    if(hunters[i].y===player.y&&R.uOf(view,hunters[i].x,hunters[i].z)===u)
+      return hunters[i];
+  return null;
+}
 function hunterAt(x,y,z,skip){
   for(var i=0;i<hunters.length;i++)
     if(i!==skip&&hunters[i].x===x&&hunters[i].y===y&&hunters[i].z===z)return true;
@@ -168,6 +237,20 @@ function hunterTouching(h){
    only ever apart in it. */
 function bossFoldCrush(){
   if(!B||!hunters.length)return;
+  if(B.twin){
+    if(!twinAligned())return;
+    bossHp--;bossHitFlash=1;
+    SFX.strike();shakeT=1;
+    if(bossHp<=0){hunters=[];buildGrid();win();return;}
+    /* A core goes, and the centre moves. Leaving it where it was would mean
+       the answer is in the same place three times running, and the second
+       one would not be a fight, it would be a repetition. */
+    var faster=Math.max(B.floorStep,hunters[0].step*B.rage);
+    twinSpawn(twinCore+1,faster);
+    flash("folded into itself · "+bossHp+(bossHp===1?" core left":" cores left"));
+    buildGrid();syncHud();
+    return;
+  }
   var cr=liveCrates(), doomed=[];
   for(var i=0;i<hunters.length;i++)
     if(doomedCell(hunters[i].x,hunters[i].y,hunters[i].z,cr))doomed.push(i);
@@ -191,6 +274,13 @@ function bossFoldCrush(){
 // in it, so this can never be true at the same moment peril is.
 function bossCrushable(){
   if(!B||flat||app!=="play"||!hunters.length)return false;
+  /* For the twin the fold is only a strike if it does not also take you, and
+     there are two ways it can: a half sharing your column, or a pillar in it.
+     Leaving the second one out made the button go green while the player was
+     standing in a shadow, which is a cue to walk into a wall - and because
+     dying resets the fight, it read as a boss that would not die. */
+  if(B.twin)return twinAligned()&&!twinOnPlayerColumn()&&
+    !crushedBy(R,view,player.x,player.y,player.z,liveCrates());
   var cr=liveCrates();
   for(var i=0;i<hunters.length;i++)
     if(doomedCell(hunters[i].x,hunters[i].y,hunters[i].z,cr))return true;
@@ -410,7 +500,12 @@ function foldPeril(){
   var u=R.uOf(view,player.x,player.z), cr=liveCrates();
   var crush=R.siloSolid(view,u,player.y,cr);
   var spike=R.deadly2(view,u,player.y);
-  if(!crush&&!spike)return null;
+  var half=twinOnPlayerColumn();
+  if(!crush&&!spike&&!half)return null;
+  // A half of the twin fills your square in the plane exactly as a block
+  // would. Reported here so the same red outline and the same pulsing button
+  // cover it, because it is the same death.
+  if(half&&!crush)return {kind:"crush",cells:[[half.x,half.y,half.z]]};
   // the guilty are whatever shares your silhouette square: for a crush the
   // blocks at your height, for a spike the ones directly beneath it
   var wantY=crush?player.y:player.y-1, cells=[];
@@ -436,6 +531,12 @@ function doFlatten(){
   if(dying||!canShift())return;
   clearCue();
   var pu=R.uOf(view,player.x,player.z), crf=liveCrates();
+  /* Captured before the fold resolves, because the twin replaces both halves
+     when a core goes and the *new* pair lands wherever the next centre puts
+     them. Asking afterwards had the fresh spawn crushing the player for a
+     kill they had just earned - which reset the fight and made three cores
+     look like an endless one. */
+  var wall=!!twinOnPlayerColumn();
   lastSolidDepth=R.dOf(view,player.x,player.z);
   pushHistory();moveCount++;
   flatPos={u:pu,y:player.y};
@@ -444,8 +545,9 @@ function doFlatten(){
   bossFoldCrush();
   syncHud();saveSession();
   // Something else already occupies that square in the plane. Let the fold
-  // play out, then close on the player.
-  if(R.siloSolid(view,pu,player.y,crf)) setTimeout(function(){die("crush");},420);
+  // play out, then close on the player. A half of the twin counts: it is
+  // solid there, and folding into one is folding into a wall.
+  if(wall||R.siloSolid(view,pu,player.y,crf)) setTimeout(function(){die("crush");},420);
   else if(R.deadly2(view,pu,player.y)) setTimeout(function(){die("spike");},420);
 }
 function doUnflatten(){

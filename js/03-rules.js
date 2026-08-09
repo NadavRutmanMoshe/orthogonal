@@ -129,9 +129,53 @@ function parseK(k){var p=k.split(",");return [+p[0],+p[1],+p[2]];}
    with you, and every arena fell in under five seconds. Making the line
    dangerous to stand on is what turned an execution into a duel.
    ============================================================ */
+/* ------------------------------------------------------------
+   THE TWIN — one creature, two bodies, and a point of symmetry
+
+   A different fight sharing the same machinery. The two halves are one
+   animal: each hunts the *reflection* of you through a centre, so whatever
+   one of them does the other does backwards, and the gap between them is a
+   number you change by walking. They are lethal on contact like any hunter
+   and cannot be hurt by anything you do to them directly.
+
+   You kill it by folding while the two halves share a silhouette column.
+   Depth goes, they land in the same square of the plane, and a creature that
+   was only ever pretending to be two collapses into itself. That is rule 4
+   again, pointed at something new: the halves are solid in the plane, so the
+   identical fold kills *you* if you are the one sharing a column with one of
+   them — which is why the line you want them on is the line you must not be
+   standing on.
+
+   Because they mirror, they share a column exactly when one of them stands
+   on the centre's row or column — whichever the current view collapses. So
+   the cross drawn on the floor is the whole fight: bait a half onto the arm
+   that your axis flattens, step off it yourself, fold. And each core moves
+   the centre somewhere new, so the answer is never twice in the same place.
+   ------------------------------------------------------------ */
 function makeBoss(level){
   if(!level.boss)return null;
   var b=level.boss;
+  if(b.twin){
+    // Each core is a centre and one half's spawn; the other half is that
+    // spawn reflected, so the pair starts mirrored by construction.
+    var pairs=b.cores.map(function(c){
+      return {c:c.c,a:c.a,
+              b:[2*c.c[0]-c.a[0], c.a[1], 2*c.c[2]-c.a[2]]};
+    });
+    return {
+      twin:true, pairs:pairs, hp:pairs.length,
+      at:[pairs[0].a,pairs[0].b],
+      /* How many steps a half will spend refusing to cross its own kill line
+         before it comes through anyway. This is the tuning dial for the whole
+         fight: lower and the openings come often enough to feel cheap,
+         higher and you spend the fight waiting for one. */
+      hold:b.hold===undefined?2:b.hold,
+      step:b.step||480, aim:0,
+      rage:b.rage||.88, creep:b.creep||.95,
+      creepEvery:b.creepEvery||6500, floorStep:b.floorStep||240,
+      grace:b.grace||1100
+    };
+  }
   var at=b.at&&b.at.length&&b.at[0].length?b.at:[b.at];
   return {
     at:at,                    // one spawn cell per hunter
@@ -199,9 +243,21 @@ function makeBoss(level){
    `doomed` is supplied by the caller because it depends on the live crates
    and on the other hunters, neither of which belongs in here. `from.wait`
    is the patience counter, carried on the hunter itself. */
-function bossNext(R,from,to,cr,lineTo){
+function bossNext(R,from,to,cr,lineTo,avoid){
   var dirs=[[1,0],[-1,0],[0,1],[0,-1]], best=null;
   var here=Math.abs(from.x-to.x)+Math.abs(from.z-to.z);
+  /* `avoid` inverts the whole thing, for the twin: there, a line is where it
+     dies rather than where it attacks from, so it skirts one while skirting
+     is free and comes through anyway once it has spent two steps failing to
+     get closer than it has already been. Measuring patience against its
+     *best* distance rather than its last is what stops it oscillating
+     forever between one square that closes and one that does not. */
+  var pat=0;
+  if(avoid){
+    var gk=to.x+","+to.y+","+to.z;
+    if(from.goalKey!==gk){from.goalKey=gk;from.best=here;from.wait=0;}
+    pat=(from.wait||0)>=(from.hold===undefined?2:from.hold)?0:9;
+  }
   for(var i=0;i<4;i++){
     var nx=from.x+dirs[i][0], nz=from.z+dirs[i][1];
     var ny=resolveStep(
@@ -211,8 +267,12 @@ function bossNext(R,from,to,cr,lineTo){
     if(R.deadly3(nx,ny,nz))continue;
     var d=Math.abs(nx-to.x)+Math.abs(nz-to.z);
     var lined=(lineTo&&lineTo({x:nx,y:ny,z:nz}))?1:0;
-    var score=lined*40-d-(d>here?6:0);
-    if(!best||score>best.score)best={x:nx,y:ny,z:nz,score:score};
+    var score=(avoid?-lined*pat:lined*40)-d-(d>here?(avoid?3:6):0);
+    if(!best||score>best.score)best={x:nx,y:ny,z:nz,score:score,d:d};
+  }
+  if(avoid&&best){
+    if(best.d<(from.best===undefined?here:from.best)){from.best=best.d;from.wait=0;}
+    else from.wait=(from.wait||0)+1;
   }
   return best;
 }
@@ -390,8 +450,17 @@ function bossArena(level){
       stand.add(k);q.push([nx,ny,nz]);
     }
   }
-  for(var h=0;h<B.at.length;h++){
-    var a=B.at[h];
+  /* Every cell anything spawns on, across every core - for the twin that is
+     three pairs and three centres, none of which may be inside a block or on
+     the wrong side of a chasm, and each pair of which must start out of line
+     with itself or the first fold is free. */
+  var spawns=[];
+  if(B.twin)
+    for(var pi=0;pi<B.pairs.length;pi++)
+      spawns.push(B.pairs[pi].a,B.pairs[pi].b,B.pairs[pi].c);
+  else spawns=B.at;
+  for(var h=0;h<spawns.length;h++){
+    var a=spawns[h];
     if(R.solid(a[0],a[1],a[2],cr))
       fail.push("hunter "+h+" is spawned inside a block");
     else if(!stand.has(K(a[0],a[1],a[2])))
@@ -401,8 +470,12 @@ function bossArena(level){
        pair that shares a column there is a pair that crushes itself for free
        the next time anybody folds - a standing gift, renewed on every hit.
        The simulator found this by winning a fight without moving. */
-    for(var h2=h+1;h2<B.at.length;h2++){
-      var a2=B.at[h2];
+    // The twin's spawns are checked pairwise instead: half a and half b of
+    // the same core, never across cores, because those are never alive
+    // together. Its centres are exempt - nothing stands on those.
+    for(var h2=h+1;h2<spawns.length;h2++){
+      if(B.twin&&(h%3===2||h2!==h+1))continue;
+      var a2=spawns[h2];
       if(a[1]!==a2[1])continue;
       if(a[0]===a2[0]||a[2]===a2[2])
         fail.push("hunters "+h+" and "+h2+" spawn in one column - a free kill");

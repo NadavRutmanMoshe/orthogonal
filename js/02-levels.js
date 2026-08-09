@@ -98,11 +98,21 @@ var LEVELS=[
    hint:"Three collapses. Each one throws away a different dimension.",
    blocks:[[0,0,0],[-1,1,3],[-1,1,4],[-2,2,4],[-2,3,3],[-2,4,2],[2,4,3],[0,4,3],[0,4,0]],
    start:[0,1,0],goal:[0,5,0],rotate:true},
-{name:"BOSS I — The Pack",
-   hint:"They charge down your row. Fold while one shares your column and it dies there — but a pillar in that column kills you first.",
-   boss:{at:[[7,1,1],[5,1,6],[8,1,4]],step:640,aim:780,creepEvery:8000},
-   blocks:[[0,0,0,0],[0,0,1,0],[0,0,2,0],[0,0,3,0],[0,0,4,0],[0,0,5,0],[0,0,6,0],[1,0,0,0],[1,0,1,0],[1,0,2,0],[1,0,3,0],[1,0,4,0],[1,0,5,0],[1,0,6,0],[2,0,0,0],[2,0,1,0],[2,0,2,0],[2,0,3,0],[2,0,4,0],[2,0,5,0],[2,0,6,0],[3,0,0,0],[3,0,1,0],[3,0,2,0],[3,0,3,0],[3,0,4,0],[3,0,5,0],[3,0,6,0],[4,0,0,0],[4,0,1,0],[4,0,2,0],[4,0,3,0],[4,0,4,0],[4,0,5,0],[4,0,6,0],[5,0,0,0],[5,0,1,0],[5,0,2,0],[5,0,3,0],[5,0,4,0],[5,0,5,0],[5,0,6,0],[6,0,0,0],[6,0,1,0],[6,0,2,0],[6,0,3,0],[6,0,4,0],[6,0,5,0],[6,0,6,0],[7,0,0,0],[7,0,1,0],[7,0,2,0],[7,0,3,0],[7,0,4,0],[7,0,5,0],[7,0,6,0],[8,0,0,0],[8,0,1,0],[8,0,2,0],[8,0,3,0],[8,0,4,0],[8,0,5,0],[8,0,6,0],[2,1,1,0],[4,1,3,0],[6,1,5,0],[3,1,5,0]],
-   start:[1,1,1]},
+{name:"BOSS I — The Twin",
+   hint:"One creature, two bodies, mirrored through the amber cross. Bait a half onto the bright arm, step off it yourself, and fold — they land in the same square.",
+   /* Each core is a centre and one half's spawn; the other half is that spawn
+      reflected through the centre, so the pair starts mirrored and the centre
+      moves every time a core goes. The pillars are placed symmetrically about
+      the first centre (4,3) so the mirror is honest to begin with - the halves
+      path independently, and geometry is what bends them out of step. */
+   boss:{twin:true,step:470,creepEvery:7000,
+         cores:[{c:[4,1,3],a:[7,1,1]},
+                {c:[3,1,4],a:[6,1,6]},
+                {c:[5,1,2],a:[8,1,4]}]},
+   blocks:(function(){var b=[];box(0,8,0,0,0,6,b);
+     b.push([2,1,1]);b.push([6,1,5]);b.push([6,1,1]);b.push([2,1,5]);
+     return b;})(),
+   start:[1,1,3]},
 {name:"10 — Sharp",
    hint:"Red blocks kill you underfoot. In the volume you simply walk around them.",
    blocks:[[0,0,0],[-4,0,1],[-3,0,1],[-2,0,1],[-1,0,1,4],[-1,1,-1]],
@@ -391,7 +401,8 @@ var SECTIONS=[
    so never rewrite this table, only extend it. Applied by migrateNames()
    in 06-persistence.js. */
 var LEVEL_RENAMES={
- "BOSS I — The Sentinel": "BOSS I — The Pack",
+ "BOSS I — The Sentinel": "BOSS I — The Twin",
+ "BOSS I — The Pack": "BOSS I — The Twin",
  "02 — Turn to see": "01 — Turn to see",
  "03 — Two Windows": "02 — Two Windows",
  "04 — The Long Way Round": "03 — The Long Way Round",

@@ -226,6 +226,37 @@ this one the simulator rejected, are in `docs/HISTORY.md` — **read it before
 changing the kill rule**, because the two most obvious alternatives have both
 already been built and measured.
 
+### The twin — a second fight, on trial
+
+`BOSS I` is not a pack. It is **one creature with two bodies**, each hunting
+the *reflection* of you through a centre, so whatever one does the other does
+backwards and the gap between them is a number you change by walking. You
+kill it by folding while the two halves share a silhouette column: they land
+in the same square of the plane and collapse into each other. Three cores,
+and **the centre moves after every one**, so the answer is never twice in the
+same place.
+
+Because they are reflections, the halves share a column exactly when one of
+them stands on the centre's row or column — whichever the current view
+collapses. That is why the cross is drawn on the floor with the live arm lit:
+bait a half onto it, step off it yourself, fold. Rule 4 is unchanged, so a
+half in *your* column is a wall, and so is a pillar.
+
+- **`hold` is the dial** (`js/03-rules.js`, per level): how many steps a half
+  spends refusing to cross its own kill line before it comes through anyway.
+  Lower and openings feel cheap; higher and you wait for one. Currently 2.
+- **`bosssim` does not simulate it, on purpose.** That file models the pack —
+  its lines, its charges, its kill rule — so running the twin through it
+  measures a fiction, which is exactly what it did before it was excluded
+  (idle "won" a fight it was not playing). `bossArena()` still checks the
+  stage. The rest is playtesting, which is the agreement for anything
+  real-time.
+- Two bugs worth not re-introducing: the crush test must be taken **before**
+  the fold resolves, because a merge respawns the pair and the fresh spawn
+  was crushing the player for the kill they had just earned; and the green
+  strike cue has to check for a pillar in your column as well as a half,
+  or it lights up while telling you to walk into a wall.
+
 ### Details that are load-bearing
 
 - **It plants to charge.** While a lock is held it does not walk, so the line

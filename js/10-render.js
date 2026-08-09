@@ -9,6 +9,7 @@
    ============================================================ */
 var scene,camera,renderer,meshes={},playerMesh,goalMesh,gridLines,groundPlane,footMesh;
 var huntMeshes=[],lineMeshes=[];
+var twinCross=null,twinTether=null;
 var trialSlab,trialEdge;
 var colPeril=new THREE.Color(0x8f3b52);
 var perilSet=null,perilCleanup=[],perilPulse=0;
@@ -275,6 +276,71 @@ function drawLines(){
   }
   for(var k=n;k<lineMeshes.length;k++)lineMeshes[k].visible=false;
 }
+/* The twin's centre, and the tether.
+
+   The cross is the fight drawn on the floor: the halves are reflections
+   through that point, so they share a silhouette column exactly when one of
+   them stands on the arm the current view is about to collapse. That arm is
+   drawn bright and the other faint, and both re-label themselves when you
+   rotate — which is the moment the whole board changes meaning, and it
+   should be visible as one.
+
+   The tether says the two bodies are one animal, and goes green the instant
+   folding would close it. Both are drawn in the volume: they are facts about
+   the world rather than about the picture, and they vanish once you are flat
+   because in the plane there is nothing left for them to describe. */
+function drawTwin(rx,rz){
+  if(!B||!B.twin||app!=="play"||!twinAt||flatT>.4){
+    if(twinCross)twinCross.visible=false;
+    if(twinTether)twinTether.visible=false;
+    return;
+  }
+  if(!twinCross){
+    twinCross=new THREE.Group();
+    var bar=function(){
+      var m=new THREE.Mesh(new THREE.BoxGeometry(1,.04,.04),
+        new THREE.MeshBasicMaterial({color:0xffb14d,transparent:true,
+          opacity:.3,depthWrite:false}));
+      m.renderOrder=870;twinCross.add(m);return m;
+    };
+    twinCross.userData.xArm=bar();
+    var za=bar();za.rotation.y=Math.PI/2;twinCross.userData.zArm=za;
+    var eye=new THREE.Mesh(new THREE.OctahedronGeometry(.17),
+      new THREE.MeshBasicMaterial({color:0xffb14d,wireframe:true}));
+    twinCross.userData.eye=eye;twinCross.add(eye);
+    scene.add(twinCross);
+  }
+  twinCross.visible=true;
+  twinCross.position.set(twinAt.x,twinAt.y-.42,twinAt.z);
+  twinCross.userData.xArm.scale.set(34,1,1);
+  twinCross.userData.zArm.scale.set(34,1,1);
+  // u = x at views 0 and 2, so there the halves meet on the arm that runs
+  // along z, and vice versa. Bright is "this is the line that matters now".
+  var xLive=Math.abs(rx)<.5;
+  twinCross.userData.xArm.material.opacity=xLive?(.5+perilPulse*.35):.14;
+  twinCross.userData.zArm.material.opacity=xLive?.14:(.5+perilPulse*.35);
+  twinCross.userData.eye.rotation.y+=.02;
+  twinCross.userData.eye.position.y=.42+Math.sin(Date.now()*.003)*.05;
+
+  if(hunters.length<2){if(twinTether)twinTether.visible=false;return;}
+  if(!twinTether){
+    twinTether=new THREE.Mesh(new THREE.BoxGeometry(1,.03,.03),
+      new THREE.MeshBasicMaterial({color:0xff6b7a,transparent:true,
+        opacity:.35,depthWrite:false}));
+    twinTether.renderOrder=870;scene.add(twinTether);
+  }
+  var a=hunters[0], b=hunters[1];
+  var mx=(a.x+b.x)/2, mz=(a.z+b.z)/2;
+  var dx=b.x-a.x, dz=b.z-a.z;
+  var len=Math.sqrt(dx*dx+dz*dz)||.001;
+  twinTether.position.set(mx,a.y-.1,mz);
+  twinTether.rotation.y=-Math.atan2(dz,dx);
+  twinTether.scale.set(len,1,1);
+  var lit=a.doom;
+  twinTether.material.color.setHex(lit?0x35c2a5:0xff6b7a);
+  twinTether.material.opacity=lit?(.7+perilPulse*.3):.3;
+  twinTether.visible=true;
+}
 function drawBoss(rx,rz,tdvx,tdvz){
   var want=(B&&app==="play")?hunters.length:0;
   while(huntMeshes.length<want)huntMeshes.push(huntMesh());
@@ -299,6 +365,7 @@ function drawBoss(rx,rz,tdvx,tdvz){
     m.scale.setScalar((1+bossHitFlash*.3)*(h.doom?1.06:(h.lock>0?1.12:1)));
   }
   drawLines();
+  drawTwin(rx,rz);
 }
 /* The charging slice.
 

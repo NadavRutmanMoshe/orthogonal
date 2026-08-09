@@ -42,6 +42,9 @@ var B=null, bossHp=0, lives=0, bossFlash=0;
    recomputed each frame for the renderer. bossHp is just hunters.length,
    kept as its own name because the HUD and progress[] both speak in cores. */
 var hunters=[], bossHitFlash=0, bossCreepMs=0, bossGraceMs=0;
+// The twin's current core: which centre the two halves are mirrored about,
+// and the cell that centre sits on. Null on every other fight.
+var twinCore=0, twinAt=null;
 var BOSS_LIVES=3;
 /* Trials. T is null on every level that isn't one, and like B every check is
    guarded on it. It deliberately spends the same `lives` a boss does: a level
