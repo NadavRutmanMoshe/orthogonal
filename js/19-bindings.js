@@ -118,4 +118,16 @@ window.addEventListener("keydown",function(e){
   else if(k==="m"){muted=!muted;flash(muted?"sound off":"sound on");}
   else if(k==="shift"){peekTarget=1;}
   else if(k==="z"&&app==="edit"){undo();}
+  /* Escape is the key everyone already presses. It closes whatever panel is
+     open first and only opens the menu from a clear screen, because a key
+     that opened the menu unconditionally would be the one thing you cannot
+     use to get *out* of the wardrobe - and backing out is what the reflex is
+     for. It does nothing behind the intro or the win card: those have their
+     own buttons, and dismissing them from the keyboard would skip a level. */
+  else if(k==="escape"&&app==="play"){
+    if(panelOpen())hidePanel();
+    else if($("intro").classList.contains("gone")&&
+            !$("won").classList.contains("on"))menuPanel();
+    e.preventDefault();
+  }
 });

@@ -10,7 +10,12 @@
   html,body{margin:0;height:100%;overflow:hidden;background:var(--void);
     touch-action:none;transition:background .5s ease}
   body.flat{background:var(--paper)}
-  canvas{display:block;position:fixed;inset:0;z-index:0}
+  /* The game's canvas, and only it. This used to be a bare `canvas` selector,
+     which also caught the wardrobe's preview canvas and pinned it over the
+     whole viewport - the game's renderer is the only one that is a direct
+     child of body, so the child combinator is the thing that distinguishes
+     them. Any future in-panel canvas depends on this staying scoped. */
+  body>canvas{display:block;position:fixed;inset:0;z-index:0}
 
   .hud{position:fixed;top:60px;left:0;right:0;padding:0 16px;z-index:10;
     display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
@@ -67,6 +72,16 @@
   .par{color:var(--goal)}
   .flatbtn{height:50px;padding:0 14px;font-weight:600;letter-spacing:.14em;
     border-color:var(--player);color:var(--player)}
+  /* Folding from here would kill you. Marked, not disabled - it is still a
+     legal move and some players will want to see what happens. */
+  .flatbtn.peril{border-color:#ff4d5e;color:#ff4d5e;
+    animation:perilpulse 1.15s ease-in-out infinite}
+  @keyframes perilpulse{50%{background:rgba(255,77,94,.16)}}
+  /* Folding right now would crush the boss. The one moment the fold is an
+     attack rather than a risk, so it gets the goal colour. */
+  .flatbtn.strike{border-color:var(--goal);color:var(--goal);
+    animation:strikepulse .9s ease-in-out infinite}
+  @keyframes strikepulse{50%{background:rgba(53,194,165,.2)}}
   .tiny{height:28px;font-size:9.5px;letter-spacing:.1em;color:var(--fg-dim);padding:0 8px}
   .tinyrow{display:flex;gap:4px;justify-content:flex-end}
 
@@ -90,7 +105,15 @@
   .verify{flex:1;border-color:var(--goal);color:var(--goal);
     font-weight:600;letter-spacing:.13em}
 
-  .panel{position:fixed;left:16px;right:16px;bottom:196px;z-index:12;
+  /* Phone-width, centred, on every screen. The panels were written against a
+     phone and stretched edge to edge on anything wider: the wardrobe's case
+     is a square sized as a percentage of the panel, so at 1600px it became a
+     600px block with two absurd columns of tiles beside it, and the level
+     picker turned into 10px monospace ruled across a metre of glass. Capping
+     the width changes nothing at phone size - 100% - 32px is exactly what
+     left:16px/right:16px gave - and makes every panel behave on a desktop. */
+  .panel{position:fixed;left:50%;transform:translateX(-50%);
+    width:calc(100% - 32px);max-width:560px;bottom:196px;z-index:12;
     background:var(--panel);border:1px solid var(--rule);border-radius:3px;
     padding:12px 13px;font-family:'IBM Plex Mono',ui-monospace,monospace;
     font-size:10.5px;line-height:1.65;color:var(--fg);display:none;
@@ -133,12 +156,64 @@
   .item{border:1px solid var(--rule);border-radius:3px;padding:8px 4px;
     text-align:center;cursor:pointer;transition:border-color .2s}
   .item.on{border-color:var(--goal)}
+  /* Selected is what is on the stand; equipped is what you are wearing. They
+     are different things and an item is often both, so selection is drawn
+     with outline and a tint - using border-color for both would mean one
+     silently overwriting the other depending on rule order. */
+  .item.sel{outline:1px solid var(--player);outline-offset:-1px;
+    background:rgba(214,51,108,.11)}
+
+  /* The wardrobe is a browsing UI rather than a block of text: it owns its
+     height, and the item list scrolls inside it instead of the whole panel
+     scrolling, so the display case stays put while you look through. */
+  .panel.ward.on{display:flex;flex-direction:column;overflow:hidden;
+    max-height:min(56vh,calc(100vh - 250px))}
+  .wbody{display:flex;gap:9px;flex:1;min-height:0}
+  .wlist{flex:1 1 0;min-width:0;overflow-y:auto;overflow-x:hidden}
+  .wlist .grid{grid-template-columns:repeat(2,1fr)}
+  .wcase{flex:0 0 40%;min-width:0;display:flex;flex-direction:column}
+  .wcanvas{position:relative;inset:auto;width:100%;aspect-ratio:1/1;display:block;
+    border:1px solid var(--rule);border-radius:3px;background:var(--void);
+    touch-action:none;cursor:grab}
+  .wcanvas:active{cursor:grabbing}
+  .wturn{font-size:8px;letter-spacing:.11em;color:var(--fg-dim);
+    text-align:center;margin:4px 0 6px}
+  .wname{font-size:11.5px;color:var(--fg);font-weight:500;line-height:1.3}
+  .wcost{font-size:9px;color:var(--fg-dim);margin-top:1px}
+  .wact{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+  .wact button{height:30px;width:100%;font-size:9.5px}
+  .wact .wgo{border-color:var(--goal);color:var(--goal)}
+  .wact .wsure{border-color:var(--player);color:var(--player)}
+  .wcase .note{margin-top:5px}
+  /* The list scrolls under this row, so it needs a hard edge of its own -
+     without one, a half-scrolled tile reads as though it is behind the
+     button rather than clipped by the list. */
+  .panel.ward.on>.prow{border-top:1px solid var(--rule);padding-top:8px;
+    margin-top:0;flex-shrink:0}
+  .wlist{padding-bottom:2px}
   .item i{display:block;width:30px;height:30px;margin:0 auto 5px;border-radius:4px;
     font-style:normal;font-size:16px;line-height:30px;color:var(--fg)}
   .item b{display:block;font-size:9.5px;font-weight:500;color:var(--fg)}
   .item span{display:block;font-size:8.5px;color:var(--fg-dim);margin-top:2px}
   .note{font-size:9px;color:var(--fg-dim);line-height:1.6;margin-top:6px}
   .note code{color:var(--fg)}
+  /* How far through a section you are, in stars rather than levels solved:
+     clearing a section is the loop's unit of progress, so the bar has to
+     answer "is this one finished with" at a glance. */
+  .secbar{display:block;height:2px;background:var(--rule);border-radius:2px;
+    margin:5px 0 3px;overflow:hidden}
+  .secbar i{display:block;height:100%;background:var(--goal);
+    transition:width .4s ease}
+  /* The boss closes its section, so its row is marked and pulled slightly
+     clear of the levels above it. */
+  .lrow.bossrow{border-bottom-color:#ff8a3c55;margin-top:3px}
+  .lrow.bossrow .lname{color:#ff8a3c;letter-spacing:.06em}
+  /* A trial sits inside a section rather than closing one, so it is marked
+     in the same amber but quieter - a landmark, not a wall. */
+  .lrow.trialrow{border-bottom-color:#ff8a3c33}
+  .lrow.trialrow .lname{color:#e0a03c;letter-spacing:.05em}
+  .chap.locked{color:var(--fg-dim)}
+  .chap.locked .secbar{opacity:.5}
   .chap{margin:12px 0 4px;font-size:9.5px;letter-spacing:.16em;color:var(--player)}
   .chap:first-child{margin-top:2px}
   .chap span{display:block;color:var(--fg-dim);letter-spacing:.03em;
@@ -214,4 +289,50 @@
   #intro{display:flex}
   #intro.gone{display:none}
   #intro .tiny{border-color:var(--rule);color:var(--fg-dim)}
+
+  /* Lives and cores, only on a boss. Centred at the top because it is the
+     one thing you check between every move, and a corner would put it where
+     the thumb sits on a phone. */
+  .boss{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:11;
+    display:none;flex-direction:column;align-items:center;gap:3px;
+    pointer-events:none;font-family:'IBM Plex Mono',ui-monospace,monospace}
+  .boss.on{display:flex}
+  .blives,.bcores{display:flex;gap:4px;align-items:center}
+  .blives i{width:9px;height:9px;border-radius:50%;background:var(--player);
+    display:block;transition:background .25s ease,transform .25s ease}
+  .blives i.gone{background:transparent;box-shadow:inset 0 0 0 1px var(--rule);
+    transform:scale(.8)}
+  .bcores i{width:14px;height:3px;border-radius:2px;background:#ff8a3c;
+    display:block;transition:background .25s ease}
+  .bcores i.gone{background:var(--rule)}
+  .boss.hurt .blives{animation:bshake .3s ease}
+  @keyframes bshake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+
+  /* Your running star total, and the target the win screen's stars fly to.
+     z-index 30 puts it over the win overlay (20) on purpose - the count has
+     to be visible at the moment it goes up, or the flight has nothing to
+     arrive at. Sits to the left of the two round buttons in that corner. */
+  .startotal{position:fixed;top:14px;right:101px;z-index:30;height:40px;
+    display:none;align-items:center;gap:5px;padding:0 12px;
+    border:1px solid var(--rule);border-radius:20px;
+    background:var(--panel);backdrop-filter:blur(6px);
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    color:var(--fg);transition:color .35s ease,transform .18s ease,
+      border-color .35s ease}
+  .startotal.on{display:flex}
+  .startotal b{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+  .startotal i{font-style:normal;font-size:12px;color:var(--goal)}
+  .startotal.pop{transform:scale(1.16);border-color:var(--goal)}
+
+  /* A star in flight. The wrapper carries the horizontal leg and the inner
+     glyph the vertical one, on different easings - that mismatch is what
+     bends the path into an arc instead of a straight diagonal slide. */
+  .flystar{position:fixed;z-index:40;pointer-events:none;
+    transition:transform .62s cubic-bezier(.32,.5,.5,1)}
+  .flystar i{display:block;font-style:normal;font-size:24px;line-height:1;
+    color:var(--goal);text-shadow:0 0 14px rgba(53,194,165,.6);
+    transition:transform .62s cubic-bezier(.6,.02,.72,.5),opacity .62s ease}
+  .sg{display:inline-block;transition:transform .22s ease,opacity .22s ease}
+  .sg.launch{transform:translateY(-6px) scale(1.3)}
+
   @media (prefers-reduced-motion:reduce){*{transition-duration:.01ms !important}}

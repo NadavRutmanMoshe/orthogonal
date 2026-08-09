@@ -17,6 +17,24 @@
    Crates multiply the state space, so levels using them need
    to stay small.
    ============================================================ */
+/* The solver knows nothing about bosses, and that is deliberate.
+
+   A boss is a pack of real-time hunters. None of what they do is a function
+   of your move sequence: the clock runs while you think and they move in
+   response to where you are, so a breadth-first search over moves has
+   nothing true to say about it. An earlier draft did model a turn-based boss
+   and could prove a run existed that was never hit; that is gone, and
+   pretending otherwise would return paths whose safety it has no standing to
+   claim.
+
+   A trial is the opposite case and gets the full treatment - it is an
+   ordinary level with a clock bolted on, so the geometry is still a search
+   problem and verify.js runs it.
+
+   What still holds for a boss level is geometry: bossArena() checks the
+   arena is a stage a fight can happen on, and tools/bosssim.js plays each
+   fight twice to check it is neither unwinnable nor winnable by standing
+   still. Everything else is playtesting. */
 function solve(level,allowRotate,cap,from){
   var R=makeRules(level);
   cap=cap||400000;
@@ -110,8 +128,7 @@ function solve(level,allowRotate,cap,from){
           (function(a,b,cc){return function(h){return R.siloSolid(a,b,h,cc);};})(v,u,cr));
         if(nh===null||nh===FELL)continue;
         if(R.deadly2(v,nu,nh))continue;                  // a spike anywhere in depth
-        next.push(["2|"+nu+"|"+nh+"|0|"+v+"|"+crList.join(";")+"|"+collect2(v,nu,nh,kb),
-                   du>0?"\u2192":"\u2190"]);
+        next.push(["2|"+nu+"|"+nh+"|0|"+v+"|"+crList.join(";")+"|"+collect2(v,nu,nh,kb), du>0?"\u2192":"\u2190"]);
       }
       var land=R.landings(v,u,hy,cr);
       if(land.length){

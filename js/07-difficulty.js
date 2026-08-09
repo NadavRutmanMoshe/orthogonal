@@ -52,8 +52,37 @@ function starsFor(moves,par){
   if(moves<=Math.floor(par*1.4))return 1;
   return 0;
 }
+/* What `progress[name]` holds, and which direction is better.
+
+   An ordinary level records a move count and lower wins. Anything with a
+   clock - a boss, or a trial - records lives left and *higher* wins: three
+   lives intact is three stars, which is what makes those levels a test of
+   reading the pattern rather than of counting moves. Two numbers in one slot
+   with opposite senses is exactly the kind of thing that rots, so nothing
+   compares them by hand: every read goes through starsForRecord and every
+   write through betterRecord. */
+function onTheClock(level){return !!(level.boss||level.trial);}
+function starsForRecord(level,rec){
+  if(rec===undefined)return 0;
+  if(onTheClock(level))return Math.max(0,Math.min(3,rec));
+  var st=statsCached(level);
+  return starsFor(rec,st.ok?st.moves:0);
+}
+function betterRecord(level,rec,prev){
+  if(prev===undefined)return true;
+  return onTheClock(level) ? rec>prev : rec<prev;
+}
 function starGlyphs(n){
   return "\u2605\u2605\u2605".slice(0,n)+"\u2606\u2606\u2606".slice(0,3-n);
+}
+// The same three stars, but each in its own element. The win screen needs
+// that: a star flies to the counter from where its glyph actually sits, and
+// you cannot measure the third character of a text node.
+function starGlyphsEls(n){
+  var s="";
+  for(var i=0;i<3;i++)
+    s+="<i class='sg' data-i='"+i+"'>"+(i<n?"\u2605":"\u2606")+"</i>";
+  return s;
 }
 function tierOf(score){
   if(score<=18)return "gentle";

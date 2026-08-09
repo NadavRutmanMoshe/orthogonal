@@ -4,69 +4,188 @@
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
 
-var CHAPTERS=[
-  {at:0,  name:"0 \u00b7 TUTORIAL",   sub:"one new verb at a time, no scoring"},
-  {at:3,  name:"I \u00b7 FOLDING",     sub:"collapse the world and cross the gap"},
-  {at:6,  name:"II \u00b7 TURNING",    sub:"which axis you fold along is the puzzle"},
-  {at:14, name:"III \u00b7 GLASS",     sub:"solid in the volume, absent from the plane"},
-  {at:19, name:"IV \u00b7 SPIKES",     sub:"a hazard you cannot see until you fold"},
-  {at:26, name:"V \u00b7 CRATES",      sub:"change the plane by moving the volume"},
-  {at:33, name:"VI \u00b7 ANCHORS",    sub:"reach the middle of a column, not its ends"},
-  {at:40, name:"VII \u00b7 CONFLUENCE",sub:"glass, spikes and crates in the same breath"},
-  {at:49, name:"VIII \u00b7 AMBER",    sub:"park a crate on amber and it never moves again"},
-  {at:58, name:"IX \u00b7 BONUS",      sub:"long ones, for afterwards"}
-];
+/* ---- the wardrobe ----------------------------------------------------
+   Items on the left, a display case on the right. Tapping an item only
+   ever *selects* it - it goes on the stand and nothing is spent and
+   nothing is equipped. Both of those are deliberate second acts, on
+   buttons under the case, and buying is armed-then-confirmed on top of
+   that. The old panel bought and equipped on a single tap of the grid,
+   which meant a mis-tap while scrolling the list spent stars.
+
+   The shell is built once per opening and then refreshed in place. It
+   would be simpler to re-run showPanel on every tap, but that replaces
+   the panel's innerHTML, and with it the case's canvas - so every tap
+   would burn a WebGL context. See the note above previewStop().
+   ---------------------------------------------------------------------- */
+var wardTab="shape";
+var wardSel={shape:null,color:null,world3:null,world2:null};
+var buyArmed=null;   // the id whose BUY has been tapped once, awaiting a second
+
+function wardList(t){
+  return t==="shape" ?SKIN_SHAPES:
+         t==="color" ?SKIN_COLORS:
+         t==="world3"?WORLDS3D:WORLDS2D;
+}
+function wardEquipped(t){
+  return t==="shape" ?wardrobe.shape:
+         t==="color" ?wardrobe.color:
+         t==="world3"?wardrobe.world3:wardrobe.world2;
+}
+function wardSelected(t){
+  if(!wardSel[t])wardSel[t]=wardEquipped(t);
+  return wardSel[t];
+}
 function wardrobePanel(tab){
-  tab=tab||"shape";
-  var bal=shards();
-  var html="<h3>WARDROBE \u00b7 "+bal+" \u2605 TO SPEND</h3>"+
+  wardTab=tab||"shape";
+  buyArmed=null;
+  showPanel(
+    "<h3 id='wHead'></h3>"+
     "<div class='tabs'>"+
-      "<button class='tab"+(tab==="shape"?" on":"")+"' id='wS'>SHAPE</button>"+
-      "<button class='tab"+(tab==="color"?" on":"")+"' id='wC'>COLOUR</button>"+
-      "<button class='tab"+(tab==="palette"?" on":"")+"' id='wP'>WORLD</button>"+
-    "</div><div class='grid'>";
-  var list=tab==="shape"?SKIN_SHAPES:tab==="color"?SKIN_COLORS:PALETTES;
-  var cur=tab==="shape"?wardrobe.shape:tab==="color"?wardrobe.color:wardrobe.palette;
+      "<button class='tab' id='wS'>SHAPE</button>"+
+      "<button class='tab' id='wC'>COLOUR</button>"+
+      "<button class='tab' id='wV'>3D</button>"+
+      "<button class='tab' id='wP'>2D</button>"+
+    "</div>"+
+    "<div class='wbody'>"+
+      "<div class='wlist'><div class='grid' id='wGrid'></div></div>"+
+      "<div class='wcase'>"+
+        "<canvas id='wCase3d' class='wcanvas'></canvas>"+
+        "<div class='wturn'>DRAG TO TURN</div>"+
+        "<div id='wMeta'></div>"+
+      "</div>"+
+    "</div>"+
+    "<div class='prow'><button id='wBack'>BACK</button></div>","wardrobe");
+  bind("wS",function(){wardTabTo("shape");});
+  bind("wC",function(){wardTabTo("color");});
+  bind("wV",function(){wardTabTo("world3");});
+  bind("wP",function(){wardTabTo("world2");});
+  bind("wBack",hidePanel);
+  wardRefresh();
+  // The canvas has no measurable size until the panel has been laid out, so
+  // the case starts a frame late. Re-check the panel on the way in: closing
+  // the wardrobe inside that frame would otherwise start a context that the
+  // already-finished previewStop() never gets the chance to release.
+  requestAnimationFrame(function(){
+    var cv=$("wCase3d");
+    if(!cv||panelKind!=="wardrobe"||!panelOpen())return;
+    previewStart(cv);
+    wardPreview();
+  });
+}
+function wardTabTo(t){
+  wardTab=t;buyArmed=null;
+  wardRefresh();wardPreview();
+}
+function wardPreview(){
+  var sel=wardSelected(wardTab);
+  previewShow(
+    wardTab==="shape" ?sel:wardrobe.shape,
+    wardTab==="color" ?sel:wardrobe.color,
+    wardTab==="world3"?sel:wardrobe.world3,
+    wardTab==="world2"?sel:wardrobe.world2,
+    wardTab==="world2");
+}
+function wardRefresh(){
+  var t=wardTab, list=wardList(t), cur=wardEquipped(t), sel=wardSelected(t);
+  $("wHead").textContent="WARDROBE \u00b7 "+shards()+" \u2605 TO SPEND";
+  $("wS").classList.toggle("on",t==="shape");
+  $("wC").classList.toggle("on",t==="color");
+  $("wV").classList.toggle("on",t==="world3");
+  $("wP").classList.toggle("on",t==="world2");
+  var html="";
   for(var i=0;i<list.length;i++){
     var it=list[i], have=owns(it.id), on=cur===it.id;
-    var swatch = tab==="color"
+    // each swatch shows the two colours that item actually sets
+    var swatch = t==="color"
       ? "background:#"+it.hex.toString(16).padStart(6,"0")
-      : tab==="palette"
+      : t==="world3"
         ? "background:linear-gradient(135deg,#"+it.void.toString(16).padStart(6,"0")+
-          " 0 50%,#"+it.paper.toString(16).padStart(6,"0")+" 50% 100%)"
+          " 0 50%,#"+it.block.toString(16).padStart(6,"0")+" 50% 100%)"
+      : t==="world2"
+        ? "background:linear-gradient(135deg,#"+it.paper.toString(16).padStart(6,"0")+
+          " 0 50%,#"+it.ink.toString(16).padStart(6,"0")+" 50% 100%)"
         : "background:var(--rule)";
-    html+="<div class='item"+(on?" on":"")+"' data-id='"+it.id+"' data-tab='"+tab+"'>"+
-      "<i style='"+swatch+"'>"+(tab==="shape"?shapeGlyph(it.id):"")+"</i>"+
+    html+="<div class='item"+(on?" on":"")+(sel===it.id?" sel":"")+
+      "' data-id='"+it.id+"'>"+
+      "<i style='"+swatch+"'>"+(t==="shape"?shapeGlyph(it.id):"")+"</i>"+
       "<b>"+it.name+"</b>"+
       "<span>"+(on?"equipped":have?"owned":it.cost+" \u2605")+"</span></div>";
   }
-  html+="</div>"+
-    "<div class='prow'><button id='wAd' disabled>WATCH AN AD \u00b7 +10 \u2605</button></div>"+
-    "<div class='note'>Rewarded video is not wired up in this build \u2014 it needs "+
-    "an ad SDK, which only exists once the game is wrapped for a store. "+
-    "<code>grantShards(n)</code> is the hook.</div>"+
-    "<div class='prow'><button id='wBack'>BACK</button></div>";
-  showPanel(html,"wardrobe");
-  bind("wS",function(){wardrobePanel("shape");});
-  bind("wC",function(){wardrobePanel("color");});
-  bind("wP",function(){wardrobePanel("palette");});
-  bind("wBack",hidePanel);
-  $("panel").querySelectorAll(".item").forEach(function(el){
+  $("wGrid").innerHTML=html;
+  $("wGrid").querySelectorAll(".item").forEach(function(el){
     tap(el,function(){
-      var id=el.getAttribute("data-id"), t=el.getAttribute("data-tab");
-      var list=t==="shape"?SKIN_SHAPES:t==="color"?SKIN_COLORS:PALETTES;
-      var it=findBy(list,id);
-      if(!owns(id)){
-        if(shards()<it.cost){flash("you need "+(it.cost-shards())+" more");SFX.bump();return;}
-        wardrobe.owned.push(id);wardrobe.spent+=it.cost;SFX.key();
-      }
-      if(t==="shape")wardrobe.shape=id;
-      else if(t==="color")wardrobe.color=id;
-      else wardrobe.palette=id;
-      applyPalette();applySkin();saveWardrobe();
-      wardrobePanel(t);
+      var id=el.getAttribute("data-id");
+      if(wardSel[wardTab]===id)return;
+      wardSel[wardTab]=id;
+      buyArmed=null;                 // a new selection disarms the old confirm
+      SFX.turn();
+      wardRefresh();wardPreview();
     });
   });
+  wardMeta();
+}
+function wardMeta(){
+  var t=wardTab, id=wardSelected(t), it=findBy(wardList(t),id);
+  var have=owns(id), on=wardEquipped(t)===id, bal=shards();
+  var s="<div class='wname'>"+it.name+"</div>"+
+        "<div class='wcost'>"+(on?"equipped":have?"owned":it.cost+" \u2605")+"</div>"+
+        "<div class='wact'>";
+  if(on)              s+="<button disabled>EQUIPPED</button>";
+  else if(have)       s+="<button id='wEquip' class='wgo'>EQUIP</button>";
+  else if(bal<it.cost)s+="<button disabled>NEED "+(it.cost-bal)+" MORE \u2605</button>";
+  else if(buyArmed===id)
+                      s+="<button id='wBuy' class='wsure'>SURE? \u00b7 "+it.cost+" \u2605</button>";
+  else                s+="<button id='wBuy' class='wgo'>BUY \u00b7 "+it.cost+" \u2605</button>";
+  if(!have){
+    var need=adsFor(it.cost), got=adsWatched(id);
+    s+="<button id='wAd' disabled>WATCH "+need+" AD"+(need===1?"":"S")+
+       (got?" ("+got+"/"+need+")":"")+"</button>";
+  }
+  s+="</div>";
+  // The hook name belongs in the code and in CLAUDE.md, not in a player's
+  // narrow sidebar; all this has to say is why the button does nothing.
+  if(!have)s+="<div class='note'>Ads need an SDK, so the button is dead "+
+    "until the game is wrapped for a store.</div>";
+  $("wMeta").innerHTML=s;
+  bind("wEquip",function(){wardEquip(t,id);SFX.key();wardRefresh();});
+  bind("wBuy",function(){
+    if(buyArmed!==id){buyArmed=id;SFX.turn();wardMeta();return;}
+    buyArmed=null;
+    if(shards()<it.cost){flash("not enough stars");SFX.bump();wardRefresh();return;}
+    wardrobe.owned.push(id);wardrobe.spent+=it.cost;
+    wardEquip(t,id);                 // you confirmed a purchase; wear it
+    SFX.key();flash(it.name+" unlocked");
+    wardRefresh();
+  });
+}
+function wardEquip(t,id){
+  if(t==="shape")wardrobe.shape=id;
+  else if(t==="color")wardrobe.color=id;
+  else if(t==="world3")wardrobe.world3=id;
+  else wardrobe.world2=id;
+  applyPalette();applySkin();saveWardrobe();
+}
+/* The hook a rewarded-video callback calls when one video finishes playing
+   against a specific item, as opposed to grantShards(), which tops up the
+   balance instead. An item needs adsFor(cost) of them, and progress is kept
+   so watching two of the three does not have to happen in one sitting.
+   Neither hook is wired to anything; there is no ad SDK in this build. */
+function grantAdView(id){
+  if(owns(id))return;
+  var it=null, tabs=["shape","color","world3","world2"];
+  for(var i=0;i<tabs.length&&!it;i++){
+    var l=wardList(tabs[i]);
+    for(var j=0;j<l.length;j++) if(l[j].id===id){it=l[j];break;}
+  }
+  if(!it)return;
+  if(!wardrobe.ads)wardrobe.ads={};
+  wardrobe.ads[id]=adsWatched(id)+1;
+  if(wardrobe.ads[id]>=adsFor(it.cost)){
+    wardrobe.owned.push(id);
+    delete wardrobe.ads[id];
+  }
+  saveWardrobe();
+  if(panelKind==="wardrobe")wardRefresh();
 }
 // Called by the rewarded-video callback once an ad completes. Kept separate so
 // wiring an SDK later is a one-line change and never touches the star maths.
@@ -97,10 +216,6 @@ function menuPanel(){
       seg("mUi","full","ON-SCREEN",settings.ui)+
       seg("mUi","compact","COMPACT",settings.ui)+
       seg("mUi","none","HIDDEN",settings.ui)+"</span></div>"+
-    "<div class='crow'><label>The verb</label><span class='seg'>"+
-      seg("mVb","dim","2D / 3D",settings.verbs)+
-      seg("mVb","fold","FOLD",settings.verbs)+
-      seg("mVb","flat","FLATTEN",settings.verbs)+"</span></div>"+
     "<div class='note'>COMPACT drops the d-pad; HIDDEN clears the screen. "+
       "Either way: <code>swipe</code> or arrows/WASD to move, "+
       "<code>space</code> to change dimension, <code>Q</code>/<code>E</code> to turn. "+
@@ -114,8 +229,9 @@ function menuPanel(){
   var v=$("mVol"), b=$("mBri");
   v.addEventListener("input",function(){
     settings.volume=v.value/100;
+    settings.volTouched=true;      // from here on, your choice outranks the default
     $("mVolV").textContent=v.value+"%";
-    if(masterGain)masterGain.gain.value=settings.volume;
+    applyVolume();
     muted=settings.volume<=0;
     saveSettings();
   });
@@ -131,18 +247,14 @@ function menuPanel(){
       settings.ui=m;applyUI();saveSettings();syncHud();onResize();menuPanel();
     });
   });
-  ["dim","fold","flat"].forEach(function(m){
-    bind("mVb_"+m,function(){
-      settings.verbs=m;saveSettings();syncHud();menuPanel();
-    });
-  });
   bind("mTut",function(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
   });
   bind("mReset",function(){
-    settings.volume=.7;settings.brightness=1;settings.ui="full";settings.verbs="dim";
+    settings.volume=defaultVolume();settings.volTouched=false;
+    settings.brightness=1;settings.ui="full";
     muted=false;
-    if(masterGain)masterGain.gain.value=settings.volume;
+    applyVolume();
     applyBrightness();applyUI();saveSettings();syncHud();
     flash("settings reset");menuPanel();
   });
@@ -152,25 +264,73 @@ function menuPanel(){
   bind("mClose",hidePanel);
 }
 
+/* Where each section starts and ends, and how much of it is done. The
+   picker is the only place the campaign's shape is visible, so it has to
+   show the shape: a run of levels, then the boss that closes it, and how
+   many stars of the section's total you are carrying. */
+/* A locked section opens when everything before it is finished. "Finished"
+   is deliberately the bosses only, not every level: the Extra shelf is a
+   reward for beating the game, and gating it on 100% would turn a bonus into
+   a chore nobody collects. */
+function sectionsUnlocked(){
+  for(var i=0;i<LEVELS.length;i++)
+    if(LEVELS[i].boss&&progress[LEVELS[i].name]===undefined)return false;
+  return true;
+}
+function sectionSpans(){
+  var out=[];
+  for(var i=0;i<SECTIONS.length;i++){
+    var from=SECTIONS[i].at;
+    var to=(i+1<SECTIONS.length?SECTIONS[i+1].at:LEVELS.length)-1;
+    var got=0,max=0,done=0,n=0;
+    for(var j=from;j<=to;j++){
+      if(LEVELS[j].tutorial)continue;
+      n++;max+=3;
+      got+=starsForRecord(LEVELS[j],progress[LEVELS[j].name]);
+      if(progress[LEVELS[j].name]!==undefined)done++;
+    }
+    out.push({i:i,from:from,to:to,got:got,max:max,done:done,n:n,
+              sec:SECTIONS[i],locked:!!SECTIONS[i].locked&&!sectionsUnlocked()});
+  }
+  return out;
+}
 function levelPicker(){
   var solved=0;
   for(var q=0;q<LEVELS.length;q++) if(progress[LEVELS[q].name]!==undefined) solved++;
   var html="<h3>SELECT LEVEL \u00b7 "+solved+"/"+LEVELS.length+" SOLVED</h3>";
+  var spans=sectionSpans(), spanAt={};
+  spans.forEach(function(sp){spanAt[sp.from]=sp;});
   for(var i=0;i<LEVELS.length;i++){
-    for(var ci=0;ci<CHAPTERS.length;ci++)
-      if(CHAPTERS[ci].at===i)
-        html+="<div class='chap'>"+CHAPTERS[ci].name+
-              "<span>"+CHAPTERS[ci].sub+"</span></div>";
+    var sp=spanAt[i];
+    if(sp){
+      var pct=sp.max?Math.round(sp.got/sp.max*100):0;
+      html+="<div class='chap"+(sp.locked?" locked":"")+"'>"+sp.sec.name+
+        (sp.locked?" \u00b7 LOCKED":"")+
+        "<b class='secbar'><i style='width:"+(sp.locked?0:pct)+"%'></i></b>"+
+        "<span>"+(sp.locked
+          ? "beat every boss to open these"
+          : sp.sec.sub+"  \u00b7  "+sp.done+"/"+sp.n+" solved, "+
+            sp.got+"/"+sp.max+" \u2605")+"</span></div>";
+      if(sp.locked){i=sp.to;continue;}      // draw the header, hide the rows
+    }
     var tut=!!LEVELS[i].tutorial;
-    var st=tut?{ok:false}:statsCached(LEVELS[i]);
+    var boss=!!LEVELS[i].boss;
+    var trial=!!LEVELS[i].trial;
+    var st=(tut||boss||trial)?{ok:false}:statsCached(LEVELS[i]);
     var mark=(playSource==="builtin"&&i===lvIndex)?" \u25c0":"";
     var done=progress[LEVELS[i].name];
     var badge=done===undefined?"":
       (tut?"<span class='ok'>\u2713</span>"
-         :"<span class='ok'>"+starGlyphs(st.ok?starsFor(done,st.moves):0)+"</span>");
-    html+="<div class='lrow"+(mark?" here":"")+"'><span class='lname'>"+
+         :"<span class='ok'>"+starGlyphs(starsForRecord(LEVELS[i],done))+"</span>");
+    var note=tut?"tutorial":
+      boss?(LEVELS[i].boss.hp+" hits"):
+      trial?(LEVELS[i].trial.beats.length+" sweeps"):
+      (st.ok?st.flattens+(st.flattens===1?" fold":" folds"):"?");
+    html+="<div class='lrow"+(mark?" here":"")+(boss?" bossrow":"")+
+      (trial?" trialrow":"")+
+      "'><span class='lname'>"+
       esc(LEVELS[i].name)+mark+"</span>"+
-      "<span class='mono'>"+(tut?"tutorial":(st.ok?st.flattens+(st.flattens===1?" fold":" folds"):"?"))+
+      "<span class='mono'>"+note+
       (badge?" &middot; ":"")+badge+"</span>"+
       "<span class='lbtns'><button class='mini' data-lv='"+i+"'>PLAY</button></span></div>";
   }
