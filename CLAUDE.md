@@ -509,6 +509,13 @@ exclusive — every gesture also has a key and, unless hidden, a button:
   the case, and only a confirmed purchase equips. A consequence worth keeping:
   a palette does not touch the world until it is equipped — the case previews
   it instead.
+- **Panels are phone-width and centred on every screen** (`.panel`, capped at
+  560px). They were written against a phone and stretched edge to edge on
+  anything wider: the wardrobe's display case is a square sized as a
+  percentage of the panel, so on a 1600px monitor it became a 600px block
+  with two absurd columns of tiles, and the level picker became 10px
+  monospace ruled across a metre of glass. At phone size the cap changes
+  nothing — `100% - 32px` is exactly what `left:16px/right:16px` gave.
 - **`body>canvas` in the CSS is load-bearing.** The game's renderer is the only
   canvas that is a direct child of `body`; any future in-panel canvas depends
   on that staying scoped.

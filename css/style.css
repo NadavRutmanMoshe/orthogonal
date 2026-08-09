@@ -105,7 +105,15 @@
   .verify{flex:1;border-color:var(--goal);color:var(--goal);
     font-weight:600;letter-spacing:.13em}
 
-  .panel{position:fixed;left:16px;right:16px;bottom:196px;z-index:12;
+  /* Phone-width, centred, on every screen. The panels were written against a
+     phone and stretched edge to edge on anything wider: the wardrobe's case
+     is a square sized as a percentage of the panel, so at 1600px it became a
+     600px block with two absurd columns of tiles beside it, and the level
+     picker turned into 10px monospace ruled across a metre of glass. Capping
+     the width changes nothing at phone size - 100% - 32px is exactly what
+     left:16px/right:16px gave - and makes every panel behave on a desktop. */
+  .panel{position:fixed;left:50%;transform:translateX(-50%);
+    width:calc(100% - 32px);max-width:560px;bottom:196px;z-index:12;
     background:var(--panel);border:1px solid var(--rule);border-radius:3px;
     padding:12px 13px;font-family:'IBM Plex Mono',ui-monospace,monospace;
     font-size:10.5px;line-height:1.65;color:var(--fg);display:none;
