@@ -491,12 +491,16 @@ exclusive — every gesture also has a key and, unless hidden, a button:
   `masterGain.gain.value` must go through `masterLevel()` or the boost is lost
   the first time the volume slider moves.
 - **The default volume differs by device**: 1.0 where the pointer is coarse
-  (a finger, so a phone or tablet — small speaker), 0.5 elsewhere (a desktop,
+  (a finger, so a phone or tablet — small speaker), 0.35 elsewhere (a desktop,
   usually with its own amplification, where the phone setting is painful).
   Only the default differs; the chain and the ceiling are identical, and the
-  slider still goes to the top. A save keeps whatever volume it already had.
-  If it sounds wrong on a device that has played before, the slider is the
-  answer before `MIX` is.
+  slider still goes to the top.
+- **A stored volume only wins once you have moved the slider** (`volTouched`).
+  Without that flag the per-device default was a no-op on every machine that
+  had ever played: the save already carried a volume, written by a default
+  from an era when the whole mix was six times quieter, and it silently
+  outranked the number picked for the hardware. Moving the slider sets the
+  flag and your choice sticks from then on.
 - **The wardrobe's display case is a second WebGL context**, created when the
   panel opens and explicitly released — `loseContext()`, not just GC — when it
   closes. Browsers cap live contexts (commonly 16) and evict the oldest, which

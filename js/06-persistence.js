@@ -69,7 +69,12 @@ function loadSettings(){
     if(r&&r.value){
       try{
         var o=JSON.parse(r.value);
-        if(typeof o.volume==="number")settings.volume=o.volume;
+        /* Only a volume you chose survives. Anything else is a default from
+           some earlier build of the mix, and letting it through is what made
+           the per-device default a no-op on every machine that had played. */
+        if(typeof o.volume==="number"&&o.volTouched){
+          settings.volume=o.volume;settings.volTouched=true;
+        }
         if(typeof o.brightness==="number")settings.brightness=o.brightness;
         if(o.ui&&["full","compact","none"].indexOf(o.ui)>=0)settings.ui=o.ui;
         // o.verbs may exist in settings saved before the wording was settled.

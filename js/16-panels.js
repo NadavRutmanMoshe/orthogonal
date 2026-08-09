@@ -229,6 +229,7 @@ function menuPanel(){
   var v=$("mVol"), b=$("mBri");
   v.addEventListener("input",function(){
     settings.volume=v.value/100;
+    settings.volTouched=true;      // from here on, your choice outranks the default
     $("mVolV").textContent=v.value+"%";
     if(masterGain)masterGain.gain.value=masterLevel();
     muted=settings.volume<=0;
@@ -250,7 +251,8 @@ function menuPanel(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
   });
   bind("mReset",function(){
-    settings.volume=.7;settings.brightness=1;settings.ui="full";
+    settings.volume=defaultVolume();settings.volTouched=false;
+    settings.brightness=1;settings.ui="full";
     muted=false;
     if(masterGain)masterGain.gain.value=masterLevel();
     applyBrightness();applyUI();saveSettings();syncHud();
