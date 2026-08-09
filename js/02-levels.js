@@ -105,7 +105,7 @@ var LEVELS=[
       moves every time a core goes. The pillars are placed symmetrically about
       the first centre (4,3) so the mirror is honest to begin with - the halves
       path independently, and geometry is what bends them out of step. */
-   boss:{twin:true,step:470,creepEvery:7000,
+   boss:{twin:true,step:640,floorStep:340,creepEvery:7000,
          cores:[{c:[4,1,3],a:[7,1,1]},
                 {c:[3,1,4],a:[6,1,6]},
                 {c:[5,1,2],a:[8,1,4]}]},
