@@ -229,6 +229,12 @@ this one the simulator rejected, are in `docs/HISTORY.md` — **read it before
 changing the kill rule**, because the two most obvious alternatives have both
 already been built and measured.
 
+**Playtest verdict on the twin: too hard, and parked.** The owner may come
+back with new ideas; until then it stays exactly as it is in `BOSS I` and the
+pack holds the other three. If it is picked up again, the dials in order of
+likely usefulness are `hold` (openings), `step` (already slowed once, 470 →
+640) and the number of cores.
+
 ### The twin — a second fight, on trial
 
 `BOSS I` is not a pack. It is **one creature with two bodies**, each hunting
