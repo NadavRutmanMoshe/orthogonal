@@ -331,7 +331,7 @@ function bossTakeCrate(idx){
    flat along the axis it sweeps, where every depth is your depth.
    ============================================================ */
 function trialReset(){
-  trialMs=0;trialBeat=-1;trialFlash=0;trialGrace=0;trialTicked=-1;
+  trialMs=0;trialBeat=-1;trialFlash=0;trialGrace=0;trialTicked=-1;trialCore=0;
   if(TR)lives=BOSS_LIVES;
 }
 function trialFrame(dt){
@@ -580,12 +580,32 @@ function keysLeft(){
   for(var i=0;i<R.keys.length;i++) if(!(gKeys&(1<<i))) n++;
   return n;
 }
+/* The square you are actually heading for. On a trial with cores that is the
+   one you have not reached yet; everywhere else it is the level's goal. The
+   renderer draws this rather than L.goal - the old boss had exactly this bug,
+   where the marker stayed on the first target and the fight became
+   unfinishable because there was nothing left to aim at. */
+function liveGoal(){
+  if(TR&&TR.cores)return TR.cores[Math.min(trialCore,TR.cores.length-1)];
+  return L.goal;
+}
 function checkWin(){
   // A boss has no goal square at all: the fight ends when the last hunter
   // goes, in bossFoldCrush() or bossTakeCrate(), never by arriving anywhere.
   if(B)return;
-  if(player.x!==L.goal[0]||player.y!==L.goal[1]||player.z!==L.goal[2])return;
+  var g=liveGoal();
+  if(player.x!==g[0]||player.y!==g[1]||player.z!==g[2])return;
   if(keysLeft()){flash("still sealed \u2014 "+keysLeft()+" to collect");SFX.bump();return;}
+  // One core down, and the next is somewhere else: the clock does not pause
+  // for it, which is the whole point of there being three.
+  if(TR&&TR.cores&&trialCore<TR.cores.length-1){
+    trialCore++;
+    SFX.key();shakeT=.4;
+    var left=TR.cores.length-trialCore;
+    flash(left===1?"one more":left+" more");
+    buildGrid();syncHud();
+    return;
+  }
   win();
 }
 var starsBefore=0,starsAfter=0,starsGained=0;

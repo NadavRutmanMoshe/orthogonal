@@ -343,6 +343,15 @@ function makeTrial(level){
   var t=level.trial;
   var beats=t.beats, period=t.period||2300, fire=t.fire||320;
   return {
+    /* Three targets in sequence, not one. A trial where the first arrival
+       ends it is over before its second beat, and the clock never gets to be
+       the level - you cross once, on the rhythm you happened to arrive on.
+       Three crossings is what makes it a rhythm you have to learn: the first
+       teaches the beat, the second is a return trip you now have to time,
+       and the third is under a clock that has been running long enough to
+       have sped you up. `level.goal` is cores[0] so the solver, the picker
+       and the renderer all still have one square to talk about. */
+    cores:t.cores||null,
     beats:beats, period:period, fire:fire,
     cycle:period*beats.length,
     // which slice is charging right now, how far through its beat it is, and

@@ -148,12 +148,23 @@ optimal solution.
 
 ## Trials
 
-**An ordinary level, on a clock.** Four or five turn-based puzzles into a
-section, one arrives that will not wait: the goal is drawn amber instead of
-green, and a lethal plane sweeps one slice of the world, charging in plain
-sight for most of a beat and going live for the last `fire` milliseconds.
-Reach the goal in the volume, as always. Three lives, and three intact lives
-is three stars.
+**An ordinary level, on a clock, three times over.** Four or five turn-based
+puzzles into a section, one arrives that will not wait: a lethal plane sweeps
+one slice of the world, charging in plain sight for most of a beat and going
+live for the last `fire` milliseconds. Reach the amber core in the volume, as
+always — and then the next one, somewhere else, and then the third. Three
+lives, and three intact lives is three stars.
+
+**Three cores, not one.** A trial that ends on the first arrival is over
+before its second beat, on whatever rhythm you happened to arrive with. Three
+crossings is what makes it a rhythm you have to learn: the first teaches the
+beat, the second is a return trip you now have to time, and the third runs
+under a clock that has been going long enough to have sped you up. This was
+got wrong once — the first version had a single goal and was reported, fairly,
+as stopping after one — and it is why `checkWin()` advances `trialCore` rather
+than winning, and why the renderer draws `liveGoal()` rather than `L.goal`.
+The old boss had precisely this bug in reverse: its marker stayed on the first
+core and the fight became unfinishable.
 
 The reason the attack is a plane, and the reason a trial is about the fold
 rather than about reflexes: **a sweep down the axis you are looking along
@@ -186,7 +197,13 @@ which axis, and is this the moment — only now with a metronome running.
 ### Verification
 
 `solve()` is allowed a full opinion here, unlike on a boss: a trial is a real
-level underneath, so BFS proves the geometry admits a route. What BFS cannot
+level underneath, so BFS proves the geometry admits a route — **every leg of
+it**, start to the first core and then core to core, because a trial whose way
+back is a wall passes a check that only looks at the first. `TRIAL III` was
+exactly that: the glass that makes the crossing interesting also makes it
+one-way, so its middle core is the bridge block rather than a return to the
+island. The obvious fix, a stepping stone that opens a route back, quietly
+made the glass optional — which the load-bearing check caught. What BFS cannot
 speak to is the clock, and `trialSafety()` stands in: for every square you can
 stand on and every beat, either that square is safe or one a step away is —
 the arena never corners you. `node tools/verify.js` runs both. The safety

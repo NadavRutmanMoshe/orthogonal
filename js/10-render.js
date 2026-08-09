@@ -629,7 +629,7 @@ function animate(now){
   // A boss arena has no goal square - the target is the boss itself, which
   // draws itself in drawBoss() - so the marker is simply hidden there.
   goalMesh.visible=goalGhost.visible=!B;
-  var g=L.goal||[0,0,0];
+  var g=((typeof liveGoal==="function"&&L.goal)?liveGoal():L.goal)||[0,0,0];
   var gu=g[0]*rx+g[2]*rz, gd=g[0]*tdvx+g[2]*tdvz;
   var gx=gu*rx+gd*.012*tdvx, gz=gu*rz+gd*.012*tdvz;
   goalMesh.position.set(g[0]+(gx-g[0])*flatT,g[1],g[2]+(gz-g[2])*flatT);

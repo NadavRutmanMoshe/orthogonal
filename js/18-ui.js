@@ -134,14 +134,19 @@ function syncHud(){
 function syncBossBar(){
   var bar=$("bossBar");
   if(!bar)return;
-  // A trial spends the same lives and shows the same dots; it just has no
-  // cores to break, so the lower row is simply empty there.
+  // A trial spends the same lives and shows the same dots, and its cores are
+  // the targets it still has to reach.
   var on=!!((B||TR)&&app==="play");
   bar.classList.toggle("on",on);
   if(!on)return;
   var lv="",co="";
   for(var i=0;i<BOSS_LIVES;i++)lv+="<i class='"+(i<lives?"":"gone")+"'></i>";
   if(B)for(var j=0;j<B.hp;j++)co+="<i class='"+(j<bossHp?"":"gone")+"'></i>";
+  // A trial's cores count down as you reach them, so the row empties from
+  // the left as you go - the same shape as a boss losing hit points.
+  else if(TR&&TR.cores)
+    for(var k=0;k<TR.cores.length;k++)
+      co+="<i class='"+(k<TR.cores.length-trialCore?"":"gone")+"'></i>";
   $("bossLives").innerHTML=lv;
   $("bossCores").innerHTML=co;
 }

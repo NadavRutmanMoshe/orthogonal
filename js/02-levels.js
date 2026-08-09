@@ -70,7 +70,8 @@ var LEVELS=[
 {name:"TRIAL I — The Metronome",
    hint:"The red slice lands on the beat. Cross in the gaps between.",
    trial:{period:2500,fire:340,
-          beats:[{axis:"x",at:6},{axis:"x",at:2},{axis:"x",at:4}]},
+          beats:[{axis:"x",at:6},{axis:"x",at:2},{axis:"x",at:4}],
+          cores:[[7,1,4],[0,1,2],[6,1,6]]},
    /* The far side is offset in depth as well as across, and that is
       structural rather than decorative: two platforms sharing a row of z can
       be joined by one turn and one fold, and the solver finds that in four
@@ -132,7 +133,8 @@ var LEVELS=[
 {name:"TRIAL II — Sharp Rhythm",
    hint:"Spikes take the squares you would have dodged into. Walk to the edge before you fold — the near columns are poisoned.",
    trial:{period:2200,fire:320,
-          beats:[{axis:"x",at:3},{axis:"x",at:1},{axis:"x",at:5}]},
+          beats:[{axis:"x",at:3},{axis:"x",at:1},{axis:"x",at:5}],
+          cores:[[9,1,4],[0,1,2],[7,1,6]]},
    blocks:(function(){var b=[];box(0,4,0,0,0,2,b);box(7,9,0,0,4,6,b);
      b.push([5,0,9]);b.push([6,0,9]);
      /* Three floor squares bite, and they are the ones the sweeps would
@@ -179,7 +181,8 @@ var LEVELS=[
 {name:"TRIAL III — The Depth Slice",
    hint:"A slice down the axis you are looking along cannot be dodged flat — there, you are at every depth. Fold between those beats, or turn until it is one you can step out of.",
    trial:{period:2100,fire:300,
-          beats:[{axis:"x",at:1},{axis:"z",at:1},{axis:"x",at:6}]},
+          beats:[{axis:"x",at:1},{axis:"z",at:1},{axis:"x",at:6}],
+          cores:[[7,1,4],[4,1,9],[5,1,6]]},
    /* The glass is the fold platform, and it is load-bearing twice over: it
       carries you in the volume, and because it casts nothing, folding from
       the stone behind it drops you into a column with no floor. You have to
@@ -233,7 +236,8 @@ var LEVELS=[
    hint:"Three axes now, and the high ground is one of them. The crossing happens up here — so does the slice that owns this height.",
    trial:{period:2000,fire:320,
           beats:[{axis:"y",at:2},{axis:"x",at:2},{axis:"x",at:6},
-                 {axis:"z",at:1}]},
+                 {axis:"z",at:1}],
+          cores:[[7,1,4],[0,1,1],[7,1,6]]},
    blocks:(function(){var b=[];
      box(0,0,0,0,0,2,b);                       // the island you start on
      /* A catwalk one square wide, with a lane under each side. The width is

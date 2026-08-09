@@ -45,6 +45,28 @@ LEVELS.forEach((lv,i)=>{
     console.log("  FAIL  ["+i+"] "+lv.name+"  ->  "+r.status);
     return;
   }
+  /* A trial is three targets in sequence, so "solvable" has to mean every
+     leg of it - start to the first core, then core to core. Checking only
+     the first would have passed a trial whose way back was a wall, which is
+     exactly what the glass made of one of them. */
+  if(lv.trial&&lv.trial.cores){
+    let from=null, legFail=null, legs=[];
+    lv.trial.cores.forEach((c,n)=>{
+      if(legFail)return;
+      const lr=solve({...lv,goal:c}, lv.rotate!==false, 250000, from);
+      if(lr.status!=="solved")legFail="leg "+(n+1)+" -> "+lr.status;
+      else legs.push(lr.path.length);
+      from={mode:"3",x:c[0],y:c[1],z:c[2],view:0};
+    });
+    if(legFail){
+      bad++;
+      console.log("  LEG   ["+i+"] "+lv.name+"  ->  "+legFail);
+      return;
+    }
+    if(only!==undefined||process.env.VERBOSE)
+      console.log("  ok    ["+i+"] "+lv.name+"  legs "+legs.join("+")+
+        " moves  ·  sweeps fair");
+  }
   /* A trial is an ordinary level with a clock bolted on, so it gets the
      ordinary proof - BFS says the geometry admits a route - and then one
      more that BFS has no standing to give: that no beat can corner you.

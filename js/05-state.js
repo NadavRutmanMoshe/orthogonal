@@ -56,6 +56,8 @@ var TR=null, trialMs=0, trialBeat=-1, trialFlash=0;
 // Milliseconds of grace after a hit, and the beat the metronome last ticked
 // on, so the tick fires once per beat rather than once per frame.
 var trialGrace=0, trialTicked=-1;
+// Which core you are heading for. Only meaningful when the trial has a list.
+var trialCore=0;
 /* The level is over and the win card is on its way. Both clocks stop here.
    Without it there is a real gap - win() takes 380ms to raise the card, and
    until it is up the boss's last shot is still in the air and the next slice
