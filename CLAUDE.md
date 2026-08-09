@@ -384,6 +384,10 @@ exclusive — every gesture also has a key and, unless hidden, a button:
 - tap the world — change dimension *(only when the bar is hidden)*
 - two-finger tap — turn right *(rotate-left has no gesture; four turns is a circle)*
 - arrows / WASD, space, Q / E, Z undo, R restart, H hint, M mute, Shift peek
+- Esc — close the open panel, or open the menu from a clear screen. It closes
+  before it opens, because a key that always opened the menu would be the one
+  key you could not use to back out of the wardrobe. Ignored behind the intro
+  and the win card, which have their own buttons.
 
 ---
 
