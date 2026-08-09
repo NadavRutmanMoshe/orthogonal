@@ -231,7 +231,7 @@ function menuPanel(){
     settings.volume=v.value/100;
     settings.volTouched=true;      // from here on, your choice outranks the default
     $("mVolV").textContent=v.value+"%";
-    if(masterGain)masterGain.gain.value=masterLevel();
+    applyVolume();
     muted=settings.volume<=0;
     saveSettings();
   });
@@ -254,7 +254,7 @@ function menuPanel(){
     settings.volume=defaultVolume();settings.volTouched=false;
     settings.brightness=1;settings.ui="full";
     muted=false;
-    if(masterGain)masterGain.gain.value=masterLevel();
+    applyVolume();
     applyBrightness();applyUI();saveSettings();syncHud();
     flash("settings reset");menuPanel();
   });

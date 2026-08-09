@@ -9,6 +9,7 @@
    can only start after a gesture, so it's created lazily.
    ============================================================ */
 var actx=null, masterGain=null, limiter=null, postGain=null, shaper=null;
+var outGain=null;
 /* The same digital level is not the same loudness on every device. A phone's
    speaker is small and quiet and wants everything the chain can give it; a
    desktop is usually running powered speakers or headphones with their own
@@ -70,7 +71,19 @@ var settings={volume:defaultVolume(),brightness:1,ui:"full",volTouched:false};
    distorting on every footstep without ever sounding broken in a quiet
    room. */
 var MIX=16, POST=1.55, LIMIT_DB=-18, SOFT=1.2;
-function masterLevel(){return settings.volume*MIX;}
+/* THE VOLUME GOES LAST, AFTER THE LIMITER. This was wrong for two builds and
+   it is the reason turning it down did almost nothing: the slider was feeding
+   the *drive* into a limiter with a -18 dB threshold and a ratio of 20, so
+   cutting the input by two thirds cut the output by about two decibels - the
+   limiter simply stopped working as hard and handed the level straight back.
+   A compressor before the fader is a compressor that undoes the fader.
+
+   Now MIX is a fixed drive into the chain, and settings.volume is a plain
+   attenuation on the far end, where a third means a third. */
+function masterLevel(){return MIX;}
+function applyVolume(){
+  if(outGain)outGain.gain.value=settings.volume;
+}
 
 // The verb's wording is settled: GO 2D / GO 3D. It stays in one table rather
 // than as string literals sprinkled through the file, so it is still a data
@@ -123,10 +136,13 @@ function audio(){
     }
     shaper.curve=curve;
     shaper.oversample="4x";
+    outGain=actx.createGain();
+    outGain.gain.value=settings.volume;
     masterGain.connect(limiter);
     limiter.connect(postGain);
     postGain.connect(shaper);
-    shaper.connect(actx.destination);
+    shaper.connect(outGain);
+    outGain.connect(actx.destination);
   }
   return actx;
 }

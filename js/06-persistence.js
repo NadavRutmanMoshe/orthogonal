@@ -82,7 +82,7 @@ function loadSettings(){
       }catch(e){}
     }
     muted=settings.volume<=0;
-    applyBrightness();applyUI();syncHud();
+    applyVolume();applyBrightness();applyUI();syncHud();
   }).catch(function(){});
 }
 // Resume where you stopped, mid-level, not just at the last level you finished.

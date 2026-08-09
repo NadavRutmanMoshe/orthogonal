@@ -477,8 +477,15 @@ exclusive — every gesture also has a key and, unless hidden, a button:
   work, so buying exercises the true purchase path. **Set it back to `false`
   before shipping.**
 - **Sound goes through a mastering chain** (`js/11-sound.js`): blips →
-  `masterGain` (`MIX` × the volume setting) → limiter → `POST` → soft clipper
-  → destination. The per-blip gains are a deliberate mix — a footstep sits
+  `masterGain` (a fixed `MIX` drive) → limiter → `POST` → soft clipper →
+  **`outGain`, the volume setting** → destination.
+- **The volume goes last, after the limiter, and that ordering is the whole
+  point.** For two builds it multiplied the *drive* instead, and a fader in
+  front of a limiter is a fader the limiter undoes: measured, dropping the
+  slider from 1.0 to 0.35 made the output 0.9 dB quieter, because all it did
+  was stop the limiter working so hard. Wired after, the same move is a true
+  −9.1 dB. If the slider ever stops doing anything again, check what it is
+  connected to before touching `MIX`. The per-blip gains are a deliberate mix — a footstep sits
   well under the win chord — so loudness is corrected at the master rather
   than by editing eleven numbers. The limiter defends the ceiling against the
   rarest moment (win chord + shot + strike + step inside 40ms), which alone
