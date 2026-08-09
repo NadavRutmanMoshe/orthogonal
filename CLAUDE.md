@@ -40,11 +40,14 @@ though it did not end up on the button.
    **unless** an anchor is among the candidates — then the anchor wins.
 6. You must reach the goal in the volume. Standing on its projection is not
    enough.
-7. On a boss level there is no goal: a pack of hunters walks at you, and you
-   kill one by folding while it shares your silhouette column — the same line
-   it charges down. On a **trial** there is a goal like any other level, and
-   a lethal plane sweeping one slice of the world. Both run **on a real
-   clock**, and that clock is the one place the game is not turn-based.
+7. On a boss level there is no goal. Three of them are a pack of hunters: one
+   walks onto your row, plants, and charges down it, and you kill it by
+   folding while it shares your silhouette column — the same line. `BOSS I`
+   is the twin, one creature with two mirrored bodies, killed by folding
+   while the two halves share a column with each other. On a **trial** there
+   is a goal like any other level, and a lethal plane sweeping one slice of
+   the world. All of them run **on a real clock**, and that clock is the one
+   place the game is not turn-based.
 
 Death is solver-equivalent to a blocked move — neither leads anywhere, so no
 shortest path routes through it. Adding death changed nothing about any puzzle;
