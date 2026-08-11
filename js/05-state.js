@@ -82,7 +82,7 @@ function pushHistory(){
   if(moveHistory.length>400)moveHistory.shift();
 }
 function undoMove(){
-  if(dying)return;
+  if(dying||levelOver())return;
   if(!moveHistory.length){flash("nothing to undo");return;}
   var st=moveHistory.pop();
   player={x:st.x,y:st.y,z:st.z};

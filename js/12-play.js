@@ -557,8 +557,24 @@ function foldPeril(){
 }
 // A tutorial level may withhold a verb so the lesson stays about one thing.
 function canShift(){return !(app==="play"&&L&&L.lockFlat);}
+/* A solved level is a picture, not a game. `levelDone` used to stop the boss
+   and trial clocks and nothing else, because the win card was a full-bleed
+   overlay and simply sat in front of every other control - the block was
+   physical rather than logical. The LEVELS button dismisses that card without
+   leaving the level, which opened the gap: you could fold, walk, undo and
+   spend hints on a level already scored and written to progress.
+   Re-showing the card rather than swallowing the input is the point. The card
+   is the only thing on screen that explains why nothing is responding, and it
+   carries the three ways out; silently eating the tap would read as a freeze.
+   Not while a panel is open, though - the card outranks it at z-index 20 and
+   would bury the picker the player just asked for. */
+function levelOver(){
+  if(app!=="play"||!levelDone)return false;
+  if(!panelOpen()&&!$("won").classList.contains("on"))$("won").classList.add("on");
+  return true;
+}
 function doFlatten(){
-  if(dying||!canShift())return;
+  if(dying||levelOver()||!canShift())return;
   clearCue();
   var pu=R.uOf(view,player.x,player.z), crf=liveCrates();
   /* Captured before the fold resolves, because the twin replaces both halves
@@ -581,7 +597,7 @@ function doFlatten(){
   else if(R.deadly2(view,pu,player.y)) setTimeout(function(){die("spike");},420);
 }
 function doUnflatten(){
-  if(dying||!canShift())return;
+  if(dying||levelOver()||!canShift())return;
   clearCue();
   var land=R.landings(view,flatPos.u,flatPos.y,liveCrates());
   if(!land.length){flash("nothing solid behind that");SFX.bump();return;}
@@ -596,7 +612,7 @@ function doUnflatten(){
   checkWin();
 }
 function press(dir){
-  if(app!=="play")return;
+  if(app!=="play"||levelOver())return;
   if(flat){ if(dir==="left")move2(-1); else if(dir==="right")move2(1); return; }
   var r=AX[view].r,d=AX[view].d;
   if(dir==="left")move3(-r[0],-r[2],dir);
@@ -729,7 +745,7 @@ function win(){
   }
 }
 function rotateView(dir){
-  if(flat||dying)return;
+  if(flat||dying||levelOver())return;
   if(app==="play")clearCue();
   if(app==="play"&&L.rotate===false)return;
   if(app==="play"){pushHistory();moveCount++;SFX.turn();if(tutC)tutC.rot++;}

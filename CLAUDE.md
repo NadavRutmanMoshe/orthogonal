@@ -629,6 +629,18 @@ tested and failed, plus where this sits in the PCG literature, are in
 - **Difficulty tiers are calibrated against single-fold levels**, so any
   multi-fold level reads hard or brutal by construction. That is the scale, not
   necessarily the feel.
+- **A solved level is inert, and `levelOver()` is what makes it so.** For a
+  long time `levelDone` stopped the boss and trial clocks and nothing else —
+  the win card is a full-bleed overlay, so it blocked every other control by
+  physically sitting in front of it. That is a physical guard, not a logical
+  one, and the moment anything dismissed the card without leaving the level
+  (the win card's `LEVELS` button does exactly that) you could walk, fold,
+  turn, undo and spend hints on a level already scored and written. Every
+  turn-based verb now asks `levelOver()` first, and it **re-shows the win
+  card** rather than swallowing the input — the card is the only thing that
+  explains why nothing is responding, and it carries the ways out. It stays
+  quiet while a panel is open, because at z-index 20 it would bury the picker
+  the player just asked for.
 - **The two-finger drag is unproven on real glass.** It is the one gesture that
   asks iOS to keep its hands off a two-finger move, and `user-scalable=no` is
   ignored there — `touch-action:none` on the body is what should hold it, and
