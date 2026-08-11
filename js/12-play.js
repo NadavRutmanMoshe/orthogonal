@@ -704,7 +704,11 @@ function win(){
     $("bNext").textContent=last?"PLAY AGAIN":"NEXT LEVEL";
     $("bRetry").style.display=stw>=3?"none":"flex";
   }
-  if(fromEditor||playSource!=="builtin")$("bRetry").style.display="none";
+  /* The picker only lists the campaign, so offering it after a library level
+     or an editor test would land you somewhere you did not come from. */
+  if(fromEditor||playSource!=="builtin"){
+    $("bRetry").style.display="none";$("bLevels").style.display="none";
+  } else $("bLevels").style.display="flex";
   setTimeout(function(){$("won").classList.add("on");},380);
   // The stars that are new are the rightmost ones: you had starsBefore, you
   // now have starsAfter, so glyphs [starsBefore, starsAfter) are the ones

@@ -288,7 +288,7 @@
     stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   #intro{display:flex}
   #intro.gone{display:none}
-  #intro .tiny{border-color:var(--rule);color:var(--fg-dim)}
+  #intro .tiny,#won .tiny{border-color:var(--rule);color:var(--fg-dim)}
 
   /* Lives and cores, only on a boss. Centred at the top because it is the
      one thing you check between every move, and a corner would put it where

@@ -381,8 +381,27 @@ Three layouts, in the menu: `ON-SCREEN` (d-pad, default), `COMPACT` (no d-pad),
 exclusive — every gesture also has a key and, unless hidden, a button:
 
 - swipe — move
-- tap the world — change dimension *(only when the bar is hidden)*
-- two-finger tap — turn right *(rotate-left has no gesture; four turns is a circle)*
+- **double-tap the world — change dimension**, in every mode. A single tap did
+  this when the bar was hidden and no longer does anything: the two cannot
+  coexist, because a single tap that fires at once makes a double tap into
+  fold-then-unfold, and telling them apart means delaying the fold ~300ms in
+  the one layout where tapping is the only control you have.
+- **two-finger twist — turn, either way.** The map gesture: plant two fingers,
+  pivot them around each other, and the world follows 1:1. It takes hold after
+  8° (`TURN_GRAB`, subtracted rather than crossed, so it starts from still),
+  and the turn is only *taken* if you let go past 30°; short of that it springs
+  back having cost nothing, which is the whole point — turning is a move, and
+  a beat of a live clock on a boss or a trial.
+- **It reads the twist and nothing else, and that is deliberate.** A
+  two-finger slide does nothing, as on a map. Two earlier versions read the
+  midpoint between the fingers — first alone, then added to the twist — and
+  the summed one was the worse of the two: `viewAngle` grows clockwise on
+  screen, so a clockwise twist is +angle while a rightward slide is −angle,
+  and summing them makes the commonest grip of all (one finger planted, one
+  sweeping) cancel against itself. **No constant fixes that**; if the turn
+  ever feels mushy again, check the signs before touching the sensitivity.
+  `docs/HISTORY.md` has the worked example.
+- two-finger tap — turn right, unchanged: it is a drag that never travelled
 - arrows / WASD, space, Q / E, Z undo, R restart, H hint, M mute, Shift peek
 - Esc — close the open panel, or open the menu from a clear screen. It closes
   before it opens, because a key that always opened the menu would be the one
@@ -610,6 +629,10 @@ tested and failed, plus where this sits in the PCG literature, are in
 - **Difficulty tiers are calibrated against single-fold levels**, so any
   multi-fold level reads hard or brutal by construction. That is the scale, not
   necessarily the feel.
+- **The two-finger drag is unproven on real glass.** It is the one gesture that
+  asks iOS to keep its hands off a two-finger move, and `user-scalable=no` is
+  ignored there — `touch-action:none` on the body is what should hold it, and
+  that has not been tested on a device.
 - **`cue("bUndo")` targets a button that does not exist.** When you have wedged
   yourself past recovery, `showHint()` pulses nothing. Related: with controls
   `HIDDEN`, every hint cue points at an invisible button. Both want the same
