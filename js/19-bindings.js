@@ -45,6 +45,10 @@ bind("bRetry",function(){
   $("won").classList.remove("on");
   resetLevel();
 });
+bind("bLevels",function(){
+  $("won").classList.remove("on");
+  levelPicker();
+});
 bind("bNext",function(){
   if(fromEditor){enterEditor();return;}
   if(playSource==="library"){

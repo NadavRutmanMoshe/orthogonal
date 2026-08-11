@@ -185,6 +185,42 @@ need not march away from the camera (13% → 12%, noise).
 
 ---
 
+## The two-finger turn: three versions in one sitting
+
+Asked for on mobile, and got wrong twice before it was got right — both times
+by measuring the wrong thing about the hand.
+
+**One: the midpoint alone.** Track the centre between the two fingers, map its
+horizontal travel to degrees. This answers a two-finger parallel *slide* and
+strictly nothing else. A pivot barely moves the midpoint, and a symmetric
+twist — two fingers turning about a fixed centre, which is exactly what
+"rotate with two fingers" means to anyone who has used a map — does not move
+it at all. Reported as "it feels like it waits for a specific movement", which
+was the literal truth.
+
+**Two: the midpoint plus the twist, summed.** Worse, and worse in a way that
+no constant could reach. `viewAngle` grows *clockwise* on screen — the render
+loop's screen-right is `rx=cos(ta), rz=-sin(ta)`, so a point on the near edge
+has screen-x `-r·sin(a)` and slides left as the angle rises. A clockwise
+finger twist therefore wants **+angle**, while a rightward slide moves the
+near edge right and wants **−angle**. Opposite signs. Summing them meant that
+the commonest grip in the world — one finger planted, the other sweeping,
+which produces a twist *and* a midpoint shift together — had its two channels
+cancel. Worked example: left finger at the origin, right finger at (100,0),
+swung 90° clockwise to (0,100). Twist +90, midpoint −50px. Summed with one
+sign it gives −55 and turns the wrong way, weakly.
+
+**Three: twist only.** The angle between the fingers, 1:1, with an 8° grab
+subtracted rather than merely crossed so the world starts from still instead
+of jumping when it takes hold. A two-finger slide now does nothing at all,
+which is also what it does on a map. The midpoint is still measured, but only
+to tell a turn from a two-finger tap.
+
+The lesson is not about gestures. Two channels that both "obviously" mean
+rotation had opposite signs in this camera, and adding them looked like extra
+sensitivity while actually being subtraction. A single worked example on paper
+would have caught it before any of it shipped.
+
 ## Smaller things, settled
 
 - **The verb's name.** `GO 2D / GO 3D` was auditioned against `FOLD /

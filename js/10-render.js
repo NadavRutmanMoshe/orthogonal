@@ -482,8 +482,15 @@ function animate(now){
 
   if(flat)peekTarget=0;                  // peeking is meaningless in the plane
   peek+=(peekTarget-peek)*.12;
-  // camera angle includes the peek; the fold axis never does
-  var a=(viewAngle+peek*26)*Math.PI/180;
+  // A live two-finger drag belongs to the finger; a released one springs back
+  // to nothing. Turning is meaningless in the plane, same as peeking.
+  if(flat)turnDrag=0;
+  else if(!turnDragging){
+    turnDrag*=.82;
+    if(Math.abs(turnDrag)<.05)turnDrag=0;
+  }
+  // camera angle includes the peek and the drag; the fold axis never does
+  var a=(viewAngle+turnDrag+peek*26)*Math.PI/180;
   var dvx=Math.sin(a),dvz=Math.cos(a);
   var ta=viewAngle*Math.PI/180;
   var tdvx=Math.sin(ta),tdvz=Math.cos(ta),rx=Math.cos(ta),rz=-Math.sin(ta);

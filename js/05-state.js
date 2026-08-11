@@ -20,6 +20,12 @@ var squash=0, shakeT=0, lastY=null, lastSolidDepth=0;
 // orthogonal axis without touching the game state, so you can read depth and
 // then carry on.
 var peek=0, peekTarget=0;
+// Two fingers turn the world, and it leans while you drag so you can see the
+// turn before you buy it - turning costs a move, and a beat of a real clock on
+// a boss or a trial. Degrees, signed, and camera-only for exactly the same
+// reason peek is: it is handed over to viewAngle at the instant the turn is
+// actually taken, and springs back to nothing if you let go short of it.
+var turnDrag=0, turnDragging=false;
 var moveHistory=[], moveCount=0, levelPar=null, levelKey=null;
 var gCrates=[];          // live crate positions, in level order
 var gKeys=0;             // bitmask of collected keys
@@ -76,7 +82,7 @@ function pushHistory(){
   if(moveHistory.length>400)moveHistory.shift();
 }
 function undoMove(){
-  if(dying)return;
+  if(dying||levelOver())return;
   if(!moveHistory.length){flash("nothing to undo");return;}
   var st=moveHistory.pop();
   player={x:st.x,y:st.y,z:st.z};

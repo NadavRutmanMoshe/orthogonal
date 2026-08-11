@@ -41,7 +41,7 @@ function tutSync(){
 }
 
 function showHint(){
-  if(app!=="play"||dying)return;
+  if(app!=="play"||dying||levelOver())return;
   if(L&&L.tut){
     var ti=tutStep();
     if(ti>=0){if(L.tut[ti].cue)cue(L.tut[ti].cue);flash("follow the line above the bar");return;}
