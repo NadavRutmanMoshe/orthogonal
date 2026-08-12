@@ -99,21 +99,30 @@ var LEVELS=[
    hint:"Three collapses. Each one throws away a different dimension.",
    blocks:[[0,0,0],[-1,1,3],[-1,1,4],[-2,2,4],[-2,3,3],[-2,4,2],[2,4,3],[0,4,3],[0,4,0]],
    start:[0,1,0],goal:[0,5,0],rotate:true},
-{name:"BOSS I — The Twin",
-   hint:"One creature, two bodies, mirrored through the amber cross. Bait a half onto the bright arm, step off it yourself, and fold — they land in the same square.",
-   /* Each core is a centre and one half's spawn; the other half is that spawn
-      reflected through the centre, so the pair starts mirrored and the centre
-      moves every time a core goes. The pillars are placed symmetrically about
-      the first centre (4,3) so the mirror is honest to begin with - the halves
-      path independently, and geometry is what bends them out of step. */
-   boss:{twin:true,step:640,floorStep:340,creepEvery:7000,
-         cores:[{c:[4,1,3],a:[7,1,1]},
-                {c:[3,1,4],a:[6,1,6]},
-                {c:[5,1,2],a:[8,1,4]}]},
-   blocks:(function(){var b=[];box(0,8,0,0,0,6,b);
-     b.push([2,1,1]);b.push([6,1,5]);b.push([6,1,1]);b.push([2,1,5]);
-     return b;})(),
-   start:[1,1,3]},
+{name:"BOSS I — The Hunt",
+   hint:"It walks onto your line and plants. Fold while it shares your silhouette column and it lands in your square instead. The arena does not stay this empty.",
+   /* The first fight anyone meets, and the shape every later one repeats.
+      Four phases, and each one changes the question rather than the speed:
+      one slow hunter on a bare floor, so the line can be learned with nothing
+      else going on; pillars, so rule 4 starts costing you squares to attack
+      from; one that will not take a line you can answer, so rotating stops
+      being optional; and finally two, which is the only phase that asks you
+      to hold more than one line in your head.
+
+      The pillars that rise in phase two are the twin's own, kept because they
+      are placed symmetrically and a symmetric arena is the honest one to
+      teach on - no corner is quietly better than another. */
+   boss:{floorStep:300,creepEvery:7500,
+     phases:[
+       {at:[[8,1,5]],step:780,aim:900,
+        say:"one of them, and nothing in the way"},
+       {at:[[8,1,5]],step:700,aim:820,say:"the ground comes up",
+        add:[[2,1,1],[6,1,5],[6,1,1],[2,1,5]]},
+       {at:[[8,1,5]],step:640,aim:740,cunning:true,add:[[4,1,3]],
+        say:"it stops taking the lines you can answer"},
+       {at:[[8,1,5],[2,1,3]],step:620,aim:700,say:"two"}]},
+   blocks:box(0,8,0,0,0,6,[]),
+   start:[1,1,1]},
 {name:"10 — Sharp",
    hint:"Red blocks kill you underfoot. In the volume you simply walk around them.",
    blocks:[[0,0,0],[-4,0,1],[-3,0,1],[-2,0,1],[-1,0,1,4],[-1,1,-1]],
@@ -158,9 +167,22 @@ var LEVELS=[
    blocks:[[0,0,0],[-2,0,-5],[-1,0,-5],[0,0,-5,4],[-1,1,1]],
    start:[0,1,0],goal:[-1,1,-5],rotate:true},
 {name:"BOSS II — Sharp Ground",
-   hint:"Three, and the ground bites. A spike casts like stone, so its column kills them exactly as well as a pillar's does.",
-   boss:{at:[[9,1,1],[7,1,6],[6,1,3]],step:590,aim:720,creepEvery:7500},
-   blocks:[[0,0,0,0],[0,0,1,0],[0,0,2,0],[0,0,3,0],[0,0,4,0],[0,0,5,0],[0,0,6,0],[1,0,0,0],[1,0,1,0],[1,0,2,0],[1,0,3,0],[1,0,4,0],[1,0,5,0],[1,0,6,0],[2,0,0,0],[2,0,1,0],[2,0,2,0],[2,0,3,0],[2,0,4,0],[2,0,5,0],[2,0,6,0],[3,0,0,0],[3,0,1,0],[3,0,2,0],[3,0,3,0],[3,0,4,0],[3,0,5,0],[3,0,6,0],[4,0,0,0],[4,0,1,0],[4,0,2,0],[4,0,3,0],[4,0,4,0],[4,0,5,0],[4,0,6,0],[5,0,0,0],[5,0,1,0],[5,0,2,0],[5,0,3,0],[5,0,4,0],[5,0,5,0],[5,0,6,0],[6,0,0,0],[6,0,1,0],[6,0,2,0],[6,0,3,0],[6,0,4,0],[6,0,5,0],[6,0,6,0],[7,0,0,0],[7,0,1,0],[7,0,2,0],[7,0,3,0],[7,0,4,0],[7,0,5,0],[7,0,6,0],[8,0,0,0],[8,0,1,0],[8,0,2,0],[8,0,3,0],[8,0,4,0],[8,0,5,0],[8,0,6,0],[9,0,0,0],[9,0,1,0],[9,0,2,0],[9,0,3,0],[9,0,4,0],[9,0,5,0],[9,0,6,0],[3,1,1,0],[6,1,4,0],[5,1,2,4],[8,1,5,4]],
+   hint:"The ground bites here. A spike casts like stone, so its column kills them exactly as well as a pillar's does — and it kills you underfoot, which a pillar never does.",
+   /* The section's piece arrives with the phase that needs it. Phase two is
+      ordinary cover; phase three brings the first spike at the same moment
+      the hunter turns cunning, so the squares you would have backed into to
+      buy thinking time are the ones that stop existing. */
+   boss:{creepEvery:7500,
+     phases:[
+       {at:[[8,1,5]],step:740,aim:880,say:"bare ground, for now"},
+       {at:[[8,1,5]],step:670,aim:790,say:"cover, for it",
+        add:[[3,1,1],[6,1,4]]},
+       {at:[[8,1,5]],step:610,aim:710,cunning:true,
+        say:"sharp ground, and it has stopped being obliging",
+        add:[[5,1,2,4],[2,1,4]]},
+       {at:[[8,1,5],[2,1,2]],step:590,aim:660,say:"two, and the floor bites",
+        add:[[7,1,2,4]]}]},
+   blocks:box(0,9,0,0,0,6,[]),
    start:[1,1,1]},
 {name:"17 — Clear Ground",
    hint:"Glass holds you up in the volume. It puts nothing in the plane.",
@@ -209,8 +231,21 @@ var LEVELS=[
    start:[0,1,0],goal:[3,2,-1],rotate:true},
 {name:"BOSS III — Through Glass",
    hint:"Glass casts nothing. The pillars you can see through are the ones that will not kill them — check which shadow you are herding them into.",
-   boss:{at:[[9,1,0],[8,1,6],[6,1,3]],step:560,aim:680,creepEvery:7000},
-   blocks:[[0,0,0,0],[0,0,1,0],[0,0,2,0],[0,0,3,0],[0,0,4,0],[0,0,5,0],[0,0,6,0],[1,0,0,0],[1,0,1,0],[1,0,2,0],[1,0,3,0],[1,0,4,0],[1,0,5,0],[1,0,6,0],[2,0,0,0],[2,0,1,0],[2,0,2,0],[2,0,3,0],[2,0,4,0],[2,0,5,0],[2,0,6,0],[3,0,0,0],[3,0,1,0],[3,0,2,0],[3,0,3,0],[3,0,4,0],[3,0,5,0],[3,0,6,0],[4,0,0,0],[4,0,1,0],[4,0,2,0],[4,0,3,0],[4,0,4,0],[4,0,5,0],[4,0,6,0],[5,0,0,0],[5,0,1,0],[5,0,2,0],[5,0,3,0],[5,0,4,0],[5,0,5,0],[5,0,6,0],[6,0,0,0],[6,0,1,0],[6,0,2,0],[6,0,3,0],[6,0,4,0],[6,0,5,0],[6,0,6,0],[7,0,0,0],[7,0,1,0],[7,0,2,0],[7,0,3,0],[7,0,4,0],[7,0,5,0],[7,0,6,0],[8,0,0,0],[8,0,1,0],[8,0,2,0],[8,0,3,0],[8,0,4,0],[8,0,5,0],[8,0,6,0],[9,0,0,0],[9,0,1,0],[9,0,2,0],[9,0,3,0],[9,0,4,0],[9,0,5,0],[9,0,6,0],[3,1,2,0],[7,1,4,0],[5,1,1,1],[2,1,5,1],[8,1,3,1]],
+   /* The glass arrives with the cunning hunter, and the pairing is the point:
+      once it is choosing lines you cannot answer, the columns that look
+      blocked are exactly the ones you can still attack from, so reading the
+      arena correctly is what buys back the beat it just took off you. */
+   boss:{creepEvery:7000,
+     phases:[
+       {at:[[8,1,5]],step:720,aim:860,say:"clear glass, clear floor"},
+       {at:[[8,1,5]],step:650,aim:770,say:"two shadows to work around",
+        add:[[3,1,2],[7,1,4]]},
+       {at:[[8,1,5]],step:600,aim:700,cunning:true,
+        say:"see-through cover — and it has started choosing",
+        add:[[5,1,1,1],[2,1,5,1],[8,1,3,1]]},
+       {at:[[8,1,5],[1,1,3]],step:570,aim:650,say:"two, through glass",
+        add:[[6,1,1]]}]},
+   blocks:box(0,9,0,0,0,6,[]),
    start:[1,1,1]},
 {name:"25 — Shove",
    hint:"Violet blocks move when you walk into them. The plane notices.",
@@ -274,9 +309,21 @@ var LEVELS=[
    blocks:[[1,1,1],[1,1,2],[1,1,3],[1,1,4],[2,2,5],[0,0,0],[1,2,2,3],[1,3,2,3]],
    start:[0,1,0],goal:[2,3,5],rotate:true},
 {name:"BOSS IV — The Orthogon",
-   hint:"Four of them, everything the game knows, and a crate you can shove into a column that had no shadow in it.",
-   boss:{at:[[10,1,0],[9,1,4],[6,1,7],[4,1,6]],step:520,aim:620,creepEvery:6500},
-   blocks:[[0,0,0,0],[0,0,1,0],[0,0,2,0],[0,0,3,0],[0,0,4,0],[0,0,5,0],[0,0,6,0],[0,0,7,0],[1,0,0,0],[1,0,1,0],[1,0,2,0],[1,0,3,0],[1,0,4,0],[1,0,5,0],[1,0,6,0],[1,0,7,0],[2,0,0,0],[2,0,1,0],[2,0,2,0],[2,0,3,0],[2,0,4,0],[2,0,5,0],[2,0,6,0],[2,0,7,0],[3,0,0,0],[3,0,1,0],[3,0,2,0],[3,0,3,0],[3,0,4,0],[3,0,5,0],[3,0,6,0],[3,0,7,0],[4,0,0,0],[4,0,1,0],[4,0,2,0],[4,0,3,0],[4,0,4,0],[4,0,5,0],[4,0,6,0],[4,0,7,0],[5,0,0,0],[5,0,1,0],[5,0,2,0],[5,0,3,0],[5,0,4,0],[5,0,5,0],[5,0,6,0],[5,0,7,0],[6,0,0,0],[6,0,1,0],[6,0,2,0],[6,0,3,0],[6,0,4,0],[6,0,5,0],[6,0,6,0],[6,0,7,0],[7,0,0,0],[7,0,1,0],[7,0,2,0],[7,0,3,0],[7,0,4,0],[7,0,5,0],[7,0,6,0],[7,0,7,0],[8,0,0,0],[8,0,1,0],[8,0,2,0],[8,0,3,0],[8,0,4,0],[8,0,5,0],[8,0,6,0],[8,0,7,0],[9,0,0,0],[9,0,1,0],[9,0,2,0],[9,0,3,0],[9,0,4,0],[9,0,5,0],[9,0,6,0],[9,0,7,0],[10,0,0,0],[10,0,1,0],[10,0,2,0],[10,0,3,0],[10,0,4,0],[10,0,5,0],[10,0,6,0],[10,0,7,0],[3,1,2,0],[7,1,2,0],[5,1,5,0],[3,1,5,4],[8,1,3,1],[7,1,5,3],[5,1,2,3]],
+   hint:"Everything the game knows, one piece at a time. The crates are the attack that still works when the geometry is against you — shove one into a column that had no shadow in it.",
+   /* The finale, so the phases stack the whole game rather than one piece.
+      The crates arrive in phase two and never again: rebuilding the crate
+      list is what puts them on the board, and doing that a second time would
+      snap any crate you had already shoved back to where it started. */
+   boss:{creepEvery:6500,
+     phases:[
+       {at:[[9,1,6]],step:700,aim:820,say:"the widest floor in the game"},
+       {at:[[9,1,6]],step:630,aim:730,say:"stone, and two crates to shove",
+        add:[[3,1,2],[7,1,2],[5,1,5],[7,1,5,3],[5,1,2,3]]},
+       {at:[[9,1,6]],step:580,aim:670,cunning:true,
+        say:"a spike, a pane, and it has stopped being obliging",
+        add:[[3,1,5,4],[8,1,3,1]]},
+       {at:[[9,1,6],[2,1,3]],step:550,aim:620,say:"two — last phase"}]},
+   blocks:box(0,10,0,0,0,7,[]),
    start:[1,1,1]},
 {name:"35 — Up and Over",
    hint:"Three folds and two shoves. The crate has to travel.",
@@ -405,8 +452,15 @@ var SECTIONS=[
    so never rewrite this table, only extend it. Applied by migrateNames()
    in 06-persistence.js. */
 var LEVEL_RENAMES={
- "BOSS I — The Sentinel": "BOSS I — The Twin",
- "BOSS I — The Pack": "BOSS I — The Twin",
+ /* BOSS I has been four fights now. migrateNames() looks each old name up
+    exactly once and does not chase chains, so when the current name changes
+    every row that pointed at the old one has to be re-pointed at the new one
+    as well as a row being added for the old one itself. Composing the table,
+    not rewriting it: no row is ever deleted, because a save may still be
+    carrying any of these keys. */
+ "BOSS I — The Sentinel": "BOSS I — The Hunt",
+ "BOSS I — The Pack": "BOSS I — The Hunt",
+ "BOSS I — The Twin": "BOSS I — The Hunt",
  "02 — Turn to see": "01 — Turn to see",
  "03 — Two Windows": "02 — Two Windows",
  "04 — The Long Way Round": "03 — The Long Way Round",

@@ -152,6 +152,59 @@ function parseK(k){var p=k.split(",");return [+p[0],+p[1],+p[2]];}
    that your axis flattens, step off it yourself, fold. And each core moves
    the centre somewhere new, so the answer is never twice in the same place.
    ------------------------------------------------------------ */
+/* ------------------------------------------------------------
+   PHASES — the fight's own difficulty curve
+
+   A boss is a sequence of phases, not one pack. Clearing what is on the board
+   advances to the next, and each one changes the fight rather than repeating
+   it: one slow hunter in a bare arena, then pillars rising out of the floor
+   so rule 4 starts biting, then a hunter that hunts the lines you cannot
+   answer, then two of them at once.
+
+   The reason is a diagnosis rather than a taste. Every dial this fight used
+   to expose - step, aim, hunter count, creep - moves *execution* difficulty:
+   how fast you must act once you already know what to do. But the verb set
+   is three slow buttons and there is no dexterity ceiling to climb, so a
+   faster clock does not make the player better, it just shortens the window
+   for a decision that takes as long as it takes. Phases move the other axis:
+   how hard it is to work out what to do at all, which is the axis a puzzle
+   game is actually good at. And they make failure legible - you know which
+   phase beat you - which is most of what makes a fight feel fair.
+
+   Each phase carries its own `at` (spawns), `step`, `aim`, an optional `add`
+   of blocks that rise when it begins, and an optional `cunning` flag. A boss
+   written the old way, with a bare `at`, becomes a single phase, so nothing
+   downstream needs to know both shapes. */
+function bossPhases(b){
+  var raw=b.phases||[{at:b.at,step:b.step,aim:b.aim}];
+  return raw.map(function(p){
+    var at=(p.at&&p.at.length&&p.at[0].length)?p.at:[p.at];
+    return {at:at,
+            add:p.add||[],
+            say:p.say||"",              // what the banner says when it begins
+            step:p.step||b.step||620,   // ms between hunter steps
+            aim:p.aim||b.aim||700,      // ms it plants on your line before it charges
+            cunning:!!p.cunning,
+            /* How many times a cunning hunter refuses a line you could fold
+               on before it takes it anyway. The same patience valve the twin
+               uses, and it is here for the same reason: an opponent that will
+               not attack from anywhere you can punish is design 3's freeze in
+               a new costume. It declines while declining is cheap. */
+            hold:p.hold===undefined?2:p.hold};
+  });
+}
+/* Every block standing in the arena once phase `i` has begun: what the level
+   was authored with, plus everything that has risen since. For the checkers
+   and the simulator, which get pristine level data; the game applies each
+   phase's blocks as it reaches them. */
+function bossBlocksAt(level,i){
+  var out=level.blocks.slice();
+  if(!level.boss||level.boss.twin)return out;
+  var ps=bossPhases(level.boss);
+  for(var p=0;p<=i&&p<ps.length;p++)
+    for(var j=0;j<ps[p].add.length;j++)out.push(ps[p].add[j]);
+  return out;
+}
 function makeBoss(level){
   if(!level.boss)return null;
   var b=level.boss;
@@ -176,12 +229,11 @@ function makeBoss(level){
       grace:b.grace||1100
     };
   }
-  var at=b.at&&b.at.length&&b.at[0].length?b.at:[b.at];
+  var ps=bossPhases(b);
   return {
-    at:at,                    // one spawn cell per hunter
-    hp:at.length,             // the pack is the health bar
-    step:b.step||620,         // ms between hunter steps
-    aim:b.aim||700,           // ms it plants on your line before it charges
+    phases:ps,
+    hp:ps.length,             // the phases are the health bar
+    at:ps[0].at,              // the opening spawns, for anything that only wants those
     /* Two escalations, both there to stop the fight becoming a kite. `rage`
        is what the survivors of a fold get for surviving it, so a fold that
        kills nothing costs you; `creep` is the slow tightening that happens
@@ -266,8 +318,20 @@ function bossNext(R,from,to,cr,lineTo,avoid){
     if(ny===null||ny===FELL)continue;
     if(R.deadly3(nx,ny,nz))continue;
     var d=Math.abs(nx-to.x)+Math.abs(nz-to.z);
-    var lined=(lineTo&&lineTo({x:nx,y:ny,z:nz}))?1:0;
-    var score=(avoid?-lined*pat:lined*40)-d-(d>here?(avoid?3:6):0);
+    /* `lineTo` answers in three grades, not two: 0 no line, 1 a line, 2 a
+       line the player cannot fold on from where they are standing. A cunning
+       hunter prefers grade 2 - the line whose answer is a rotation you have
+       to spend a beat on - and an ordinary one returns a plain boolean, which
+       is grade 1, so its scoring is bit for bit what it always was.
+
+       Only the *ordering* of 56 over 40 matters. Neighbours differ in
+       distance by at most two, so any margin above that makes a safe line win
+       whenever one is adjacent; it is not a distance the hunter will cross an
+       arena to collect, and it must not be, or preferring a line becomes
+       hunting for one and we are back to circling. */
+    var lg=lineTo?(lineTo({x:nx,y:ny,z:nz})||0):0;
+    var lined=lg?1:0;
+    var score=(avoid?-lined*pat:(lg===2?56:lined*40))-d-(d>here?(avoid?3:6):0);
     if(!best||score>best.score)best={x:nx,y:ny,z:nz,score:score,d:d};
   }
   if(avoid&&best){
@@ -426,25 +490,12 @@ function trialSafety(level){
   return {ok:!bad.length&&!born,trapped:bad,born:born};
 }
 
-/* Is this arena a stage a fight can happen on?
-
-   Run by tools/verify.js on every arena. Three things have to be true, and
-   each of them has rejected a real one:
-
-     - every hunter can reach you. A pack walks, so an arena split by a chasm
-       is a pack that can never arrive. (This is also what caught two arenas
-       with a hunter spawned inside a pillar.)
-     - there are lethal columns to fight over, in every view. Fold-crushing
-       is the only attack, so an arena with nothing standing proud of the
-       floor is an arena where the boss cannot be killed at all.
-     - and not so many that the floor is mostly a killing field, because then
-       neither side has to be manoeuvred anywhere.
-   ============================================================ */
-function bossArena(level){
-  var B=makeBoss(level); if(!B)return {ok:true};
-  var R=makeRules(level), cr=crateSet(crateKeys(level)), fail=[];
-  var stand=new Set(), q=[level.start.slice()];
-  stand.add(K(level.start[0],level.start[1],level.start[2]));
+/* Every cell you could ever stand on, walking out from the start. Shared by
+   the arena checks, because "can it reach you" and "how much of the floor is
+   lethal" are both questions about this set and nothing else. */
+function arenaStand(lv,R,cr){
+  var stand=new Set(), q=[lv.start.slice()];
+  stand.add(K(lv.start[0],lv.start[1],lv.start[2]));
   while(q.length){
     var p=q.shift(), d=[[1,0],[-1,0],[0,1],[0,-1]];
     for(var i=0;i<4;i++){
@@ -459,15 +510,34 @@ function bossArena(level){
       stand.add(k);q.push([nx,ny,nz]);
     }
   }
-  /* Every cell anything spawns on, across every core - for the twin that is
-     three pairs and three centres, none of which may be inside a block or on
-     the wrong side of a chasm, and each pair of which must start out of line
-     with itself or the first fold is free. */
-  var spawns=[];
-  if(B.twin)
-    for(var pi=0;pi<B.pairs.length;pi++)
-      spawns.push(B.pairs[pi].a,B.pairs[pi].b,B.pairs[pi].c);
-  else spawns=B.at;
+  return stand;
+}
+/* Counted per view: how much of the floor you cannot attack from, because
+   folding there kills you first. Glass is deliberately absent from the count
+   - it casts nothing, so a glass pillar is one you can fold straight through,
+   which is the whole joke of "Through Glass". */
+function arenaFractions(lv,R,cr,stand){
+  var worst=1, best=0, cells=[...stand].map(parseK);
+  for(var v=0;v<4;v++){
+    var n=0;
+    for(var c=0;c<cells.length;c++)
+      if(crushedBy(R,v,cells[c][0],cells[c][1],cells[c][2],cr))n++;
+    var frac=n/cells.length;
+    worst=Math.min(worst,frac);best=Math.max(best,frac);
+  }
+  return {worst:worst,best:best};
+}
+function arenaLethal(lv,R){
+  var cr=crateSet(crateKeys(lv));
+  var f=arenaFractions(lv,R,cr,arenaStand(lv,R,cr));
+  return (f.worst*100).toFixed(0)+"-"+(f.best*100).toFixed(0)+"%";
+}
+/* One phase's board, judged on its own. `requireLethal` is off for every
+   phase but the last: an opening phase with a bare floor has no lethal
+   columns by design, and that is the point of it. */
+function arenaFail(lv,spawns,requireLethal){
+  var R=makeRules(lv), cr=crateSet(crateKeys(lv)), fail=[];
+  var stand=arenaStand(lv,R,cr);
   for(var h=0;h<spawns.length;h++){
     var a=spawns[h];
     if(R.solid(a[0],a[1],a[2],cr))
@@ -479,47 +549,115 @@ function bossArena(level){
        pair that shares a column there is a pair that crushes itself for free
        the next time anybody folds - a standing gift, renewed on every hit.
        The simulator found this by winning a fight without moving. */
-    // The twin's spawns are checked pairwise instead: half a and half b of
-    // the same core, never across cores, because those are never alive
-    // together. Its centres are exempt - nothing stands on those.
     for(var h2=h+1;h2<spawns.length;h2++){
-      if(B.twin&&(h%3===2||h2!==h+1))continue;
       var a2=spawns[h2];
       if(a[1]!==a2[1])continue;
       if(a[0]===a2[0]||a[2]===a2[2])
         fail.push("hunters "+h+" and "+h2+" spawn in one column - a free kill");
     }
   }
-  /* Counted per view: how many of the squares you can stand on are in some
-     block's silhouette column - which is to say, how much of the floor you
-     cannot attack from, because folding there kills you first. Too little
-     and every line is yours for the taking; too much and you spend the fight
-     looking for anywhere to stand. Glass is deliberately absent from the
-     count: it casts nothing, so a glass pillar is one you can fold straight
-     through, which is the whole joke of "Through Glass". */
-  var worst=1, best=0, cells=[].concat.apply([],[...stand].map(function(k){
-    return [parseK(k)];
-  }));
-  for(var v=0;v<4;v++){
-    var n=0;
-    for(var c=0;c<cells.length;c++)
-      if(crushedBy(R,v,cells[c][0],cells[c][1],cells[c][2],cr))n++;
-    var frac=n/cells.length;
-    worst=Math.min(worst,frac);best=Math.max(best,frac);
+  var f=arenaFractions(lv,R,cr,stand);
+  if(requireLethal&&f.worst<.12)
+    fail.push("view with almost nothing in it: "+(f.worst*100).toFixed(0)+
+              "% - every line is free");
+  if(f.best>.62)
+    fail.push((f.best*100).toFixed(0)+
+              "% of the floor cannot be folded from in one view - nowhere to fight");
+  return fail;
+}
+/* Is this arena a stage a fight can happen on?
+
+   Run by tools/verify.js on every arena. Three things have to be true, and
+   each of them has rejected a real one:
+
+     - every hunter can reach you. A pack walks, so an arena split by a chasm
+       is a pack that can never arrive. (This is also what caught two arenas
+       with a hunter spawned inside a pillar.)
+     - there are lethal columns to fight over, in every view. Fold-crushing
+       is the only attack, so an arena with nothing standing proud of the
+       floor is an arena where the boss cannot be killed at all.
+     - and not so many that the floor is mostly a killing field, because then
+       neither side has to be manoeuvred anywhere.
+
+   Every phase is a different board, so every phase is checked as one - the
+   pillars that rise for phase two can seal a spawn off or hand the pack a
+   free kill exactly as an authored pillar can. The one check that is *not*
+   applied per phase is the lower bound on lethal columns: an opening phase
+   with a bare floor has none by design, because that phase's job is to teach
+   the line and every fold in it should work. What has to be true is that the
+   fight ends somewhere with columns worth fighting over, so the floor is
+   asked for that once the arena is fully up.
+   ============================================================ */
+function bossArena(level){
+  var B=makeBoss(level); if(!B)return {ok:true};
+  var fail=[];
+  if(!B.twin){
+    /* Each phase in turn, on its own board. `last` is the finished arena and
+       the only one asked to have anywhere to fight from. */
+    var last=B.phases.length-1;
+    for(var pi=0;pi<B.phases.length;pi++){
+      var lvP={start:level.start,blocks:bossBlocksAt(level,pi)};
+      var f=arenaFail(lvP,B.phases[pi].at,pi===last);
+      for(var fi=0;fi<f.length;fi++)fail.push("phase "+(pi+1)+": "+f[fi]);
+      /* A block may not rise onto a cell something is standing on when the
+         phase begins. The game lifts the player out rather than burying them,
+         which is the right runtime answer, but a spawn buried by its own
+         phase is an authoring mistake and not something to paper over. */
+      var add=B.phases[pi].add, spawns=B.phases[pi].at;
+      for(var ai=0;ai<add.length;ai++)
+        for(var si=0;si<spawns.length;si++)
+          if(add[ai][0]===spawns[si][0]&&add[ai][1]===spawns[si][1]&&
+             add[ai][2]===spawns[si][2])
+            fail.push("phase "+(pi+1)+": a rising block buries hunter "+si);
+    }
+    var lvL={start:level.start,blocks:bossBlocksAt(level,last)};
+    var RL=makeRules(lvL);
+    var depths={},nd=0;
+    for(var q2=0;q2<lvL.blocks.length;q2++)
+      if(!depths[lvL.blocks[q2][2]]){depths[lvL.blocks[q2][2]]=1;nd++;}
+    if(nd<4)fail.push("too flat for folding to buy anything");
+    var crates=0;
+    for(var c2=0;c2<lvL.blocks.length;c2++)if(isCrate(lvL.blocks[c2]))crates++;
+    return {ok:!fail.length,fail:fail,
+            phases:B.phases.length,
+            hunters:B.phases.map(function(p){return p.at.length;}).join("/"),
+            lethal:arenaLethal(lvL,RL),crates:crates};
   }
-  if(worst<.12)fail.push("view with almost nothing in it: "+
-    (worst*100).toFixed(0)+"% - every line is free");
-  if(best>.62)fail.push((best*100).toFixed(0)+
+  /* The twin's stage. Every cell anything spawns on, across every core -
+     three pairs and three centres, none of which may be inside a block or on
+     the wrong side of a chasm, and each pair of which must start out of line
+     with itself or the first fold is free. The pairwise column rule is
+     narrower than the pack's: half a and half b of the *same* core, never
+     across cores, because two cores are never alive together. The centres are
+     exempt - nothing stands on those. */
+  var R=makeRules(level), cr=crateSet(crateKeys(level));
+  var stand=arenaStand(level,R,cr);
+  for(var ti=0;ti<B.pairs.length;ti++){
+    var pr=B.pairs[ti], cells3=[pr.a,pr.b,pr.c];
+    for(var h=0;h<3;h++){
+      var a=cells3[h];
+      if(R.solid(a[0],a[1],a[2],cr))
+        fail.push("core "+ti+" spawn "+h+" is inside a block");
+      else if(h<2&&!stand.has(K(a[0],a[1],a[2])))
+        fail.push("core "+ti+" half "+h+" cannot reach you: its ground is not yours");
+    }
+    if(pr.a[1]===pr.b[1]&&(pr.a[0]===pr.b[0]||pr.a[2]===pr.b[2]))
+      fail.push("core "+ti+" spawns its halves in one column - a free kill");
+  }
+  var tf=arenaFractions(level,R,cr,stand);
+  if(tf.worst<.12)fail.push("view with almost nothing in it: "+
+    (tf.worst*100).toFixed(0)+"% - every line is free");
+  if(tf.best>.62)fail.push((tf.best*100).toFixed(0)+
     "% of the floor cannot be folded from in one view - nowhere to fight");
-  var crates=0;
-  for(var c2=0;c2<level.blocks.length;c2++) if(isCrate(level.blocks[c2]))crates++;
-  var depths={},nd=0;
-  for(var q2=0;q2<level.blocks.length;q2++)
-    if(!depths[level.blocks[q2][2]]){depths[level.blocks[q2][2]]=1;nd++;}
-  if(nd<4)fail.push("too flat for folding to buy anything");
-  return {ok:!fail.length,fail:fail,squares:stand.size,hunters:B.at.length,
-          lethal:(worst*100).toFixed(0)+"-"+(best*100).toFixed(0)+"%",
-          crates:crates};
+  var tcr=0,tdep={},tnd=0;
+  for(var c2=0;c2<level.blocks.length;c2++){
+    if(isCrate(level.blocks[c2]))tcr++;
+    if(!tdep[level.blocks[c2][2]]){tdep[level.blocks[c2][2]]=1;tnd++;}
+  }
+  if(tnd<4)fail.push("too flat for folding to buy anything");
+  return {ok:!fail.length,fail:fail,squares:stand.size,hunters:"twin",
+          lethal:(tf.worst*100).toFixed(0)+"-"+(tf.best*100).toFixed(0)+"%",
+          crates:tcr};
 }
 
 function makeRules(level){

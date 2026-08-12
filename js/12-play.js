@@ -67,16 +67,102 @@ function spendLife(){
    ============================================================ */
 function bossReset(){
   bossHp=B?B.hp:0;bossFlash=0;bossHitFlash=0;bossCreepMs=0;bossGraceMs=0;
-  hunters=[];twinCore=0;twinAt=null;
+  hunters=[];twinCore=0;twinAt=null;bossPhase=0;
   if(B&&B.twin)twinSpawn(0);
-  else if(B)for(var i=0;i<B.at.length;i++){
-    var a=B.at[i];
-    // Staggered clocks. Identical ones make the pack move as one animal,
-    // which is both easier to dodge and much less alarming.
-    hunters.push({x:a[0],y:a[1],z:a[2],ms:i*B.step/Math.max(1,B.at.length),
-                  step:B.step,doom:false,lock:0,line:null});
-  }
+  else if(B){bossRestoreArena();bossEnterPhase(false);}
   lives=B?BOSS_LIVES:0;
+}
+// Does this fight raise anything mid-way? A boss whose phases all have empty
+// `add` never touches L.blocks at all, so it runs the code it always ran.
+function bossRisers(){
+  if(!B||!B.phases)return false;
+  for(var i=0;i<B.phases.length;i++)if(B.phases[i].add.length)return true;
+  return false;
+}
+/* Put the arena back the way it was authored.
+
+   Phases raise blocks by pushing them into L.blocks and rebuilding the rules,
+   which means the level object is genuinely edited while you fight - so the
+   pristine list has to be kept somewhere and restored on every reset, or a
+   second attempt would begin with the last attempt's pillars already up.
+   `arenaBase` is captured exactly once, the first time this level is ever
+   loaded, and never overwritten: at that moment L.blocks is guaranteed clean,
+   because this is the only code that dirties it. Capturing it again on a
+   later load is precisely the bug this ordering avoids. */
+function bossRestoreArena(){
+  if(!bossRisers())return;
+  if(!L.arenaBase)L.arenaBase=L.blocks.slice();
+  L.blocks=L.arenaBase.slice();
+  R=makeRules(L);
+  syncMeshes();
+}
+/* A pillar rising into an occupied square lifts whoever is standing there
+   rather than burying them. Being crushed by scenery is not an attack you
+   could have read, and the fold already covers dying to blocks you chose.
+
+   The flat case is the common one, not the exception: you clear a phase by
+   folding, so the pillars of the next phase almost always come up while you
+   are in the plane. There the height you will come back down at is the real
+   quantity - `flatPos.y` is what doUnflatten lands you on - so that is what
+   has to rise, and the pillar you were lifted over becomes the block you
+   stand on when you return to the volume. */
+function liftPlayer(){
+  var cr=liveCrates(), guard=0;
+  if(flat){
+    while(R.siloSolid(view,flatPos.u,flatPos.y,cr)&&guard++<8)flatPos.y++;
+    player.y=flatPos.y;
+    return;
+  }
+  while(R.solid(player.x,player.y,player.z,cr)&&guard++<8)player.y++;
+}
+/* Begin a phase: raise its blocks, then put its hunters down.
+
+   The stagger on their clocks is the same trick the pack always used -
+   identical ones make them move as one animal, which is both easier to dodge
+   and much less alarming. */
+function bossEnterPhase(announce){
+  var ph=B.phases[bossPhase], i;
+  if(ph.add.length){
+    var crateRose=false;
+    for(i=0;i<ph.add.length;i++){
+      L.blocks.push(ph.add[i]);
+      if(isCrate(ph.add[i]))crateRose=true;
+    }
+    R=makeRules(L);
+    /* A crate is dynamic, so its arrival has to go through the crate list
+       rather than the block list. Rebuilding it resets any crate already
+       shoved, which is why no phase after the one that brings them may add
+       more - bossArena has no opinion on that, so it is a note, not a check.
+       syncMeshes() calls buildDynamic() itself, so the list is all that is
+       wanted here. */
+    if(crateRose)initDynamic();
+    syncMeshes();buildGrid();
+    liftPlayer();
+  }
+  hunters=[];
+  for(i=0;i<ph.at.length;i++){
+    var a=ph.at[i];
+    hunters.push({x:a[0],y:a[1],z:a[2],ms:i*ph.step/Math.max(1,ph.at.length),
+                  step:ph.step,doom:false,lock:0,line:null,shy:0});
+  }
+  bossCreepMs=0;
+  if(announce){
+    // A beat of grace, because a phase that begins by walking a fresh hunter
+    // into you is a hit you were given no way to read.
+    bossGraceMs=Math.max(bossGraceMs,B.grace);
+    SFX.strike();shakeT=1;bossHitFlash=1;
+    flash(ph.say||("phase "+(bossPhase+1)+" of "+B.phases.length));
+  }
+  syncHud();
+}
+/* The board is clear, so the fight moves on rather than ending. This is the
+   whole structure in four lines: the health bar counts phases, and the last
+   one running out is the win. */
+function bossAdvance(){
+  bossPhase++;
+  bossHp=B.phases.length-bossPhase;
+  if(bossPhase>=B.phases.length){hunters=[];buildGrid();win();return;}
+  bossEnterPhase(true);
 }
 /* Put the two halves down mirrored about core `i`'s centre. Both clocks run
    together on purpose - the halves are one animal and should move as one, so
@@ -184,6 +270,7 @@ function bossFrame(dt){
     hunters[0].doom=hunters[1].doom=al&&!flat;
     return;
   }
+  var ph=B.phases[bossPhase];
   for(var i=0;i<hunters.length;i++){
     var h=hunters[i];
     /* Planted. It does not walk while a lock is held, so the line you are
@@ -207,9 +294,21 @@ function bossFrame(dt){
     if(h.ms<h.step)continue;
     h.ms=0;
     var goal=huntGoal(h);
+    /* Three grades of square, not two - see bossNext. A cunning hunter rates
+       a line you cannot answer above a line you can, which is the whole of
+       phase three: "it is lined up" stops meaning "I can eat it", because the
+       line it chose is the one your current view cannot fold on and the
+       answer is a rotation you have to spend a beat on.
+
+       Graded only while you are standing up. Flat, every hunter sharing your
+       silhouette column already has a line and you cannot fold again anyway,
+       so there is nothing for it to prefer. */
     var nx=bossNext(R,h,goal,cr,function(c){
-      return !!(flat?(R.uOf(view,c.x,c.z)===flatPos.u&&c.y===flatPos.y)
-                    :bossLine(R,c,goal,cr));
+      var has=flat?(R.uOf(view,c.x,c.z)===flatPos.u&&c.y===flatPos.y)
+                  :!!bossLine(R,c,goal,cr);
+      if(!has)return 0;
+      if(!ph.cunning||flat)return 1;
+      return doomedCell(c.x,c.y,c.z,cr)?1:2;
     });
     // Never onto another hunter's square: two of them in one cell reads as
     // one of them, and the pack should look like a pack.
@@ -217,7 +316,21 @@ function bossFrame(dt){
     if(hunterTouching(h)){bossHurt("it reached you");return;}
     // Lined up, so it plants. The beat that follows is the whole fight.
     h.line=huntLine(h,cr);
-    if(h.line){h.lock=B.aim;bossFlash=1;}
+    if(h.line){
+      /* A cunning one declines a line you could answer on the spot - but only
+         while declining is cheap. After `hold` refusals it plants anyway,
+         which is the same patience valve the twin uses and it is here for the
+         same reason: an opponent that will not attack from anywhere you can
+         punish stops attacking, and a fight where nobody can act is design
+         3's freeze wearing a new costume. It never stops *walking*, so it
+         closes on you the whole time it is being fussy. */
+      if(ph.cunning&&!flat&&(h.shy||0)<ph.hold&&
+         doomedCell(h.x,h.y,h.z,cr)){
+        h.shy=(h.shy||0)+1;h.line=null;
+      }else{
+        h.shy=0;h.lock=ph.aim;bossFlash=1;
+      }
+    }
   }
   // Recomputed once a frame for the renderer and for the GO 2D button, so
   // "this one dies if you fold" is answered in exactly one place.
@@ -286,7 +399,7 @@ function bossFoldCrush(){
     if(doomedCell(hunters[i].x,hunters[i].y,hunters[i].z,cr))doomed.push(i);
   if(!doomed.length)return;
   for(var d=doomed.length-1;d>=0;d--)hunters.splice(doomed[d],1);
-  bossHp=hunters.length;bossHitFlash=1;
+  bossHitFlash=1;
   SFX.strike();shakeT=1;
   /* What the survivors get for surviving. A fold that kills nothing is now
      worse than free, and a fold that kills one of three leaves the other two
@@ -294,7 +407,9 @@ function bossFoldCrush(){
      thinning out into a mop-up. */
   for(var s=0;s<hunters.length;s++)
     hunters[s].step=Math.max(B.floorStep,hunters[s].step*B.rage);
-  if(!hunters.length){buildGrid();win();return;}
+  // The board is clear, so the fight moves on. Only the last phase running
+  // out is the win.
+  if(!hunters.length){bossAdvance();return;}
   flash(doomed.length>1?(doomed.length+" in one square · "+hunters.length+" left"):
         ("folded onto it · "+hunters.length+" left"));
   syncHud();
@@ -330,10 +445,11 @@ function bossHurt(why){
      punishment for being hit *and* for having played well. The pack losing
      its ground is punishment enough, and it buys you the beat of grace to
      use it. */
+  var spawns=B.twin?B.at:B.phases[bossPhase].at;
   for(var i=0;i<hunters.length;i++){
-    var a=B.at[i%B.at.length];
+    var a=spawns[i%spawns.length];
     hunters[i].x=a[0];hunters[i].y=a[1];hunters[i].z=a[2];
-    hunters[i].ms=0;hunters[i].lock=0;hunters[i].line=null;
+    hunters[i].ms=0;hunters[i].lock=0;hunters[i].line=null;hunters[i].shy=0;
   }
   syncHud();
 }
@@ -342,9 +458,9 @@ function bossHurt(why){
 // while the geometry is against you.
 function bossTakeCrate(idx){
   hunters.splice(idx,1);
-  bossHp=hunters.length;bossHitFlash=1;
+  bossHitFlash=1;
   SFX.strike();shakeT=1;
-  if(!hunters.length){buildGrid();win();return true;}
+  if(!hunters.length){bossAdvance();return true;}
   flash("crushed under the crate · "+hunters.length+" left");
   syncHud();
   return true;
@@ -583,6 +699,13 @@ function doFlatten(){
      kill they had just earned - which reset the fight and made three cores
      look like an endless one. */
   var wall=!!twinOnPlayerColumn();
+  /* Both verdicts are taken before the fold resolves, for the same reason the
+     twin's is: clearing a phase raises that phase's pillars, and asking R
+     afterwards would ask a world that has grown a pillar since you committed.
+     The player would be crushed by the reward for the kill they just made -
+     the twin bug exactly, in a new place. */
+  var crush=R.siloSolid(view,pu,player.y,crf);
+  var spiked=R.deadly2(view,pu,player.y);
   lastSolidDepth=R.dOf(view,player.x,player.z);
   pushHistory();moveCount++;
   flatPos={u:pu,y:player.y};
@@ -593,8 +716,8 @@ function doFlatten(){
   // Something else already occupies that square in the plane. Let the fold
   // play out, then close on the player. A half of the twin counts: it is
   // solid there, and folding into one is folding into a wall.
-  if(wall||R.siloSolid(view,pu,player.y,crf)) setTimeout(function(){die("crush");},420);
-  else if(R.deadly2(view,pu,player.y)) setTimeout(function(){die("spike");},420);
+  if(wall||crush) setTimeout(function(){die("crush");},420);
+  else if(spiked) setTimeout(function(){die("spike");},420);
 }
 function doUnflatten(){
   if(dying||levelOver()||!canShift())return;

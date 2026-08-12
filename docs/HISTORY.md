@@ -81,6 +81,95 @@ first two before a human ever saw them, and each failure looked fine on paper:
   Found by the idle policy winning a fight without taking a step.
   `bossArena()` now rejects it.
 
+### Phases: the sixth change, and the first that was not a redesign
+
+The fifth design survived. What changed in the end was not the fight but its
+*shape*, and the argument is worth keeping because it applies to anything
+real-time this game ever grows.
+
+Every dial the fight exposed — `step`, `aim`, hunter count, `creep` — moves
+execution difficulty: how fast you must act once you already know what to do.
+Orthogonal's verb set is three slow buttons. There is no dexterity ceiling to
+climb toward, so tightening the clock does not make a player better; it
+shortens the window for a decision that takes as long as it takes. Every
+"is this too hard or too easy" question ran into that wall, and the honest
+answer — recorded in this file's own limitations for a long time — was that
+nobody knew, because the only available knob was the wrong one.
+
+The fights also had no arc. Three hunters, three kills, all the same kill;
+`rage` and `creep` escalated the numbers but not the question. A fight with no
+arc can only be tuned globally, which is exactly why it could not be tuned.
+
+So: four phases, and clearing the board begins the next. One hunter on a bare
+floor; pillars rising so rule 4 starts biting; a `cunning` hunter that will
+not take a line you can answer; then two at once. The difficulty now lives in
+what changes, which is a design decision that can be reasoned about, rather
+than in `aim: 620`, which never could be.
+
+Three things were found building it, none of which a static check would have
+caught:
+
+- **The crush verdict has to be taken before the fold resolves.** Clearing a
+  phase raises that phase's pillars, so asking `R` afterwards asks a world
+  that has grown one since the player committed — and the player is crushed
+  by the reward for the kill they just made. This is *precisely* the twin's
+  old respawn bug, in a new place, found only because it had already been
+  written down. Which is the argument for this file.
+- **A phase is nearly always cleared from inside the plane**, because folding
+  is how you kill. So "a pillar rising into an occupied square" is the common
+  case, not an edge case, and what has to rise with it is `flatPos.y` — the
+  height `doUnflatten` will land you at — rather than `player.y`.
+- **`bosssim`'s duellist climbs.** Given a pillar between it and a hunter it
+  walks up onto it and then oscillates on and off forever, one storey above
+  anything `foldKills` could reach, because its move scoring had no term for
+  height. It read as two unwinnable arenas. The fix is a fact about the rules
+  rather than a heuristic — a square at the wrong `y` cannot be attacked from
+  at all — but the near-miss is the point: an arena was one edit away from
+  being redesigned to satisfy a broken instrument.
+
+The simulator can say the phased fights are survivable and it cannot say
+whether `cunning` is interesting: the duellist ends a phase in about five
+moves, so the phase-3 hunter rarely lives long enough to plant. Measured, a
+full duellist run produces zero declines; the same phase against a passive
+policy produces 18–21. That the mechanic fires is checked. Whether it is worth
+having is a playtest, which is the agreement.
+
+### The twin, retired — and how to bring it back
+
+`BOSS I` was the twin: one creature with two bodies, each hunting your
+reflection through a centre, killed by folding while the halves shared a
+silhouette column. Playtesting called it too hard and it was parked. The
+diagnosis, made when the phases went in, is that it was never too *fast* — it
+asks you to compose three transformations in your head (reflect through a
+centre, project along the current axis, remember the centre moved) under a
+clock. Lowering `step` from 640 would not have touched that. If it comes back,
+it should be one phase of something else, not a whole fight: the reflection is
+a lovely flourish and a punishing steady state.
+
+All of its code is still live and exercised — `makeBoss`'s `twin` branch,
+`twinSpawn`, `twinMirror`, `twinAligned`, `bossNext`'s `avoid` path, and the
+twin arm of `bossArena`. Only the level data went. It was:
+
+```js
+{name:"BOSS I — The Twin",
+   hint:"One creature, two bodies, mirrored through the amber cross. Bait a half onto the bright arm, step off it yourself, and fold — they land in the same square.",
+   boss:{twin:true,step:640,floorStep:340,creepEvery:7000,
+         cores:[{c:[4,1,3],a:[7,1,1]},
+                {c:[3,1,4],a:[6,1,6]},
+                {c:[5,1,2],a:[8,1,4]}]},
+   blocks:(function(){var b=[];box(0,8,0,0,0,6,b);
+     b.push([2,1,1]);b.push([6,1,5]);b.push([6,1,1]);b.push([2,1,5]);
+     return b;})(),
+   start:[1,1,3]},
+```
+
+Its pillars were kept: they are what rises in phase 2 of `BOSS I — The Hunt`,
+because a symmetric arrangement is the honest one to teach on — no corner is
+quietly better than another. Restoring the twin means pasting the block back
+and adding a `LEVEL_RENAMES` row; **do not delete the rows already there**,
+and remember `migrateNames()` does not chase chains, so every row pointing at
+the old current name has to be re-pointed too.
+
 **`tools/bossgen.js` and `tools/bosses.json` are deleted.** The generator
 searched for arenas for the walk-to-a-marker boss and emitted a boss format
 the game no longer understands. The four arenas are authored by hand in

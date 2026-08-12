@@ -45,9 +45,17 @@ var muted=false;
 var B=null, bossHp=0, lives=0, bossFlash=0;
 /* The pack. Each hunter carries its own step clock, so they arrive out of
    phase and the fight has texture instead of a single drumbeat; `doom` is
-   recomputed each frame for the renderer. bossHp is just hunters.length,
-   kept as its own name because the HUD and progress[] both speak in cores. */
+   recomputed each frame for the renderer. bossHp is the number of phases
+   still to come, kept as its own name because the HUD and progress[] both
+   speak in cores. */
 var hunters=[], bossHitFlash=0, bossCreepMs=0, bossGraceMs=0;
+/* Which phase of the fight is live. A boss is a sequence of phases rather
+   than one pack: clearing the hunters on the board advances it, and bossHp is
+   phases *remaining*, so the dots in the HUD are the arc of the fight rather
+   than a body count. That is the whole reason for the structure - a fight
+   with no arc can only be tuned by making the whole thing faster, which is a
+   dial that punishes reading rather than rewarding it. */
+var bossPhase=0;
 // The twin's current core: which centre the two halves are mirrored about,
 // and the cell that centre sits on. Null on every other fight.
 var twinCore=0, twinAt=null;

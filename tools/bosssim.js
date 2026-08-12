@@ -32,20 +32,50 @@ const ctx=vm.createContext({console,Set,Map,Math,JSON});
 ["01-coords.js","02-levels.js","03-rules.js"].forEach(f=>
   vm.runInContext(fs.readFileSync(path.join(ROOT,f),"utf8"),ctx,{filename:f}));
 const {LEVELS,makeRules,makeBoss,bossNext,bossLine,crushedBy,foldKills,
-       resolveStep,FELL,crateSet,crateKeys,AX,K}=ctx;
+       resolveStep,FELL,crateSet,crateKeys,AX,K,bossBlocksAt}=ctx;
 
 const TICK=50;      // ms per simulated frame
 const ACT=200;      // ms between the player's inputs - a fast but human rate
 
+// The arena as it stands once phase `i` has begun: what the level was
+// authored with, plus everything that has risen since.
+const blockView=(lv,i)=>({start:lv.start,blocks:bossBlocksAt(lv,i)});
+
+/* A fight is a sequence of phases, so the simulation has to be one too.
+ * Clearing the board advances it, which raises that phase's blocks - so the
+ * rules, the standable floor and the crate set are all rebuilt rather than
+ * captured once. Playing only the opening phase would measure a fiction, and
+ * measuring a fiction is exactly the mistake this file exists to catch. */
 function sim(lv,policy,ms){
-  const R=makeRules(lv), B=makeBoss(lv), cr=crateSet(crateKeys(lv));
-  const spawn=()=>B.at.map((a,i)=>({x:a[0],y:a[1],z:a[2],lock:0,
-                                    ms:i*B.step/B.at.length,step:B.step}));
+  const B=makeBoss(lv);
+  let phase=0;
+  let board=blockView(lv,0), R=makeRules(board), cr=crateSet(crateKeys(board));
+  const ph=()=>B.phases[phase];
+  const spawn=()=>ph().at.map((a,i)=>({x:a[0],y:a[1],z:a[2],lock:0,shy:0,
+                                       ms:i*ph().step/ph().at.length,
+                                       step:ph().step}));
   let hs=spawn();
   let p={x:lv.start[0],y:lv.start[1],z:lv.start[2]};
   let v=0, lives=3, grace=0, creep=0, actMs=0, flat=null;
   let folds=0, moves=0, kills=0, t=0;
-  const done=(o)=>Object.assign({secs:+(t/1000).toFixed(1)},o);
+  /* Advance, or report the win. Raising blocks can bury the player, and the
+   * game lifts them out rather than crushing them, so the simulation does the
+   * same - otherwise a phase change reads as a death nobody could have read. */
+  const advance=()=>{
+    phase++;
+    if(phase>=B.phases.length)return true;
+    board=blockView(lv,phase);R=makeRules(board);cr=crateSet(crateKeys(board));
+    let guard=0;
+    // Almost always flat, because folding is how a phase gets cleared. In the
+    // plane the height you will come back down at is the real quantity, so
+    // that is what rises - exactly liftPlayer() in the game.
+    if(flat){while(R.siloSolid(v,flat.u,flat.y,cr)&&guard++<8)flat.y++;p.y=flat.y;}
+    else while(R.solid(p.x,p.y,p.z,cr)&&guard++<8)p.y++;
+    hs=spawn();grace=Math.max(grace,B.grace);creep=0;
+    return false;
+  };
+  const done=(o)=>Object.assign({secs:+(t/1000).toFixed(1),
+                                 reached:Math.min(phase+1,B.phases.length)},o);
   const uOf=(vv,x,z)=>x*AX[vv].r[0]+z*AX[vv].r[2];
 
   // The same question the game asks, asked the same way: would folding from
@@ -73,7 +103,7 @@ function sim(lv,policy,ms){
   const goalFor=(h)=>{
     if(!flat)return p;
     let best=null,bd=1e9;
-    for(const b of lv.blocks){
+    for(const b of board.blocks){
       if(uOf(v,b[0],b[2])!==flat.u)continue;
       const d=Math.abs(b[0]-h.x)+Math.abs(b[2]-h.z);
       if(d<bd){bd=d;best={x:b[0],y:b[1]+1,z:b[2]};}
@@ -106,19 +136,32 @@ function sim(lv,policy,ms){
       if(h.ms<h.step)continue;
       h.ms=0;
       const goal=goalFor(h);
-      const nx=bossNext(R,h,goal,cr,(c)=>!!(flat
-        ? (uOf(v,c.x,c.z)===flat.u&&c.y===flat.y) : bossLine(R,c,goal,cr)));
+      // Three grades, exactly as the game asks it: 0 no line, 1 a line, 2 a
+      // line the player cannot fold on from where they stand.
+      const nx=bossNext(R,h,goal,cr,(c)=>{
+        const has=flat?(uOf(v,c.x,c.z)===flat.u&&c.y===flat.y)
+                      :!!bossLine(R,c,goal,cr);
+        if(!has)return 0;
+        if(!ph().cunning||flat)return 1;
+        return doomed(c.x,c.y,c.z)?1:2;
+      });
       if(nx&&!hs.some((o,j)=>j!==i&&o.x===nx.x&&o.y===nx.y&&o.z===nx.z)){
         h.x=nx.x;h.y=nx.y;h.z=nx.z;
       }
       if(grace<=0&&touched()){hit="reached";break;}
-      if(lineOn(h))h.lock=B.aim;
+      if(lineOn(h)){
+        // Declines a line the player could answer, but only while declining
+        // is cheap - the same patience valve the game uses, and without it
+        // this policy would be measuring an opponent that never attacks.
+        if(ph().cunning&&!flat&&h.shy<ph().hold&&doomed(h.x,h.y,h.z))h.shy++;
+        else {h.shy=0;h.lock=ph().aim;}
+      }
     }
     if(hit&&grace<=0){
       lives--;grace=B.grace;hs=spawn();flat=null;
       if(lives<=0)return done({win:false,lives,kills,folds,moves,why:hit});
     }
-    if(!hs.length)return done({win:true,lives,kills,folds,moves});
+    if(!hs.length&&advance())return done({win:true,lives,kills,folds,moves});
 
     actMs+=TICK;
     if(actMs<ACT)continue;
@@ -147,18 +190,20 @@ function sim(lv,policy,ms){
       // it: the whole set is decided before any of them is removed, or the
       // first to die would save the second.
       const dead=hs.map(h=>doomed(h.x,h.y,h.z));
+      // Taken before anything resolves, because clearing a phase raises that
+      // phase's pillars and asking afterwards asks a world that has grown one.
       const mine=crushedBy(R,v,p.x,p.y,p.z,cr);
       hs=hs.filter((h,i)=>!dead[i]);
       kills+=dead.filter(Boolean).length;
       if(dead.some(Boolean))
         hs.forEach(h=>{h.step=Math.max(B.floorStep,h.step*B.rage);});
-      if(!hs.length)return done({win:true,lives,kills,folds,moves});
       if(mine){
         lives--;grace=B.grace;hs=spawn();
         if(lives<=0)return done({win:false,lives,kills,folds,moves,why:"folded into one"});
         continue;                       // crushed, so never in the plane
       }
       flat={u:uOf(v,p.x,p.z),y:p.y};moves++;
+      if(!hs.length&&advance())return done({win:true,lives,kills,folds,moves});
       continue;
     }
     if(act.turn!==undefined){v=(v+act.turn+4)%4;moves++;continue;}
@@ -216,8 +261,16 @@ function duellist({R,B,cr,hs,p,v,flat,doomed,stepTo,uOf,doomedIn,crushedBy}){
     const n=stepTo(p,d[0],d[1]);
     if(!n)continue;
     if(hs.some(h=>h.x===n.x&&h.y===n.y&&h.z===n.z))continue;   // not into one
+    /* Height is worth more than distance because it is worth everything:
+       foldKills() wants the same y, so a square at the wrong height is one
+       you cannot attack from at all. Without this the policy climbs the first
+       pillar between it and a hunter and then oscillates on and off it
+       forever, one storey above anything it could kill - the hunters' own
+       two-square loop, rediscovered in the player. It read as an unwinnable
+       arena and was nothing of the kind. */
     const lined=(n.y===tgt.y&&uOf(v,n.x,n.z)===uOf(v,tgt.x,tgt.z))?1:0;
     const score=lined*10-(crushedBy(R,v,n.x,n.y,n.z,cr)?6:0)
+      -Math.abs(n.y-tgt.y)*8
       -(Math.abs(n.x-tgt.x)+Math.abs(n.z-tgt.z));
     if(!best||score>best.score)best={d,score};
   }
@@ -244,7 +297,8 @@ function run(){
     const ok=!r.win;
     if(!ok)bad++;
     console.log("  "+lv.name.padEnd(24)+(ok?"lost":"FAILED - it won")+
-      "  ("+r.kills+" free kills, "+(3-r.lives)+" hits taken in "+r.secs+"s)");
+      "  ("+r.kills+" free kills, reached phase "+r.reached+"/"+
+      makeBoss(lv).phases.length+", "+(3-r.lives)+" hits in "+r.secs+"s)");
   });
   console.log("\nB. duelling it properly (must WIN):");
   bosses.forEach(lv=>{
@@ -252,7 +306,8 @@ function run(){
     if(!r.win)bad++;
     console.log("  "+lv.name.padEnd(24)+(r.win
       ? "cleared in "+r.secs+"s with "+r.lives+"/3 lives, "+r.folds+" folds, "+r.moves+" moves"
-      : "FAILED - "+r.why+" with "+(makeBoss(lv).hp-r.kills)+" still up"));
+      : "FAILED - "+r.why+", stuck in phase "+r.reached+"/"+
+        makeBoss(lv).phases.length+" after "+r.secs+"s"));
   });
   return bad;
 }

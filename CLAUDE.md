@@ -42,14 +42,14 @@ though it did not end up on the button.
    **unless** an anchor is among the candidates — then the anchor wins.
 6. You must reach the goal in the volume. Standing on its projection is not
    enough.
-7. On a boss level there is no goal. Three of them are a pack of hunters: one
-   walks onto your row, plants, and charges down it, and you kill it by
-   folding while it shares your silhouette column — the same line. `BOSS I`
-   is the twin, one creature with two mirrored bodies, killed by folding
-   while the two halves share a column with each other. On a **trial** there
-   is a goal like any other level, and a lethal plane sweeping one slice of
-   the world. All of them run **on a real clock**, and that clock is the one
-   place the game is not turn-based.
+7. On a boss level there is no goal. All four are packs of hunters run in
+   **four phases**: one walks onto your row, plants, and charges down it, and
+   you kill it by folding while it shares your silhouette column — the same
+   line. Clearing what is on the board begins the next phase, which changes
+   the fight rather than repeating it. On a **trial** there is a goal like any
+   other level, and a lethal plane sweeping one slice of the world. All of
+   them run **on a real clock**, and that clock is the one place the game is
+   not turn-based.
 
 Death is solver-equivalent to a blocked move — neither leads anywhere, so no
 shortest path routes through it. Adding death changed nothing about any puzzle;
@@ -68,7 +68,7 @@ anything; everything before it only declares.
 | `js/00-storage.js` | `window.storage` over `localStorage`. The game was born inside a Claude artifact where the host supplied this API; the shim lets identical code run from `file://`, itch.io and a Capacitor WebView. Defines itself only if absent. Falls back to an in-memory map if storage is denied (private browsing). |
 | `js/01-coords.js` | `AX[]` — the four camera views, each with `r` (screen-right) and `d` (depth, pointing at the camera). Nearly every coordinate calculation goes through these. Also `K()` and `box()`. |
 | `js/02-levels.js` | 72 levels + `SECTIONS` + `LEVEL_RENAMES`. |
-| `js/03-rules.js` | `resolveStep()`, block kinds, `makeRules()`, `makeBoss()`, `bossNext()`, `bossLine()`, `foldKills()`, `bossArena()`, `makeTrial()`, `trialSafety()`. |
+| `js/03-rules.js` | `resolveStep()`, block kinds, `makeRules()`, `makeBoss()`, `bossPhases()`, `bossBlocksAt()`, `bossNext()`, `bossLine()`, `foldKills()`, `bossArena()`, `makeTrial()`, `trialSafety()`. |
 | `js/04-solver.js` | `solve()` — BFS over game states. Solves trials; knows nothing of bosses, on purpose. |
 | `js/05-state.js` | Mutable state, the pack, the trial clock, tutorial counters. |
 | `js/06-persistence.js` | Progress, settings, session, library, wardrobe. |
@@ -223,8 +223,8 @@ the sweep that owns that height leaves the middle square nowhere to go.
 
 **A pack of hunters, and one line that belongs to both of you.**
 
-Three or four hunters walk the volume toward you on a real clock. Touching
-you costs a life. There is no gun, no window to wait for, and nothing to farm.
+Hunters walk the volume toward you on a real clock. Touching you costs a life.
+There is no gun, no window to wait for, and nothing to farm.
 
 | | |
 |---|---|
@@ -253,42 +253,80 @@ this one the simulator rejected, are in `docs/HISTORY.md` — **read it before
 changing the kill rule**, because the two most obvious alternatives have both
 already been built and measured.
 
-**Playtest verdict on the twin: too hard, and parked.** The owner may come
-back with new ideas; until then it stays exactly as it is in `BOSS I` and the
-pack holds the other three. If it is picked up again, the dials in order of
-likely usefulness are `hold` (openings), `step` (already slowed once, 470 →
-640) and the number of cores.
+### Four phases, because a fight with no arc has only one dial
 
-### The twin — a second fight, on trial
+Every fight runs **four phases**, and clearing what is on the board begins the
+next. Each phase changes the question rather than the speed:
 
-`BOSS I` is not a pack. It is **one creature with two bodies**, each hunting
-the *reflection* of you through a centre, so whatever one does the other does
-backwards and the gap between them is a number you change by walking. You
-kill it by folding while the two halves share a silhouette column: they land
-in the same square of the plane and collapse into each other. Three cores,
-and **the centre moves after every one**, so the answer is never twice in the
-same place.
+| | |
+|---|---|
+| **1** | one hunter, a **bare floor**, the slowest clock in the fight |
+| **2** | **pillars rise** out of the floor, so rule 4 starts costing you squares to attack from |
+| **3** | one hunter, **`cunning`** — it will not take a line you can answer |
+| **4** | **two** at once, ordinary rules |
 
-Because they are reflections, the halves share a column exactly when one of
-them stands on the centre's row or column — whichever the current view
-collapses. That is why the cross is drawn on the floor with the live arm lit:
-bait a half onto it, step off it yourself, fold. Rule 4 is unchanged, so a
-half in *your* column is a wall, and so is a pillar.
+The reasoning is a diagnosis, not a taste. Every dial this fight used to
+expose — `step`, `aim`, hunter count, `creep` — moves *execution* difficulty:
+how fast you must act once you already know what to do. But the verb set is
+three slow buttons and there is no dexterity ceiling to climb, so a faster
+clock does not make the player better, it shortens the window for a decision
+that takes as long as it takes. Phases move the other axis — how hard it is
+to work out what to do at all — which is the axis a puzzle game is good at.
+And they make failure legible: you know which phase beat you, and phase one
+becomes muscle memory, so the retry is short.
 
-- **`hold` is the dial** (`js/03-rules.js`, per level): how many steps a half
-  spends refusing to cross its own kill line before it comes through anyway.
-  Lower and openings feel cheap; higher and you wait for one. Currently 2.
-- **`bosssim` does not simulate it, on purpose.** That file models the pack —
-  its lines, its charges, its kill rule — so running the twin through it
-  measures a fiction, which is exactly what it did before it was excluded
-  (idle "won" a fight it was not playing). `bossArena()` still checks the
-  stage. The rest is playtesting, which is the agreement for anything
-  real-time.
-- Two bugs worth not re-introducing: the crush test must be taken **before**
-  the fold resolves, because a merge respawns the pair and the fresh spawn
-  was crushing the player for the kill they had just earned; and the green
-  strike cue has to check for a pillar in your column as well as a half,
-  or it lights up while telling you to walk into a wall.
+**Phases 3 and 4 are deliberately two answers to the same question**, so they
+can be compared back to back in one sitting: is a single smarter opponent
+better than two ordinary ones? That comparison is the point of the current
+shape and neither is settled.
+
+- **`cunning` grades lines rather than refusing them.** `bossNext`'s `lineTo`
+  callback answers 0 / 1 / 2 — no line, a line, a line the player cannot fold
+  on from where they stand — and a cunning hunter prefers grade 2. Only the
+  *ordering* matters (56 over 40); the margin must stay small enough that it
+  never crosses the arena hunting for one, or preferring a line becomes
+  circling and we are back in design 3.
+- **It declines to plant, but only `hold` times** (currently 2). This is the
+  same patience valve the twin uses and it is here for the same reason: an
+  opponent that will not attack from anywhere you can punish stops attacking.
+  It never stops *walking*, so it closes on you the whole time it is fussy.
+- **The player's counter to `cunning` is rotating**, which relabels every line
+  at once — so turning stops being a way to aim and becomes the answer. That
+  is the fight's own question asked one level up.
+- **Rising blocks genuinely edit `L.blocks`** and rebuild `R`, so the pristine
+  list is kept in `L.arenaBase` and restored by `bossReset()`. It is captured
+  **exactly once**, the first time the level is ever loaded, and never
+  overwritten — capturing it again on a later load is the bug that ordering
+  avoids, because by then the last attempt's pillars are already up.
+- **A pillar rising into an occupied square lifts you onto it** rather than
+  burying you (`liftPlayer`). The flat case is the *common* one, not the
+  exception: you clear a phase by folding, so the next phase's pillars almost
+  always come up while you are in the plane, and there it is `flatPos.y` that
+  has to rise, because that is the height `doUnflatten` lands you on.
+- **Crates may only arrive in one phase.** Putting them on the board means
+  rebuilding the crate list, which snaps any crate you had already shoved back
+  to where it started. `bossArena()` has no opinion on this — it is a note,
+  not a check.
+- **The crush verdict is taken before `bossFoldCrush()` runs.** Clearing a
+  phase raises pillars, and asking `R` afterwards asks a world that has grown
+  one since you committed — the player is crushed by the reward for the kill
+  they just made. This is the twin's old bug in a new place; see below.
+
+### The twin — retired, and recoverable
+
+`BOSS I` used to be one creature with two mirrored bodies. Playtesting called
+it too hard and it was parked; when the campaign went to phases it was
+replaced by `BOSS I — The Hunt`, and `LEVEL_RENAMES` carries the rename.
+
+**All of its code is still live and working** — `makeBoss`'s `twin` branch,
+`twinSpawn`, `twinMirror`, `twinAligned`, `bossNext`'s `avoid` path, and the
+twin arm of `bossArena` — so restoring it is one level-data paste, which is in
+`docs/HISTORY.md` along with what was wrong with it. Two bugs there are worth
+not re-introducing anywhere: the crush test must be taken **before** the fold
+resolves (the phased fight hit exactly this, and it is why `doFlatten` now
+captures both verdicts up front), and the green strike cue has to check for a
+pillar in your column as well as a body, or it lights up while telling you to
+walk into a wall.
 
 ### Details that are load-bearing
 
@@ -315,11 +353,15 @@ half in *your* column is a wall, and so is a pillar.
   punishment for being hit *and* for having played well.
 - **No two hunters may spawn sharing a silhouette column.** They respawn
   together after every hit, so a pair that shares one there is a standing
-  gift, renewed. `bossArena()` checks it.
+  gift, renewed. `bossArena()` checks it, per phase.
+- **A hit throws the pack back to the *current phase's* spawns**, and the
+  arena keeps whatever has risen. Losing a life does not rewind the fight.
 - **On a clock, the `GO 2D` button is re-judged every frame** in the render
   loop rather than in `syncHud`. It is the one place a button class is not
   owned by `syncHud`, and it has to be: hunters move while you do not, so a
   cue computed at your last keypress describes a board that has moved on.
+- **`bossHp` counts phases remaining, not bodies.** The dots in the HUD are
+  the arc of the fight; killing one of a phase's two hunters moves nothing.
 - Scored on lives, three stars for three intact. `progress[name]` holds lives
   for a boss or a trial and a move count for everything else — opposite
   senses in one slot — so reads go through `starsForRecord()`, writes through
@@ -336,12 +378,23 @@ of a move sequence. Two checks stand in.
 - **`bossArena()`** — the stage works: every hunter can reach you, none spawns
   inside a block or in another's column, and enough of the floor is under a
   pillar's shadow to make position matter without leaving nowhere to fight
-  from.
-- **`tools/bosssim.js`**, run by `verify.js` — it plays each fight twice. An
-  IDLE policy that never moves and takes every free kill must **lose**; a
+  from. **Every phase is checked as its own board**, because pillars that rise
+  later can seal a spawn off or hand the pack a free kill exactly as authored
+  ones can. The one check not applied per phase is the *lower* bound on lethal
+  columns: an opening phase with a bare floor has none by design, and that is
+  what it is for, so only the finished arena is asked for somewhere to fight.
+- **`tools/bosssim.js`**, run by `verify.js` — it plays each fight twice, all
+  the way through its phases, raising each phase's blocks as it reaches them.
+  An IDLE policy that never moves and takes every free kill must **lose**; a
   DUELLIST that lines up, turns to re-aim and folds must **win**. Neither is
   a good player — the duellist never *herds*, which is the actual skill — so
   a fight it wins is winnable by doing considerably less than the design asks.
+- **The simulator cannot see whether `cunning` is interesting**, only that it
+  is survivable. The duellist ends a phase in about five moves, so the phase-3
+  hunter rarely lives long enough to plant at all — measured: zero declines in
+  a full run, and 18–21 when the same phase is played against a passive
+  policy. That the mechanic *fires* is checked; whether it is fun is a
+  playtest, per the working agreement.
 
 **Both of these are optional when the owner is playtesting a fight** — see
 Working notes. They are worth running when the *rules* change; they are not
@@ -602,15 +655,24 @@ tested and failed, plus where this sits in the PCG literature, are in
   nothing there to check — but the machine has no opinion at all about the
   state you spend the crossing in.
 - **Boss and sweep pacing are both guesswork.** Trials: `period` 2500 → 2000,
-  `fire` 340 → 300. Bosses: `step` 640 → 520ms, `aim` 780 → 620ms, three
-  hunters rising to four. The checks bracket each fight; they say nothing
-  about whether the numbers are *fun*, or whether a human can read a line,
-  decide the axis, rotate and fold inside one beat.
+  `fire` 340 → 300. Bosses now ramp *within* a fight — `step` 780 → 620 and
+  `aim` 900 → 700 across `BOSS I`'s four phases, faster again by `BOSS IV` —
+  and the whole ramp is invented. The checks bracket each fight; they say
+  nothing about whether the numbers are *fun*, or whether a human can read a
+  line, decide the axis, rotate and fold inside one beat.
+- **Nobody has played the phased fights.** Four bosses × four phases is a lot
+  of authored pacing that has only ever been machine-checked. The specific
+  open questions: does phase 1 read as a tutorial or as filler; is the
+  arrival of the pillars legible or does it just feel like being interrupted;
+  and does a `cunning` hunter read as *smart* or merely as evasive.
 - **`bosssim`'s duellist is not a good player.** It never herds — it does not
   pick a square in order to put a hunter on a line — and it reacts every
-  200ms with perfect knowledge. It cleared the four arenas in 3 to 33
-  seconds, which says the fights are winnable, not that they are the right
-  length.
+  200ms with perfect knowledge. It clears the four arenas in 4 to 7 seconds,
+  which says the fights are winnable, not that they are the right length.
+  It also has to be told that height matters (a square at the wrong `y` cannot
+  be attacked from at all), or it climbs the first pillar between it and a
+  hunter and oscillates on and off it forever — which reads as an unwinnable
+  arena and is nothing of the kind.
 - **The lunge is instant and unblockable once the beat ends.** It is
   telegraphed for `aim` milliseconds and breaking the line cancels it, so it
   is fair — but there is no partial answer, no grazing hit, and a player who
@@ -655,10 +717,14 @@ tested and failed, plus where this sits in the PCG literature, are in
 
 ## Agreed next steps
 
-0. **Playtest the boss and the trials.** Both are real-time, which is the one
-   thing no tool here can judge. The questions: can a human read which axis to
-   fold along while a line is lit, is `aim` long enough to rotate first, and
-   does the trial's beat of grace read as mercy or as being let off?
+0. **Playtest the four phased bosses.** They are real-time, which is the one
+   thing no tool here can judge, and the phase ramp has never been felt. The
+   questions: can a human read which axis to fold along while a line is lit,
+   is `aim` long enough to rotate first, does the trial's beat of grace read
+   as mercy or as being let off — and above all, **phase 3 against phase 4**:
+   one smarter opponent or two ordinary ones. They are laid out consecutively
+   on purpose so the comparison can be made in a single fight. Whichever wins
+   should probably become the shape of the last phase, and the loser can go.
 1. **More gentle levels.** The real gap the curve exposes: after the tutorial
    there is nothing between 16 and 31. The composer can make them, but not
    crate or key levels, and its 59% hit rate means hand-checking a batch. This
