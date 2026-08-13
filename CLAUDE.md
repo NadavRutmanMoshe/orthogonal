@@ -477,6 +477,14 @@ trial partway in, a boss closing it — tabs across the top, a winding trail
 below, drawn from `SECTIONS` and `LEVELS` exactly as the old list was. No
 level data changed to make it.
 
+- **A section's colour runs the whole way through it** — tab, header, bar,
+  the lit trail and the solved nodes — so a finished section is its own chain
+  rather than another stretch of the same green. The rim, ink and lip are
+  `color-mix`ed from that one hue, which is what keeps a pale section (glass
+  blue) and a dark one (spikes red) both legible without hand-picking three
+  values each. **No section may be violet or amber**: those two belong to the
+  boss and the trial in every section, and `V · EXTRA` had to move off violet
+  for exactly that reason.
 - **Boss and trial differ by silhouette before colour.** They used to be
   `#ff8a3c` against `#e0a03c` — the same hue two steps apart, which at 60px on
   a dark ground is not a distinction. The boss is now **violet** and wears a
@@ -505,6 +513,15 @@ level data changed to make it.
 - **The tutorials get a `PROLOGUE` section** so the map has somewhere to put
   them. Its `at:0` shifts no other marker — these are array indices and every
   later section keeps the index it had.
+- **The way out lives in the header, not the footer.** The row at the foot of
+  the panel sits below a trail several screens long, so after scrolling into a
+  section there was nothing in sight that looked like an exit and the map read
+  as somewhere the game had left you.
+- **The ambient cubes never touch an edge.** They are inset by a whole cube
+  and the wrap is hidden by a fade, because anything that drifts *through* a
+  boundary is necessarily half-drawn while it crosses, and a sliced cube reads
+  as a rendering fault. The half-extent is `1.732*s`, not the `0.866*s` the
+  face size suggests — `P()` spans `(px - pz*k)` over `[-2,2]`.
 - **`syncCorners()` owns the map's chrome.** The running star total lives
   outside `.corner` at z-index 30 so it can sit over the win overlay, which
   also puts it over a near-full-height map and its own total. The one function

@@ -393,16 +393,36 @@ function mapBgStart(){
     x.clearRect(0,0,W,H);
     for(var i=0;i<mapBgCubes.length;i++){
       var cu=mapBgCubes[i];
+      /* Kept a whole cube clear of every edge. Positioning by a fraction of
+         the canvas and drawing from the centre meant anything near a side was
+         bisected by the panel's clip, and a sliced-off cube reads as a
+         rendering fault rather than as depth.
+
+         `m` is the real drawn half-extent, which is bigger than it looks:
+         P() spans (px - pz*k) over [-2,2], so the cube reaches 1.732*s across
+         and 1.24*s down - not the 0.866*s the face size suggests.
+
+         Staying inside is not enough on its own, though: anything that drifts
+         *through* an edge is necessarily half-drawn while it crosses. So the
+         travel band is inset by a whole cube at both ends and the wrap is
+         hidden instead - a cube fades out over the last stretch of the band,
+         jumps back to the start while invisible, and fades in. No cube is
+         ever clipped, and none of them pops. */
+      var m=cu.s*1.8;
       if(!reduce){
         cu.t+=cu.sp*dt/1000;
         cu.y-=cu.drift*dt/1000;
-        if(cu.y<-.14)cu.y=1.14;
+        if(cu.y<0)cu.y=1;
       }
+      var px=m+cu.x*Math.max(0,W-2*m);
+      var py=m+cu.y*Math.max(0,H-2*m);
+      var fade=Math.max(0,Math.min(1,Math.min(cu.y,1-cu.y)/.12));
+      if(fade<=0)continue;
       // Most of the beat standing up and a short flat moment, like play.
       var raw=(Math.sin(cu.t)+1)/2;
       x.save();
-      x.translate(cu.x*W,cu.y*H);
-      cube(cu,Math.pow(raw,3.2),cu.d*.85);
+      x.translate(px,py);
+      cube(cu,Math.pow(raw,3.2),cu.d*.85*fade);
       x.restore();
     }
     mapBgRAF=requestAnimationFrame(frame);
@@ -472,7 +492,13 @@ function levelPicker(){
         "<div class='mhead'><div class='mt'><b>Orthogonal</b>"+
         "<span id='mSub'></span></div>"+
         "<div class='mtot'>"+done+" ★</div>"+
-        "<button class='mq' id='mHelp' aria-label='What the map means'>?</button></div>"+
+        "<button class='mq' id='mHelp' aria-label='What the map means'>?</button>"+
+        /* The way back to the game, in the header where it is always on
+           screen. The row at the foot of the panel is below a trail that can
+           be several screens long, so after scrolling down a section there
+           was nothing in sight that looked like an exit and the map read as
+           somewhere the game had left you. */
+        "<button class='mq mx' id='mExit' aria-label='Back to the level'>✕</button></div>"+
         "<div class='mtabs' id='mTabs'></div>"+
         "<div class='mbody' id='mBody'><div class='mcard' id='mCard'></div>"+
         "<div id='mtrail'><svg></svg></div></div>"+
@@ -482,6 +508,7 @@ function levelPicker(){
   showPanel(h,"map");   // syncCorners() adds .map and hides the corner total
   bind("pkBack",menuPanel);
   bind("pkClose",hidePanel);
+  bind("mExit",hidePanel);
   bind("mHelp",mapHelp);
 
   var cleared=0;
@@ -581,7 +608,10 @@ function mapLayout(pts,H){
   svg.setAttribute("width",w);svg.setAttribute("height",H);
   svg.innerHTML=(off?"<path d='"+off+"' fill='none' stroke='rgba(195,205,228,.16)' "+
       "stroke-width='3' stroke-linecap='round' stroke-dasharray='2 9'/>":"")+
-    (on?"<path d='"+on+"' fill='none' stroke='rgba(53,194,165,.34)' "+
+    // The lit trail is the section's colour too, so how far you have got and
+    // where you are reading both come from one hue.
+    (on?"<path d='"+on+"' fill='none' stroke='"+
+      (SECTIONS[mapSection].col||"#35c2a5")+"' stroke-opacity='.42' "+
       "stroke-width='3.5' stroke-linecap='round'/>":"");
   trail.querySelectorAll("[data-off]").forEach(function(el){
     el.style.left=(cx+parseFloat(el.getAttribute("data-off"))*(w*.5-44))+"px";

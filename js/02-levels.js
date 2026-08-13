@@ -451,13 +451,24 @@ var LEVELS=[
    The tutorials get a section of their own so the map has somewhere to put
    them. `at:0` shifts nothing, because these are array indices and every
    other marker keeps the index it already had. */
+/* `col` is the section's colour, and on the map it runs the whole way
+   through: the tab, the header, the progress bar, the trail behind you and
+   the solved nodes themselves. A section you have finished should be a
+   different colour of chain from the one before it, so the campaign reads as
+   places rather than as one long green line.
+
+   The six are picked to stay clear of the two colours that are *not* free to
+   vary: violet is the boss and amber is the trial, everywhere, in every
+   section. So no section is violet or amber - `V · EXTRA` used to be violet
+   and had to move, because a whole shelf the colour of a boss makes the one
+   thing on it that is a boss unreadable. */
 var SECTIONS=[
   {at:0, name:"PROLOGUE", sub:"walking, folding, turning — one verb each", col:"#7183a6"},
   {at:3, name:"I · FUNDAMENTALS", sub:"one verb: collapse the world and cross the gap", col:"#35c2a5"},
-  {at:14, name:"II · SPIKES", sub:"a hazard you cannot see until you fold", col:"#d6336c"},
+  {at:14, name:"II · SPIKES", sub:"a hazard you cannot see until you fold", col:"#e0455f"},
   {at:23, name:"III · GLASS", sub:"solid in the volume, absent from the plane", col:"#7fb2ff"},
-  {at:33, name:"IV · CRATES", sub:"change the plane by moving the volume", col:"#c58f5c"},
-  {at:45, name:"V · EXTRA", sub:"unlocked by the Orthogon — the long ones", col:"#a274ff", locked:true}
+  {at:33, name:"IV · CRATES", sub:"change the plane by moving the volume", col:"#c9744f"},
+  {at:45, name:"V · EXTRA", sub:"unlocked by the Orthogon — the long ones", col:"#3fc4d4", locked:true}
 ];
 
 /* Levels have been renumbered more than once. Progress is keyed by name,

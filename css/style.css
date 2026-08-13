@@ -384,6 +384,8 @@
   .mq{width:30px;height:30px;border-radius:50%;flex-shrink:0;font-size:13px;
     color:var(--fg-dim);border:1px solid var(--rule);background:transparent}
   .mq.on{color:var(--player);border-color:var(--player)}
+  .mq.mx{color:var(--fg);font-size:15px}
+  .mq.mx:active{border-color:var(--player);color:var(--player)}
 
   .mtabs{display:flex;gap:6px;overflow-x:auto;padding:9px 13px;flex-shrink:0;
     border-bottom:1px solid var(--rule);scrollbar-width:none}
@@ -420,9 +422,16 @@
     box-shadow:0 5px 0 rgba(0,0,0,.42);
     transition:transform .12s ease,box-shadow .12s ease,border-color .25s,color .25s}
   .mnode:active{transform:translateY(4px);box-shadow:0 1px 0 rgba(0,0,0,.42)}
-  .mnode.solved{background:var(--goal);border-color:#5fe0c4;color:#08281f;
-    box-shadow:0 5px 0 #14705d}
-  .mnode.solved:active{box-shadow:0 1px 0 #14705d}
+  /* Solved nodes wear the section's colour, so a finished section is its own
+     chain rather than another stretch of the same green. The rim, the ink and
+     the lip are all mixed from that one hue, which is what keeps a light
+     section (glass blue) and a dark one (spikes red) both legible without
+     hand-picking three values apiece. */
+  .mnode.solved{background:var(--sec);
+    border-color:color-mix(in srgb,var(--sec) 68%,#fff);
+    color:color-mix(in srgb,var(--sec) 26%,#000);
+    box-shadow:0 5px 0 color-mix(in srgb,var(--sec) 44%,#000)}
+  .mnode.solved:active{box-shadow:0 1px 0 color-mix(in srgb,var(--sec) 44%,#000)}
   .mnode.open{border-color:var(--fg);color:var(--fg);background:rgba(20,26,46,.9)}
   .mnode.here{background:var(--player);border-color:#f4699a;color:#2a0512;
     box-shadow:0 5px 0 #8a1441;animation:mhalo 2.1s ease-out infinite}
