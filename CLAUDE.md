@@ -351,6 +351,16 @@ walk into a wall.
   warning and was reported, correctly, as being shot from across the arena.
   A telegraph that fails silently is worse than none, because the mechanic it
   is explaining still fires.
+- **The charge line is always red, including when you can answer it.** It used
+  to turn green whenever the hunter was foldable, and green is this game's
+  colour for the goal — for *safe* — so the one drawing whose job is "you are
+  about to be hit" said "you are fine" at the moment of maximum danger. It was
+  reported, exactly, as not indicating anything. The line says one thing: the
+  charge lands along here. The opportunity is said in the two places you are
+  already looking — the hunter's own body turns green and swells, and the
+  `GO 2D` button turns green and pulses — and being answerable only *adds*
+  brightness to the line, so the contested one reads as live rather than as
+  harmless. Three cues, one danger reading that never inverts.
 - **The telegraph is drawn in the volume and does not fold with the world.**
   The charge happens along that row whichever way you are looking, and the
   whole tension is that the axis you must fold along to answer it may not be

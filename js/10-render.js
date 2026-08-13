@@ -271,7 +271,21 @@ function drawLines(){
     // it is standing on you
     var t=1-Math.min(1,h.lock/bossAim());
     m.material.opacity=.28+t*t*.62;
-    m.material.color.setHex(h.doom?0x35c2a5:0xff4d5e);
+    /* The line is always the charge colour, even when you could answer it.
+       It used to turn green whenever the hunter was foldable, and green is
+       this game's colour for the goal - for safe - so the one drawing that
+       exists to say "you are about to be hit" said "you are fine" at exactly
+       the moment the danger was highest, and was reported as not indicating
+       anything. The line means one thing: the charge lands along here.
+
+       The opportunity is not lost, because it was never this drawing's job.
+       It is already said twice, in the two places you are looking: the hunter
+       itself turns green and swells, and the GO 2D button turns green and
+       pulses. Being answerable only adds urgency here - the line brightens in
+       time with the peril pulse, so the contested one reads as live rather
+       than as harmless. */
+    m.material.color.setHex(0xff4d5e);
+    m.material.opacity=Math.min(1,m.material.opacity+(h.doom?perilPulse*.32:0));
     m.visible=true;
   }
   for(var k=n;k<lineMeshes.length;k++)lineMeshes[k].visible=false;

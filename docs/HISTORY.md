@@ -137,6 +137,15 @@ them was a matter of taste.**
   the charge really did arrive out of nowhere. Worth stating as a rule: a
   telegraph that fails silently is worse than no telegraph, because the thing
   it explains keeps happening and the player learns the fight is unfair.
+- **And when the line *was* drawn, it lied.** It turned green whenever the
+  hunter was foldable — meaning "this line is yours", which is a lovely idea
+  and the wrong drawing to put it on. Green is the goal colour, so the
+  telegraph announced *safe* at the exact instant the danger peaked, and the
+  second report was that a green line did not seem to indicate anything. The
+  general rule, paid for twice in one session: a telegraph may vary in
+  intensity but must never vary in *meaning*. The opportunity was already
+  being said by the hunter's body and the `GO 2D` button; the line only ever
+  had one job.
 - **A pillar rising in phase 3 buried phase 3.** The phase whose job was to
   announce "the opponent has changed" also changed the arena, so it read as
   more of phase 2. All geometry now arrives in phase 2. This also made phases
