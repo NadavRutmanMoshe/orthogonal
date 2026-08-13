@@ -513,6 +513,19 @@ level data changed to make it.
 - **The tutorials get a `PROLOGUE` section** so the map has somewhere to put
   them. Its `at:0` shifts no other marker — these are array indices and every
   later section keeps the index it had.
+- **The trail climbs.** The first level of a section sits at the bottom and
+  its boss at the top, laid out from the last index down rather than mirrored
+  afterwards — everything hung off a node (its stars, its label) is positioned
+  relative to that node and would otherwise need un-mirroring one by one. A
+  segment is lit by the *lower* of its two indices, because the trail draws
+  top-down while the campaign runs bottom-up. `mapFocus()` opens on where you
+  are, or at the foot of a section you have not started.
+- **The menu, the wardrobe and the map share their furniture** (`.panel.tall`,
+  `.phead`, `.pcard`, `.pgo`, pill `.tab`s). The map got its language first
+  and the menu read as a debug screen beside it — eleven identical outlined
+  rectangles with no hierarchy and whatever slider the browser drew. The
+  corner star total hides behind *any* open panel now, since three of them
+  carry a total of their own.
 - **The way out lives in the header, not the footer.** The row at the foot of
   the panel sits below a trail several screens long, so after scrolling into a
   section there was nothing in sight that looked like an exit and the map read

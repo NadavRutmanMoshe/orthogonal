@@ -39,7 +39,10 @@ function wardrobePanel(tab){
   wardTab=tab||"shape";
   buyArmed=null;
   showPanel(
-    "<h3 id='wHead'></h3>"+
+    "<div class='phead'><div class='pt'><b>Wardrobe</b>"+
+      "<span id='wHead'></span></div>"+
+      "<div class='mtot' id='wBal'></div>"+
+      "<button class='mq mx' id='wX' aria-label='Back to the level'>✕</button></div>"+
     "<div class='tabs'>"+
       "<button class='tab' id='wS'>SHAPE</button>"+
       "<button class='tab' id='wC'>COLOUR</button>"+
@@ -60,6 +63,7 @@ function wardrobePanel(tab){
   bind("wV",function(){wardTabTo("world3");});
   bind("wP",function(){wardTabTo("world2");});
   bind("wBack",hidePanel);
+  bind("wX",hidePanel);
   wardRefresh();
   // The canvas has no measurable size until the panel has been laid out, so
   // the case starts a frame late. Re-check the panel on the way in: closing
@@ -87,7 +91,10 @@ function wardPreview(){
 }
 function wardRefresh(){
   var t=wardTab, list=wardList(t), cur=wardEquipped(t), sel=wardSelected(t);
-  $("wHead").textContent="WARDROBE \u00b7 "+shards()+" \u2605 TO SPEND";
+  $("wHead").textContent=t==="shape"?"THE SHAPE YOU PLAY AS":
+    t==="color"?"ITS COLOUR":t==="world3"?"THE VOLUME":"THE PLANE";
+  $("wBal").innerHTML=shards()+" \u2605";
+  $("wBal").title="to spend";
   $("wS").classList.toggle("on",t==="shape");
   $("wC").classList.toggle("on",t==="color");
   $("wV").classList.toggle("on",t==="world3");
@@ -203,29 +210,38 @@ function seg(pre,val,label,cur){
 }
 function menuPanel(){
   var vol=Math.round(settings.volume*100), bri=Math.round(settings.brightness*100);
-  showPanel("<h3>MENU</h3>"+
-    "<div class='prow'><button id='mRestart'>RESTART LEVEL</button>"+
-    "<button id='mLevels'>LEVELS</button></div>"+
-    "<div class='srow'><label>Volume</label>"+
-      "<input type='range' id='mVol' min='0' max='100' value='"+vol+"'>"+
-      "<span id='mVolV'>"+vol+"%</span></div>"+
-    "<div class='srow'><label>Brightness</label>"+
-      "<input type='range' id='mBri' min='60' max='140' value='"+bri+"'>"+
-      "<span id='mBriV'>"+bri+"%</span></div>"+
-    "<div class='crow'><label>Controls</label><span class='seg'>"+
-      seg("mUi","full","ON-SCREEN",settings.ui)+
-      seg("mUi","compact","COMPACT",settings.ui)+
-      seg("mUi","none","HIDDEN",settings.ui)+"</span></div>"+
-    "<div class='note'>COMPACT drops the d-pad; HIDDEN clears the screen. "+
-      "Either way: <code>swipe</code> or arrows/WASD to move, "+
-      "<code>space</code> to change dimension, <code>Q</code>/<code>E</code> to turn. "+
-      "With the bar hidden, <code>tap</code> the world to change dimension and "+
-      "<code>two-finger tap</code> to turn.</div>"+
-    "<div class='prow'><button id='mLegend'>WHAT THE PIECES DO</button>"+
-    "<button id='mTut'>REPLAY TUTORIAL</button></div>"+
-    "<div class='prow'><button id='mReset'>RESET SETTINGS</button></div>"+
-    "<div class='prow'><button id='mEditor'>LEVEL EDITOR</button>"+
-    "<button id='mClose'>CLOSE</button></div>","menu");
+  showPanel(
+    "<div class='phead'><div class='pt'><b>Menu</b>"+
+      "<span>"+esc((L&&L.name)||"")+"</span></div>"+
+      "<div class='mtot'>"+starsEarned()+" ★</div>"+
+      "<button class='mq mx' id='mClose' aria-label='Back to the level'>✕</button></div>"+
+    "<div class='pbody'>"+
+      "<div class='prow2'><button class='pgo' id='mLevels'>LEVELS</button>"+
+      "<button id='mRestart'>RESTART</button></div>"+
+      "<div class='pcard'><h4>Sound &amp; light</h4>"+
+        "<div class='srow'><label>Volume</label>"+
+          "<input type='range' id='mVol' min='0' max='100' value='"+vol+"'>"+
+          "<span id='mVolV'>"+vol+"%</span></div>"+
+        "<div class='srow'><label>Brightness</label>"+
+          "<input type='range' id='mBri' min='60' max='140' value='"+bri+"'>"+
+          "<span id='mBriV'>"+bri+"%</span></div></div>"+
+      "<div class='pcard'><h4>Controls</h4>"+
+        "<div class='crow'><label>Layout</label><span class='seg'>"+
+          seg("mUi","full","ON-SCREEN",settings.ui)+
+          seg("mUi","compact","COMPACT",settings.ui)+
+          seg("mUi","none","HIDDEN",settings.ui)+"</span></div>"+
+        "<div class='note'>COMPACT drops the d-pad; HIDDEN clears the screen. "+
+          "Either way: <code>swipe</code> or arrows/WASD to move, "+
+          "<code>space</code> to change dimension, <code>Q</code>/<code>E</code> to turn. "+
+          "With the bar hidden, <code>tap</code> the world to change dimension and "+
+          "<code>two-finger tap</code> to turn.</div></div>"+
+      "<div class='pcard'><h4>More</h4><div class='psub'>"+
+        "<button id='mLegend'>WHAT THE PIECES DO</button>"+
+        "<button id='mTut'>REPLAY TUTORIAL</button>"+
+        "<button id='mEditor'>LEVEL EDITOR</button>"+
+        "<button id='mReset' class='pdanger'>RESET SETTINGS</button>"+
+      "</div></div>"+
+    "</div>","menu");
   var v=$("mVol"), b=$("mBri");
   v.addEventListener("input",function(){
     settings.volume=v.value/100;
@@ -534,7 +550,6 @@ function mapTabs(spans){
     tap(el,function(){
       mapSection=+el.getAttribute("data-tab");
       mapTabs(sectionSpans());mapDraw(sectionSpans());
-      $("mBody").scrollTop=0;
     });
   });
   var sel=$("mTabs").querySelector(".mtab.sel");
@@ -554,12 +569,17 @@ function mapDraw(spans){
     "<div class='mf'><span>"+cleared+"/"+tot+" cleared</span>"+
     "<span>"+sp.got+"/"+sp.max+" ★</span></div>";
 
+  /* Laid out from the last level down, so the first sits at the *bottom* and
+     the boss at the top: progress climbs. Drawn in that order rather than
+     mirrored afterwards, because everything hung off a node - its stars, its
+     label - is positioned relative to the node and would have had to be
+     un-mirrored one by one. */
   var trail=$("mtrail"), STEP=94, AMP=.30;
   var pts=[], html="", y=36;
-  for(var i=sp.from;i<=sp.to;i++){
+  for(var i=sp.to;i>=sp.from;i--){
     var l=LEVELS[i], k=mapKind(l), st=mapState(i), off=Math.sin((i-sp.from)*.95)*AMP;
     var half=(k==="boss"?38:k==="tut"?21:29);
-    pts.push({y:y,off:off,on:mapTouched(i)});
+    pts.push({y:y,off:off,i:i});
     html+="<button class='mnode "+st+(k==="trial"?" trial":"")+(k==="boss"?" boss":"")+
       (k==="tut"?" tut":"")+"' data-node='"+i+"' data-off='"+off.toFixed(4)+
       "' style='top:"+y+"px;margin-left:"+(-half)+"px;margin-top:"+(-half)+"px'>"+
@@ -585,6 +605,17 @@ function mapDraw(spans){
   trail.querySelectorAll("[data-node]").forEach(function(el){
     tap(el,function(){mapSheet(+el.getAttribute("data-node"));});
   });
+  mapFocus();
+}
+/* Land on where you are. The trail climbs, so the top of the scroll is the
+   boss and the bottom is the first level - opening at scrollTop 0 would show
+   every section by its ending. A section you have not started scrolls to its
+   foot instead, which is where it begins. */
+function mapFocus(){
+  var body=$("mBody"); if(!body)return;
+  var here=$("mtrail").querySelector(".mnode.here");
+  if(here&&here.scrollIntoView){here.scrollIntoView({block:"center"});return;}
+  body.scrollTop=body.scrollHeight;
 }
 
 /* The trail. Drawn solid behind you and dotted ahead, so how far you have got
@@ -601,7 +632,11 @@ function mapLayout(pts,H){
     var a=pts[n-1], b=pts[n];
     var ax=cx+a.off*(w*.5-44), bx=cx+b.off*(w*.5-44);
     var seg="M "+ax.toFixed(1)+" "+a.y+" L "+bx.toFixed(1)+" "+b.y;
-    if(a.on)on+=seg; else off+=seg;
+    /* A segment is lit when the *earlier* of its two levels has been dealt
+       with, so the lit run always trails behind you. Decided by index rather
+       than by draw order, because the trail is drawn top-down while the
+       campaign runs bottom-up and the two disagree about which end is first. */
+    if(mapTouched(Math.min(a.i,b.i)))on+=seg; else off+=seg;
   }
   var svg=trail.querySelector("svg");
   svg.setAttribute("viewBox","0 0 "+w+" "+H);

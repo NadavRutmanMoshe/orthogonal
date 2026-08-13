@@ -467,7 +467,13 @@ var SECTIONS=[
   {at:3, name:"I · FUNDAMENTALS", sub:"one verb: collapse the world and cross the gap", col:"#35c2a5"},
   {at:14, name:"II · SPIKES", sub:"a hazard you cannot see until you fold", col:"#e0455f"},
   {at:23, name:"III · GLASS", sub:"solid in the volume, absent from the plane", col:"#7fb2ff"},
-  {at:33, name:"IV · CRATES", sub:"change the plane by moving the volume", col:"#c9744f"},
+  /* Purple, because a crate is drawn pale violet in the world - the section
+     wears the colour of the piece it teaches. It is deliberately pinker and
+     lighter than the boss's #a274ff so the two are not the same purple; the
+     boss also carries its four-arc ring, which is what actually tells them
+     apart. This is the closest any section gets to a reserved colour, and
+     the pair should be pulled further apart when the boss is revisited. */
+  {at:33, name:"IV · CRATES", sub:"change the plane by moving the volume", col:"#c07ae0"},
   {at:45, name:"V · EXTRA", sub:"unlocked by the Orthogon — the long ones", col:"#3fc4d4", locked:true}
 ];
 
