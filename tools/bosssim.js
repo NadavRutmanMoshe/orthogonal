@@ -203,14 +203,16 @@ function sim(lv,policy,ms){
         continue;                       // crushed, so never in the plane
       }
       flat={u:uOf(v,p.x,p.z),y:p.y};moves++;
-      if(!hs.length&&advance())return done({win:true,lives,kills,folds,moves});
-      /* Every kill sends the player back to the start square, so the walk
-         back is part of the fight and has to be part of the measurement. A
-         simulation that lets the policy keep its ground is measuring the
-         spawn-camp this rule exists to remove. */
-      // Position only. Standing it back up or granting grace would make the
-      // fold free, which is measurable: idle wins all four arenas unhit.
-      if(dead.some(Boolean)){
+      if(!hs.length){
+        if(advance())return done({win:true,lives,kills,folds,moves});
+        /* Clearing a phase sends the player back to the start square, so the
+           walk back is part of the fight and has to be part of the
+           measurement - a simulation that lets the policy keep its ground is
+           measuring the spawn-camp this rule removes. Killing one of a
+           phase's two hunters moves nobody.
+
+           Position only: standing it back up or granting grace would make the
+           fold free, which is measurable - idle wins all four arenas unhit. */
         p={x:lv.start[0],y:lv.start[1],z:lv.start[2]};
         if(flat)flat={u:uOf(v,p.x,p.z),y:p.y};
       }

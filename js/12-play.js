@@ -168,13 +168,21 @@ function bossAim(){
   var ph=B.phases&&B.phases[bossPhase];
   return Math.max(1,(ph&&ph.aim)||1);
 }
-/* Back to your corner, after every kill.
+/* Back to your corner, at the end of a phase.
 
    Killing means folding and folding means being where it is, so the square
    next to a spawn is the best square in the arena: stand there and take each
    arrival as it appears, and the fight is a queue rather than a hunt. That is
    farming, which is the one thing five boss designs have been spent avoiding,
    and it was found in the first playtest.
+
+   A *phase boundary*, though, not a kill. The camp being closed here is the
+   one between phases - every phase puts its hunter down on the same cell, so
+   holding that cell means the next one arrives beside you already. Inside a
+   phase there is no queue to farm: the two hunters of phase four walk at you
+   once and only return to their spawns if they hit you, so taking the ground
+   you earned for killing the first of them would be charging you for playing
+   well - which is exactly what a hit deliberately does not do.
 
    This is deliberately the opposite of what a *hit* does. A hit throws the
    pack back to its spawns and does not move you, because losing the position
@@ -462,7 +470,7 @@ function bossFoldCrush(){
   if(!hunters.length){bossAdvance();setTimeout(bossSendHome,420);return;}
   flash(doomed.length>1?(doomed.length+" in one square · "+hunters.length+" left"):
         ("folded onto it · "+hunters.length+" left"));
-  syncHud();setTimeout(bossSendHome,420);
+  syncHud();
 }
 // True when folding right now would kill at least one of them - what turns
 // the GO 2D button green. foldKills() already refuses a column with a pillar
@@ -512,7 +520,7 @@ function bossTakeCrate(idx){
   SFX.strike();shakeT=1;
   if(!hunters.length){bossAdvance();setTimeout(bossSendHome,420);return true;}
   flash("crushed under the crate · "+hunters.length+" left");
-  syncHud();setTimeout(bossSendHome,420);
+  syncHud();
   return true;
 }
 

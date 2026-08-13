@@ -367,15 +367,25 @@ walk into a wall.
 - **A hit throws the pack back to its spawns and does not move you.** Sending
   the player home costs the position they spent twenty seconds building — a
   punishment for being hit *and* for having played well.
-- **A kill throws *you* back to your corner** (`bossSendHome`), which is the
-  deliberate opposite. Killing means folding and folding means being where it
-  is, so the square beside a spawn is the best in the arena: stand there and
-  take each arrival as it appears. That is farming, it was found in the first
-  playtest, and winning the exchange is the moment you can afford to give
-  ground up. It moves you and **does nothing else** — it does not stand you
-  back up and does not grant grace, because being flat is what a fold costs.
-  An earlier version did both and made folding free: `bosssim`'s idle policy
-  went from losing every arena to winning all four unhit.
+- **Clearing a phase throws *you* back to your corner** (`bossSendHome`),
+  which is the deliberate opposite. Killing means folding and folding means
+  being where it is, so the square beside a spawn is the best in the arena:
+  stand there and take each arrival as it appears. That is farming, it was
+  found in the first playtest, and winning the exchange is the moment you can
+  afford to give ground up.
+- **It is a phase boundary, not a kill.** The camp it closes is the one
+  *between* phases: every phase puts its hunter on the same cell, so holding
+  that cell means the next arrives beside you already. Inside a phase there is
+  no queue to farm — phase 4's two hunters walk at you once and only return to
+  their spawns if they hit you — so killing the first of them moves nobody.
+  Taking back ground you earned would charge you for playing well, which is
+  precisely what a hit is careful not to do.
+- **It moves you and does nothing else.** It does not stand you back up and
+  does not grant grace, because being flat is what a fold costs. An earlier
+  version did both and made folding free: `bosssim`'s idle policy went from
+  losing every arena to winning all four unhit. The unfold that follows lands
+  on the start *square* (`bossHomePending`) rather than wherever in that
+  column the nearest-camera rule would otherwise favour.
 - **No hunter may spawn within 5 of the start square.** The player is returned
   there after every kill *and* every life lost, so it is where they keep
   reappearing rather than somewhere they pass through once. `bossArena()`

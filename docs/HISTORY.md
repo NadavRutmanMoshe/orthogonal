@@ -143,8 +143,13 @@ them was a matter of taste.**
   3 and 4 a controlled comparison for the first time — same board, one smarter
   against two ordinary — which is the entire reason both exist.
 - **The spawn was campable.** Stand beside it, fold as each arrival appears,
-  and the fight is a queue. Every kill now returns the player to the start
-  square. Two things fell out of that immediately: it must move you and do
+  and the fight is a queue. Clearing a phase now returns the player to the
+  start square — a phase boundary and not a kill, because the queue being
+  farmed was the one *between* phases, where each new hunter arrives on the
+  same cell. Inside a phase there is nothing to farm, so killing one of phase
+  4's two moves nobody; taking that ground back would charge the player for
+  playing well, which is the thing a hit is careful not to do. Two things fell
+  out of the rule immediately: it must move you and do
   *nothing else* — an early version also stood you up and gave grace, and
   since being flat is what a fold costs, that made folding free and the idle
   policy won all four arenas without being hit once — and a spawn near the
