@@ -1,7 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "Artifact"
+      "Artifact",
+      "Bash(node --check *)",
+      "Bash(node tools/verify.js)",
+      "Bash(node tools/verify.js *)",
+      "Bash(node tools/bosssim.js)",
+      "Bash(node tools/bosssim.js *)",
+      "Bash(node tools/curve.js)",
+      "Bash(node tools/curve.js *)",
+      "Bash(node tools/build-single.js --vendor --artifact)"
     ]
   }
 }

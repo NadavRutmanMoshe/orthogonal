@@ -34,6 +34,11 @@ function showPanel(html,kind){
 function syncMapChrome(){
   $("panel").classList.toggle("map",panelKind==="map");
   document.body.classList.toggle("mapopen",panelKind==="map");
+  // The ambient loop lives and dies with the panel, so it can never be left
+  // running behind a level - least of all behind one on a clock.
+  if(typeof mapBgStart==="function"){
+    if(panelKind==="map")mapBgStart(); else mapBgStop();
+  }
 }
 function hidePanel(){
   previewStop();

@@ -318,6 +318,98 @@ function sectionSpans(){
 var MAP_WINDOW=2;
 var mapSection=null;          // which tab is open; null means "where you are"
 
+/* ---- the map's ambient world -----------------------------------------
+   Wireframe cubes drifting behind the trail, each one periodically
+   collapsing into a flat square and standing back up: the game's own verb,
+   running quietly where the menu would otherwise be a flat panel.
+
+   Three things about it are deliberate. It is a *2D* canvas, so it costs
+   nothing against the WebGL context cap the wardrobe's display case has to
+   budget for. It is a child of the panel rather than of body, because
+   `body>canvas` in the CSS is what scopes the game's own renderer and any
+   canvas that escapes into body would be pinned over the whole viewport by
+   that rule. And the loop stops dead when the panel closes - a menu
+   animation that keeps running behind a boss fight is a menu animation
+   stealing frames from the thing on a clock.
+
+   The cubes are pushed out of the middle third. The trail and its labels own
+   the centre column, and ambience you have to read around is not ambience.
+   ---------------------------------------------------------------------- */
+var mapBgRAF=0, mapBgCubes=null;
+function mapBgStop(){ if(mapBgRAF){cancelAnimationFrame(mapBgRAF);mapBgRAF=0;} }
+function mapBgStart(){
+  var c=$("mBg");
+  if(!c||mapBgRAF||!c.getContext)return;
+  var x=c.getContext("2d");
+  if(!x)return;
+  var reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches;
+  var W=0,H=0,DPR=1;
+  function fit(){
+    DPR=Math.min(2,window.devicePixelRatio||1);
+    W=c.clientWidth||1;H=c.clientHeight||1;
+    c.width=Math.max(1,Math.round(W*DPR));c.height=Math.max(1,Math.round(H*DPR));
+    x.setTransform(DPR,0,0,DPR,0,0);
+  }
+  if(!mapBgCubes){
+    mapBgCubes=[];
+    for(var i=0;i<11;i++)mapBgCubes.push({
+      x:.5+(Math.random()<.5?-1:1)*(.26+Math.random()*.27),
+      y:Math.random(), d:.3+Math.random()*.7,
+      s:10+Math.random()*17, t:Math.random()*Math.PI*2,
+      sp:.12+Math.random()*.2, drift:.010+Math.random()*.022
+    });
+  }
+  /* A cube, isometric, with its depth axis scaled by (1-f). At f=1 the depth
+     is gone and the three faces land in one square - which is exactly what
+     the fold does to the world. */
+  function cube(cu,f,alpha){
+    var s=cu.s, k=1-f;
+    function P(px,py,pz){
+      return [(px-pz*k)*0.866*s, (py+(px+pz*k)*0.5)*s*0.62];
+    }
+    var faces=[[[-1,-1,-1],[1,-1,-1],[1,-1,1],[-1,-1,1]],
+               [[-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1]],
+               [[1,-1,-1],[1,-1,1],[1,1,1],[1,1,-1]]];
+    var tint=[.085,.055,.032];
+    for(var i=0;i<3;i++){
+      x.beginPath();
+      for(var v=0;v<4;v++){
+        var p=P(faces[i][v][0],faces[i][v][1],faces[i][v][2]);
+        if(v)x.lineTo(p[0],p[1]); else x.moveTo(p[0],p[1]);
+      }
+      x.closePath();
+      x.fillStyle="rgba(150,180,230,"+(tint[i]*alpha).toFixed(3)+")";
+      x.fill();
+      x.strokeStyle="rgba(170,200,245,"+(.16*alpha).toFixed(3)+")";
+      x.lineWidth=1;x.stroke();
+    }
+  }
+  fit();
+  var last=0;
+  function frame(now){
+    if(panelKind!=="map"){mapBgRAF=0;return;}   // the panel closed under us
+    var dt=Math.min(60,now-last)||16; last=now;
+    if(c.clientWidth!==W||c.clientHeight!==H)fit();
+    x.clearRect(0,0,W,H);
+    for(var i=0;i<mapBgCubes.length;i++){
+      var cu=mapBgCubes[i];
+      if(!reduce){
+        cu.t+=cu.sp*dt/1000;
+        cu.y-=cu.drift*dt/1000;
+        if(cu.y<-.14)cu.y=1.14;
+      }
+      // Most of the beat standing up and a short flat moment, like play.
+      var raw=(Math.sin(cu.t)+1)/2;
+      x.save();
+      x.translate(cu.x*W,cu.y*H);
+      cube(cu,Math.pow(raw,3.2),cu.d*.85);
+      x.restore();
+    }
+    mapBgRAF=requestAnimationFrame(frame);
+  }
+  mapBgRAF=requestAnimationFrame(frame);
+}
+
 function mapSolved(i){return progress[LEVELS[i].name]!==undefined;}
 function mapSkipped(i){return !!skips[LEVELS[i].name];}
 function mapTouched(i){return mapSolved(i)||mapSkipped(i);}
@@ -363,6 +455,11 @@ function mapNumeral(l){
 }
 
 function levelPicker(){
+  /* Opening the map while it is already open replaces the panel's innerHTML,
+     and with it the canvas. Without this the old loop would still be running
+     against the detached one - drawing nothing anybody can see, and refusing
+     to start again because it thinks it is already going. */
+  mapBgStop();
   if(mapSection===null)mapSection=mapSecOf(mapHere());
   var spans=sectionSpans();
   var here=mapHere(), total=0, done=0;
@@ -371,7 +468,8 @@ function levelPicker(){
     total+=3;done+=starsForRecord(LEVELS[q],progress[LEVELS[q].name]);
   }
 
-  var h="<div class='mhead'><div class='mt'><b>Orthogonal</b>"+
+  var h="<canvas class='mbg' id='mBg' aria-hidden='true'></canvas>"+
+        "<div class='mhead'><div class='mt'><b>Orthogonal</b>"+
         "<span id='mSub'></span></div>"+
         "<div class='mtot'>"+done+" ★</div>"+
         "<button class='mq' id='mHelp' aria-label='What the map means'>?</button></div>"+
