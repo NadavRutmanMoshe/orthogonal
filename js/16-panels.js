@@ -216,8 +216,7 @@ function menuPanel(){
       "<div class='mtot'>"+starsEarned()+" ★</div>"+
       "<button class='mq mx' id='mClose' aria-label='Back to the level'>✕</button></div>"+
     "<div class='pbody'>"+
-      "<div class='prow2'><button class='pgo' id='mLevels'>LEVELS</button>"+
-      "<button id='mRestart'>RESTART</button></div>"+
+      "<div class='prow2'><button class='pgo' id='mLevels'>LEVELS</button></div>"+
       "<div class='pcard'><h4>Sound &amp; light</h4>"+
         "<div class='srow'><label>Volume</label>"+
           "<input type='range' id='mVol' min='0' max='100' value='"+vol+"'>"+
@@ -257,7 +256,6 @@ function menuPanel(){
     $("mBriV").textContent=b.value+"%";
     applyBrightness();saveSettings();
   });
-  bind("mRestart",function(){hidePanel();resetLevel();});
   ["full","compact","none"].forEach(function(m){
     bind("mUi_"+m,function(){
       settings.ui=m;applyUI();saveSettings();syncHud();onResize();menuPanel();
@@ -449,10 +447,14 @@ function mapBgStart(){
 function mapSolved(i){return progress[LEVELS[i].name]!==undefined;}
 function mapSkipped(i){return !!skips[LEVELS[i].name];}
 function mapTouched(i){return mapSolved(i)||mapSkipped(i);}
-// The furthest index you may open.
+/* The furthest index the window itself opens, measured from what you have
+   actually *beaten*. Skips are excluded on purpose: a skip is a door opened
+   onto one landmark, not progress, and counting it here would drag the whole
+   window forward and hand over the levels in between - which are the levels
+   the skip exists to let you come back to. */
 function mapReach(){
   var last=-1;
-  for(var i=0;i<LEVELS.length;i++) if(mapTouched(i)) last=i;
+  for(var i=0;i<LEVELS.length;i++) if(mapSolved(i)) last=i;
   return last+1+MAP_WINDOW;
 }
 // Where the pink node goes: the first level you have not dealt with.
@@ -461,10 +463,28 @@ function mapHere(){
   return LEVELS.length-1;
 }
 function mapLocked(i){
-  if(mapTouched(i))return false;
+  if(mapTouched(i))return false;      // beaten, or a door already opened
   var s=SECTIONS[mapSecOf(i)];
   if(s&&s.locked&&!sectionsUnlocked())return true;
   return i>mapReach();
+}
+/* What an ad may open, and nothing else. A skip lands on a *landmark* - the
+   boss that closes a section you are already inside, or the opening level of
+   the next section - so it buys you past a wall rather than past the levels
+   themselves. Skipping straight to a boss used to drag the rolling window
+   with it and quietly hand over everything in between, which is the opposite
+   of the point: those levels are still there to play. */
+function mapSkippable(i){
+  return mapLocked(i)&&mapKind(LEVELS[i])==="boss"&&
+         mapSecOf(i)===mapSecOf(mapHere());
+}
+// A whole section can be opened at its first level, but never V · EXTRA:
+// that shelf is what beating every boss is *for*, and selling it would make
+// the reward a purchase.
+function mapSectionSkippable(n){
+  var s=SECTIONS[n];
+  if(!s||s.locked)return false;
+  return s.at>mapReach()&&!mapTouched(s.at);
 }
 function mapState(i){
   if(mapSolved(i))return "solved";
@@ -483,6 +503,38 @@ function mapAds(k){return k==="boss"?3:k==="trial"?2:1;}
 // The circle already carries the number, so the label beside it drops it.
 function mapCaption(l){
   return l.name.replace(/^\d+\s+—\s+/,"").replace(/^(?:TRIAL|BOSS)\s+[IVX]+\s+—\s+/,"");
+}
+/* The two landmarks get shapes out of the game's own vocabulary rather than
+   ornament bolted onto a circle.
+
+   A BOSS is a hexagon, which is what a cube looks like seen corner-on - the
+   silhouette of the game's own piece, and the only shape on the map that is
+   also a thing in the world. Around it, four arcs: its four phases.
+
+   A TRIAL is a diamond, the square standing on its point, with the sweeping
+   plane drawn straight through it. That is the trial in one picture: a flat
+   thing and the slice about to cross it.
+
+   Drawn as SVG rather than clip-path because a clipped box loses its border
+   and its shadow, and the rim and the lip are what make a node look like
+   something you can press. */
+var MAP_HEX="50,2 92.6,26 92.6,74 50,98 7.4,74 7.4,26";
+var MAP_DIA="50,3 97,50 50,97 3,50";
+function mapShape(k){
+  if(k==="boss")
+    return "<svg class='msvg' viewBox='0 0 100 100' aria-hidden='true'>"+
+      "<polygon class='mlip' points='"+MAP_HEX+"'/>"+
+      "<polygon class='mface' points='"+MAP_HEX+"'/>"+
+      "<circle class='mring' cx='50' cy='50' r='58'/></svg>";
+  if(k==="trial")
+    return "<svg class='msvg' viewBox='0 0 100 100' aria-hidden='true'>"+
+      "<polygon class='mlip' points='"+MAP_DIA+"'/>"+
+      "<polygon class='mface' points='"+MAP_DIA+"'/>"+
+      // Below centre, so the plane crosses the square without cutting through
+      // the numeral - the sweep still reads and the label stays legible.
+      "<rect class='mslice' x='-18' y='63' width='136' height='10' rx='5' "+
+      "transform='rotate(-24 50 50)'/></svg>";
+  return "";
 }
 function mapNumeral(l){
   var m=l.name.match(/^(\d+)/); if(m)return m[1];
@@ -567,7 +619,18 @@ function mapDraw(spans){
   $("mCard").innerHTML="<b>"+esc(sec.name)+"</b><i>"+esc(sec.sub)+"</i>"+
     "<u class='mbar'><u style='width:"+(lk?0:pct)+"%'></u></u>"+
     "<div class='mf'><span>"+cleared+"/"+tot+" cleared</span>"+
-    "<span>"+sp.got+"/"+sp.max+" ★</span></div>";
+    "<span>"+sp.got+"/"+sp.max+" ★</span></div>"+
+    (mapSectionSkippable(n)
+      ? "<button class='skipsec' id='mSecAd'>START THIS SECTION · WATCH 3 ADS</button>"
+      : "");
+  var sa=$("mSecAd");
+  /* Opens the section's *first* level and nothing else, so the section is
+     played from its beginning rather than handed over. */
+  if(sa)tap(sa,function(){
+    grantSkip(LEVELS[sec.at].name);
+    mapTabs(sectionSpans());mapDraw(sectionSpans());
+    flash("section opened · no stars for a skip");
+  });
 
   /* Laid out from the last level down, so the first sits at the *bottom* and
      the boss at the top: progress climbs. Drawn in that order rather than
@@ -580,11 +643,12 @@ function mapDraw(spans){
     var l=LEVELS[i], k=mapKind(l), st=mapState(i), off=Math.sin((i-sp.from)*.95)*AMP;
     var half=(k==="boss"?38:k==="tut"?21:29);
     pts.push({y:y,off:off,i:i});
-    html+="<button class='mnode "+st+(k==="trial"?" trial":"")+(k==="boss"?" boss":"")+
+    html+="<button class='mnode "+st+(k==="trial"?" mtrial":"")+(k==="boss"?" mboss":"")+
       (k==="tut"?" tut":"")+"' data-node='"+i+"' data-off='"+off.toFixed(4)+
       "' style='top:"+y+"px;margin-left:"+(-half)+"px;margin-top:"+(-half)+"px'>"+
+      mapShape(k)+"<span>"+
       (st==="locked"?"●":(st==="solved"&&k==="tut"?"✓":esc(mapNumeral(l))))+
-      "</button>";
+      "</span></button>";
     if(st==="solved"&&k!=="tut"){
       var got=starsForRecord(l,progress[l.name]), sh="";
       for(var s2=0;s2<3;s2++)sh+="<u class='"+(s2<got?"":"off")+"'>★</u>";
@@ -669,13 +733,21 @@ function mapSheet(i){
     : "locked — clear what is in front of it, or skip ahead";
 
   var acts,note;
-  if(st==="locked"){
+  if(st==="locked"&&mapSkippable(i)){
     var ads=mapAds(k);
-    acts="<button class='ad' id='mAd'>SKIP AHEAD · WATCH "+ads+" AD"+
+    acts="<button class='ad' id='mAd'>OPEN THE BOSS · WATCH "+ads+" AD"+
          (ads>1?"S":"")+"</button><button class='qt' id='mNo'>NOT NOW</button>";
-    note="Skipping opens the door, not the level. It awards <b>no stars</b> and "+
-         "the level stays here to beat properly whenever you want. Ads buy "+
-         "progress, never score.";
+    note="This opens the boss and <b>nothing else</b> — the levels before it "+
+         "stay where they are, still to play. It awards <b>no stars</b>. Ads "+
+         "buy progress, never score.";
+  }else if(st==="locked"){
+    acts="<button class='qt' id='mNo'>CLOSE</button>";
+    note=(k==="boss")
+      ? "Get into this section first — the boss opens once you are working "+
+        "through the levels that lead to it."
+      : "Clear the levels in front of it. Only the <b>boss</b> that closes a "+
+        "section, or the start of the next section, can be opened with an ad — "+
+        "so a skip carries you past a wall, never past the puzzles.";
   }else{
     acts="<button class='go' id='mPlay'>"+(st==="solved"?"PLAY AGAIN":"PLAY")+
          "</button><button class='qt' id='mNo'>CLOSE</button>";
@@ -718,8 +790,10 @@ function mapHelp(){
     row("open","9","<b>Open.</b> You can always reach a couple of levels ahead, so one hard puzzle never stops you.")+
     row("locked","●","<b>Locked.</b> Clear what is in front of it — or skip ahead with an ad.")+
     row("skipped","●","<b>Skipped.</b> The door opened, the level did not. Its stars are still there to take.")+
-    row("trial","I","<b>Trial</b> — the bar is the plane about to sweep through. Three cores, on a clock.")+
-    row("boss","I","<b>Boss</b> — the ring is its four phases. Closes the section.")+
+    row("mtrial",mapShape("trial")+"<span>I</span>",
+        "<b>Trial</b> \u2014 a square on its point, with the plane about to sweep through it. Three cores, on a clock.")+
+    row("mboss",mapShape("boss")+"<span>I</span>",
+        "<b>Boss</b> \u2014 a cube seen corner-on. The four arcs are its four phases. Closes the section.")+
     "</div><div class='mn'>Ads buy <b>progress, never score</b>. A skip awards no "+
     "stars and the level stays on the map, playable, whenever you want it.</div>"+
     "<div class='ma'><button class='qt' id='mNo'>CLOSE</button></div>";

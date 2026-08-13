@@ -485,13 +485,23 @@ level data changed to make it.
   values each. **No section may be violet or amber**: those two belong to the
   boss and the trial in every section, and `V · EXTRA` had to move off violet
   for exactly that reason.
-- **Boss and trial differ by silhouette before colour.** They used to be
-  `#ff8a3c` against `#e0a03c` — the same hue two steps apart, which at 60px on
-  a dark ground is not a distinction. The boss is now **violet** and wears a
-  four-arc ring (its four phases); the trial keeps amber, because that is
-  already the colour of a core on a clock in the world, and wears the bar that
-  is about to sweep through it. Turn the colour off and they are still three
-  different shapes. The violet follows through to `.bcores` in the HUD.
+- **Boss and trial are different shapes, taken from the game's own world.**
+  They used to be `#ff8a3c` against `#e0a03c` — the same hue two steps apart,
+  which at 60px on a dark ground is not a distinction. A **boss is a hexagon**,
+  which is what a cube looks like seen corner-on: the silhouette of the game's
+  own piece, ringed by four arcs for its four phases, in violet. A **trial is a
+  diamond**, the square on its point, with the sweeping plane drawn straight
+  through it, in the amber that already means a core on a clock. An ordinary
+  level is a bare disc. Turn the colour off and all three still read. The
+  violet follows through to `.bcores` in the HUD.
+- **The landmarks are SVG, not `clip-path`.** A clipped box loses its border
+  and its shadow, and the rim and the lip are what make a node look pressable;
+  `mapShape()` emits the polygon, its lip and its ring as one `<svg>`.
+- **The map's node classes are `mboss`/`mtrial`, not `boss`/`trial`.** The
+  HUD's lives bar is `.boss`, which sets `pointer-events:none` — a map node
+  carrying that class inherited it and was silently unclickable. Check any new
+  class name against the ones already in `css/style.css`; this is the CSS
+  version of the `history` / `window.history` collision in the layout notes.
 - **Progression is a rolling window, not a chain.** You may always reach
   `MAP_WINDOW` (2) levels past the furthest you have got to. In a match-3 you
   eventually beat a level by luck; in a deterministic puzzle stuck is stuck
@@ -506,6 +516,15 @@ level data changed to make it.
   skip in there would be a purchase leaking into the currency. Kept apart, a
   skipped level is worth zero stars *by construction* rather than by
   remembering to subtract it. Verified: skipping does not move `starsEarned()`.
+- **A skip lands on a landmark, never on a puzzle.** Only the boss that closes
+  the section you are already in (`mapSkippable`), or the opening level of the
+  next section (`mapSectionSkippable`), can be opened with an ad — so a skip
+  carries you past a wall rather than past the levels, which are still there to
+  play. `V · EXTRA` cannot be bought open at all: that shelf is what beating
+  every boss is *for*.
+- **`mapReach()` counts solved levels only, never skips.** Counting a skip
+  would drag the rolling window forward with it and quietly hand over
+  everything in between — the exact levels the skip exists to leave for later.
 - **`grantSkip(name)` is the single call site a rewarded video needs.** It is
   not gated on an ad here, because there is no provider yet and a button that
   silently did nothing would be worse than one that plainly works. Wiring the

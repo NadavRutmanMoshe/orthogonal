@@ -487,6 +487,9 @@
     margin:10px 0 4px;overflow:hidden}
   .mcard .mbar u{display:block;height:100%;background:var(--sec);text-decoration:none}
   .mcard .mf{display:flex;justify-content:space-between;font-size:9.5px;color:var(--fg-dim)}
+  .mcard .skipsec{margin-top:11px;width:100%;height:36px;border-radius:3px;
+    background:rgba(111,168,255,.08);border-color:#6fa8ff;color:#6fa8ff;
+    font-size:9.5px;letter-spacing:.11em}
 
   #mtrail{position:relative;margin-top:8px}
   #mtrail svg{position:absolute;inset:0;pointer-events:none;z-index:0}
@@ -522,51 +525,63 @@
     background:rgba(111,168,255,.09)}
   .mnode.tut{width:42px;height:42px;font-size:12px}
 
-  /* The boss wears its four phases. */
-  .mnode.boss{width:76px;height:76px;font-size:18px;border-width:3px;
-    border-color:var(--vio);color:var(--vio);background:rgba(162,116,255,.12)}
-  .mnode.boss.solved{background:var(--vio);border-color:#c6a4ff;color:#1b0d38;
-    box-shadow:0 5px 0 var(--vio-lip)}
-  .mnode.boss::before{content:"";position:absolute;inset:-9px;border-radius:50%;
-    background:conic-gradient(from -90deg,var(--vio) 0 22%,transparent 22% 25%,
-      var(--vio) 25% 47%,transparent 47% 50%,var(--vio) 50% 72%,
-      transparent 72% 75%,var(--vio) 75% 97%,transparent 97%);
-    -webkit-mask:radial-gradient(circle,transparent calc(50% - 3px),#000 calc(50% - 2px));
-    mask:radial-gradient(circle,transparent calc(50% - 3px),#000 calc(50% - 2px));
-    opacity:.9;pointer-events:none}
-  /* The trial wears the slice that is about to sweep through it. */
-  .mnode.trial{border-color:var(--amb);color:var(--amb);background:rgba(224,160,60,.11)}
-  .mnode.trial.solved{background:var(--amb);border-color:#f0bd6c;color:#2c1c02;
-    box-shadow:0 5px 0 var(--amb-lip)}
-  .mnode.trial::before{content:"";position:absolute;left:-11px;right:-11px;top:50%;
-    height:4px;transform:translateY(-50%) rotate(-24deg);border-radius:3px;
-    background:linear-gradient(90deg,transparent,var(--amb) 20%,var(--amb) 80%,transparent);
-    opacity:.95;pointer-events:none}
-  /* Locked, both of them go quiet - the shape still says which it is. */
-  .mnode.boss.locked,.mnode.trial.locked{border-color:var(--rule);color:#4a577a;
-    background:rgba(255,255,255,.02)}
-  .mnode.boss.locked::before,.mnode.trial.locked::before{opacity:.26;
-    background:var(--rule)}
-  .mnode.boss.locked::before{background:conic-gradient(from -90deg,var(--fg-dim) 0 22%,
-    transparent 22% 25%,var(--fg-dim) 25% 47%,transparent 47% 50%,var(--fg-dim) 50% 72%,
-    transparent 72% 75%,var(--fg-dim) 75% 97%,transparent 97%)}
+  /* The two landmarks are SVG, so the shape carries its own rim and lip.
+     A hexagon is a cube seen corner-on and a diamond is a square on its
+     point - told apart with the colour taken away, which two shades of amber
+     never were. */
+  .mnode.mboss,.mnode.mtrial{background:transparent;border:none;
+    box-shadow:none;overflow:visible}
+  .mnode.mboss{width:78px;height:78px;font-size:18px}
+  .msvg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+  .mnode>span{position:relative;z-index:1;line-height:1}
+  .mface{fill:rgba(255,255,255,.03);stroke:var(--rule);stroke-width:5;
+    stroke-linejoin:round}
+  .mlip{fill:rgba(0,0,0,.42);transform:translateY(6px);
+    transition:transform .12s ease}
+  .mnode:active .mlip{transform:translateY(1px)}
+  .mring{fill:none;stroke:var(--rule);stroke-width:5;stroke-linecap:round;
+    stroke-dasharray:64 27}
+  .mslice{fill:var(--amb);opacity:.95}
+
+  .mnode.mboss .mface{fill:rgba(162,116,255,.13);stroke:var(--vio)}
+  .mnode.mboss .mring{stroke:var(--vio)}
+  .mnode.mboss.solved .mface{fill:var(--vio);stroke:#c6a4ff}
+  .mnode.mboss.solved .mlip{fill:var(--vio-lip)}
+  .mnode.mtrial .mface{fill:rgba(224,160,60,.12);stroke:var(--amb)}
+  .mnode.mtrial.solved .mface{fill:var(--amb);stroke:#f0bd6c}
+  .mnode.mtrial.solved .mlip{fill:var(--amb-lip)}
+  .mnode.mtrial.solved .mslice{fill:#402c06}
+  /* Locked, both go quiet - the shape still says which it is. */
+  .mnode.mboss.locked .mface,.mnode.mtrial.locked .mface{
+    fill:rgba(255,255,255,.02);stroke:var(--rule);stroke-dasharray:5 5}
+  .mnode.mboss.locked .mring{stroke:var(--fg-dim);opacity:.4}
+  .mnode.mtrial.locked .mslice{fill:var(--fg-dim);opacity:.35}
+  /* A landmark's numeral takes its own colour, not the section's. Without
+     this .mnode.solved's section-mixed ink applied and BOSS I read as a dark
+     green numeral sitting inside a violet hexagon. */
+  .mnode.mboss>span{color:var(--vio)}
+  .mnode.mtrial>span{color:var(--amb)}
+  .mnode.mboss.solved>span{color:#22103f}
+  .mnode.mtrial.solved>span{color:#2e1d02}
+  .mnode.mboss.locked>span,.mnode.mtrial.locked>span{color:#4a577a}
+  .mnode.mboss.locked,.mnode.mtrial.locked{color:#4a577a}
 
   /* Standing on a landmark, it keeps its own colour and only borrows the
      pulse. .mnode.here sets a pink body and a pink lip; trial and boss
      override the body by coming later, but the lip is theirs to restore or
      the node reads as an amber disc sitting on a pink one. */
-  .mnode.trial.here{box-shadow:0 5px 0 var(--amb-lip);animation:mhaloT 2.1s ease-out infinite}
+  .mnode.mtrial.here{box-shadow:0 5px 0 var(--amb-lip);animation:mhaloT 2.1s ease-out infinite}
   @keyframes mhaloT{
     0%,100%{box-shadow:0 5px 0 var(--amb-lip),0 0 0 0 rgba(224,160,60,.36)}
     50%{box-shadow:0 5px 0 var(--amb-lip),0 0 0 13px rgba(224,160,60,0)}
   }
-  .mnode.boss.here{box-shadow:0 5px 0 var(--vio-lip);animation:mhaloB 2.1s ease-out infinite}
+  .mnode.mboss.here{box-shadow:0 5px 0 var(--vio-lip);animation:mhaloB 2.1s ease-out infinite}
   @keyframes mhaloB{
     0%,100%{box-shadow:0 5px 0 var(--vio-lip),0 0 0 0 rgba(162,116,255,.38)}
     50%{box-shadow:0 5px 0 var(--vio-lip),0 0 0 15px rgba(162,116,255,0)}
   }
-  .mnode.trial.here:active{box-shadow:0 1px 0 var(--amb-lip);animation:none}
-  .mnode.boss.here:active{box-shadow:0 1px 0 var(--vio-lip);animation:none}
+  .mnode.mtrial.here:active{box-shadow:0 1px 0 var(--amb-lip);animation:none}
+  .mnode.mboss.here:active{box-shadow:0 1px 0 var(--vio-lip);animation:none}
 
   .mstars{position:absolute;z-index:1;display:flex;gap:2px;pointer-events:none;
     font-size:12px;line-height:1;color:var(--goal)}
@@ -608,16 +623,17 @@
   .mlegend .mk2.open{border-color:var(--fg);color:var(--fg)}
   .mlegend .mk2.locked{border-style:dashed}
   .mlegend .mk2.skipped{border-color:#6fa8ff;border-style:dashed;color:#6fa8ff}
-  .mlegend .mk2.trial{border-color:var(--amb);color:var(--amb)}
-  .mlegend .mk2.trial::after{content:"";position:absolute;left:-6px;right:-6px;top:50%;
-    height:2.5px;transform:translateY(-50%) rotate(-24deg);background:var(--amb)}
-  .mlegend .mk2.boss{border-color:var(--vio);color:var(--vio)}
-  .mlegend .mk2.boss::after{content:"";position:absolute;inset:-5px;border-radius:50%;
-    background:conic-gradient(from -90deg,var(--vio) 0 22%,transparent 22% 25%,
-      var(--vio) 25% 47%,transparent 47% 50%,var(--vio) 50% 72%,transparent 72% 75%,
-      var(--vio) 75% 97%,transparent 97%);
-    -webkit-mask:radial-gradient(circle,transparent calc(50% - 2px),#000 calc(50% - 1px));
-    mask:radial-gradient(circle,transparent calc(50% - 2px),#000 calc(50% - 1px))}
+  /* The legend shows the real silhouettes, not circles wearing a hint. */
+  .mlegend .mk2.mtrial,.mlegend .mk2.mboss{border:none;background:transparent;
+    overflow:visible}
+  .mlegend .mk2.mtrial{color:var(--amb)}
+  .mlegend .mk2.mboss{color:var(--vio)}
+  .mlegend .mk2 .msvg{position:absolute;inset:0}
+  .mlegend .mk2 .mlip{display:none}
+  .mlegend .mk2 .mface{stroke-width:7}
+  .mlegend .mk2.mboss .mring{stroke-width:7;stroke-dasharray:64 27}
+  .mlegend .mk2>span{position:relative;z-index:1}
+  .mlegend .mk2.mbossOLD{border-color:var(--vio);color:var(--vio)}
   .mlegend .md{font-size:10px;color:var(--fg-dim);line-height:1.5}
   .mlegend .md b{color:var(--fg);font-weight:500}
 
