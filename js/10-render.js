@@ -269,7 +269,7 @@ function drawLines(){
     m.position.set(mx,h.y-.2,mz);
     // full bright as the beat closes: this is the last thing you see before
     // it is standing on you
-    var t=1-Math.min(1,h.lock/Math.max(1,B.aim));
+    var t=1-Math.min(1,h.lock/bossAim());
     m.material.opacity=.28+t*t*.62;
     m.material.color.setHex(h.doom?0x35c2a5:0xff4d5e);
     m.visible=true;

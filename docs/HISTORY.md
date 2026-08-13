@@ -127,6 +127,31 @@ caught:
   at all — but the near-miss is the point: an arena was one edit away from
   being redesigned to satisfy a broken instrument.
 
+**The first playtest of the phased fights found three things, and only one of
+them was a matter of taste.**
+
+- **"It shoots me."** The charge is telegraphed by a line drawn along the row,
+  ramping in opacity as the beat closes — except the ramp divided by `B.aim`,
+  and `aim` had just moved onto the phase. `Math.max(1, undefined)` is `NaN`,
+  a `NaN` opacity does not throw, and the line simply stopped being drawn. So
+  the charge really did arrive out of nowhere. Worth stating as a rule: a
+  telegraph that fails silently is worse than no telegraph, because the thing
+  it explains keeps happening and the player learns the fight is unfair.
+- **A pillar rising in phase 3 buried phase 3.** The phase whose job was to
+  announce "the opponent has changed" also changed the arena, so it read as
+  more of phase 2. All geometry now arrives in phase 2. This also made phases
+  3 and 4 a controlled comparison for the first time — same board, one smarter
+  against two ordinary — which is the entire reason both exist.
+- **The spawn was campable.** Stand beside it, fold as each arrival appears,
+  and the fight is a queue. Every kill now returns the player to the start
+  square. Two things fell out of that immediately: it must move you and do
+  *nothing else* — an early version also stood you up and gave grace, and
+  since being flat is what a fold costs, that made folding free and the idle
+  policy won all four arenas without being hit once — and a spawn near the
+  start square stopped being decoration and became a scheduled free hit, since
+  the start is now where the player keeps reappearing. Every second spawn in
+  the game was 2–3 squares from it. `bossArena()` now requires 5.
+
 The simulator can say the phased fights are survivable and it cannot say
 whether `cunning` is interesting: the duellist ends a phase in about five
 moves, so the phase-3 hunter rarely lives long enough to plant. Measured, a

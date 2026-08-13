@@ -261,9 +261,18 @@ next. Each phase changes the question rather than the speed:
 | | |
 |---|---|
 | **1** | one hunter, a **bare floor**, the slowest clock in the fight |
-| **2** | **pillars rise** out of the floor, so rule 4 starts costing you squares to attack from |
+| **2** | **the whole arena rises** — every pillar, spike, pane and crate the fight will ever have |
 | **3** | one hunter, **`cunning`** — it will not take a line you can answer |
 | **4** | **two** at once, ordinary rules |
+
+**All the geometry arrives in phase 2, and nothing is added after.** Two
+reasons, both found in playtest. It makes a phase legible: phase 2 is the one
+where the *arena* changes and 3 and 4 are the ones where the *opponent* does,
+so a player who dies knows which kind of thing beat them — a pillar rising in
+phase 3 read as more of phase 2 and buried the change it was meant to
+announce. And it makes 3 and 4 a fair comparison: same board, so the only
+variable is one smarter against two ordinary, which is the whole question
+those phases exist to ask.
 
 The reasoning is a diagnosis, not a taste. Every dial this fight used to
 expose — `step`, `aim`, hunter count, `creep` — moves *execution* difficulty:
@@ -335,6 +344,13 @@ walk into a wall.
   telegraph — and its stillness is the tell before the line even brightens.
   Stepping off the line breaks the lock; that is the dodge, and folding is
   the other answer to the same question.
+- **The telegraph's ramp reads the *phase's* `aim`, through `bossAim()`.**
+  Pacing lives per phase, so there is no `B.aim` to read. It used to read one
+  directly, and when that moved the ramp silently became `NaN` — which does
+  not throw, it just stops drawing the line, so the charge arrived with no
+  warning and was reported, correctly, as being shot from across the arena.
+  A telegraph that fails silently is worse than none, because the mechanic it
+  is explaining still fires.
 - **The telegraph is drawn in the volume and does not fold with the world.**
   The charge happens along that row whichever way you are looking, and the
   whole tension is that the axis you must fold along to answer it may not be
@@ -351,6 +367,20 @@ walk into a wall.
 - **A hit throws the pack back to its spawns and does not move you.** Sending
   the player home costs the position they spent twenty seconds building — a
   punishment for being hit *and* for having played well.
+- **A kill throws *you* back to your corner** (`bossSendHome`), which is the
+  deliberate opposite. Killing means folding and folding means being where it
+  is, so the square beside a spawn is the best in the arena: stand there and
+  take each arrival as it appears. That is farming, it was found in the first
+  playtest, and winning the exchange is the moment you can afford to give
+  ground up. It moves you and **does nothing else** — it does not stand you
+  back up and does not grant grace, because being flat is what a fold costs.
+  An earlier version did both and made folding free: `bosssim`'s idle policy
+  went from losing every arena to winning all four unhit.
+- **No hunter may spawn within 5 of the start square.** The player is returned
+  there after every kill *and* every life lost, so it is where they keep
+  reappearing rather than somewhere they pass through once. `bossArena()`
+  checks it; every second spawn in the game was 2–3 squares away, harmless
+  while you could hold ground and a standing gift the moment you could not.
 - **No two hunters may spawn sharing a silhouette column.** They respawn
   together after every hit, so a pair that shares one there is a standing
   gift, renewed. `bossArena()` checks it, per phase.

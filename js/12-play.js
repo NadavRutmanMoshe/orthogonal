@@ -47,7 +47,7 @@ function spendLife(){
   flash(lives+" "+(lives===1?"life":"lives")+" left");
   if(TR)trialGrace=TR.period;
   if(B)bossGraceMs=B.grace;
-  moveHistory=[];
+  moveHistory=[];bossHomePending=false;   // dying already put you at the start
   initDynamic();buildDynamic();
   player={x:L.start[0],y:L.start[1],z:L.start[2]};
   flat=false;flatTarget=0;flatT=0;
@@ -67,7 +67,7 @@ function spendLife(){
    ============================================================ */
 function bossReset(){
   bossHp=B?B.hp:0;bossFlash=0;bossHitFlash=0;bossCreepMs=0;bossGraceMs=0;
-  hunters=[];twinCore=0;twinAt=null;bossPhase=0;
+  hunters=[];twinCore=0;twinAt=null;bossPhase=0;bossHomePending=false;
   if(B&&B.twin)twinSpawn(0);
   else if(B){bossRestoreArena();bossEnterPhase(false);}
   lives=B?BOSS_LIVES:0;
@@ -154,6 +154,56 @@ function bossEnterPhase(announce){
     flash(ph.say||("phase "+(bossPhase+1)+" of "+B.phases.length));
   }
   syncHud();
+}
+/* How long a hunter plants before it charges, in the phase being played. The
+   renderer needs it to ramp the telegraph, and it must come from the phase
+   rather than the fight: pacing lives per phase now, so a single B.aim would
+   be a number no phase actually uses. It used to read B.aim directly, and
+   when that moved onto the phase the ramp quietly became NaN - which does not
+   throw, it just stops drawing the line. The charge arrived with no warning
+   at all and read, correctly, as being shot from across the arena. */
+function bossAim(){
+  if(!B)return 1;
+  if(B.twin)return Math.max(1,B.aim||1);
+  var ph=B.phases&&B.phases[bossPhase];
+  return Math.max(1,(ph&&ph.aim)||1);
+}
+/* Back to your corner, after every kill.
+
+   Killing means folding and folding means being where it is, so the square
+   next to a spawn is the best square in the arena: stand there and take each
+   arrival as it appears, and the fight is a queue rather than a hunt. That is
+   farming, which is the one thing five boss designs have been spent avoiding,
+   and it was found in the first playtest.
+
+   This is deliberately the opposite of what a *hit* does. A hit throws the
+   pack back to its spawns and does not move you, because losing the position
+   you spent twenty seconds building is a punishment for being hit and for
+   having played well at the same time. Winning the exchange is the moment you
+   can afford to give that position up, so that is where the cost goes: the
+   kill is free, the ground is not, and you have to cross the arena again to
+   get the next one.
+
+   It moves you and does nothing else, and both halves of that are load-bearing.
+   It does not stand you back up: you killed by folding, so you are in the
+   plane, and being there - a whole silhouette column that anything can touch -
+   is the price the fold charges. An earlier version of this pulled you out and
+   handed you a beat of grace, and it made folding completely free: bosssim's
+   idle policy, which never takes a step, went from losing every arena to
+   winning all four without being hit once. It does not grant grace either, for
+   the same reason.
+
+   Deferred by a beat so the kill reads before the world moves - the same
+   reason die("crush") waits for the fold to play out. */
+function bossSendHome(){
+  if(!B||!B.phases||levelDone||dying||app!=="play")return;
+  var s=L.start;
+  // Flat, you are a column rather than a square, so it is the column that
+  // moves - and doUnflatten will land you on your own side of the arena.
+  if(flat){flatPos={u:R.uOf(view,s[0],s[2]),y:s[1]};bossHomePending=true;}
+  player={x:s[0],y:s[1],z:s[2]};
+  moveHistory=[];
+  buildGrid();syncHud();
 }
 /* The board is clear, so the fight moves on rather than ending. This is the
    whole structure in four lines: the health bar counts phases, and the last
@@ -409,10 +459,10 @@ function bossFoldCrush(){
     hunters[s].step=Math.max(B.floorStep,hunters[s].step*B.rage);
   // The board is clear, so the fight moves on. Only the last phase running
   // out is the win.
-  if(!hunters.length){bossAdvance();return;}
+  if(!hunters.length){bossAdvance();setTimeout(bossSendHome,420);return;}
   flash(doomed.length>1?(doomed.length+" in one square · "+hunters.length+" left"):
         ("folded onto it · "+hunters.length+" left"));
-  syncHud();
+  syncHud();setTimeout(bossSendHome,420);
 }
 // True when folding right now would kill at least one of them - what turns
 // the GO 2D button green. foldKills() already refuses a column with a pillar
@@ -460,9 +510,9 @@ function bossTakeCrate(idx){
   hunters.splice(idx,1);
   bossHitFlash=1;
   SFX.strike();shakeT=1;
-  if(!hunters.length){bossAdvance();return true;}
+  if(!hunters.length){bossAdvance();setTimeout(bossSendHome,420);return true;}
   flash("crushed under the crate · "+hunters.length+" left");
-  syncHud();
+  syncHud();setTimeout(bossSendHome,420);
   return true;
 }
 
@@ -725,6 +775,10 @@ function doUnflatten(){
   var land=R.landings(view,flatPos.u,flatPos.y,liveCrates());
   if(!land.length){flash("nothing solid behind that");SFX.bump();return;}
   var b=R.pick(land);
+  // A kill throws you back to your corner. bossSendHome moved the column;
+  // this is what puts you on the square rather than wherever in that column
+  // the camera would otherwise have landed you.
+  if(bossHomePending){bossHomePending=false;b={x:L.start[0],z:L.start[2]};}
   pushHistory();moveCount++;
   player.x=b.x;player.z=b.z;player.y=flatPos.y;
   flat=false;flatTarget=0;SFX.unfold();

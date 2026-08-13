@@ -111,16 +111,26 @@ var LEVELS=[
 
       The pillars that rise in phase two are the twin's own, kept because they
       are placed symmetrically and a symmetric arena is the honest one to
-      teach on - no corner is quietly better than another. */
+      teach on - no corner is quietly better than another.
+
+      ALL of the geometry arrives in phase two, and this is load-bearing
+      twice. It makes each phase legible - phase two is the one where the
+      arena changes and phases three and four are the ones where the opponent
+      does, so a player who dies knows which kind of thing beat them. And it
+      makes phase three and phase four a fair comparison: they are the same
+      board, so the only difference between "one smarter" and "two ordinary"
+      is the opponents themselves, which is the entire question those two
+      phases exist to answer. A pillar rising in phase three read as more of
+      phase two and buried the change it was supposed to announce. */
    boss:{floorStep:300,creepEvery:7500,
      phases:[
        {at:[[8,1,5]],step:780,aim:900,
         say:"one of them, and nothing in the way"},
        {at:[[8,1,5]],step:700,aim:820,say:"the ground comes up",
-        add:[[2,1,1],[6,1,5],[6,1,1],[2,1,5]]},
-       {at:[[8,1,5]],step:640,aim:740,cunning:true,add:[[4,1,3]],
-        say:"it stops taking the lines you can answer"},
-       {at:[[8,1,5],[2,1,3]],step:620,aim:700,say:"two"}]},
+        add:[[2,1,1],[6,1,5],[6,1,1],[2,1,5],[4,1,3]]},
+       {at:[[8,1,5]],step:640,aim:740,cunning:true,
+        say:"same ground — it stops taking the lines you can answer"},
+       {at:[[8,1,5],[7,1,1]],step:620,aim:700,say:"same ground — two of them"}]},
    blocks:box(0,8,0,0,0,6,[]),
    start:[1,1,1]},
 {name:"10 — Sharp",
@@ -168,20 +178,17 @@ var LEVELS=[
    start:[0,1,0],goal:[-1,1,-5],rotate:true},
 {name:"BOSS II — Sharp Ground",
    hint:"The ground bites here. A spike casts like stone, so its column kills them exactly as well as a pillar's does — and it kills you underfoot, which a pillar never does.",
-   /* The section's piece arrives with the phase that needs it. Phase two is
-      ordinary cover; phase three brings the first spike at the same moment
-      the hunter turns cunning, so the squares you would have backed into to
-      buy thinking time are the ones that stop existing. */
+   /* Cover and spikes together in phase two, so the section's piece is part
+      of "the arena finishes rising" rather than something smuggled in later.
+      Phases three and four then change only the opponent - see BOSS I. */
    boss:{creepEvery:7500,
      phases:[
        {at:[[8,1,5]],step:740,aim:880,say:"bare ground, for now"},
-       {at:[[8,1,5]],step:670,aim:790,say:"cover, for it",
-        add:[[3,1,1],[6,1,4]]},
+       {at:[[8,1,5]],step:670,aim:790,say:"cover for it, and the floor bites",
+        add:[[3,1,1],[6,1,4],[5,1,2,4],[2,1,4],[7,1,2,4]]},
        {at:[[8,1,5]],step:610,aim:710,cunning:true,
-        say:"sharp ground, and it has stopped being obliging",
-        add:[[5,1,2,4],[2,1,4]]},
-       {at:[[8,1,5],[2,1,2]],step:590,aim:660,say:"two, and the floor bites",
-        add:[[7,1,2,4]]}]},
+        say:"same ground — it has stopped being obliging"},
+       {at:[[8,1,5],[7,1,1]],step:590,aim:660,say:"same ground — two of them"}]},
    blocks:box(0,9,0,0,0,6,[]),
    start:[1,1,1]},
 {name:"17 — Clear Ground",
@@ -231,20 +238,18 @@ var LEVELS=[
    start:[0,1,0],goal:[3,2,-1],rotate:true},
 {name:"BOSS III — Through Glass",
    hint:"Glass casts nothing. The pillars you can see through are the ones that will not kill them — check which shadow you are herding them into.",
-   /* The glass arrives with the cunning hunter, and the pairing is the point:
-      once it is choosing lines you cannot answer, the columns that look
-      blocked are exactly the ones you can still attack from, so reading the
-      arena correctly is what buys back the beat it just took off you. */
+   /* Stone and glass rise together in phase two, so the lesson of the arena -
+      the pillars you can see through are the ones you can still attack from -
+      is learned against an ordinary hunter, and then tested against a cunning
+      one on exactly the same board. */
    boss:{creepEvery:7000,
      phases:[
        {at:[[8,1,5]],step:720,aim:860,say:"clear glass, clear floor"},
-       {at:[[8,1,5]],step:650,aim:770,say:"two shadows to work around",
-        add:[[3,1,2],[7,1,4]]},
+       {at:[[8,1,5]],step:650,aim:770,say:"stone you cannot fold through, glass you can",
+        add:[[3,1,2],[7,1,4],[6,1,1],[5,1,1,1],[2,1,5,1],[8,1,3,1]]},
        {at:[[8,1,5]],step:600,aim:700,cunning:true,
-        say:"see-through cover — and it has started choosing",
-        add:[[5,1,1,1],[2,1,5,1],[8,1,3,1]]},
-       {at:[[8,1,5],[1,1,3]],step:570,aim:650,say:"two, through glass",
-        add:[[6,1,1]]}]},
+        say:"same ground — it has started choosing"},
+       {at:[[8,1,5],[7,1,1]],step:570,aim:650,say:"same ground — two of them"}]},
    blocks:box(0,9,0,0,0,6,[]),
    start:[1,1,1]},
 {name:"25 — Shove",
@@ -310,19 +315,19 @@ var LEVELS=[
    start:[0,1,0],goal:[2,3,5],rotate:true},
 {name:"BOSS IV — The Orthogon",
    hint:"Everything the game knows, one piece at a time. The crates are the attack that still works when the geometry is against you — shove one into a column that had no shadow in it.",
-   /* The finale, so the phases stack the whole game rather than one piece.
-      The crates arrive in phase two and never again: rebuilding the crate
-      list is what puts them on the board, and doing that a second time would
-      snap any crate you had already shoved back to where it started. */
+   /* The finale, so phase two brings the whole game at once - stone, spike,
+      glass and the crates. The crates in particular can only ever arrive in
+      one phase: rebuilding the crate list is what puts them on the board, and
+      doing it a second time would snap any crate you had already shoved back
+      to where it started. */
    boss:{creepEvery:6500,
      phases:[
        {at:[[9,1,6]],step:700,aim:820,say:"the widest floor in the game"},
-       {at:[[9,1,6]],step:630,aim:730,say:"stone, and two crates to shove",
-        add:[[3,1,2],[7,1,2],[5,1,5],[7,1,5,3],[5,1,2,3]]},
+       {at:[[9,1,6]],step:630,aim:730,say:"everything at once — and two crates to shove",
+        add:[[3,1,2],[7,1,2],[5,1,5],[3,1,5,4],[8,1,3,1],[7,1,5,3],[5,1,2,3]]},
        {at:[[9,1,6]],step:580,aim:670,cunning:true,
-        say:"a spike, a pane, and it has stopped being obliging",
-        add:[[3,1,5,4],[8,1,3,1]]},
-       {at:[[9,1,6],[2,1,3]],step:550,aim:620,say:"two — last phase"}]},
+        say:"same ground — it has stopped being obliging"},
+       {at:[[9,1,6],[8,1,1]],step:550,aim:620,say:"same ground — two of them"}]},
    blocks:box(0,10,0,0,0,7,[]),
    start:[1,1,1]},
 {name:"35 — Up and Over",

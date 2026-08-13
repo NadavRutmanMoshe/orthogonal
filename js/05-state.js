@@ -56,6 +56,12 @@ var hunters=[], bossHitFlash=0, bossCreepMs=0, bossGraceMs=0;
    with no arc can only be tuned by making the whole thing faster, which is a
    dial that punishes reading rather than rewarding it. */
 var bossPhase=0;
+/* Set by a kill, spent by the unfold that follows it. bossSendHome moves your
+   silhouette column to the start square, but which square of that column you
+   come back down on is decided by the nearest-camera rule - so without this
+   you return to your side of the arena rather than to your corner, at
+   whatever depth the camera happened to favour. */
+var bossHomePending=false;
 // The twin's current core: which centre the two halves are mirrored about,
 // and the cell that centre sits on. Null on every other fight.
 var twinCore=0, twinAt=null;

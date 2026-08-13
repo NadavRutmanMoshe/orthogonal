@@ -544,6 +544,17 @@ function arenaFail(lv,spawns,requireLethal){
       fail.push("hunter "+h+" is spawned inside a block");
     else if(!stand.has(K(a[0],a[1],a[2])))
       fail.push("hunter "+h+" cannot reach you: its ground is not yours");
+    /* And none of them may spawn near the start square. Every kill returns
+       the player there and so does every life lost, so the start is not a
+       place they pass through once - it is the place they keep reappearing,
+       and a spawn beside it is a hit nobody could have read, handed out on a
+       schedule. This was found the moment the send-home rule went in: every
+       second spawn in the game had been placed two or three squares from the
+       corner, which was harmless while the player could hold ground and a
+       standing gift the instant they could not. */
+    else if(Math.abs(a[0]-lv.start[0])+Math.abs(a[2]-lv.start[2])<5)
+      fail.push("hunter "+h+" spawns on top of the start square - "+
+                "the player is returned there after every kill");
     /* And no two of them may spawn sharing a silhouette column, in any view.
        They are thrown back to their spawns every time one reaches you, so a
        pair that shares a column there is a pair that crushes itself for free
@@ -604,11 +615,19 @@ function bossArena(level){
          which is the right runtime answer, but a spawn buried by its own
          phase is an authoring mistake and not something to paper over. */
       var add=B.phases[pi].add, spawns=B.phases[pi].at;
-      for(var ai=0;ai<add.length;ai++)
+      for(var ai=0;ai<add.length;ai++){
         for(var si=0;si<spawns.length;si++)
           if(add[ai][0]===spawns[si][0]&&add[ai][1]===spawns[si][1]&&
              add[ai][2]===spawns[si][2])
             fail.push("phase "+(pi+1)+": a rising block buries hunter "+si);
+        /* And never on the start square. Every kill returns the player there,
+           so it is landed on repeatedly and mid-fight rather than once - a
+           block that rose into it would be lifted through on every single
+           kill, which is a shove nobody asked for at the worst moment. */
+        if(add[ai][0]===level.start[0]&&add[ai][1]===level.start[1]&&
+           add[ai][2]===level.start[2])
+          fail.push("phase "+(pi+1)+": a rising block lands on the start square");
+      }
     }
     var lvL={start:level.start,blocks:bossBlocksAt(level,last)};
     var RL=makeRules(lvL);
