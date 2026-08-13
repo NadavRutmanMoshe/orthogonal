@@ -166,6 +166,53 @@ them was a matter of taste.**
   the start is now where the player keeps reappearing. Every second spawn in
   the game was 2–3 squares from it. `bossArena()` now requires 5.
 
+### Standing up on a phase clear, and what it cost
+
+The second playtest asked for something small: on a death or a phase clear,
+come back to 3D and to the starting rotation, not just the starting square.
+Arriving at a new phase still folded, facing an axis chosen for the last one,
+means reading a board that changed while you were not looking at it straight
+on. Obviously right, and it pulled a thread that ran through the whole fight.
+
+**Being flat after a kill was the anti-camp mechanism, and nobody knew.** The
+send-home rule had deliberately left the player in the plane, on the argument
+that exposure is what a fold costs. Standing them up instead made `bosssim`'s
+idle policy — which never takes a step — go from dying in phase 2 to winning
+all four arenas without being hit once. The measurement was unambiguous and
+the cause was not the exposure at all: staying flat meant the *unfold* chose
+where you landed by the nearest-camera rule, so a stationary player never got
+to keep one perfect square. Standing them up on the start square handed it
+back to them permanently.
+
+Two more failures surfaced underneath it, both invisible until the player was
+returned to a *fixed* square facing a *fixed* view:
+
+- **A spawn on the start square's row is a free charge, every phase.** All
+  four second spawns shared a row with the start. Previously the player was
+  somewhere unpredictable when a phase began, so it never showed.
+- **The start square could be unfoldable in the view you arrive facing.** In
+  `BOSS II` a pillar sat in the start's z-column, so a hunter approaching down
+  that row could not be answered from the square the game keeps putting you
+  on. `bossArena()` now checks the row/column rule and that the start is
+  foldable in at least one view.
+
+**The fix for the camp was to make every hunter prefer the line you cannot
+answer**, not just the cunning one. A hunter that seeks *any* line walks into
+the single silhouette column a stationary player can fold on, which is why
+standing still won: half of its line-seeking was suicide. Preferring the
+unanswerable line means the answer is a rotation, and a policy that never
+rotates loses. `cunning` keeps its identity as the *refusal to plant* on a
+line you could answer — measured at 18–21 declines in phase 3 against a
+passive player, and none in phase 2.
+
+This is a real erosion of the fifth design's cleanest sentence, "the square it
+wants and the square that can kill it are the same square", and it is worth
+knowing that it was paid knowingly. The failure that sentence was guarding
+against was hunters *circling* rather than attacking, and the margin here is
+deliberately too small to cause that: neighbours differ in distance by at most
+two, so 48 against 40 only breaks ties between adjacent squares and can never
+send a hunter across the arena looking for an angle.
+
 The simulator can say the phased fights are survivable and it cannot say
 whether `cunning` is interesting: the duellist ends a phase in about five
 moves, so the phase-3 hunter rarely lives long enough to plant. Measured, a

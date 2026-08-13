@@ -47,10 +47,15 @@ function spendLife(){
   flash(lives+" "+(lives===1?"life":"lives")+" left");
   if(TR)trialGrace=TR.period;
   if(B)bossGraceMs=B.grace;
-  moveHistory=[];bossHomePending=false;   // dying already put you at the start
+  moveHistory=[];
   initDynamic();buildDynamic();
   player={x:L.start[0],y:L.start[1],z:L.start[2]};
   flat=false;flatTarget=0;flatT=0;
+  // And the rotation you started the level with. You got here by falling,
+  // being crushed or standing on something sharp, so you are being put back
+  // at the beginning - facing the way the level opens is part of that, and
+  // resuming a restart mid-turn is disorienting in exactly the wrong moment.
+  view=0;viewAngle=0;viewAngleTarget=0;
   buildGrid();syncHud();
   playerMesh.position.set(player.x,player.y,player.z);
 }
@@ -67,7 +72,7 @@ function spendLife(){
    ============================================================ */
 function bossReset(){
   bossHp=B?B.hp:0;bossFlash=0;bossHitFlash=0;bossCreepMs=0;bossGraceMs=0;
-  hunters=[];twinCore=0;twinAt=null;bossPhase=0;bossHomePending=false;
+  hunters=[];twinCore=0;twinAt=null;bossPhase=0;
   if(B&&B.twin)twinSpawn(0);
   else if(B){bossRestoreArena();bossEnterPhase(false);}
   lives=B?BOSS_LIVES:0;
@@ -192,26 +197,23 @@ function bossAim(){
    kill is free, the ground is not, and you have to cross the arena again to
    get the next one.
 
-   It moves you and does nothing else, and both halves of that are load-bearing.
-   It does not stand you back up: you killed by folding, so you are in the
-   plane, and being there - a whole silhouette column that anything can touch -
-   is the price the fold charges. An earlier version of this pulled you out and
-   handed you a beat of grace, and it made folding completely free: bosssim's
-   idle policy, which never takes a step, went from losing every arena to
-   winning all four without being hit once. It does not grant grace either, for
-   the same reason.
+   It puts the whole view back where the fight started: the start square, the
+   volume, and the starting rotation. A phase boundary is the one moment the
+   fight genuinely restarts, and arriving at a new phase still folded, facing
+   an axis you chose for the last one, means reading a board that changed
+   while you were not looking at it straight on.
 
    Deferred by a beat so the kill reads before the world moves - the same
    reason die("crush") waits for the fold to play out. */
 function bossSendHome(){
   if(!B||!B.phases||levelDone||dying||app!=="play")return;
   var s=L.start;
-  // Flat, you are a column rather than a square, so it is the column that
-  // moves - and doUnflatten will land you on your own side of the arena.
-  if(flat){flatPos={u:R.uOf(view,s[0],s[2]),y:s[1]};bossHomePending=true;}
   player={x:s[0],y:s[1],z:s[2]};
+  flat=false;flatTarget=0;flatT=0;
+  view=0;viewAngle=0;viewAngleTarget=0;
   moveHistory=[];
   buildGrid();syncHud();
+  playerMesh.position.set(player.x,player.y,player.z);
 }
 /* The board is clear, so the fight moves on rather than ending. This is the
    whole structure in four lines: the health bar counts phases, and the last
@@ -365,7 +367,7 @@ function bossFrame(dt){
       var has=flat?(R.uOf(view,c.x,c.z)===flatPos.u&&c.y===flatPos.y)
                   :!!bossLine(R,c,goal,cr);
       if(!has)return 0;
-      if(!ph.cunning||flat)return 1;
+      if(flat)return 1;
       return doomedCell(c.x,c.y,c.z,cr)?1:2;
     });
     // Never onto another hunter's square: two of them in one cell reads as
@@ -783,10 +785,6 @@ function doUnflatten(){
   var land=R.landings(view,flatPos.u,flatPos.y,liveCrates());
   if(!land.length){flash("nothing solid behind that");SFX.bump();return;}
   var b=R.pick(land);
-  // A kill throws you back to your corner. bossSendHome moved the column;
-  // this is what puts you on the square rather than wherever in that column
-  // the camera would otherwise have landed you.
-  if(bossHomePending){bossHomePending=false;b={x:L.start[0],z:L.start[2]};}
   pushHistory();moveCount++;
   player.x=b.x;player.z=b.z;player.y=flatPos.y;
   flat=false;flatTarget=0;SFX.unfold();

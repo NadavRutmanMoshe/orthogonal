@@ -289,16 +289,24 @@ can be compared back to back in one sitting: is a single smarter opponent
 better than two ordinary ones? That comparison is the point of the current
 shape and neither is settled.
 
-- **`cunning` grades lines rather than refusing them.** `bossNext`'s `lineTo`
+- **Every hunter prefers the line you cannot answer.** `bossNext`'s `lineTo`
   callback answers 0 / 1 / 2 — no line, a line, a line the player cannot fold
-  on from where they stand — and a cunning hunter prefers grade 2. Only the
-  *ordering* matters (56 over 40); the margin must stay small enough that it
-  never crosses the arena hunting for one, or preferring a line becomes
-  circling and we are back in design 3.
-- **It declines to plant, but only `hold` times** (currently 2). This is the
-  same patience valve the twin uses and it is here for the same reason: an
-  opponent that will not attack from anywhere you can punish stops attacking.
-  It never stops *walking*, so it closes on you the whole time it is fussy.
+  on from where they stand — and grade 2 outscores grade 1 (48 over 40). Only
+  the *ordering* matters: neighbours differ in distance by at most two, so the
+  margin decides ties among adjacent squares and never sends a hunter across
+  the arena hunting for one. That bound is the thing to preserve — widen it
+  and preferring a line becomes circling, which is design 3 again.
+- **This is what stops a stationary player winning.** A hunter that seeks
+  *any* line walks into the one silhouette column a player standing still can
+  fold on, so never moving beat every arena. Preferring the unanswerable line
+  means the answer is a rotation, and a player who will not rotate loses.
+- **`cunning` is now the refusal, not the preference.** A cunning hunter
+  additionally declines to plant on a line you could answer — but only `hold`
+  times (currently 2), the same patience valve the twin uses and for the same
+  reason: an opponent that will not attack from anywhere you can punish stops
+  attacking. It never stops *walking*, so it closes on you the whole time it
+  is being fussy. Measured, phase 3 produces 18–21 declines against a passive
+  player where phase 2 produces none.
 - **The player's counter to `cunning` is rotating**, which relabels every line
   at once — so turning stops being a way to aim and becomes the answer. That
   is the fight's own question asked one level up.
@@ -390,17 +398,27 @@ walk into a wall.
   their spawns if they hit you — so killing the first of them moves nobody.
   Taking back ground you earned would charge you for playing well, which is
   precisely what a hit is careful not to do.
-- **It moves you and does nothing else.** It does not stand you back up and
-  does not grant grace, because being flat is what a fold costs. An earlier
-  version did both and made folding free: `bosssim`'s idle policy went from
-  losing every arena to winning all four unhit. The unfold that follows lands
-  on the start *square* (`bossHomePending`) rather than wherever in that
-  column the nearest-camera rule would otherwise favour.
-- **No hunter may spawn within 5 of the start square.** The player is returned
-  there after every kill *and* every life lost, so it is where they keep
-  reappearing rather than somewhere they pass through once. `bossArena()`
-  checks it; every second spawn in the game was 2–3 squares away, harmless
-  while you could hold ground and a standing gift the moment you could not.
+- **It puts the whole view back to the opening: start square, volume,
+  starting rotation.** Arriving at a new phase still folded and facing an axis
+  chosen for the last one means reading a board that changed while you were
+  not looking at it straight on.
+- **Standing the player up costs the fight its anti-camp property, and that
+  had to be paid for elsewhere.** Being flat after a kill is exposure, and it
+  was the exposure that punished never moving: measured, keeping the player
+  flat on a clear makes `bosssim`'s idle policy die in phase 2, and standing
+  it up lets idle win all four unhit. What replaced it is `bossNext`'s line
+  preference — see below.
+- **No hunter may spawn within 5 of the start square, or on its row or
+  column.** The player is returned there after every phase *and* every life
+  lost, standing and facing the opening view, so it is where they keep
+  reappearing rather than somewhere they pass through once. A spawn sharing a
+  line with it has a line on the player from the first instant of the phase,
+  before they have moved. `bossArena()` checks both; every second spawn in the
+  game broke one or the other.
+- **The start square must be foldable in at least one view**, also checked,
+  for the same reason: it is where the player is repeatedly dropped, and a
+  square whose every silhouette column is blocked is one they arrive at unable
+  to answer anything.
 - **No two hunters may spawn sharing a silhouette column.** They respawn
   together after every hit, so a pair that shares one there is a standing
   gift, renewed. `bossArena()` checks it, per phase.
@@ -719,10 +737,15 @@ tested and failed, plus where this sits in the PCG literature, are in
   pick a square in order to put a hunter on a line — and it reacts every
   200ms with perfect knowledge. It clears the four arenas in 4 to 7 seconds,
   which says the fights are winnable, not that they are the right length.
-  It also has to be told that height matters (a square at the wrong `y` cannot
-  be attacked from at all), or it climbs the first pillar between it and a
-  hunter and oscillates on and off it forever — which reads as an unwinnable
-  arena and is nothing of the kind.
+  It has needed two corrections, both facts about the rules rather than
+  heuristics, and both found when it declared a fine arena unwinnable. It has
+  to be told that height matters (a square at the wrong `y` cannot be attacked
+  from at all), or it climbs the first pillar between it and a hunter and
+  oscillates above anything it could kill. And it needs the same best-distance
+  patience valve the hunters have, or refusing to stand in a pillar's shadow
+  — worth more to it than one step of distance — makes it pace between two
+  squares forever while it is charged. Crossing a shadow was always safe; it
+  is folding from one that kills.
 - **The lunge is instant and unblockable once the beat ends.** It is
   telegraphed for `aim` milliseconds and breaking the line cancels it, so it
   is fair — but there is no partial answer, no grazing hit, and a player who

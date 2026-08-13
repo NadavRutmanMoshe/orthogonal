@@ -58,6 +58,12 @@ function sim(lv,policy,ms){
   let p={x:lv.start[0],y:lv.start[1],z:lv.start[2]};
   let v=0, lives=3, grace=0, creep=0, actMs=0, flat=null;
   let folds=0, moves=0, kills=0, t=0;
+  /* Scratch for the policy, one per fight. The duellist keeps its patience
+     counter here; it is cleared whenever the player is moved by something
+     other than its own choice, because after that the distance it was
+     measuring against is about a board it is no longer standing on. */
+  const mem={};
+  const clearMem=()=>{for(const k in mem)delete mem[k];};
   /* Advance, or report the win. Raising blocks can bury the player, and the
    * game lifts them out rather than crushing them, so the simulation does the
    * same - otherwise a phase change reads as a death nobody could have read. */
@@ -71,7 +77,7 @@ function sim(lv,policy,ms){
     // that is what rises - exactly liftPlayer() in the game.
     if(flat){while(R.siloSolid(v,flat.u,flat.y,cr)&&guard++<8)flat.y++;p.y=flat.y;}
     else while(R.solid(p.x,p.y,p.z,cr)&&guard++<8)p.y++;
-    hs=spawn();grace=Math.max(grace,B.grace);creep=0;
+    hs=spawn();grace=Math.max(grace,B.grace);creep=0;clearMem();
     return false;
   };
   const done=(o)=>Object.assign({secs:+(t/1000).toFixed(1),
@@ -142,7 +148,7 @@ function sim(lv,policy,ms){
         const has=flat?(uOf(v,c.x,c.z)===flat.u&&c.y===flat.y)
                       :!!bossLine(R,c,goal,cr);
         if(!has)return 0;
-        if(!ph().cunning||flat)return 1;
+        if(flat)return 1;
         return doomed(c.x,c.y,c.z)?1:2;
       });
       if(nx&&!hs.some((o,j)=>j!==i&&o.x===nx.x&&o.y===nx.y&&o.z===nx.z)){
@@ -158,7 +164,7 @@ function sim(lv,policy,ms){
       }
     }
     if(hit&&grace<=0){
-      lives--;grace=B.grace;hs=spawn();flat=null;
+      lives--;grace=B.grace;hs=spawn();flat=null;clearMem();
       if(lives<=0)return done({win:false,lives,kills,folds,moves,why:hit});
     }
     if(!hs.length&&advance())return done({win:true,lives,kills,folds,moves});
@@ -166,7 +172,7 @@ function sim(lv,policy,ms){
     actMs+=TICK;
     if(actMs<ACT)continue;
     actMs=0;
-    const act=policy({R,B,cr,hs,p,v,flat,doomed,doomedIn,stepTo,uOf,crushedBy,lineOn});
+    const act=policy({R,B,cr,hs,p,v,flat,doomed,doomedIn,stepTo,uOf,crushedBy,lineOn,mem});
     if(!act)continue;
     // Flat: the only thing to decide is when to stand back up, and standing
     // there is what costs you.
@@ -179,7 +185,7 @@ function sim(lv,policy,ms){
       }
       flat=null;moves++;
       if(grace<=0&&touched()){
-        lives--;grace=B.grace;hs=spawn();
+        lives--;grace=B.grace;hs=spawn();clearMem();
         if(lives<=0)return done({win:false,lives,kills,folds,moves,why:"popped onto one"});
       }
       continue;
@@ -198,23 +204,25 @@ function sim(lv,policy,ms){
       if(dead.some(Boolean))
         hs.forEach(h=>{h.step=Math.max(B.floorStep,h.step*B.rage);});
       if(mine){
-        lives--;grace=B.grace;hs=spawn();
+        // Crushed is a death, so it spends a life and puts the player back at
+        // the start, standing, facing the way the level opens - spendLife().
+        lives--;grace=B.grace;hs=spawn();clearMem();
         if(lives<=0)return done({win:false,lives,kills,folds,moves,why:"folded into one"});
+        p={x:lv.start[0],y:lv.start[1],z:lv.start[2]};
+        flat=null;v=0;
         continue;                       // crushed, so never in the plane
       }
       flat={u:uOf(v,p.x,p.z),y:p.y};moves++;
       if(!hs.length){
         if(advance())return done({win:true,lives,kills,folds,moves});
-        /* Clearing a phase sends the player back to the start square, so the
-           walk back is part of the fight and has to be part of the
-           measurement - a simulation that lets the policy keep its ground is
-           measuring the spawn-camp this rule removes. Killing one of a
-           phase's two hunters moves nobody.
-
-           Position only: standing it back up or granting grace would make the
-           fold free, which is measurable - idle wins all four arenas unhit. */
+        /* Clearing a phase puts the player back where the fight started - the
+           start square, the volume, and the starting rotation - so the walk
+           back is part of the fight and has to be part of the measurement. A
+           simulation that lets the policy keep its ground is measuring the
+           spawn-camp this rule removes. Killing one of a phase's two hunters
+           moves nobody. */
         p={x:lv.start[0],y:lv.start[1],z:lv.start[2]};
-        if(flat)flat={u:uOf(v,p.x,p.z),y:p.y};
+        flat=null;v=0;
       }
       continue;
     }
@@ -223,7 +231,7 @@ function sim(lv,policy,ms){
       const n=stepTo(p,act.mv[0],act.mv[1]);
       if(n){p=n;moves++;}
       if(grace<=0&&touched()){
-        lives--;grace=B.grace;hs=spawn();
+        lives--;grace=B.grace;hs=spawn();clearMem();
         if(lives<=0)return done({win:false,lives,kills,folds,moves,why:"walked into one"});
       }
     }
@@ -248,7 +256,7 @@ function idle({R,cr,hs,p,v,flat,doomed,crushedBy}){
    That is the whole ceiling: turn, look, fold. It never herds anything - it
    does not choose where to stand in order to put a hunter anywhere - so a
    fight it can win is winnable by doing much less than the design asks. */
-function duellist({R,B,cr,hs,p,v,flat,doomed,stepTo,uOf,doomedIn,crushedBy}){
+function duellist({R,B,cr,hs,p,v,flat,doomed,stepTo,uOf,doomedIn,crushedBy,mem}){
   if(flat)return {pop:true};
   if(hs.some(h=>doomed(h.x,h.y,h.z)))return {fold:true};
   // Not lined up from here. Would a quarter turn line one of them up? This
@@ -268,6 +276,21 @@ function duellist({R,B,cr,hs,p,v,flat,doomed,stepTo,uOf,doomedIn,crushedBy}){
     if(d<td){td=d;tgt=h;}
   }
   if(!tgt)return null;
+  /* Patience, and it is the same valve the hunters needed for the same
+     reason. Refusing to stand in a pillar's shadow is worth more than one
+     step of distance, so when the only square that closes is a shadowed one
+     the policy declines it, steps back, closes again, and paces between two
+     squares forever while it is charged - the hunters' two-square loop,
+     rediscovered in the player. Measured against its *best* distance rather
+     than its last, so a policy that oscillates cannot keep resetting the
+     count; after two steps that fail to improve on it, shadows stop being
+     worth anything and it walks in. Crossing one was always safe - it is
+     folding from one that kills - so this costs nothing but the reluctance. */
+  if(mem){
+    if(mem.best===undefined||td<mem.best){mem.best=td;mem.wait=0;}
+    else mem.wait=(mem.wait||0)+1;
+  }
+  const shy=(mem&&(mem.wait||0)>=2)?0:6;
   let best=null;
   for(const d of [[1,0],[-1,0],[0,1],[0,-1]]){
     const n=stepTo(p,d[0],d[1]);
@@ -281,7 +304,7 @@ function duellist({R,B,cr,hs,p,v,flat,doomed,stepTo,uOf,doomedIn,crushedBy}){
        two-square loop, rediscovered in the player. It read as an unwinnable
        arena and was nothing of the kind. */
     const lined=(n.y===tgt.y&&uOf(v,n.x,n.z)===uOf(v,tgt.x,tgt.z))?1:0;
-    const score=lined*10-(crushedBy(R,v,n.x,n.y,n.z,cr)?6:0)
+    const score=lined*10-(crushedBy(R,v,n.x,n.y,n.z,cr)?shy:0)
       -Math.abs(n.y-tgt.y)*8
       -(Math.abs(n.x-tgt.x)+Math.abs(n.z-tgt.z));
     if(!best||score>best.score)best={d,score};

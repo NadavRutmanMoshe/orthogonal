@@ -331,7 +331,7 @@ function bossNext(R,from,to,cr,lineTo,avoid){
        hunting for one and we are back to circling. */
     var lg=lineTo?(lineTo({x:nx,y:ny,z:nz})||0):0;
     var lined=lg?1:0;
-    var score=(avoid?-lined*pat:(lg===2?56:lined*40))-d-(d>here?(avoid?3:6):0);
+    var score=(avoid?-lined*pat:(lg===2?48:lined*40))-d-(d>here?(avoid?3:6):0);
     if(!best||score>best.score)best={x:nx,y:ny,z:nz,score:score,d:d};
   }
   if(avoid&&best){
@@ -555,6 +555,16 @@ function arenaFail(lv,spawns,requireLethal){
     else if(Math.abs(a[0]-lv.start[0])+Math.abs(a[2]-lv.start[2])<5)
       fail.push("hunter "+h+" spawns on top of the start square - "+
                 "the player is returned there after every kill");
+    /* Nor on the start square's row or column. Clearing a phase returns the
+       player to that square standing and facing the opening view, so a spawn
+       sharing a line with it has a line on the player from the first instant
+       of the phase, every time, before they have moved at all - and whether
+       they can answer it depends on geometry they did not choose. The check
+       is not "is that line foldable": a telegraphed charge the player is
+       handed on arrival is unfair either way. */
+    else if(a[1]===lv.start[1]&&(a[0]===lv.start[0]||a[2]===lv.start[2]))
+      fail.push("hunter "+h+" spawns on the start square's own line - "+
+                "a free charge the moment the phase begins");
     /* And no two of them may spawn sharing a silhouette column, in any view.
        They are thrown back to their spawns every time one reaches you, so a
        pair that shares a column there is a pair that crushes itself for free
@@ -567,6 +577,15 @@ function arenaFail(lv,spawns,requireLethal){
         fail.push("hunters "+h+" and "+h2+" spawn in one column - a free kill");
     }
   }
+  /* And the start square must be somewhere the player can actually fight
+     from. They are returned to it after every phase and every death, so a
+     square whose every silhouette column is blocked is a square they are
+     repeatedly dropped onto unable to answer anything. */
+  var canFold=false;
+  for(var v0=0;v0<4;v0++)
+    if(!crushedBy(R,v0,lv.start[0],lv.start[1],lv.start[2],cr))canFold=true;
+  if(!canFold)
+    fail.push("the start square cannot be folded from in any view");
   var f=arenaFractions(lv,R,cr,stand);
   if(requireLethal&&f.worst<.12)
     fail.push("view with almost nothing in it: "+(f.worst*100).toFixed(0)+
