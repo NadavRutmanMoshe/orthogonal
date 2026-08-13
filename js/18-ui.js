@@ -27,6 +27,14 @@ function showPanel(html,kind){
   panelKind=kind||null;
   syncCorners();
 }
+/* The map is nearly full height, and the running star total lives outside
+   .corner at z-index 30 so it can sit *over* the win overlay. That puts it
+   over the map too, on top of the map's own total - so the one place that
+   already knows which panel is open turns it off. */
+function syncMapChrome(){
+  $("panel").classList.toggle("map",panelKind==="map");
+  document.body.classList.toggle("mapopen",panelKind==="map");
+}
 function hidePanel(){
   previewStop();
   $("panel").classList.remove("on");
@@ -38,6 +46,7 @@ function syncCorners(){
   var m=$("bMenu"), w=$("bWard");
   if(m)m.classList.toggle("on",panelKind==="menu");
   if(w)w.classList.toggle("on",panelKind==="wardrobe");
+  syncMapChrome();
 }
 function toggleMenu(){
   if(panelKind==="menu"){hidePanel();return;}

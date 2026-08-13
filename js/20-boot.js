@@ -9,6 +9,7 @@ applyUI();
 playSource="builtin";
 enterPlay(LEVELS[0],0,false);
 progLoad();
+skipLoad();
 loadSettings();
 loadWardrobe();
 loadSession().then(function(){

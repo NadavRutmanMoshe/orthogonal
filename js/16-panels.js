@@ -294,63 +294,274 @@ function sectionSpans(){
   }
   return out;
 }
+/* ============================================================
+   THE MAP — the picker as a path
+
+   A section at a time: a run of levels, a trial partway in, a boss closing
+   it. The list this replaced showed all seventy-two at once in one column of
+   monospace, which is honest and unreadable - nothing in it said which rows
+   mattered, and the two that matter most were told apart by two shades of
+   the same amber.
+
+   Progression is a rolling window rather than a chain. You may always reach
+   `MAP_WINDOW` levels past the furthest you have got to, which is the whole
+   of the difference between this and Candy Crush: in a match-3 you can beat
+   a level by luck eventually, and in a deterministic puzzle stuck is stuck
+   forever. One hard level must never be able to end somebody's game. The
+   window closes behind you anyway, so a skip is still worth something.
+
+   Measured from the furthest level *touched*, not from the first gap. Saves
+   from before any of this existed have arbitrary holes in them - nothing was
+   locked, so people played in whatever order they liked - and measuring from
+   the first gap would re-lock levels those players had already walked past.
+   ============================================================ */
+var MAP_WINDOW=2;
+var mapSection=null;          // which tab is open; null means "where you are"
+
+function mapSolved(i){return progress[LEVELS[i].name]!==undefined;}
+function mapSkipped(i){return !!skips[LEVELS[i].name];}
+function mapTouched(i){return mapSolved(i)||mapSkipped(i);}
+// The furthest index you may open.
+function mapReach(){
+  var last=-1;
+  for(var i=0;i<LEVELS.length;i++) if(mapTouched(i)) last=i;
+  return last+1+MAP_WINDOW;
+}
+// Where the pink node goes: the first level you have not dealt with.
+function mapHere(){
+  for(var i=0;i<LEVELS.length;i++) if(!mapTouched(i)) return i;
+  return LEVELS.length-1;
+}
+function mapLocked(i){
+  if(mapTouched(i))return false;
+  var s=SECTIONS[mapSecOf(i)];
+  if(s&&s.locked&&!sectionsUnlocked())return true;
+  return i>mapReach();
+}
+function mapState(i){
+  if(mapSolved(i))return "solved";
+  if(mapSkipped(i))return "skipped";
+  if(mapLocked(i))return "locked";
+  return i===mapHere()?"here":"open";
+}
+function mapSecOf(i){
+  for(var n=SECTIONS.length-1;n>=0;n--) if(i>=SECTIONS[n].at) return n;
+  return 0;
+}
+function mapKind(l){return l.boss?"boss":l.trial?"trial":l.tutorial?"tut":"lv";}
+// One ad a level, two a trial, three a boss - a landmark should cost more to
+// walk past than a puzzle does.
+function mapAds(k){return k==="boss"?3:k==="trial"?2:1;}
+// The circle already carries the number, so the label beside it drops it.
+function mapCaption(l){
+  return l.name.replace(/^\d+\s+—\s+/,"").replace(/^(?:TRIAL|BOSS)\s+[IVX]+\s+—\s+/,"");
+}
+function mapNumeral(l){
+  var m=l.name.match(/^(\d+)/); if(m)return m[1];
+  var r=l.name.match(/^(?:TRIAL|BOSS)\s+([IVX]+)/); if(r)return r[1];
+  return "·";
+}
+
 function levelPicker(){
-  var solved=0;
-  for(var q=0;q<LEVELS.length;q++) if(progress[LEVELS[q].name]!==undefined) solved++;
-  var html="<h3>SELECT LEVEL \u00b7 "+solved+"/"+LEVELS.length+" SOLVED</h3>";
-  var spans=sectionSpans(), spanAt={};
-  spans.forEach(function(sp){spanAt[sp.from]=sp;});
-  for(var i=0;i<LEVELS.length;i++){
-    var sp=spanAt[i];
-    if(sp){
-      var pct=sp.max?Math.round(sp.got/sp.max*100):0;
-      html+="<div class='chap"+(sp.locked?" locked":"")+"'>"+sp.sec.name+
-        (sp.locked?" \u00b7 LOCKED":"")+
-        "<b class='secbar'><i style='width:"+(sp.locked?0:pct)+"%'></i></b>"+
-        "<span>"+(sp.locked
-          ? "beat every boss to open these"
-          : sp.sec.sub+"  \u00b7  "+sp.done+"/"+sp.n+" solved, "+
-            sp.got+"/"+sp.max+" \u2605")+"</span></div>";
-      if(sp.locked){i=sp.to;continue;}      // draw the header, hide the rows
-    }
-    var tut=!!LEVELS[i].tutorial;
-    var boss=!!LEVELS[i].boss;
-    var trial=!!LEVELS[i].trial;
-    var st=(tut||boss||trial)?{ok:false}:statsCached(LEVELS[i]);
-    var mark=(playSource==="builtin"&&i===lvIndex)?" \u25c0":"";
-    var done=progress[LEVELS[i].name];
-    var badge=done===undefined?"":
-      (tut?"<span class='ok'>\u2713</span>"
-         :"<span class='ok'>"+starGlyphs(starsForRecord(LEVELS[i],done))+"</span>");
-    var note=tut?"tutorial":
-      boss?(LEVELS[i].boss.hp+" hits"):
-      trial?(LEVELS[i].trial.beats.length+" sweeps"):
-      (st.ok?st.flattens+(st.flattens===1?" fold":" folds"):"?");
-    html+="<div class='lrow"+(mark?" here":"")+(boss?" bossrow":"")+
-      (trial?" trialrow":"")+
-      "'><span class='lname'>"+
-      esc(LEVELS[i].name)+mark+"</span>"+
-      "<span class='mono'>"+note+
-      (badge?" &middot; ":"")+badge+"</span>"+
-      "<span class='lbtns'><button class='mini' data-lv='"+i+"'>PLAY</button></span></div>";
+  if(mapSection===null)mapSection=mapSecOf(mapHere());
+  var spans=sectionSpans();
+  var here=mapHere(), total=0, done=0;
+  for(var q=0;q<LEVELS.length;q++){
+    if(LEVELS[q].tutorial)continue;
+    total+=3;done+=starsForRecord(LEVELS[q],progress[LEVELS[q].name]);
   }
-  html+="<div class='prow'><button id='pkBack'>BACK</button>"+
-        "<button id='pkClose'>CLOSE</button></div>";
-  showPanel(html);
+
+  var h="<div class='mhead'><div class='mt'><b>Orthogonal</b>"+
+        "<span id='mSub'></span></div>"+
+        "<div class='mtot'>"+done+" ★</div>"+
+        "<button class='mq' id='mHelp' aria-label='What the map means'>?</button></div>"+
+        "<div class='mtabs' id='mTabs'></div>"+
+        "<div class='mbody' id='mBody'><div class='mcard' id='mCard'></div>"+
+        "<div id='mtrail'><svg></svg></div></div>"+
+        "<div class='prow' style='padding:0 13px 11px;margin:0'>"+
+        "<button id='pkBack'>BACK</button><button id='pkClose'>CLOSE</button></div>"+
+        "<div class='msheet' id='mSheet'></div>";
+  showPanel(h,"map");   // syncCorners() adds .map and hides the corner total
   bind("pkBack",menuPanel);
-  // jump to the level you're actually on instead of making you scroll
-  setTimeout(function(){
-    var here=$("panel").querySelector(".lrow.here");
-    if(here&&here.scrollIntoView)
-      here.scrollIntoView({block:"center"});
-  },0);
-  $("panel").querySelectorAll("[data-lv]").forEach(function(el){
+  bind("pkClose",hidePanel);
+  bind("mHelp",mapHelp);
+
+  var cleared=0;
+  for(var c=0;c<LEVELS.length;c++) if(mapTouched(c)) cleared++;
+  $("mSub").textContent=cleared+" OF "+LEVELS.length+" CLEARED";
+
+  mapTabs(spans);
+  mapDraw(spans);
+}
+
+function mapTabs(spans){
+  var t="";
+  for(var n=0;n<SECTIONS.length;n++){
+    var sp=spans[n], pct=sp.max?Math.round(sp.got/sp.max*100):0;
+    var lk=sp.locked||SECTIONS[n].at>mapReach();
+    t+="<button class='mtab"+(n===mapSection?" sel":"")+(lk?" lk":"")+
+       "' data-tab='"+n+"' style=\"--tabc:"+(SECTIONS[n].col||"#c3cde4")+
+       ";--pct:"+(lk?0:pct)+"%\"><i></i>"+(lk?"🔒 ":"")+
+       esc(SECTIONS[n].name.split(" ")[0])+"</button>";
+  }
+  $("mTabs").innerHTML=t;
+  $("mTabs").querySelectorAll("[data-tab]").forEach(function(el){
     tap(el,function(){
-      var i=+el.getAttribute("data-lv");
-      hidePanel();playSource="builtin";enterPlay(LEVELS[i],i,false);
+      mapSection=+el.getAttribute("data-tab");
+      mapTabs(sectionSpans());mapDraw(sectionSpans());
+      $("mBody").scrollTop=0;
     });
   });
-  bind("pkClose",hidePanel);
+  var sel=$("mTabs").querySelector(".mtab.sel");
+  if(sel&&sel.scrollIntoView)sel.scrollIntoView({inline:"center",block:"nearest"});
+}
+
+function mapDraw(spans){
+  var n=mapSection, sp=spans[n], sec=SECTIONS[n];
+  var lk=sp.locked||sec.at>mapReach();
+  document.documentElement.style.setProperty("--sec",sec.col||"#c3cde4");
+
+  var pct=sp.max?Math.round(sp.got/sp.max*100):0;
+  var cleared=0,tot=0;
+  for(var j=sp.from;j<=sp.to;j++){tot++;if(mapTouched(j))cleared++;}
+  $("mCard").innerHTML="<b>"+esc(sec.name)+"</b><i>"+esc(sec.sub)+"</i>"+
+    "<u class='mbar'><u style='width:"+(lk?0:pct)+"%'></u></u>"+
+    "<div class='mf'><span>"+cleared+"/"+tot+" cleared</span>"+
+    "<span>"+sp.got+"/"+sp.max+" ★</span></div>";
+
+  var trail=$("mtrail"), STEP=94, AMP=.30;
+  var pts=[], html="", y=36;
+  for(var i=sp.from;i<=sp.to;i++){
+    var l=LEVELS[i], k=mapKind(l), st=mapState(i), off=Math.sin((i-sp.from)*.95)*AMP;
+    var half=(k==="boss"?38:k==="tut"?21:29);
+    pts.push({y:y,off:off,on:mapTouched(i)});
+    html+="<button class='mnode "+st+(k==="trial"?" trial":"")+(k==="boss"?" boss":"")+
+      (k==="tut"?" tut":"")+"' data-node='"+i+"' data-off='"+off.toFixed(4)+
+      "' style='top:"+y+"px;margin-left:"+(-half)+"px;margin-top:"+(-half)+"px'>"+
+      (st==="locked"?"●":(st==="solved"&&k==="tut"?"✓":esc(mapNumeral(l))))+
+      "</button>";
+    if(st==="solved"&&k!=="tut"){
+      var got=starsForRecord(l,progress[l.name]), sh="";
+      for(var s2=0;s2<3;s2++)sh+="<u class='"+(s2<got?"":"off")+"'>★</u>";
+      html+="<div class='mstars' data-off='"+off.toFixed(4)+"' style='top:"+
+            (y+half+7)+"px;transform:translateX(-50%)'>"+sh+"</div>";
+    }
+    var cap=(st==="locked"&&k==="lv")?"":esc(mapCaption(l));
+    if(st==="skipped")cap=esc(mapCaption(l))+" <em>· skipped</em>";
+    var right=off<0;
+    html+="<div class='mcap"+(k==="boss"||k==="trial"?" big":"")+"' data-off='"+
+      off.toFixed(4)+"' style='top:"+(y-8)+"px;transform:translateX("+
+      (right?(half+13):(-half-13))+"px)"+(right?"":" translateX(-100%)")+"'>"+cap+"</div>";
+    y+=STEP;
+  }
+  trail.style.height=(y-STEP+80)+"px";
+  trail.innerHTML="<svg></svg>"+html;
+  mapLayout(pts,y-STEP+80);
+  trail.querySelectorAll("[data-node]").forEach(function(el){
+    tap(el,function(){mapSheet(+el.getAttribute("data-node"));});
+  });
+}
+
+/* The trail. Drawn solid behind you and dotted ahead, so how far you have got
+   is legible without reading a single node. */
+function mapLayout(pts,H){
+  var trail=$("mtrail"), w=trail.clientWidth||480, cx=w/2, on="",off="";
+  /* One subpath per gap, rather than two long polylines. Building them as
+     polylines meant the first vertex decided whether the string opened with a
+     moveto, so a section whose opening node you had not reached yet produced
+     a path starting with "L" - which is not a path, and SVG simply drops it.
+     Per-segment cannot have that failure, and it also stops a lit run jumping
+     across a level you skipped in the middle of one. */
+  for(var n=1;n<pts.length;n++){
+    var a=pts[n-1], b=pts[n];
+    var ax=cx+a.off*(w*.5-44), bx=cx+b.off*(w*.5-44);
+    var seg="M "+ax.toFixed(1)+" "+a.y+" L "+bx.toFixed(1)+" "+b.y;
+    if(a.on)on+=seg; else off+=seg;
+  }
+  var svg=trail.querySelector("svg");
+  svg.setAttribute("viewBox","0 0 "+w+" "+H);
+  svg.setAttribute("width",w);svg.setAttribute("height",H);
+  svg.innerHTML=(off?"<path d='"+off+"' fill='none' stroke='rgba(195,205,228,.16)' "+
+      "stroke-width='3' stroke-linecap='round' stroke-dasharray='2 9'/>":"")+
+    (on?"<path d='"+on+"' fill='none' stroke='rgba(53,194,165,.34)' "+
+      "stroke-width='3.5' stroke-linecap='round'/>":"");
+  trail.querySelectorAll("[data-off]").forEach(function(el){
+    el.style.left=(cx+parseFloat(el.getAttribute("data-off"))*(w*.5-44))+"px";
+  });
+}
+
+function mapSheetClose(){$("mSheet").classList.remove("on");}
+
+function mapSheet(i){
+  var l=LEVELS[i], k=mapKind(l), st=mapState(i);
+  var kind=k==="boss"?"BOSS · FOUR PHASES":
+           k==="trial"?"TRIAL · THREE CORES, ON A CLOCK":
+           k==="tut"?"TUTORIAL · UNSCORED":"LEVEL";
+  var meta=st==="solved"
+      ? (k==="tut"?"<span class='g'>done</span>":
+         "<span class='g'>"+starGlyphs(starsForRecord(l,progress[l.name]))+"</span> best so far")
+    : st==="skipped"?"<span class='a'>skipped</span> · no stars yet, still playable"
+    : st==="here"?"you are here"
+    : st==="open"?"open — not played yet"
+    : "locked — clear what is in front of it, or skip ahead";
+
+  var acts,note;
+  if(st==="locked"){
+    var ads=mapAds(k);
+    acts="<button class='ad' id='mAd'>SKIP AHEAD · WATCH "+ads+" AD"+
+         (ads>1?"S":"")+"</button><button class='qt' id='mNo'>NOT NOW</button>";
+    note="Skipping opens the door, not the level. It awards <b>no stars</b> and "+
+         "the level stays here to beat properly whenever you want. Ads buy "+
+         "progress, never score.";
+  }else{
+    acts="<button class='go' id='mPlay'>"+(st==="solved"?"PLAY AGAIN":"PLAY")+
+         "</button><button class='qt' id='mNo'>CLOSE</button>";
+    note=st==="skipped"?"You have not beaten this one yet. Its stars are still on the table."
+      :k==="boss"?"No goal here. Four phases, and clearing the board begins the next."
+      :k==="trial"?"Three cores, a sweeping plane, three lives. Scored on lives."
+      :(st==="solved"&&starsForRecord(l,progress[l.name])<3)
+        ?"Three stars is the solver's own move count, so <b>3★ means optimal</b>.":"";
+  }
+  $("mSheet").innerHTML="<div class='mk"+(k==="boss"?" b":k==="trial"?" t":"")+"'>"+
+    kind+"</div><h4>"+esc(l.name)+"</h4><div class='mm'>"+meta+"</div>"+
+    "<div class='ma'>"+acts+"</div>"+(note?"<div class='mn'>"+note+"</div>":"");
+  $("mSheet").classList.add("on");
+  bind("mNo",mapSheetClose);
+  var play=$("mPlay");
+  if(play)tap(play,function(){
+    mapSheetClose();hidePanel();playSource="builtin";enterPlay(LEVELS[i],i,false);
+  });
+  var ad=$("mAd");
+  /* No ad provider is wired yet, so this does the unlock directly. When one
+     is, its completion callback is the only thing that should call
+     grantSkip() - everything else here stays exactly as it is. */
+  if(ad)tap(ad,function(){
+    grantSkip(l.name);
+    mapSection=mapSecOf(i);
+    mapTabs(sectionSpans());mapDraw(sectionSpans());
+    mapSheet(i);
+    flash("opened · no stars for a skip");
+  });
+}
+
+function mapHelp(){
+  var row=function(cls,glyph,body){
+    return "<div class='mk2 "+cls+"'>"+glyph+"</div><div class='md'>"+body+"</div>";
+  };
+  $("mSheet").innerHTML="<div class='mk'>THE MAP</div><h4>What the map means</h4>"+
+    "<div class='mlegend'>"+
+    row("solved","7","<b>Solved.</b> Stars sit underneath — three is the solver's own move count, so 3★ is optimal.")+
+    row("here","8","<b>Where you are.</b> The one that breathes.")+
+    row("open","9","<b>Open.</b> You can always reach a couple of levels ahead, so one hard puzzle never stops you.")+
+    row("locked","●","<b>Locked.</b> Clear what is in front of it — or skip ahead with an ad.")+
+    row("skipped","●","<b>Skipped.</b> The door opened, the level did not. Its stars are still there to take.")+
+    row("trial","I","<b>Trial</b> — the bar is the plane about to sweep through. Three cores, on a clock.")+
+    row("boss","I","<b>Boss</b> — the ring is its four phases. Closes the section.")+
+    "</div><div class='mn'>Ads buy <b>progress, never score</b>. A skip awards no "+
+    "stars and the level stays on the map, playable, whenever you want it.</div>"+
+    "<div class='ma'><button class='qt' id='mNo'>CLOSE</button></div>";
+  $("mSheet").classList.add("on");
+  bind("mNo",mapSheetClose);
 }
 
 function legendPanel(){

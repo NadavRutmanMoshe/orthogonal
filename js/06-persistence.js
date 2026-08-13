@@ -13,6 +13,7 @@ var PROG_KEY="orthogonal:progress";
 var SET_KEY="orthogonal:settings";
 var SESS_KEY="orthogonal:session";
 var WARD_KEY="orthogonal:wardrobe";
+var SKIP_KEY="orthogonal:skips";
 function saveWardrobe(){
   if(!window.storage)return;
   window.storage.set(WARD_KEY,JSON.stringify(wardrobe)).catch(function(){});
@@ -158,6 +159,47 @@ function migrateNames(){
 function progSave(){
   if(!window.storage)return Promise.resolve();
   return window.storage.set(PROG_KEY,JSON.stringify(progress)).catch(function(){});
+}
+/* Skips live in their own store, deliberately not in `progress`.
+
+   `progress[name]` means "you beat this", and everything downstream reads it
+   that way: starsEarned() sums it, the wardrobe spends it, betterRecord()
+   writes it. A skip is the opposite claim - the door opened, the level did
+   not - so putting it in the same object would leak a purchase into the star
+   economy, which is the one thing the economy must never allow. Kept apart,
+   a skipped level is worth exactly zero stars by construction rather than by
+   remembering to subtract it. Migrated by name for the same reason progress
+   is: a rename must not silently re-lock what somebody has already opened. */
+function skipLoad(){
+  if(!window.storage)return Promise.resolve();
+  return window.storage.get(SKIP_KEY).then(function(r){
+    if(r&&r.value){try{skips=JSON.parse(r.value)||{};}catch(e){skips={};}}
+    if(typeof LEVEL_RENAMES!=="undefined"){
+      var moved=0;
+      for(var old in LEVEL_RENAMES){
+        if(!LEVEL_RENAMES.hasOwnProperty(old))continue;
+        var now=LEVEL_RENAMES[old];
+        if(skips[old]===undefined||old===now)continue;
+        if(skips[now]===undefined)skips[now]=skips[old];
+        delete skips[old];moved++;
+      }
+      if(moved)skipSave();
+    }
+  }).catch(function(){skips={};});
+}
+function skipSave(){
+  if(!window.storage)return Promise.resolve();
+  return window.storage.set(SKIP_KEY,JSON.stringify(skips)).catch(function(){});
+}
+/* The single call site a rewarded video has to reach. Nothing else in the
+   game opens a level, so when the ad SDK is wired under Capacitor its
+   completion callback calls exactly this and nothing else changes. It is
+   deliberately not gated on an ad here: no provider exists yet, and a button
+   that silently did nothing would be worse than one that plainly works. */
+function grantSkip(name){
+  if(!name)return false;
+  skips[name]=1;skipSave();
+  return true;
 }
 function libLoad(){
   if(!window.storage)return Promise.resolve();

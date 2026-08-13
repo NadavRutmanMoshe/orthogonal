@@ -206,8 +206,8 @@
     transition:width .4s ease}
   /* The boss closes its section, so its row is marked and pulled slightly
      clear of the levels above it. */
-  .lrow.bossrow{border-bottom-color:#ff8a3c55;margin-top:3px}
-  .lrow.bossrow .lname{color:#ff8a3c;letter-spacing:.06em}
+  .lrow.bossrow{border-bottom-color:#a274ff55;margin-top:3px}
+  .lrow.bossrow .lname{color:#a274ff;letter-spacing:.06em}
   /* A trial sits inside a section rather than closing one, so it is marked
      in the same amber but quieter - a landmark, not a wall. */
   .lrow.trialrow{border-bottom-color:#ff8a3c33}
@@ -302,7 +302,10 @@
     display:block;transition:background .25s ease,transform .25s ease}
   .blives i.gone{background:transparent;box-shadow:inset 0 0 0 1px var(--rule);
     transform:scale(.8)}
-  .bcores i{width:14px;height:3px;border-radius:2px;background:#ff8a3c;
+  /* Violet, matching the map. Boss and trial used to share an amber two steps
+     apart, which is not a distinction at a glance; the trial keeps the amber
+     because that is already the colour of a core on a clock in the world. */
+  .bcores i{width:14px;height:3px;border-radius:2px;background:#a274ff;
     display:block;transition:background .25s ease}
   .bcores i.gone{background:var(--rule)}
   .boss.hurt .blives{animation:bshake .3s ease}
@@ -334,5 +337,192 @@
     transition:transform .62s cubic-bezier(.6,.02,.72,.5),opacity .62s ease}
   .sg{display:inline-block;transition:transform .22s ease,opacity .22s ease}
   .sg.launch{transform:translateY(-6px) scale(1.3)}
+
+  /* ============================================================
+     THE MAP — the level picker as a path
+
+     A run of levels, a trial partway in, a boss at the end, drawn as a trail
+     you walk down. The list it replaced was honest and unreadable: seventy-two
+     rows of monospace where nothing said which of them mattered.
+
+     Three node silhouettes, and they differ by shape before they differ by
+     colour. Boss and trial used to be told apart by #ff8a3c against #e0a03c,
+     which are the same hue two steps apart - at 60px, on a dark ground, that
+     is not a distinction. So the boss is violet and wears a four-arc ring (its
+     four phases), the trial keeps the amber the game already uses for a core
+     on a clock and wears the slice that is about to sweep through it, and an
+     ordinary level is a bare disc. Told apart with the colour removed.
+     ============================================================ */
+  :root{ --vio:#a274ff; --vio-lip:#5b3aa8; --amb:#e0a03c; --amb-lip:#8a5f14; }
+
+  /* Near full-height, but still a panel: hidePanel, Esc and the WebGL
+     teardown rules all keep working exactly as they did. */
+  .panel.map{top:8px;bottom:8px;max-height:none;overflow:hidden;
+    display:none;flex-direction:column;padding:0}
+  .panel.map.on{display:flex}
+  body.mapopen .startotal{display:none}
+
+  .mhead{display:flex;align-items:center;gap:10px;padding:11px 13px 9px;
+    border-bottom:1px solid var(--rule);flex-shrink:0}
+  .mhead .mt{flex:1;min-width:0}
+  .mhead .mt b{display:block;font-family:'Space Grotesk',system-ui,sans-serif;
+    font-size:15px;font-weight:700;letter-spacing:-.02em;color:var(--fg)}
+  .mhead .mt span{display:block;font-size:9px;letter-spacing:.13em;color:var(--fg-dim)}
+  .mtot{display:flex;align-items:center;gap:4px;padding:4px 10px;flex-shrink:0;
+    border:1px solid var(--rule);border-radius:20px;color:var(--goal);font-size:12px}
+  .mq{width:30px;height:30px;border-radius:50%;flex-shrink:0;font-size:13px;
+    color:var(--fg-dim);border:1px solid var(--rule);background:transparent}
+  .mq.on{color:var(--player);border-color:var(--player)}
+
+  .mtabs{display:flex;gap:6px;overflow-x:auto;padding:9px 13px;flex-shrink:0;
+    border-bottom:1px solid var(--rule);scrollbar-width:none}
+  .mtabs::-webkit-scrollbar{display:none}
+  .mtab{flex:none;display:flex;align-items:center;gap:6px;height:32px;padding:0 12px;
+    border:1px solid var(--rule);border-radius:17px;color:var(--fg-dim);
+    background:transparent;font-size:10px;letter-spacing:.09em;white-space:nowrap}
+  .mtab.sel{color:var(--tabc);border-color:var(--tabc)}
+  .mtab i{width:14px;height:14px;flex:none;border-radius:50%;font-style:normal;
+    background:conic-gradient(var(--tabc) var(--pct),var(--rule) 0);
+    -webkit-mask:radial-gradient(circle,transparent 4px,#000 4.5px);
+    mask:radial-gradient(circle,transparent 4px,#000 4.5px)}
+  .mtab.lk{opacity:.7}
+
+  .mbody{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 13px 130px}
+  .mcard{margin:13px 0 4px;padding:13px 14px;border-radius:4px;
+    border:1px solid var(--rule);
+    background:linear-gradient(150deg,color-mix(in srgb,var(--sec) 15%,transparent),transparent 72%)}
+  .mcard b{display:block;font-family:'Space Grotesk',system-ui,sans-serif;
+    font-size:17px;font-weight:700;letter-spacing:-.02em;color:var(--sec)}
+  .mcard i{display:block;font-style:normal;font-size:10px;color:var(--fg-dim);margin-top:2px}
+  .mcard .mbar{display:block;height:3px;background:var(--rule);border-radius:3px;
+    margin:10px 0 4px;overflow:hidden}
+  .mcard .mbar u{display:block;height:100%;background:var(--sec);text-decoration:none}
+  .mcard .mf{display:flex;justify-content:space-between;font-size:9.5px;color:var(--fg-dim)}
+
+  #mtrail{position:relative;margin-top:8px}
+  #mtrail svg{position:absolute;inset:0;pointer-events:none;z-index:0}
+
+  /* A disc with a lip under it, so it reads as something to push. */
+  .mnode{position:absolute;z-index:1;width:58px;height:58px;border-radius:50%;
+    display:grid;place-items:center;padding:0;font-size:15px;font-weight:600;
+    background:#1b2340;color:#4a577a;border:2.5px solid var(--rule);
+    box-shadow:0 5px 0 rgba(0,0,0,.42);
+    transition:transform .12s ease,box-shadow .12s ease,border-color .25s,color .25s}
+  .mnode:active{transform:translateY(4px);box-shadow:0 1px 0 rgba(0,0,0,.42)}
+  .mnode.solved{background:var(--goal);border-color:#5fe0c4;color:#08281f;
+    box-shadow:0 5px 0 #14705d}
+  .mnode.solved:active{box-shadow:0 1px 0 #14705d}
+  .mnode.open{border-color:var(--fg);color:var(--fg);background:rgba(20,26,46,.9)}
+  .mnode.here{background:var(--player);border-color:#f4699a;color:#2a0512;
+    box-shadow:0 5px 0 #8a1441;animation:mhalo 2.1s ease-out infinite}
+  .mnode.here:active{box-shadow:0 1px 0 #8a1441;animation:none}
+  @keyframes mhalo{
+    0%,100%{box-shadow:0 5px 0 #8a1441,0 0 0 0 rgba(214,51,108,.34)}
+    50%{box-shadow:0 5px 0 #8a1441,0 0 0 13px rgba(214,51,108,0)}
+  }
+  .mnode.locked{border-style:dashed;background:rgba(255,255,255,.02);
+    box-shadow:0 4px 0 rgba(0,0,0,.28)}
+  .mnode.skipped{border-color:#6fa8ff;border-style:dashed;color:#6fa8ff;
+    background:rgba(111,168,255,.09)}
+  .mnode.tut{width:42px;height:42px;font-size:12px}
+
+  /* The boss wears its four phases. */
+  .mnode.boss{width:76px;height:76px;font-size:18px;border-width:3px;
+    border-color:var(--vio);color:var(--vio);background:rgba(162,116,255,.12)}
+  .mnode.boss.solved{background:var(--vio);border-color:#c6a4ff;color:#1b0d38;
+    box-shadow:0 5px 0 var(--vio-lip)}
+  .mnode.boss::before{content:"";position:absolute;inset:-9px;border-radius:50%;
+    background:conic-gradient(from -90deg,var(--vio) 0 22%,transparent 22% 25%,
+      var(--vio) 25% 47%,transparent 47% 50%,var(--vio) 50% 72%,
+      transparent 72% 75%,var(--vio) 75% 97%,transparent 97%);
+    -webkit-mask:radial-gradient(circle,transparent calc(50% - 3px),#000 calc(50% - 2px));
+    mask:radial-gradient(circle,transparent calc(50% - 3px),#000 calc(50% - 2px));
+    opacity:.9;pointer-events:none}
+  /* The trial wears the slice that is about to sweep through it. */
+  .mnode.trial{border-color:var(--amb);color:var(--amb);background:rgba(224,160,60,.11)}
+  .mnode.trial.solved{background:var(--amb);border-color:#f0bd6c;color:#2c1c02;
+    box-shadow:0 5px 0 var(--amb-lip)}
+  .mnode.trial::before{content:"";position:absolute;left:-11px;right:-11px;top:50%;
+    height:4px;transform:translateY(-50%) rotate(-24deg);border-radius:3px;
+    background:linear-gradient(90deg,transparent,var(--amb) 20%,var(--amb) 80%,transparent);
+    opacity:.95;pointer-events:none}
+  /* Locked, both of them go quiet - the shape still says which it is. */
+  .mnode.boss.locked,.mnode.trial.locked{border-color:var(--rule);color:#4a577a;
+    background:rgba(255,255,255,.02)}
+  .mnode.boss.locked::before,.mnode.trial.locked::before{opacity:.26;
+    background:var(--rule)}
+  .mnode.boss.locked::before{background:conic-gradient(from -90deg,var(--fg-dim) 0 22%,
+    transparent 22% 25%,var(--fg-dim) 25% 47%,transparent 47% 50%,var(--fg-dim) 50% 72%,
+    transparent 72% 75%,var(--fg-dim) 75% 97%,transparent 97%)}
+
+  /* Standing on a landmark, it keeps its own colour and only borrows the
+     pulse. .mnode.here sets a pink body and a pink lip; trial and boss
+     override the body by coming later, but the lip is theirs to restore or
+     the node reads as an amber disc sitting on a pink one. */
+  .mnode.trial.here{box-shadow:0 5px 0 var(--amb-lip);animation:mhaloT 2.1s ease-out infinite}
+  @keyframes mhaloT{
+    0%,100%{box-shadow:0 5px 0 var(--amb-lip),0 0 0 0 rgba(224,160,60,.36)}
+    50%{box-shadow:0 5px 0 var(--amb-lip),0 0 0 13px rgba(224,160,60,0)}
+  }
+  .mnode.boss.here{box-shadow:0 5px 0 var(--vio-lip);animation:mhaloB 2.1s ease-out infinite}
+  @keyframes mhaloB{
+    0%,100%{box-shadow:0 5px 0 var(--vio-lip),0 0 0 0 rgba(162,116,255,.38)}
+    50%{box-shadow:0 5px 0 var(--vio-lip),0 0 0 15px rgba(162,116,255,0)}
+  }
+  .mnode.trial.here:active{box-shadow:0 1px 0 var(--amb-lip);animation:none}
+  .mnode.boss.here:active{box-shadow:0 1px 0 var(--vio-lip);animation:none}
+
+  .mstars{position:absolute;z-index:1;display:flex;gap:2px;pointer-events:none;
+    font-size:12px;line-height:1;color:var(--goal)}
+  .mstars u{text-decoration:none;text-shadow:0 0 8px rgba(53,194,165,.5)}
+  .mstars u.off{color:rgba(195,205,228,.18);text-shadow:none}
+  .mcap{position:absolute;z-index:1;font-size:9.5px;color:var(--fg-dim);
+    pointer-events:none;white-space:nowrap}
+  .mcap.big{color:var(--fg);letter-spacing:.07em}
+  .mcap em{font-style:normal;color:#6fa8ff}
+
+  /* the level sheet, inside the panel */
+  .msheet{position:absolute;left:0;right:0;bottom:0;z-index:3;
+    background:var(--panel);border-top:1px solid var(--rule);
+    padding:15px 14px 16px;transform:translateY(112%);
+    transition:transform .26s cubic-bezier(.22,.72,.28,1);backdrop-filter:blur(9px)}
+  .msheet.on{transform:translateY(0)}
+  .msheet .mk{font-size:9px;letter-spacing:.17em;color:var(--fg-dim)}
+  .msheet .mk.b{color:var(--vio)} .msheet .mk.t{color:var(--amb)}
+  .msheet h4{font-family:'Space Grotesk',system-ui,sans-serif;font-size:17px;
+    font-weight:700;letter-spacing:-.015em;margin:4px 0 0;color:var(--fg)}
+  .msheet .mm{font-size:10.5px;color:var(--fg-dim);margin-top:5px}
+  .msheet .mm .g{color:var(--goal)} .msheet .mm .a{color:#6fa8ff}
+  .msheet .ma{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+  .msheet .ma button{height:42px;font-size:10.5px;letter-spacing:.13em}
+  .msheet .ma .go{border-color:var(--goal);color:var(--goal);font-weight:600;
+    background:rgba(53,194,165,.09)}
+  .msheet .ma .ad{border-color:#6fa8ff;color:#6fa8ff;background:rgba(111,168,255,.08)}
+  .msheet .ma .qt{height:32px;font-size:9.5px;color:var(--fg-dim);border-color:var(--rule)}
+  .msheet .mn{font-size:9.5px;color:var(--fg-dim);line-height:1.65;margin-top:9px}
+  .msheet .mn b{color:var(--fg);font-weight:500}
+
+  .mlegend{display:grid;grid-template-columns:auto 1fr;gap:9px 11px;align-items:center;
+    margin-top:11px}
+  .mlegend .mk2{width:30px;height:30px;border-radius:50%;border:2.5px solid var(--rule);
+    background:#1b2340;display:grid;place-items:center;font-size:11px;color:#4a577a;
+    position:relative}
+  .mlegend .mk2.solved{background:var(--goal);border-color:#5fe0c4;color:#08281f}
+  .mlegend .mk2.here{background:var(--player);border-color:#f4699a;color:#2a0512}
+  .mlegend .mk2.open{border-color:var(--fg);color:var(--fg)}
+  .mlegend .mk2.locked{border-style:dashed}
+  .mlegend .mk2.skipped{border-color:#6fa8ff;border-style:dashed;color:#6fa8ff}
+  .mlegend .mk2.trial{border-color:var(--amb);color:var(--amb)}
+  .mlegend .mk2.trial::after{content:"";position:absolute;left:-6px;right:-6px;top:50%;
+    height:2.5px;transform:translateY(-50%) rotate(-24deg);background:var(--amb)}
+  .mlegend .mk2.boss{border-color:var(--vio);color:var(--vio)}
+  .mlegend .mk2.boss::after{content:"";position:absolute;inset:-5px;border-radius:50%;
+    background:conic-gradient(from -90deg,var(--vio) 0 22%,transparent 22% 25%,
+      var(--vio) 25% 47%,transparent 47% 50%,var(--vio) 50% 72%,transparent 72% 75%,
+      var(--vio) 75% 97%,transparent 97%);
+    -webkit-mask:radial-gradient(circle,transparent calc(50% - 2px),#000 calc(50% - 1px));
+    mask:radial-gradient(circle,transparent calc(50% - 2px),#000 calc(50% - 1px))}
+  .mlegend .md{font-size:10px;color:var(--fg-dim);line-height:1.5}
+  .mlegend .md b{color:var(--fg);font-weight:500}
 
   @media (prefers-reduced-motion:reduce){*{transition-duration:.01ms !important}}

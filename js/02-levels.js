@@ -443,12 +443,21 @@ var LEVELS=[
 /* Section markers hold array indices, so inserting a level means shifting
    every marker after it. `locked` sections stay closed until the campaign
    proper is finished - see sectionsUnlocked() in 16-panels.js. */
+/* `col` is the section's identity on the map - the tab, the header, the
+   progress bar. It is decoration only: the *nodes* keep the game's semantic
+   colours (green solved, amber trial, violet boss) so no section can make a
+   piece mean something different from the section before it.
+
+   The tutorials get a section of their own so the map has somewhere to put
+   them. `at:0` shifts nothing, because these are array indices and every
+   other marker keeps the index it already had. */
 var SECTIONS=[
-  {at:3, name:"I · FUNDAMENTALS", sub:"one verb: collapse the world and cross the gap"},
-  {at:14, name:"II · SPIKES", sub:"a hazard you cannot see until you fold"},
-  {at:23, name:"III · GLASS", sub:"solid in the volume, absent from the plane"},
-  {at:33, name:"IV · CRATES", sub:"change the plane by moving the volume"},
-  {at:45, name:"V · EXTRA", sub:"unlocked by the Orthogon — the long ones", locked:true}
+  {at:0, name:"PROLOGUE", sub:"walking, folding, turning — one verb each", col:"#7183a6"},
+  {at:3, name:"I · FUNDAMENTALS", sub:"one verb: collapse the world and cross the gap", col:"#35c2a5"},
+  {at:14, name:"II · SPIKES", sub:"a hazard you cannot see until you fold", col:"#d6336c"},
+  {at:23, name:"III · GLASS", sub:"solid in the volume, absent from the plane", col:"#7fb2ff"},
+  {at:33, name:"IV · CRATES", sub:"change the plane by moving the volume", col:"#c58f5c"},
+  {at:45, name:"V · EXTRA", sub:"unlocked by the Orthogon — the long ones", col:"#a274ff", locked:true}
 ];
 
 /* Levels have been renumbered more than once. Progress is keyed by name,

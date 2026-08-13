@@ -81,7 +81,7 @@ anything; everything before it only declares.
 | `js/13-gestures.js` | Swipe / tap / two-finger tap on the world. |
 | `js/14-editor.js` | Tap-to-place editor, verify, minimize. |
 | `js/15-tutorial.js` | Button cues, the tutorial coach, the hint button. |
-| `js/16-panels.js` | Every slide-up panel; `sectionSpans()` for the picker. |
+| `js/16-panels.js` | Every slide-up panel; `sectionSpans()`; the map (`levelPicker()`). |
 | `js/17-composer.js` | Solution-first level generation. |
 | `js/18-ui.js` | `$`, toasts, panel plumbing, `syncHud()`. |
 | `js/19-bindings.js` | Every button and key binding. |
@@ -470,6 +470,46 @@ worth running to tune a number the owner is about to feel out anyway.
 
 ---
 
+## The map
+
+**The level picker is a path, one section at a time.** A run of levels, a
+trial partway in, a boss closing it — tabs across the top, a winding trail
+below, drawn from `SECTIONS` and `LEVELS` exactly as the old list was. No
+level data changed to make it.
+
+- **Boss and trial differ by silhouette before colour.** They used to be
+  `#ff8a3c` against `#e0a03c` — the same hue two steps apart, which at 60px on
+  a dark ground is not a distinction. The boss is now **violet** and wears a
+  four-arc ring (its four phases); the trial keeps amber, because that is
+  already the colour of a core on a clock in the world, and wears the bar that
+  is about to sweep through it. Turn the colour off and they are still three
+  different shapes. The violet follows through to `.bcores` in the HUD.
+- **Progression is a rolling window, not a chain.** You may always reach
+  `MAP_WINDOW` (2) levels past the furthest you have got to. In a match-3 you
+  eventually beat a level by luck; in a deterministic puzzle stuck is stuck
+  forever, so one hard level must never be able to end somebody's game. The
+  window still closes behind you, so a skip is still worth something.
+- **Measured from the furthest level *touched*, not the first gap.** Nothing
+  was locked before this existed, so old saves have arbitrary holes; measuring
+  from the first gap would re-lock levels those players had already walked
+  past. `V · EXTRA` keeps its own older gate on top — every boss down.
+- **Skips live in `skips`, deliberately not in `progress`.** `progress[name]`
+  means "you beat this" and the whole star economy reads it that way, so a
+  skip in there would be a purchase leaking into the currency. Kept apart, a
+  skipped level is worth zero stars *by construction* rather than by
+  remembering to subtract it. Verified: skipping does not move `starsEarned()`.
+- **`grantSkip(name)` is the single call site a rewarded video needs.** It is
+  not gated on an ad here, because there is no provider yet and a button that
+  silently did nothing would be worse than one that plainly works. Wiring the
+  SDK means calling it from the completion callback and changing nothing else.
+- **The tutorials get a `PROLOGUE` section** so the map has somewhere to put
+  them. Its `at:0` shifts no other marker — these are array indices and every
+  later section keeps the index it had.
+- **`syncCorners()` owns the map's chrome.** The running star total lives
+  outside `.corner` at z-index 30 so it can sit over the win overlay, which
+  also puts it over a near-full-height map and its own total. The one function
+  that already knows which panel is open turns it off.
+
 ## The tutorial
 
 Three levels, one new verb each: walking, collapsing, turning. They carry
@@ -817,9 +857,13 @@ tested and failed, plus where this sits in the PCG literature, are in
 6. **Keys.** Currently cut. Collecting them in the plane tied them to the fold,
    but they still read as an errand rather than a puzzle.
 7. **Ad integration.** Nothing is wired. When wrapped with Capacitor the
-   rewarded-video callback should call `grantShards(n)`. Rewarded-only by
-   design: skip a level, or buy shards. No interstitials — they pay poorly on a
-   slow puzzle game and are the main cause of uninstalls.
+   rewarded-video callback should call `grantShards(n)`, `grantAdView(id)` or
+   `grantSkip(name)` — three hooks, one per thing an ad can buy. Rewarded-only
+   by design: skip a level, or buy shards. No interstitials — they pay poorly
+   on a slow puzzle game and are the main cause of uninstalls.
+   **The rule that keeps this out of pay-to-win: ads buy progress, never
+   score.** A skip awards no stars and leaves the level playable, so nothing
+   bought can ever appear in `starsEarned()`.
 
 ### Before mobile
 

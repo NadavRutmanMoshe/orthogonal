@@ -31,6 +31,10 @@ var gCrates=[];          // live crate positions, in level order
 var gKeys=0;             // bitmask of collected keys
 var nKeysTotal=0;
 var progress={};             // levelKey -> best move count
+/* levelKey -> 1, for levels opened with a skip rather than beaten. Kept out
+   of `progress` on purpose: that object is the star economy's input, and a
+   skip must be worth nothing in it. See skipLoad() in 06-persistence.js. */
+var skips={};
 // Tutorial bookkeeping. Counters only - the coach reads them, nothing else
 // does, and they reset with the level so a death restarts the lesson too.
 var tutC=null, tutShown=-1;
