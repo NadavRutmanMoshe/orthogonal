@@ -31,7 +31,41 @@ function defaultVolume(){
   var coarse=window.matchMedia&&window.matchMedia("(pointer: coarse)").matches;
   return coarse?1:.35;
 }
-var settings={volume:defaultVolume(),brightness:1,ui:"full",volTouched:false};
+var settings={volume:defaultVolume(),brightness:1,ui:"full",volTouched:false,
+              pace:1};
+
+/* PACE — how fast the two real-time things run.
+
+   Bosses and trials are the one part of the game that does not wait for you,
+   and "real time is the one thing this game is not" has been a known hole
+   for as long as they have existed. This is the accessibility answer: 1 is
+   the designed speed, .75 and .5 are the same fight played slower.
+
+   It is deliberately *one number applied to dt*, not a set of eased dials.
+   Every interval in a fight is derived from the clock - the step, the aim
+   window, the creep, the rage multiplier, the trial's period and its fire
+   window, the beat of grace after a hit - so scaling the clock scales all of
+   them together and every ratio between them survives untouched. Slowing
+   `step` by hand would not: it would change how many steps a hunter gets per
+   telegraph, which is the fight's whole shape.
+
+   It is free, and it does not touch stars. Hints are metered because a hint
+   hands you the answer to the puzzle; a slower clock hands you nothing you
+   did not already have to work out, it just gives you longer to say it. If
+   that judgement ever needs reversing, the place to do it is
+   starsForRecord() in 07-difficulty.js - cap a clock level's stars the way
+   capForHints() caps an ordinary one. */
+/* Carried as a percentage as well as a multiplier, and the percentage is
+   what the button ids are built from. `mPace_0.5` is a legal element id and
+   getElementById finds it happily, but it is not a legal CSS selector, so
+   the first querySelector anyone reaches for would throw on it. */
+var PACES=[{v:1,pct:100,label:"NORMAL"},
+           {v:.75,pct:75,label:"EASED"},
+           {v:.5,pct:50,label:"SLOW"}];
+function paceScale(){
+  var p=settings.pace;
+  return (typeof p==="number"&&p>0&&p<=1)?p:1;
+}
 
 /* The individual blip gains below are a balanced mix - a footstep is meant to
    sit well under the win chord - so loudness is corrected once here at the

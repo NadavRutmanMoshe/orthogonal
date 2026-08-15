@@ -314,6 +314,87 @@ lands on the current one in a single lookup. Verified by loading a save
 written in the original numbering and watching every star survive. **Compose
 that table, never rewrite it.**
 
+**The fourth renumbering, and what made it cheap.** Section I gained four
+levels at its head, which pushed every number in the game and needed 61 new
+rename entries on top of the 152 already there. That was done by a script,
+and the script is the interesting part: it composed the table rather than
+regenerating it — every existing key kept its key and had its *value*
+re-pointed — and then refused to write unless two invariants held. No key
+dropped, and no value also a key pointing somewhere else. The second one
+matters because `migrateNames()` makes a single pass in enumeration order: a
+chain `A → B` alongside `B → C` half-applies depending on which it happens to
+reach first, and the failure is silent and only visible to a player with an
+old save.
+
+It caught something on the first run. Three levels — `The Last Step`, `Turn
+Twice More`, `The Last Placement` — came back round to a number they had worn
+in an *earlier* numbering, so an old key ended up mapping to itself. That is
+harmless (`migrateNames` skips `old===now`, and a save under that name is
+already correct) but it is indistinguishable from a real chain if you only
+check "is this value also a key". Worth knowing the next time, because it will
+happen again: numbers are a small space and this campaign keeps reshuffling.
+
+---
+
+## The opening was a cliff, and the curve said so
+
+For a long time the first thing after the tutorial scored 21 and the third
+scored 33. A new player was in `brutal` by their fourth level, in the section
+whose whole job is teaching — while sections II, III and IV each opened with
+two or three gentle ones. Nobody designed that; it is what happens when levels
+are cut and reshuffled and the front of the campaign is the part you stop
+looking at because you have solved it a hundred times.
+
+`node tools/curve.js` had been printing it all along. The lesson is not
+"write easier levels", it is that **difficulty is measurable here and the
+measurement was not being read.** The solver gives an exact optimal path for
+every level; the tier is a formula over it. A step of more than about +10 in
+the opening section is a fact you can print, not a thing to argue about.
+
+The four levels that filled it — 14, 16, 19, 28, around the existing 21 — were
+designed against the harness rather than by feel, and two of the four came out
+wrong on the first try in a way that is worth recording:
+
+- **`02 — The Near One`** teaches that you return on the block nearest the
+  camera by putting a decoy in the goal's column. The first version was
+  solvable in seven moves by folding, popping onto the decoy, turning 180°
+  and popping again — because from the far side the far block *is* the near
+  one. The decoy had become a stepping stone. It only stopped being one once
+  the bridge blocks' depths were chosen so that no second axis lines anything
+  up, which is a constraint the level's own view never shows you.
+- **`05 — Halfway Across`** is meant to need two folds. The first version
+  needed one: the plane was a single connected staircase, so the player could
+  climb *within* the plane and walk the whole way. Forcing the second fold
+  needed a wall in the plane — two blocks stacked, no step up — placed at a
+  depth the volume route does not pass through. Same blocks on the route and
+  they block both.
+
+Both were found by BFS in seconds and neither would have been obvious by
+playing. This is the standing agreement working as intended: ordinary levels
+get machine-verified, always.
+
+---
+
+## Publishing overwrote the artifact with a build from the wrong branch
+
+Worth recording because it cost nothing in git and could have cost everything.
+The published artifact had been built from an unmerged branch — the map, the
+phased bosses, the menu redesign — and a later session, working from `main`,
+rebuilt the single-file bundle and republished it to the same URL. The design
+work vanished from the link while sitting perfectly safe on its branch.
+
+**The tell was there and was ignored.** The live artifact was 945KB; the
+replacement build was 875KB. A 70KB gap between what you are replacing and
+what you are replacing it with is a question, not a rounding error. The rule
+that follows: **before republishing an artifact, check that the build you are
+about to push accounts for the size of the one already there** — and if it
+does not, find the branch that does.
+
+Recovery was total and took one command, because `tools/build-single.js` is
+deterministic: rebuilding from the branch the artifact originally came from
+produced a file byte-identical to what had been live. That determinism is a
+property worth protecting; it is what turned a scare into a diff.
+
 ---
 
 ## The anchor, and a cautionary note about evidence
@@ -409,6 +490,15 @@ would have caught it before any of it shipped.
 - **`body>canvas` used to be a bare `canvas` selector**, which caught the
   wardrobe's preview canvas and pinned it `position:fixed` over the whole
   viewport.
+- **A hint used to point at nothing, twice over.** `cue()` pulses a button,
+  and `cue("bUndo")` named a button this game has never had — so the hint you
+  get when you are wedged past recovery did nothing at all. With controls
+  `HIDDEN` every cue had the same problem, and it still charged you a star.
+  `cue()` now speaks the move when its target is not on screen, and returns
+  the words so a caller about to write its own toast can carry them rather
+  than overwrite them. Visibility is `getClientRects()`, not `offsetParent`:
+  the control bar is `position:fixed` and a fixed element has no offset parent
+  even while it is plainly visible.
 - **Sound used to peak near -19 dBFS.** `MIX` alone could never fix it: with
   oscillators wired straight to the destination, the ceiling is set by the
   loudest possible moment and everything quieter has to live far beneath it.

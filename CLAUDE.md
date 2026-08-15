@@ -67,7 +67,7 @@ anything; everything before it only declares.
 |---|---|
 | `js/00-storage.js` | `window.storage` over `localStorage`. The game was born inside a Claude artifact where the host supplied this API; the shim lets identical code run from `file://`, itch.io and a Capacitor WebView. Defines itself only if absent. Falls back to an in-memory map if storage is denied (private browsing). |
 | `js/01-coords.js` | `AX[]` — the four camera views, each with `r` (screen-right) and `d` (depth, pointing at the camera). Nearly every coordinate calculation goes through these. Also `K()` and `box()`. |
-| `js/02-levels.js` | 72 levels + `SECTIONS` + `LEVEL_RENAMES`. |
+| `js/02-levels.js` | 76 levels + `SECTIONS` + `LEVEL_RENAMES`. |
 | `js/03-rules.js` | `resolveStep()`, block kinds, `makeRules()`, `makeBoss()`, `bossPhases()`, `bossBlocksAt()`, `bossNext()`, `bossLine()`, `foldKills()`, `bossArena()`, `makeTrial()`, `trialSafety()`. |
 | `js/04-solver.js` | `solve()` — BFS over game states. Solves trials; knows nothing of bosses, on purpose. |
 | `js/05-state.js` | Mutable state, the pack, the trial clock, tutorial counters. |
@@ -121,7 +121,7 @@ five levels in, each section is interrupted by a **trial**:
 
 | | | |
 |---|---|---|
-| I · FUNDAMENTALS | 9 + trial + boss | turn, depth — the fold itself is the tutorial's job |
+| I · FUNDAMENTALS | 13 + trial + boss | turn, depth — the fold itself is the tutorial's job |
 | II · SPIKES | 7 + trial + boss | spikes before glass — a hazard reads faster than an absence |
 | III · GLASS | 8 + trial + boss | ends on glass + spikes |
 | IV · CRATES | 10 + trial + boss | ends on crate + glass + spikes |
@@ -137,10 +137,26 @@ because gating a bonus on 100% turns a reward into a chore.
 section would renumber every level after it and cost a `LEVEL_RENAMES` entry
 each. A landmark must not be able to break a save.
 
+**Section I is long on purpose.** It is thirteen levels where the others are
+seven to ten, because it is the section a new player is *in* while they are
+deciding whether to keep playing. Its first five now score 14, 16, 19, 21, 28
+against a tutorial that ends at 12; before that the first thing after the
+tutorial was 21 and the third was `brutal`. Difficulty is a curve you can
+measure — `node tools/curve.js` prints it, and a step of more than about +10
+in the opening section is a bug in the campaign, not a hard level.
+
 `LEVEL_RENAMES` maps every old level name to its **current** one and
 `migrateNames()` applies it on load. **Compose that table, never rewrite it** —
 regenerating it from scratch once silently broke the oldest saves. The story is
-in `docs/HISTORY.md`.
+in `docs/HISTORY.md`. Composing means two edits, not one: every existing key
+keeps its key and has its *value* re-pointed at the new current name, and one
+new entry maps today's name to tomorrow's. Two invariants make that checkable
+and both are worth asserting mechanically, because `migrateNames()` makes a
+single unordered pass — **no key may be dropped**, and **no value may also be
+a key** that points somewhere else, or a chain half-applies depending on
+enumeration order. An entry that ends up mapping a name to *itself* is fine
+and will happen: numbers come back round, and a save under that name is
+already correct.
 
 Every special piece is verified load-bearing; every anchor level is verified
 **impossible** without its anchor; every crate is verified to be shoved in the
@@ -632,7 +648,7 @@ exclusive — every gesture also has a key and, unless hidden, a button:
 - **Folding into a wall is telegraphed, not blocked.** `foldPeril()` in
   `js/12-play.js` answers "would flattening from here kill me, and which blocks
   are to blame" — the guilty ones are tinted and outlined red in the world and
-  the `GO 2D` button pulses. It came from playtesting `08 — Far Side`, where
+  the `GO 2D` button pulses. It came from playtesting `12 — Far Side`, where
   the block that crushes you sits one square to your *left* in world space and
   shares your silhouette column only because the view is rotated: nothing on
   screen said so. The move stays legal — dying to it is a real outcome and the
@@ -657,6 +673,18 @@ exclusive — every gesture also has a key and, unless hidden, a button:
   metered/timer design deliberately — an energy timer teaches people to close
   the app, which is the opposite of what a free game needs. `win()` writes an
   *effective* move count so hints cannot be laundered into currency.
+- **A hint is delivered as a pulse on a button, and `cue()` speaks it instead
+  when that button is not on screen.** Three layouts and one missing button
+  made this necessary: `COMPACT` drops the d-pad, `HIDDEN` drops the whole
+  bar, and `cue("bUndo")` has always pointed at a control this game does not
+  have — so the one hint you get when you are wedged past recovery showed
+  nothing at all, and a `HIDDEN` player paid a star for a pulse on an
+  invisible button. `cue()` now **returns** the spoken form when it falls
+  back, because there is one toast element and the last write wins: a caller
+  about to flash its own message carries the words along rather than clobber
+  them. Visibility is tested with `getClientRects()`, not `offsetParent` —
+  the bar is `position:fixed` and reports no offset parent while plainly on
+  screen.
 - **Stars.** 3★ = the solver's own move count, 2★ ≤ 120%, 1★ ≤ 140%. Par is
   optimal, so 3★ genuinely means optimal. Levels on a clock ignore all of this
   and score on lives.
@@ -839,9 +867,19 @@ tested and failed, plus where this sits in the PCG literature, are in
   telegraphed for `aim` milliseconds and breaking the line cancels it, so it
   is fair — but there is no partial answer, no grazing hit, and a player who
   misreads the axis simply takes it.
-- **Real time is the one thing the game is not.** Bosses and trials mean it no
-  longer plays entirely at your own pace, and an accessibility option to slow
-  both clocks is the obvious missing setting.
+- **Real time is the one thing the game is not**, and `Pace` in the menu is the
+  concession. `NORMAL` / `EASED` / `SLOW` = 1 / .75 / .5, and it is **one
+  multiplication on `dt`** at the top of `bossFrame` and `trialFrame` rather
+  than a set of slowed dials. That matters most now that a fight is phased:
+  `step` and `aim` belong to the *phase*, and `creep`, `rage`, `period`,
+  `fire` and the beat of grace are all measured against the same clock, so
+  scaling the clock keeps every ratio between them. Slowing `step` alone would
+  change how many steps a hunter gets per telegraph — the fight's whole shape,
+  and the one thing phases exist to control. It is free and does not touch
+  stars, on the grounds that a hint hands you the answer and a slower clock
+  only gives you longer to say it. To reverse that judgement, cap a clock
+  level in `starsForRecord()` the way `capForHints()` caps an ordinary one.
+  What is still guesswork is whether .75 and .5 are the right two rungs.
 - **The composer cannot generate crates or keys.** It synthesises geometry move
   by move from a solution; a push changes the world, so the geometry cannot be
   derived that way without re-deriving everything downstream. Crate and key
@@ -869,10 +907,6 @@ tested and failed, plus where this sits in the PCG literature, are in
   asks iOS to keep its hands off a two-finger move, and `user-scalable=no` is
   ignored there — `touch-action:none` on the body is what should hold it, and
   that has not been tested on a device.
-- **`cue("bUndo")` targets a button that does not exist.** When you have wedged
-  yourself past recovery, `showHint()` pulses nothing. Related: with controls
-  `HIDDEN`, every hint cue points at an invisible button. Both want the same
-  fix — `cue()` should fall back to a `flash()` when its target is not on screen.
 - **Two-finger tap only rotates right.** There is no left-rotate gesture.
 
 ---
@@ -887,10 +921,13 @@ tested and failed, plus where this sits in the PCG literature, are in
    one smarter opponent or two ordinary ones. They are laid out consecutively
    on purpose so the comparison can be made in a single fight. Whichever wins
    should probably become the shape of the last phase, and the loser can go.
-1. **More gentle levels.** The real gap the curve exposes: after the tutorial
-   there is nothing between 16 and 31. The composer can make them, but not
-   crate or key levels, and its 59% hit rate means hand-checking a batch. This
-   is the highest-value content work left.
+1. **More gentle levels — the opening is fixed, the middle is not.** Section I
+   was the urgent case and now runs 14, 16, 19, 21, 28 out of the tutorial.
+   What is left is thinner and further in: `II` still jumps 17 → 27 in one
+   step and `III` 24 → 29, and every level in the locked shelf reads `brutal`
+   — a whole section with one texture. The composer can make ordinary levels
+   but not crate or key ones, and its 59% hit rate means hand-checking a
+   batch.
 2. **A crate trial**, per the limitation above.
 3. **Negative constraint tracking in the composer.** Synthesis is still greedy
    and violations are only caught at verification. Recording "this silhouette

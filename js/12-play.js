@@ -282,7 +282,12 @@ function bossFrame(dt){
   if(!B||app!=="play")return;
   if(dying||levelDone||panelOpen()||!$("intro").classList.contains("gone")||
      $("won").classList.contains("on"))return;
-  dt=Math.min(dt,90);
+  /* Clamp first, then scale. The clamp is about a backgrounded tab handing
+     back one enormous frame; the scale is the player's pace setting, and
+     applying it here means every derived interval below - the phase's step
+     and aim, creep, rage, grace - slows together and keeps its ratio to the
+     others. A phase is a set of dials; pace must not be another one. */
+  dt=Math.min(dt,90)*paceScale();
   if(bossHitFlash>0)bossHitFlash=Math.max(0,bossHitFlash-dt/380);
   if(bossFlash>0)bossFlash=Math.max(0,bossFlash-dt/300);
   if(bossGraceMs>0)bossGraceMs=Math.max(0,bossGraceMs-dt);
@@ -544,7 +549,10 @@ function trialFrame(dt){
   if(!TR||app!=="play")return;
   if(dying||levelDone||panelOpen()||!$("intro").classList.contains("gone")||
      $("won").classList.contains("on"))return;
-  dt=Math.min(dt,90);          // a backgrounded tab returns one enormous frame
+  // Clamped against a backgrounded tab's one enormous frame, then scaled by
+  // the pace setting - see paceScale() in 11-sound.js for why it is one
+  // multiplication here rather than a slower `period` and `fire`.
+  dt=Math.min(dt,90)*paceScale();
   if(trialFlash>0)trialFlash=Math.max(0,trialFlash-dt/300);
   if(trialGrace>0)trialGrace=Math.max(0,trialGrace-dt);
   var was=TR.live(trialMs);

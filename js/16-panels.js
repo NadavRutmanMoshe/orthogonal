@@ -234,6 +234,15 @@ function menuPanel(){
           "<code>space</code> to change dimension, <code>Q</code>/<code>E</code> to turn. "+
           "With the bar hidden, <code>tap</code> the world to change dimension and "+
           "<code>two-finger tap</code> to turn.</div></div>"+
+      "<div class='pcard'><h4>Real time</h4>"+
+        "<div class='crow'><label>Pace</label><span class='seg'>"+
+          PACES.map(function(p){
+            return seg("mPace",p.pct,p.label,Math.round(paceScale()*100));
+          }).join("")+"</span></div>"+
+        "<div class='note'>A boss and a trial are the only things in the game "+
+          "that do not wait for you. This slows both — every part of them "+
+          "together, so a fight keeps its shape — and it costs you no stars."+
+          "</div></div>"+
       "<div class='pcard'><h4>More</h4><div class='psub'>"+
         "<button id='mLegend'>WHAT THE PIECES DO</button>"+
         "<button id='mTut'>REPLAY TUTORIAL</button>"+
@@ -261,12 +270,21 @@ function menuPanel(){
       settings.ui=m;applyUI();saveSettings();syncHud();onResize();menuPanel();
     });
   });
+  PACES.forEach(function(p){
+    bind("mPace_"+p.pct,function(){
+      settings.pace=p.v;saveSettings();menuPanel();
+      // Takes effect on the next frame - there is no state to rebuild, which
+      // is the other reason pace is a multiplier on dt and not a set of dials
+      // baked into the fight when the level loads.
+      flash(p.v===1?"pace: normal":"clocks at "+p.pct+"%");
+    });
+  });
   bind("mTut",function(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
   });
   bind("mReset",function(){
     settings.volume=defaultVolume();settings.volTouched=false;
-    settings.brightness=1;settings.ui="full";
+    settings.brightness=1;settings.ui="full";settings.pace=1;
     muted=false;
     applyVolume();
     applyBrightness();applyUI();saveSettings();syncHud();

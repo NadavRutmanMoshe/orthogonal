@@ -78,6 +78,11 @@ function loadSettings(){
         }
         if(typeof o.brightness==="number")settings.brightness=o.brightness;
         if(o.ui&&["full","compact","none"].indexOf(o.ui)>=0)settings.ui=o.ui;
+        /* Read against the table rather than a range check: pace multiplies
+           every real-time interval in the game, so a hand-edited save saying
+           0.01 would stop the clocks rather than slow them. */
+        for(var p=0;p<PACES.length;p++)
+          if(o.pace===PACES[p].v)settings.pace=o.pace;
         // o.verbs may exist in settings saved before the wording was settled.
         // Ignoring it is the migration: everyone lands on GO 2D / GO 3D.
       }catch(e){}
