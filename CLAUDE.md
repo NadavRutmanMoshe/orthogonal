@@ -983,6 +983,23 @@ tested and failed, plus where this sits in the PCG literature, are in
   tools/verify.js` before handing over any new or edited non-boss level. A
   level that cannot be solved, or that falls in four moves, is not something
   playtesting should have to discover.
+- **The owner playtests from the published artifact, so publishing is part of
+  handing work over.** The loop is: work on a branch, commit, push,
+  `node tools/build-single.js --vendor --artifact`, publish that file to the
+  **existing** artifact URL. Four rules make it reversible, and all four exist
+  because one of them was broken once and cost the whole map redesign off the
+  live link (`docs/HISTORY.md`):
+  - **Commit before you build.** The build stamps its own commit into the
+    file, and warns when the tree is dirty — a build from uncommitted work
+    cannot be re-derived, so there is no way back to it.
+  - **Check the size against what is already live** before replacing it. A
+    build that is *smaller* than the one it replaces is a question. −70KB
+    meant a whole unmerged branch was about to be thrown off the link.
+  - **Publish to the URL, never to a new one.** A second artifact is not a
+    new version, it is a second link the owner now has to keep straight.
+  - **Rolling back is `git checkout <commit> && build && publish`.** The
+    build is deterministic — same commit, byte-identical file — which is what
+    makes "put it back" checkable rather than hopeful.
 - **One job per session where possible.** Unrelated work in one pass re-reads
   the same files several times over.
 - **Edit files with the editing tools, not by patching them from a shell.**

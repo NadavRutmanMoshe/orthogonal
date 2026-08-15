@@ -31,6 +31,11 @@ No dependencies. It runs the real game modules, not a copy.
 
     node tools/build-single.js --vendor   # dist/orthogonal.html, one file, offline
 
+Every build stamps the commit it came from into the top of the file and into
+`BUILD` on the page, and warns if the tree is dirty. Same commit in,
+byte-identical file out - so any published build can be put back exactly by
+checking out its commit and building again.
+
 **itch.io** - upload either this folder zipped (with `index.html` at the root)
 or the single file from `dist/`. Tick "This file will be played in the browser".
 
