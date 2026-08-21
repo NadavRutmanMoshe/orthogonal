@@ -295,6 +295,95 @@
     letter-spacing:.08em;color:var(--fg-dim);margin-top:4px}
   body.ui-none .toast.cuesay{bottom:28px}
 
+  /* ============================================================
+     THE STING.  See js/20-splash.js for what it is and why it waits for a
+     tap.  z-index 60 puts it over everything including the star total (30)
+     and the win overlay (20): it is the first thing on screen and nothing
+     else is allowed to poke through it.
+     ============================================================ */
+  .splash{position:fixed;inset:0;z-index:60;display:none;
+    flex-direction:column;align-items:center;justify-content:center;gap:0;
+    background:var(--void);
+    transition:opacity .42s ease,transform .42s ease;
+    /* --c is one cell.  Everything in the mark is a multiple of it, so the
+       wordmark scales as one object between a phone and a monitor. */
+    --c:clamp(7px,2.55vw,22px);
+    --s:calc(var(--c) - 1.5px)}
+  .splash.on{display:flex}
+  .splash.out{opacity:0;transform:scale(1.05);pointer-events:none}
+
+  /* No `perspective` anywhere, and that is the whole trick: a preserve-3d
+     subtree with no perspective is an orthographic projection, which is the
+     projection the game itself uses.  A cube here is shaded exactly as a
+     block is - lit top, shaded side, flat front - and lands the same way. */
+  .sstage{position:relative;transform-style:preserve-3d;
+    width:calc(var(--cols) * var(--c));height:calc(var(--rows) * var(--c));
+    transform:rotateX(26deg) rotateY(-36deg);
+    transition:transform 860ms cubic-bezier(.16,.72,.16,1)}
+  .splash.fold .sstage{transform:none}
+
+  /* NOTHING HERE MAY CARRY opacity OR filter.  Either one sets
+     `transform-style: flat` on the element it is on, per spec, which
+     collapses the four faces below into overlapping squares - the cubes stop
+     being cubes and the side faces measure zero pixels wide.  Depth is
+     shaded by mixing the face colours toward the void instead, which is what
+     the renderer does anyway.  See js/20-splash.js. */
+  .scube{position:absolute;width:var(--s);height:var(--s);
+    transform-style:preserve-3d;transform:translateZ(var(--tz));
+    transition:transform 720ms cubic-bezier(.16,.72,.16,1) var(--d)}
+  .splash.fold .scube{transform:translateZ(0)}
+  .scube i{position:absolute;inset:0;display:block;
+    backface-visibility:hidden;-webkit-backface-visibility:hidden;
+    transition:background-color 720ms ease var(--d)}
+  /* Four faces, not six.  The camera is above and to one side, so the back
+     and the underside are never in view; backface-visibility drops whichever
+     of left/right is facing away. */
+  .scube i.f{transform:translateZ(calc(var(--s)/2));background:var(--fd)}
+  .scube i.t{transform:rotateX(-90deg) translateZ(calc(var(--s)/2));background:var(--td)}
+  .scube i.l{transform:rotateY(-90deg) translateZ(calc(var(--s)/2));background:var(--ld)}
+  .scube i.r{transform:rotateY(90deg) translateZ(calc(var(--s)/2));background:var(--rd)}
+  .splash.fold .scube i.f{background:var(--f)}
+  .splash.fold .scube i.t{background:var(--t)}
+  .splash.fold .scube i.l{background:var(--l)}
+  .splash.fold .scube i.r{background:var(--r)}
+
+  /* Drawn by the fold and nothing else.  It is the plane the cubes land in,
+     said once and quietly. */
+  .srule{width:0;height:1px;
+    background:linear-gradient(90deg,transparent,var(--fg-dim),transparent);
+    margin-top:calc(var(--c) * 2.2);
+    transition:width 520ms cubic-bezier(.16,.72,.16,1) 60ms}
+  .splash.hit .srule{width:calc(var(--cols) * var(--c))}
+
+  .sprompt{position:absolute;bottom:11vh;font-size:9.5px;letter-spacing:.34em;
+    text-transform:uppercase;color:var(--fg-dim);
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    animation:spulse 2.1s ease-in-out infinite}
+  @keyframes spulse{0%,100%{opacity:.34}50%{opacity:.85}}
+
+  /* The flash of everything arriving in one plane.  It is short and it is
+     the only bright thing on the card, so it reads as an impact rather than
+     as a transition. */
+  .sbloom{position:absolute;inset:0;pointer-events:none;opacity:0;
+    background:radial-gradient(circle at 50% 47%,
+      rgba(232,242,255,.78),rgba(232,242,255,0) 25%)}
+  .splash.hit .sbloom{animation:sbloom .44s ease-out forwards}
+  @keyframes sbloom{0%{opacity:0}9%{opacity:1}48%{opacity:.16}100%{opacity:0}}
+
+  /* The game is being built behind this the whole time.  Nothing it does
+     should be audible as a jolt through the card. */
+  body.splashing{overflow:hidden}
+
+  /* Motion sickness, and a phone that cannot hold 60fps through 276
+     transformed elements.  The mark still assembles, it just does not fly. */
+  @media (prefers-reduced-motion: reduce){
+    .sstage{transform:none;transition:none}
+    .scube{transform:none;transition:none}
+    .scube i{transition:none}
+    .splash{transition:opacity .3s ease}
+    .sprompt{animation:none;opacity:.6}
+  }
+
   .won{position:fixed;inset:0;display:none;flex-direction:column;z-index:20;
     align-items:center;justify-content:center;gap:16px;
     background:rgba(15,20,36,.86)}

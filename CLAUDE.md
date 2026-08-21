@@ -60,7 +60,7 @@ that was verified across all levels.
 ## Layout
 
 No build step. Classic scripts sharing one global scope, loaded in the numeric
-order listed in `index.html`. `20-boot.js` is the only file that *runs*
+order listed in `index.html`. `21-boot.js` is the only file that *runs*
 anything; everything before it only declares.
 
 | File | What it holds |
@@ -85,7 +85,8 @@ anything; everything before it only declares.
 | `js/17-composer.js` | Solution-first level generation. |
 | `js/18-ui.js` | `$`, toasts, panel plumbing, `syncHud()`. |
 | `js/19-bindings.js` | Every button and key binding. |
-| `js/20-boot.js` | Startup order. Runs last on purpose. |
+| `js/20-splash.js` | The studio sting: the `nadaz` wordmark, and the tap that unlocks audio. |
+| `js/21-boot.js` | Startup order. Runs last on purpose. |
 
 **Splitting the monolith renamed exactly one thing.** `history` became
 `moveHistory`, because at global scope it would have shadowed `window.history`.
@@ -676,6 +677,58 @@ level data changed to make it.
   also puts it over a near-full-height map and its own total. The one function
   that already knows which panel is open turns it off.
 
+## The sting
+
+**The logo is a fold.** `nadaz` starts as a cloud of cubes strewn through
+depth, illegible for exactly the reason the game exists: an orthographic view
+maps depth onto the screen, so blocks far apart in z pile on top of things
+they have nothing to do with. Collapse that axis and all of them land in the
+plane at once, and the cloud is a word. The sentence on the intro card behind
+it — *things far apart in depth land side by side* — is demonstrated before it
+is read.
+
+**It waits for a tap, and that is not friction — it is the only way it has
+sound.** Every browser refuses an AudioContext until a gesture, so a card that
+plays itself on load plays itself silent. Waiting makes the fold *be* the
+gesture, and it moves the audio unlock off `BEGIN` onto a full-bleed surface
+where a touch anywhere counts, which is the more robust place for it inside a
+WebView. A second tap skips: it runs on every load, so the reflex that starts
+it has to be able to end it.
+
+- **Nothing in the card may carry `opacity` or `filter`.** Either one sets
+  `transform-style: flat` on the element it is on, per spec, which collapses a
+  cube's four faces into a stack of overlapping squares — measured, the side
+  faces came out zero pixels wide. Depth is shaded by mixing the face colours
+  toward the void instead, which is what `applyDepth()` does in the renderer
+  anyway, so the card and the game now push things back the same way.
+- **The stage has no `perspective`, deliberately.** A `preserve-3d` subtree
+  without one *is* an orthographic projection — the same projection the game
+  uses — so a cube on the card is shaded and lands exactly like a block.
+- **`--cols` is set on the card, not on the stage.** The rule under the
+  wordmark is the stage's *sibling* and sizes itself from it; a custom
+  property inherits down, not across, so set on the stage it silently never
+  drew.
+- **The depths are seeded off the cell, not `Math.random()`.** A logo that
+  reshuffles itself every load is not a logo.
+- **`SPLASH_FOLD` (980ms) is one number in two files.** The CSS transitions
+  and `SFX.sting()` are both written against the moment the last cube lands;
+  moving it means moving both.
+- **The sting was measured through the real chain**, as the mix notes in
+  `js/11-sound.js` demand: peak 1.0004 with 2 saturated samples in 141,000,
+  against the documented worst-case pile-up's 1.0082 in 88,000. It is the
+  loudest thing in the game and it sits under what the limiter was already
+  built to survive. Retune a voice and re-measure — a limiter plus a soft
+  clipper will happily hide a set piece that distorts on every play.
+- **The keydown listener is on the capture phase and stops propagation.** The
+  four verbs are all guarded on the intro card still being up, so nothing
+  would fire anyway — but `m` toggles mute, and muting the sting with the key
+  that starts it is a poor first impression.
+- **Under `prefers-reduced-motion` the word is simply there**, dim, and
+  resolves to full colour on the tap. The prompt changes to "tap to begin",
+  because "tap to fold" would be describing something that will not happen.
+- **The glyphs are five strings of seven characters each**, in
+  `SPLASH_GLYPHS`. There is no font; editing a letter is editing those.
+
 ## The tutorial
 
 Three levels, one new verb each: walking, collapsing, turning. They carry
@@ -1228,8 +1281,11 @@ tested and failed, plus where this sits in the PCG literature, are in
 
 - Safe-area insets: the bar sits at `bottom: 18px` and will collide with the
   iPhone home indicator. Needs `env(safe-area-inset-bottom)`.
-- The audio context unlock currently hangs off the intro card's BEGIN button.
-  Verify that still counts as a user gesture inside a WebView.
+- The audio context unlock now hangs off the sting's tap surface — a
+  full-bleed div, so a touch anywhere counts, which is the best chance this
+  has of working inside a WebView. Still unverified on a device, and `BEGIN`
+  calls `audio()` too, so a WebView that refuses the first gesture has a
+  second one behind it.
 - `user-scalable=no` is set, but iOS Safari ignores it. Pinch-zoom during a
   two-finger tap needs testing.
 

@@ -121,6 +121,16 @@
   </div>
 </div>
 
+<!-- The sting. Empty here on purpose: 20-splash.js builds the wordmark out
+     of one div per voxel, and a hand-written grid of 69 of them in the markup
+     would be a bitmap nobody could edit. -->
+<div class="splash" id="splash" aria-hidden="true">
+  <div class="sstage" id="splashStage"></div>
+  <div class="srule"></div>
+  <div class="sprompt" id="splashPrompt">tap to fold</div>
+  <div class="sbloom"></div>
+</div>
+
 <div class="panel" id="panel"></div>
 <div class="toast" id="toast"></div>
 
@@ -150,7 +160,7 @@
 
 <script src="vendor/three.min.js"></script>
 <!-- Load order matters: these are classic scripts sharing one global
-     scope, and 20-boot.js is the only file that runs anything. -->
+     scope, and 21-boot.js is the only file that runs anything. -->
 <script src="js/00-storage.js"></script>
 <script src="js/01-coords.js"></script>
 <script src="js/02-levels.js"></script>
@@ -171,6 +181,7 @@
 <script src="js/17-composer.js"></script>
 <script src="js/18-ui.js"></script>
 <script src="js/19-bindings.js"></script>
-<script src="js/20-boot.js"></script>
+<script src="js/20-splash.js"></script>
+<script src="js/21-boot.js"></script>
 </body>
 </html>

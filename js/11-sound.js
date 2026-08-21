@@ -211,6 +211,41 @@ function blip(freq,dur,type,vol,slideTo){
   o.connect(g);g.connect(out(c));g.connect(reverb(c));
   o.start();o.stop(c.currentTime+dur+.02);
 }
+/* THE STING'S OWN VOICES.  blip() fires at c.currentTime, which is right for
+   a footstep and useless for a two-second arrangement: every note here has to
+   land on a beat the animation is also hitting, so these take an absolute
+   time and schedule against it. Same destination, same master chain - a set
+   piece is not an excuse to bypass the limiter. */
+function toneAt(c,f,at,dur,type,vol,slideTo){
+  var o=c.createOscillator(),g=c.createGain();
+  o.type=type||"sine";
+  o.frequency.setValueAtTime(f,at);
+  if(slideTo)o.frequency.exponentialRampToValueAtTime(slideTo,at+dur);
+  g.gain.setValueAtTime(0,at);
+  g.gain.linearRampToValueAtTime(vol,at+.012);
+  g.gain.exponentialRampToValueAtTime(.0001,at+dur);
+  o.connect(g);g.connect(out(c));g.connect(reverb(c));
+  o.start(at);o.stop(at+dur+.02);
+}
+/* The riser.  Oscillators cannot do this - what makes a riser read as
+   *approaching* is broadband noise swept through a resonant filter, so the
+   top edge of the sound climbs while the body stays wide.  One short buffer
+   of white noise, one bandpass with a ramp on it. */
+function noiseRise(c,at,dur,vol){
+  var len=Math.floor(c.sampleRate*(dur+.2));
+  var buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);
+  for(var i=0;i<len;i++)d[i]=Math.random()*2-1;
+  var src=c.createBufferSource();src.buffer=buf;
+  var bp=c.createBiquadFilter();bp.type="bandpass";bp.Q.value=1.5;
+  bp.frequency.setValueAtTime(220,at);
+  bp.frequency.exponentialRampToValueAtTime(5400,at+dur);
+  var g=c.createGain();
+  g.gain.setValueAtTime(.0001,at);
+  g.gain.exponentialRampToValueAtTime(vol,at+dur*.92);
+  g.gain.exponentialRampToValueAtTime(.0001,at+dur+.16);
+  src.connect(bp);bp.connect(g);g.connect(out(c));
+  src.start(at);src.stop(at+dur+.18);
+}
 var SFX={
   step:(function(){var n=0;return function(){
     // a soft two-layer footstep: a pitched tap over a low body thump
@@ -263,5 +298,54 @@ var SFX={
     var f=[784,988,1245][Math.min(i,2)];
     blip(f,.2,"sine",.055,f*1.5);
     blip(f/2,.26,"triangle",.022);
+  },
+  /* THE STING.  Written against SPLASH_FOLD in js/20-splash.js: the cubes
+     are in flight for its first 0.98s and land on the beat marked IMPACT.
+     Move one and the other has to move.
+
+     It is an arc rather than a fanfare, because what it is scoring is an
+     arrival: something gathering out of nothing (a swept-noise riser under a
+     rising glide), the last few cubes zipping in (five tiny ticks climbing a
+     scale), then the plane (a low thump under an open-fifths chord, rolled
+     over 60ms so it blooms instead of hitting flat), and a tail that settles
+     rather than stops.  No fourths, no thirds in the top - stacked fifths
+     are what make a short chord read as a mark rather than as a key.
+
+     It is the loudest thing in the game, so it was measured through this
+     exact chain in an OfflineAudioContext the way the mix notes above
+     demand - a limiter plus a soft clipper will hide a set piece that is
+     distorting on every play:
+
+       sting                 peak 1.0004,  2 saturated samples in 141,000
+       documented worst pile peak 1.0082, 25 saturated samples in  88,000
+
+     ie. it sits under the pile-up the chain was already built to survive.
+     Retune a voice here and re-run that measurement. */
+  sting:function(){
+    var c=audio();if(!c)return;
+    var t=c.currentTime+.03, F=.98;   // F: the moment the fold lands
+
+    // the gather
+    noiseRise(c,t,F,.042);
+    toneAt(c,42,t,F+.1,"sine",.042,112);
+    toneAt(c,165,t,F,"sine",.02,495);
+
+    // the last cubes arriving, left to right
+    [660,742,832,988,1109].forEach(function(f,i){
+      toneAt(c,f,t+.66+i*.06,.05,"triangle",.015);
+    });
+
+    // IMPACT
+    toneAt(c,112,t+F,.55,"sine",.055,46);
+    toneAt(c,82,t+F,.12,"square",.024);
+    [[261.63,.9,.034],[392,.85,.030],[523.25,.8,.028],
+     [784,.7,.022],[1046.5,.6,.018]].forEach(function(n,i){
+      toneAt(c,n[0],t+F+i*.015,n[1],"sine",n[2]);
+    });
+    toneAt(c,2093,t+F+.04,.5,"triangle",.012,3136);
+
+    // the tail
+    toneAt(c,1568,t+F+.22,.5,"sine",.012,2093);
+    toneAt(c,130.81,t+F+.32,.9,"sine",.026);
   }
 };
