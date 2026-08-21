@@ -470,6 +470,17 @@ function mapTouched(i){return mapSolved(i)||mapSkipped(i);}
    onto one landmark, not progress, and counting it here would drag the whole
    window forward and hand over the levels in between - which are the levels
    the skip exists to let you come back to. */
+/* Where a tutorial should hand you back to when nothing remembered where you
+   were: the first campaign level you have not solved. Falls back to the given
+   index - the level straight after the tutorial - for a player who has solved
+   nothing, which is exactly right for a first run. */
+function tutFallback(def){
+  for(var i=0;i<LEVELS.length;i++){
+    if(LEVELS[i].tutorial)continue;
+    if(!mapSolved(i))return i;
+  }
+  return def;
+}
 function mapReach(){
   var last=-1;
   for(var i=0;i<LEVELS.length;i++) if(mapSolved(i)) last=i;

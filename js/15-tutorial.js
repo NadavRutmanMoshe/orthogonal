@@ -118,7 +118,7 @@ function tutBlocks(id){
 function tutPoke(id){
   var i=tutStep();
   if(i<0)return;
-  var want=L.tut[i].cue||null;
+  var want=tutStepView(i).cue||null;
   if(!want||id!==want)return;
   tutRelease();                 // the dim goes; the green stays until the step does
   tutArm(TUT_AGAIN_MS);
@@ -158,8 +158,7 @@ function tutTick(){
     if(tutIdle<tutWait){tutTick();return;}
     var i=tutStep();
     if(i<0)return;
-    var step=L.tut[i];
-    if(step.lock===false)return;
+    if(L.tut[i].lock===false)return;
     tutEngage();
   },TUT_TICK);
 }
@@ -169,6 +168,30 @@ function tutTick(){
    death, or a player doing things in the wrong order all just re-evaluate. */
 function tutState(){
   return {view:view,flat:flat,u:flatPos.u,p:{x:player.x,y:player.y,z:player.z}};
+}
+/* What the coach should actually say right now, which is not always the
+   step's own line.
+
+   A step can assume a state as well as a goal: "Depth is gone - walk across"
+   only makes sense while you are flat. A player who folds, takes one step and
+   stands back up has not finished that step, so the coach still shows it -
+   and it is now instructing them to do something they cannot do, in a level
+   whose whole job is not confusing them. Reported from a playtest with the
+   player standing in the volume being told to walk across the plane.
+
+   A step declares `want:"flat"` or `want:"3d"`, and when the state does not
+   match, the line and the cued control are both replaced by the way back.
+   Everything downstream - the coach, the green, the lock, tutPoke - reads
+   through here, so there is one answer to "what is being asked" rather than
+   four that can disagree. */
+function tutStepView(i){
+  var step=L.tut[i];
+  if(step.want==="flat"&&!flat)
+    return {say:"You stood back up, so the plane is gone with it.<br>"+
+                "Press <b>{to2}</b> to flatten again.",cue:"bFlat",lock:step.lock};
+  if(step.want==="3d"&&flat)
+    return {say:"Press <b>{to3}</b> to stand up first.",cue:"bFlat",lock:step.lock};
+  return {say:step.say,cue:step.cue,lock:step.lock};
 }
 function tutStep(){
   if(app!=="play"||!L||!L.tut||!tutC)return -1;
@@ -181,20 +204,20 @@ function tutSync(){
   var el=$("coach");if(!el)return;
   var i=tutStep();
   if(i<0||dying){el.classList.remove("on");tutShown=-1;tutUnlock();return;}
-  var step=L.tut[i];
-  el.innerHTML="<i>"+(i+1)+" / "+L.tut.length+"</i>"+tutWords(step.say);
+  var step=L.tut[i], v=tutStepView(i);
+  el.innerHTML="<i>"+(i+1)+" / "+L.tut.length+"</i>"+tutWords(v.say);
   el.classList.add("on");
   // Re-asserted every time rather than only on a change: tutCueTo is a no-op
   // when it already matches, and asserting it here is what keeps the green on
   // the button a function of the step rather than a thing someone has to
   // remember to restore.
-  tutCueTo(step.cue||null);
+  tutCueTo(v.cue||null);
   // Only re-pulse when the step actually changes, or the cue timer would be
   // reset on every render and the button would strobe forever. A new step
   // also drops the guide and starts its wait again from nothing.
   if(i!==tutShown){
     tutShown=i;
-    if(step.cue)cue(step.cue);
+    if(v.cue)cue(v.cue);
     tutRelease();
     tutArm();
   }
@@ -232,10 +255,10 @@ function tutCueTo(id){
 function tutEngage(){
   if(tutLock!==null)return;
   var i=tutStep(); if(i<0)return;
-  var step=L.tut[i];
-  if(step.lock===false||!step.cue)return;
-  tutCueTo(step.cue);
-  tutLock=step.cue;
+  var v=tutStepView(i);
+  if(v.lock===false||!v.cue)return;
+  tutCueTo(v.cue);
+  tutLock=v.cue;
   document.body.classList.add("tutlock");
 }
 function tutRelease(){

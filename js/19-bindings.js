@@ -61,11 +61,21 @@ bind("bNext",function(){
     return;
   }
   var n=lvIndex>=LEVELS.length-1?0:lvIndex+1;
-  // Coming out of a tutorial you were replaying: go back to the level you
-  // interrupted, not to the start of the campaign. Only on the way *out* -
-  // moving between tutorial levels is just the next one.
-  if(L&&L.tutorial&&LEVELS[n]&&!LEVELS[n].tutorial&&tutReturn!==null){
-    n=tutReturn;tutReturn=null;
+  /* Coming out of a tutorial you were replaying: go back to the level you
+     interrupted, not to the start of the campaign. Only on the way *out* -
+     moving between tutorial levels is just the next one.
+
+     tutReturn can legitimately be null here even for a player who is well
+     into the game: they may have closed the app on a tutorial level and been
+     restored straight into one, so there is no "level I came from" recorded
+     anywhere. Handing them 01 in that case is the same unhelpful answer by a
+     different route, so the fallback is the front of their own progress
+     rather than the front of the campaign. A genuinely new player has solved
+     nothing, so tutFallback() gives them 01 and the first-run path is
+     unchanged. */
+  if(L&&L.tutorial&&LEVELS[n]&&!LEVELS[n].tutorial){
+    n=(tutReturn!==null)?tutReturn:tutFallback(n);
+    tutReturn=null;
   }
   playSource="builtin";
   enterPlay(LEVELS[n],n,false);
