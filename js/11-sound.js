@@ -31,8 +31,13 @@ function defaultVolume(){
   var coarse=window.matchMedia&&window.matchMedia("(pointer: coarse)").matches;
   return coarse?1:.35;
 }
+/* `mastery` is a *preview* switch, not a gameplay one. "auto" is the real
+   thing - a section wears its finished colours when every level in it is on
+   three stars. "on" forces that look everywhere, so the celebration can be
+   looked at without earning it four times over. It changes nothing but the
+   drawing: no stars move, nothing unlocks. */
 var settings={volume:defaultVolume(),brightness:1,ui:"full",volTouched:false,
-              pace:1};
+              pace:1,mastery:"auto"};
 
 /* PACE — how fast the two real-time things run.
 
@@ -332,6 +337,19 @@ var SFX={
   },
   // One per star landing on the counter, climbing as they arrive, so three
   // stars resolve upward instead of repeating the same note three times.
+  /* A whole section on three stars. It is the longest thing in the game
+     that is not the sting, and it is deliberately the same chord family as
+     win() an octave up and spread wider - the same news, four levels of
+     magnitude louder. */
+  mastery:function(){
+    [0,110,220,330,470].forEach(function(d,i){
+      setTimeout(function(){
+        var f=[523.25,659.25,784,1046.5,1568][i];
+        blip(f,i===4?.7:.34,"sine",i===4?.05:.038);
+        blip(f/2,.4,"triangle",.016);
+      },d);
+    });
+  },
   star:function(i){
     var f=[784,988,1245][Math.min(i,2)];
     blip(f,.2,"sine",.055,f*1.5);

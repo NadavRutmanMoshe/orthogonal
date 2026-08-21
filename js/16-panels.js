@@ -243,6 +243,15 @@ function menuPanel(){
           "that do not wait for you. This slows both — every part of them "+
           "together, so a fight keeps its shape — and it costs you no stars."+
           "</div></div>"+
+      "<div class='pcard'><h4>Mastery</h4>"+
+        "<div class='crow'><label>Show as</label><span class='seg'>"+
+          seg("mMast","auto","EARNED",settings.mastery)+
+          seg("mMast","on","PREVIEW",settings.mastery)+"</span></div>"+
+        "<div class='note'>A section on the map paints itself in its own "+
+        "colour once every level in it is on three stars. EARNED is the real "+
+        "thing; PREVIEW shows it on every section so you can look at it "+
+        "without collecting it. Nothing else changes either way — no stars "+
+        "move and nothing unlocks.</div></div>"+
       "<div class='pcard'><h4>More</h4><div class='psub'>"+
         "<button id='mLegend'>WHAT THE PIECES DO</button>"+
         "<button id='mTut'>REPLAY TUTORIAL</button>"+
@@ -268,6 +277,12 @@ function menuPanel(){
   ["full","compact","none"].forEach(function(m){
     bind("mUi_"+m,function(){
       settings.ui=m;applyUI();saveSettings();syncHud();onResize();menuPanel();
+    });
+  });
+  ["auto","on"].forEach(function(m){
+    bind("mMast_"+m,function(){
+      settings.mastery=m;saveSettings();menuPanel();
+      flash(m==="on"?"mastery preview on — open the map":"mastery: as earned");
     });
   });
   PACES.forEach(function(p){
@@ -326,6 +341,27 @@ function sectionSpans(){
   }
   return out;
 }
+/* MASTERED — every scoreable level in the section on three stars.
+
+   Not "cleared": cleared is what the rolling window already tracks and what
+   the bar under the section card already draws. This is the other thing, and
+   it is the only claim in the game that cannot be bought, skipped or padded -
+   `sp.got` is summed through starsForRecord(), which reads `progress` and
+   nothing else, and a skip is deliberately not in `progress`. So a painted
+   section means exactly one thing and cannot be made to lie.
+
+   PROLOGUE can never be mastered and that is correct, not an oversight:
+   sectionSpans() skips tutorials, so its `max` is 0 - a section that awards
+   no stars has none to collect.
+
+   The preview switch forces the look on so it can be *seen* without being
+   earned. It touches the drawing only. */
+function masteryPreview(){return settings.mastery==="on";}
+function sectionMastered(sp){
+  if(!sp||sp.max<=0||sp.locked)return false;
+  return masteryPreview()||sp.got===sp.max;
+}
+
 /* ============================================================
    THE MAP — the picker as a path
 
@@ -623,9 +659,11 @@ function mapTabs(spans){
   for(var n=0;n<SECTIONS.length;n++){
     var sp=spans[n], pct=sp.max?Math.round(sp.got/sp.max*100):0;
     var lk=sp.locked||SECTIONS[n].at>mapReach();
+    var mst=sectionMastered(sp);
     t+="<button class='mtab"+(n===mapSection?" sel":"")+(lk?" lk":"")+
+       (mst?" mst":"")+
        "' data-tab='"+n+"' style=\"--tabc:"+(SECTIONS[n].col||"#c3cde4")+
-       ";--pct:"+(lk?0:pct)+"%\"><i></i>"+(lk?"🔒 ":"")+
+       ";--pct:"+(lk?0:pct)+"%\"><i></i>"+(lk?"🔒 ":mst?"★ ":"")+
        esc(SECTIONS[n].name.split(" ")[0])+"</button>";
   }
   $("mTabs").innerHTML=t;
@@ -643,11 +681,18 @@ function mapDraw(spans){
   var n=mapSection, sp=spans[n], sec=SECTIONS[n];
   var lk=sp.locked||sec.at>mapReach();
   document.documentElement.style.setProperty("--sec",sec.col||"#c3cde4");
+  /* Nothing to remember and nothing to reset: mapDraw rebuilds the trail's
+     innerHTML every time it runs, so the CSS animations below start over by
+     construction. That is why the celebration replays whenever you come back
+     to a finished section rather than firing once and being gone. */
+  var mast=sectionMastered(sp);
 
   var pct=sp.max?Math.round(sp.got/sp.max*100):0;
   var cleared=0,tot=0;
   for(var j=sp.from;j<=sp.to;j++){tot++;if(mapTouched(j))cleared++;}
-  $("mCard").innerHTML="<b>"+esc(sec.name)+"</b><i>"+esc(sec.sub)+"</i>"+
+  $("mCard").className="mcard"+(mast?" mst":"");
+  $("mCard").innerHTML="<b>"+esc(sec.name)+
+    (mast?"<em class='mmast'>ALL STARS</em>":"")+"</b><i>"+esc(sec.sub)+"</i>"+
     "<u class='mbar'><u style='width:"+(lk?0:pct)+"%'></u></u>"+
     "<div class='mf'><span>"+cleared+"/"+tot+" cleared</span>"+
     "<span>"+sp.got+"/"+sp.max+" ★</span></div>"+
@@ -671,12 +716,23 @@ function mapDraw(spans){
   var trail=$("mtrail"), STEP=94, AMP=.30;
   var pts=[], html="", y=36;
   for(var i=sp.to;i>=sp.from;i--){
-    var l=LEVELS[i], k=mapKind(l), st=mapState(i), off=Math.sin((i-sp.from)*.95)*AMP;
+    var l=LEVELS[i], k=mapKind(l), off=Math.sin((i-sp.from)*.95)*AMP;
+    /* In PREVIEW the nodes are drawn solved with their three stars, because a
+       preview of the finished look that leaves every node dashed and locked
+       is not a preview of the finished look. It is a drawing and nothing
+       else: mapSheet() asks mapState() again when a node is tapped, so a
+       level that is really locked still refuses to open. */
+    var st=(mast&&masteryPreview())?"solved":mapState(i);
     var half=(k==="boss"?38:k==="tut"?21:29);
     pts.push({y:y,off:off,i:i});
+    /* The paint climbs the chain at a steady rate, so a node lights when the
+       stroke reaches it: its delay is its position along the section, not its
+       position in this loop, which runs the other way. */
+    var lit=mast?(MAP_PAINT_LEAD+MAP_PAINT_MS*(sp.to-sp.from?(i-sp.from)/(sp.to-sp.from):0)):0;
     html+="<button class='mnode "+st+(k==="trial"?" mtrial":"")+(k==="boss"?" mboss":"")+
-      (k==="tut"?" tut":"")+"' data-node='"+i+"' data-off='"+off.toFixed(4)+
-      "' style='top:"+y+"px;margin-left:"+(-half)+"px;margin-top:"+(-half)+"px'>"+
+      (k==="tut"?" tut":"")+(mast?" mst":"")+"' data-node='"+i+"' data-off='"+off.toFixed(4)+
+      "' style='top:"+y+"px;margin-left:"+(-half)+"px;margin-top:"+(-half)+"px"+
+      (mast?";animation-delay:"+Math.round(lit)+"ms":"")+"'>"+
       mapShape(k)+"<span>"+
       (st==="locked"?"●":esc(mapNumeral(l,i-sp.from+1)))+
       "</span></button>";
@@ -688,7 +744,7 @@ function mapDraw(spans){
       var sh="";
       if(k==="tut")sh="<u>✓</u>";
       else{
-        var got=starsForRecord(l,progress[l.name]);
+        var got=masteryPreview()&&mast?3:starsForRecord(l,progress[l.name]);
         for(var s2=0;s2<3;s2++)sh+="<u class='"+(s2<got?"":"off")+"'>★</u>";
       }
       html+="<div class='mstars' data-off='"+off.toFixed(4)+"' style='top:"+
@@ -703,8 +759,10 @@ function mapDraw(spans){
     y+=STEP;
   }
   trail.style.height=(y-STEP+80)+"px";
+  trail.className=mast?"mst":"";
   trail.innerHTML="<svg></svg>"+html;
-  mapLayout(pts,y-STEP+80);
+  mapLayout(pts,y-STEP+80,mast);
+  if(mast&&SFX.mastery)SFX.mastery();
   trail.querySelectorAll("[data-node]").forEach(function(el){
     tap(el,function(){mapSheet(+el.getAttribute("data-node"));});
   });
@@ -723,8 +781,39 @@ function mapFocus(){
 
 /* The trail. Drawn solid behind you and dotted ahead, so how far you have got
    is legible without reading a single node. */
-function mapLayout(pts,H){
+/* How long the paint takes to climb a whole section, and how long it waits
+   before starting. One pair of numbers in two places - the stroke animation
+   in the CSS is written against them and the per-node delays above are
+   computed from them. */
+var MAP_PAINT_MS=1050, MAP_PAINT_LEAD=140;
+function mapLayout(pts,H,mast){
   var trail=$("mtrail"), w=trail.clientWidth||480, cx=w/2, on="",off="";
+  function px(pt){return cx+pt.off*(w*.5-44);}
+  /* A MASTERED SECTION IS ONE STROKE, NOT A RUN OF SEGMENTS, and it has to
+     be: the paint is a dashoffset sweeping along a single path, and a path
+     built per-gap would sweep every gap at once. Traversed from the *end* of
+     `pts` because the trail is drawn top-down while the campaign runs
+     bottom-up - the colour has to climb the way the player did. */
+  if(mast&&pts.length>1){
+    var d="M "+px(pts[pts.length-1]).toFixed(1)+" "+pts[pts.length-1].y;
+    for(var m=pts.length-2;m>=0;m--)
+      d+=" L "+px(pts[m]).toFixed(1)+" "+pts[m].y;
+    var svg0=trail.querySelector("svg");
+    svg0.setAttribute("viewBox","0 0 "+w+" "+H);
+    svg0.setAttribute("width",w);svg0.setAttribute("height",H);
+    svg0.innerHTML="<path class='mpaint' d='"+d+"' fill='none' stroke='"+
+      (SECTIONS[mapSection].col||"#35c2a5")+"' stroke-width='5' "+
+      "stroke-linecap='round' stroke-linejoin='round'/>";
+    var pel=svg0.querySelector(".mpaint"), len=pel.getTotalLength();
+    /* Set as inline style so the keyframe's implicit `from` is this value;
+       the animation only has to name where it ends. */
+    pel.style.strokeDasharray=len;
+    pel.style.strokeDashoffset=len;
+    trail.querySelectorAll("[data-off]").forEach(function(el){
+      el.style.left=px({off:parseFloat(el.getAttribute("data-off"))})+"px";
+    });
+    return;
+  }
   /* One subpath per gap, rather than two long polylines. Building them as
      polylines meant the first vertex decided whether the string opened with a
      moveto, so a section whose opening node you had not reached yet produced

@@ -395,6 +395,15 @@
     margin:0;color:var(--fg);font-weight:700;letter-spacing:-.02em}
   .won p{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;
     color:var(--fg-dim);margin:0;letter-spacing:.05em}
+  /* Said once, on the run that finishes a section. The map is where the
+     reward lives afterwards; this is the sentence. */
+  .wonmast{display:block;font-style:normal;margin-top:9px;
+    font-size:9px;letter-spacing:.2em;text-transform:uppercase;
+    color:color-mix(in srgb,var(--sec) 26%,#000);background:var(--sec);
+    padding:5px 11px;border-radius:99px;
+    box-shadow:0 0 18px color-mix(in srgb,var(--sec) 45%,transparent);
+    animation:wmast .6s cubic-bezier(.2,1.5,.4,1) .5s both}
+  @keyframes wmast{0%{opacity:0;transform:scale(.8)}100%{opacity:1;transform:scale(1)}}
   .wonrow{display:flex;gap:8px;align-items:center}
   .won button{height:42px;padding:0 22px;border-color:var(--goal);color:var(--goal)}
   #bRetry{border-color:var(--rule);color:var(--fg-dim);gap:7px}
@@ -684,6 +693,54 @@
   }
   .mnode.mtrial.here:active{box-shadow:0 1px 0 var(--amb-lip);animation:none}
   .mnode.mboss.here:active{box-shadow:0 1px 0 var(--vio-lip);animation:none}
+
+  /* ============================================================
+     A MASTERED SECTION — every level in it on three stars.
+     The trail is redrawn as one continuous stroke and the colour climbs it
+     from the first level to the boss, lighting each node as it arrives.
+     See sectionMastered() and mapLayout() in js/16-panels.js.
+     ============================================================ */
+  .mpaint{animation:mpaint 1050ms cubic-bezier(.34,.66,.2,1) 140ms forwards;
+    filter:drop-shadow(0 0 7px color-mix(in srgb,var(--sec) 55%,transparent))}
+  @keyframes mpaint{to{stroke-dashoffset:0}}
+
+  /* Each node pops as the stroke reaches it. The delay is set inline, per
+     node, from its position along the section. */
+  .mnode.mst{animation:mpop 620ms cubic-bezier(.2,1.5,.4,1) both}
+  @keyframes mpop{
+    0%{transform:scale(1)}
+    30%{transform:scale(1.22)}
+    100%{transform:scale(1)}
+  }
+  /* The ring it throws off. `animation-delay:inherit` takes the node's own
+     inline delay, which is the only way a pseudo-element can be told when
+     its own node's turn came. */
+  .mnode.mst::after{content:"";position:absolute;inset:-5px;border-radius:50%;
+    border:2px solid var(--sec);opacity:0;pointer-events:none;
+    animation:mring 760ms ease-out both;animation-delay:inherit}
+  @keyframes mring{
+    0%{opacity:0;transform:scale(.72)}
+    22%{opacity:.85}
+    100%{opacity:0;transform:scale(1.9)}
+  }
+  /* And keeps a halo afterwards, so a finished section still reads as
+     finished on the next visit rather than only during the celebration. */
+  .mnode.mst>.msvg,.mnode.mst{filter:drop-shadow(0 0 8px
+    color-mix(in srgb,var(--sec) 42%,transparent))}
+
+  .mcard.mst{border-color:color-mix(in srgb,var(--sec) 46%,var(--rule));
+    background:linear-gradient(180deg,
+      color-mix(in srgb,var(--sec) 11%,transparent),transparent 62%)}
+  .mmast{font-style:normal;font-size:8.5px;letter-spacing:.16em;
+    margin-left:8px;padding:3px 7px;border-radius:99px;vertical-align:2px;
+    color:color-mix(in srgb,var(--sec) 26%,#000);background:var(--sec)}
+  .mtab.mst{border-color:color-mix(in srgb,var(--tabc) 62%,var(--rule))}
+
+  @media (prefers-reduced-motion: reduce){
+    .mpaint{animation:none;stroke-dashoffset:0 !important}
+    .mnode.mst{animation:none}
+    .mnode.mst::after{animation:none}
+  }
 
   .mstars{position:absolute;z-index:1;display:flex;gap:2px;pointer-events:none;
     font-size:12px;line-height:1;color:var(--goal)}

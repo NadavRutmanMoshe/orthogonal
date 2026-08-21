@@ -970,6 +970,28 @@ function win(){
     $("bNext").textContent=last?"PLAY AGAIN":"NEXT LEVEL";
     $("bRetry").style.display=stw>=3?"none":"flex";
   }
+  /* DID THAT LAST STAR FINISH THE SECTION?
+     Asked here rather than on the map, because this is the only moment it is
+     news - the map paints a finished section every time you open it, which
+     is the reward, but the sentence "you have just taken the last one"
+     can only be said once.
+
+     Derived from starsGained rather than by remembering a previous state:
+     the section is complete now, and something was gained, so it was not
+     complete a moment ago. Deliberately does *not* go through
+     sectionMastered() - that answers yes to everything while the preview
+     switch is on, and a preview must never be able to fake this. */
+  if(starsGained>0&&playSource==="builtin"&&!L.tutorial&&
+     typeof sectionSpans==="function"){
+    var sn=mapSecOf(lvIndex), spn=sn>=0?sectionSpans()[sn]:null;
+    if(spn&&spn.max>0&&spn.got===spn.max){
+      var sub2=$("wonSub");
+      sub2.innerHTML=esc(sub2.textContent)+
+        "<em class='wonmast' style='--sec:"+(SECTIONS[sn].col||"#35c2a5")+"'>"+
+        esc(SECTIONS[sn].name)+" \u00b7 every star</em>";
+      setTimeout(function(){if(SFX.mastery)SFX.mastery();},520);
+    }
+  }
   /* The picker only lists the campaign, so offering it after a library level
      or an editor test would land you somewhere you did not come from. */
   if(fromEditor||playSource!=="builtin"){
