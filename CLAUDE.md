@@ -786,6 +786,15 @@ they can reach.
   solver's move in that case too.
 - **The coach, the green, the dim and `tutPoke` all read `tutGuide()`.** They
   used to work theirs out separately, and gave different answers.
+- **The solver's answer is cached on the state *and the level*.**
+  `currentState()` says where the player is standing and nothing about what
+  they are standing on, and all three tutorials start at `[0,1,0]` facing
+  view 0 with no crates and no keys — so their opening states stringify
+  identically. Keyed on the state alone, opening `First Turn` straight after
+  another tutorial handed back that one's first move, and the coach said
+  "press right" on the level whose entire subject is turning. It compares the
+  level by identity, not by name: the editor and the composer both make
+  levels that can share a name.
 - **`solve()` obeys `lockFlat`.** It did not, so its answer for
   `00 — First Steps` was a four-move fold route the player is physically
   prevented from taking — harmless while nothing consulted it, wrong the

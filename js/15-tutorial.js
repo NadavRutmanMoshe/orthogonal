@@ -205,15 +205,29 @@ var TUT_MOVE_SAY={
   "\u2190":"Press <b>&#9664;</b>.",
   "\u2191":"Press <b>&#9650;</b>.",
   "\u2193":"Press <b>&#9660;</b>."};
-var tutSolveKey=null, tutSolveVal=null;
+var tutSolveKey=null, tutSolveVal=null, tutSolveLvl=null;
 /* Cached on the exact state, because tutSync, tutPoke and tutEngage all ask
-   within one interaction and a tutorial board is small but not free. */
+   within one interaction and a tutorial board is small but not free.
+
+   THE LEVEL IS PART OF THE KEY AND HAS TO BE. currentState() describes where
+   the player is standing and nothing about what they are standing on - and
+   all three tutorials start at [0,1,0] facing view 0 with no crates and no
+   keys, so their opening states stringify identically. Cached on the state
+   alone, opening `First Turn` straight after `First Steps` handed back the
+   walking lesson's first move and the coach said "press right" on the level
+   whose entire subject is turning. Reported from a playtest, and it took a
+   particular route to see: the first move of a level, on a level entered
+   from another level whose first move had already been asked for.
+
+   Compared by identity rather than by name because a name is not unique
+   either - the editor and the composer both produce levels that can share
+   one. */
 function tutSolverMove(){
   if(!L||!L.tut||app!=="play")return null;
   var st=currentState();
   var key=JSON.stringify(st);
-  if(key===tutSolveKey)return tutSolveVal;
-  tutSolveKey=key;tutSolveVal=null;
+  if(key===tutSolveKey&&L===tutSolveLvl)return tutSolveVal;
+  tutSolveKey=key;tutSolveLvl=L;tutSolveVal=null;
   var res=solve(L,L.rotate!==false,60000,st);
   if(res.status==="solved"&&res.path.length)
     tutSolveVal=res.path[0].replace("\u2739","");
