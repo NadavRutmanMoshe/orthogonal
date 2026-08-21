@@ -43,7 +43,7 @@ though it did not end up on the button.
 6. You must reach the goal in the volume. Standing on its projection is not
    enough.
 7. On a boss level there is no goal. All four are packs of hunters run in
-   **four phases**: one walks onto your row, plants, and charges down it, and
+   **three phases**: one walks onto your row, plants, and charges down it, and
    you kill it by folding while it shares your silhouette column — the same
    line. Clearing what is on the board begins the next phase, which changes
    the fight rather than repeating it. On a **trial** there is a goal like any
@@ -333,23 +333,32 @@ this one the simulator rejected, are in `docs/HISTORY.md` — **read it before
 changing the kill rule**, because the two most obvious alternatives have both
 already been built and measured.
 
-### Four phases, because a fight with no arc has only one dial
+### Three phases, because a fight with no arc has only one dial
 
-Every fight runs **four phases**, and clearing what is on the board begins the
+Every fight runs **three phases**, and clearing what is on the board begins the
 next. Each phase changes the question rather than the speed:
 
 | | |
 |---|---|
 | **1** | one hunter, a **bare floor**, the slowest clock in the fight |
 | **2** | **the whole arena rises** — every pillar, spike, pane and crate the fight will ever have |
-| **3** | one hunter, **`cunning`** — it will not take a line you can answer |
-| **4** | **two** at once, ordinary rules |
+| **3** | **two** at once, on that same ground |
+
+**There were four.** A third phase put a single `cunning` hunter — one that
+refuses lines you could answer — between the arena rising and the pair
+arriving. It went because three beats is the arc this fight actually has:
+nothing, then the ground, then more of them. A fourth made the middle sag,
+and "one smarter versus two ordinary" turned out to be a comparison the
+design was interested in rather than the player. **The machinery is
+untouched** — `cunning` and `hold` still work in `bossPhases()` and
+`bossNext()` — so restoring it is one line of level data, exactly like the
+twin.
 
 **All the geometry arrives in phase 2, and nothing is added after.** Two
 reasons, both found in playtest. It makes a phase legible: phase 2 is the one
 where the *arena* changes and 3 and 4 are the ones where the *opponent* does,
 so a player who dies knows which kind of thing beat them — a pillar rising in
-phase 3 read as more of phase 2 and buried the change it was meant to
+a pillar rising in phase 3 read as more of phase 2 and buried the change it was meant to
 announce. And it makes 3 and 4 a fair comparison: same board, so the only
 variable is one smarter against two ordinary, which is the whole question
 those phases exist to ask.
@@ -364,10 +373,13 @@ to work out what to do at all — which is the axis a puzzle game is good at.
 And they make failure legible: you know which phase beat you, and phase one
 becomes muscle memory, so the retry is short.
 
-**Phases 3 and 4 are deliberately two answers to the same question**, so they
-can be compared back to back in one sitting: is a single smarter opponent
-better than two ordinary ones? That comparison is the point of the current
-shape and neither is settled.
+**The comparison that used to live here is settled.** Phases 3 and 4 were two
+answers to one question — is a single smarter opponent better than two
+ordinary ones? — laid out consecutively so a player could feel both in one
+sitting. Played, the answer was that the question belonged to the design
+rather than to the player: two ordinary hunters on ground you already
+understand is the ending, and the smarter one in front of it made the middle
+of the fight sag. Three phases now, and the fourth is recoverable.
 
 - **Every hunter prefers the line you cannot answer.** `bossNext`'s `lineTo`
   callback answers 0 / 1 / 2 — no line, a line, a line the player cannot fold
@@ -380,7 +392,7 @@ shape and neither is settled.
   *any* line walks into the one silhouette column a player standing still can
   fold on, so never moving beat every arena. Preferring the unanswerable line
   means the answer is a rotation, and a player who will not rotate loses.
-- **`cunning` is now the refusal, not the preference.** A cunning hunter
+- **`cunning` is kept but unused by any level.** A cunning hunter
   additionally declines to plant on a line you could answer — but only `hold`
   times (currently 2), the same patience valve the twin uses and for the same
   reason: an opponent that will not attack from anywhere you can punish stops
@@ -508,8 +520,15 @@ walk into a wall.
   loop rather than in `syncHud`. It is the one place a button class is not
   owned by `syncHud`, and it has to be: hunters move while you do not, so a
   cue computed at your last keypress describes a board that has moved on.
-- **`bossHp` counts phases remaining, not bodies.** The dots in the HUD are
+- **`bossHp` counts phases remaining, not bodies.** The bars in the HUD are
   the arc of the fight; killing one of a phase's two hunters moves nothing.
+- **The HUD's two rows are "you" and "them", and each wears its own side's
+  colour.** Lives are hearts in the player colour; the row underneath is a
+  boss's phases in the hunters' own red or a trial's cores in the amber those
+  cores are actually drawn in. It used to be violet for both, to match the
+  map — but the map is separating one landmark from another in a list, and
+  the HUD is separating you from the thing in front of you, which is a
+  different job. The map keeps violet.
 - Scored on lives, three stars for three intact. `progress[name]` holds lives
   for a boss or a trial and a move count for everything else — opposite
   senses in one slot — so reads go through `starsForRecord()`, writes through
@@ -569,7 +588,7 @@ level data changed to make it.
   They used to be `#ff8a3c` against `#e0a03c` — the same hue two steps apart,
   which at 60px on a dark ground is not a distinction. A **boss is a hexagon**,
   which is what a cube looks like seen corner-on: the silhouette of the game's
-  own piece, ringed by four arcs for its four phases, in violet. A **trial is a
+  own piece, ringed by three arcs for its three phases, in violet. A **trial is a
   diamond**, the square on its point, with the sweeping plane drawn straight
   through it, in the amber that already means a core on a clock. An ordinary
   level is a bare disc. Turn the colour off and all three still read. The
@@ -1066,11 +1085,11 @@ tested and failed, plus where this sits in the PCG literature, are in
   state you spend the crossing in.
 - **Boss and sweep pacing are both guesswork.** Trials: `period` 2500 → 2000,
   `fire` 340 → 300. Bosses now ramp *within* a fight — `step` 780 → 620 and
-  `aim` 900 → 700 across `BOSS I`'s four phases, faster again by `BOSS IV` —
+  `aim` 900 → 700 across `BOSS I`'s three phases, faster again by `BOSS IV` —
   and the whole ramp is invented. The checks bracket each fight; they say
   nothing about whether the numbers are *fun*, or whether a human can read a
   line, decide the axis, rotate and fold inside one beat.
-- **Nobody has played the phased fights.** Four bosses × four phases is a lot
+- **Nobody has played the phased fights.** Four bosses × three phases is a lot
   of authored pacing that has only ever been machine-checked. The specific
   open questions: does phase 1 read as a tutorial or as filler; is the
   arrival of the pillars legible or does it just feel like being interrupted;
@@ -1150,16 +1169,15 @@ tested and failed, plus where this sits in the PCG literature, are in
 
 ## Agreed next steps
 
-0. **Playtest the four phased bosses.** They are real-time, which is the one
-   thing no tool here can judge, and the phase ramp has never been felt. The
+0. **Playtest the three phased bosses.** They are real-time, which is the one
+   thing no tool here can judge, and the ramp has still barely been felt. The
    questions: can a human read which axis to fold along while a line is lit,
    is `aim` long enough to rotate first, does the trial's beat of grace read
-   as mercy or as being let off — and above all, **phase 3 against phase 4**:
-   one smarter opponent or two ordinary ones. They are laid out consecutively
-   on purpose so the comparison can be made in a single fight. Whichever wins
-   should probably become the shape of the last phase, and the loser can go.
+   as mercy or as being let off, and does the arc — nothing, then the ground,
+   then two of them — land in three beats now that the `cunning` phase has
+   gone.
 1. **More gentle levels — the opening is fixed, the middle is not.** Section I
-   was the urgent case and now runs 14, 16, 19, 21, 28 out of the tutorial.
+   was the urgent case and now runs 14, 16, 21, 28 out of the tutorial.
    What is left is thinner and further in: `II` still jumps 17 → 27 in one
    step and `III` 24 → 29, and every level in the locked shelf reads `brutal`
    — a whole section with one texture. The composer can make ordinary levels

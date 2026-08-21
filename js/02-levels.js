@@ -218,23 +218,27 @@ var LEVELS=[
       are placed symmetrically and a symmetric arena is the honest one to
       teach on - no corner is quietly better than another.
 
-      ALL of the geometry arrives in phase two, and this is load-bearing
-      twice. It makes each phase legible - phase two is the one where the
-      arena changes and phases three and four are the ones where the opponent
-      does, so a player who dies knows which kind of thing beat them. And it
-      makes phase three and phase four a fair comparison: they are the same
-      board, so the only difference between "one smarter" and "two ordinary"
-      is the opponents themselves, which is the entire question those two
-      phases exist to answer. A pillar rising in phase three read as more of
-      phase two and buried the change it was supposed to announce. */
+      ALL of the geometry arrives in phase two, and that is load-bearing: it
+      makes each phase legible. Phase two is the one where the *arena*
+      changes and phase three is the one where the *opposition* does, so a
+      player who dies knows which kind of thing beat them. A pillar rising in
+      phase three read as more of phase two and buried the change it was
+      supposed to announce.
+
+      There were four phases once. The third was a single 'cunning' hunter -
+      one that refuses lines you could answer - sitting between the arena
+      rising and the pair arriving. It went because three beats is the arc
+      this fight actually has: nothing, then the ground, then more of them.
+      A fourth made the middle sag, and "one smarter" against "two ordinary"
+      was a comparison the design was interested in rather than the player.
+      The machinery is untouched in bossPhases() and bossNext(), so putting
+      it back is one line of level data. */
    boss:{floorStep:300,creepEvery:7500,
      phases:[
        {at:[[8,1,5]],step:780,aim:900,
         say:"one of them, and nothing in the way"},
        {at:[[8,1,5]],step:700,aim:820,say:"the ground comes up",
         add:[[2,1,1],[6,1,5],[6,1,1],[2,1,5],[4,1,3]]},
-       {at:[[8,1,5]],step:640,aim:740,cunning:true,
-        say:"same ground — it stops taking the lines you can answer"},
        {at:[[8,1,5],[7,1,3]],step:620,aim:700,say:"same ground — two of them"}]},
    blocks:box(0,8,0,0,0,6,[]),
    start:[1,1,1]},
@@ -299,8 +303,6 @@ var LEVELS=[
        {at:[[8,1,5]],step:740,aim:880,say:"bare ground, for now"},
        {at:[[8,1,5]],step:670,aim:790,say:"cover for it, and the floor bites",
         add:[[3,1,1],[6,1,4],[5,1,2,4],[2,1,4],[7,1,2,4]]},
-       {at:[[8,1,5]],step:610,aim:710,cunning:true,
-        say:"same ground — it has stopped being obliging"},
        {at:[[8,1,5],[7,1,6]],step:590,aim:660,say:"same ground — two of them"}]},
    blocks:box(0,9,0,0,0,6,[]),
    start:[1,1,1]},
@@ -362,15 +364,13 @@ var LEVELS=[
    hint:"Glass casts nothing. The pillars you can see through are the ones that will not kill them — check which shadow you are herding them into.",
    /* Stone and glass rise together in phase two, so the lesson of the arena -
       the pillars you can see through are the ones you can still attack from -
-      is learned against an ordinary hunter, and then tested against a cunning
-      one on exactly the same board. */
+      is learned against one hunter and then tested against two on exactly
+      the same board. */
    boss:{creepEvery:7000,
      phases:[
        {at:[[8,1,5]],step:720,aim:860,say:"clear glass, clear floor"},
        {at:[[8,1,5]],step:650,aim:770,say:"stone you cannot fold through, glass you can",
         add:[[3,1,2],[7,1,4],[6,1,1],[5,1,1,1],[2,1,5,1],[8,1,3,1]]},
-       {at:[[8,1,5]],step:600,aim:700,cunning:true,
-        say:"same ground — it has started choosing"},
        {at:[[8,1,5],[7,1,6]],step:570,aim:650,say:"same ground — two of them"}]},
    blocks:box(0,9,0,0,0,6,[]),
    start:[1,1,1]},
@@ -449,8 +449,6 @@ var LEVELS=[
        {at:[[9,1,6]],step:700,aim:820,say:"the widest floor in the game"},
        {at:[[9,1,6]],step:630,aim:730,say:"everything at once — and two crates to shove",
         add:[[3,1,2],[7,1,2],[5,1,5],[3,1,5,4],[8,1,3,1],[7,1,5,3],[5,1,2,3]]},
-       {at:[[9,1,6]],step:580,aim:670,cunning:true,
-        say:"same ground — it has stopped being obliging"},
        {at:[[9,1,6],[8,1,7]],step:550,aim:620,say:"same ground — two of them"}]},
    blocks:box(0,10,0,0,0,7,[]),
    start:[1,1,1]},

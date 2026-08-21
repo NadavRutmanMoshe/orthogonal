@@ -531,6 +531,17 @@ would have caught it before any of it shipped.
   had no observable consequence — you cannot teach a tie-break with nothing to
   break. Two blocks in that column, the near one being the goal, and the rule
   is something you watch happen.
+- **The boss lost its fourth phase, and the reason is worth keeping.** The
+  arc was: one hunter on a bare floor, the arena rising, a single `cunning`
+  hunter that refuses lines you can answer, then two ordinary ones. Phases 3
+  and 4 were deliberately two answers to one question — is a smarter opponent
+  better than more of them? — set side by side so a player could feel both in
+  one sitting. Played, the question turned out to belong to the design rather
+  than to the player: two hunters on ground you already understand is the
+  ending, and the clever one in front of it made the middle sag. Three beats
+  is the arc this fight has: nothing, then the ground, then more of them. The
+  `cunning`/`hold` machinery is untouched, so it is one line of level data
+  to bring back — the same standing offer the twin has.
 - **The tutorial's guided lock shipped as a mood before it was a hint.** The
   first version dimmed the world the moment a step began, and since every step
   names a control it was on from the first frame to the last. The owner's

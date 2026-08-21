@@ -183,8 +183,17 @@ function syncBossBar(){
   var on=!!((B||TR)&&app==="play");
   bar.classList.toggle("on",on);
   if(!on)return;
+  // Whose row is which. The lives are yours in the player colour; the row
+  // underneath belongs to whatever is opposing you, and takes that thing's
+  // own colour rather than a third one the player has to learn.
+  bar.classList.toggle("tr",!!TR&&!B);
   var lv="",co="";
-  for(var i=0;i<BOSS_LIVES;i++)lv+="<i class='"+(i<lives?"":"gone")+"'></i>";
+  // A heart rather than a dot, because a dot is a countable token and a
+  // heart is a life - and this row is the one thing on a clock the player
+  // checks between every move.
+  for(var i=0;i<BOSS_LIVES;i++)
+    lv+="<i class='"+(i<lives?"":"gone")+"'>"+
+        (i<lives?"\u2665":"\u2661")+"</i>";
   if(B)for(var j=0;j<B.hp;j++)co+="<i class='"+(j<bossHp?"":"gone")+"'></i>";
   // A trial's cores count down as you reach them, so the row empties from
   // the left as you go - the same shape as a boss losing hit points.

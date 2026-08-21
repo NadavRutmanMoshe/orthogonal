@@ -323,15 +323,17 @@
     pointer-events:none;font-family:'IBM Plex Mono',ui-monospace,monospace}
   .boss.on{display:flex}
   .blives,.bcores{display:flex;gap:4px;align-items:center}
-  .blives i{width:9px;height:9px;border-radius:50%;background:var(--player);
-    display:block;transition:background .25s ease,transform .25s ease}
-  .blives i.gone{background:transparent;box-shadow:inset 0 0 0 1px var(--rule);
-    transform:scale(.8)}
-  /* Violet, matching the map. Boss and trial used to share an amber two steps
-     apart, which is not a distinction at a glance; the trial keeps the amber
-     because that is already the colour of a core on a clock in the world. */
-  .bcores i{width:14px;height:3px;border-radius:2px;background:#a274ff;
+  .blives i{display:block;font-style:normal;font-size:13px;line-height:1;
+    color:var(--player);transition:color .25s ease,transform .25s ease}
+  .blives i.gone{color:var(--rule);transform:scale(.86)}
+  /* The lower row is the opposition, and it wears the opposition's colour:
+     a boss's phases in the hunters' own red, a trial's cores in the amber
+     its cores are actually drawn in. The map keeps violet for a boss node,
+     which is a different job - there it separates one landmark from another
+     in a list, here it separates you from the thing in front of you. */
+  .bcores i{width:14px;height:3px;border-radius:2px;background:#ff4d5e;
     display:block;transition:background .25s ease}
+  .boss.tr .bcores i{background:#ff8a3c}
   .bcores i.gone{background:var(--rule)}
   .boss.hurt .blives{animation:bshake .3s ease}
   @keyframes bshake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
@@ -548,8 +550,10 @@
   .mlip{fill:rgba(0,0,0,.42);transform:translateY(6px);
     transition:transform .12s ease}
   .mnode:active .mlip{transform:translateY(1px)}
+  /* One arc per phase: three now, not four. r=58 gives a circumference of
+     about 364, so dash+gap has to divide into it three times. */
   .mring{fill:none;stroke:var(--rule);stroke-width:5;stroke-linecap:round;
-    stroke-dasharray:64 27}
+    stroke-dasharray:94 27}
   .mslice{fill:var(--amb);opacity:.95}
 
   .mnode.mboss .mface{fill:rgba(162,116,255,.13);stroke:var(--vio)}
@@ -640,7 +644,7 @@
   .mlegend .mk2 .msvg{position:absolute;inset:0}
   .mlegend .mk2 .mlip{display:none}
   .mlegend .mk2 .mface{stroke-width:7}
-  .mlegend .mk2.mboss .mring{stroke-width:7;stroke-dasharray:64 27}
+  .mlegend .mk2.mboss .mring{stroke-width:7;stroke-dasharray:94 27}
   .mlegend .mk2>span{position:relative;z-index:1}
   .mlegend .mk2.mbossOLD{border-color:var(--vio);color:var(--vio)}
   .mlegend .md{font-size:10px;color:var(--fg-dim);line-height:1.5}
