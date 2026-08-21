@@ -490,6 +490,19 @@ would have caught it before any of it shipped.
 - **`body>canvas` used to be a bare `canvas` selector**, which caught the
   wardrobe's preview canvas and pinned it `position:fixed` over the whole
   viewport.
+- **Turning the slices onto depth made them unfindable, and the fix was to
+  stop drawing the plane.** A slice had always been one translucent slab over
+  the lethal plane, which worked while the slices ran on `x`: from the opening
+  view that is edge-on, a wall at a readable screen position. On `z` the same
+  slab points straight at the camera, and an orthographic face-on plane does
+  not move as its depth changes — so it tinted the whole screen and said
+  nothing about where it was. Reported exactly that way: you had to rotate to
+  find out, on a clock, where turning is a move. The answer was that empty
+  space has no landmarks but the floor does: mark the standable squares inside
+  the slice and let the blocks around them supply the position. The slab is now
+  suppressed precisely when it is face-on — the same `comp===0` test the hit
+  rule already used — and keeps its old weight edge-on, where it was never the
+  problem.
 - **The trial's slices used to run across the road, not down it.** All four
   trials swept on `x`, which is the axis you can safely be flat under in the
   starting view — so the clock had no opinion about folding, and a trial was a

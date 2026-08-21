@@ -13,7 +13,7 @@ var twinCross=null,twinTether=null;
 var trialSlab,trialEdge;
 var colPeril=new THREE.Color(0x8f3b52);
 var perilSet=null,perilCleanup=[],perilPulse=0;
-var crateMeshes=[],keyMeshes=[],goalGhost=null;
+var crateMeshes=[],keyMeshes=[],goalGhost=null,trialMarks=[];
 var amb,dir1,dir2;
 var center=new THREE.Vector3(),centerT=new THREE.Vector3();
 var viewSize=10,viewSizeT=10;
@@ -151,7 +151,56 @@ function removeMesh(x,y,z){
 function clearDynamic(){
   crateMeshes.forEach(function(m){scene.remove(m);m.material.dispose();});
   keyMeshes.forEach(function(m){scene.remove(m);m.geometry.dispose();m.material.dispose();});
-  crateMeshes=[];keyMeshes=[];
+  trialMarks.forEach(function(m){scene.remove(m);m.geometry.dispose();m.material.dispose();});
+  crateMeshes=[];keyMeshes=[];trialMarks=[];
+}
+/* ONE PLATE PER SQUARE THE SWEEP IS ABOUT TO TAKE.
+
+   The slab alone cannot answer "where is it". A slice is a plane, and a plane
+   seen face-on carries no position at all: now that the slices run down the
+   depth axis, from the opening view the slab is a wall pointed straight at the
+   camera, so the whole screen tints and nothing says which depth it is at. The
+   owner's report was that you had to rotate to find out - which is a real cost
+   in a level where turning is a move and the clock is running.
+
+   Empty space has no landmarks. The floor does. So the readable form of the
+   warning is not the plane, it is the set of squares you could be standing on
+   that are inside it: a row of tiles lighting up at a particular depth, read
+   against the blocks around them. It is also strictly more useful than the
+   plane, because a square you cannot stand on was never going to kill you. */
+function buildTrialMarks(){
+  if(!TR)return;
+  var seen={};
+  for(var i=0;i<L.blocks.length;i++){
+    var b=L.blocks[i];
+    var cx=b[0], cy=b[1]+1, cz=b[2];
+    var k=K(cx,cy,cz);
+    if(seen[k])continue;
+    // Only squares you could actually occupy: a cell with a block in it is
+    // not somewhere the sweep can catch you.
+    if(R.solid(cx,cy,cz,liveCrates()))continue;
+    seen[k]=1;
+    var m=new THREE.Mesh(new THREE.PlaneGeometry(.94,.94),
+      new THREE.MeshBasicMaterial({color:0xff4d5e,transparent:true,
+        opacity:0,depthWrite:false,side:THREE.DoubleSide}));
+    m.rotation.x=-Math.PI/2;
+    m.position.set(cx,cy-.5+.03,cz);
+    m.renderOrder=901;
+    m.visible=false;
+    /* A filled square alone reads as a discolouration of the block under it,
+       and the blocks are already several colours. The border is what makes it
+       read as something placed on top - and it survives the fill going faint
+       at the start of a beat, which is when being told matters most. */
+    var ring=new THREE.LineLoop(
+      new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(-.47,-.47,0),new THREE.Vector3(.47,-.47,0),
+        new THREE.Vector3(.47,.47,0),new THREE.Vector3(-.47,.47,0)]),
+      new THREE.LineBasicMaterial({color:0xff8a94,transparent:true,opacity:0}));
+    ring.position.z=.002;
+    m.add(ring);m.userData.ring=ring;
+    m.userData.cell=[cx,cy,cz];
+    scene.add(m);trialMarks.push(m);
+  }
 }
 function buildDynamic(){
   clearDynamic();
@@ -177,6 +226,7 @@ function buildDynamic(){
     km.userData.cell=keys[j];
     scene.add(km);keyMeshes.push(km);
   }
+  buildTrialMarks();
 }
 
 function syncMeshes(){
@@ -198,8 +248,10 @@ function syncMeshes(){
   buildDynamic();
   recomputeBounds();
 }
+var arenaLo=[0,0,0], arenaHi=[0,0,0];
 function recomputeBounds(){
-  if(!L.blocks.length){centerT.set(0,0,0);viewSizeT=7;return;}
+  if(!L.blocks.length){centerT.set(0,0,0);viewSizeT=7;
+    arenaLo=[0,0,0];arenaHi=[0,0,0];return;}
   var a=[1e9,1e9,1e9],b=[-1e9,-1e9,-1e9];
   var pts=L.blocks.concat(L.keys||[]);
   for(var i=0;i<pts.length;i++)for(var j=0;j<3;j++){
@@ -207,6 +259,7 @@ function recomputeBounds(){
   }
   centerT.set((a[0]+b[0])/2,(a[1]+b[1])/2+.5,(a[2]+b[2])/2);
   viewSizeT=Math.max(b[0]-a[0],b[2]-a[2],b[1]-a[1])*.72+3.4;
+  arenaLo=a.slice();arenaHi=b.slice();
 }
 /* The pack.
 
@@ -396,13 +449,21 @@ function drawBoss(rx,rz,tdvx,tdvz){
 function drawTrial(rx,rz){
   if(!trialSlab)return;
   if(!TR||app!=="play"||!TR.beats.length){
-    trialSlab.visible=trialEdge.visible=false;return;
+    trialSlab.visible=trialEdge.visible=false;
+    for(var q=0;q<trialMarks.length;q++)trialMarks[q].visible=false;
+    return;
   }
   var sw=TR.beatAt(trialMs), span=20;
   var ph=TR.phase(trialMs), live=TR.live(trialMs);
   // Centred on the arena rather than the origin: a slab hung off world zero
   // trails halfway across the screen and reads as scenery.
-  var sx=span,sy=span,sz=span, px=centerT.x,py=centerT.y,pz=centerT.z;
+  /* Sized to the arena, not to the sky. At span 20 the slab's own edges were
+     off screen, so the one part of it that carries a position - the outline -
+     was never visible, and a slice facing the camera was a full-bleed red
+     wash. Bounded, it reads as a pane standing somewhere. */
+  var ex=(arenaHi[0]-arenaLo[0])+3, ey=(arenaHi[1]-arenaLo[1])+4,
+      ez=(arenaHi[2]-arenaLo[2])+3;
+  var sx=ex,sy=ey,sz=ez, px=centerT.x,py=centerT.y,pz=centerT.z;
   if(sw.axis==="y"){ sy=1; py=sw.at; }
   else if(flatT>.5){
     var comp=sw.axis==="x"?AX[view].r[0]:AX[view].r[2];
@@ -415,10 +476,24 @@ function drawTrial(rx,rz){
       if(Math.abs(rx)>.5)sx=1; else sz=1;
     }
     // comp===0 is the view axis: the whole plane is the slice, so the slab
-    // stays at full span in every direction and swallows the board.
+    // swallows the board on purpose - that is the warning, and it is the only
+    // one you get that the fold you are in is the wrong one.
+    else { sx=sy=sz=span; }
   }
   else if(sw.axis==="x"){ sx=1; px=sw.at; }
   else { sz=1; pz=sw.at; }
+  /* Is the slice pointed straight at the camera?
+
+     A plane carries a position only when you can see it edge-on: then it is a
+     wall standing at a particular place on screen and you read it instantly.
+     Face-on it is a sheet of colour over everything, and in an orthographic
+     view it does not even move as its depth changes - which is exactly why
+     the depth-axis slices could not be located without rotating.
+
+     Same test the hit rule uses. AX[view].r is screen-right, so a slice whose
+     axis has no screen-right component is one you are looking down. */
+  var faceOn = sw.axis!=="y" &&
+    (sw.axis==="x"?AX[view].r[0]:AX[view].r[2])===0;
   trialSlab.scale.set(sx,sy,sz);
   trialSlab.position.set(px,py,pz);
   trialEdge.scale.copy(trialSlab.scale);
@@ -429,9 +504,44 @@ function drawTrial(rx,rz){
      read the whole arena as having switched off. Being *told* early is the
      entire bargain a telegraph makes; the ramp is for how long you have
      left, not for whether there is a slice at all. */
-  trialSlab.material.opacity=live?(.62+trialFlash*.3):(.15+ph*ph*.3);
-  trialEdge.material.opacity=live?1:(.5+ph*.4);
+  /* Face-on the fill is suppressed almost to nothing and the tiles carry the
+     message; edge-on it is the best indicator there is and keeps its old
+     weight. The outline stays in both cases - bounded to the arena now, so it
+     is a frame you can see rather than something running off the screen -
+     because "a slice is charging" still has to be legible even in the view
+     where "which slice" is the tiles' job. */
+  var edgeOnly = faceOn && flatT<=.5;
+  var wash = edgeOnly ? .10 : 1;
+  trialSlab.material.opacity=(live?(.62+trialFlash*.3):(.15+ph*ph*.3))*wash;
+  trialEdge.material.opacity=(live?1:(.5+ph*.4))*(edgeOnly?.22:1);
   trialSlab.visible=trialEdge.visible=true;
+  drawTrialMarks(sw,ph,live);
+}
+/* The tiles. Flat only in the volume: in the plane the world is a silhouette
+   and a marker sitting on a world block would be pointing at a place that is
+   not there any more - the slab is the right shape for that case and already
+   says it. */
+function drawTrialMarks(sw,ph,live){
+  var hidden=flatT>.5;
+  var here=null;
+  for(var i=0;i<trialMarks.length;i++){
+    var m=trialMarks[i], c=m.userData.cell;
+    if(hidden||!TR.hits(sw,view,"3",c[0],c[1],c[2])){m.visible=false;continue;}
+    m.visible=true;
+    var mine=(!flat&&player.x===c[0]&&player.y===c[1]&&player.z===c[2]);
+    if(mine)here=m;
+    /* The ramp is the countdown, same as the slab's - but these start
+       brighter, because the tiles are what the player is reading and a
+       telegraph that is invisible for the first half of its beat is not a
+       telegraph. The square you are actually standing on is louder again:
+       "there is a slice" and "you are in it" are different sentences. */
+    m.material.opacity=(live?.92:.34+ph*ph*.5)*(mine?1:.8);
+    m.scale.setScalar(mine?1.04+(live?.06:0):1);
+    if(m.userData.ring)
+      m.userData.ring.material.opacity=(live?1:.5+ph*.5)*(mine?1:.75);
+  }
+  // Drawn last so it sits over its neighbours rather than z-fighting them.
+  if(here)here.renderOrder=903;
 }
 function buildGrid(){
   if(gridLines){scene.remove(gridLines);gridLines.geometry.dispose();gridLines.material.dispose();}

@@ -215,6 +215,33 @@ Two consequences worth knowing before changing a beat list:
   not a bug in either piece — it is what happens when a hazard is authored
   against a specific sweep.
 
+**The warning is drawn on the squares, not in the air.** A plane carries a
+position only seen *edge-on*, where it is a wall standing somewhere on screen.
+Face-on it is a sheet of colour over everything — and orthographically it does
+not even shift as its depth changes, so once the slices moved onto the depth
+axis the opening view could not locate them at all and you had to rotate to
+find out, which costs a move on a clock. So:
+
+- **One plate per standable square in the slice** (`trialMarks`, built in
+  `buildDynamic`). Empty space has no landmarks; the floor does. It is also
+  strictly the more useful set — a square you cannot stand on was never going
+  to kill you.
+- **The slab is suppressed exactly when it says nothing.** `faceOn` is the
+  same test the hit rule uses: a slice whose axis has no screen-right
+  component is one you are looking down. Face-on, the fill drops to a tenth
+  and the tiles carry it; edge-on it keeps its old weight, because there it is
+  the best indicator there is.
+- **The slab is sized to the arena, not to the sky.** At span 20 its outline
+  was off screen, so the one part of it that carries a position was never
+  visible.
+- **The square you are standing on is louder than the rest** — brighter and
+  slightly larger. "There is a slice" and "you are in it" are different
+  sentences and the second one is the urgent one.
+- **In the plane the tiles are hidden and the slab goes back to full span.**
+  There the world *is* a silhouette, so a marker on a world block points at a
+  place that no longer exists — and the whole board going red is the correct
+  answer, being the only warning that the fold you are in is the wrong one.
+
 ### Details that are load-bearing
 
 - **Every death costs a life, not the level.** Falling, spikes and folding
