@@ -641,6 +641,7 @@
   .mnode.mboss,.mnode.mtrial{background:transparent;border:none;
     box-shadow:none;overflow:visible}
   .mnode.mboss{width:78px;height:78px;font-size:18px}
+  .mnode.mtrial{width:68px;height:68px;font-size:16px}
   .msvg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
   .mnode>span{position:relative;z-index:1;line-height:1}
   .mface{fill:rgba(255,255,255,.03);stroke:var(--rule);stroke-width:5;
@@ -652,7 +653,22 @@
      about 364, so dash+gap has to divide into it three times. */
   .mring{fill:none;stroke:var(--rule);stroke-width:5;stroke-linecap:round;
     stroke-dasharray:94 27}
-  .mslice{fill:var(--amb);opacity:.95}
+
+  /* THE TRIAL'S RING IS A CLOCK, and its dash pattern has to be set in CSS
+     rather than as an attribute: .mring above already sets stroke-dasharray,
+     and a CSS declaration beats a presentation attribute however specific
+     the attribute looks. r=60 gives a circumference of ~377, so 337+40 is
+     one near-complete turn with a single break, and the offset of 357 puts
+     the middle of that break at the path's start - which the rotation below
+     then swings to the top, where the pip is. */
+  .mnode.mtrial .mring{stroke:var(--amb);stroke-width:4;
+    stroke-dasharray:337 40;stroke-dashoffset:357;
+    transform-box:view-box;transform-origin:50px 50px;transform:rotate(-90deg)}
+  /* It turns until you have beaten it. The boss's arcs never move, which is
+     the third thing telling the two landmarks apart. */
+  .mnode.mtrial:not(.solved) .mring{animation:mswp 9s linear infinite}
+  @keyframes mswp{from{transform:rotate(-90deg)}to{transform:rotate(270deg)}}
+  .mpip{fill:var(--amb)}
 
   .mnode.mboss .mface{fill:rgba(162,116,255,.13);stroke:var(--vio)}
   .mnode.mboss .mring{stroke:var(--vio)}
@@ -661,12 +677,14 @@
   .mnode.mtrial .mface{fill:rgba(224,160,60,.12);stroke:var(--amb)}
   .mnode.mtrial.solved .mface{fill:var(--amb);stroke:#f0bd6c}
   .mnode.mtrial.solved .mlip{fill:var(--amb-lip)}
-  .mnode.mtrial.solved .mslice{fill:#402c06}
+  .mnode.mtrial.solved .mring{stroke:#f0bd6c}
+  .mnode.mtrial.solved .mpip{fill:var(--amb-lip)}
   /* Locked, both go quiet - the shape still says which it is. */
   .mnode.mboss.locked .mface,.mnode.mtrial.locked .mface{
     fill:rgba(255,255,255,.02);stroke:var(--rule);stroke-dasharray:5 5}
   .mnode.mboss.locked .mring{stroke:var(--fg-dim);opacity:.4}
-  .mnode.mtrial.locked .mslice{fill:var(--fg-dim);opacity:.35}
+  .mnode.mtrial.locked .mring{stroke:var(--fg-dim);opacity:.4}
+  .mnode.mtrial.locked .mpip{fill:var(--fg-dim);opacity:.45}
   /* A landmark's numeral takes its own colour, not the section's. Without
      this .mnode.solved's section-mixed ink applied and BOSS I read as a dark
      green numeral sitting inside a violet hexagon. */
@@ -737,6 +755,7 @@
   .mtab.mst{border-color:color-mix(in srgb,var(--tabc) 62%,var(--rule))}
 
   @media (prefers-reduced-motion: reduce){
+    .mnode.mtrial:not(.solved) .mring{animation:none}
     .mpaint{animation:none;stroke-dashoffset:0 !important}
     .mnode.mst{animation:none}
     .mnode.mst::after{animation:none}

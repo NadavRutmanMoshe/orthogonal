@@ -624,10 +624,42 @@ level data changed to make it.
   which at 60px on a dark ground is not a distinction. A **boss is a hexagon**,
   which is what a cube looks like seen corner-on: the silhouette of the game's
   own piece, ringed by three arcs for its three phases, in violet. A **trial is a
-  diamond**, the square on its point, with the sweeping plane drawn straight
-  through it, in the amber that already means a core on a clock. An ordinary
-  level is a bare disc. Turn the colour off and all three still read. The
-  violet follows through to `.bcores` in the HUD.
+  diamond inside a clock** — the square on its point, an open ring around it
+  with three pips on it, in the amber that already means a core on a clock.
+  An ordinary level is a bare disc. Turn the colour off and all three still
+  read. The violet follows through to `.bcores` in the HUD.
+- **The trial's sweep used to be a bar drawn through the diamond, and it read
+  as a strikethrough.** It overshot the shape on both sides, which is not what
+  a plane passing through something looks like — it is what a cancelled thing
+  looks like. The ring says the same fact better (a trial is the level on a
+  clock) and says a second one nothing on the map ever said: the three pips
+  are the three cores. It is deliberately close to the boss's ring, both being
+  landmarks on a clock, and is told apart by three things at once — the shape
+  inside, the colour, and **motion**: the boss's arcs are still and count
+  phases, the trial's ring turns until you have beaten it. The trial node is
+  also 68px against a level's 58 and a boss's 78, because the ring reaches
+  past the shape and at 58 the pips landed on the trail.
+- **A section paints itself when every level in it is on three stars.** The
+  trail redraws as *one* continuous stroke and the colour climbs it from the
+  first level to the boss, each node popping as the paint arrives. One stroke
+  is forced: the paint is a `stroke-dashoffset` sweeping along a path, and the
+  usual per-gap subpaths would sweep every gap at once. It is traversed from
+  the end of `pts`, because the trail draws top-down while the campaign runs
+  bottom-up and the colour has to climb the way the player did. Nothing is
+  remembered to make it replay — `mapDraw` rebuilds the trail's innerHTML
+  every time, so the animations restart by construction.
+- **Mastery cannot be bought, and that is what makes it worth drawing.**
+  `sp.got` is summed through `starsForRecord()`, which reads `progress` and
+  nothing else, and a skip is deliberately not in `progress`. `PROLOGUE` can
+  never be mastered because `sectionSpans()` skips tutorials, so its `max` is
+  0 — a section that awards no stars has none to collect.
+- **The menu's `PREVIEW` switch forces the finished look on and draws the
+  nodes solved**, because a preview that leaves every node dashed and locked
+  is not a preview of the finished look. It is a drawing and nothing else:
+  `mapSheet()` asks `mapState()` again on a tap, so a locked level still
+  refuses to open. The win card's mastery banner deliberately does **not** go
+  through `sectionMastered()` — it is derived from `starsGained` — so a
+  preview can never fake the one moment that is actually news.
 - **The landmarks are SVG, not `clip-path`.** A clipped box loses its border
   and its shadow, and the rim and the lip are what make a node look pressable;
   `mapShape()` emits the polygon, its lip and its ring as one `<svg>`.

@@ -581,13 +581,31 @@ function mapShape(k){
       "<polygon class='mface' points='"+MAP_HEX+"'/>"+
       "<circle class='mring' cx='50' cy='50' r='58'/></svg>";
   if(k==="trial")
+    /* The square on its point, inside a clock.
+
+       It used to carry the sweeping plane as a bar drawn straight through it,
+       and the bar overshot the shape on both sides - which does not read as a
+       plane passing through, it reads as a strikethrough. A node with a line
+       scored across it looks cancelled.
+
+       So the sweep became the thing it actually is on a trial: a beat. An
+       open ring with three pips on it, which is a clock face and is also the
+       three cores, said for the first time - nothing on the map has ever
+       mentioned that a trial is three crossings. The ring's gap sits at the
+       top with a pip in it, the way a clock's twelve is its start.
+
+       It is close to the boss's ring on purpose - both are landmarks and both
+       are on a clock - and told apart by three things at once: the shape
+       inside (diamond against hexagon), the colour (amber against violet) and
+       motion. The boss's arcs are still and count its phases; this one turns,
+       slowly, until you have beaten it. */
     return "<svg class='msvg' viewBox='0 0 100 100' aria-hidden='true'>"+
       "<polygon class='mlip' points='"+MAP_DIA+"'/>"+
       "<polygon class='mface' points='"+MAP_DIA+"'/>"+
-      // Below centre, so the plane crosses the square without cutting through
-      // the numeral - the sweep still reads and the label stays legible.
-      "<rect class='mslice' x='-18' y='63' width='136' height='10' rx='5' "+
-      "transform='rotate(-24 50 50)'/></svg>";
+      "<circle class='mring' cx='50' cy='50' r='60'/>"+
+      "<circle class='mpip' cx='50' cy='-10' r='7'/>"+
+      "<circle class='mpip' cx='102' cy='80' r='7'/>"+
+      "<circle class='mpip' cx='-2' cy='80' r='7'/></svg>";
   return "";
 }
 /* The number in the node.
@@ -723,7 +741,10 @@ function mapDraw(spans){
        else: mapSheet() asks mapState() again when a node is tapped, so a
        level that is really locked still refuses to open. */
     var st=(mast&&masteryPreview())?"solved":mapState(i);
-    var half=(k==="boss"?38:k==="tut"?21:29);
+    /* A trial sits between a level and a boss in size as well as in weight,
+       and it has to: its ring reaches past the shape, and at 58px the pips
+       were landing on the trail. */
+    var half=(k==="boss"?38:k==="trial"?34:k==="tut"?21:29);
     pts.push({y:y,off:off,i:i});
     /* The paint climbs the chain at a steady rate, so a node lights when the
        stroke reaches it: its delay is its position along the section, not its
