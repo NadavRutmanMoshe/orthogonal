@@ -42,7 +42,7 @@ var skips={};
    *view* of the step rather than a second copy of where the player is up to -
    which is what keeps the lock from being able to disagree with the coach. */
 var tutC=null, tutShown=-1, tutLock=null, tutHelpTimer=null,
-    tutIdle=0, tutWait=0, tutCued=null, tutReturn=null;
+    tutIdle=0, tutWait=0, tutCued=null;
 function tutReset(){
   tutC={m3:0,m2:0,flat:0,unflat:0,rot:0,climb:0,
         d:{left:0,right:0,up:0,down:0}};

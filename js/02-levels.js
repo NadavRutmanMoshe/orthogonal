@@ -309,8 +309,14 @@ var LEVELS=[
    blocks:[[0,0,0],[0,1,-1,1],[-1,2,-5],[-1,2,-3],[0,2,-3,1],[0,2,-4,1],[1,2,-4,1],[1,2,-5,1]],
    start:[0,1,0],goal:[1,3,-5],rotate:true},
 {name:"21 — Nothing Underfoot",
+   /* Second block moved from z=2 to z=7, for the reason Six Across was moved:
+      one across and two back draws within a twentieth of a cell of one across
+      and one *down*, so the first press of the level read as a step you could
+      take and was a fall out of the world. Reported from play, and
+      tools/legible.js had it flagged from the start square. Checked at
+      z=2,3,5,6,7,9 - same route, same move count, same score. */
    hint:"A long walk on a silhouette with a piece missing.",
-   blocks:[[0,0,0],[-1,0,2],[-2,1,6],[-3,1,5],[-4,1,4],[-5,2,-4],[-6,3,-4],[-6,3,-2],[-6,3,-3,1],[-6,4,-4,1]],
+   blocks:[[0,0,0],[-1,0,7],[-2,1,6],[-3,1,5],[-4,1,4],[-5,2,-4],[-6,3,-4],[-6,3,-2],[-6,3,-3,1],[-6,4,-4,1]],
    start:[0,1,0],goal:[-6,5,-4],rotate:true},
 {name:"22 — Twice Transparent",
    hint:"What you stood on to get here won't be there when you fold.",

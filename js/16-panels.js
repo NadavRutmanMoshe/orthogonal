@@ -470,17 +470,6 @@ function mapTouched(i){return mapSolved(i)||mapSkipped(i);}
    onto one landmark, not progress, and counting it here would drag the whole
    window forward and hand over the levels in between - which are the levels
    the skip exists to let you come back to. */
-/* Where a tutorial should hand you back to when nothing remembered where you
-   were: the first campaign level you have not solved. Falls back to the given
-   index - the level straight after the tutorial - for a player who has solved
-   nothing, which is exactly right for a first run. */
-function tutFallback(def){
-  for(var i=0;i<LEVELS.length;i++){
-    if(LEVELS[i].tutorial)continue;
-    if(!mapSolved(i))return i;
-  }
-  return def;
-}
 function mapReach(){
   var last=-1;
   for(var i=0;i<LEVELS.length;i++) if(mapSolved(i)) last=i;
@@ -1019,24 +1008,7 @@ function enterEditor(){
   $("editBar").classList.add("on");
   syncMeshes();buildGrid();syncHud();onResize();
 }
-/* Replaying the tutorial should put you back where you were, not at level 01.
-
-   Someone forty levels in who goes back to check what GO 2D meant was being
-   walked out of the tutorial into the start of the campaign - five, ten,
-   forty levels behind where they left off, with NEXT LEVEL marching them
-   forward through puzzles they had already solved. The tutorial is the one
-   part of the game you re-enter *sideways*, so it is the one part that has to
-   know how to put you back.
-
-   Recorded here rather than at the two call sites (the menu's REPLAY
-   TUTORIAL and a PROLOGUE node on the map) for the usual reason: this is the
-   funnel, and a third entry point added later gets the behaviour for free.
-   Only a move from a non-tutorial into a tutorial arms it, so walking 00 ->
-   00 -> 00 does not overwrite it, and `L` being null on the very first boot
-   is what stops a new player being sent "back" to where they never were. */
 function enterPlay(level,idx,fromEd){
-  if(level&&level.tutorial){ if(L&&!L.tutorial)tutReturn=lvIndex; }
-  else tutReturn=null;
   app="play";fromEditor=!!fromEd;
   hidePanel();ghosted.clear();
   $("editBarWrap").classList.remove("on");

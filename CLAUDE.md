@@ -724,18 +724,13 @@ opts out with `lock:false`.
   the swipe.
 - **The corner chrome is never dimmed or blocked.** Menu and restart stay live
   throughout. A tutorial you cannot leave is a trap, not a lesson.
-- **Replaying the tutorial puts you back where you were.** `tutReturn` is set
-  in `enterPlay` — the funnel, so the menu, the map and anything added later
-  all get it — whenever a *non*-tutorial level hands off to a tutorial one,
-  and `bNext` spends it on the way out. Without it, someone forty levels in
-  who went back to check what `GO 2D` meant was walked out into `01` and
-  marched forward through puzzles they had already solved. `L` being null on
-  the first boot is what stops a new player being sent "back" to where they
-  have never been. When it *is* null for a player who is nonetheless deep in
-  the game — closing the app on a tutorial level and being restored straight
-  into one leaves nothing to record — `tutFallback()` hands back the first
-  unsolved campaign level rather than `01`, which would be the same unhelpful
-  answer by a different route.
+- **`NEXT LEVEL` is the next level, always — including out of the tutorial,
+  where it is `01`.** Two cleverer versions were built and both were wrong the
+  same way: returning you to the level you interrupted, and failing that to
+  your first unsolved one, each made the button mean something other than what
+  it says, chosen by state the player cannot see. A player who wants to be
+  somewhere else has the map, which is explicit about where it is sending
+  them.
 - **The highlight is `.tutlive`, not `.cue`.** A cue is a 3.2-second pulse and
   the lock lasts as long as the step, so keying the highlight off the pulse
   dims the whole bar the moment it expires — including the button being asked
