@@ -635,12 +635,23 @@ opts out with `lock:false`.
   same question `bossFrame` asks, so the intro card, an open menu and a death
   animation do not accrue. A plain one-shot timer kept its own cadence and ran
   out behind the intro, putting the guide up within a few hundred milliseconds
-  of BEGIN. Any input re-arms it (`tutPoke()` from the four verbs), so a
-  player who is following along never sees it; once it *is* up it stays until
-  the step is satisfied, because re-arming on every press would flicker on a
-  step that takes two.
-- **`TUT_HELP_MS` is a feel number** and nothing here can judge it. It is
-  1000ms. Playtest it.
+  of BEGIN.
+- **Pressing the control it is asking for dismisses it, always — including
+  while it is up.** `tutPoke(id)` takes the control the player actually used
+  and only answers to the cued one. The first version refused to re-arm once
+  engaged, to stop it flickering on a multi-press step, and that was exactly
+  backwards: `First Fold` step 3 wants three presses of the same arrow, so a
+  player obeying the instruction perfectly watched the screen stay dark
+  through all three. Complying has to be what turns it off, or the guide is
+  not answering the player at all.
+- **What stops the flicker is a longer second wait**, not a refusal to
+  re-arm. `TUT_AGAIN_MS` applies once the player has used the right control
+  on this step — they have shown they know it — so a steady press rhythm never
+  strobes and a player who stalls again still gets it back. An input that is
+  *not* the cued control neither buys time nor spends it: the wait carries on,
+  so pressing other things cannot hold the help off forever.
+- **`TUT_HELP_MS` (1000) and `TUT_AGAIN_MS` (2600) are feel numbers** and
+  nothing here can judge them. Playtest them.
 - **The dim is the quieter half.** It cannot carry the message alone, so it is
   light and the *lit* button does the work — goal colour, a ring that breathes,
   a step up in size. Three cues on one control beats one cue spread thin.

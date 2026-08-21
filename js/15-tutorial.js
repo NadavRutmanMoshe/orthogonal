@@ -90,19 +90,39 @@ function tutWords(s){
    is satisfied - re-arming on every press would make it flicker on a step that
    takes two.
 
-   TUT_HELP_MS is a feel number and nothing here can judge it. Playtest it. */
-var TUT_HELP_MS=1000;
+   Both numbers are feel and nothing here can judge them. Playtest them. */
+var TUT_HELP_MS=1000;    // before the first help on a step
+var TUT_AGAIN_MS=2600;   // after the player has used the right control once
 
 function tutBlocks(id){
   return app==="play" && tutLock !== null && tutLock !== id;
 }
-/* Re-start the wait. Called by the four verbs on any input they accept, so
-   the guide stays away from a player who is busy. Deliberately does nothing
-   once the guide is already up: the player is being shown one button and may
-   need to press it more than once. */
-function tutPoke(){
-  if(tutLock!==null)return;
-  tutArm();
+/* Called by the four verbs with the control the player actually used.
+
+   **Pressing the button being asked for dismisses the guide**, every time,
+   including while it is already up. The first version refused to re-arm once
+   it had engaged — meant to stop it flickering on a step that takes several
+   presses — and that was exactly backwards: 'First Fold' step 3 asks for three
+   presses of the same arrow, so a player following the instruction perfectly
+   watched the screen stay dark through all three. Complying has to be the
+   thing that turns it off, or the guide is not answering the player at all.
+
+   What stops the flicker instead is TUT_AGAIN_MS: once they have used the
+   right control on this step they have shown they know it, so the second help
+   waits considerably longer than the first. Pressing at a steady beat never
+   strobes, and a player who stalls again still gets it back.
+
+   An input that is *not* the cued control does nothing here, on purpose. It
+   neither buys time nor spends it — the wait carries on from where it was, so
+   pressing other things cannot hold the help off forever. It cannot happen
+   while the guide is up in any case: those buttons are inert. */
+function tutPoke(id){
+  var i=tutStep();
+  if(i<0)return;
+  var want=L.tut[i].cue||null;
+  if(!want||id!==want)return;
+  tutUnlock();
+  tutArm(TUT_AGAIN_MS);
 }
 /* Is the game actually in front of the player right now? The same question
    bossFrame and trialFrame ask before running their clocks, and for the same
@@ -123,10 +143,11 @@ function tutPlayable(){
    Counting ticks instead means a wait spent reading the intro, or the menu,
    or watching a death animation is not hesitation and does not accrue. */
 var TUT_TICK=120;
-function tutArm(){
+function tutArm(ms){
   clearTimeout(tutHelpTimer);
   tutHelpTimer=null;
   tutIdle=0;
+  tutWait=ms||TUT_HELP_MS;
   tutTick();
 }
 function tutTick(){
@@ -135,7 +156,7 @@ function tutTick(){
     if(tutLock!==null)return;                    // already up; nothing to count
     if(app!=="play"||!L||!L.tut)return;
     if(tutPlayable())tutIdle+=TUT_TICK;
-    if(tutIdle<TUT_HELP_MS){tutTick();return;}
+    if(tutIdle<tutWait){tutTick();return;}
     var i=tutStep();
     if(i<0)return;
     var step=L.tut[i];

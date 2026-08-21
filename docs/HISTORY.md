@@ -522,8 +522,14 @@ would have caught it before any of it shipped.
   dimming carries the message. Two further corrections fell out of building
   the wait: it must not accrue while the intro card or a panel is up (the
   first one ran out behind the intro, so the guide was already on at BEGIN),
-  and it must *not* re-arm once it is up, or a step needing two presses makes
-  it flicker.
+  and — the correction after that — it *must* re-arm when the player presses
+  the button being asked for. Refusing to, as an anti-flicker measure, meant
+  `First Fold` step 3 (three presses of one arrow) stayed dark through all
+  three while the player did exactly as told. A guide that does not respond to
+  compliance is not a guide. Flicker is held off by making the *second* wait
+  on a step much longer than the first instead, which is the honest fix: the
+  player has demonstrated they know the control, so they have earned more
+  rope.
 - **A hint used to point at nothing, twice over.** `cue()` pulses a button,
   and `cue("bUndo")` named a button this game has never had — so the hint you
   get when you are wedged past recovery did nothing at all. With controls
