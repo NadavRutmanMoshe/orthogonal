@@ -257,6 +257,16 @@ function menuPanel(){
         "<button id='mTut'>REPLAY TUTORIAL</button>"+
         "<button id='mEditor'>LEVEL EDITOR</button>"+
         "<button id='mReset' class='pdanger'>RESET SETTINGS</button>"+
+      "</div>"+
+      /* WHICH BUILD AM I LOOKING AT? The stamp has been in the file since
+         build-single.js started writing it, but only in a comment and a
+         global - which answers the question for whoever has a terminal and
+         nobody else. A published artifact is played by people who cannot
+         open a console, and "are you on the new one?" is unanswerable
+         without this. It is the short commit, so it matches the build log
+         and `git checkout <it>` puts that exact version back. */
+      "<div class='note pbuild'>build "+
+        esc(typeof BUILD==="string"?BUILD:"unbuilt \u00b7 running from source")+
       "</div></div>"+
     "</div>","menu");
   var v=$("mVol"), b=$("mBri");

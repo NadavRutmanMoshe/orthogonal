@@ -503,6 +503,10 @@
     justify-content:flex-start;padding:0 12px}
   .psub button:active{color:var(--fg)}
   .pdanger{color:#e0455f}
+  /* Small, dim and selectable: it is not for the player, it is for the
+     player telling somebody else which version they have. */
+  .pbuild{font-size:8.5px;letter-spacing:.08em;opacity:.6;
+    user-select:text;-webkit-user-select:text;word-break:break-all}
 
   /* Sliders. `accent-color` gives the browser's own chunky control, which is
      the one part of the UI the game did not draw itself. */
