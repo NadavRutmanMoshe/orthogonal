@@ -1440,6 +1440,22 @@ tested and failed, plus where this sits in the PCG literature, are in
   - **Rolling back is `git checkout <commit> && build && publish`.** The
     build is deterministic — same commit, byte-identical file — which is what
     makes "put it back" checkable rather than hopeful.
+- **Publishing updates the artifact; it does not update what other people
+  see.** Each publish becomes a version, and the share is pinned to one of
+  them — the owner sees the newest, everybody holding the link sees whatever
+  the share points at. This was found the hard way: the owner's mother opened
+  the link and got a build several days old. The permanent fix is the
+  **Always share latest version** toggle in the artifact's Share menu, and
+  once that is on nothing here has to happen again. Until it is confirmed on,
+  **remind the owner to bump the shared version every few publishes** — not
+  after every one, which is noise, but whenever a run of changes has landed
+  that somebody else would want to see. Agreed with the owner, in those words.
+- **The running build is visible in the menu**, at the foot of the panel, as
+  `build <sha> (<branch>)`. That is the whole diagnostic for "are we looking
+  at the same version": ask whoever is playing to read it out. It says
+  `unbuilt · running from source` when `index.html` is opened directly, and a
+  build stamped `+UNCOMMITTED CHANGES` is one that cannot be re-derived from
+  a commit.
 - **One job per session where possible.** Unrelated work in one pass re-reads
   the same files several times over.
 - **Edit files with the editing tools, not by patching them from a shell.**
