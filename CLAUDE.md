@@ -192,6 +192,29 @@ The same sweep is one step to dodge in the volume, and rotating re-labels
 which sweeps are survivable. So the question is the one the whole game asks —
 which axis, and is this the moment — only now with a metronome running.
 
+**So the slices run down the depth axis, and that is the point rather than a
+setting.** Views 0 and 2 both look down z, so while a `z` slice is live, being
+flat in the opening view is death wherever you stand — the fold itself is on
+the clock. They used to be `x` slices, which are precisely the ones you can
+safely be flat under in the starting view, so the sweep had no opinion about
+the one verb the game has and a trial was a walking-timing puzzle. Now a
+crossing has to be timed *between* beats, or taken from a view turned 90° off
+the one the silhouette needs — which costs the move you were trying to save.
+
+Two consequences worth knowing before changing a beat list:
+
+- **The fold danger is a property of the axis, not of `at`.** One `z` beat
+  anywhere makes every fold in views 0 and 2 lethal while it is live. Moving
+  `at` around only changes who is threatened in the volume — so pick `at`
+  values that sit on rows the player actually stands in. A slice that threatens
+  nobody is decoration.
+- **Spikes and the sweep axis are coupled.** `TRIAL II` keeps one `x` slice
+  because its spikes were placed to take the squares an `x` sweep leaves you,
+  which means they also take the `z` escapes: all three depth slices over its
+  near island corner somebody, and `trialSafety()` rejects every one. That is
+  not a bug in either piece — it is what happens when a hazard is authored
+  against a specific sweep.
+
 ### Details that are load-bearing
 
 - **Every death costs a life, not the level.** Falling, spikes and folding
@@ -593,6 +616,43 @@ is a sentence plus `done(counters, state)`, and the coach always displays the
 *first* unsatisfied step. It therefore cannot desynchronise: undo, death, or a
 player doing things out of order all just re-evaluate. If you add tutorial
 steps, keep them as predicates over state — do not introduce a step index.
+
+**The guided lock is derived from that predicate, not parallel to it.** While a
+step names a control (its `cue`), the world dims and that control is the only
+one the game accepts — a first-time player should not have to work out which of
+seven buttons a sentence means. `tutLock` is recomputed from the current step
+every time the coach re-evaluates, so it inherits the property above and cannot
+disagree with the line on screen. A step opts out with `lock:false`.
+
+- **The gate lives on the four verbs** — `press`, `rotateView`, `doFlatten`,
+  `doUnflatten`. Buttons, keys and gestures all funnel through those, so one
+  check each covers every way in; scattering it across the bindings would miss
+  the swipe.
+- **The corner chrome is never dimmed or blocked.** Menu and restart stay live
+  throughout. A tutorial you cannot leave is a trap, not a lesson.
+- **The highlight is `.tutlive`, not `.cue`.** A cue is a 3.2-second pulse and
+  the lock lasts as long as the step, so keying the highlight off the pulse
+  dims the whole bar the moment it expires — including the button being asked
+  for.
+
+**The tutorial's prose says what the button says, mechanically.** `tut` text is
+data in `02-levels.js`, which loads before `11-sound.js`, so it cannot call
+`VB()` when it is written. It writes `{to2}` / `{to3}` / `{n2}` / `{n3}` and
+`tutWords()` substitutes them as the line is shown. This exists because the
+lesson used to say "collapse the world", then "Collapse", then "flatten", then
+"stand back up", while the button in front of the player read `GO 2D` — four
+names for one verb, none of them the one on screen, in the three levels whose
+whole job is naming things.
+
+**`00 — First Fold` has two blocks in the goal column, and that is the lesson.**
+Rule 5 used to be *stated* there and never *shown*: the column held one block,
+so "you return on the one nearest the camera" described an event with no
+alternative. You cannot teach a tie-break with nothing to break. The near block
+is now the goal, so the demonstration is a success rather than a punishment.
+Note the direction while you are in there: **+z points toward the camera**
+(`AX[0].d`, and the camera sits at +z at `viewAngle` 0), so a block at high z
+is in *front*. The old line called it "far behind everything", which is
+backwards, and a lesson that contradicts the screen is worse than none.
 
 Tutorials force the control bar back on screen regardless of the layout
 setting (`body.tut` in the CSS). Hiding the controls during the lesson about

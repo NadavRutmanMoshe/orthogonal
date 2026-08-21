@@ -37,7 +37,11 @@ var progress={};             // levelKey -> best move count
 var skips={};
 // Tutorial bookkeeping. Counters only - the coach reads them, nothing else
 // does, and they reset with the level so a death restarts the lesson too.
-var tutC=null, tutShown=-1;
+/* The control the tutorial is currently insisting on, or null. Derived from
+   the active step's own cue every time the coach re-evaluates, so it is a
+   *view* of the step rather than a second copy of where the player is up to -
+   which is what keeps the lock from being able to disagree with the coach. */
+var tutC=null, tutShown=-1, tutLock=null;
 function tutReset(){
   tutC={m3:0,m2:0,flat:0,unflat:0,rot:0,climb:0,
         d:{left:0,right:0,up:0,down:0}};

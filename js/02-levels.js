@@ -11,27 +11,46 @@ var LEVELS=[
    blocks:(function(){var b=[];box(0,2,0,0,0,0,b);box(2,2,0,0,-2,-1,b);
      b.push([2,0,-3]);b.push([2,1,-3]);return b;})(),
    start:[0,1,0],goal:[2,2,-3],rotate:false,tutorial:true,lockFlat:true,
+   /* Every step here names a control, so every step locks to it: the world
+      dims and the named button is the only one that answers. See the guided
+      lock in 15-tutorial.js - a step can opt out with lock:false, and none of
+      these wants to. */
    tut:[
-     {say:"You are the pink cube. The green square is where you're going.<br>Press <b>&#9654;</b> twice to walk to the corner.",
+     {say:"You are the pink cube. The green square is where you are going.<br>Press <b>&#9654;</b> twice.",
       cue:"bRight",done:function(c){return c.d.right>=2;}},
-     {say:"<b>&#9650;</b> and <b>&#9660;</b> move away from and toward the camera.<br>Press <b>&#9650;</b> to follow the path back.",
+     {say:"<b>&#9650;</b> and <b>&#9660;</b> move you away from the camera and back toward it.<br>Press <b>&#9650;</b> twice.",
       cue:"bUp",done:function(c){return c.d.up>=2;}},
      {say:"There is no jump. A block one high is a <b>step</b> — walk straight into it.",
       cue:"bUp",done:function(c){return c.climb>=1;}}
    ]},
 {name:"00 — First Fold",
    hint:"The gap is not crossable. The gap is not the point.",
+   /* The goal column holds TWO blocks, at z=0 and z=6, and that is the whole
+      change: the landing rule is now something the player watches happen
+      instead of something a sentence claims.
+
+      Before this there was one block in that column, so "you return on the
+      block nearest the camera" described an event with no alternative and
+      therefore no visible content - you cannot teach a tie-break with nothing
+      to break. Now the near block is the goal, so the demonstration is a
+      success rather than a punishment, which is what a tutorial wants.
+
+      The old line also had the geometry backwards. +z points *toward* the
+      camera (AX[0].d, and the camera sits at +z at viewAngle 0), so the loose
+      block at z=4 is in front of everything, not "far behind everything" as
+      the text used to say. A lesson that describes the opposite of what is on
+      screen is worse than no lesson. */
    blocks:(function(){var b=[];box(0,1,0,0,0,0,b);box(3,4,0,0,0,0,b);
-     b.push([2,0,4]);return b;})(),
-   start:[0,1,0],goal:[4,1,0],rotate:false,tutorial:true,
+     b.push([2,0,4]);b.push([4,0,6]);return b;})(),
+   start:[0,1,0],goal:[4,1,6],rotate:false,tutorial:true,
    tut:[
-     {say:"Walk right to the edge.",
+     {say:"Walk to the edge.",
       cue:"bRight",done:function(c){return c.d.right>=1;}},
-     {say:"Too far to walk, and there is no jump. Instead, <b>collapse the world</b> along your line of sight.",
+     {say:"Too far to walk, and there is no jump.<br>Press <b>{to2}</b>: the world flattens along your line of sight, and depth stops existing.",
       cue:"bFlat",done:function(c){return c.flat>=1;}},
-     {say:"Depth is gone. That lonely block was far behind everything — now it is simply next to you. Walk across.",
+     {say:"Depth is gone, so the block that was floating out in front is simply next to you. Walk across.",
       cue:"bRight",done:function(c){return c.m2>=3;}},
-     {say:"Stand back up. You return on the block <b>nearest the camera</b> in that column.",
+     {say:"Press <b>{to3}</b> to stand up.<br>Two blocks share this column, and you always come back on the one <b>nearest the camera</b> — the green one.",
       cue:"bFlat",done:function(c){return c.unflat>=1;}}
    ]},
 {name:"00 — First Turn",
@@ -39,11 +58,11 @@ var LEVELS=[
    blocks:[[0,0,0],[5,0,0]],
    start:[0,1,0],goal:[5,1,0],rotate:true,tutorial:true,
    tut:[
-     {say:"Nothing lines up from this side. Turn the camera 90&deg; with <b>&#8631;</b>.",
+     {say:"Nothing lines up from this side. Press <b>&#8631;</b> to turn a quarter turn.",
       cue:"bRotR",done:function(c,st){return st.view===1;}},
-     {say:"From here the two blocks sit in the <b>same column</b>. Collapse.",
+     {say:"From here the two blocks are in the <b>same column</b>.<br>Press <b>{to2}</b>.",
       cue:"bFlat",done:function(c){return c.flat>=1;}},
-     {say:"Stand back up. Nearest-the-camera is now the far block — which is the whole trick.",
+     {say:"Press <b>{to3}</b>. Nearest the camera is now the block that was out of reach — so turning is how you choose which one catches you.",
       cue:"bFlat",done:function(c){return c.unflat>=1;}}
    ]},
 /* The four levels below (01, 02, 03 and 05) exist because the curve had a
@@ -114,8 +133,27 @@ var LEVELS=[
    pushed it to ninth, so it came back to fifth, and no save noticed. */
 {name:"TRIAL I — The Metronome",
    hint:"The red slice lands on the beat. Cross in the gaps between.",
+   /* THE SLICES RUN DOWN THE DEPTH AXIS, and that is the difficulty of a
+      trial rather than a detail of this one.
+
+      A sweep along the axis you are *looking* along cannot be dodged in the
+      plane at all: flattened, you are the projection of every depth at once,
+      so you stand in every slice of that axis simultaneously. Views 0 and 2
+      both look down z. So while a z-slice is live, being flat in the opening
+      view is death wherever you stand - and the fold stops being free.
+
+      These used to be x-slices, which are precisely the ones you can safely
+      be flat under in the starting view, so the clock never had an opinion
+      about the one verb the game has. Now the crossing has to be timed
+      *between* beats, or taken from a view turned 90 degrees off the one the
+      silhouette needs - which costs the move you were trying to save.
+
+      The `at` values are the three rows the player actually stands in: z=0
+      on the near island, z=4 and z=6 on the far one. A slice that threatens
+      nobody is decoration. z=0 cannot be first - the player respawns there,
+      and trialSafety() rejects a beat that is live where you are born. */
    trial:{period:2500,fire:340,
-          beats:[{axis:"x",at:6},{axis:"x",at:2},{axis:"x",at:4}],
+          beats:[{axis:"z",at:4},{axis:"z",at:0},{axis:"z",at:6}],
           cores:[[7,1,4],[0,1,2],[6,1,6]]},
    /* The far side is offset in depth as well as across, and that is
       structural rather than decorative: two platforms sharing a row of z can
@@ -209,7 +247,15 @@ var LEVELS=[
 {name:"TRIAL II — Sharp Rhythm",
    hint:"Spikes take the squares you would have dodged into. Walk to the edge before you fold — the near columns are poisoned.",
    trial:{period:2200,fire:320,
-          beats:[{axis:"x",at:3},{axis:"x",at:1},{axis:"x",at:5}],
+          /* Two depth slices and one across, and the mix is forced rather
+             than chosen: this level's spikes were placed to take the squares
+             an *x*-sweep leaves you, which means they also take the z-escapes.
+             All three depth slices over the near island corner somebody -
+             checked - so the near half keeps an x-slice and the far half
+             takes depth. One z beat is enough to make folding dangerous,
+             because that danger is a property of the axis, not of where the
+             slice sits. */
+          beats:[{axis:"z",at:4},{axis:"x",at:1},{axis:"z",at:6}],
           cores:[[9,1,4],[0,1,2],[7,1,6]]},
    blocks:(function(){var b=[];box(0,4,0,0,0,2,b);box(7,9,0,0,4,6,b);
      b.push([5,0,9]);b.push([6,0,9]);
@@ -267,7 +313,10 @@ var LEVELS=[
 {name:"TRIAL III — The Depth Slice",
    hint:"A slice down the axis you are looking along cannot be dodged flat — there, you are at every depth. Fold between those beats, or turn until it is one you can step out of.",
    trial:{period:2100,fire:300,
-          beats:[{axis:"x",at:1},{axis:"z",at:1},{axis:"x",at:6}],
+          /* All three on depth, which is what the name promised. This is the
+             most fold-heavy route in the game - every leg flattens - so it is
+             where a depth slice bites hardest. */
+          beats:[{axis:"z",at:1},{axis:"z",at:5},{axis:"z",at:4}],
           cores:[[7,1,4],[4,1,9],[5,1,6]]},
    /* The glass is the fold platform, and it is load-bearing twice over: it
       carries you in the volume, and because it casts nothing, folding from
@@ -332,7 +381,9 @@ var LEVELS=[
 {name:"TRIAL IV — Every Slice",
    hint:"Three axes now, and the high ground is one of them. The crossing happens up here — so does the slice that owns this height.",
    trial:{period:2000,fire:320,
-          beats:[{axis:"y",at:2},{axis:"x",at:2},{axis:"x",at:6},
+          /* Still every axis - that is this one's whole idea - but weighted
+             onto depth now that depth is the axis which punishes the fold. */
+          beats:[{axis:"y",at:2},{axis:"z",at:2},{axis:"x",at:6},
                  {axis:"z",at:1}],
           cores:[[7,1,4],[0,1,1],[7,1,6]]},
    blocks:(function(){var b=[];

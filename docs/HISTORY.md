@@ -490,6 +490,27 @@ would have caught it before any of it shipped.
 - **`body>canvas` used to be a bare `canvas` selector**, which caught the
   wardrobe's preview canvas and pinned it `position:fixed` over the whole
   viewport.
+- **The trial's slices used to run across the road, not down it.** All four
+  trials swept on `x`, which is the axis you can safely be flat under in the
+  starting view — so the clock had no opinion about folding, and a trial was a
+  test of when to *walk*. Turning them onto `z` makes the fold itself timed,
+  because views 0 and 2 both look down z and a sweep along the axis you are
+  looking down catches every depth at once. Worth recording that BFS is blind
+  to this: every variant returned identical move counts, because the geometry
+  never changed. `trialSafety()` is the only check with anything to say, and
+  it rejected two of the seven candidates — a `y` plane at standing height
+  corners twenty cells, and four `z` lanes spawn you inside a live beat.
+- **The tutorial contradicted itself, and then contradicted the screen.** It
+  named the verb four ways — "collapse the world", "Collapse", "flatten",
+  "stand back up" — while the button said `GO 2D`, in the three levels whose
+  whole job is naming things. The fix is a token (`{to2}`) substituted from
+  `VERBS` when the line is shown, so the prose cannot drift from the button
+  again. Worse was `First Fold` calling the floating block "far behind
+  everything": +z points *toward* the camera, so it was the nearest thing on
+  screen. And rule 5 was *stated* in a column containing one block, where it
+  had no observable consequence — you cannot teach a tie-break with nothing to
+  break. Two blocks in that column, the near one being the goal, and the rule
+  is something you watch happen.
 - **A hint used to point at nothing, twice over.** `cue()` pulses a button,
   and `cue("bUndo")` named a button this game has never had — so the hint you
   get when you are wedged past recovery did nothing at all. With controls

@@ -638,3 +638,30 @@
   .mlegend .md b{color:var(--fg);font-weight:500}
 
   @media (prefers-reduced-motion:reduce){*{transition-duration:.01ms !important}}
+
+/* ============================================================
+   THE GUIDED LOCK — the tutorial insisting on one control
+
+   The world goes quiet and every play button but one goes faint, so the
+   sentence in the coach line has exactly one thing it can be referring to.
+
+   Keyed off .tutlive, not .cue: the cue is a 3.2s pulse and the lock lasts
+   as long as the step, so pinning the highlight to the pulse would dim the
+   whole bar the moment it expired - including the button being asked for.
+
+   The corner chrome is deliberately untouched. A tutorial you cannot get out
+   of is a trap, and the menu is the way out.
+   ============================================================ */
+body.tutlock::before{content:"";position:fixed;inset:0;z-index:5;
+  background:rgba(4,7,16,.55);pointer-events:none;
+  animation:tutdim .35s ease}
+body.flat.tutlock::before{background:rgba(120,112,92,.34)}
+@keyframes tutdim{from{opacity:0}to{opacity:1}}
+
+/* Faint, and inert: opacity alone would still let a mis-tap through, and the
+   verbs would swallow it silently with no way to see why. */
+body.tutlock #playBar button{opacity:.2;pointer-events:none}
+body.tutlock #playBar button.tutlive{opacity:1;pointer-events:auto;
+  position:relative;z-index:6}
+/* The coach is the one thing that has to stay legible over the dim. */
+body.tutlock .coach{z-index:11}
