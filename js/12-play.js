@@ -895,9 +895,15 @@ function win(){
     $("wonSub").textContent=L.name+"  ("+(libIndex+1)+" of "+n+")";
     $("bNext").textContent=libIndex>=n-1?"DONE":"NEXT LEVEL";
   } else if(L.tutorial){
+    /* The tutorial has been holding the player's hand the whole way, so the
+       last thing it should say is where the hand goes. Only on the way out -
+       between tutorial levels the guidance simply continues, and saying it
+       three times would make it furniture. */
+    var lastTut=!(LEVELS[lvIndex+1]&&LEVELS[lvIndex+1].tutorial);
     $("wonTitle").textContent="Got it";
     $("wonSub").textContent=L.name.replace(/^00 \u2014 /,"")+"  \u00b7  "+
-      moveCount+" moves  \u00b7  not scored";
+      moveCount+" moves  \u00b7  not scored"+
+      (lastTut?"  \u00b7  from here on, tap the bulb for a hint":"");
     $("bNext").textContent="NEXT LEVEL";
     $("bRetry").style.display="none";
   } else if(B||TR){

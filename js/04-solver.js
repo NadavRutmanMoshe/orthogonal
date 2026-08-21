@@ -115,8 +115,13 @@ function solve(level,allowRotate,cap,from){
         next.push([pack("3",x,y,z,(v+1)%4,crList,kb),"rot+"]);
         next.push([pack("3",x,y,z,(v+3)%4,crList,kb),"rot-"]);
       }
+      /* A level that disables the fold disables it for the search too.
+         Without this the solver answers 00 - First Steps with a four-move
+         fold route, which is a route the player is physically prevented from
+         taking - fine while nothing consulted it, and wrong the moment the
+         tutorial started asking it what to do next. */
       var fu=R.uOf(v,x,z);
-      if(!R.siloSolid(v,fu,y,cr)&&!R.deadly2(v,fu,y))
+      if(!level.lockFlat&&!R.siloSolid(v,fu,y,cr)&&!R.deadly2(v,fu,y))
         next.push(["2|"+fu+"|"+y+"|0|"+v+"|"+crList.join(";")+"|"+collect2(v,fu,y,kb),"FLAT"]);
     } else {
       var u=+f[1],hy=+f[2];

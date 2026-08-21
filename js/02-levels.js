@@ -49,7 +49,7 @@ var LEVELS=[
      {say:"Too far to walk, and there is no jump.<br>Press <b>{to2}</b>: the world flattens along your line of sight, and depth stops existing.",
       cue:"bFlat",done:function(c){return c.flat>=1;}},
      {say:"Depth is gone, so the block that was floating out in front is simply next to you. Walk across.",
-      cue:"bRight",want:"flat",done:function(c){return c.m2>=3;}},
+      cue:"bRight",done:function(c){return c.m2>=3;}},
      {say:"Press <b>{to3}</b> to stand up.<br>Two blocks share this column, and you always come back on the one <b>nearest the camera</b> — the green one.",
       cue:"bFlat",done:function(c){return c.unflat>=1;}}
    ]},

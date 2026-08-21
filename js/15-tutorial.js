@@ -116,9 +116,8 @@ function tutBlocks(id){
    pressing other things cannot hold the help off forever. It cannot happen
    while the guide is up in any case: those buttons are inert. */
 function tutPoke(id){
-  var i=tutStep();
-  if(i<0)return;
-  var want=tutStepView(i).cue||null;
+  var g=tutGuide();
+  var want=g?g.cue:null;
   if(!want||id!==want)return;
   tutRelease();                 // the dim goes; the green stays until the step does
   tutArm(TUT_AGAIN_MS);
@@ -156,9 +155,6 @@ function tutTick(){
     if(app!=="play"||!L||!L.tut)return;
     if(tutPlayable())tutIdle+=TUT_TICK;
     if(tutIdle<tutWait){tutTick();return;}
-    var i=tutStep();
-    if(i<0)return;
-    if(L.tut[i].lock===false)return;
     tutEngage();
   },TUT_TICK);
 }
@@ -169,6 +165,51 @@ function tutTick(){
 function tutState(){
   return {view:view,flat:flat,u:flatPos.u,p:{x:player.x,y:player.y,z:player.z}};
 }
+/* THE TUTORIAL POINTS WHERE THE SOLVER POINTS.
+
+   Each step used to name its own control and be satisfied by a counter, and
+   a counter is not a position: 'First Fold' step 3 finished on "three moves
+   in the plane", so a player who folded, stepped, stood up, folded again and
+   walked to the far end had made two plane moves and was still being told to
+   walk right - with nowhere left to walk. The instruction was wrong and the
+   green arrow was wrong with it.
+
+   A script cannot survive a player who goes their own way, and this game has
+   undo, death and a free camera. So the guidance is no longer scripted: the
+   cued control is whatever solve() says the next move is from where the
+   player actually stands, which is right by construction from any state the
+   player can reach, including states no author thought of.
+
+   The step's own line still carries the lesson while it agrees with the
+   solver. When they disagree the player has gone off-script, and a short
+   honest line about the next move replaces it - being wordlessly correct
+   beats being eloquently wrong. */
+var TUT_MOVE_BTN={"FLAT":"bFlat","POP":"bFlat","rot+":"bRotR","rot-":"bRotL",
+  "\u2192":"bRight","\u2190":"bLeft","\u2191":"bUp","\u2193":"bDown"};
+var TUT_MOVE_SAY={
+  "FLAT":"Press <b>{to2}</b>.",
+  "POP":"Press <b>{to3}</b> to stand back up.",
+  "rot+":"Turn with <b>&#8631;</b>.",
+  "rot-":"Turn with <b>&#8630;</b>.",
+  "\u2192":"Press <b>&#9654;</b>.",
+  "\u2190":"Press <b>&#9664;</b>.",
+  "\u2191":"Press <b>&#9650;</b>.",
+  "\u2193":"Press <b>&#9660;</b>."};
+var tutSolveKey=null, tutSolveVal=null;
+/* Cached on the exact state, because tutSync, tutPoke and tutEngage all ask
+   within one interaction and a tutorial board is small but not free. */
+function tutSolverMove(){
+  if(!L||!L.tut||app!=="play")return null;
+  var st=currentState();
+  var key=JSON.stringify(st);
+  if(key===tutSolveKey)return tutSolveVal;
+  tutSolveKey=key;tutSolveVal=null;
+  var res=solve(L,L.rotate!==false,60000,st);
+  if(res.status==="solved"&&res.path.length)
+    tutSolveVal=res.path[0].replace("\u2739","");
+  return tutSolveVal;
+}
+
 /* What the coach should actually say right now, which is not always the
    step's own line.
 
@@ -184,14 +225,36 @@ function tutState(){
    Everything downstream - the coach, the green, the lock, tutPoke - reads
    through here, so there is one answer to "what is being asked" rather than
    four that can disagree. */
-function tutStepView(i){
-  var step=L.tut[i];
-  if(step.want==="flat"&&!flat)
-    return {say:"You stood back up, so the plane is gone with it.<br>"+
-                "Press <b>{to2}</b> to flatten again.",cue:"bFlat",lock:step.lock};
-  if(step.want==="3d"&&flat)
-    return {say:"Press <b>{to3}</b> to stand up first.",cue:"bFlat",lock:step.lock};
-  return {say:step.say,cue:step.cue,lock:step.lock};
+/* ONE ANSWER TO "WHAT NOW", FOR EVERY STATE THE PLAYER CAN BE IN.
+
+   The coach, the green button, the dim and tutPoke all read this, so they
+   cannot give different answers - which they could when each worked out its
+   own, and did.
+
+   Three cases, and the third is the one that was missing. While a lesson step
+   is outstanding and the solver agrees with it, the lesson speaks. While a
+   step is outstanding and the solver does *not* agree, the player has gone
+   off-script and the solver speaks, because being wordlessly correct beats
+   being eloquently wrong. And when every step is satisfied but the level is
+   not finished - which happens easily, since the steps count actions and the
+   level counts arriving - the tutorial used to fall silent and leave a
+   first-time player with no guidance at all, one move from the end. Now the
+   solver carries them the rest of the way. */
+function tutGuide(){
+  if(app!=="play"||!L||!L.tut||!tutC)return null;
+  var i=tutStep();
+  var mv=levelOver&&levelOver()?null:tutSolverMove();
+  var btn=mv?TUT_MOVE_BTN[mv]:null;
+  if(i>=0){
+    var step=L.tut[i];
+    if(!btn||btn===step.cue)
+      return {idx:i,say:"<i>"+(i+1)+" / "+L.tut.length+"</i>"+step.say,
+              cue:step.cue,lock:step.lock};
+    return {idx:i,say:"<i>"+(i+1)+" / "+L.tut.length+"</i>"+
+            (TUT_MOVE_SAY[mv]||step.say),cue:btn,lock:step.lock};
+  }
+  if(!btn)return null;                       // finished, or nothing to suggest
+  return {idx:-1,say:TUT_MOVE_SAY[mv],cue:btn,lock:undefined};
 }
 function tutStep(){
   if(app!=="play"||!L||!L.tut||!tutC)return -1;
@@ -202,22 +265,21 @@ function tutStep(){
 }
 function tutSync(){
   var el=$("coach");if(!el)return;
-  var i=tutStep();
-  if(i<0||dying){el.classList.remove("on");tutShown=-1;tutUnlock();return;}
-  var step=L.tut[i], v=tutStepView(i);
-  el.innerHTML="<i>"+(i+1)+" / "+L.tut.length+"</i>"+tutWords(v.say);
+  var g=dying?null:tutGuide();
+  if(!g){el.classList.remove("on");tutShown=-2;tutUnlock();return;}
+  el.innerHTML=tutWords(g.say);
   el.classList.add("on");
   // Re-asserted every time rather than only on a change: tutCueTo is a no-op
   // when it already matches, and asserting it here is what keeps the green on
   // the button a function of the step rather than a thing someone has to
   // remember to restore.
-  tutCueTo(v.cue||null);
+  tutCueTo(g.cue||null);
   // Only re-pulse when the step actually changes, or the cue timer would be
   // reset on every render and the button would strobe forever. A new step
   // also drops the guide and starts its wait again from nothing.
-  if(i!==tutShown){
-    tutShown=i;
-    if(v.cue)cue(v.cue);
+  if(g.idx!==tutShown){
+    tutShown=g.idx;
+    if(g.cue)cue(g.cue);
     tutRelease();
     tutArm();
   }
@@ -254,11 +316,10 @@ function tutCueTo(id){
    incapable of. Derived, it re-heals instead. */
 function tutEngage(){
   if(tutLock!==null)return;
-  var i=tutStep(); if(i<0)return;
-  var v=tutStepView(i);
-  if(v.lock===false||!v.cue)return;
-  tutCueTo(v.cue);
-  tutLock=v.cue;
+  var g=tutGuide(); if(!g)return;
+  if(g.lock===false||!g.cue)return;
+  tutCueTo(g.cue);
+  tutLock=g.cue;
   document.body.classList.add("tutlock");
 }
 function tutRelease(){

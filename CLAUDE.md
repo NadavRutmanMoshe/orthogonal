@@ -658,6 +658,35 @@ is a sentence plus `done(counters, state)`, and the coach always displays the
 player doing things out of order all just re-evaluate. If you add tutorial
 steps, keep them as predicates over state — do not introduce a step index.
 
+**The tutorial points where the solver points, and `tutGuide()` is the one
+answer.** Each step used to name its own control and be satisfied by a
+counter, and a counter is not a position: `First Fold` step 3 finished on
+"three moves in the plane", so a player who folded, stepped, stood up, folded
+again and walked to the far end had made two plane moves and was still being
+told to walk right, with nowhere left to walk. A script cannot survive a
+player who goes their own way, and this game has undo, death and a free
+camera. So the cued control is now whatever `solve()` says the next move is
+from where the player actually stands — right by construction from any state
+they can reach.
+
+- **The lesson still speaks while it agrees with the solver.** When they
+  disagree the player is off-script and a short line about the next move
+  replaces the lesson: wordlessly correct beats eloquently wrong.
+- **The third case is the one that was missing.** Steps count actions and the
+  level counts arriving, so every step can be satisfied while the level is
+  not finished — and the tutorial used to fall silent there, leaving a
+  first-time player unguided one move from the end. `tutGuide()` returns the
+  solver's move in that case too.
+- **The coach, the green, the dim and `tutPoke` all read `tutGuide()`.** They
+  used to work theirs out separately, and gave different answers.
+- **`solve()` obeys `lockFlat`.** It did not, so its answer for
+  `00 — First Steps` was a four-move fold route the player is physically
+  prevented from taking — harmless while nothing consulted it, wrong the
+  moment the tutorial started asking it what to do next.
+- **The last tutorial's win card names the bulb**, because the tutorial has
+  been holding the player's hand the whole way and the last thing it should
+  say is where the hand goes.
+
 **A step can assume a state, not only aim at a goal, and the coach has to
 notice.** `want:"flat"` / `want:"3d"` on a step swaps both the line and the
 cued control for the way back when the player is not in that state. "Depth is
