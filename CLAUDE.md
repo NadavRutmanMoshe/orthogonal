@@ -140,9 +140,19 @@ each. A landmark must not be able to break a save.
 
 **Section I is long on purpose.** It is twelve levels where the others are
 seven to ten, because it is the section a new player is *in* while they are
-deciding whether to keep playing. Its first four now score 14, 16, 21, 28
+deciding whether to keep playing. Its first four now score 14, 21, 16, 28
 against a tutorial that ends at 12; before that the first thing after the
 tutorial was 21 and the third was `brutal`.
+
+**The order is the owner's call, and once it overrules the curve.** `02` and
+`03` were swapped after playtesting, so the section reads 14, **21, 16**, 28
+— a dip that `curve.js` flags and that is meant to be there. `The Near One`
+scores lower and plays harder: it is the first time the game asks the player
+to distrust where the fold puts them, which is a rule rather than a view, and
+`statsFor()` counts moves, folds and turns and has no column for that. A
+rotation is worth more to the tier model than a subtlety is. Every other step
+in the section still answers to the curve; this one answers to having played
+it.
 
 **Two levels teaching the same thing is a bug, and the curve will not catch
 it.** `03 — The Other Axis` and `04 — Turn to see` scored 19 and 21 and
@@ -152,6 +162,12 @@ owner applies: say in one sentence what each level teaches, and if two
 sentences match, one of them goes. Difficulty is a curve you can
 measure — `node tools/curve.js` prints it, and a step of more than about +10
 in the opening section is a bug in the campaign, not a hard level.
+
+**`node tools/verify.js` now asserts both `LEVEL_RENAMES` invariants**, which
+is what makes composing it checkable rather than careful: every value must
+name a level that exists, and no value may also be a key pointing somewhere
+else. Both failure modes are tested — the check has been deliberately broken
+and seen to fire.
 
 `LEVEL_RENAMES` maps every old level name to its **current** one and
 `migrateNames()` applies it on load. **Compose that table, never rewrite it** —
@@ -1274,7 +1290,7 @@ tested and failed, plus where this sits in the PCG literature, are in
    then two of them — land in three beats now that the `cunning` phase has
    gone.
 1. **More gentle levels — the opening is fixed, the middle is not.** Section I
-   was the urgent case and now runs 14, 16, 21, 28 out of the tutorial.
+   was the urgent case and now runs 14, 21, 16, 28 out of the tutorial.
    What is left is thinner and further in: `II` still jumps 17 → 27 in one
    step and `III` 24 → 29, and every level in the locked shelf reads `brutal`
    — a whole section with one texture. The composer can make ordinary levels

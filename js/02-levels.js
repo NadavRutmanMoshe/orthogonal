@@ -73,7 +73,11 @@ var LEVELS=[
    one opened with a cliff. Scores now run 14, 16, 21, 28, 31.
 
    Each teaches one clause of the rules rather than combining several, and
-   none of them uses a special block: fundamentals is stone only. */
+   none of them uses a special block: fundamentals is stone only.
+
+   The measured scores now run 14, 21, 16, 28, 31: 02 and 03 were swapped
+   after playtesting, against what curve.js says, because the rule level
+   played harder than the rotation level. The reasoning is on both entries. */
 {name:"01 — Scattered Steps",
    /* Six blocks at six unrelated depths. Flat, they are a staircase — which
       is the tutorial's lesson again, but with the answer no longer written
@@ -82,7 +86,26 @@ var LEVELS=[
    hint:"Six blocks, six depths, nothing to walk on. Depth is the only thing in the way.",
    blocks:[[0,0,0],[1,1,-8],[2,1,-3],[3,2,-9],[4,2,-6],[5,3,-4]],
    start:[0,1,0],goal:[5,4,-4],rotate:true},
-{name:"02 — The Near One",
+{name:"02 — Turn to see",
+   /* Kept over "03 — The Other Axis", which was cut for teaching the same
+      lesson: both were "the bridge only exists along the other axis". This one
+      is the older of the two and the better picture - a wall standing off to
+      one side turns out to be the bridge, which is one object read two ways
+      rather than three loose blocks that happen to line up.
+
+      IT SITS BEFORE `The Near One` DESPITE SCORING HIGHER (21 against 16),
+      and that is the one place in the campaign where the order deliberately
+      contradicts tools/curve.js. Playtested, this one is the easier of the
+      two: it asks for a rotation, which the tutorial has just taught, and
+      once you are looking down the right axis the answer is on screen. The
+      Near One asks you to *distrust* where the fold puts you, which is a
+      rule rather than a view, and the tier model cannot see that - it counts
+      moves, folds and turns, and a rotation is worth more to it than a
+      subtlety is. See the note on the next level. */
+   hint:"Nothing to walk on from here. There is, from the side.",
+   blocks:(function(){var b=[];b.push([0,0,0]);b.push([3,0,5]);box(7,7,0,0,1,4,b);return b;})(),
+   start:[0,1,0],goal:[3,1,5],rotate:true},
+{name:"03 — The Near One",
    /* Rule 5, on its own. The goal's column holds two blocks and you come
       back on the one nearest the camera, which is not the goal — so you have
       to stand up one square early and finish on foot.
@@ -90,19 +113,17 @@ var LEVELS=[
       The decoy block is the whole level and it is worth saying why it is not
       wasted geometry: taken out, the solver walks to the goal's own column
       and pops there, same move count, lesson gone. Its cost is a wrong
-      landing you can walk back from, not a death. */
+      landing you can walk back from, not a death.
+
+      It scores 16 and follows a 21, which curve.js reads as a dip. It is
+      not one: the level moved here because it played harder than the one in
+      front of it, and felt difficulty is the thing the score is a proxy for
+      rather than the other way round. A landing that is *wrong* while
+      looking right is the first time the game asks the player to doubt what
+      they can see, and there is no column in statsFor() for that. */
    hint:"Two blocks share that column. You return on the one nearest the camera.",
    blocks:[[0,0,0],[1,0,-3],[2,0,-12],[3,0,-3],[4,0,-12],[5,0,-8],[6,0,-8],[6,0,-2]],
    start:[0,1,0],goal:[6,1,-8],rotate:true},
-{name:"03 — Turn to see",
-   /* Kept over "03 — The Other Axis", which was cut for teaching the same
-      lesson: both were "the bridge only exists along the other axis". This one
-      is the older of the two and the better picture - a wall standing off to
-      one side turns out to be the bridge, which is one object read two ways
-      rather than three loose blocks that happen to line up. */
-   hint:"Nothing to walk on from here. There is, from the side.",
-   blocks:(function(){var b=[];b.push([0,0,0]);b.push([3,0,5]);box(7,7,0,0,1,4,b);return b;})(),
-   start:[0,1,0],goal:[3,1,5],rotate:true},
 {name:"04 — Halfway Across",
    /* The first level where one fold is not enough, which is the idea every
       hard level in the game is built on. The plane is walled at the fourth
@@ -608,7 +629,7 @@ var LEVEL_RENAMES={
  "BOSS I — The Sentinel": "BOSS I — The Hunt",
  "BOSS I — The Pack": "BOSS I — The Hunt",
  "BOSS I — The Twin": "BOSS I — The Hunt",
- "02 — Turn to see": "03 — Turn to see",
+ "02 — Turn to see": "02 — Turn to see",
  "03 — Two Windows": "05 — Two Windows",
  "04 — The Long Way Round": "06 — The Long Way Round",
  "05 — About Face": "07 — About Face",
@@ -757,7 +778,7 @@ var LEVEL_RENAMES={
  "46 — The Whole Language": "42 — The Whole Language",
  "62 — Three Folds Deep": "63 — Three Folds Deep",
  "63 — Everything at Once": "64 — Everything at Once",
- "01 — Turn to see": "03 — Turn to see",
+ "01 — Turn to see": "02 — Turn to see",
  "02 — Two Windows": "05 — Two Windows",
  "03 — The Long Way Round": "06 — The Long Way Round",
  "04 — About Face": "07 — About Face",
@@ -818,7 +839,7 @@ var LEVEL_RENAMES={
  "59 — The Far Shore": "62 — The Far Shore",
  "60 — Three Folds Deep": "63 — Three Folds Deep",
  "61 — Everything at Once": "64 — Everything at Once",
- "04 — Turn to see": "03 — Turn to see",
+ "04 — Turn to see": "02 — Turn to see",
  "05 — Halfway Across": "04 — Halfway Across",
  "06 — Two Windows": "05 — Two Windows",
  "07 — The Long Way Round": "06 — The Long Way Round",
@@ -876,5 +897,13 @@ var LEVEL_RENAMES={
  "62 — Twice Up": "61 — Twice Up",
  "63 — The Far Shore": "62 — The Far Shore",
  "64 — Three Folds Deep": "63 — Three Folds Deep",
- "65 — Everything at Once": "64 — Everything at Once"
+ "65 — Everything at Once": "64 — Everything at Once",
+ /* 02 and 03 traded places after playtesting. Composed, not rewritten: the
+    three older keys that used to land on "03 — Turn to see" were re-pointed
+    at its new name in the same edit, which is what leaves one of them
+    ("02 — Turn to see", from an era when it was 02 the first time) mapping
+    to itself. That is correct and expected - numbers come back round, and a
+    save under that name already holds the right level. */
+ "03 — Turn to see": "02 — Turn to see",
+ "02 — The Near One": "03 — The Near One"
 };

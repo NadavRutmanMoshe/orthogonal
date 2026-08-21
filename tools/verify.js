@@ -16,7 +16,43 @@ const ctx=vm.createContext({console,Set,Map,Math,JSON});
 ["01-coords.js","02-levels.js","03-rules.js","04-solver.js"].forEach(f=>{
   vm.runInContext(fs.readFileSync(path.join(JS,f),"utf8"),ctx,{filename:f});
 });
-const {LEVELS,solve,makeRules,resolveStep,AX,bossSafety,bossArena,trialSafety}=ctx;
+const {LEVELS,solve,makeRules,resolveStep,AX,bossSafety,bossArena,trialSafety,
+       LEVEL_RENAMES}=ctx;
+
+/* LEVEL_RENAMES holds every save that has ever existed, and migrateNames()
+ * applies it in a single unordered pass. Two properties make that pass safe,
+ * and neither is visible by reading the table - it is nearly three hundred
+ * entries long and it is meant to be *composed*, never regenerated. So they
+ * are asserted here instead:
+ *
+ *   - every value names a level that exists now. A value pointing at a name
+ *     nothing is called any more is a save that migrates into thin air.
+ *   - no value is also a key that points somewhere else. If it were, whether
+ *     the chain resolved would depend on the order the pass happened to
+ *     enumerate in, so the same save would migrate differently on different
+ *     runs. A key that maps to *itself* is fine and does happen: numbers come
+ *     back round, and a save under that name is already correct.
+ *
+ * Regenerating this table from scratch once broke the oldest saves. See
+ * docs/HISTORY.md.
+ */
+function checkRenames(){
+  const live=new Set(LEVELS.map(l=>l.name)), fails=[];
+  const keys=Object.keys(LEVEL_RENAMES);
+  keys.forEach(k=>{
+    const v=LEVEL_RENAMES[k];
+    if(!live.has(v))fails.push('"'+k+'" -> "'+v+'", which is not a level');
+    if(k!==v&&LEVEL_RENAMES[v]!==undefined&&LEVEL_RENAMES[v]!==v)
+      fails.push('"'+k+'" -> "'+v+'", which is itself a key -> "'+
+                 LEVEL_RENAMES[v]+'" (order-dependent)');
+  });
+  if(fails.length){
+    console.log("  RENAMES  "+fails.length+" broken:");
+    fails.slice(0,12).forEach(f=>console.log("    "+f));
+    if(fails.length>12)console.log("    ... and "+(fails.length-12)+" more");
+  }
+  return fails.length?1:0;
+}
 
 const only=process.argv[2];
 let bad=0, checked=0;
@@ -89,6 +125,7 @@ LEVELS.forEach((lv,i)=>{
 });
 // Static checks cannot see a degenerate strategy, so the fights get played.
 if(only===undefined){
+  bad+=checkRenames();
   console.log("");
   bad+=require("./bosssim.js").run();
 }
