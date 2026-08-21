@@ -61,6 +61,12 @@ bind("bNext",function(){
     return;
   }
   var n=lvIndex>=LEVELS.length-1?0:lvIndex+1;
+  // Coming out of a tutorial you were replaying: go back to the level you
+  // interrupted, not to the start of the campaign. Only on the way *out* -
+  // moving between tutorial levels is just the next one.
+  if(L&&L.tutorial&&LEVELS[n]&&!LEVELS[n].tutorial&&tutReturn!==null){
+    n=tutReturn;tutReturn=null;
+  }
   playSource="builtin";
   enterPlay(LEVELS[n],n,false);
 });

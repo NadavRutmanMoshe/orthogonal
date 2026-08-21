@@ -1008,7 +1008,24 @@ function enterEditor(){
   $("editBar").classList.add("on");
   syncMeshes();buildGrid();syncHud();onResize();
 }
+/* Replaying the tutorial should put you back where you were, not at level 01.
+
+   Someone forty levels in who goes back to check what GO 2D meant was being
+   walked out of the tutorial into the start of the campaign - five, ten,
+   forty levels behind where they left off, with NEXT LEVEL marching them
+   forward through puzzles they had already solved. The tutorial is the one
+   part of the game you re-enter *sideways*, so it is the one part that has to
+   know how to put you back.
+
+   Recorded here rather than at the two call sites (the menu's REPLAY
+   TUTORIAL and a PROLOGUE node on the map) for the usual reason: this is the
+   funnel, and a third entry point added later gets the behaviour for free.
+   Only a move from a non-tutorial into a tutorial arms it, so walking 00 ->
+   00 -> 00 does not overwrite it, and `L` being null on the very first boot
+   is what stops a new player being sent "back" to where they never were. */
 function enterPlay(level,idx,fromEd){
+  if(level&&level.tutorial){ if(L&&!L.tutorial)tutReturn=lvIndex; }
+  else tutReturn=null;
   app="play";fromEditor=!!fromEd;
   hidePanel();ghosted.clear();
   $("editBarWrap").classList.remove("on");

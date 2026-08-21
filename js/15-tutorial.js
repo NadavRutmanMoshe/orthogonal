@@ -84,11 +84,10 @@ function tutWords(s){
    reads as "the game is dark". A hint has to be an *event*: something that was
    not there a moment ago and now is. Appearing is most of the signal.
 
-   So the guide waits, and the wait restarts every time the player does
-   anything. Somebody who is following along never sees it at all; somebody who
-   has stopped gets it a beat later. Once it is up it stays up until the step
-   is satisfied - re-arming on every press would make it flicker on a step that
-   takes two.
+   So the guide waits, and the wait restarts every time the player presses the
+   control being asked for. Somebody who is following along never sees it at
+   all; somebody who has stopped gets it a beat later. See tutPoke() for why
+   complying dismisses it and what stops that flickering.
 
    Both numbers are feel and nothing here can judge them. Playtest them. */
 var TUT_HELP_MS=1000;    // before the first help on a step
@@ -121,7 +120,7 @@ function tutPoke(id){
   if(i<0)return;
   var want=L.tut[i].cue||null;
   if(!want||id!==want)return;
-  tutUnlock();
+  tutRelease();                 // the dim goes; the green stays until the step does
   tutArm(TUT_AGAIN_MS);
 }
 /* Is the game actually in front of the player right now? The same question
@@ -161,7 +160,7 @@ function tutTick(){
     if(i<0)return;
     var step=L.tut[i];
     if(step.lock===false)return;
-    tutLockTo(step.cue||null);
+    tutEngage();
   },TUT_TICK);
 }
 
@@ -185,13 +184,18 @@ function tutSync(){
   var step=L.tut[i];
   el.innerHTML="<i>"+(i+1)+" / "+L.tut.length+"</i>"+tutWords(step.say);
   el.classList.add("on");
+  // Re-asserted every time rather than only on a change: tutCueTo is a no-op
+  // when it already matches, and asserting it here is what keeps the green on
+  // the button a function of the step rather than a thing someone has to
+  // remember to restore.
+  tutCueTo(step.cue||null);
   // Only re-pulse when the step actually changes, or the cue timer would be
   // reset on every render and the button would strobe forever. A new step
   // also drops the guide and starts its wait again from nothing.
   if(i!==tutShown){
     tutShown=i;
     if(step.cue)cue(step.cue);
-    tutUnlock();
+    tutRelease();
     tutArm();
   }
 }
@@ -199,23 +203,49 @@ function tutSync(){
    lock lasts as long as the step does. Keying the highlight off the pulse
    would leave every button dimmed once it expired, including the one the
    player is being told to press. */
-function tutLockTo(id){
-  if(id===tutLock)return;
-  tutUnlock();
+/* TWO SEPARATE THINGS, and conflating them was a bug.
+
+   The green on the button says "this is the control this step wants" and is
+   true for as long as the step is. The dim says "you seem stuck, and now it
+   is the *only* control I will accept" and is true only after hesitation.
+
+   They used to be one class, so dismissing the dim by pressing the right
+   button also took the green away - and `First Fold` step 3 wants three
+   presses of one arrow, so after the first one the player was mid-step with
+   nothing lit at all. Doing as you are told should never leave you with less
+   information than you had. */
+function tutCueTo(id){
+  if(id===tutCued)return;
+  var els=document.querySelectorAll(".tutlive");
+  for(var i=0;i<els.length;i++)els[i].classList.remove("tutlive");
+  tutCued=null;
   if(!id)return;
   var el=$(id); if(!el)return;
-  tutLock=id;
+  tutCued=id;
   el.classList.add("tutlive");
+}
+/* Read out of the current step, not out of tutCued. Depending on the cached
+   value meant anything that cleared the green mid-step also made the dim
+   unable to come back for the rest of that step - state quietly disagreeing
+   with the predicate, which is the exact failure the coach is built to be
+   incapable of. Derived, it re-heals instead. */
+function tutEngage(){
+  if(tutLock!==null)return;
+  var i=tutStep(); if(i<0)return;
+  var step=L.tut[i];
+  if(step.lock===false||!step.cue)return;
+  tutCueTo(step.cue);
+  tutLock=step.cue;
   document.body.classList.add("tutlock");
 }
-function tutUnlock(){
+function tutRelease(){
   clearTimeout(tutHelpTimer);tutHelpTimer=null;
   if(tutLock===null)return;
   tutLock=null;
-  var els=document.querySelectorAll(".tutlive");
-  for(var i=0;i<els.length;i++)els[i].classList.remove("tutlive");
   document.body.classList.remove("tutlock");
 }
+// Everything off: the tutorial is over, or there is no step asking for a control.
+function tutUnlock(){ tutRelease(); tutCueTo(null); }
 
 function showHint(){
   if(app!=="play"||dying||levelOver())return;

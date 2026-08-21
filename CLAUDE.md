@@ -693,6 +693,18 @@ opts out with `lock:false`.
   so pressing other things cannot hold the help off forever.
 - **`TUT_HELP_MS` (1000) and `TUT_AGAIN_MS` (2600) are feel numbers** and
   nothing here can judge them. Playtest them.
+- **The green on the button and the dim are two different statements**, and
+  tying them together was a bug. The green says "this step wants this
+  control" and is true for as long as the step is; the dim says "you seem
+  stuck, and now it is the *only* control I accept" and is true only after
+  hesitation. They shared a class once, so dismissing the dim by pressing the
+  right button also took the green away — and `First Fold` step 3 wants three
+  presses of one arrow, so after the first the player was mid-step with
+  nothing lit. Doing as you are told must never leave you with less
+  information than you had.
+- **`tutEngage()` reads the current step, never a cached id.** Deriving it
+  is what lets it re-heal; caching it meant anything that cleared the cue
+  mid-step also stopped the dim ever returning for that step.
 - **The dim is the quieter half.** It cannot carry the message alone, so it is
   light and the *lit* button does the work — goal colour, a ring that breathes,
   a step up in size. Three cues on one control beats one cue spread thin.
@@ -702,6 +714,14 @@ opts out with `lock:false`.
   the swipe.
 - **The corner chrome is never dimmed or blocked.** Menu and restart stay live
   throughout. A tutorial you cannot leave is a trap, not a lesson.
+- **Replaying the tutorial puts you back where you were.** `tutReturn` is set
+  in `enterPlay` — the funnel, so the menu, the map and anything added later
+  all get it — whenever a *non*-tutorial level hands off to a tutorial one,
+  and `bNext` spends it on the way out. Without it, someone forty levels in
+  who went back to check what `GO 2D` meant was walked out into `01` and
+  marched forward through puzzles they had already solved. `L` being null on
+  the first boot is what stops a new player being sent "back" to where they
+  have never been.
 - **The highlight is `.tutlive`, not `.cue`.** A cue is a 3.2-second pulse and
   the lock lasts as long as the step, so keying the highlight off the pulse
   dims the whole bar the moment it expires — including the button being asked

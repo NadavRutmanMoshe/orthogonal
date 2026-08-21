@@ -663,17 +663,22 @@ body.tutlock::before{content:"";position:fixed;inset:0;z-index:5;
 body.flat.tutlock::before{background:rgba(90,84,68,.30)}
 @keyframes tutdim{from{opacity:0}to{opacity:1}}
 
+/* Green for as long as the step is asking for this control - which is not the
+   same span as the dim, and must not be tied to it. A step can want three
+   presses of one arrow; the light has to survive all three. */
+#playBar button.tutlive{border-color:var(--goal);color:var(--goal);
+  background:rgba(53,194,165,.10)}
+
 /* Faint, and inert: opacity alone would still let a mis-tap through, and the
    verbs would swallow it silently with no way to see why. */
 body.tutlock #playBar button{opacity:.16;pointer-events:none;
   transition:opacity .3s ease}
 
-/* The lit button is the actual hint. It has to win against a dark screen, so
-   it takes the goal colour, a ring that breathes, and a step up in size -
-   three cues on one control rather than one cue spread thin. */
+/* Under the dim the same button has to win against a dark screen, so it gains
+   a ring that breathes and a step up in size on top of the colour it already
+   had - three cues on one control rather than one cue spread thin. */
 body.tutlock #playBar button.tutlive{opacity:1;pointer-events:auto;
   position:relative;z-index:6;
-  border-color:var(--goal);color:var(--goal);
   background:rgba(53,194,165,.14);
   animation:tutlive 1.25s ease-in-out infinite}
 @keyframes tutlive{

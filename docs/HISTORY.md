@@ -550,6 +550,13 @@ would have caught it before any of it shipped.
   on a step much longer than the first instead, which is the honest fix: the
   player has demonstrated they know the control, so they have earned more
   rope.
+- **The tutorial's green light and its dim were one class, and should never
+  have been.** Pressing the button the step asked for dismissed the dim, and
+  took the green with it — so on a step wanting three presses of one arrow,
+  a player obeying perfectly was left mid-step with nothing lit at all. The
+  general shape is worth keeping: two statements with different lifetimes
+  ("this is the control" / "you are stuck") cannot share one piece of state,
+  however alike they look on screen the first time you build them.
 - **A hint used to point at nothing, twice over.** `cue()` pulses a button,
   and `cue("bUndo")` named a button this game has never had — so the hint you
   get when you are wedged past recovery did nothing at all. With controls
