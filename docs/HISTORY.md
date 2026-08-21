@@ -490,6 +490,13 @@ would have caught it before any of it shipped.
 - **`body>canvas` used to be a bare `canvas` selector**, which caught the
   wardrobe's preview canvas and pinned it `position:fixed` over the whole
   viewport.
+- **Two of Section I's new levels were the same level.** `The Other Axis`
+  (19) and `Turn to see` (21) read as a clean two-step ramp and were both
+  "the bridge only exists along the other axis" — one object seen twice.
+  Nothing mechanical catches this: the difficulty curve is a function of the
+  solved path, and two identical lessons at different lengths look exactly
+  like progression. The test that does catch it is a sentence per level, said
+  out loud. `The Other Axis` was the newer of the two and was cut.
 - **Turning the slices onto depth made them unfindable, and the fix was to
   stop drawing the plane.** A slice had always been one translucent slab over
   the lethal plane, which worked while the slices ran on `x`: from the opening

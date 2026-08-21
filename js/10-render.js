@@ -526,8 +526,32 @@ function drawTrialMarks(sw,ph,live){
   var here=null;
   for(var i=0;i<trialMarks.length;i++){
     var m=trialMarks[i], c=m.userData.cell;
-    if(hidden||!TR.hits(sw,view,"3",c[0],c[1],c[2])){m.visible=false;continue;}
+    if(hidden){m.visible=false;continue;}
     m.visible=true;
+    /* EVERY standable square is outlined, not only the lethal ones.
+
+       Reported: falling off the starting island on TRIAL I, more than once.
+       That is what an orthographic view costs - screen-vertical is height and
+       depth added together, so a block one further away and a block one
+       higher draw at the same place, and the edge of a platform is genuinely
+       ambiguous until you rotate. On a turn-based level you can afford to
+       find out; on a clock you cannot, and stepping into nothing is a life.
+
+       So a trial draws its own floor: a faint outline on each square you
+       could stand on. It costs nothing - these plates already existed for the
+       sweep - and it turns "where does the ground end" from something you
+       infer into something you look at. It is deliberately outline-only, so
+       the red fill of the hot row still has the whole colour channel. */
+    if(!TR.hits(sw,view,"3",c[0],c[1],c[2])){
+      m.material.opacity=0;
+      if(m.userData.ring){
+        m.userData.ring.material.color.setHex(0x7d8db3);
+        m.userData.ring.material.opacity=.2;
+      }
+      m.scale.setScalar(1);
+      continue;
+    }
+    if(m.userData.ring)m.userData.ring.material.color.setHex(0xff8a94);
     var mine=(!flat&&player.x===c[0]&&player.y===c[1]&&player.z===c[2]);
     if(mine)here=m;
     /* The ramp is the countdown, same as the slab's - but these start

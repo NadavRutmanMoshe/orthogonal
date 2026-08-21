@@ -67,7 +67,7 @@ anything; everything before it only declares.
 |---|---|
 | `js/00-storage.js` | `window.storage` over `localStorage`. The game was born inside a Claude artifact where the host supplied this API; the shim lets identical code run from `file://`, itch.io and a Capacitor WebView. Defines itself only if absent. Falls back to an in-memory map if storage is denied (private browsing). |
 | `js/01-coords.js` | `AX[]` — the four camera views, each with `r` (screen-right) and `d` (depth, pointing at the camera). Nearly every coordinate calculation goes through these. Also `K()` and `box()`. |
-| `js/02-levels.js` | 76 levels + `SECTIONS` + `LEVEL_RENAMES`. |
+| `js/02-levels.js` | 75 levels + `SECTIONS` + `LEVEL_RENAMES`. |
 | `js/03-rules.js` | `resolveStep()`, block kinds, `makeRules()`, `makeBoss()`, `bossPhases()`, `bossBlocksAt()`, `bossNext()`, `bossLine()`, `foldKills()`, `bossArena()`, `makeTrial()`, `trialSafety()`. |
 | `js/04-solver.js` | `solve()` — BFS over game states. Solves trials; knows nothing of bosses, on purpose. |
 | `js/05-state.js` | Mutable state, the pack, the trial clock, tutorial counters. |
@@ -121,7 +121,7 @@ five levels in, each section is interrupted by a **trial**:
 
 | | | |
 |---|---|---|
-| I · FUNDAMENTALS | 13 + trial + boss | turn, depth — the fold itself is the tutorial's job |
+| I · FUNDAMENTALS | 12 + trial + boss | turn, depth — the fold itself is the tutorial's job |
 | II · SPIKES | 7 + trial + boss | spikes before glass — a hazard reads faster than an absence |
 | III · GLASS | 8 + trial + boss | ends on glass + spikes |
 | IV · CRATES | 10 + trial + boss | ends on crate + glass + spikes |
@@ -137,11 +137,18 @@ because gating a bonus on 100% turns a reward into a chore.
 section would renumber every level after it and cost a `LEVEL_RENAMES` entry
 each. A landmark must not be able to break a save.
 
-**Section I is long on purpose.** It is thirteen levels where the others are
+**Section I is long on purpose.** It is twelve levels where the others are
 seven to ten, because it is the section a new player is *in* while they are
-deciding whether to keep playing. Its first five now score 14, 16, 19, 21, 28
+deciding whether to keep playing. Its first four now score 14, 16, 21, 28
 against a tutorial that ends at 12; before that the first thing after the
-tutorial was 21 and the third was `brutal`. Difficulty is a curve you can
+tutorial was 21 and the third was `brutal`.
+
+**Two levels teaching the same thing is a bug, and the curve will not catch
+it.** `03 — The Other Axis` and `04 — Turn to see` scored 19 and 21 and
+looked like a clean ramp; played, they were both "the bridge only exists along
+the other axis" and the second one taught nothing. The check is the one the
+owner applies: say in one sentence what each level teaches, and if two
+sentences match, one of them goes. Difficulty is a curve you can
 measure — `node tools/curve.js` prints it, and a step of more than about +10
 in the opening section is a bug in the campaign, not a hard level.
 
@@ -237,6 +244,13 @@ find out, which costs a move on a clock. So:
 - **The square you are standing on is louder than the rest** — brighter and
   slightly larger. "There is a slice" and "you are in it" are different
   sentences and the second one is the urgent one.
+- **Every standable square is outlined, not only the lethal ones.** A trial
+  draws its own floor. Screen-vertical in this projection is height and depth
+  added together, so a block one further back and a block one higher land in
+  the same place and the edge of a platform is genuinely ambiguous until you
+  rotate — which on a clock is a move you cannot spare, and stepping into
+  nothing is a life. The plates already existed for the sweep, so this is
+  free.
 - **In the plane the tiles are hidden and the slab goes back to full span.**
   There the world *is* a silhouette, so a marker on a world block points at a
   place that no longer exists — and the whole board going red is the correct
