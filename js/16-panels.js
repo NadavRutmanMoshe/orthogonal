@@ -404,6 +404,7 @@ var mapSection=null;          // which tab is open; null means "where you are"
    the centre column, and ambience you have to read around is not ambience.
    ---------------------------------------------------------------------- */
 var mapBgRAF=0, mapBgCubes=null;
+var mapBgHold=null;
 function mapBgStop(){ if(mapBgRAF){cancelAnimationFrame(mapBgRAF);mapBgRAF=0;} }
 function mapBgStart(){
   var c=$("mBg");
@@ -804,7 +805,20 @@ function mapDraw(spans){
   trail.innerHTML=(fillPct>0?"<div class='mfill'></div>":"")+"<svg></svg>"+html;
   mapLayout(pts,y-STEP+80,mast);
   mapFill(fillPct);
-  if(mast&&SFX.mastery)SFX.mastery();
+  if(mast){
+    if(SFX.mastery)SFX.mastery();
+    /* The ambient cubes are a canvas redrawing every frame behind all of
+       this, and they are the one cost here that is buying nothing during a
+       celebration - nobody is looking at the wallpaper while the section
+       fills. Parked for the length of it and handed back afterwards, which
+       is a frame budget the paint, fourteen node pops and the rising water
+       are all sharing. */
+    mapBgStop();
+    clearTimeout(mapBgHold);
+    mapBgHold=setTimeout(function(){
+      if(panelKind==="map"&&panelOpen())mapBgStart();
+    },MAP_PAINT_LEAD+MAP_PAINT_MS+700);
+  }
   trail.querySelectorAll("[data-node]").forEach(function(el){
     tap(el,function(){mapSheet(+el.getAttribute("data-node"));});
   });

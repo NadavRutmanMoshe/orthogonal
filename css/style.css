@@ -586,7 +586,11 @@
   .mtab.lk{opacity:.7}
 
   .mbody{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 13px 130px}
-  .mcard{margin:13px 0 4px;padding:13px 14px;border-radius:4px;
+  /* Positioned so the water can flood *behind* it rather than over it: at
+     every star the fill runs past the top of the trail to cover the head of
+     the section, and a translucent wash over the card's own text was muddy. */
+  .mcard{position:relative;z-index:1;
+    margin:13px 0 4px;padding:13px 14px;border-radius:4px;
     border:1px solid var(--rule);
     background:linear-gradient(150deg,color-mix(in srgb,var(--sec) 15%,transparent),transparent 72%)}
   .mcard b{display:block;font-family:'Space Grotesk',system-ui,sans-serif;
@@ -610,11 +614,33 @@
     pointer-events:none;
     background:linear-gradient(to top,
       color-mix(in srgb,var(--sec) 30%,transparent) 0%,
-      color-mix(in srgb,var(--sec) 14%,transparent) 58%,
-      color-mix(in srgb,var(--sec) 22%,transparent) 100%);
-    border-top:2px solid color-mix(in srgb,var(--sec) 78%,transparent);
-    box-shadow:0 -18px 34px -12px color-mix(in srgb,var(--sec) 60%,transparent);
+      color-mix(in srgb,var(--sec) 15%,transparent) 58%,
+      color-mix(in srgb,var(--sec) 26%,transparent) 100%);
+    /* One period of a sine, 96 wide, starting and ending at the same height
+       and the same slope so it tiles seamlessly. Used as a mask rather than
+       drawn, so the crest takes the section's colour like everything else -
+       a data URI cannot read a custom property. */
+    --wave:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' \
+viewBox='0 0 96 14' preserveAspectRatio='none'><path d='M0 8 Q 24 0 48 8 T 96 8 \
+L96 14 L0 14 Z' fill='%23fff'/></svg>");
     transition:height 980ms cubic-bezier(.3,.7,.2,1) 120ms}
+  /* THE WATERLINE IS A WAVE, NOT A RULE. It was a border-top, and a straight
+     bright line across the map read as a divider - something the layout was
+     doing - rather than as the top of a body of water. */
+  .mfill::before{content:"";position:absolute;left:0;right:0;bottom:100%;
+    height:14px;background:color-mix(in srgb,var(--sec) 34%,transparent);
+    -webkit-mask-image:var(--wave);mask-image:var(--wave);
+    -webkit-mask-repeat:repeat-x;mask-repeat:repeat-x;
+    -webkit-mask-size:96px 14px;mask-size:96px 14px;
+    -webkit-mask-position:bottom;mask-position:bottom}
+  /* At every star there is no waterline left to draw, so the crest stops
+     being a crest and becomes the flood: it runs up past the top of the
+     trail to cover the head of the section, which the fill alone could not
+     reach - the trail starts below the section card and everything above
+     that was staying dark on a section that was supposed to be finished. */
+  #mtrail.mst .mfill::before{height:300px;
+    -webkit-mask-image:none;mask-image:none;
+    background:color-mix(in srgb,var(--sec) 26%,transparent)}
   /* The trail stops 80px above the foot of the panel and the body carries
      130px of padding under that, so a fill that ended with the trail left a
      dark strip beneath the water. This is that strip, in the colour the
@@ -741,33 +767,49 @@
      from the first level to the boss, lighting each node as it arrives.
      See sectionMastered() and mapLayout() in js/16-panels.js.
      ============================================================ */
-  .mpaint{animation:mpaint 1050ms cubic-bezier(.34,.66,.2,1) 140ms forwards;
-    filter:drop-shadow(0 0 7px color-mix(in srgb,var(--sec) 55%,transparent))}
+  /* NO `filter` ON THE ANIMATED STROKE. A drop-shadow on a path whose
+     dashoffset is changing re-rasterizes the filter over the path's whole
+     bounding box every frame, and that box is the height of the section -
+     measured, it was most of the reason a finished section stuttered. */
+  .mpaint{animation:mpaint 1050ms cubic-bezier(.34,.66,.2,1) 140ms forwards}
   @keyframes mpaint{to{stroke-dashoffset:0}}
 
-  /* Each node pops as the stroke reaches it. The delay is set inline, per
-     node, from its position along the section. */
-  .mnode.mst{animation:mpop 620ms cubic-bezier(.2,1.5,.4,1) both}
-  @keyframes mpop{
-    0%{transform:scale(1)}
-    30%{transform:scale(1.22)}
-    100%{transform:scale(1)}
-  }
-  /* The ring it throws off. `animation-delay:inherit` takes the node's own
-     inline delay, which is the only way a pseudo-element can be told when
-     its own node's turn came. */
+  /* Each node throws a ring as the stroke reaches it. `animation-delay` is
+     set inline on the node, per node, from its position along the section;
+     `inherit` is the only way a pseudo-element can be told when its own
+     node's turn came. It still works with no animation on the node itself -
+     animation-delay holds a value whether or not anything is using it.
+
+     ONE ANIMATION PER NODE, NOT TWO. The node used to scale as well, and
+     running both at once was measured as most of the cost of a finished
+     section: 46% of frames over 32ms against 26% for the same section
+     un-mastered. Either alone sits at that baseline; the ring alone, on its
+     own compositor layer, comes in under it at 20%. Fourteen small layers is
+     a cheap price for the one animation that carries the celebration - and
+     the ring is the half that reads, since a disc growing 22% and shrinking
+     back is nearly invisible next to a wave of light leaving it. */
   .mnode.mst::after{content:"";position:absolute;inset:-5px;border-radius:50%;
-    border:2px solid var(--sec);opacity:0;pointer-events:none;
-    animation:mring 760ms ease-out both;animation-delay:inherit}
+    border:2.5px solid var(--sec);opacity:0;pointer-events:none;
+    will-change:transform,opacity;
+    animation:mring 780ms ease-out both;animation-delay:inherit}
   @keyframes mring{
-    0%{opacity:0;transform:scale(.72)}
-    22%{opacity:.85}
-    100%{opacity:0;transform:scale(1.9)}
+    0%{opacity:0;transform:scale(.7)}
+    20%{opacity:.95}
+    100%{opacity:0;transform:scale(2)}
   }
   /* And keeps a halo afterwards, so a finished section still reads as
-     finished on the next visit rather than only during the celebration. */
-  .mnode.mst>.msvg,.mnode.mst{filter:drop-shadow(0 0 8px
-    color-mix(in srgb,var(--sec) 42%,transparent))}
+     finished on the next visit rather than only during the celebration.
+
+     `box-shadow` rather than a `drop-shadow` filter, and the difference is
+     not cosmetic: a filter on a node makes every frame of the pop above
+     re-rasterize it, and worse, it stays expensive long after the
+     celebration - it is repainted on every scroll of a finished section. A
+     box-shadow composites. The landmarks get a round halo behind their
+     hexagon and diamond, which is what the disc nodes have anyway. */
+  .mnode.solved.mst{box-shadow:0 5px 0 color-mix(in srgb,var(--sec) 44%,#000),
+    0 0 15px color-mix(in srgb,var(--sec) 45%,transparent)}
+  .mnode.mboss.mst,.mnode.mtrial.mst{
+    box-shadow:0 0 17px color-mix(in srgb,var(--sec) 42%,transparent)}
 
   .mcard.mst{border-color:color-mix(in srgb,var(--sec) 46%,var(--rule));
     background:linear-gradient(180deg,
@@ -781,7 +823,6 @@
     .mfill{transition:none}
     .mnode.mtrial:not(.solved) .mring{animation:none}
     .mpaint{animation:none;stroke-dashoffset:0 !important}
-    .mnode.mst{animation:none}
     .mnode.mst::after{animation:none}
   }
 

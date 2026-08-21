@@ -646,23 +646,45 @@ level data changed to make it.
   path you have reached. Measured against the trail rather than the viewport,
   because the panel scrolls: a fill pinned to the screen would put the
   waterline somewhere different every time you dragged it. It is emitted only
-  when there is something to draw — the waterline is a `border-top`, and a
-  zero-height box still draws its border, so an empty section wore a bright
-  line along its foot. The 220px tail under it covers `.mbody`'s bottom
-  padding, which is outside the trail and was left as a dark strip beneath
-  the water. And it is raised from 0 across **two** animation frames, not
-  one: a height that is already correct when the element first paints has
+  when there is something to draw. The 220px tail under it covers `.mbody`'s
+  bottom padding, which is outside the trail and was left as a dark strip
+  beneath the water. And it is raised from 0 across **two** animation frames,
+  not one: a height that is already correct when the element first paints has
   nothing to transition from, and the first frame is the one the browser is
   still assembling.
+- **The waterline is a wave, not a rule.** It was a `border-top`, and a
+  straight bright line across the map read as a *divider* — something the
+  layout was doing — rather than as the surface of anything. It is one period
+  of a sine masked onto a 14px crest, tiling seamlessly because it starts and
+  ends at the same height and the same slope, and it is a **mask** rather than
+  a drawn shape so the crest can take the section's colour: a data URI cannot
+  read a custom property.
+- **At every star the crest becomes the flood.** The trail begins below the
+  section card, so a fill that stopped at the trail's top left the head of a
+  finished section dark — the same pseudo-element drops its mask and runs
+  300px upward instead, and `.mcard` is `position:relative;z-index:1` so the
+  water goes *behind* it rather than washing over its text.
 - **A section paints itself when every level in it is on three stars.** The
   trail redraws as *one* continuous stroke and the colour climbs it from the
-  first level to the boss, each node popping as the paint arrives. One stroke
-  is forced: the paint is a `stroke-dashoffset` sweeping along a path, and the
+  first level to the boss, each node throwing a ring as the paint arrives.
+  One stroke is forced: the paint is a `stroke-dashoffset` sweeping along a path, and the
   usual per-gap subpaths would sweep every gap at once. It is traversed from
   the end of `pts`, because the trail draws top-down while the campaign runs
   bottom-up and the colour has to climb the way the player did. Nothing is
   remembered to make it replay — `mapDraw` rebuilds the trail's innerHTML
   every time, so the animations restart by construction.
+- **One animation per node, and it was measured rather than guessed.** The
+  nodes used to scale *and* throw a ring, and running both put 46% of frames
+  over 32ms against 26% for the same section un-mastered (Chromium at 6×
+  CPU throttle, medians identical, the difference all in the tail). Either
+  alone sits at that baseline; the ring alone on its own compositor layer
+  comes in under it. The first guesses were wrong and the profile said so:
+  `drop-shadow` filters on the animated stroke and on the nodes were removed
+  first and changed nothing measurable, and parking the ambient cubes for the
+  duration changed nothing either. **Both are still worth keeping** — a
+  filter is repainted on every scroll of a finished section, not just during
+  the celebration — but neither was the answer. Halos are `box-shadow` now,
+  which composites.
 - **Mastery cannot be bought, and that is what makes it worth drawing.**
   `sp.got` is summed through `starsForRecord()`, which reads `progress` and
   nothing else, and a skip is deliberately not in `progress`. `PROLOGUE` can
