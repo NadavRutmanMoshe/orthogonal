@@ -895,6 +895,21 @@ exclusive — every gesture also has a key and, unless hidden, a button:
   them. Visibility is tested with `getClientRects()`, not `offsetParent` —
   the bar is `position:fixed` and reports no offset parent while plainly on
   screen.
+- **A spoken cue does not look like a toast, because it is not one.** A toast
+  is an aside in the player colour at the top of the screen; a spoken cue is
+  an *instruction*, and in `COMPACT` or `HIDDEN` it is the only guidance
+  there is. So `flashCue()` gives it the goal colour — green already means
+  "do this" on the button pulse — puts it down by the controls where the
+  thumb and the eye are, and gives the move its own line with the hint
+  accounting small underneath. It also lingers longer than a toast: reading
+  three words costs more than glancing at a button that is already flashing.
+  It shared the toast's styling once and wrapped into "go right — hint 4," /
+  "max 1 star" straight across the level's own hint text.
+- **The words are the ones on the buttons, not the ones in the code.** The
+  d-pad's glyphs are arrows, so `bUp` says "go up" even though it moves you
+  away from the camera. `bFlat` is the exception that has to be computed:
+  "2D shift" going in and "3D shift" coming out, because which way you are
+  about to go is the whole content of the instruction.
 - **Stars.** 3★ = the solver's own move count, 2★ ≤ 120%, 1★ ≤ 140%. Par is
   optimal, so 3★ genuinely means optimal. Levels on a clock ignore all of this
   and score on lives.

@@ -10,9 +10,30 @@
 var $=function(id){return document.getElementById(id);};
 var toastTimer=null;
 function flash(m){
-  var t=$("toast");t.textContent=m;t.classList.add("on");
+  var t=$("toast");
+  t.classList.remove("cuesay");
+  t.textContent=m;t.classList.add("on");
   clearTimeout(toastTimer);
   toastTimer=setTimeout(function(){t.classList.remove("on");},1100);
+}
+/* A spoken cue, for when the control it names is not on screen.
+
+   It shares the toast element - there is only one, and two would fight over
+   the same moment - but it is not the same kind of message and does not look
+   like one. A toast is an aside in the player colour at the top of the
+   screen; this is an instruction, so it takes the goal colour the cue pulse
+   already uses (green means "do this" throughout the game), it sits down by
+   the controls where the player's attention and thumb already are rather
+   than under the level title where it collided with the hint text, and the
+   move gets a line of its own with the accounting quiet underneath. It also
+   lingers longer: reading three words costs more than glancing at a button
+   that is already flashing.  */
+function flashCue(move,note){
+  var t=$("toast");
+  t.innerHTML="<b>"+move+"</b>"+(note?"<i>"+note+"</i>":"");
+  t.classList.add("cuesay");t.classList.add("on");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){t.classList.remove("on");},1700);
 }
 var panelKind=null;
 function showPanel(html,kind){

@@ -17,13 +17,23 @@ function clearCue(){
    you have wedged yourself past recovery was the one that showed nothing.
    Every gesture and button also has a key, so there is always something true
    to say instead. */
+/* Said the way the buttons read, not the way the code thinks.
+
+   The d-pad's glyphs are arrows, so "go up" and "go down" are what a player
+   sees even though those two move you away from and toward the camera. And
+   the fold has one name per direction rather than one name for the verb -
+   "2D shift" going in, "3D shift" coming out - because which way you are
+   about to go is the whole content of the instruction. */
 var CUE_WORDS={
-  bLeft:"go left",   bRight:"go right",
-  bUp:"go back",     bDown:"go forward",
-  bRotL:"turn left — Q", bRotR:"turn right — E",
-  bFlat:"change dimension — space",
-  bUndo:"undo — Z",      bLook:"peek — hold shift"
+  bLeft:"go left",  bRight:"go right",
+  bUp:"go up",      bDown:"go down",
+  bRotL:"rotate counter-clockwise", bRotR:"rotate clockwise",
+  bUndo:"undo",     bLook:"peek"
 };
+function cueWord(id){
+  if(id==="bFlat")return flat?"3D shift":"2D shift";
+  return CUE_WORDS[id]||null;
+}
 function cueVisible(el){
   // Rects rather than offsetParent: the bar is position:fixed, and a fixed
   // element reports no offsetParent even when it is plainly on screen.
@@ -42,8 +52,8 @@ function cue(id){
     cueTimer=setTimeout(clearCue,3200);
     return null;
   }
-  var say=CUE_WORDS[id]||null;
-  if(say)flash(say);
+  var say=cueWord(id);
+  if(say)flashCue(say);
   return say;
 }
 /* The verb has one player-facing name and it lives in VERBS, reached through
@@ -355,10 +365,11 @@ function showHint(){
   SFX.hint();
   syncHud();
   var cap=hintCap();
-  // With the bar hidden there is no button to pulse, so the move itself goes
-  // in the toast ahead of the accounting. Paying a star for a hint that
-  // pointed at nothing was the actual bug.
-  flash((say?say+" \u2014 ":"")+
-        (cap===0?"hints used, no stars this level"
-                :"hint "+hintsUsed+", max "+cap+" star"+(cap===1?"":"s")));
+  var note=cap===0?"hints used \u00b7 no stars this level"
+                  :"hint "+hintsUsed+" \u00b7 max "+cap+" star"+(cap===1?"":"s");
+  /* With the bar hidden there is no button to pulse, so the move itself is
+     the message and the accounting is a footnote to it. Both used to be one
+     run-on line in the toast, which wrapped into "go right - hint 4," /
+     "max 1 star" across the level's own hint text. */
+  if(say)flashCue(say,note); else flash(note);
 }

@@ -285,6 +285,15 @@
     letter-spacing:.05em;color:var(--player);opacity:0;transition:opacity .25s;
     pointer-events:none;text-align:center;padding:0 20px}
   .toast.on{opacity:1}
+  /* The spoken cue: green because green already means "do this" on the
+     button pulse, and down by the controls because that is where the eye and
+     the thumb are - at the top it landed across the level's own hint. */
+  .toast.cuesay{top:auto;bottom:176px;color:var(--goal);line-height:1.5}
+  .toast.cuesay b{display:block;font-size:15px;font-weight:600;
+    letter-spacing:.12em;text-transform:uppercase}
+  .toast.cuesay i{display:block;font-style:normal;font-size:9px;
+    letter-spacing:.08em;color:var(--fg-dim);margin-top:4px}
+  body.ui-none .toast.cuesay{bottom:28px}
 
   .won{position:fixed;inset:0;display:none;flex-direction:column;z-index:20;
     align-items:center;justify-content:center;gap:16px;
