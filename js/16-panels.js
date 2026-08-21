@@ -554,7 +554,20 @@ function mapShape(k){
       "transform='rotate(-24 50 50)'/></svg>";
   return "";
 }
-function mapNumeral(l){
+/* The number in the node.
+
+   THE TUTORIALS ARE NUMBERED BY POSITION, NOT BY NAME, and that is the whole
+   reason this takes an ordinal. All three are called `00 — ...` on purpose:
+   they sit outside the campaign's numbering, so they do not consume 01, 02
+   and 03 and cannot renumber anything after them. The cost was that every
+   node in PROLOGUE read "00", and once solved they all read the same tick -
+   so the one section a first-time player is actually in was the one section
+   whose order you could not see, while every other section spells it out.
+   The name stays untouched, because a name is a save key; only the label
+   counts. Single digits rather than `01`, so a glance never confuses a
+   prologue node with a Fundamentals one. */
+function mapNumeral(l,ord){
+  if(l.tutorial)return String(ord);
   var m=l.name.match(/^(\d+)/); if(m)return m[1];
   var r=l.name.match(/^(?:TRIAL|BOSS)\s+([IVX]+)/); if(r)return r[1];
   return "·";
@@ -665,11 +678,19 @@ function mapDraw(spans){
       (k==="tut"?" tut":"")+"' data-node='"+i+"' data-off='"+off.toFixed(4)+
       "' style='top:"+y+"px;margin-left:"+(-half)+"px;margin-top:"+(-half)+"px'>"+
       mapShape(k)+"<span>"+
-      (st==="locked"?"●":(st==="solved"&&k==="tut"?"✓":esc(mapNumeral(l))))+
+      (st==="locked"?"●":esc(mapNumeral(l,i-sp.from+1)))+
       "</span></button>";
-    if(st==="solved"&&k!=="tut"){
-      var got=starsForRecord(l,progress[l.name]), sh="";
-      for(var s2=0;s2<3;s2++)sh+="<u class='"+(s2<got?"":"off")+"'>★</u>";
+    /* A solved node says so underneath, where every other section already
+       puts its stars. A tutorial earns none, so it gets a tick in the same
+       place - the tick used to sit *in* the node instead, which meant a
+       finished prologue was three identical ticks with no order left in it. */
+    if(st==="solved"){
+      var sh="";
+      if(k==="tut")sh="<u>✓</u>";
+      else{
+        var got=starsForRecord(l,progress[l.name]);
+        for(var s2=0;s2<3;s2++)sh+="<u class='"+(s2<got?"":"off")+"'>★</u>";
+      }
       html+="<div class='mstars' data-off='"+off.toFixed(4)+"' style='top:"+
             (y+half+7)+"px;transform:translateX(-50%)'>"+sh+"</div>";
     }
