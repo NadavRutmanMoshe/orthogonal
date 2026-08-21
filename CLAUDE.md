@@ -773,7 +773,27 @@ exclusive — every gesture also has a key and, unless hidden, a button:
 - **Verify claims with the solver rather than asserting them.** `node
   tools/verify.js` checks every level: BFS on ordinary levels and trials,
   `trialSafety()` on trials, `bossArena()` + `bosssim` on bosses. `node
-  tools/curve.js` dumps the difficulty curve.
+  tools/curve.js` dumps the difficulty curve. `node tools/legible.js` finds
+  squares that lie.
+- **A level can tell the player something untrue, and `legible.js` is what
+  finds it.** Screen-vertical is height and depth added together, so a block
+  can draw exactly where ground would have to be for a step that is actually
+  a fall — and the player learns otherwise by dying. It asks that precisely:
+  standing here, stepping there falls, but does some distant block draw within
+  half a cell of where ground would have been? **30 levels are flagged at the
+  strictest reading and 9 of those lie from the start square**, where it is
+  the first press of the level. It fails nothing — a near-miss is sometimes
+  the puzzle — but a level flagged from its start square is almost always a
+  mistake, and the fix is usually one coordinate. Both levels reported in
+  playtesting so far turned up in it.
+- **The camera tilt is not the fix for that, and it was measured rather than
+  assumed.** The tempting theory is that `0.62` makes one unit of height and
+  two of depth nearly equal, so nudge it. Nudging does nothing: the
+  coincidence moves to a different pair and the count stays at ~30. There is a
+  cliff, but only once the camera is steep enough that a cell of depth
+  outruns a cell of height — around `0.95`, where the count falls to 11. That
+  is a real lever and a large change to how the game looks. The numbers are in
+  `tools/legible.js`.
 - **`resolveStep()` is shared by the game and the solver**, so they can never
   disagree. Keep it that way. Its optional `occHere` argument checks headroom in
   *both* columns; without it you can slide diagonally past a ceiling.

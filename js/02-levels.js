@@ -182,8 +182,15 @@ var LEVELS=[
    blocks:[[0,0,0],[-4,0,1],[-2,0,1],[-2,1,2],[-7,2,1],[4,2,0],[5,2,0]],
    start:[0,1,0],goal:[4,3,0],rotate:true},
 {name:"09 — Six Across",
+   /* The second block used to sit at z=2, one across and two back from the
+      start - and two back is very nearly one *down* on screen (see
+      tools/legible.js for the arithmetic). So it drew where a block you could
+      step down onto would draw, and the first press of the game was a fall
+      out of the world. At z=6 it joins the far group and reads as far.
+      Checked at z=2,4,5,6,7,8: same route, same move count, same score, so
+      the level is untouched and only the lie is gone. */
    hint:"A long walk on a silhouette that barely exists.",
-   blocks:[[0,0,0],[1,0,2],[2,1,6],[3,1,5],[4,1,4],[5,2,-4],[6,3,-4],[6,3,-2],[3,3,-2]],
+   blocks:[[0,0,0],[1,0,6],[2,1,6],[3,1,5],[4,1,4],[5,2,-4],[6,3,-4],[6,3,-2],[3,3,-2]],
    start:[0,1,0],goal:[3,4,-2],rotate:true},
 {name:"10 — Fold After Climbing",
    hint:"Height first. The projection you want only opens up from above.",
