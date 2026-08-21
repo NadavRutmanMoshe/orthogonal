@@ -511,6 +511,19 @@ would have caught it before any of it shipped.
   had no observable consequence — you cannot teach a tie-break with nothing to
   break. Two blocks in that column, the near one being the goal, and the rule
   is something you watch happen.
+- **The tutorial's guided lock shipped as a mood before it was a hint.** The
+  first version dimmed the world the moment a step began, and since every step
+  names a control it was on from the first frame to the last. The owner's
+  report was exact: "the tutorial is dark all the way through — the game is
+  just dark at the start." That is the whole lesson. A hint is an *event*; if
+  it is always present it is not pointing at anything, and layering dark on a
+  dark game communicates nothing at all. It now waits out a beat of
+  hesitation, any input pushes it back, and the lit button rather than the
+  dimming carries the message. Two further corrections fell out of building
+  the wait: it must not accrue while the intro card or a panel is up (the
+  first one ran out behind the intro, so the guide was already on at BEGIN),
+  and it must *not* re-arm once it is up, or a step needing two presses makes
+  it flicker.
 - **A hint used to point at nothing, twice over.** `cue()` pulses a button,
   and `cue("bUndo")` named a button this game has never had — so the hint you
   get when you are wedged past recovery did nothing at all. With controls

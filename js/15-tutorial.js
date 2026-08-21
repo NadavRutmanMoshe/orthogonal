@@ -62,12 +62,12 @@ function tutWords(s){
           .replace(/\{n2\}/g,v.n2).replace(/\{n3\}/g,v.n3);
 }
 
-/* THE GUIDED LOCK.
+/* THE GUIDED LOCK — shown to a player who has stopped, not to every player.
 
-   While a step names a control, that control is the only one the game will
-   accept: the world dims, every other play button goes faint, and a press
-   anywhere else does nothing. A first-time player should not have to work out
-   which of seven buttons the sentence means.
+   When it is up, the named control is the only one the game accepts: the
+   world dims, every other play button goes faint and inert, and the one being
+   asked for lights up. A first-time player should not have to work out which
+   of seven buttons a sentence means.
 
    Two things it deliberately does not do. It never touches the corner chrome,
    so the menu and restart are always reachable - a tutorial you cannot leave
@@ -75,8 +75,73 @@ function tutWords(s){
    control is read out of the current step every time the coach re-evaluates,
    so undo, death or a stray input just re-derive it. That is the same
    property the coach has always had and the reason it cannot desynchronise. */
+/* IT ARMS ON HESITATION, NOT ON ARRIVAL, and that is the whole difference
+   between a hint and a mood.
+
+   The first version engaged the moment a step began. Since every step names a
+   control, the guide was on for the entire tutorial - and this game is already
+   dark, so a permanent dark overlay does not read as "here is the button", it
+   reads as "the game is dark". A hint has to be an *event*: something that was
+   not there a moment ago and now is. Appearing is most of the signal.
+
+   So the guide waits, and the wait restarts every time the player does
+   anything. Somebody who is following along never sees it at all; somebody who
+   has stopped gets it a beat later. Once it is up it stays up until the step
+   is satisfied - re-arming on every press would make it flicker on a step that
+   takes two.
+
+   TUT_HELP_MS is a feel number and nothing here can judge it. Playtest it. */
+var TUT_HELP_MS=1000;
+
 function tutBlocks(id){
   return app==="play" && tutLock !== null && tutLock !== id;
+}
+/* Re-start the wait. Called by the four verbs on any input they accept, so
+   the guide stays away from a player who is busy. Deliberately does nothing
+   once the guide is already up: the player is being shown one button and may
+   need to press it more than once. */
+function tutPoke(){
+  if(tutLock!==null)return;
+  tutArm();
+}
+/* Is the game actually in front of the player right now? The same question
+   bossFrame and trialFrame ask before running their clocks, and for the same
+   reason: time spent reading the intro card or the menu is not hesitation.
+   Without this the very first wait ran out behind the intro, so the guide was
+   already up the instant the player pressed BEGIN - which is the bug it was
+   built to fix, one screen earlier. */
+function tutPlayable(){
+  return app==="play" && !dying && !panelOpen() &&
+         $("intro").classList.contains("gone") &&
+         !$("won").classList.contains("on");
+}
+/* The wait is a poll that only counts time the player could have used.
+
+   A plain one-shot timer keeps its own cadence, so the first one ran out
+   behind the intro card and the guide was up within a few hundred
+   milliseconds of BEGIN - the same bug it exists to fix, one screen earlier.
+   Counting ticks instead means a wait spent reading the intro, or the menu,
+   or watching a death animation is not hesitation and does not accrue. */
+var TUT_TICK=120;
+function tutArm(){
+  clearTimeout(tutHelpTimer);
+  tutHelpTimer=null;
+  tutIdle=0;
+  tutTick();
+}
+function tutTick(){
+  tutHelpTimer=setTimeout(function(){
+    tutHelpTimer=null;
+    if(tutLock!==null)return;                    // already up; nothing to count
+    if(app!=="play"||!L||!L.tut)return;
+    if(tutPlayable())tutIdle+=TUT_TICK;
+    if(tutIdle<TUT_HELP_MS){tutTick();return;}
+    var i=tutStep();
+    if(i<0)return;
+    var step=L.tut[i];
+    if(step.lock===false)return;
+    tutLockTo(step.cue||null);
+  },TUT_TICK);
 }
 
 /* The coach shows the first unsatisfied step. Because it is a predicate over
@@ -99,10 +164,15 @@ function tutSync(){
   var step=L.tut[i];
   el.innerHTML="<i>"+(i+1)+" / "+L.tut.length+"</i>"+tutWords(step.say);
   el.classList.add("on");
-  tutLockTo(step.lock===false?null:(step.cue||null));
   // Only re-pulse when the step actually changes, or the cue timer would be
-  // reset on every render and the button would strobe forever.
-  if(i!==tutShown){tutShown=i;if(step.cue)cue(step.cue);}
+  // reset on every render and the button would strobe forever. A new step
+  // also drops the guide and starts its wait again from nothing.
+  if(i!==tutShown){
+    tutShown=i;
+    if(step.cue)cue(step.cue);
+    tutUnlock();
+    tutArm();
+  }
 }
 /* .tutlive rather than .cue, because the cue is a 3.2-second pulse and the
    lock lasts as long as the step does. Keying the highlight off the pulse
@@ -118,6 +188,7 @@ function tutLockTo(id){
   document.body.classList.add("tutlock");
 }
 function tutUnlock(){
+  clearTimeout(tutHelpTimer);tutHelpTimer=null;
   if(tutLock===null)return;
   tutLock=null;
   var els=document.querySelectorAll(".tutlive");

@@ -759,6 +759,7 @@ function levelOver(){
 }
 function doFlatten(){
   if(tutBlocks("bFlat"))return;
+  tutPoke();
   if(dying||levelOver()||!canShift())return;
   clearCue();
   var pu=R.uOf(view,player.x,player.z), crf=liveCrates();
@@ -790,6 +791,7 @@ function doFlatten(){
 }
 function doUnflatten(){
   if(tutBlocks("bFlat"))return;
+  tutPoke();
   if(dying||levelOver()||!canShift())return;
   clearCue();
   var land=R.landings(view,flatPos.u,flatPos.y,liveCrates());
@@ -806,9 +808,12 @@ function doUnflatten(){
 }
 function press(dir){
   if(app!=="play"||levelOver())return;
-  // A tutorial step that names a control accepts only that control.
+  // A tutorial step that names a control accepts only that control - but only
+  // once the guide is actually up. Until then everything works and every input
+  // pushes the guide further away.
   if(tutBlocks(dir==="left"?"bLeft":dir==="right"?"bRight":
                dir==="up"?"bUp":"bDown"))return;
+  tutPoke();
   if(flat){ if(dir==="left")move2(-1); else if(dir==="right")move2(1); return; }
   var r=AX[view].r,d=AX[view].d;
   if(dir==="left")move3(-r[0],-r[2],dir);
@@ -943,6 +948,7 @@ function win(){
 function rotateView(dir){
   if(flat||dying||levelOver())return;
   if(tutBlocks(dir>0?"bRotR":"bRotL"))return;
+  tutPoke();
   if(app==="play")clearCue();
   if(app==="play"&&L.rotate===false)return;
   if(app==="play"){pushHistory();moveCount++;SFX.turn();if(tutC)tutC.rot++;}

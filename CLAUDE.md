@@ -617,13 +617,33 @@ is a sentence plus `done(counters, state)`, and the coach always displays the
 player doing things out of order all just re-evaluate. If you add tutorial
 steps, keep them as predicates over state — do not introduce a step index.
 
-**The guided lock is derived from that predicate, not parallel to it.** While a
-step names a control (its `cue`), the world dims and that control is the only
-one the game accepts — a first-time player should not have to work out which of
-seven buttons a sentence means. `tutLock` is recomputed from the current step
-every time the coach re-evaluates, so it inherits the property above and cannot
-disagree with the line on screen. A step opts out with `lock:false`.
+**The guided lock is derived from that predicate, not parallel to it.** When it
+is up, the world dims and the step's own `cue` is the only control the game
+accepts — a first-time player should not have to work out which of seven
+buttons a sentence means. It is recomputed from the current step, so it
+inherits the property above and cannot disagree with the line on screen. A step
+opts out with `lock:false`.
 
+- **It arms on hesitation, not on arrival, and that is the difference between
+  a hint and a mood.** The first version engaged the instant a step began —
+  and since every step names a control, the guide was on for the whole
+  tutorial. Against a game that is already dark, a permanent dark overlay does
+  not read as "here is the button", it reads as "the game is dark". Appearing
+  is most of the signal, so it has to have been absent.
+- **The wait counts only time the player could have used.** `tutTick()` polls
+  and accrues `TUT_HELP_MS` worth of *playable* idle — `tutPlayable()` is the
+  same question `bossFrame` asks, so the intro card, an open menu and a death
+  animation do not accrue. A plain one-shot timer kept its own cadence and ran
+  out behind the intro, putting the guide up within a few hundred milliseconds
+  of BEGIN. Any input re-arms it (`tutPoke()` from the four verbs), so a
+  player who is following along never sees it; once it *is* up it stays until
+  the step is satisfied, because re-arming on every press would flicker on a
+  step that takes two.
+- **`TUT_HELP_MS` is a feel number** and nothing here can judge it. It is
+  1000ms. Playtest it.
+- **The dim is the quieter half.** It cannot carry the message alone, so it is
+  light and the *lit* button does the work — goal colour, a ring that breathes,
+  a step up in size. Three cues on one control beats one cue spread thin.
 - **The gate lives on the four verbs** — `press`, `rotateView`, `doFlatten`,
   `doUnflatten`. Buttons, keys and gestures all funnel through those, so one
   check each covers every way in; scattering it across the bindings would miss
