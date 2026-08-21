@@ -152,9 +152,21 @@ function splashKey(e){
   e.preventDefault();e.stopPropagation();
   splashPoke();
 }
+/* One poke per 320ms. Two reasons, and both are real: the card listens for
+   `pointerdown` *and* `click` so it cannot miss whichever one a given browser
+   treats as the activating gesture, and those arrive as a pair; and a
+   double-tap should not start the sting and skip it in the same breath. */
+var splashLast=0;
 function splashPoke(){
+  var now=Date.now();
+  if(now-splashLast<320)return;
+  splashLast=now;
   if(splashState==="armed")splashGo();
-  else if(splashState==="running")splashEnd();
+  /* Only skippable once it is actually playing. Between the tap and the
+     first frame there is a short wait on the audio clock, and a poke landing
+     in there would end the card before it ever folded. */
+  else if(splashState==="running"&&$("splash").classList.contains("fold"))
+    splashEnd();
 }
 
 function splashShow(){
@@ -169,22 +181,49 @@ function splashShow(){
   if(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches)
     $("splashPrompt").textContent="tap to begin";
   splashState="armed";
-  el.addEventListener("pointerdown",function(e){e.preventDefault();splashPoke();});
+  /* POINTER *UP*, NOT DOWN, AND THIS IS THE BUG THAT MADE THE STING ARRIVE
+     LATE. `pointerdown` is not an activation-triggering event for touch -
+     only pointerup, touchend, click and keydown are - so on a phone the tap
+     that started the card granted no user activation at all, the audio
+     context could not start on it, and the whole arrangement queued against
+     a stopped clock and landed in a heap on whatever the player pressed
+     next. Waiting for the finger to lift costs nothing a player can feel and
+     is the difference between sound and no sound.
+
+     `click` as well, because it is the one every engine agrees counts, and
+     splashPoke() drops whichever of the pair arrives second. Nothing here
+     calls preventDefault: suppressing the pointer event also suppresses the
+     click, which is the half that does the unlocking. */
+  el.addEventListener("pointerup",splashPoke);
+  el.addEventListener("click",splashPoke);
   window.addEventListener("keydown",splashKey,true);
 }
 
+/* THE FOLD DOES NOT START UNTIL THE AUDIO CLOCK IS RUNNING, and that is the
+   whole reason this is two functions.
+
+   The first version unlocked the context and scheduled the sting in the same
+   call as the animation, on the reasonable assumption that a gesture handler
+   is where a context starts. It is not, quite: resume() is a promise, and
+   until it settles currentTime is frozen at 0. The arrangement queued
+   against that frozen clock, the fold played in silence, and the entire
+   sting arrived in a heap on the next button the player pressed.
+
+   So the tap asks for the clock and waits for it - a few milliseconds
+   normally, AUDIO_WAIT at the very worst - and the picture and the sound
+   start in the same tick. If the clock never starts, the card plays silent
+   rather than late. */
 function splashGo(){
   if(splashState!=="armed")return;
   splashState="running";
-  var el=$("splash");
-  /* The gesture that unlocks the audio context is this one, and the sound is
-     scheduled in the same call - a tap that starts a silent animation and
-     unlocks sound for later is the failure mode this whole card exists to
-     avoid. */
-  audio();
-  if(SFX.sting)SFX.sting();
-  el.classList.add("fold");
   $("splashPrompt").textContent="";
+  audioReady(splashPlay);
+}
+function splashPlay(c){
+  if(splashState!=="running")return;
+  var el=$("splash");
+  if(c&&SFX.sting)SFX.sting();
+  el.classList.add("fold");
   /* The bloom is a separate class from the fold because it fires on arrival,
      not on departure: it is the flash of everything landing in one plane. */
   setTimeout(function(){

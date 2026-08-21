@@ -181,6 +181,44 @@ function audio(){
   return actx;
 }
 function out(c){return masterGain||c.destination;}
+
+/* WAIT FOR THE CLOCK TO ACTUALLY BE RUNNING BEFORE SCHEDULING ANYTHING LONG.
+   audio() creates the context and calls resume(), and resume() is a promise:
+   until it settles the context is suspended, which means currentTime is
+   frozen at 0 and does not advance. Scheduling a two-second arrangement
+   against a frozen clock does not fail - it queues, and then every note
+   whose time has already passed fires at once the moment something else
+   wakes the context up. That is exactly what the sting did: silent through
+   the fold, then the whole thing in a heap on the next button press.
+
+   A blip does not care, because it is one 50ms event at currentTime. A set
+   piece does. So this hands back a context only once it is running, with
+   three things in it that matter:
+
+   - the one-sample silent buffer, played *inside* the gesture. On iOS and in
+     a sandboxed iframe a context does not truly start until something has
+     been pushed through it, and resume() alone can sit pending.
+   - the fallback timer, so a browser that never resumes does not leave the
+     caller waiting forever - it gets null and plays nothing, which is the
+     right answer. Silent beats a jumble arriving late.
+   - the state re-check inside go(), because resume() resolving is not itself
+     a promise that the context is running. */
+var AUDIO_WAIT=350;
+function audioReady(cb){
+  var c=audio();
+  if(!c){cb(null);return;}
+  if(c.state==="running"){cb(c);return;}
+  var done=false;
+  function go(){if(done)return;done=true;cb(c.state==="running"?c:null);}
+  try{
+    var b=c.createBuffer(1,1,c.sampleRate),src=c.createBufferSource();
+    src.buffer=b;src.connect(c.destination);src.start(0);
+  }catch(e){}
+  var p=null;
+  try{p=c.resume();}catch(e){}
+  if(p&&p.then)p.then(go,go);
+  setTimeout(go,AUDIO_WAIT);
+}
 function applyBrightness(){
   document.body.style.filter=settings.brightness===1?"":
     "brightness("+settings.brightness.toFixed(2)+")";
@@ -322,7 +360,11 @@ var SFX={
      ie. it sits under the pile-up the chain was already built to survive.
      Retune a voice here and re-run that measurement. */
   sting:function(){
-    var c=audio();if(!c)return;
+    var c=audio();
+    /* Never schedule this against a stopped clock - see audioReady(). Every
+       note here is at an absolute time, so a suspended context turns the
+       arrangement into a pile that lands on whatever gesture happens next. */
+    if(!c||c.state!=="running")return;
     var t=c.currentTime+.03, F=.98;   // F: the moment the fold lands
 
     // the gather

@@ -719,6 +719,23 @@ it has to be able to end it.
   loudest thing in the game and it sits under what the limiter was already
   built to survive. Retune a voice and re-measure — a limiter plus a soft
   clipper will happily hide a set piece that distorts on every play.
+- **It listens on `pointerup` and `click`, never `pointerdown`.** This is the
+  bug that made the sting arrive late: `pointerdown` is not an
+  activation-triggering event for touch — only `pointerup`, `touchend`,
+  `click` and `keydown` are — so on a phone the tap that started the card
+  granted no user activation, the audio context could not start on it, and
+  the whole arrangement queued against a stopped clock and landed in a heap
+  on whatever was pressed next. Nothing calls `preventDefault` on the pointer
+  event either, because suppressing it suppresses the click, which is the
+  half that does the unlocking.
+- **`audioReady()` is the general form of that, and the fold waits for it.**
+  `resume()` is a promise; until it settles `currentTime` is frozen at 0, and
+  a set piece scheduled at absolute times against a frozen clock queues
+  rather than fails. So the tap asks for the clock, and the picture and the
+  sound start in the same tick — a few milliseconds normally, `AUDIO_WAIT`
+  (350ms) at the very worst. If the clock never starts the card plays silent
+  rather than late: silent beats a jumble arriving after the fact. A blip
+  does not need any of this, because it is one 50ms event at `currentTime`.
 - **The keydown listener is on the capture phase and stops propagation.** The
   four verbs are all guarded on the intro card still being up, so nothing
   would fire anyway — but `m` toggles mute, and muting the sting with the key
