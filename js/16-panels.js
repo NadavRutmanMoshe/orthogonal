@@ -781,8 +781,29 @@ function mapDraw(spans){
   }
   trail.style.height=(y-STEP+80)+"px";
   trail.className=mast?"mst":"";
-  trail.innerHTML="<svg></svg>"+html;
+  /* THE SECTION FILLS UP FROM THE BOTTOM WITH ITS OWN COLOUR, to the height
+     of the stars taken. The trail runs first-level-at-the-foot to
+     boss-at-the-top, so a level rising is progress climbing, and the
+     waterline lands at roughly the point on the path you have reached -
+     half the stars is half way up, and the last star floods it.
+
+     Measured against the trail rather than the viewport on purpose: the
+     panel scrolls, so a fill pinned to the screen would put the waterline
+     somewhere different every time you dragged. Anchored here it marks a
+     place on the path and stays there.
+
+     Emitted only when there is something to draw, because the waterline is a
+     border and a zero-height box still draws its border - an empty section
+     would wear a bright line along its foot. */
+  var fillPct=sp.max?(sp.got/sp.max*100):0;
+  if(lk)fillPct=0;
+  /* PREVIEW claims the section is finished, so the water has to agree with
+     it. Left at the real figure, the preview showed a glowing mastered chain
+     standing in a half-empty tank. */
+  if(mast&&masteryPreview())fillPct=100;
+  trail.innerHTML=(fillPct>0?"<div class='mfill'></div>":"")+"<svg></svg>"+html;
   mapLayout(pts,y-STEP+80,mast);
+  mapFill(fillPct);
   if(mast&&SFX.mastery)SFX.mastery();
   trail.querySelectorAll("[data-node]").forEach(function(el){
     tap(el,function(){mapSheet(+el.getAttribute("data-node"));});
@@ -802,6 +823,24 @@ function mapFocus(){
 
 /* The trail. Drawn solid behind you and dotted ahead, so how far you have got
    is legible without reading a single node. */
+/* The fill is raised after the layout rather than written into the markup,
+   because a height that is already correct when the element first paints has
+   nothing to transition from. Two frames, not one: the first is the frame
+   the browser is still assembling, so a height set in it can be collapsed
+   into the initial style and the transition skipped. */
+function mapFill(pct){
+  var el=$("mtrail").querySelector(".mfill");
+  if(!el)return;
+  if(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+    el.style.height=pct+"%";return;
+  }
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      if(el.parentNode)el.style.height=pct+"%";
+    });
+  });
+}
+
 /* How long the paint takes to climb a whole section, and how long it waits
    before starting. One pair of numbers in two places - the stroke animation
    in the CSS is written against them and the per-node delays above are

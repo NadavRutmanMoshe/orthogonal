@@ -639,6 +639,21 @@ level data changed to make it.
   phases, the trial's ring turns until you have beaten it. The trial node is
   also 68px against a level's 58 and a boss's 78, because the ring reaches
   past the shape and at 58 the pips landed on the trail.
+- **The section fills with its own colour to the height of the stars you
+  have taken**, and that is the progress bar the map actually wants — the
+  trail runs first-level-at-the-foot to boss-at-the-top, so a level rising
+  *is* progress climbing, and the waterline lands at roughly the point on the
+  path you have reached. Measured against the trail rather than the viewport,
+  because the panel scrolls: a fill pinned to the screen would put the
+  waterline somewhere different every time you dragged it. It is emitted only
+  when there is something to draw — the waterline is a `border-top`, and a
+  zero-height box still draws its border, so an empty section wore a bright
+  line along its foot. The 220px tail under it covers `.mbody`'s bottom
+  padding, which is outside the trail and was left as a dark strip beneath
+  the water. And it is raised from 0 across **two** animation frames, not
+  one: a height that is already correct when the element first paints has
+  nothing to transition from, and the first frame is the one the browser is
+  still assembling.
 - **A section paints itself when every level in it is on three stars.** The
   trail redraws as *one* continuous stroke and the colour climbs it from the
   first level to the boss, each node popping as the paint arrives. One stroke
