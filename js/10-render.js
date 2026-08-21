@@ -17,6 +17,31 @@ var crateMeshes=[],keyMeshes=[],goalGhost=null,trialMarks=[];
 var amb,dir1,dir2;
 var center=new THREE.Vector3(),centerT=new THREE.Vector3();
 var viewSize=10,viewSizeT=10;
+
+/* ============================================================
+   THE FOLLOW CAMERA — an experiment, and easy to take out
+
+   The camera has always been centred on the *arena*: it frames the whole
+   level and never moves while you play. That is clean, and it costs the one
+   thing this projection is worst at. Screen-vertical here is height and depth
+   added together, so a block one square further back and a block one square
+   higher draw in the same place, and no amount of shading fixes it - shading
+   ranks things, it does not tell you which row they are in.
+
+   A camera locked to the player gives that back through *motion*. Step in
+   depth and the whole world slides vertically; step sideways and it slides
+   sideways. The two axes stop being the same gesture on screen, and you are
+   told which one you just moved along by watching it happen.
+
+   Two knobs, deliberately separate so either can be undone alone:
+     FOLLOW      how much of the way to the player the camera sits (1 = all).
+     FOLLOW_ZOOM a ceiling on how far out it pulls. Small arenas already fit
+                 inside it and are unchanged; only big ones come closer, and
+                 they are the ones where a fixed frame made everything tiny.
+   Set FOLLOW to 0 and this is the old camera exactly.
+   ============================================================ */
+var FOLLOW=1, FOLLOW_ZOOM=9;
+var followT=new THREE.Vector3();
 var colVoid=new THREE.Color(0x0f1424),colPaper=new THREE.Color(0xe6e1d3);
 var colBlock=new THREE.Color(0x5a6d94),colInk=new THREE.Color(0x1a1c2b);
 var colGhost=new THREE.Color(0x2e3549);
@@ -624,8 +649,22 @@ function animate(now){
   flatT+=(flatTarget-flatT)*.14;
   if(Math.abs(flatTarget-flatT)<.002)flatT=flatTarget;
   viewAngle+=(viewAngleTarget-viewAngle)*.16;
-  center.lerp(centerT,.12);
-  var pv=viewSize;viewSize+=(viewSizeT-viewSize)*.12;
+  /* playerMesh rather than `player`, because the mesh is where the player is
+     actually drawn - already eased, and already in plane coordinates when
+     flat - so the camera cannot arrive somewhere the cube has not. */
+  if(FOLLOW>0&&app==="play"&&playerMesh){
+    followT.copy(playerMesh.position);
+    // Clamped to the arena so the camera never drifts out into pure void
+    // looking at nothing, which is what an unbounded follow does the moment
+    // the player stands on an edge block.
+    followT.x=Math.max(arenaLo[0],Math.min(arenaHi[0],followT.x));
+    followT.y=Math.max(arenaLo[1],Math.min(arenaHi[1]+1,followT.y))+.5;
+    followT.z=Math.max(arenaLo[2],Math.min(arenaHi[2],followT.z));
+    if(FOLLOW<1)followT.lerp(centerT,1-FOLLOW);
+    center.lerp(followT,.12);
+  } else center.lerp(centerT,.12);
+  var vsWant=(FOLLOW>0&&app==="play")?Math.min(viewSizeT,FOLLOW_ZOOM):viewSizeT;
+  var pv=viewSize;viewSize+=(vsWant-viewSize)*.12;
   if(Math.abs(pv-viewSize)>.005)updateFrustum();
 
   if(flat)peekTarget=0;                  // peeking is meaningless in the plane

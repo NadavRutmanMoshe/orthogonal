@@ -1039,6 +1039,18 @@ tested and failed, plus where this sits in the PCG literature, are in
   asks iOS to keep its hands off a two-finger move, and `user-scalable=no` is
   ignored there — `touch-action:none` on the body is what should hold it, and
   that has not been tested on a device.
+- **The follow camera is on trial, not settled.** `FOLLOW` and
+  `FOLLOW_ZOOM` at the top of `js/10-render.js` put the camera on the player
+  instead of on the arena; `FOLLOW=0` is exactly the old camera and the whole
+  thing comes out in one line. It is there to answer a real complaint — that
+  a block one square back and a block one square higher draw in the same place
+  — by giving depth back as *motion*: step in depth and the world slides
+  vertically, step sideways and it slides sideways. Measured before shipping:
+  with the player parked in every arena's worst corner, every hunter spawn of
+  every phase is still on screen (worst 0.87 of the way to the edge), so it
+  does not hide the pack. What is unmeasured is whether it feels better, and
+  the known cost is that a level whose start square is a corner frames
+  lopsidedly — `FOLLOW` below 1 trades the motion cue back for framing.
 - **Two-finger tap only rotates right.** There is no left-rotate gesture.
 
 ---
