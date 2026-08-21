@@ -41,6 +41,9 @@ var skips={};
    the active step's own cue every time the coach re-evaluates, so it is a
    *view* of the step rather than a second copy of where the player is up to -
    which is what keeps the lock from being able to disagree with the coach. */
+/* Milliseconds of held breath between one phase and the next. Nothing moves
+   and no input is accepted while it runs. */
+var bossPause=0;
 var tutC=null, tutShown=-1, tutLock=null, tutHelpTimer=null,
     tutIdle=0, tutWait=0, tutCued=null;
 function tutReset(){

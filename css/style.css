@@ -702,3 +702,30 @@ body.tutlock #playBar button.tutlive{opacity:1;pointer-events:auto;
 }
 /* The coach is the one thing that has to stay legible over the dim. */
 body.tutlock .coach{z-index:11}
+
+/* ============================================================
+   THE PHASE CARD — the breath between one phase and the next
+
+   Clearing a phase used to raise the next one's pillars, drop a fresh hunter
+   in and teleport the player home 420ms later, all while the clock ran. The
+   board you were looking at was not the board you were now standing on, and
+   the first thing you learned about the change was usually being hit by it.
+
+   So the fight stops. The player is stood up, put back on their corner and
+   turned to the opening view first - the reset is the calm part - then the
+   geometry rises, and only then does anyone move. The card says what
+   changed; the dim says the game is not listening yet.
+   ============================================================ */
+.phasenote{position:fixed;left:16px;right:16px;top:38%;z-index:16;
+  pointer-events:none;text-align:center;opacity:0;
+  font-family:'Space Grotesk',system-ui,sans-serif;
+  transition:opacity .3s ease}
+.phasenote.on{opacity:1;animation:phaseIn .45s cubic-bezier(.2,.9,.3,1)}
+.phasenote b{display:block;font-size:11px;letter-spacing:.3em;font-weight:500;
+  color:var(--fg-dim);text-transform:uppercase}
+.phasenote i{display:block;font-style:normal;font-size:20px;font-weight:700;
+  letter-spacing:-.01em;color:var(--fg);margin-top:8px;line-height:1.25}
+@keyframes phaseIn{from{transform:translateY(14px) scale(.96)}to{transform:none}}
+body.bosshold::before{content:"";position:fixed;inset:0;z-index:6;
+  background:rgba(4,7,16,.5);pointer-events:none;animation:tutdim .4s ease both}
+body.flat.bosshold::before{background:rgba(90,84,68,.34)}

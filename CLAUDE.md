@@ -490,6 +490,24 @@ walk into a wall.
   their spawns if they hit you — so killing the first of them moves nobody.
   Taking back ground you earned would charge you for playing well, which is
   precisely what a hit is careful not to do.
+- **A phase boundary is a held breath, not a cut.** `bossPause`
+  (`BOSS_PAUSE`, 1900ms) stops the fight between phases: nothing walks,
+  nothing lands, and none of the four verbs answers. The order matters and is
+  the order a player can follow — **reset first, geometry second**. They are
+  stood up, put back on their corner and turned to the opening view while the
+  board is still the one they know; only then do the pillars rise; then they
+  get most of two seconds to look at it. It used to raise the pillars, drop a
+  fresh hunter in and teleport the player home 420ms later with the clock
+  running, so the board you were reading was never the board you were
+  standing on.
+- **The pause is taken before the grace beat, not inside it.** `B.grace` is
+  for the moment the fight restarts; burning it while the player reads a card
+  would hand it back already spent.
+- **Standing the player up is also what stops 2D sticking after a win.** You
+  kill by folding, so a boss is nearly always beaten from inside the plane —
+  and the plane is a whole *theme*, not just a camera, so winning flat left
+  the win card, the map and the menu on 2D's paper until something else
+  loaded. `bossAdvance()` calls `bossSendHome()` before `win()`.
 - **It puts the whole view back to the opening: start square, volume,
   starting rotation.** Arriving at a new phase still folded and facing an axis
   chosen for the last one means reading a board that changed while you were

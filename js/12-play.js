@@ -71,6 +71,7 @@ function spendLife(){
    frame marches the whole pack across the arena at once.
    ============================================================ */
 function bossReset(){
+  bossPause=0;phaseNoteEnd();
   bossHp=B?B.hp:0;bossFlash=0;bossHitFlash=0;bossCreepMs=0;bossGraceMs=0;
   hunters=[];twinCore=0;twinAt=null;bossPhase=0;
   if(B&&B.twin)twinSpawn(0);
@@ -156,7 +157,8 @@ function bossEnterPhase(announce){
     // into you is a hit you were given no way to read.
     bossGraceMs=Math.max(bossGraceMs,B.grace);
     SFX.strike();shakeT=1;bossHitFlash=1;
-    flash(ph.say||("phase "+(bossPhase+1)+" of "+B.phases.length));
+    // The card says what changed now; a toast saying it as well is two
+    // messages competing for the same beat.
   }
   syncHud();
 }
@@ -218,11 +220,40 @@ function bossSendHome(){
 /* The board is clear, so the fight moves on rather than ending. This is the
    whole structure in four lines: the health bar counts phases, and the last
    one running out is the win. */
+var BOSS_PAUSE=1900;   // how long the board is yours to read. A feel number.
 function bossAdvance(){
   bossPhase++;
   bossHp=B.phases.length-bossPhase;
-  if(bossPhase>=B.phases.length){hunters=[];buildGrid();win();return;}
+  if(bossPhase>=B.phases.length){
+    hunters=[];
+    /* Stand up before winning. You kill by folding, so a boss is almost
+       always beaten from inside the plane - and the plane is a whole theme,
+       not just a camera, so winning flat left the win card, the map and the
+       menu on 2D's paper until the next level loaded. */
+    bossSendHome();
+    buildGrid();win();return;
+  }
+  /* The reset comes first and the geometry second, which is the order the
+     player can actually follow: put them back somewhere they know, standing,
+     facing the way the level opens, and only then change the board. */
+  bossSendHome();
   bossEnterPhase(true);
+  bossPause=BOSS_PAUSE;
+  phaseNote(B.phases[bossPhase].say||("phase "+(bossPhase+1)+" of "+B.phases.length));
+}
+/* Held while the card is up: nothing walks, nothing lands, nothing you press
+   does anything. Read by the four verbs and by bossFrame. */
+function bossHolding(){return bossPause>0;}
+function phaseNote(text){
+  var el=$("phaseNote");if(!el)return;
+  el.innerHTML="<b>phase "+(bossPhase+1)+" of "+B.phases.length+"</b><i>"+
+    esc(text)+"</i>";
+  el.classList.add("on");
+  document.body.classList.add("bosshold");
+}
+function phaseNoteEnd(){
+  var el=$("phaseNote");if(el)el.classList.remove("on");
+  document.body.classList.remove("bosshold");
 }
 /* Put the two halves down mirrored about core `i`'s centre. Both clocks run
    together on purpose - the halves are one animal and should move as one, so
@@ -290,6 +321,14 @@ function bossFrame(dt){
   dt=Math.min(dt,90)*paceScale();
   if(bossHitFlash>0)bossHitFlash=Math.max(0,bossHitFlash-dt/380);
   if(bossFlash>0)bossFlash=Math.max(0,bossFlash-dt/300);
+  /* The held breath, before the grace beat rather than inside it: grace is
+     for the moment the fight restarts, and burning it while the player is
+     reading a card would hand it back spent. */
+  if(bossPause>0){
+    bossPause=Math.max(0,bossPause-dt);
+    if(bossPause<=0)phaseNoteEnd();
+    return;
+  }
   if(bossGraceMs>0)bossGraceMs=Math.max(0,bossGraceMs-dt);
   if(!hunters.length)return;
 
@@ -474,7 +513,7 @@ function bossFoldCrush(){
     hunters[s].step=Math.max(B.floorStep,hunters[s].step*B.rage);
   // The board is clear, so the fight moves on. Only the last phase running
   // out is the win.
-  if(!hunters.length){bossAdvance();setTimeout(bossSendHome,420);return;}
+  if(!hunters.length){bossAdvance();return;}
   flash(doomed.length>1?(doomed.length+" in one square · "+hunters.length+" left"):
         ("folded onto it · "+hunters.length+" left"));
   syncHud();
@@ -525,7 +564,7 @@ function bossTakeCrate(idx){
   hunters.splice(idx,1);
   bossHitFlash=1;
   SFX.strike();shakeT=1;
-  if(!hunters.length){bossAdvance();setTimeout(bossSendHome,420);return true;}
+  if(!hunters.length){bossAdvance();return true;}
   flash("crushed under the crate · "+hunters.length+" left");
   syncHud();
   return true;
@@ -758,6 +797,7 @@ function levelOver(){
   return true;
 }
 function doFlatten(){
+  if(bossHolding())return;
   if(tutBlocks("bFlat"))return;
   tutPoke("bFlat");
   if(dying||levelOver()||!canShift())return;
@@ -790,6 +830,7 @@ function doFlatten(){
   else if(spiked) setTimeout(function(){die("spike");},420);
 }
 function doUnflatten(){
+  if(bossHolding())return;
   if(tutBlocks("bFlat"))return;
   tutPoke("bFlat");
   if(dying||levelOver()||!canShift())return;
@@ -811,6 +852,7 @@ function press(dir){
   // A tutorial step that names a control accepts only that control - but only
   // once the guide is actually up. Until then everything works and every input
   // pushes the guide further away.
+  if(bossHolding())return;
   var tutId=dir==="left"?"bLeft":dir==="right"?"bRight":
             dir==="up"?"bUp":"bDown";
   if(tutBlocks(tutId))return;
@@ -954,6 +996,7 @@ function win(){
 }
 function rotateView(dir){
   if(flat||dying||levelOver())return;
+  if(bossHolding())return;
   if(tutBlocks(dir>0?"bRotR":"bRotL"))return;
   tutPoke(dir>0?"bRotR":"bRotL");
   if(app==="play")clearCue();
@@ -979,6 +1022,9 @@ function resetLevel(){
   playerMesh.position.set(player.x,player.y,player.z);
 }
 function loadLevel(level,idx){
+  // A cue is a 3.2s pulse, so without this one outlives the level it was
+  // about and greets you on the next one.
+  clearCue();
   L=level;R=makeRules(L);
   if(idx!==undefined)lvIndex=idx;
   $("lvName").textContent=L.name;
