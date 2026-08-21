@@ -658,6 +658,16 @@ is a sentence plus `done(counters, state)`, and the coach always displays the
 player doing things out of order all just re-evaluate. If you add tutorial
 steps, keep them as predicates over state — do not introduce a step index.
 
+**A step can assume a state, not only aim at a goal, and the coach has to
+notice.** `want:"flat"` / `want:"3d"` on a step swaps both the line and the
+cued control for the way back when the player is not in that state. "Depth is
+gone — walk across" means nothing unless you are flat, and a player who
+folded, took one step and stood up again is still on that step, being told to
+do something they cannot do, in the level whose whole job is not confusing
+them. `tutStepView()` is the single answer to "what is being asked right
+now", and the coach, the green, the lock and `tutPoke` all read through it,
+so they cannot drift apart.
+
 **The guided lock is derived from that predicate, not parallel to it.** When it
 is up, the world dims and the step's own `cue` is the only control the game
 accepts — a first-time player should not have to work out which of seven
@@ -721,7 +731,11 @@ opts out with `lock:false`.
   who went back to check what `GO 2D` meant was walked out into `01` and
   marched forward through puzzles they had already solved. `L` being null on
   the first boot is what stops a new player being sent "back" to where they
-  have never been.
+  have never been. When it *is* null for a player who is nonetheless deep in
+  the game — closing the app on a tutorial level and being restored straight
+  into one leaves nothing to record — `tutFallback()` hands back the first
+  unsolved campaign level rather than `01`, which would be the same unhelpful
+  answer by a different route.
 - **The highlight is `.tutlive`, not `.cue`.** A cue is a 3.2-second pulse and
   the lock lasts as long as the step, so keying the highlight off the pulse
   dims the whole bar the moment it expires — including the button being asked
