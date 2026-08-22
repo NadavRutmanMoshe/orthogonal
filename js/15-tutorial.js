@@ -340,8 +340,7 @@ function tutPoke(id){
    already up the instant the player pressed BEGIN - which is the bug it was
    built to fix, one screen earlier. */
 function tutPlayable(){
-  return app==="play" && !dying && !panelOpen() &&
-         $("intro").classList.contains("gone") &&
+  return app==="play" && !dying && !panelOpen() && !screenUp() &&
          !$("won").classList.contains("on");
 }
 /* The wait is a poll that only counts time the player could have used.

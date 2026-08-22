@@ -1142,3 +1142,92 @@ body.tut.tutgest .coach,body.tut.tutgest.ui-none .coach{bottom:44px}
   .ghost.g-dbl .gdot,.ghost.g-dbl .gtap{animation-duration:3.4s}
   .ghost.g-dbl .gtap.two{animation-delay:.68s}
 }
+
+/* ============================================================
+   THE HOME SCREEN — where the game starts from
+
+   z-index 11 puts it over the world, the HUD and the bar, and *under* the
+   panels (12), which is the whole arrangement: the map and the wardrobe open
+   over the home screen the same way they open over a level, and closing one
+   puts you back here rather than dropping you into a level you never chose.
+   The win card (20) and the sting (60) still cover it.
+
+   The stand is the wardrobe's display case, not a copy of it - homeCase()
+   hands this canvas to previewStart(). One consequence is load-bearing and
+   lives in hidePanel(): that case is a singleton, so opening a panel over
+   the home screen tears the stand down and it has to be put back on the way
+   out.
+
+   The canvas has no visible edge because previewShow paints its scene with
+   the equipped world's void colour, and applyPalette sets the CSS --void
+   from the same world. The character simply stands there.
+   ============================================================ */
+.home{position:fixed;inset:0;z-index:11;display:none;
+  flex-direction:column;align-items:center;justify-content:center;
+  background:var(--void);padding:22px 16px;overflow:auto;
+  transition:background .5s ease}
+.home.on{display:flex}
+.hwrap{width:100%;max-width:340px;display:flex;flex-direction:column;
+  align-items:center}
+.htitle{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;
+  font-size:27px;letter-spacing:-.03em;color:var(--fg);line-height:1}
+.hsub{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:8px;
+  letter-spacing:.28em;text-transform:uppercase;color:var(--fg-dim);
+  margin-top:7px}
+.hstand{width:216px;height:216px;margin:2px 0}
+.hstand canvas{width:100%;height:100%;display:block}
+.hstars{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9px;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--fg-dim)}
+.hstars b{color:var(--goal);font-weight:600;font-size:12px}
+.hstars i{font-style:normal;color:var(--goal);margin:0 4px 0 1px}
+
+.hbtns{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.home button{width:100%;height:44px;font-size:10.5px;letter-spacing:.14em}
+/* The one thing this screen is for, so it gets the raised treatment the
+   panels' primary button already has - and its own second line, because
+   "CONTINUE" alone does not say what you are continuing. */
+.hcont{flex-direction:column;gap:2px;height:56px;
+  border-color:var(--goal);color:var(--goal);font-weight:600;
+  background:rgba(53,194,165,.10);box-shadow:0 4px 0 rgba(20,112,93,.55);
+  transition:transform .12s ease,box-shadow .12s ease}
+.hcont:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(20,112,93,.55)}
+.hcont b{font-size:12px;letter-spacing:.16em;font-weight:600}
+.hcont i{font-style:normal;font-size:8.5px;letter-spacing:.08em;
+  color:var(--fg-dim);text-transform:none}
+.hcont i:empty{display:none}
+
+/* The shop, advertised rather than opened. Three things you do not own yet
+   with what they cost, so a new player learns the character is a thing you
+   can change before they have any stars to change it with. It is a drawing,
+   not a control - the button under it is the way in. */
+.hshop{width:100%;margin-top:18px;padding-top:15px;
+  border-top:1px solid var(--rule);
+  display:flex;flex-direction:column;align-items:center;gap:11px}
+.hteaser{display:flex;gap:18px;align-items:flex-start;justify-content:center;
+  min-height:38px}
+.hteaser em{display:flex;flex-direction:column;align-items:center;gap:4px;
+  font-style:normal}
+.hteaser em span{font-size:20px;line-height:1;color:var(--fg-dim)}
+.hteaser em b{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:8.5px;
+  font-weight:500;letter-spacing:.06em;color:var(--goal)}
+.hteaser .hnone{font-family:'IBM Plex Mono',ui-monospace,monospace;
+  font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--fg-dim);align-self:center}
+.home .tiny{width:auto;height:30px;padding:0 16px;margin-top:18px;
+  font-size:9px;border-color:var(--rule);color:var(--fg-dim)}
+
+/* Play chrome has nothing to do while the home screen is up, and the star
+   total is shown inside it instead - two counts of the same number, one of
+   them floating over a title screen, is one too many.
+
+   THE BODY CLASS IS `athome`, NOT `home`, AND IT HAS TO BE. `.home` is the
+   overlay's own class, and a bare `.home` selector matches any element
+   carrying it - including `<body class="home">`. The body inherited
+   `position:fixed; display:none` from the rule above and the entire document
+   measured 0x0, with getComputedStyle still cheerfully reporting `flex` on
+   the overlay because a computed display survives an ancestor being hidden.
+   This is the same collision as `.mboss`/`.boss` on the map and `history` /
+   `window.history` in the layout notes: check a new class name against the
+   ones already in this file. */
+body.athome .hud,body.athome .bar,body.athome .coach,body.athome .boss,
+body.athome .startotal{display:none}

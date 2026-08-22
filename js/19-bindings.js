@@ -22,11 +22,10 @@ bind("bBegin",function(){
   $("intro").classList.add("gone");
   audio();applyBrightness();     // first gesture unlocks sound
 });
-bind("bResume",function(){
-  $("intro").classList.add("gone");
-  audio();applyBrightness();
-  if(!resumeSession())flash("couldn't restore that");
-});
+bind("hContinue",homeGo);
+bind("hLevels",function(){audio();levelPicker();});
+bind("hWard",function(){audio();wardrobePanel("shape");});
+bind("hMenu",function(){audio();menuPanel();});
 bind("bSkipTo",function(){
   $("intro").classList.add("gone");
   audio();levelPicker();
@@ -116,8 +115,18 @@ bind("eTest",function(){
 window.addEventListener("keyup",function(e){
   if(e.key.toLowerCase()==="shift")peekTarget=0;
 });
+/* The keys that drive the game, as a set, so one test can hold them all off
+   while a full-bleed screen is up. Everything not in here stays live behind
+   the intro card and the home screen - mute, and Escape, which is a way out
+   rather than a move. */
+var GAME_KEYS={arrowleft:1,arrowright:1,arrowup:1,arrowdown:1,a:1,d:1,w:1,s:1,
+               " ":1,q:1,e:1,r:1,u:1,z:1,h:1,shift:1};
 window.addEventListener("keydown",function(e){
   var k=e.key.toLowerCase();
+  /* An overlay swallows taps by being there; a keyboard does not care what
+     is on top. Without this the arrow keys walked the player around a level
+     nobody could see, behind the title screen. */
+  if(GAME_KEYS[k]&&screenUp())return;
   if(k==="arrowleft"||k==="a"){press("left");e.preventDefault();}
   else if(k==="arrowright"||k==="d"){press("right");e.preventDefault();}
   else if(k==="arrowup"||k==="w"){press("up");e.preventDefault();}
@@ -139,8 +148,9 @@ window.addEventListener("keydown",function(e){
      own buttons, and dismissing them from the keyboard would skip a level. */
   else if(k==="escape"&&app==="play"){
     if(panelOpen())hidePanel();
-    else if($("intro").classList.contains("gone")&&
-            !$("won").classList.contains("on"))menuPanel();
+    // Live on the home screen too: settings are one of the things it is for.
+    else if(!$("intro").classList.contains("gone")){}
+    else if(!$("won").classList.contains("on"))menuPanel();
     e.preventDefault();
   }
 });

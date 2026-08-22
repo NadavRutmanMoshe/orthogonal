@@ -81,7 +81,7 @@ anything; everything before it only declares.
 | `js/13-gestures.js` | Swipe / tap / two-finger tap on the world. |
 | `js/14-editor.js` | Tap-to-place editor, verify, minimize. |
 | `js/15-tutorial.js` | Control cues, the coach, the ghost hand, hints. |
-| `js/16-panels.js` | Every slide-up panel; `sectionSpans()`; the map (`levelPicker()`). |
+| `js/16-panels.js` | The home screen; every slide-up panel; `sectionSpans()`; the map. |
 | `js/17-composer.js` | Solution-first level generation. |
 | `js/18-ui.js` | `$`, toasts, panel plumbing, `syncHud()`. |
 | `js/19-bindings.js` | Every button and key binding. |
@@ -761,6 +761,73 @@ level data changed to make it.
   outside `.corner` at z-index 30 so it can sit over the win overlay, which
   also puts it over a near-full-height map and its own total. The one function
   that already knows which panel is open turns it off.
+
+## The home screen
+
+**Where the game starts from, once there is anything to come back to.** A
+title, your character turning on its plinth, `CONTINUE`, `LEVELS`, three
+things you do not own with what they cost, and a way into the wardrobe.
+
+- **A first run never sees it.** There is nothing to continue and nothing
+  owned, so the intro card — which says in one sentence what the game is —
+  stays the first screen and `BEGIN` goes straight into the tutorial.
+  `firstRun()` in `21-boot.js` asks `progress` and the session, deliberately
+  not `starsEarned()`: somebody who walked into a level and quit has a
+  session and no stars, and is plainly not seeing the game for the first
+  time. The home screen is a **launch** screen; finishing the tutorial still
+  goes to `01`, because `NEXT LEVEL` is the next level, always.
+- **It is a screen, not a panel, and it sits at z-index 11 — *under* the
+  panels.** That is the whole arrangement: the map and the wardrobe open over
+  it exactly as they open over a level, and closing one puts you back here
+  rather than dropping you into a level you never chose.
+- **`CONTINUE` has two answers and the specific one wins.** A saved session
+  puts you back mid-level on the move you stopped on (`resumeSession()`);
+  without one it is `mapHere()`, the first level you have not dealt with,
+  which is where the map's own marker sits. It says `START` only when there
+  is genuinely nothing behind you — the word has to match what the button is
+  about to do.
+- **The plinth is the wardrobe's display case, not a copy of it.** `homeCase()`
+  hands its canvas to `previewStart()` and calls `previewShow()` with what you
+  have equipped, so the character, the slab and the world behind it are built
+  by the code that already builds them. It keeps the case's own scale: the
+  framing there is tuned to fit the slab and its two neighbours, and scaling
+  the group up pushes the plinth off the canvas. Size comes from a bigger
+  canvas instead.
+- **The case is a singleton, so `hidePanel()` has to put it back.**
+  `showPanel()` calls `previewStop()`, which is right — the stand is behind an
+  opaque panel — but nothing restored it, so closing the map over the home
+  screen left an empty plinth.
+- **And it must be a *fresh canvas* every time.** `previewStop()` ends its
+  context with `WEBGL_lose_context.loseContext()` on purpose, and a canvas
+  whose context was lost that way is spent: `getContext` returns null forever
+  after and three.js dies reading `precision` off it. The wardrobe never meets
+  this because `showPanel` rewrites its markup, and its canvas, on every
+  opening; this screen keeps its markup, so `homeCase()` replaces the element
+  itself.
+- **The canvas has no visible edge**, because `previewShow` paints its scene
+  with the equipped world's void colour and `applyPalette` sets the CSS
+  `--void` from the same world. The character simply stands there.
+- **The body class is `athome`, not `home`.** `.home` is the overlay's own
+  class and a bare `.home` selector matches `<body class="home">` too — the
+  body inherited `position:fixed; display:none` and the entire document
+  measured 0×0, with `getComputedStyle` still reporting `flex` on the overlay
+  because a computed display survives an ancestor being hidden. Same
+  collision as `.mboss`/`.boss` on the map.
+- **`screenUp()` is the shared "a full-bleed screen is in front of the game"
+  test**, and it exists because an overlay swallows taps by being there while
+  a keyboard does not care what is on top. Without it the arrow keys walked
+  the player around a level nobody could see, behind the title screen — which
+  was already true behind the intro card. The two clocks ask it too, so a
+  boss cannot run behind a home screen opened from the menu. The win card is
+  deliberately **not** in it: a solved level is inert through `levelOver()`,
+  which re-shows the card rather than swallowing the input.
+- **The shop is advertised, not opened.** Three unowned items with their
+  prices, shapes before colours because a pyramid is visibly not a cube where
+  two colours at 20px are two dots. It is a drawing; the button under it is
+  the way in. The owner chose this over a live tile strip and over opening the
+  wardrobe panel on arrival.
+
+---
 
 ## The sting
 

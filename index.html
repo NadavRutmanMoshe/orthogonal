@@ -140,6 +140,28 @@
   <div class="sbloom"></div>
 </div>
 
+<!-- The home screen. Everything inside .hwrap is written by homeSync() in
+     js/16-panels.js, except the stand: that canvas is handed to the wardrobe's
+     previewStart(), so the character you are looking at is built by the same
+     code that builds the display case. -->
+<div class="home" id="home">
+  <div class="hwrap">
+    <div class="htitle">Orthogonal</div>
+    <div class="hsub">a cube, a world, one verb</div>
+    <div class="hstand"><canvas id="homeCase"></canvas></div>
+    <div class="hstars"><b id="homeStars">0</b><i>&#9733;</i> earned</div>
+    <div class="hbtns">
+      <button class="hcont" id="hContinue"><b>START</b><i></i></button>
+      <button id="hLevels">LEVELS</button>
+    </div>
+    <div class="hshop">
+      <div class="hteaser" id="homeTeaser"></div>
+      <button id="hWard">WARDROBE</button>
+    </div>
+    <button class="tiny" id="hMenu">SETTINGS</button>
+  </div>
+</div>
+
 <div class="panel" id="panel"></div>
 <div class="toast" id="toast"></div>
 
@@ -149,7 +171,6 @@
     A cube, a world, and one verb.<br>
     Drop the world to 2D and things far apart in depth<br>land side by side.
   </p>
-  <button id="bResume" style="display:none">CONTINUE</button>
   <button id="bBegin">BEGIN</button>
   <button class="tiny" id="bSkipTo" style="height:30px;padding:0 14px">PICK A LEVEL</button>
 </div>

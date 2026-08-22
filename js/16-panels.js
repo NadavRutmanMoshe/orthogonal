@@ -216,7 +216,8 @@ function menuPanel(){
       "<div class='mtot'>"+starsEarned()+" ★</div>"+
       "<button class='mq mx' id='mClose' aria-label='Back to the level'>✕</button></div>"+
     "<div class='pbody'>"+
-      "<div class='prow2'><button class='pgo' id='mLevels'>LEVELS</button></div>"+
+      "<div class='prow2'><button class='pgo' id='mHome'>HOME</button>"+
+        "<button class='pgo' id='mLevels'>LEVELS</button></div>"+
       "<div class='pcard'><h4>Sound &amp; light</h4>"+
         "<div class='srow'><label>Volume</label>"+
           "<input type='range' id='mVol' min='0' max='100' value='"+vol+"'>"+
@@ -330,10 +331,130 @@ function menuPanel(){
     applyBrightness();applyUI();saveSettings();syncHud();
     flash("settings reset");menuPanel();
   });
+  bind("mHome",function(){hidePanel();homeShow();});
   bind("mLevels",levelPicker);
   bind("mLegend",legendPanel);
   bind("mEditor",function(){hidePanel();enterEditor();});
   bind("mClose",hidePanel);
+}
+
+/* ============================================================
+   THE HOME SCREEN
+
+   Where the game starts from once there is anything to come back to. It is
+   not a panel - it is a full-bleed screen at z-index 11, under the panels on
+   purpose, so the map and the wardrobe open *over* it and closing one puts
+   you back here rather than dropping you into a level you never chose.
+
+   A first run never sees it. There is nothing to continue and nothing owned,
+   so the intro card - which says in one sentence what the game is - is the
+   better first screen, and BEGIN goes straight into the tutorial. Once there
+   is progress or a saved session, this replaces it. See 21-boot.js.
+   ============================================================ */
+function homeUp(){var el=$("home");return !!el&&el.classList.contains("on");}
+
+/* WHERE CONTINUE GOES, and it is two answers rather than one.
+
+   A saved session is the truest: it puts you back mid-level, on the move you
+   stopped on, which is what `resumeSession()` already restores for the intro
+   card's old CONTINUE button. Without one - a fresh device, or a level
+   finished cleanly - it is `mapHere()`, the first level you have not dealt
+   with, which is exactly where the map's own marker sits. Those are the two
+   senses of "where I was" and the session is the more specific, so it wins. */
+function homeTarget(){
+  var si=(typeof sessionIndex==="function")?sessionIndex():-1;
+  if(si>=0&&LEVELS[si])return {i:si,resume:true};
+  return {i:mapHere(),resume:false};
+}
+/* Three things you do not own, cheapest first, shapes before colours.
+
+   Shapes lead because they are the headline purchase and the one that reads
+   at a glance - a pyramid is visibly not a cube, where two colours at 20px
+   are two dots. SKIN_SHAPES is already in ascending cost order, so "cheapest
+   first" is just the order of the table. Colours top the row up when there
+   are not three shapes left to want. */
+function homeTeaser(){
+  var out=[],i;
+  for(i=0;i<SKIN_SHAPES.length&&out.length<3;i++)
+    if(!owns(SKIN_SHAPES[i].id))
+      out.push({g:shapeGlyph(SKIN_SHAPES[i].id),c:SKIN_SHAPES[i].cost,col:null});
+  for(i=0;i<SKIN_COLORS.length&&out.length<3;i++)
+    if(!owns(SKIN_COLORS[i].id))
+      out.push({g:"\u25cf",c:SKIN_COLORS[i].cost,
+                col:"#"+SKIN_COLORS[i].hex.toString(16).padStart(6,"0")});
+  return out;
+}
+function homeSync(){
+  if(!$("home"))return;
+  var t=homeTarget(), lv=LEVELS[t.i];
+  var b=$("hContinue");
+  /* "START" only when there is genuinely nothing behind you. Anything else
+     is a continuation, even the first level of a section you have not
+     touched - the word has to match what the button is about to do. */
+  var fresh=!t.resume&&t.i===0&&!mapTouched(0);
+  b.querySelector("b").textContent=fresh?"START":"CONTINUE";
+  b.querySelector("i").textContent=lv?lv.name.replace(/^\d+ \u2014 /,""):"";
+  $("homeStars").textContent=starsEarned();
+  var tz=homeTeaser(),h="";
+  if(!tz.length)h="<span class='hnone'>everything unlocked</span>";
+  else for(var i=0;i<tz.length;i++)
+    h+="<em><span"+(tz[i].col?" style='color:"+tz[i].col+"'":"")+">"+
+       tz[i].g+"</span><b>"+tz[i].c+"\u2605</b></em>";
+  $("homeTeaser").innerHTML=h;
+}
+/* The stand, which is the wardrobe's display case pointed at what you have
+   equipped. Rebuilt rather than kept, because previewStart is a singleton and
+   anything that opens a panel takes it down - see hidePanel().
+
+   AND ON A FRESH CANVAS EVERY TIME, which is not a tidiness choice. previewStop
+   ends its context with WEBGL_lose_context.loseContext(), deliberately, so the
+   browser reclaims it instead of waiting for a GC that might evict the game's
+   own renderer first. A canvas whose context has been lost that way is spent:
+   getContext returns null on it forever after, and three.js dies reading
+   `precision` off the null. The wardrobe never meets this because showPanel
+   rewrites the panel's markup on every opening and hands previewStart a brand
+   new element each time; this screen keeps its markup between openings, so it
+   has to make the new element itself. */
+function homeCase(){
+  var old=$("homeCase");
+  if(!old||!homeUp())return;
+  var cv=document.createElement("canvas");
+  cv.id="homeCase";
+  old.parentNode.replaceChild(cv,old);
+  previewStart(cv);
+  previewShow(wardrobe.shape,wardrobe.color,wardrobe.world3,wardrobe.world2,false);
+  /* Left at the display case's own scale. The framing there is tuned to fit
+     the slab and its two neighbours, and scaling the group up pushes the
+     plinth off the bottom of the canvas - the character grows and its ground
+     is cut away, which reads as a cropping accident. This screen gets its
+     size from a bigger canvas instead. */
+}
+function homeShow(){
+  if(!$("home"))return;
+  hidePanel();
+  $("won").classList.remove("on");
+  $("intro").classList.add("gone");
+  $("home").classList.add("on");
+  syncHud();                       // syncHud owns body.home and the chrome
+  homeSync();
+  homeCase();
+}
+function homeHide(){
+  if(!homeUp())return;
+  previewStop();
+  $("home").classList.remove("on");
+  syncHud();
+}
+/* Leaving by the front door. The audio unlock rides here as well as on the
+   intro card's BEGIN, because on a returning player's launch this is the
+   first thing they touch and a WebView may have refused the sting's tap. */
+function homeGo(){
+  var t=homeTarget();
+  homeHide();
+  audio();applyBrightness();
+  if(t.resume&&resumeSession())return;
+  playSource="builtin";
+  enterPlay(LEVELS[t.i],t.i,false);
 }
 
 /* Where each section starts and ends, and how much of it is done. The

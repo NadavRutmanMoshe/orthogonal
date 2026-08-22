@@ -87,8 +87,28 @@ function hidePanel(){
   $("panel").classList.remove("on");
   panelKind=null;
   syncCorners();
+  /* The home screen's stand is the same singleton the wardrobe's display case
+     is, so showPanel() tore it down on the way in - which is right, it was
+     behind an opaque panel. Put it back on the way out, or closing the map
+     over the home screen leaves an empty plinth. */
+  if(homeUp())homeCase();
 }
 function panelOpen(){return $("panel").classList.contains("on");}
+/* Is a full-bleed screen standing in front of the game?
+
+   The intro card and the home screen both cover the world, and both swallow
+   taps simply by being there - but a keyboard does not care what is on top,
+   and neither does a clock. So the keys that drive the game ask this, and so
+   do bossFrame and trialFrame, which would otherwise run a fight behind a
+   title screen the player opened from the menu.
+
+   The win card is deliberately not in here. A solved level is already inert
+   through levelOver(), which re-shows the card rather than swallowing the
+   input - the card is the only thing that explains why nothing is
+   responding, and that behaviour is worth keeping exactly as it is. */
+function screenUp(){
+  return homeUp()||!$("intro").classList.contains("gone");
+}
 function syncCorners(){
   var m=$("bMenu"), w=$("bWard");
   if(m)m.classList.toggle("on",panelKind==="menu");
@@ -113,7 +133,16 @@ function syncHud(){
      so there is one place that decides, and the CSS rule for this one is
      written after those three so it wins. */
   document.body.classList.toggle("tutgest",tutGestureLesson());
-  var inPlay=app==="play";
+  /* The home screen is a screen, not a panel, so it does not go through
+     showPanel - but the chrome has to answer to it exactly as it answers to
+     one. One owner for the body class, here, beside the others.
+
+     `athome` rather than `home`, because `.home` is the overlay's own class
+     and a bare `.home` selector would match the body carrying it too - which
+     it did, handing the whole document `display:none`. See the note in
+     css/style.css. */
+  document.body.classList.toggle("athome",homeUp());
+  var inPlay=app==="play"&&!homeUp();
   ["bHint","bLook","bMenu","bWard","bRestart"].forEach(function(id){
     var el=$(id); if(el)el.style.display=inPlay?"flex":"none";
   });

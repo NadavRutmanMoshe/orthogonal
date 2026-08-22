@@ -311,7 +311,9 @@ function huntLine(h,cr){
 }
 function bossFrame(dt){
   if(!B||app!=="play")return;
-  if(dying||levelDone||panelOpen()||!$("intro").classList.contains("gone")||
+  // screenUp() is the intro card *and* the home screen: a fight must not run
+  // behind a title screen the player opened from the menu mid-boss.
+  if(dying||levelDone||panelOpen()||screenUp()||
      $("won").classList.contains("on"))return;
   /* Clamp first, then scale. The clamp is about a backgrounded tab handing
      back one enormous frame; the scale is the player's pace setting, and
@@ -586,7 +588,9 @@ function trialReset(){
 }
 function trialFrame(dt){
   if(!TR||app!=="play")return;
-  if(dying||levelDone||panelOpen()||!$("intro").classList.contains("gone")||
+  // screenUp() is the intro card *and* the home screen: a fight must not run
+  // behind a title screen the player opened from the menu mid-boss.
+  if(dying||levelDone||panelOpen()||screenUp()||
      $("won").classList.contains("on"))return;
   // Clamped against a backgrounded tab's one enormous frame, then scaled by
   // the pace setting - see paceScale() in 11-sound.js for why it is one
