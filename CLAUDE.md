@@ -821,11 +821,41 @@ things you do not own with what they cost, and a way into the wardrobe.
   boss cannot run behind a home screen opened from the menu. The win card is
   deliberately **not** in it: a solved level is inert through `levelOver()`,
   which re-shows the card rather than swallowing the input.
-- **The shop is advertised, not opened.** Three unowned items with their
-  prices, shapes before colours because a pyramid is visibly not a cube where
-  two colours at 20px are two dots. It is a drawing; the button under it is
-  the way in. The owner chose this over a live tile strip and over opening the
-  wardrobe panel on arrival.
+- **The shop is on the screen and every tile is live.** Two scrolling rows,
+  SHAPE and COLOUR, the whole catalogue in cost order. It started as three
+  locked items with prices and *no behaviour* — a drawing, with the wardrobe
+  button as the way in — and that was wrong the first time anybody used it:
+  **a thing shaped like a tile invites a press, and a press that answers
+  nothing is worse than showing no tiles at all.**
+- **Which thing a tap does falls out of whether you own it.** Owned goes
+  straight onto the character — equipping costs nothing and is undone by
+  tapping another, so there is no confirmation to make. Locked opens the
+  wardrobe *on that item*, with its price and its BUY already under the case;
+  `wardSel[t]` is the wardrobe's own selection, so setting it before opening
+  lands the player exactly where the tile was advertising. Nothing on this
+  screen can spend a star, which is what keeps "selecting, buying and
+  equipping are three separate acts" true.
+- **Worlds are not in the strip.** Two rows is a strip; four is the wardrobe
+  with worse ergonomics, and the shape and the colour are what a player means
+  when they say they want to look different.
+- **Locked is a dashed edge, not a faded swatch.** Dimming looked right on
+  the shapes and was plainly wrong on the colours: at .42 over this ground,
+  White came out grey and Red came out maroon, so the row was misdescribing
+  the one thing it is selling.
+- **`--player` is not a constant** — `applySkin()` rewrites it from the
+  equipped colour — so the equipped tile's ring is drawn *detached*, with a
+  1px void gap, or it is the swatch's own colour drawn on the swatch and
+  invisible on the single tile it exists to mark. Its glow is `color-mix`ed
+  from the same variable for the same reason: it was a literal rose `rgba()`,
+  which is what `--player` happened to be the day it was written.
+- **The rows are tapped on `pointerup` with a travel test**, not through
+  `tap()`, which fires on `pointerdown` and calls `preventDefault` — that eats
+  the drag that scrolls them. They also hand back `touch-action`, which is
+  `none` on the body to keep iOS off the two-finger turn; the home screen is
+  the one place no game gesture applies.
+- **`hidePanel()` syncs the home screen as well as restarting its stand.**
+  You may have just bought and equipped something in the wardrobe, and the
+  strip, the plinth and the star count all have to know.
 
 ---
 

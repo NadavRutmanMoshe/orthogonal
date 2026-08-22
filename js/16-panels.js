@@ -366,41 +366,105 @@ function homeTarget(){
   if(si>=0&&LEVELS[si])return {i:si,resume:true};
   return {i:mapHere(),resume:false};
 }
-/* Three things you do not own, cheapest first, shapes before colours.
+/* THE SHOP IS ON THE SCREEN, AND EVERY TILE IS LIVE.
 
-   Shapes lead because they are the headline purchase and the one that reads
-   at a glance - a pyramid is visibly not a cube, where two colours at 20px
-   are two dots. SKIN_SHAPES is already in ascending cost order, so "cheapest
-   first" is just the order of the table. Colours top the row up when there
-   are not three shapes left to want. */
-function homeTeaser(){
-  var out=[],i;
-  for(i=0;i<SKIN_SHAPES.length&&out.length<3;i++)
-    if(!owns(SKIN_SHAPES[i].id))
-      out.push({g:shapeGlyph(SKIN_SHAPES[i].id),c:SKIN_SHAPES[i].cost,col:null});
-  for(i=0;i<SKIN_COLORS.length&&out.length<3;i++)
-    if(!owns(SKIN_COLORS[i].id))
-      out.push({g:"\u25cf",c:SKIN_COLORS[i].cost,
-                col:"#"+SKIN_COLORS[i].hex.toString(16).padStart(6,"0")});
-  return out;
+   It started as three locked items with their prices and no behaviour - a
+   drawing, with the wardrobe button as the way in. That was wrong the first
+   time anybody used it: a thing shaped like a tile invites a press, and a
+   press that answers nothing is worse than showing no tiles at all.
+
+   So a tap always does something, and which thing it does falls out of
+   whether you own it:
+
+   - Owned goes straight onto the character. Equipping costs nothing and is
+     reversible by tapping another one, so there is no confirmation to make.
+   - Locked opens the wardrobe on that item, with its price and its BUY
+     already under the case. That is the other half of the same answer: the
+     purchase is armed and confirmed where it always was. Nothing on this
+     screen can spend a star, which is what keeps "selecting, buying and
+     equipping are three separate acts" true.
+
+   Worlds are not here. Two rows is a strip; four is the wardrobe with worse
+   ergonomics, and the shape and the colour are what a player means when they
+   say they want to look different. */
+function homeTile(t,it,glyph,swatch){
+  var have=owns(it.id), on=wardEquipped(t)===it.id;
+  return "<i class='htile"+(on?" on":have?"":" lock")+"' data-t='"+t+
+         "' data-id='"+it.id+"'><span"+
+         (swatch?" style='background:"+swatch+"'":"")+">"+(glyph||"")+"</span>"+
+         (have?"":"<b>"+it.cost+"\u2605</b>")+"</i>";
+}
+function homeStrip(){
+  var h="",i;
+  for(i=0;i<SKIN_SHAPES.length;i++)
+    h+=homeTile("shape",SKIN_SHAPES[i],shapeGlyph(SKIN_SHAPES[i].id),null);
+  $("homeShapes").innerHTML=h;
+  h="";
+  for(i=0;i<SKIN_COLORS.length;i++)
+    h+=homeTile("color",SKIN_COLORS[i],"",
+        "#"+SKIN_COLORS[i].hex.toString(16).padStart(6,"0"));
+  $("homeColors").innerHTML=h;
+}
+function homePick(t,id){
+  if(!t||!id)return;
+  if(!owns(id)){
+    /* Hand off rather than sell. wardSel is the wardrobe's own selection, so
+       setting it before opening lands the player on that exact item with the
+       case showing it and BUY underneath - the same place the tile was
+       advertising, reached in one tap instead of three. */
+    wardSel[t]=id;
+    SFX.turn();
+    wardrobePanel(t);
+    return;
+  }
+  if(wardEquipped(t)===id){SFX.turn();return;}   // already on; say so quietly
+  wardEquip(t,id);
+  SFX.key();
+  homeStrip();
+  homeStand();
+}
+/* Delegated, and on pointerup with a travel test rather than the pointerdown
+   `tap()` uses everywhere else. These rows scroll sideways, and a pointerdown
+   that calls preventDefault eats the drag that scrolls them - so a tap here
+   has to be a press that did not travel. Bound once: homeStrip() rewrites the
+   tiles on every sync, and a listener per rebuild would stack up. */
+var homeStripBound=false;
+function homeBindStrip(){
+  if(homeStripBound)return;
+  ["homeShapes","homeColors"].forEach(function(id){
+    var el=$(id); if(!el)return;
+    homeStripBound=true;
+    var sx=0,sy=0,pid=null;
+    el.addEventListener("pointerdown",function(e){
+      pid=e.pointerId;sx=e.clientX;sy=e.clientY;
+    });
+    el.addEventListener("pointerup",function(e){
+      if(e.pointerId!==pid)return;
+      pid=null;
+      if(Math.abs(e.clientX-sx)>8||Math.abs(e.clientY-sy)>8)return;
+      var t=e.target&&e.target.closest?e.target.closest(".htile"):null;
+      if(!t)return;
+      homePick(t.getAttribute("data-t"),t.getAttribute("data-id"));
+    });
+  });
 }
 function homeSync(){
   if(!$("home"))return;
   var t=homeTarget(), lv=LEVELS[t.i];
   var b=$("hContinue");
-  /* "START" only when there is genuinely nothing behind you. Anything else
-     is a continuation, even the first level of a section you have not
-     touched - the word has to match what the button is about to do. */
-  var fresh=!t.resume&&t.i===0&&!mapTouched(0);
+  /* "START" only when there is genuinely nothing behind you, which is more
+     than "the target is level 0". mapHere() answers with the first level you
+     have not *dealt with*, and that can point backwards at a tutorial somebody
+     skipped past from the intro card - so a player with several levels beaten
+     was being offered START. Stars are the second opinion that catches it:
+     tutorials pay none, so a player who has only done those still reads as
+     fresh, and anyone who has beaten a real level does not. */
+  var fresh=!t.resume&&t.i===0&&!mapTouched(0)&&starsEarned()===0;
   b.querySelector("b").textContent=fresh?"START":"CONTINUE";
   b.querySelector("i").textContent=lv?lv.name.replace(/^\d+ \u2014 /,""):"";
   $("homeStars").textContent=starsEarned();
-  var tz=homeTeaser(),h="";
-  if(!tz.length)h="<span class='hnone'>everything unlocked</span>";
-  else for(var i=0;i<tz.length;i++)
-    h+="<em><span"+(tz[i].col?" style='color:"+tz[i].col+"'":"")+">"+
-       tz[i].g+"</span><b>"+tz[i].c+"\u2605</b></em>";
-  $("homeTeaser").innerHTML=h;
+  homeStrip();
+  homeBindStrip();
 }
 /* The stand, which is the wardrobe's display case pointed at what you have
    equipped. Rebuilt rather than kept, because previewStart is a singleton and
@@ -422,12 +486,15 @@ function homeCase(){
   cv.id="homeCase";
   old.parentNode.replaceChild(cv,old);
   previewStart(cv);
+  homeStand();
+}
+/* Just the drawing, on whatever context is already there. Equipping from the
+   strip goes through here rather than homeCase(), because building a WebGL
+   renderer per tap on a row you are meant to browse is the wrong price for
+   changing a colour. */
+function homeStand(){
+  if(!pv)return;
   previewShow(wardrobe.shape,wardrobe.color,wardrobe.world3,wardrobe.world2,false);
-  /* Left at the display case's own scale. The framing there is tuned to fit
-     the slab and its two neighbours, and scaling the group up pushes the
-     plinth off the bottom of the canvas - the character grows and its ground
-     is cut away, which reads as a cropping accident. This screen gets its
-     size from a bigger canvas instead. */
 }
 function homeShow(){
   if(!$("home"))return;

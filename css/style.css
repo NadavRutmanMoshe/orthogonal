@@ -1164,7 +1164,7 @@ body.tut.tutgest .coach,body.tut.tutgest.ui-none .coach{bottom:44px}
    ============================================================ */
 .home{position:fixed;inset:0;z-index:11;display:none;
   flex-direction:column;align-items:center;justify-content:center;
-  background:var(--void);padding:22px 16px;overflow:auto;
+  background:var(--void);padding:22px 16px;overflow:auto;touch-action:pan-y;
   transition:background .5s ease}
 .home.on{display:flex}
 .hwrap{width:100%;max-width:340px;display:flex;flex-direction:column;
@@ -1174,14 +1174,14 @@ body.tut.tutgest .coach,body.tut.tutgest.ui-none .coach{bottom:44px}
 .hsub{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:8px;
   letter-spacing:.28em;text-transform:uppercase;color:var(--fg-dim);
   margin-top:7px}
-.hstand{width:216px;height:216px;margin:2px 0}
+.hstand{width:196px;height:196px;margin:0}
 .hstand canvas{width:100%;height:100%;display:block}
 .hstars{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9px;
   letter-spacing:.14em;text-transform:uppercase;color:var(--fg-dim)}
 .hstars b{color:var(--goal);font-weight:600;font-size:12px}
 .hstars i{font-style:normal;color:var(--goal);margin:0 4px 0 1px}
 
-.hbtns{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.hbtns{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:12px}
 .home button{width:100%;height:44px;font-size:10.5px;letter-spacing:.14em}
 /* The one thing this screen is for, so it gets the raised treatment the
    panels' primary button already has - and its own second line, because
@@ -1196,24 +1196,63 @@ body.tut.tutgest .coach,body.tut.tutgest.ui-none .coach{bottom:44px}
   color:var(--fg-dim);text-transform:none}
 .hcont i:empty{display:none}
 
-/* The shop, advertised rather than opened. Three things you do not own yet
-   with what they cost, so a new player learns the character is a thing you
-   can change before they have any stars to change it with. It is a drawing,
-   not a control - the button under it is the way in. */
-.hshop{width:100%;margin-top:18px;padding-top:15px;
+/* THE SHOP, ON THE SCREEN RATHER THAN BEHIND A BUTTON.
+
+   It was a row of three locked items with their prices and nothing else - a
+   drawing, deliberately, on the grounds that the button under it was the way
+   in. Played, the first thing anybody does is press one, and a thing shaped
+   like a tile that answers nothing is worse than no tile at all. So every
+   tile is live: an owned one goes straight onto the character, and a locked
+   one opens the wardrobe already showing that item with its BUY under it.
+   Nothing here can spend a star - buying is still armed and confirmed in the
+   wardrobe, which is the rule the whole catalogue is built on.
+
+   Both rows scroll sideways, which needs saying twice: `touch-action` is
+   `none` on the body to keep iOS off the two-finger turn, and that would
+   swallow the drag that scrolls these. The home screen is the one place no
+   game gesture applies, so it hands the axes back. */
+.hshop{width:100%;margin-top:14px;padding-top:12px;
   border-top:1px solid var(--rule);
-  display:flex;flex-direction:column;align-items:center;gap:11px}
-.hteaser{display:flex;gap:18px;align-items:flex-start;justify-content:center;
-  min-height:38px}
-.hteaser em{display:flex;flex-direction:column;align-items:center;gap:4px;
-  font-style:normal}
-.hteaser em span{font-size:20px;line-height:1;color:var(--fg-dim)}
-.hteaser em b{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:8.5px;
-  font-weight:500;letter-spacing:.06em;color:var(--goal)}
-.hteaser .hnone{font-family:'IBM Plex Mono',ui-monospace,monospace;
-  font-size:9px;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--fg-dim);align-self:center}
-.home .tiny{width:auto;height:30px;padding:0 16px;margin-top:18px;
+  display:flex;flex-direction:column;align-items:stretch;gap:8px}
+.hrow{display:flex;align-items:center;gap:9px;min-width:0}
+.hrow label{width:46px;flex-shrink:0;font-family:'IBM Plex Mono',ui-monospace,monospace;
+  font-size:7.5px;letter-spacing:.16em;color:var(--fg-dim)}
+.htiles{flex:1;min-width:0;display:flex;gap:5px;align-items:flex-start;
+  overflow-x:auto;overflow-y:hidden;touch-action:pan-x;
+  scrollbar-width:none;padding:2px 0 1px}
+.htiles::-webkit-scrollbar{display:none}
+.htile{flex-shrink:0;width:34px;display:flex;flex-direction:column;
+  align-items:center;gap:2px;font-style:normal;cursor:pointer}
+.htile>span{width:32px;height:32px;border-radius:3px;
+  border:1px solid var(--rule);display:flex;align-items:center;
+  justify-content:center;font-size:15px;line-height:1;color:var(--fg);
+  transition:border-color .2s ease,opacity .2s ease}
+.htile>b{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:7.5px;
+  font-weight:500;letter-spacing:.02em;color:var(--goal)}
+/* EQUIPPED IS A DETACHED RING, WITH A GAP. `--player` is not a constant: it
+   is rewritten from the equipped skin colour every time applySkin() runs, so
+   a ring drawn tight around a colour swatch is the swatch's own colour drawn
+   on the swatch - invisible on exactly the one tile it has to mark. The 1px
+   void border is the gap that separates them, and it works for every colour
+   because the ground behind the tiles is the same ground.
+
+   The glow is color-mixed from the same variable rather than hard-coded. It
+   was a literal rose rgba(), which is what --player happened to be the day it
+   was written; equipping any other colour left a pink halo around a ring that
+   had moved on. */
+.htile.on>span{border-color:var(--void);
+  box-shadow:0 0 0 2px var(--player),
+             0 0 12px color-mix(in srgb,var(--player) 40%,transparent)}
+/* LOCKED IS A DASHED EDGE, NOT A FADED SWATCH. Dimming looked right on the
+   shapes and was plainly wrong on the colours: at .42 over this background,
+   White came out grey and Red came out maroon, so the row was misdescribing
+   the very thing it is selling. The border carries "locked" instead, the
+   glyph goes quiet with it, and a colour is shown at the colour it is. The
+   price under the tile was always saying it too. */
+.htile.lock>span{border-style:dashed;color:var(--fg-dim)}
+.htile:active>span{border-color:var(--fg-dim)}
+
+.home .tiny{width:auto;height:30px;padding:0 16px;margin-top:14px;
   font-size:9px;border-color:var(--rule);color:var(--fg-dim)}
 
 /* Play chrome has nothing to do while the home screen is up, and the star

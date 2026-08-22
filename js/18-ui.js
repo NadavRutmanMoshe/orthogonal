@@ -90,8 +90,10 @@ function hidePanel(){
   /* The home screen's stand is the same singleton the wardrobe's display case
      is, so showPanel() tore it down on the way in - which is right, it was
      behind an opaque panel. Put it back on the way out, or closing the map
-     over the home screen leaves an empty plinth. */
-  if(homeUp())homeCase();
+     over the home screen leaves an empty plinth. The sync goes with it: you
+     may have just bought and equipped something in the wardrobe, and the
+     strip and the plinth both have to know. */
+  if(homeUp()){homeSync();homeCase();}
 }
 function panelOpen(){return $("panel").classList.contains("on");}
 /* Is a full-bleed screen standing in front of the game?
