@@ -973,27 +973,37 @@ body.flat.bosshold::before{background:rgba(90,84,68,.34)}
    later statement - under it the world dims and the hand brightens, which is
    the same two-cue arrangement the buttons had, moved onto a new surface.
 
-   Everything about a demonstration is set from two custom properties and a
+   IT SITS IN THE MIDDLE OF THE SCREEN, over the world rather than under it.
+   That is where the gesture actually happens - a swipe or a double tap lands
+   on the world itself, not on a strip at the bottom where the bar used to be
+   - and it is also where the player is already looking. It rode the bottom
+   edge first, which put the demonstration in the one place the lesson had
+   just finished saying was empty.
+
+   Everything about a demonstration is set from four custom properties and a
    handful of classes, so tutGhost() only ever writes a class string and a
    start/end offset. Nothing here animates layout: the finger moves on
    `transform`, which composites, and this thing loops for as long as a
    first-time player is stuck.
    ============================================================ */
-.ghost{position:fixed;left:50%;bottom:26px;z-index:11;
-  width:190px;height:118px;margin-left:-95px;
+.ghost{position:fixed;left:50%;top:50%;z-index:11;
+  width:190px;height:118px;margin:-59px 0 0 -95px;
   pointer-events:none;opacity:0;transition:opacity .35s ease}
 .ghost.on{opacity:.62}
 /* Under the lock the hand is the lit control, so it goes to full strength -
    the same step up the cued button used to take. */
 body.tutlock .ghost.on{opacity:1}
 
-/* The path, drawn faintly and always visible, so the gesture reads as a
-   direction even in the pause between loops. The gradient runs from nothing
-   at the start to the goal colour at the finish, which is a second statement
-   of the same direction for anyone who glances at a still frame. */
+/* THE TRACK IS WHERE THE GESTURE HAPPENS, and every demonstration has one -
+   a line for a swipe, a spot for a tap. It is drawn faintly and is always
+   there, so the demo reads as a shape even in the pause between loops, and
+   so the double tap has something for the finger to land back onto rather
+   than blinking in mid-air. The gradient on a swipe runs from nothing at the
+   start to the goal colour at the finish, which states the direction a
+   second time for anyone who glances at a still frame. */
 .gtrack{position:absolute;left:50%;top:50%;border-radius:3px;
   transform:translate(-50%,-50%);display:none}
-.ghost.g-swipe .gtrack,.ghost.g-two .gtrack{display:block}
+.ghost.g-swipe .gtrack,.ghost.g-two .gtrack,.ghost.g-dbl .gtrack{display:block}
 .ghost.gx .gtrack{width:112px;height:4px}
 .ghost.gy .gtrack{width:4px;height:84px}
 .ghost.d-right .gtrack{background:linear-gradient(90deg,
@@ -1004,20 +1014,40 @@ body.tutlock .ghost.on{opacity:1}
   rgba(53,194,165,.05),rgba(53,194,165,.5))}
 .ghost.d-down .gtrack{background:linear-gradient(180deg,
   rgba(53,194,165,.05),rgba(53,194,165,.5))}
+/* A tap has no path, so its track is the place: a soft disc the finger lands
+   back onto, which is what keeps the two taps legible as two visits to one
+   spot rather than as one blinking dot. It is a filled disc and not a ring,
+   because the dot and the ripple are already circles of about this size and
+   a third concentric outline is most of what made this demo read as messy.
+   Filled, it sits *under* the dot rather than beside it. */
+.ghost.g-dbl .gtrack{width:34px;height:34px;border-radius:50%;
+  background:rgba(53,194,165,.12);border:1px solid rgba(53,194,165,.20)}
 
 /* A finger is a wrapper that travels and a dot that does not. Keeping the
-   travel on the wrapper is what lets the two-finger demo offset its pair with
-   plain `margin` and still share one animation. */
+   travel on the wrapper is what lets the two-finger demo offset its pair
+   with plain `margin` and still share one animation. */
 .gfinger{position:absolute;left:50%;top:50%;width:26px;height:26px;
   margin:-13px 0 0 -13px}
 .gfinger.b{display:none}
-.ghost.g-two .gfinger.a{margin-left:-35px}
-.ghost.g-two .gfinger.b{display:block;margin-left:9px}
+/* TWO FINGERS ARE STACKED, NOT SIDE BY SIDE. Side by side is the grip most
+   people actually use, but it is the worse drawing: two dots abreast sliding
+   along their own direction of travel read as one dot with a trail behind
+   it, which is the exact thing a single-finger swipe already looks like. One
+   above the other, both moving, is unmistakably two. */
+.ghost.g-two .gfinger.a{margin-top:-30px}
+.ghost.g-two .gfinger.b{display:block;margin-top:4px}
+/* ...so the path is two lines as well, one under each finger. The second is
+   a pseudo-element rather than a second div: it is the same line at the same
+   width with the same gradient, and `background:inherit` is what keeps the
+   four direction rules above from needing a copy each. */
+.ghost.g-two .gtrack{margin-top:-17px}
+.ghost.g-two .gtrack::after{content:"";position:absolute;left:0;top:34px;
+  width:100%;height:100%;background:inherit;border-radius:inherit}
 .gdot{position:absolute;inset:0;border-radius:50%;
   background:rgba(53,194,165,.30);border:1.5px solid var(--goal);
   box-shadow:0 0 14px rgba(53,194,165,.45)}
 .gtap{position:absolute;inset:0;border-radius:50%;
-  border:1.5px solid var(--goal);opacity:0;display:none}
+  border:1.2px solid var(--goal);opacity:0;display:none}
 .ghost.g-dbl .gtap{display:block}
 
 /* The travel. Start and end are written by tutGhost as --hx/--hy and
@@ -1035,42 +1065,69 @@ body.tutlock .ghost.on{opacity:1}
 .ghost.g-swipe .gfinger,.ghost.g-two .gfinger{
   animation:gswipe 1.9s cubic-bezier(.4,0,.25,1) infinite}
 
-/* The double tap: the dot dips twice, 250ms apart, and each dip throws a
-   ring. Two rings rather than one played twice, because the second has to be
-   able to start while the first is still expanding - which is what makes it
-   read as *two* taps rather than as one slow pulse. */
+/* THE DOUBLE TAP IS TWO CONTACTS, AND THE LIFT BETWEEN THEM IS THE WHOLE
+   DRAWING. The first version kept the dot on screen throughout and dipped it
+   twice, which is exactly what a single slow pulse looks like: the count was
+   carried entirely by two rings overlapping on a dot that never left, and it
+   read as one messy throb rather than as two taps.
+
+   A finger that is not touching the glass is not on the glass. So the dot
+   goes to *nothing* between the taps, and the gap is 120ms - long enough to
+   be seen as absence rather than as flicker, and considerably longer than a
+   real double tap needs, because this is a demonstration and legibility beats
+   fidelity. The soft disc holds the position while the dot is away.
+
+   The ripples no longer overlap either. Each is 18% of the loop (342ms) and
+   the second contact is at 20% (380ms), so one has finished before the next
+   begins and each ripple plainly belongs to one tap.
+
+   Contacts and ripples are two halves of one clock: both animations run 1.9s
+   and the second ring's .38s delay is exactly the 20% at which the dot lands
+   again. Move one and you must move the other - including under reduced
+   motion below. 1.9s is also the swipe's loop, so all three demonstrations
+   beat together. */
 @keyframes gdbl{
-  0%,100%{transform:scale(1)}
-  3%{transform:scale(.7)} 9%{transform:scale(1)}
-  18%{transform:scale(.7)} 24%{transform:scale(1)}
+  0%   {transform:scale(.68);opacity:1}
+  2.1% {transform:scale(1);opacity:1}
+  10%  {transform:scale(1);opacity:1}
+  13.7%{transform:scale(.86);opacity:0}
+  19%  {transform:scale(.68);opacity:0}
+  20%  {transform:scale(.68);opacity:1}
+  22.1%{transform:scale(1);opacity:1}
+  30%  {transform:scale(1);opacity:1}
+  33.7%{transform:scale(.86);opacity:0}
+  100% {transform:scale(.86);opacity:0}
 }
 @keyframes gring{
-  0%{transform:scale(.55);opacity:.9}
-  55%{transform:scale(2.5);opacity:0}
-  100%{transform:scale(2.5);opacity:0}
+  0%  {transform:scale(.62);opacity:.85}
+  18% {transform:scale(2.4);opacity:0}
+  100%{transform:scale(2.4);opacity:0}
 }
-.ghost.g-dbl .gdot{animation:gdbl 1.6s ease-in-out infinite}
-.ghost.g-dbl .gtap{animation:gring 1.6s ease-out infinite}
-.ghost.g-dbl .gtap.two{animation-delay:.25s}
+.ghost.g-dbl .gdot{animation:gdbl 1.9s ease-out infinite}
+.ghost.g-dbl .gtap{animation:gring 1.9s ease-out infinite}
+.ghost.g-dbl .gtap.two{animation-delay:.38s}
 
 /* THE BAR IS OFF DURING A GESTURE TUTORIAL, and this is the one rule that
-   turns it off. It has to beat the three `body.tut` rules above, which force
-   the bar back on over the layout preference - those were written for a
-   lesson about the buttons, and this is a lesson about the gestures. */
+   turns it off. */
 /* Written with both classes and with `.on`, because it has to out-specify
    `body.tut.ui-none #playBar.on` - the rule that forces the bar back over a
    HIDDEN layout - and a bare `body.tutgest #playBar.on` loses to it by one
    class. tutgest is only ever set alongside tut, so naming both costs
    nothing and makes the two rules directly comparable. */
 body.tut.tutgest #playBar,body.tut.tutgest #playBar.on{display:none}
-/* The coach sits above the hand rather than above the bar. */
-body.tut.tutgest .coach,body.tut.tutgest.ui-none .coach{bottom:164px}
+/* The hand has moved to the middle of the screen, so the coach goes back to
+   the foot of it - low, where a line of instruction sits when there is no
+   bar under it, and well clear of the demonstration. */
+body.tut.tutgest .coach,body.tut.tutgest.ui-none .coach{bottom:44px}
 
 @media (prefers-reduced-motion:reduce){
   /* A looping hand is the whole point, so it is not removed - but it is
      slowed to something that reads as a demonstration rather than a flicker.
      The blanket transition override at the top of this file does not reach
-     `animation`, so this has to say so itself. */
+     `animation`, so this has to say so itself. The double tap's two clocks
+     are scaled together, delay included, or the second ring would drift off
+     the second contact. */
   .ghost.g-swipe .gfinger,.ghost.g-two .gfinger{animation-duration:3.4s}
-  .ghost.g-dbl .gdot,.ghost.g-dbl .gtap{animation-duration:2.8s}
+  .ghost.g-dbl .gdot,.ghost.g-dbl .gtap{animation-duration:3.4s}
+  .ghost.g-dbl .gtap.two{animation-delay:.68s}
 }

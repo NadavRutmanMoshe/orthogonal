@@ -94,10 +94,37 @@ function tutGestureLesson(){
    room than vertical because the demo box is wider than it is tall - and the
    track is sized to match in the CSS, by the same gx / gy class. */
 var GHOST_SPAN={right:[56,0],left:[-56,0],up:[0,-42],down:[0,42]};
-/* Writes a class string and two offsets, and nothing else. Called from
-   tutSync on every re-evaluation; it compares the class it is about to set
-   against the one already there, because reassigning className restarts every
-   animation on the element and the hand would stutter on each move. */
+/* Restart every loop in the hand from the top.
+
+   Called only when the demonstration actually changes, and it has to be
+   called then. A CSS animation does not restart because a class changed -
+   it restarts when its `animation-name` changes or when the element goes
+   from display:none to displayed - so the parts of the hand were starting
+   their loops at different moments and staying that way:
+
+   - The pair fell out of step. `.gfinger.b` is display:none until g-two, so
+     it starts its loop the instant that class arrives, while `.gfinger.a`
+     has been looping since whatever step came before under the same
+     `gswipe` name. Measured at nearly three seconds apart - one finger
+     arriving as the other left, in the drawing whose entire job is to say
+     "two fingers, together".
+   - A swipe that changed direction jumped. Only --hx/--ty changed, so the
+     dot teleported to a new point on a loop it was already halfway through.
+
+   The two-step is what makes it work: assigning `animation:none` and reading
+   a layout property flushes it, so clearing it a moment later is a genuine
+   second start rather than a no-op the style system folds away. One flush
+   for all of them, so they restart on the same frame. */
+function ghostRestart(el){
+  var parts=el.querySelectorAll(".gfinger,.gdot,.gtap"),i;
+  for(i=0;i<parts.length;i++)parts[i].style.animation="none";
+  void el.offsetWidth;
+  for(i=0;i<parts.length;i++)parts[i].style.animation="";
+}
+/* Writes a class string and four offsets, and nothing else. Called from
+   tutSync on every re-evaluation, so it compares the class it is about to
+   set against the one already there: a step that wants three presses of one
+   control must not have its demonstration restarted on each of them. */
 function tutGhost(id){
   var el=$("ghost"); if(!el)return;
   var g=(id&&tutGestureLesson())?TUT_GEST[id]:null;
@@ -111,7 +138,9 @@ function tutGhost(id){
     el.style.setProperty("--tx",( sp[0]/2)+"px");
     el.style.setProperty("--ty",( sp[1]/2)+"px");
   }
-  if(el.className!==cls)el.className=cls;
+  if(el.className===cls)return;
+  el.className=cls;
+  ghostRestart(el);
 }
 
 /* THE PROSE SAYS WHAT THE CONTROL SAYS, and now there are two sets of

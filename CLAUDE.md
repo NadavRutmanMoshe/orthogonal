@@ -1012,6 +1012,48 @@ and they are also the ones that cost no screen.
   being asked for", and `TUT_GEST` is keyed by exactly those ids, so the two
   lessons cannot disagree by construction. `tutGhost()` is asserted from
   `tutSync` right beside `tutCueTo()`, out of the same value.
+- **The hand sits in the middle of the screen, over the world.** That is
+  where the gesture actually happens — a swipe or a double tap lands on the
+  world, not on a strip at the bottom — and it is where the player is already
+  looking. It rode the bottom edge first, which put the demonstration in the
+  one place the lesson had just finished emptying. The coach goes to the foot
+  of the screen under it.
+- **Every demonstration has a track, and it is the place the gesture
+  happens**: a line for a swipe, with a gradient running from nothing at the
+  start to the goal colour at the finish; a soft disc for a tap. The disc is
+  filled rather than outlined because the dot and the ripple are already
+  concentric circles of about that size, and a third outline was most of what
+  made the tap read as messy.
+- **The double tap's lift is the whole drawing.** The first version kept the
+  dot on screen and dipped it twice, which is what a single slow pulse looks
+  like — the count was carried entirely by two overlapping rings. A finger not
+  touching the glass is not on the glass, so the dot goes to *nothing* for
+  120ms between the taps, the disc holds the position while it is away, and
+  the two ripples no longer overlap. The gap is far longer than a real double
+  tap; this is a demonstration and legibility beats fidelity.
+- **The contacts and the ripples are two halves of one clock.** Both
+  animations run 1.9s and the second ring's `.38s` delay is exactly the 20%
+  at which the dot lands again — move one and you must move the other,
+  including in the reduced-motion block. 1.9s is also the swipe's loop, so
+  all three demonstrations beat together.
+- **The two fingers are stacked, not side by side.** Side by side is the grip
+  most people use, but it is the worse drawing: two dots abreast sliding
+  along their own direction of travel read as one dot with a trail, which is
+  what a single-finger swipe already looks like. One above the other, both
+  moving, is unmistakably two. The gesture reads the horizontal midpoint, so
+  either grip works and the demo is honest either way.
+- **`ghostRestart()` exists because a class change does not restart a CSS
+  animation.** An animation restarts when its `animation-name` changes or
+  when the element goes from `display:none` to displayed — so the parts of
+  the hand were starting their loops at different moments and staying that
+  way. `.gfinger.b` is hidden until `g-two`, so it began the instant that
+  class arrived while `.gfinger.a` had been looping since the previous step
+  under the same `gswipe` name: measured at nearly **three seconds apart**,
+  one finger arriving as the other left, in the drawing whose whole job is to
+  say "two fingers, together". A swipe that only changed direction jumped for
+  the same reason. It is called only when the demonstration actually changes,
+  because a step wanting three presses of one control must not restart on
+  each of them.
 - **The hand is the green button; the dim is still the dim.** Those are two
   statements and tying them together was a bug once (see above), so the
   arrangement is carried over rather than reinvented: the hand is on at .62
