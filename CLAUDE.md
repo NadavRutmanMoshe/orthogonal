@@ -892,6 +892,27 @@ plane at once, and the cloud is a word. The sentence on the intro card behind
 it — *things far apart in depth land side by side* — is demonstrated before it
 is read.
 
+**It is raised before three.js parses, and that is what makes it a loading
+screen rather than a screen that appears once loading is done.** An inline
+script in `index.html` loads `20-splash.js` and calls `splashShow()` above the
+three.js tag; everything else follows behind it. It used to be raised from
+`21-boot.js`, which is the *last* script — so the card whose whole job is to
+cover a cold start only went up once the most expensive file in the page had
+finished evaluating. Measured on the artifact build at 4× CPU throttle,
+boot-to-sting went **628ms → 356ms**. The sting needs no three.js: the
+wordmark is one div per voxel and some CSS.
+
+- **Two consequences of arming that early, both handled.** `splashShow()` is
+  guarded on `splashState`, because `21-boot.js` used to call it and a second
+  call would arm an already-armed card. And a tap can now in principle land
+  before `11-sound.js` exists, so `splashGo()` falls through to a silent
+  `splashPlay(null)` — the same trade `audioReady` already makes when the
+  clock never starts. `applyBrightness()` in `splashEnd` is guarded likewise.
+- **Three.js still has to load before `09` and `10`.** Both build
+  `THREE.Color` instances at top level, which is the one place the "everything
+  before `21-boot.js` only declares" rule does not hold. That is why only the
+  splash moves above it, not the whole list.
+
 **It waits for a tap, and that is not friction — it is the only way it has
 sound.** Every browser refuses an AudioContext until a gesture, so a card that
 plays itself on load plays itself silent. Waiting makes the fold *be* the

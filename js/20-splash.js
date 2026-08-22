@@ -169,9 +169,13 @@ function splashPoke(){
     splashEnd();
 }
 
+/* Called from an inline script in index.html, before three.js is even
+   downloaded - see the comment there. Guarded because it used to be called
+   from 21-boot.js and a second call would build a second set of listeners
+   onto a card that is already armed. */
 function splashShow(){
   var el=$("splash");
-  if(!el)return;
+  if(!el||splashState!=="off")return;
   splashBuild();
   el.classList.add("on");
   document.body.classList.add("splashing");
@@ -217,7 +221,12 @@ function splashGo(){
   if(splashState!=="armed")return;
   splashState="running";
   $("splashPrompt").textContent="";
-  audioReady(splashPlay);
+  /* The card is now armed before the rest of the game has finished parsing,
+     so a tap can in principle land before 11-sound.js exists. Silent beats
+     broken - the fold plays either way, which is the same trade audioReady
+     itself makes when the clock never starts. */
+  if(typeof audioReady==="function")audioReady(splashPlay);
+  else splashPlay(null);
 }
 function splashPlay(c){
   if(splashState!=="running")return;
@@ -244,6 +253,6 @@ function splashEnd(){
     /* Nothing else will ever want 69 cubes again, and they are 276 elements
        with live transitions on them. */
     $("splashStage").innerHTML="";
-    applyBrightness();
+    if(typeof applyBrightness==="function")applyBrightness();
   },SPLASH_OUT);
 }

@@ -189,9 +189,28 @@
   <button class="tiny" id="bLevels" style="height:30px;padding:0 14px">LEVELS</button>
 </div>
 
+<!-- THE STING PAINTS BEFORE THREE.JS PARSES, and that is what this block is.
+
+     Everything below used to load first and 21-boot.js called splashShow()
+     at the end of it, so the card - the thing whose whole job is to cover a
+     cold start - only went up once the most expensive script in the page had
+     been downloaded and evaluated. three.min.js is the bulk of that and the
+     sting does not need a line of it: the wordmark is one div per voxel and
+     some CSS. So it is built and armed here, and the rest of the game loads
+     behind a card the player is already looking at.
+
+     `$` is the one helper 20-splash.js reaches for. It is declared here so
+     the load order below can stay exactly as documented; 18-ui.js declares it
+     again later, identically, and a function declaration simply overwrites. -->
+<script>function $(id){return document.getElementById(id);}</script>
+<script src="js/20-splash.js"></script>
+<script>splashShow();</script>
+
 <script src="vendor/three.min.js"></script>
 <!-- Load order matters: these are classic scripts sharing one global
-     scope, and 21-boot.js is the only file that runs anything. -->
+     scope, and 21-boot.js is the only file that runs anything. Three.js has
+     to come before 09 and 10, which build THREE.Color instances at top
+     level - it is the one thing the "only declares" rule does not cover. -->
 <script src="js/00-storage.js"></script>
 <script src="js/01-coords.js"></script>
 <script src="js/02-levels.js"></script>
@@ -212,7 +231,7 @@
 <script src="js/17-composer.js"></script>
 <script src="js/18-ui.js"></script>
 <script src="js/19-bindings.js"></script>
-<script src="js/20-splash.js"></script>
+<!-- 20-splash.js is loaded at the top of this block, before three.js. -->
 <script src="js/21-boot.js"></script>
 </body>
 </html>

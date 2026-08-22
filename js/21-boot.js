@@ -4,13 +4,16 @@
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
 
-/* The card goes up before anything is built, and the whole of the rest of
-   this file runs behind it. It is opaque, it is waiting for a tap, and the
-   game gets its first frames rendered and its progress loaded while the
-   player is still reading a wordmark - which is the one honest use for a
-   splash screen beyond the one it is here for. */
-splashShow();
+/* THE CARD IS ALREADY UP. It is built and armed by an inline script in
+   index.html, above the three.js tag - see the comment there. It used to be
+   raised from here, which meant the screen whose job is to cover a cold start
+   only appeared after the most expensive script in the page had finished
+   evaluating; the sting needs no three.js, so it no longer waits for it.
 
+   Everything below therefore runs behind a card the player is already looking
+   at: the game gets its first frames rendered and its progress loaded while
+   they are still reading a wordmark, which is the one honest use for a splash
+   screen beyond the one it is here for. */
 initGL();
 applyUI();
 playSource="builtin";
