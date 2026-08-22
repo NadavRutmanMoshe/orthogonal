@@ -84,6 +84,7 @@ function loadSettings(){
         for(var p=0;p<PACES.length;p++)
           if(o.pace===PACES[p].v)settings.pace=o.pace;
         if(o.mastery==="on"||o.mastery==="auto")settings.mastery=o.mastery;
+        if(o.tutor==="gesture"||o.tutor==="buttons")settings.tutor=o.tutor;
         // o.verbs may exist in settings saved before the wording was settled.
         // Ignoring it is the migration: everyone lands on GO 2D / GO 3D.
       }catch(e){}

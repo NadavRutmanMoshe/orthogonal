@@ -59,13 +59,22 @@ function turnAllowed(){
   return app==="play"&&!flat&&!dying&&!panelOpen()&&!!L&&L.rotate!==false;
 }
 function bindGestures(el){
-  var live={},maxN=0,t0=0,fired=false,cx0=0,slide=0,travel=0;
+  var live={},maxN=0,t0=0,fired=false,cx0=0,cy0=0,slide=0,travel=0,travelY=0;
   var tapT=0,tapX=0,tapY=0;   // the previous tap, waiting to become a double
   function count(){var k=0;for(var q in live)k++;return k;}
   function centre(){
     var sx=0,n=0;
     for(var q in live){sx+=live[q].cx;n++;}
     return n?sx/n:0;
+  }
+  // Only the horizontal midpoint steers. The vertical one is measured purely
+  // so a two-finger drag *up or down* can be told from a two-finger tap: it
+  // moves neither the lean nor the horizontal midpoint, so without this it
+  // satisfied the tap test exactly and turned the world. See up().
+  function centreY(){
+    var sy=0,n=0;
+    for(var q in live){sy+=live[q].cy;n++;}
+    return n?sy/n:0;
   }
   el.addEventListener("pointerdown",function(e){
     if(app!=="play")return;
@@ -74,7 +83,7 @@ function bindGestures(el){
     if(count()>maxN)maxN=count();
     // the drag is measured from however the pair sat when it became a pair
     if(count()===2){
-      cx0=centre();slide=0;travel=0;
+      cx0=centre();cy0=centreY();slide=0;travel=0;travelY=0;
       turnDrag=0;turnDragging=turnAllowed();
     }
   });
@@ -92,6 +101,7 @@ function bindGestures(el){
       // asked separately below: it is what keeps a slide that returned to
       // its start from being mistaken for a two-finger tap.
       travel=Math.max(travel,Math.abs(slide));
+      travelY=Math.max(travelY,Math.abs(centreY()-cy0));
       if(turnDragging){
         /* The grab is subtracted, not merely crossed: the world starts moving
            from still rather than jumping 14px worth of angle the instant it
@@ -125,11 +135,15 @@ function bindGestures(el){
         viewAngle+=turnDrag;turnDrag=0;
         rotateView(dir);
         fired=true;
-      } else if(travel<TURN_TAP&&turnDrag===0&&dt<600){
+      } else if(travel<TURN_TAP&&travelY<TURN_TAP&&turnDrag===0&&dt<600){
         // The two-finger tap: a quick right turn, unchanged - it is a slide
         // that never travelled. It tests the lean as well as the midpoint,
         // because `turnDrag` is exactly zero until the grab is crossed, so a
-        // nudge inside the grab still reads as the tap it was.
+        // nudge inside the grab still reads as the tap it was - and it tests
+        // *both* axes, because a purely vertical two-finger drag moves
+        // neither the lean nor the horizontal midpoint and would otherwise be
+        // indistinguishable from a tap. It should do nothing at all, which is
+        // also what it does on a map.
         rotateView(1);fired=true;
       }
       // anything else: the lean springs back in the render loop, costing nothing

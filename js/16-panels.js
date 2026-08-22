@@ -231,9 +231,17 @@ function menuPanel(){
           seg("mUi","none","HIDDEN",settings.ui)+"</span></div>"+
         "<div class='note'>COMPACT drops the d-pad; HIDDEN clears the screen. "+
           "Either way: <code>swipe</code> or arrows/WASD to move, "+
-          "<code>space</code> to change dimension, <code>Q</code>/<code>E</code> to turn. "+
-          "With the bar hidden, <code>tap</code> the world to change dimension and "+
-          "<code>two-finger tap</code> to turn.</div></div>"+
+          "<code>double-tap</code> the world or <code>space</code> to change "+
+          "dimension, <code>two-finger swipe</code> left or right or "+
+          "<code>Q</code>/<code>E</code> to turn.</div>"+
+        "<div class='crow'><label>Tutorial</label><span class='seg'>"+
+          seg("mTutor","gesture","GESTURES",settings.tutor)+
+          seg("mTutor","buttons","BUTTONS",settings.tutor)+"</span></div>"+
+        "<div class='note'>Which controls the three teaching levels teach. "+
+          "GESTURES takes the bar off and demonstrates the swipe, the "+
+          "double-tap and the two-finger swipe with a ghost hand; BUTTONS is "+
+          "the older lesson, with the bar forced on. It changes nothing "+
+          "outside the tutorial \u2014 every control works in both.</div></div>"+
       "<div class='pcard'><h4>Real time</h4>"+
         "<div class='crow'><label>Pace</label><span class='seg'>"+
           PACES.map(function(p){
@@ -289,6 +297,12 @@ function menuPanel(){
       settings.ui=m;applyUI();saveSettings();syncHud();onResize();menuPanel();
     });
   });
+  ["gesture","buttons"].forEach(function(m){
+    bind("mTutor_"+m,function(){
+      settings.tutor=m;saveSettings();syncHud();menuPanel();
+      flash(m==="gesture"?"tutorial teaches gestures":"tutorial teaches buttons");
+    });
+  });
   ["auto","on"].forEach(function(m){
     bind("mMast_"+m,function(){
       settings.mastery=m;saveSettings();menuPanel();
@@ -310,6 +324,7 @@ function menuPanel(){
   bind("mReset",function(){
     settings.volume=defaultVolume();settings.volTouched=false;
     settings.brightness=1;settings.ui="full";settings.pace=1;
+    settings.tutor=defaultTutor();
     muted=false;
     applyVolume();
     applyBrightness();applyUI();saveSettings();syncHud();

@@ -51,6 +51,15 @@
 </div>
 
 <div class="coach" id="coach"></div>
+<!-- The gesture tutorial's ghost hand. One dot per finger, a track showing
+     where it travels and two rings for the double tap; which of those is
+     visible is a class on the wrapper, and how far the dot travels is a pair
+     of custom properties. See tutGhost() in js/15-tutorial.js. -->
+<div class="ghost" id="ghost" aria-hidden="true">
+  <div class="gtrack"></div>
+  <div class="gfinger a"><i class="gdot"></i><i class="gtap"></i><i class="gtap two"></i></div>
+  <div class="gfinger b"><i class="gdot"></i></div>
+</div>
 <div class="phasenote" id="phaseNote"></div>
 
 <div class="bar on" id="playBarWrap">

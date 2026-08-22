@@ -31,13 +31,34 @@ function defaultVolume(){
   var coarse=window.matchMedia&&window.matchMedia("(pointer: coarse)").matches;
   return coarse?1:.35;
 }
+/* WHICH CONTROLS THE TUTORIAL TEACHES, and it defaults by device for the same
+   reason the volume does.
+
+   The tutorial used to force the button bar back on screen whatever the
+   layout preference said, on the grounds that hiding the controls during the
+   lesson about the controls is a joke at the player's expense. That is still
+   true - but it assumed the lesson is about the buttons, and a button marked
+   with an arrow needs no lesson. The controls that genuinely cannot be
+   discovered are the gestures, and they are also the ones that cost no screen.
+
+   So "gesture" teaches the swipe, the double tap and the two-finger swipe,
+   with the bar off and a ghost hand demonstrating each one; "buttons" is the
+   old lesson, unchanged. A coarse pointer is the signal, exactly as it is for
+   the volume: it means a finger, and a finger is the only thing any of these
+   gestures can be performed with. On a mouse the gesture lesson would be
+   eloquently wrong - "swipe right" to somebody holding a mouse - so a fine
+   pointer keeps the buttons until the keyboard half of this is built. */
+function defaultTutor(){
+  var coarse=window.matchMedia&&window.matchMedia("(pointer: coarse)").matches;
+  return coarse?"gesture":"buttons";
+}
 /* `mastery` is a *preview* switch, not a gameplay one. "auto" is the real
    thing - a section wears its finished colours when every level in it is on
    three stars. "on" forces that look everywhere, so the celebration can be
    looked at without earning it four times over. It changes nothing but the
    drawing: no stars move, nothing unlocks. */
 var settings={volume:defaultVolume(),brightness:1,ui:"full",volTouched:false,
-              pace:1,mastery:"auto"};
+              pace:1,mastery:"auto",tutor:defaultTutor()};
 
 /* PACE — how fast the two real-time things run.
 

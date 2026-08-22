@@ -1,6 +1,7 @@
 "use strict";
 /* Orthogonal — 15-tutorial.js
-   Button cues, the tutorial coach, and the hint button.
+   Control cues, the tutorial coach, the gesture lesson's ghost hand,
+   and the hint button.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
 
@@ -56,6 +57,97 @@ function cue(id){
   if(say)flashCue(say);
   return say;
 }
+/* ============================================================
+   THE GESTURE TUTORIAL
+
+   The bar comes off and the lesson teaches the three things a finger can do
+   on the world: swipe to move, double tap to change dimension, two-finger
+   swipe to turn. A ghost hand demonstrates whichever one the current step is
+   asking for.
+
+   The reason this is not a rewrite of the coach is that the cue id is already
+   the single token for "what control is being asked for" - tutGuide() returns
+   one, and the coach, the green, the lock and tutPoke all read it. So the
+   gesture demo is not a second source of truth; it is a second *rendering* of
+   the same one. Every entry below is keyed by the id the buttons already use,
+   which is what makes the two lessons impossible to disagree.
+
+   THE DIRECTIONS FOR THE TURN ARE NOT ARBITRARY and are easy to get backwards.
+   The world follows your fingers, so a slide *left* carries the near edge left
+   - which is the direction viewAngle grows - so it commits rotateView(+1),
+   which is bRotR. See the sign note in 13-gestures.js. */
+var TUT_GEST={
+  bRight:{k:"swipe",d:"right"}, bLeft:{k:"swipe",d:"left"},
+  bUp:{k:"swipe",d:"up"},       bDown:{k:"swipe",d:"down"},
+  bFlat:{k:"dbl"},
+  bRotR:{k:"two",d:"left"},     bRotL:{k:"two",d:"right"}
+};
+/* Gesture mode is a setting and a device default, but it is also only ever
+   true on a tutorial level: the ghost hand is a lesson, not a HUD. */
+function tutGestures(){
+  return settings.tutor==="gesture";
+}
+function tutGestureLesson(){
+  return app==="play" && !!L && !!L.tut && tutGestures();
+}
+/* How far the finger travels, in pixels, per direction. Horizontal gets more
+   room than vertical because the demo box is wider than it is tall - and the
+   track is sized to match in the CSS, by the same gx / gy class. */
+var GHOST_SPAN={right:[56,0],left:[-56,0],up:[0,-42],down:[0,42]};
+/* Writes a class string and two offsets, and nothing else. Called from
+   tutSync on every re-evaluation; it compares the class it is about to set
+   against the one already there, because reassigning className restarts every
+   animation on the element and the hand would stutter on each move. */
+function tutGhost(id){
+  var el=$("ghost"); if(!el)return;
+  var g=(id&&tutGestureLesson())?TUT_GEST[id]:null;
+  if(!g){el.className="ghost";return;}
+  var cls="ghost on g-"+g.k;
+  if(g.k==="swipe"||g.k==="two"){
+    var sp=GHOST_SPAN[g.d];
+    cls+=(sp[0]?" gx":" gy")+" d-"+g.d;
+    el.style.setProperty("--hx",(-sp[0]/2)+"px");
+    el.style.setProperty("--hy",(-sp[1]/2)+"px");
+    el.style.setProperty("--tx",( sp[0]/2)+"px");
+    el.style.setProperty("--ty",( sp[1]/2)+"px");
+  }
+  if(el.className!==cls)el.className=cls;
+}
+
+/* THE PROSE SAYS WHAT THE CONTROL SAYS, and now there are two sets of
+   controls it could mean.
+
+   This is the same rule that already applied to the fold's name: the lesson
+   used to say "collapse the world" while the button in front of the player
+   read GO 2D, and {to2} exists so that can never happen again. A gesture
+   tutorial that says "press the right arrow" while showing a swiping finger
+   is exactly that bug with a different subject, so the arrow steps get the
+   same treatment - {do:right} is an imperative and {it:right} is a name, and
+   both are resolved against the mode at the moment the line is shown.
+
+   Level data cannot call these itself: 02-levels.js loads long before this
+   file, so the tokens have to survive as text until tutWords() runs. */
+var TUT_SAY={
+  buttons:{
+    "do:right":"Press <b>&#9654;</b>", "it:right":"<b>&#9654;</b>",
+    "do:left" :"Press <b>&#9664;</b>", "it:left" :"<b>&#9664;</b>",
+    "do:up"   :"Press <b>&#9650;</b>", "it:up"   :"<b>&#9650;</b>",
+    "do:down" :"Press <b>&#9660;</b>", "it:down" :"<b>&#9660;</b>",
+    "do:2d"   :"Press <b>{to2}</b>",   "do:3d"   :"Press <b>{to3}</b>",
+    "do:turnr":"Press <b>&#8631;</b>", "do:turnl":"Press <b>&#8630;</b>"
+  },
+  gesture:{
+    "do:right":"<b>Swipe right</b>",   "it:right":"<b>swiping right</b>",
+    "do:left" :"<b>Swipe left</b>",    "it:left" :"<b>swiping left</b>",
+    "do:up"   :"<b>Swipe up</b>",      "it:up"   :"<b>swiping up</b>",
+    "do:down" :"<b>Swipe down</b>",    "it:down" :"<b>swiping down</b>",
+    "do:2d"   :"<b>Double-tap</b> the world",
+    "do:3d"   :"<b>Double-tap</b> again",
+    "do:turnr":"<b>Swipe two fingers left</b>",
+    "do:turnl":"<b>Swipe two fingers right</b>"
+  }
+};
+
 /* The verb has one player-facing name and it lives in VERBS, reached through
    VB() - but the tutorial's prose is data in 02-levels.js, which loads before
    11-sound.js, so it cannot call VB() when it is written. It writes {to2} and
@@ -68,6 +160,13 @@ function cue(id){
    screen, in the three levels whose entire job is naming things. */
 function tutWords(s){
   var v=VB();
+  // Controls first, verb names second: a control phrase can itself contain
+  // {to2}, which the second pass then resolves. One pass in the other order
+  // would leave those braces on screen.
+  var tbl=TUT_SAY[tutGestures()?"gesture":"buttons"];
+  s=s.replace(/\{((?:do|it):[a-z0-9]+)\}/g,function(m,k){
+    return tbl[k]!==undefined?tbl[k]:m;
+  });
   return s.replace(/\{to2\}/g,v.to2).replace(/\{to3\}/g,v.to3)
           .replace(/\{n2\}/g,v.n2).replace(/\{n3\}/g,v.n3);
 }
@@ -196,15 +295,19 @@ function tutState(){
    beats being eloquently wrong. */
 var TUT_MOVE_BTN={"FLAT":"bFlat","POP":"bFlat","rot+":"bRotR","rot-":"bRotL",
   "\u2192":"bRight","\u2190":"bLeft","\u2191":"bUp","\u2193":"bDown"};
+/* The off-script lines go through the same tokens as the lesson's own prose,
+   for the same reason: this is the sentence a player sees precisely when they
+   have stopped following along, so it is the last one that can afford to name
+   a control that is not on their screen. */
 var TUT_MOVE_SAY={
-  "FLAT":"Press <b>{to2}</b>.",
-  "POP":"Press <b>{to3}</b> to stand back up.",
-  "rot+":"Turn with <b>&#8631;</b>.",
-  "rot-":"Turn with <b>&#8630;</b>.",
-  "\u2192":"Press <b>&#9654;</b>.",
-  "\u2190":"Press <b>&#9664;</b>.",
-  "\u2191":"Press <b>&#9650;</b>.",
-  "\u2193":"Press <b>&#9660;</b>."};
+  "FLAT":"{do:2d}.",
+  "POP":"{do:3d} to stand back up.",
+  "rot+":"{do:turnr}.",
+  "rot-":"{do:turnl}.",
+  "\u2192":"{do:right}.",
+  "\u2190":"{do:left}.",
+  "\u2191":"{do:up}.",
+  "\u2193":"{do:down}."};
 var tutSolveKey=null, tutSolveVal=null, tutSolveLvl=null;
 /* Cached on the exact state, because tutSync, tutPoke and tutEngage all ask
    within one interaction and a tutorial board is small but not free.
@@ -298,12 +401,21 @@ function tutSync(){
   // the button a function of the step rather than a thing someone has to
   // remember to restore.
   tutCueTo(g.cue||null);
+  /* The ghost hand is the gesture lesson's green button, so it is asserted
+     from the same place and out of the same value. tutGhost is a no-op in
+     button mode and idempotent when the demonstration has not changed. */
+  tutGhost(g.cue||null);
   // Only re-pulse when the step actually changes, or the cue timer would be
   // reset on every render and the button would strobe forever. A new step
   // also drops the guide and starts its wait again from nothing.
   if(g.idx!==tutShown){
     tutShown=g.idx;
-    if(g.cue)cue(g.cue);
+    /* No pulse in gesture mode. cue() falls back to speaking the move in a
+       toast when the button it names is not on screen - which in a gesture
+       tutorial it never is - so every step would open by announcing itself in
+       words directly over a coach line and a hand that are both already
+       saying it. The hand *is* the cue there. */
+    if(g.cue&&!tutGestureLesson())cue(g.cue);
     tutRelease();
     tutArm();
   }
@@ -353,13 +465,17 @@ function tutRelease(){
   document.body.classList.remove("tutlock");
 }
 // Everything off: the tutorial is over, or there is no step asking for a control.
-function tutUnlock(){ tutRelease(); tutCueTo(null); }
+function tutUnlock(){ tutRelease(); tutCueTo(null); tutGhost(null); }
 
 function showHint(){
   if(app!=="play"||dying||levelOver())return;
   if(L&&L.tut){
     var ti=tutStep();
-    if(ti>=0){if(L.tut[ti].cue)cue(L.tut[ti].cue);flash("follow the line above the bar");return;}
+    if(ti>=0){
+      if(tutGestureLesson()){flash("follow the line and the hand");return;}
+      if(L.tut[ti].cue)cue(L.tut[ti].cue);
+      flash("follow the line above the bar");return;
+    }
   }
   var res=solve(L,true,undefined,currentState());
   if(res.status==="toobig"){flash("too tangled to search from here");return;}

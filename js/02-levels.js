@@ -12,13 +12,20 @@ var LEVELS=[
      b.push([2,0,-3]);b.push([2,1,-3]);return b;})(),
    start:[0,1,0],goal:[2,2,-3],rotate:false,tutorial:true,lockFlat:true,
    /* Every step here names a control, so every step locks to it: the world
-      dims and the named button is the only one that answers. See the guided
+      dims and the named control is the only one that answers. See the guided
       lock in 15-tutorial.js - a step can opt out with lock:false, and none of
-      these wants to. */
+      these wants to.
+
+      The prose names that control in tokens rather than in glyphs, because
+      there are two sets of controls it could mean: the tutorial teaches the
+      buttons or the gestures depending on settings.tutor, and {do:right} is
+      "Press <b>&#9654;</b>" or "<b>Swipe right</b>" accordingly. See TUT_SAY.
+      A lesson that says "press the right arrow" over a swiping finger is the
+      same bug {to2} exists to prevent, with a different subject. */
    tut:[
-     {say:"You are the pink cube. The green square is where you are going.<br>Press <b>&#9654;</b> twice.",
+     {say:"You are the pink cube. The green square is where you are going.<br>{do:right} twice.",
       cue:"bRight",done:function(c){return c.d.right>=2;}},
-     {say:"<b>&#9650;</b> and <b>&#9660;</b> move you away from the camera and back toward it.<br>Press <b>&#9650;</b> twice.",
+     {say:"The other two move you away from the camera and back toward it: {it:up} and {it:down}.<br>{do:up} twice.",
       cue:"bUp",done:function(c){return c.d.up>=2;}},
      {say:"There is no jump. A block one high is a <b>step</b> — walk straight into it.",
       cue:"bUp",done:function(c){return c.climb>=1;}}
@@ -46,11 +53,11 @@ var LEVELS=[
    tut:[
      {say:"Walk to the edge.",
       cue:"bRight",done:function(c){return c.d.right>=1;}},
-     {say:"Too far to walk, and there is no jump.<br>Press <b>{to2}</b>: the world flattens along your line of sight, and depth stops existing.",
+     {say:"Too far to walk, and there is no jump.<br>{do:2d}: everything flattens along your line of sight, and depth stops existing.",
       cue:"bFlat",done:function(c){return c.flat>=1;}},
      {say:"Depth is gone, so the block that was floating out in front is simply next to you. Walk across.",
       cue:"bRight",done:function(c){return c.m2>=3;}},
-     {say:"Press <b>{to3}</b> to stand up.<br>Two blocks share this column, and you always come back on the one <b>nearest the camera</b> — the green one.",
+     {say:"{do:3d} to stand up.<br>Two blocks share this column, and you always come back on the one <b>nearest the camera</b> — the green one.",
       cue:"bFlat",done:function(c){return c.unflat>=1;}}
    ]},
 {name:"00 — First Turn",
@@ -58,11 +65,11 @@ var LEVELS=[
    blocks:[[0,0,0],[5,0,0]],
    start:[0,1,0],goal:[5,1,0],rotate:true,tutorial:true,
    tut:[
-     {say:"Nothing lines up from this side. Press <b>&#8631;</b> to turn a quarter turn.",
+     {say:"Nothing lines up from this side. {do:turnr} to turn a quarter turn.",
       cue:"bRotR",done:function(c,st){return st.view===1;}},
-     {say:"From here the two blocks are in the <b>same column</b>.<br>Press <b>{to2}</b>.",
+     {say:"From here the two blocks are in the <b>same column</b>.<br>{do:2d}.",
       cue:"bFlat",done:function(c){return c.flat>=1;}},
-     {say:"Press <b>{to3}</b>. Nearest the camera is now the block that was out of reach — so turning is how you choose which one catches you.",
+     {say:"{do:3d}. Nearest the camera is now the block that was out of reach — so turning is how you choose which one catches you.",
       cue:"bFlat",done:function(c){return c.unflat>=1;}}
    ]},
 /* The three levels below (01, 02 and 04) exist because the curve had a

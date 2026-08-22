@@ -95,6 +95,12 @@ function toggleWardrobe(){
 function syncHud(){
   document.body.classList.toggle("flat",flat);
   document.body.classList.toggle("tut",!!(app==="play"&&L&&L.tut));
+  /* A gesture tutorial takes the bar off, which is the exact opposite of what
+     `tut` does - `tut` forces it back on over the layout preference, because
+     the old lesson was about the buttons. Both classes are toggled from here
+     so there is one place that decides, and the CSS rule for this one is
+     written after those three so it wins. */
+  document.body.classList.toggle("tutgest",tutGestureLesson());
   var inPlay=app==="play";
   ["bHint","bLook","bMenu","bWard","bRestart"].forEach(function(id){
     var el=$(id); if(el)el.style.display=inPlay?"flex":"none";
