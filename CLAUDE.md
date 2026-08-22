@@ -80,7 +80,7 @@ anything; everything before it only declares.
 | `js/12-play.js` | The verbs: move, shove, collapse, restore, die, win. Also the fight and the trial clock. |
 | `js/13-gestures.js` | Swipe / tap / two-finger tap on the world. |
 | `js/14-editor.js` | Tap-to-place editor, verify, minimize. |
-| `js/15-tutorial.js` | Control cues, the coach, the ghost hand, the hint button. |
+| `js/15-tutorial.js` | Control cues, the coach, the ghost hand, hints. |
 | `js/16-panels.js` | Every slide-up panel; `sectionSpans()`; the map (`levelPicker()`). |
 | `js/17-composer.js` | Solution-first level generation. |
 | `js/18-ui.js` | `$`, toasts, panel plumbing, `syncHud()`. |
@@ -1009,9 +1009,11 @@ and they are also the ones that cost no screen.
   explicit choice that outranks the default from then on.
 - **The demo is a second *rendering* of the cue id, not a second source of
   truth.** `tutGuide().cue` is already the one token for "what control is
-  being asked for", and `TUT_GEST` is keyed by exactly those ids, so the two
+  being asked for", and `CUE_GEST` is keyed by exactly those ids, so the two
   lessons cannot disagree by construction. `tutGhost()` is asserted from
-  `tutSync` right beside `tutCueTo()`, out of the same value.
+  `tutSync` right beside `tutCueTo()`, out of the same value. The same table
+  is the hint system's second fallback — it sits beside `CUE_WORDS`, and a
+  cue that cannot land on a button either shows the control or names it.
 - **The hand sits in the middle of the screen, over the world.** That is
   where the gesture actually happens — a swipe or a double tap lands on the
   world, not on a strip at the bottom — and it is where the player is already
@@ -1176,28 +1178,60 @@ exclusive — every gesture also has a key and, unless hidden, a button:
   metered/timer design deliberately — an energy timer teaches people to close
   the app, which is the opposite of what a free game needs. `win()` writes an
   *effective* move count so hints cannot be laundered into currency.
-- **A hint is delivered as a pulse on a button, and `cue()` speaks it instead
-  when that button is not on screen.** Three layouts and one missing button
-  made this necessary: `COMPACT` drops the d-pad, `HIDDEN` drops the whole
-  bar, and `cue("bUndo")` has always pointed at a control this game does not
-  have — so the one hint you get when you are wedged past recovery showed
-  nothing at all, and a `HIDDEN` player paid a star for a pulse on an
-  invisible button. `cue()` now **returns** the spoken form when it falls
-  back, because there is one toast element and the last write wins: a caller
-  about to flash its own message carries the words along rather than clobber
-  them. Visibility is tested with `getClientRects()`, not `offsetParent` —
-  the bar is `position:fixed` and reports no offset parent while plainly on
-  screen.
+- **A cue has three deliveries, and `cue()` picks the most it can say.**
+  Pulse the button; if the layout dropped it, **show** the gesture with the
+  ghost hand; and only if the control has no gesture either, **name** the move
+  in words. Showing beats naming and goes first — a swiping finger is the
+  instruction where "go right" is a description of one. It is decided per
+  *control*, not per layout, which is what makes `COMPACT` come out right:
+  the d-pad is gone so a walk hint draws a hand, while the fold and turn
+  buttons are still there and pulse as they always did.
+- **The layouts are why any of this exists.** `COMPACT` drops the d-pad,
+  `HIDDEN` drops the whole bar, and `cue("bUndo")` has always pointed at a
+  control this game does not have — so the one hint you get when you are
+  wedged past recovery showed nothing at all, and a `HIDDEN` player paid a
+  star for a pulse on an invisible button. Undo and peek are still the words
+  case and always will be: no finger gesture performs them. Visibility is
+  tested with `getClientRects()`, not `offsetParent` — the bar is
+  `position:fixed` and reports no offset parent while plainly on screen.
+- **`cue()` returns the spoken form only when it fell all the way through to
+  words**, because there is one toast element and the last write wins: a
+  caller about to flash its own message carries the words along rather than
+  clobber them. A pulse and a hand both return null, and `ghostBorrowed()`
+  is how `showHint()` tells those two apart afterwards.
+- **The hand has two owners and neither may take down the other's.** The
+  tutorial *holds* it for as long as a step lasts (`held`); a hint *borrows*
+  it for `GHOST_MS` (`once`). They collide in one direction that matters:
+  `tutSync` runs on every `syncHud` and ends at `tutUnlock()` on an ordinary
+  level, so a hint's hand would be cleared by the very next redraw — which
+  `showHint` causes itself, two lines after asking for it. So clearing states
+  which owner is doing it and a mismatch is refused, and the owner lives in
+  the element's own class rather than in a variable beside it, where it
+  cannot end up disagreeing with what is on screen.
+- **A borrowed hand is louder than a held one**, .92 against .62, because
+  they are different statements: the tutorial's is ambient and has a coach
+  line saying the same thing, a hint's was asked for, costs a star, and has
+  a few seconds alone.
+- **`clearCue()` takes the borrowed hand down with the pulse.** Every verb
+  calls it, which is what makes a cue something you spend by acting on it —
+  and a demonstration still looping after the player has done the thing is a
+  hint that will not stop talking. The tutorial's hand is untouched: there
+  the step ends it, not the move.
 - **A spoken cue does not look like a toast, because it is not one.** A toast
   is an aside in the player colour at the top of the screen; a spoken cue is
-  an *instruction*, and in `COMPACT` or `HIDDEN` it is the only guidance
-  there is. So `flashCue()` gives it the goal colour — green already means
-  "do this" on the button pulse — puts it down by the controls where the
-  thumb and the eye are, and gives the move its own line with the hint
+  an *instruction*. So `flashCue()` gives it the goal colour — green already
+  means "do this" on the button pulse — puts it down by the controls where
+  the thumb and the eye are, and gives the move its own line with the hint
   accounting small underneath. It also lingers longer than a toast: reading
   three words costs more than glancing at a button that is already flashing.
   It shared the toast's styling once and wrapped into "go right — hint 4," /
   "max 1 star" straight across the level's own hint text.
+- **When the hand shows the move, the accounting keeps that slot and loses
+  the shout** (`flashCue(null, note)` → `.noteonly`). It cannot go back to
+  the top of the screen: that is where it lands across the level's own hint
+  text, which is the collision the slot was made to fix. There is no
+  instruction in it any more, only a footnote to one being drawn a few
+  centimetres above.
 - **The words are the ones on the buttons, not the ones in the code.** The
   d-pad's glyphs are arrows, so `bUp` says "go up" even though it moves you
   away from the camera. `bFlat` is the exception that has to be computed:

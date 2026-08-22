@@ -293,6 +293,11 @@
     letter-spacing:.12em;text-transform:uppercase}
   .toast.cuesay i{display:block;font-style:normal;font-size:9px;
     letter-spacing:.08em;color:var(--fg-dim);margin-top:4px}
+  /* The accounting on its own, when the ghost hand is saying the move. It
+     keeps the slot - clear of the level's hint text, where the eye already
+     is - but not the shout: there is no instruction here, only a footnote to
+     one that is being drawn a few centimetres above it. */
+  .toast.cuesay.noteonly i{font-size:10px;color:var(--fg-dim);margin-top:0}
   body.ui-none .toast.cuesay{bottom:28px}
 
   /* ============================================================
@@ -993,6 +998,12 @@ body.flat.bosshold::before{background:rgba(90,84,68,.34)}
 /* Under the lock the hand is the lit control, so it goes to full strength -
    the same step up the cued button used to take. */
 body.tutlock .ghost.on{opacity:1}
+/* A borrowed hand is louder than a held one, and they are different
+   statements. The tutorial's sits at .62 for a whole step, alongside a coach
+   line saying the same thing, so it is ambient. A hint was *asked for*, costs
+   a star, and lasts a few seconds with nothing else on screen explaining it -
+   so it arrives at full strength. */
+.ghost.on.once{opacity:.92}
 
 /* THE TRACK IS WHERE THE GESTURE HAPPENS, and every demonstration has one -
    a line for a swipe, a spot for a tap. It is drawn faintly and is always

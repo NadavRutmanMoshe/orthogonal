@@ -5,9 +5,16 @@
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
 
+/* Called by every verb, which is what makes a cue something you spend by
+   acting on it. That has to take the borrowed hand down as well as the pulse
+   - it is the same cue in a different medium, and a demonstration still
+   looping after the player has done the thing is a hint that will not stop
+   talking. The tutorial's own hand is held rather than borrowed, so it is
+   untouched: there the step, not the move, is what ends it. */
 function clearCue(){
   var els=document.querySelectorAll(".cue");
   for(var i=0;i<els.length;i++)els[i].classList.remove("cue");
+  clearCueGhost();
 }
 /* What a cue would say out loud.
 
@@ -40,8 +47,21 @@ function cueVisible(el){
   // element reports no offsetParent even when it is plainly on screen.
   return !!(el&&el.getClientRects().length);
 }
-/* Returns the spoken form when it had to fall back, and null when the pulse
-   landed. Callers that are about to flash a message of their own use that to
+/* Three ways to deliver a cue, in order of how much they say.
+
+   Pulse the button when there is one. When the layout dropped it, *show* the
+   gesture instead - the ghost hand from the tutorial, in the middle of the
+   screen, which is the same drawing the lesson uses and the same place the
+   gesture happens. Only when the control has no gesture either (undo, peek)
+   does it fall back to naming the move in words.
+
+   Showing beats naming and that is why it goes first: a swiping finger is
+   the instruction, where "go right" is a description of one. The words were
+   the whole answer for a HIDDEN layout before the hand existed, and they are
+   still the answer for the two controls a finger cannot perform.
+
+   Returns the spoken form when it fell all the way through to words, and
+   null otherwise. Callers about to flash a message of their own use that to
    carry the move along rather than clobber it — there is one toast, so the
    last write wins and a bare flash here would be wiped by the next line. */
 function cue(id){
@@ -53,37 +73,46 @@ function cue(id){
     cueTimer=setTimeout(clearCue,3200);
     return null;
   }
+  if(cueGhost(id))return null;
   var say=cueWord(id);
   if(say)flashCue(say);
   return say;
 }
 /* ============================================================
-   THE GESTURE TUTORIAL
+   THE GHOST HAND — showing a control instead of pressing one
 
-   The bar comes off and the lesson teaches the three things a finger can do
-   on the world: swipe to move, double tap to change dimension, two-finger
-   swipe to turn. A ghost hand demonstrates whichever one the current step is
-   asking for.
+   A cue is a pulse on a button, and there are two ways there is no button to
+   pulse: the layout dropped it (COMPACT has no d-pad, HIDDEN has no bar), or
+   the gesture tutorial took the whole bar off on purpose. Both want the same
+   answer, so both get it - a hand demonstrating the gesture, in the middle
+   of the screen where the gesture actually happens.
 
-   The reason this is not a rewrite of the coach is that the cue id is already
-   the single token for "what control is being asked for" - tutGuide() returns
-   one, and the coach, the green, the lock and tutPoke all read it. So the
-   gesture demo is not a second source of truth; it is a second *rendering* of
-   the same one. Every entry below is keyed by the id the buttons already use,
-   which is what makes the two lessons impossible to disagree.
+   THIS TABLE IS THE SECOND OF TWO FALLBACKS and sits beside CUE_WORDS
+   deliberately. When a cue cannot land on a button, the game either *shows*
+   the control (here) or *names* it (there), and it prefers showing: a swiping
+   finger is the instruction, where "go right" is a description of it. Words
+   are what is left for the controls no finger can perform - undo and peek
+   have no gesture, so they still fall through to CUE_WORDS.
+
+   The reason this is not a second source of truth is that the cue id already
+   is one. tutGuide() returns an id, and the coach, the green, the lock,
+   tutPoke and showHint all read it; this table is keyed by exactly those ids,
+   so the pulse, the words and the hand cannot disagree by construction.
 
    THE DIRECTIONS FOR THE TURN ARE NOT ARBITRARY and are easy to get backwards.
    The world follows your fingers, so a slide *left* carries the near edge left
    - which is the direction viewAngle grows - so it commits rotateView(+1),
    which is bRotR. See the sign note in 13-gestures.js. */
-var TUT_GEST={
+var CUE_GEST={
   bRight:{k:"swipe",d:"right"}, bLeft:{k:"swipe",d:"left"},
   bUp:{k:"swipe",d:"up"},       bDown:{k:"swipe",d:"down"},
   bFlat:{k:"dbl"},
   bRotR:{k:"two",d:"left"},     bRotL:{k:"two",d:"right"}
 };
-/* Gesture mode is a setting and a device default, but it is also only ever
-   true on a tutorial level: the ghost hand is a lesson, not a HUD. */
+/* Gesture mode is a setting and a device default. It governs the *lesson*
+   only - which controls the three teaching levels teach - and not whether
+   the hand can appear at all: a hint on a HIDDEN layout uses it whatever
+   this says, because there the alternative is a pulse on nothing. */
 function tutGestures(){
   return settings.tutor==="gesture";
 }
@@ -121,15 +150,40 @@ function ghostRestart(el){
   void el.offsetWidth;
   for(i=0;i<parts.length;i++)parts[i].style.animation="";
 }
-/* Writes a class string and four offsets, and nothing else. Called from
-   tutSync on every re-evaluation, so it compares the class it is about to
-   set against the one already there: a step that wants three presses of one
-   control must not have its demonstration restarted on each of them. */
-function tutGhost(id){
-  var el=$("ghost"); if(!el)return;
-  var g=(id&&tutGestureLesson())?TUT_GEST[id]:null;
-  if(!g){el.className="ghost";return;}
-  var cls="ghost on g-"+g.k;
+/* ONE HAND, TWO OWNERS, and neither may take down the other's.
+
+   The tutorial *holds* it up for as long as a step lasts. A hint *borrows*
+   it for a few seconds, on a layout where the button it would have pulsed is
+   not on screen. Those overlap in one direction that matters: `tutSync` runs
+   on every `syncHud`, and on an ordinary level it ends at `tutUnlock()`, so
+   a hint's hand would be cleared by the very next redraw - which `showHint`
+   causes itself, two lines after asking for it.
+
+   So clearing states which owner is doing it, and a mismatch is refused. The
+   owner lives in the element's own class rather than in a variable beside
+   it, so it cannot end up disagreeing with what is on screen; `held` is the
+   tutorial's, `once` is a hint's, and both are gone the moment the hand is.
+
+   Writes a class string and four offsets, and nothing else. It compares the
+   class against the one already there because tutSync re-asserts on every
+   evaluation, and a step that wants three presses of one control must not
+   have its demonstration restarted on each of them. Returns whether a hand
+   is now up, which is what lets `cue()` decide between showing the move and
+   naming it. */
+var GHOST_MS=3800;              // two whole loops: a hint ends on a beat
+var ghostTimer=null;
+function ghostTo(id,held){
+  var el=$("ghost"); if(!el)return false;
+  var g=id?CUE_GEST[id]:null;
+  var mine=el.className.indexOf(held?"held":"once")>=0;
+  if(!g){
+    if(el.className==="ghost")return false;      // nothing up to take down
+    if(!mine)return false;                       // not ours to take down
+    clearTimeout(ghostTimer);ghostTimer=null;
+    el.className="ghost";
+    return false;
+  }
+  var cls="ghost on "+(held?"held":"once")+" g-"+g.k;
   if(g.k==="swipe"||g.k==="two"){
     var sp=GHOST_SPAN[g.d];
     cls+=(sp[0]?" gx":" gy")+" d-"+g.d;
@@ -138,9 +192,28 @@ function tutGhost(id){
     el.style.setProperty("--tx",( sp[0]/2)+"px");
     el.style.setProperty("--ty",( sp[1]/2)+"px");
   }
-  if(el.className===cls)return;
-  el.className=cls;
-  ghostRestart(el);
+  if(el.className!==cls){el.className=cls;ghostRestart(el);}
+  return true;
+}
+// The tutorial's. The gesture-lesson test lives here rather than inside
+// ghostTo, because a hint is not a lesson and must not be gated on one.
+function tutGhost(id){ ghostTo(tutGestureLesson()?id:null,true); }
+/* A hint's. Times itself out, and the timeout clears only its own - if the
+   player has walked into a tutorial in the meantime, the refusal above is
+   what stops it taking the lesson's hand away. */
+function cueGhost(id){
+  if(!ghostTo(id,false))return false;
+  clearTimeout(ghostTimer);
+  ghostTimer=setTimeout(function(){ghostTo(null,false);},GHOST_MS);
+  return true;
+}
+function clearCueGhost(){ ghostTo(null,false); }
+// Is a *borrowed* hand up right now - a hint's, not the tutorial's? Read off
+// the element for the same reason ownership lives there: one answer, and it
+// cannot disagree with what is on screen.
+function ghostBorrowed(){
+  var el=$("ghost");
+  return !!el&&el.className.indexOf("once")>=0;
 }
 
 /* THE PROSE SAYS WHAT THE CONTROL SAYS, and now there are two sets of
@@ -530,5 +603,13 @@ function showHint(){
      the message and the accounting is a footnote to it. Both used to be one
      run-on line in the toast, which wrapped into "go right - hint 4," /
      "max 1 star" across the level's own hint text. */
-  if(say)flashCue(say,note); else flash(note);
+  /* Three deliveries, three homes for the footnote. Spoken: the words and
+     the accounting together, in the cue slot. Shown: the hand has the move,
+     so the accounting goes into that same slot alone rather than to the top
+     of the screen, where it would land across the level's own hint text -
+     the exact collision the slot exists to avoid. Pulsed: the bar is on
+     screen and the toast's ordinary place is fine. */
+  if(say)flashCue(say,note);
+  else if(ghostBorrowed())flashCue(null,note);
+  else flash(note);
 }

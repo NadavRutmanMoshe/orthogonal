@@ -11,7 +11,7 @@ var $=function(id){return document.getElementById(id);};
 var toastTimer=null;
 function flash(m){
   var t=$("toast");
-  t.classList.remove("cuesay");
+  t.classList.remove("cuesay");t.classList.remove("noteonly");
   t.textContent=m;t.classList.add("on");
   clearTimeout(toastTimer);
   toastTimer=setTimeout(function(){t.classList.remove("on");},1100);
@@ -28,10 +28,22 @@ function flash(m){
    move gets a line of its own with the accounting quiet underneath. It also
    lingers longer: reading three words costs more than glancing at a button
    that is already flashing.  */
+/* The cue slot: green, down by the controls, and it lingers longer than a
+   toast because reading three words costs more than glancing at a button
+   that is already flashing.
+
+   `move` may be null, and that case is the ghost hand's. When the hand is
+   showing the move there is nothing left to say about it - but the hint
+   accounting still has to go somewhere, and the top of the screen is not it:
+   the toast's ordinary position lands straight across the level's own hint
+   text, which is the bug this slot was made to fix in the first place. So a
+   note with no move is the accounting alone, in the slot that is already
+   clear of everything. */
 function flashCue(move,note){
   var t=$("toast");
-  t.innerHTML="<b>"+move+"</b>"+(note?"<i>"+note+"</i>":"");
-  t.classList.add("cuesay");t.classList.add("on");
+  t.innerHTML=(move?"<b>"+move+"</b>":"")+(note?"<i>"+note+"</i>":"");
+  t.classList.add("cuesay");t.classList.toggle("noteonly",!move);
+  t.classList.add("on");
   clearTimeout(toastTimer);
   toastTimer=setTimeout(function(){t.classList.remove("on");},1700);
 }
