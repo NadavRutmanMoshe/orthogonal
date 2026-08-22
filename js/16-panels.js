@@ -352,6 +352,23 @@ function menuPanel(){
    is progress or a saved session, this replaces it. See 21-boot.js.
    ============================================================ */
 function homeUp(){var el=$("home");return !!el&&el.classList.contains("on");}
+/* Nothing beaten, nothing part-done, nothing skipped: a genuine first run.
+
+   Deliberately not "no stars earned". A level beaten with enough hints scores
+   zero, and that player is plainly not new - they were being offered START
+   with a level already behind them. And deliberately not "the target is level
+   0" either: mapHere() answers with the first level not dealt with, which can
+   point backwards at a tutorial somebody skipped past from the intro card.
+
+   Boot asks this to choose between the intro card and the home screen, and
+   the home screen asks it to choose between START and CONTINUE. One answer,
+   so the two cannot disagree. */
+function nothingBehind(){
+  var k;
+  for(k in progress) if(progress.hasOwnProperty(k)) return false;
+  for(k in skips)    if(skips.hasOwnProperty(k))    return false;
+  return sessionIndex()<0;
+}
 
 /* WHERE CONTINUE GOES, and it is two answers rather than one.
 
@@ -452,17 +469,12 @@ function homeSync(){
   if(!$("home"))return;
   var t=homeTarget(), lv=LEVELS[t.i];
   var b=$("hContinue");
-  /* "START" only when there is genuinely nothing behind you, which is more
-     than "the target is level 0". mapHere() answers with the first level you
-     have not *dealt with*, and that can point backwards at a tutorial somebody
-     skipped past from the intro card - so a player with several levels beaten
-     was being offered START. Stars are the second opinion that catches it:
-     tutorials pay none, so a player who has only done those still reads as
-     fresh, and anyone who has beaten a real level does not. */
-  var fresh=!t.resume&&t.i===0&&!mapTouched(0)&&starsEarned()===0;
+  var stars=starsEarned();
+  // "START" only when there is genuinely nothing behind you - see above.
+  var fresh=nothingBehind();
   b.querySelector("b").textContent=fresh?"START":"CONTINUE";
   b.querySelector("i").textContent=lv?lv.name.replace(/^\d+ \u2014 /,""):"";
-  $("homeStars").textContent=starsEarned();
+  $("homeStars").textContent=stars;
   homeStrip();
   homeBindStrip();
 }
@@ -496,6 +508,34 @@ function homeStand(){
   if(!pv)return;
   previewShow(wardrobe.shape,wardrobe.color,wardrobe.world3,wardrobe.world2,false);
 }
+/* THE STAND IS BUILT OFF THE BOOT PATH, NOT ON IT.
+
+   A second WebGL context is not free, and this one used to be created inside
+   homeShow() - which runs the moment the saves land, while the sting is still
+   playing. Measured on the artifact build at 4x CPU throttle, boot-to-sting
+   went 715ms without the home screen and 786ms with it, and this was most of
+   the difference. It also lands during the one animation in the game written
+   against a music cue.
+
+   Nothing is lost by waiting. The buttons are the point of this screen and
+   they are ready immediately; the plinth is decoration, and while it is
+   missing the canvas is invisible anyway - previewShow paints its scene in
+   the same void the page is painted in. So: schedule it, and while the sting
+   is up, keep putting it off. The poll re-checks rather than hooking
+   splashEnd because homeShow is also reached from the menu long after the
+   sting is over, and one path is easier to keep right than two. */
+var homeCaseTimer=null;
+function homeCaseSoon(){
+  clearTimeout(homeCaseTimer);
+  if(!homeUp())return;
+  var splashing=document.body.classList.contains("splashing");
+  homeCaseTimer=setTimeout(function(){
+    homeCaseTimer=null;
+    if(!homeUp())return;
+    if(document.body.classList.contains("splashing")){homeCaseSoon();return;}
+    homeCase();
+  },splashing?200:0);
+}
 function homeShow(){
   if(!$("home"))return;
   hidePanel();
@@ -504,10 +544,11 @@ function homeShow(){
   $("home").classList.add("on");
   syncHud();                       // syncHud owns body.home and the chrome
   homeSync();
-  homeCase();
+  homeCaseSoon();
 }
 function homeHide(){
   if(!homeUp())return;
+  clearTimeout(homeCaseTimer);homeCaseTimer=null;
   previewStop();
   $("home").classList.remove("on");
   syncHud();

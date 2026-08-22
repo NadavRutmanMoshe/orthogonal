@@ -771,7 +771,7 @@ things you do not own with what they cost, and a way into the wardrobe.
 - **A first run never sees it.** There is nothing to continue and nothing
   owned, so the intro card — which says in one sentence what the game is —
   stays the first screen and `BEGIN` goes straight into the tutorial.
-  `firstRun()` in `21-boot.js` asks `progress` and the session, deliberately
+  `nothingBehind()` asks `progress`, `skips` and the session, deliberately
   not `starsEarned()`: somebody who walked into a level and quit has a
   session and no stars, and is plainly not seeing the game for the first
   time. The home screen is a **launch** screen; finishing the tutorial still
@@ -786,6 +786,29 @@ things you do not own with what they cost, and a way into the wardrobe.
   which is where the map's own marker sits. It says `START` only when there
   is genuinely nothing behind you — the word has to match what the button is
   about to do.
+- **The plinth is built off the boot path, and that was measured.** A second
+  WebGL context is not free, and `homeShow()` runs the moment the saves land,
+  while the sting is still playing. On the **artifact** build at 4× CPU
+  throttle, boot-to-sting was 715ms without the home screen and 786ms with
+  it; deferring the stand until the sting is over closed the gap (643 vs 704,
+  nine interleaved runs each, distributions overlapping). Nothing is lost by
+  waiting — the buttons are the point and they are ready immediately, and
+  while the stand is missing its canvas is invisible anyway, because
+  `previewShow` paints its scene in the same void the page is painted in.
+  `homeCaseSoon()` polls rather than hooking `splashEnd`, because `homeShow`
+  is also reached from the menu long after the sting, and one path is easier
+  to keep right than two.
+- **Measuring this needs the artifact build, not `index.html`.** From source,
+  the Google Fonts `<link>` is render-blocking and dominates everything —
+  12.6s in a sandbox with no network. `build-single.js` strips the preconnects
+  and the font link, so the published game never pays it, and any boot timing
+  taken against the source file is measuring the font CDN.
+- **`nothingBehind()` is the one first-run answer**, in `16-panels.js` beside
+  the other progress helpers. Boot asks it to choose between the intro card
+  and the home screen; the home screen asks it to choose between `START` and
+  `CONTINUE`. It is deliberately not "no stars earned" — a level beaten with
+  enough hints scores zero, and that player was being offered START with a
+  level already behind them.
 - **The plinth is the wardrobe's display case, not a copy of it.** `homeCase()`
   hands its canvas to `previewStart()` and calls `previewShow()` with what you
   have equipped, so the character, the slab and the world behind it are built

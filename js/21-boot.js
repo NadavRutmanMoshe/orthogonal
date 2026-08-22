@@ -33,15 +33,11 @@ enterPlay(LEVELS[0],0,false);
    which is the correct reading of "there is nothing saved". */
 Promise.all([progLoad(),skipLoad(),loadSettings(),loadWardrobe(),loadSession()])
   .then(function(){
-    if(!firstRun())homeShow();
+    // nothingBehind() is in 16-panels.js, beside the other progress helpers,
+    // because the home screen asks it too - to choose between START and
+    // CONTINUE. One answer, so the two screens cannot disagree.
+    if(!nothingBehind())homeShow();
   });
-/* Nothing beaten, nothing part-done. Deliberately not `starsEarned()`: a
-   player who has walked into a level and quit has a session and no stars,
-   and they are plainly not seeing this game for the first time. */
-function firstRun(){
-  for(var k in progress) if(progress.hasOwnProperty(k)) return false;
-  return sessionIndex()<0;
-}
 libLoad().then(function(){
   if(library.length) flash(library.length+" saved level"+(library.length===1?"":"s")+" in your library");
 });
