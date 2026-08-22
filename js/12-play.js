@@ -962,6 +962,17 @@ function win(){
        " taken")+"  \u00b7  "+moveCount+" moves";
     $("bNext").textContent=last?"PLAY AGAIN":"NEXT LEVEL";
     $("bRetry").style.display=stb>=3?"none":"flex";
+    /* THE ONE PLACE A FIGHT CAN SAY ANYTHING. A boss has no goal to stand on
+       and no room for prose while it is running, so the Census's four
+       sentences land here, after the score, on the card the player is
+       already reading. Appended rather than substituted: "never hit · 31
+       moves" is what they came for and the story is the footnote.
+
+       It is emitted as innerHTML because the score above it is set as
+       textContent, so the level name has never been escaped on this path -
+       esc() it here or a level called <b> would be markup. */
+    if(L.won)$("wonSub").innerHTML=esc($("wonSub").textContent)+
+      "<em class='wonstory'>"+esc(L.won)+"</em>";
   } else {
     var stw=Math.min(levelPar!==null?starsFor(moveCount,levelPar):3,hintCap());
     $("wonTitle").innerHTML=(last?"Campaign complete":(stw===3?"Perfect":"Solved"))+
@@ -990,7 +1001,12 @@ function win(){
     var sn=mapSecOf(lvIndex), spn=sn>=0?sectionSpans()[sn]:null;
     if(spn&&spn.max>0&&spn.got===spn.max){
       var sub2=$("wonSub");
-      sub2.innerHTML=esc(sub2.textContent)+
+      /* The boss branch above may already have appended the Census line as
+         markup, and re-escaping textContent would flatten it back into the
+         score with no separator - so read innerHTML once there is an element
+         in there. Everywhere else wonSub is still a bare text node set with
+         textContent, which has never been escaped and still must be. */
+      sub2.innerHTML=(sub2.children.length?sub2.innerHTML:esc(sub2.textContent))+
         "<em class='wonmast' style='--sec:"+(SECTIONS[sn].col||"#35c2a5")+"'>"+
         esc(SECTIONS[sn].name)+" \u00b7 every star</em>";
       setTimeout(function(){if(SFX.mastery)SFX.mastery();},520);

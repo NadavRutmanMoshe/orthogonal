@@ -966,6 +966,11 @@ function mapDraw(spans){
   $("mCard").className="mcard"+(mast?" mst":"");
   $("mCard").innerHTML="<b>"+esc(sec.name)+
     (mast?"<em class='mmast'>ALL STARS</em>":"")+"</b><i>"+esc(sec.sub)+"</i>"+
+    /* The Census, one sentence per section. Under `sub` rather than instead
+       of it: `sub` is the description a player needs to choose a section and
+       the story is the reason they want to. Emitted only when a section
+       carries one, so a section with no line simply has no line. */
+    (sec.story?"<s class='mstory'>"+esc(sec.story)+"</s>":"")+
     "<u class='mbar'><u style='width:"+(lk?0:pct)+"%'></u></u>"+
     "<div class='mf'><span>"+cleared+"/"+tot+" cleared</span>"+
     "<span>"+sp.got+"/"+sp.max+" ★</span></div>"+

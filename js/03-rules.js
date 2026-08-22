@@ -515,7 +515,8 @@ function arenaStand(lv,R,cr){
 /* Counted per view: how much of the floor you cannot attack from, because
    folding there kills you first. Glass is deliberately absent from the count
    - it casts nothing, so a glass pillar is one you can fold straight through,
-   which is the whole joke of "Through Glass". */
+   which is the whole joke of BOSS III's arena. (It was called "Through
+   Glass" when this was written; the Census renamed it "The Search".) */
 function arenaFractions(lv,R,cr,stand){
   var worst=1, best=0, cells=[...stand].map(parseK);
   for(var v=0;v<4;v++){

@@ -409,6 +409,22 @@
     box-shadow:0 0 18px color-mix(in srgb,var(--sec) 45%,transparent);
     animation:wmast .6s cubic-bezier(.2,1.5,.4,1) .5s both}
   @keyframes wmast{0%{opacity:0;transform:scale(.8)}100%{opacity:1;transform:scale(1)}}
+  /* A boss's Census line. It arrives after the score has been read - the
+     numbers are what the player came for - and it is the hunters' violet,
+     because it is the thing on the other side of the fight speaking. */
+  .wonstory{display:block;font-style:normal;margin:10px auto 0;max-width:34ch;
+    text-align:center;
+    font-size:10px;line-height:1.6;letter-spacing:.02em;
+    color:color-mix(in srgb,#a274ff 62%,var(--fg-dim));
+    animation:wstory .7s ease .9s both}
+  @keyframes wstory{0%{opacity:0;transform:translateY(4px)}100%{opacity:1;transform:none}}
+  /* The premise, on the intro card, under a rule that says "this is a
+     different kind of sentence from the two above it". Same violet as a
+     boss's line - it is the same voice, met early. */
+  .won p.introstory{margin:2px 0 4px;max-width:min(80vw,40ch);
+    padding-top:11px;border-top:1px solid var(--rule);
+    font-size:9.5px;line-height:1.6;text-align:center;
+    color:color-mix(in srgb,#a274ff 55%,var(--fg-dim))}
   .wonrow{display:flex;gap:8px;align-items:center}
   .won button{height:42px;padding:0 22px;border-color:var(--goal);color:var(--goal)}
   #bRetry{border-color:var(--rule);color:var(--fg-dim);gap:7px}
@@ -605,6 +621,16 @@
   .mcard b{display:block;font-family:'Space Grotesk',system-ui,sans-serif;
     font-size:17px;font-weight:700;letter-spacing:-.02em;color:var(--sec)}
   .mcard i{display:block;font-style:normal;font-size:10px;color:var(--fg-dim);margin-top:2px}
+  /* THE CENSUS, ONE LINE PER SECTION. Deliberately quieter than `i` above
+     it, and not in the section colour: `sub` is instruction and the story is
+     an aside, so it reads at a glance as the optional half. It is an <s>
+     purely because .mcard already owns bare b / i / u selectors and this is
+     the next tag free of one - hence the text-decoration reset, the same
+     trick .mbar u already uses. */
+  .mcard .mstory{display:block;text-decoration:none;
+    font-size:9.5px;line-height:1.5;margin-top:7px;
+    padding-top:7px;border-top:1px solid var(--rule);
+    color:color-mix(in srgb,var(--fg-dim) 78%,transparent)}
   .mcard .mbar{display:block;height:3px;background:var(--rule);border-radius:3px;
     margin:10px 0 4px;overflow:hidden}
   .mcard .mbar u{display:block;height:100%;background:var(--sec);text-decoration:none}

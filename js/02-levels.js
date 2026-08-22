@@ -232,7 +232,8 @@ var LEVELS=[
    hint:"Three collapses. Each one throws away a different dimension.",
    blocks:[[0,0,0],[-1,1,3],[-1,1,4],[-2,2,4],[-2,3,3],[-2,4,2],[2,4,3],[0,4,3],[0,4,0]],
    start:[0,1,0],goal:[0,5,0],rotate:true},
-{name:"BOSS I — The Hunt",
+{name:"BOSS I — The Sighting",
+   won:"Something in the plane has seen you. It will not be the only one.",
    hint:"It walks onto your line and plants. Fold while it shares your silhouette column and it lands in your square instead. The arena does not stay this empty.",
    /* The first fight anyone meets, and the shape every later one repeats.
       Four phases, and each one changes the question rather than the speed:
@@ -321,7 +322,8 @@ var LEVELS=[
    hint:"Two folds, and both of them have teeth.",
    blocks:[[0,0,0],[-2,0,-5],[-1,0,-5],[0,0,-5,4],[-1,1,1]],
    start:[0,1,0],goal:[-1,1,-5],rotate:true},
-{name:"BOSS II — Sharp Ground",
+{name:"BOSS II — The Record",
+   won:"You are on the list now. It is a short list.",
    hint:"The ground bites here. A spike casts like stone, so its column kills them exactly as well as a pillar's does — and it kills you underfoot, which a pillar never does.",
    /* Cover and spikes together in phase two, so the section's piece is part
       of "the arena finishes rising" rather than something smuggled in later.
@@ -388,7 +390,8 @@ var LEVELS=[
    hint:"Glass under your feet and something sharp down the axis.",
    blocks:[[0,0,0],[3,1,0,1],[3,1,1],[3,1,-1],[4,1,-1,4],[5,3,-4,1]],
    start:[0,1,0],goal:[3,2,-1],rotate:true},
-{name:"BOSS III — Through Glass",
+{name:"BOSS III — The Search",
+   won:"They can only count what casts a shadow. This world is larger than their record of it.",
    hint:"Glass casts nothing. The pillars you can see through are the ones that will not kill them — check which shadow you are herding them into.",
    /* Stone and glass rise together in phase two, so the lesson of the arena -
       the pillars you can see through are the ones you can still attack from -
@@ -465,7 +468,8 @@ var LEVELS=[
    hint:"It takes two shoves to get it where it belongs.",
    blocks:[[1,1,1],[1,1,2],[1,1,3],[1,1,4],[2,2,5],[0,0,0],[1,2,2,3],[1,3,2,3]],
    start:[0,1,0],goal:[2,3,5],rotate:true},
-{name:"BOSS IV — The Orthogon",
+{name:"BOSS IV — The Census",
+   won:"The count is closed, and you are not in it.",
    hint:"Everything the game knows, one piece at a time. The crates are the attack that still works when the geometry is against you — shove one into a column that had no shadow in it.",
    /* The finale, so phase two brings the whole game at once - stone, spike,
       glass and the crates. The crates in particular can only ever arrive in
@@ -612,19 +616,31 @@ var LEVELS=[
    section. So no section is violet or amber - `V · EXTRA` used to be violet
    and had to move, because a whole shelf the colour of a boss makes the one
    thing on it that is a boss unreadable. */
+/* The `story` line is the Census, one sentence per section - see the note
+   above SECTIONS' colours and CLAUDE.md. It is deliberately a second field
+   rather than an extension of `sub`: `sub` says what the section teaches and
+   is the thing a player needs, the story is the thing a player enjoys, and
+   keeping them apart means the map can drop the fiction without losing the
+   description. Never longer than one line at panel width. */
 var SECTIONS=[
-  {at:0, name:"PROLOGUE", sub:"walking, folding, turning — one verb each", col:"#7183a6"},
-  {at:3, name:"I · FUNDAMENTALS", sub:"one verb: collapse the world and cross the gap", col:"#35c2a5"},
-  {at:17, name:"II · SPIKES", sub:"a hazard you cannot see until you fold", col:"#e0455f"},
-  {at:26, name:"III · GLASS", sub:"solid in the volume, absent from the plane", col:"#7fb2ff"},
+  {at:0, name:"PROLOGUE", sub:"walking, folding, turning — one verb each", col:"#7183a6",
+   story:"Nothing has noticed you yet."},
+  {at:3, name:"I · FUNDAMENTALS", sub:"one verb: collapse the world and cross the gap", col:"#35c2a5",
+   story:"Every fold is a visit. The plane keeps count."},
+  {at:17, name:"II · SPIKES", sub:"a hazard you cannot see until you fold", col:"#e0455f",
+   story:"Some of what is down there did not survive being flattened."},
+  {at:26, name:"III · GLASS", sub:"solid in the volume, absent from the plane", col:"#7fb2ff",
+   story:"Glass casts nothing, so the plane holds no record of it."},
   /* Purple, because a crate is drawn pale violet in the world - the section
      wears the colour of the piece it teaches. It is deliberately pinker and
      lighter than the boss's #a274ff so the two are not the same purple; the
      boss also carries its four-arc ring, which is what actually tells them
      apart. This is the closest any section gets to a reserved colour, and
      the pair should be pulled further apart when the boss is revisited. */
-  {at:36, name:"IV · CRATES", sub:"change the plane by moving the volume", col:"#c07ae0"},
-  {at:48, name:"V · EXTRA", sub:"unlocked by the Orthogon — the long ones", col:"#3fc4d4", locked:true}
+  {at:36, name:"IV · CRATES", sub:"change the plane by moving the volume", col:"#c07ae0",
+   story:"You can edit what they see. That is the one thing they cannot do."},
+  {at:48, name:"V · EXTRA", sub:"unlocked by the Census — the long ones", col:"#3fc4d4", locked:true,
+   story:"The parts of the world that were never counted."}
 ];
 
 /* Levels have been renumbered more than once. Progress is keyed by name,
@@ -633,9 +649,18 @@ var SECTIONS=[
    so never rewrite this table, only extend it. Applied by migrateNames()
    in 06-persistence.js. */
 var LEVEL_RENAMES={
- "BOSS I — The Sentinel": "BOSS I — The Hunt",
- "BOSS I — The Pack": "BOSS I — The Hunt",
- "BOSS I — The Twin": "BOSS I — The Hunt",
+ /* THE CENSUS RENAMED ALL FOUR BOSSES. Composed, not rewritten: the three
+    keys that used to land on "BOSS I — The Hunt" are re-pointed at its new
+    name in the same edit that makes "The Hunt" itself a key, which is what
+    keeps the no-value-is-also-a-key invariant true. Bosses II-IV had never
+    been renamed, so they arrive as one new entry each. */
+ "BOSS I — The Sentinel": "BOSS I — The Sighting",
+ "BOSS I — The Pack": "BOSS I — The Sighting",
+ "BOSS I — The Twin": "BOSS I — The Sighting",
+ "BOSS I — The Hunt": "BOSS I — The Sighting",
+ "BOSS II — Sharp Ground": "BOSS II — The Record",
+ "BOSS III — Through Glass": "BOSS III — The Search",
+ "BOSS IV — The Orthogon": "BOSS IV — The Census",
  "02 — Turn to see": "02 — Turn to see",
  "03 — Two Windows": "05 — Two Windows",
  "04 — The Long Way Round": "06 — The Long Way Round",

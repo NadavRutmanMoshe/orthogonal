@@ -341,8 +341,8 @@ game's one question, asked while something is running at you.
 still applies to you: fold from a column that already holds a block and it
 kills you. So a hunter standing in a column with a pillar in it cannot be
 folded on, and blocks stop a charge exactly as they stop you. One piece of
-geometry, both jobs, opposite signs — which is why `Through Glass` is the
-arena it is. Glass casts nothing, so the columns that *look* blocked are
+geometry, both jobs, opposite signs — which is why `BOSS III — The Search` is
+the arena it is. Glass casts nothing, so the columns that *look* blocked are
 precisely the ones you can attack from.
 
 This is the fifth boss design. The four that failed, and the two versions of
@@ -442,7 +442,8 @@ of the fight sag. Three phases now, and the fourth is recoverable.
 
 `BOSS I` used to be one creature with two mirrored bodies. Playtesting called
 it too hard and it was parked; when the campaign went to phases it was
-replaced by `BOSS I — The Hunt`, and `LEVEL_RENAMES` carries the rename.
+replaced by `BOSS I — The Hunt` — since renamed again to `BOSS I — The
+Sighting` — and `LEVEL_RENAMES` carries both.
 
 **All of its code is still live and working** — `makeBoss`'s `twin` branch,
 `twinSpawn`, `twinMirror`, `twinAligned`, `bossNext`'s `avoid` path, and the
@@ -881,6 +882,70 @@ things you do not own with what they cost, and a way into the wardrobe.
   strip, the plinth and the star count all have to know.
 
 ---
+
+---
+
+## The story — the Census
+
+**The plane is not empty.** Everything this world has ever flattened is still
+in the silhouette, and folding is not passing *through* 2D — it is standing in
+it, briefly, with them. The hunters are its residents: they cannot leave and
+you keep going back and forth, which is what they are counting. The line you
+share with one is the only thing that exists in both places at once, which is
+why it kills either of you.
+
+**It exists to justify a rule the game already had.** The boss's kill rule is
+the fifth design and mechanically settled; what it lacked was a reason. Every
+sentence below is chosen to explain something already on screen — glass is
+cover *because* it casts nothing and so leaves no record, crates matter
+*because* editing what they see is the one thing they cannot do — rather than
+to decorate it. **A story beat that does not explain a mechanic does not go
+in.**
+
+**Eleven sentences, and never one that blocks play.** The game's voice is
+`Poisoned Column` and `Absent Floor` — spare, technical, and it does not
+narrate. So there are no cutscenes and no journal; the fiction lives in four
+places and each holds one line:
+
+| Where | What | Lives in |
+|---|---|---|
+| intro card | the premise, one line under a rule | `index.html`, `.introstory` |
+| section card on the map | one line per section | `SECTIONS[].story` → `mapDraw` |
+| boss win card | one line per fight | `LEVELS[].won` → `win()` |
+| boss names | the four stages of being counted | `LEVELS[].name` |
+
+- **`story` is a second field beside `sub`, not an extension of it.** `sub`
+  says what the section teaches and is what a player needs to choose one; the
+  story is why they want to. Kept apart, the fiction can be cut without taking
+  the description with it — which is the point of a slice this small.
+- **The bosses are named for the census, not the arena.** `The Sighting`,
+  `The Record`, `The Search`, `The Census` — you are seen, written down,
+  looked for, and finally counted. The old names said which arena it was
+  (`Sharp Ground`, `Through Glass`), which the section header already says.
+  They cost four `LEVEL_RENAMES` entries and renaming them again costs four
+  more; that is the cheapest thing here to change your mind about.
+- **The premise is bolted onto the intro card, not woven into it.** The two
+  lines above the rule are the only explanation of the verb a new player ever
+  gets and they are untouched. A third line under a divider is what lets the
+  story be removed in one edit.
+- **`won` is appended to the win card, never substituted.** "never hit · 31
+  moves" is what the player came for; the story is the footnote. It is
+  emitted as innerHTML on a path where the level name had only ever been set
+  as `textContent`, so it is `esc()`d — and the section-mastery banner below
+  it now reads `innerHTML` when there is already an element in there, or
+  clearing a section on a boss run would flatten the story line back into the
+  score.
+- **Violet is the story's colour**, on the intro card and the win card both,
+  because violet already means the hunters everywhere else in the game. The
+  section line on the map is deliberately *not* coloured: there it is an
+  aside under an instruction, and the section's own hue is already carrying
+  the section.
+
+**What is not done, and was never in this slice:** the plane's palette still
+reads as a second skin rather than a second place, nothing in the world says
+you are being counted while you are counted, and the wardrobe has no part in
+it. Those are the UI half, and they are worth doing only if the premise makes
+the fights feel different when played.
 
 ## The sting
 
