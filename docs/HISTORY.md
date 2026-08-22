@@ -441,10 +441,11 @@ need not march away from the camera (13% → 12%, noise).
 
 ---
 
-## The two-finger turn: three versions in one sitting
+## The two-finger turn: four versions
 
-Asked for on mobile, and got wrong twice before it was got right — both times
-by measuring the wrong thing about the hand.
+Asked for on mobile, and got wrong twice before it worked at all — both times
+by measuring the wrong thing about the hand. The fourth version is not a fix
+for a bug in the third; it is the owner choosing a different gesture.
 
 **One: the midpoint alone.** Track the centre between the two fingers, map its
 horizontal travel to degrees. This answers a two-finger parallel *slide* and
@@ -472,7 +473,17 @@ of jumping when it takes hold. A two-finger slide now does nothing at all,
 which is also what it does on a map. The midpoint is still measured, but only
 to tell a turn from a two-finger tap.
 
-The lesson is not about gestures. Two channels that both "obviously" mean
+**Four: the midpoint alone, again — on purpose this time.** The owner asked
+for a two-finger swipe left or right, so the gesture the game is answering
+changed and version one stopped being a mistake. The horizontal midpoint is
+read directly, 14px of grab subtracted, `TURN_DEG` .42° per pixel, and the
+same lean/spring-back/commit machinery underneath. Version one's complaint —
+that this is deaf to a pivot — is still exactly true and is now the
+specification. What survives from version two is the **sign**: a rightward
+slide is a *negative* lean, and the minus in front of `past*TURN_DEG` is the
+whole of that lesson.
+
+The lesson is not about gestures. Two channels that both mean
 rotation had opposite signs in this camera, and adding them looked like extra
 sensitivity while actually being subtraction. A single worked example on paper
 would have caught it before any of it shipped.

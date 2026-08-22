@@ -17,7 +17,7 @@
    tapping *is* the primary control. Double tap fires on the second tap with
    nothing to wait for, so it is the cheaper of the two everywhere. */
 
-/* Two fingers turn the world, and the world leans under them while you turn
+/* Two fingers turn the world, and the world leans under them while you drag
    them. That lean is free: it rides the same camera/fold-axis split that
    peeking does, so `viewAngle` is untouched and nothing is spent until you let
    go past the threshold. Let go short of it and it springs back having cost
@@ -25,26 +25,31 @@
    and par is optimal, and on a boss or a trial it is a beat of a real clock -
    so being able to see the turn before buying it is worth the extra state.
 
-   The gesture is the map one: plant two fingers and pivot them around each
-   other like a dial, and the world follows 1:1. It is deliberately *only*
-   that. Two earlier versions read the midpoint between the fingers as well -
-   first alone, then added to the twist - and both were wrong, the second
-   worse than the first:
+   THE GESTURE IS A TWO-FINGER SLIDE LEFT OR RIGHT, and the world follows your
+   fingers: slide right and the near edge comes right with them. It reads the
+   midpoint between the fingers and nothing else - a two-finger twist now does
+   nothing, and neither does a vertical slide.
 
-   - Alone, the midpoint answers a two-finger parallel slide and nothing else.
-     A pivot barely moves it and a symmetric twist does not move it at all, so
-     the gesture sat dead while the hand was offering a rotation.
-   - Added, the two channels pull opposite ways. `viewAngle` grows clockwise
-     on screen (`rx=cos, rz=-sin` in the render loop puts the near edge left
-     as it rises), so a clockwise twist is +angle - but a rightward slide
-     moves the near edge right, which is -angle. Summing them means the most
-     ordinary grip of all, one finger planted while the other sweeps, produces
-     a twist and a midpoint shift that cancel. That is not a sensitivity
-     problem and no constant fixes it.
+   This is the third arrangement, and the reasoning behind the other two is
+   worth keeping because the failure mode of the second is invisible:
 
-   So: twist only, and the near edge follows your fingers. A two-finger slide
-   now does nothing, which is also what it does on a map. */
-var TURN_GRAB=8,       // twist this far and the world takes hold
+   - The midpoint alone was tried first and dropped for being deaf to a pivot.
+     That is still true and is now the point rather than the complaint: the
+     gesture being asked for is a slide, so answering only a slide is correct.
+   - The midpoint *added to* the twist was strictly worse than either alone.
+     `viewAngle` grows clockwise on screen (`rx=cos, rz=-sin` in the render
+     loop puts the near edge left as it rises), so a clockwise twist is +angle
+     while a rightward slide is -angle. Summing them means the most ordinary
+     grip of all - one finger planted while the other sweeps - produces a
+     twist and a midpoint shift that cancel. That is not a sensitivity problem
+     and no constant fixes it. If the turn ever feels mushy again, check the
+     signs before touching TURN_DEG.
+
+   The sign below is the whole of that lesson in one minus: a rightward slide
+   is a *negative* lean, because moving the camera toward +x is what carries
+   the world to the left. */
+var TURN_GRAB=14,      // slide the pair this far (px) and the world takes hold
+    TURN_DEG=.42,      // degrees of lean per pixel of slide past the grab
     TURN_SNAP=30,      // past this much lean on release, the turn is taken
     TURN_TAP=16,       // the midpoint never moved this far: a tap, not a turn
     DBL_MS=300,        // two taps closer together than this are one double tap
@@ -54,20 +59,13 @@ function turnAllowed(){
   return app==="play"&&!flat&&!dying&&!panelOpen()&&!!L&&L.rotate!==false;
 }
 function bindGestures(el){
-  var live={},maxN=0,t0=0,fired=false,cx0=0,travel=0,twist=0,lastAng=0;
+  var live={},maxN=0,t0=0,fired=false,cx0=0,slide=0,travel=0;
   var tapT=0,tapX=0,tapY=0;   // the previous tap, waiting to become a double
   function count(){var k=0;for(var q in live)k++;return k;}
   function centre(){
     var sx=0,n=0;
     for(var q in live){sx+=live[q].cx;n++;}
     return n?sx/n:0;
-  }
-  // Screen y points down, so this grows clockwise - the same direction a
-  // rightward slide means, which is why the two terms simply add.
-  function angleNow(){
-    var a=[];for(var q in live)a.push(live[q]);
-    if(a.length!==2)return lastAng;
-    return Math.atan2(a[1].cy-a[0].cy,a[1].cx-a[0].cx)*180/Math.PI;
   }
   el.addEventListener("pointerdown",function(e){
     if(app!=="play")return;
@@ -76,7 +74,7 @@ function bindGestures(el){
     if(count()>maxN)maxN=count();
     // the drag is measured from however the pair sat when it became a pair
     if(count()===2){
-      cx0=centre();travel=0;twist=0;lastAng=angleNow();
+      cx0=centre();slide=0;travel=0;
       turnDrag=0;turnDragging=turnAllowed();
     }
   });
@@ -87,22 +85,23 @@ function bindGestures(el){
     // exactly two: a third finger freezes the lean rather than yanking the
     // centroid sideways, and it springs back like any other abandoned drag
     if(count()===2){
-      // accumulated per move and unwrapped, because atan2 jumps by a full
-      // turn at the back and a raw difference would fire a turn on the jump
-      var a=angleNow(),da=a-lastAng;
-      if(da>180)da-=360; else if(da<-180)da+=360;
-      twist+=da;lastAng=a;
-      // the midpoint is no longer steering, but it still says whether this
-      // was a turn at all, which is what keeps a slide from reading as a tap
-      travel=Math.max(travel,Math.abs(centre()-cx0));
+      // Signed against where the pair sat when it became a pair, so a slide
+      // out and back lands on nothing - the lean is a position, not a total.
+      slide=centre()-cx0;
+      // The unsigned high-water mark is a different question and is still
+      // asked separately below: it is what keeps a slide that returned to
+      // its start from being mistaken for a two-finger tap.
+      travel=Math.max(travel,Math.abs(slide));
       if(turnDragging){
         /* The grab is subtracted, not merely crossed: the world starts moving
-           from still rather than jumping 8 degrees the instant it takes hold.
-           Clamped to the full 90, so twisting that far makes the whole turn by
-           hand and the commit below has nothing left to animate. */
-        var lean=twist>TURN_GRAB?twist-TURN_GRAB:
-                 twist<-TURN_GRAB?twist+TURN_GRAB:0;
-        turnDrag=Math.max(-90,Math.min(90,lean));
+           from still rather than jumping 14px worth of angle the instant it
+           takes hold. Negated because the fingers lead and the camera follows
+           - see the sign note above. Clamped to the full 90, so sliding that
+           far makes the whole turn by hand and the commit below has nothing
+           left to animate. */
+        var past=slide>TURN_GRAB?slide-TURN_GRAB:
+                 slide<-TURN_GRAB?slide+TURN_GRAB:0;
+        turnDrag=Math.max(-90,Math.min(90,-past*TURN_DEG));
       }
     }
   });
@@ -127,10 +126,10 @@ function bindGestures(el){
         rotateView(dir);
         fired=true;
       } else if(travel<TURN_TAP&&turnDrag===0&&dt<600){
-        // The old two-finger tap: a quick right turn. It tests the lean as
-        // well as the midpoint, because a twist inside the grab leaves the
-        // midpoint exactly where it started - and `turnDrag` is still exactly
-        // zero until the grab is crossed, so this stays an exact test.
+        // The two-finger tap: a quick right turn, unchanged - it is a slide
+        // that never travelled. It tests the lean as well as the midpoint,
+        // because `turnDrag` is exactly zero until the grab is crossed, so a
+        // nudge inside the grab still reads as the tap it was.
         rotateView(1);fired=true;
       }
       // anything else: the lean springs back in the render loop, costing nothing

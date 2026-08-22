@@ -1003,21 +1003,22 @@ exclusive — every gesture also has a key and, unless hidden, a button:
   coexist, because a single tap that fires at once makes a double tap into
   fold-then-unfold, and telling them apart means delaying the fold ~300ms in
   the one layout where tapping is the only control you have.
-- **two-finger twist — turn, either way.** The map gesture: plant two fingers,
-  pivot them around each other, and the world follows 1:1. It takes hold after
-  8° (`TURN_GRAB`, subtracted rather than crossed, so it starts from still),
+- **two-finger swipe left or right — turn, either way.** Plant two fingers,
+  slide them sideways, and the world follows: slide right and the near edge
+  comes right with them. It takes hold after 14px (`TURN_GRAB`, subtracted
+  rather than crossed, so it starts from still) at `TURN_DEG` .42° per pixel,
   and the turn is only *taken* if you let go past 30°; short of that it springs
   back having cost nothing, which is the whole point — turning is a move, and
   a beat of a live clock on a boss or a trial.
-- **It reads the twist and nothing else, and that is deliberate.** A
-  two-finger slide does nothing, as on a map. Two earlier versions read the
-  midpoint between the fingers — first alone, then added to the twist — and
-  the summed one was the worse of the two: `viewAngle` grows clockwise on
-  screen, so a clockwise twist is +angle while a rightward slide is −angle,
-  and summing them makes the commonest grip of all (one finger planted, one
-  sweeping) cancel against itself. **No constant fixes that**; if the turn
-  ever feels mushy again, check the signs before touching the sensitivity.
-  `docs/HISTORY.md` has the worked example.
+- **It reads the horizontal midpoint and nothing else.** A two-finger twist
+  does nothing now, and neither does a vertical slide. This is the third
+  arrangement: twist-only was what shipped before, and the version that read
+  the midpoint *added to* the twist was worse than either alone — `viewAngle`
+  grows clockwise on screen, so a clockwise twist is +angle while a rightward
+  slide is −angle, and summing them makes the commonest grip of all (one
+  finger planted, one sweeping) cancel against itself. **No constant fixes
+  that**; if the turn ever feels mushy again, check the signs before touching
+  `TURN_DEG`. `docs/HISTORY.md` has the worked example.
 - two-finger tap — turn right, unchanged: it is a drag that never travelled
 - arrows / WASD, space, Q / E, Z undo, R restart, H hint, M mute, Shift peek
 - Esc — close the open panel, or open the menu from a clear screen. It closes
