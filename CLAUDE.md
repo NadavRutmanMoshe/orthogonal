@@ -765,6 +765,11 @@ picture with a puzzle sitting on top.
 - **`repeat.set(2,1)` for a band that is pure texture, `1` for one with a
   LANDMARK in it.** Hell has a volcano, and a volcano that tiles is two
   volcanoes.
+- **Lava comes OUT of the volcano rather than being drawn on it.** A single
+  stroke down the flank reads as a crack in the rock. What says "flowing" is
+  a stream that starts narrow at the mouth and **widens as it falls**, with a
+  hotter core inside a cooler edge, ending in something pooled and bright at
+  the foot — plus spatter thrown clear of the mouth.
 - **The volcano's crater is a radial gradient filled through a circular
   path.** A linear gradient in a `fillRect` draws a visible box — the ramp
   runs one way and the other three edges stop dead — which on a dark ridge
@@ -818,12 +823,16 @@ something untrue instead.
 
 Consequences worth knowing:
 
-- **`theme.paper` is a LIFTED version of the section's own sky, not paper.**
-  The first attempt made it a pale tint and the plane still read as a sheet
-  of stationery — folding a night meadow landed you on white. It is now a
-  lighter relative of the same hue, so **the fold changes the light rather
-  than the place**: the meadow goes to daylight blue, hell goes to a hot
-  red. There is no neutral paper left in the game.
+- **The paper is DERIVED from the sky, not authored** — `theme.sky[0]` lerped
+  `PAPER_LIFT` (0.20) toward white. Hand-picked papers were tried twice and
+  were wrong twice in the same direction: the first set was near-white, the
+  second was a "lighter relative" that still came out as a bright day over a
+  night meadow. A section only says what its sky is; the plane cannot drift
+  away from it. `theme.paper` still overrides if one is ever needed.
+- **`PAPER_LIFT` is the whole cue, and it is small on purpose.** At 0 the
+  fold changes no colour at all. Every time it has been raised the plane has
+  stopped looking like the same place, and what actually tells you that you
+  are flat is the world collapsing and the button reading `GO 3D`.
 - **The chrome follows the ground, not the verb.** `body.flat` swaps the HUD
   to dark-on-light, which was right when the plane was paper and is wrong on
   a night meadow. `syncHud` now asks `paperIsLight()` — Rec. 709 luma over

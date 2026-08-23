@@ -644,7 +644,7 @@ var LEVELS=[
 var SECTIONS=[
   {at:0, name:"PROLOGUE", sub:"walking, folding, turning — one verb each", col:"#7183a6",
    story:"Nothing has noticed you yet.",
-   theme:{sky:[0x141a2e,0x0a0e1a], block:0x5a6d94, paper:0x39436b, ink:0x14172a,
+   theme:{sky:[0x141a2e,0x0a0e1a], block:0x5a6d94, ink:0x14172a,
           air:{col:0x8fa4cc, n:14, rise:.06, drift:.05, size:.10}}},
   {at:3, name:"I · FUNDAMENTALS", sub:"one verb: collapse the world and cross the gap", col:"#35c2a5",
    story:"Every fold is a visit. The plane keeps count.",
@@ -654,7 +654,7 @@ var SECTIONS=[
       rule one level up: the goal is a saturated teal-green wireframe and it
       appears in EVERY section, so no section may sit on its hue. */
    theme:{sky:[0x1d3a58,0x0e1c2e], block:0xbdbdbd, surface:"grass",
-          scene:"trees", paper:0x3f6d97, ink:0x16241a,
+          scene:"trees", ink:0x16241a,
           stars:{n:46, col:0xdfe9ff, seed:19},
           air:{col:0xd8e8b0, n:14, rise:.05, drift:.09, size:.075}}},
   {at:17, name:"II · SPIKES", sub:"a hazard you cannot see until you fold", col:"#e0455f",
@@ -666,7 +666,7 @@ var SECTIONS=[
       sky is a deep ember glow low down, and the brightest thing standing
       anywhere on it is still the piece the section is about. */
    theme:{sky:[0x1a0a10,0x3a0f0a], block:0xc8c8c8, surface:"basalt",
-          scene:"hell", flare:17000, paper:0x6d2a1c, ink:0x24100e,
+          scene:"hell", flare:17000, ink:0x24100e,
           air:{col:0xff9a4a, n:24, rise:.20, drift:.07, size:.07}}},
   {at:26, name:"III · GLASS", sub:"solid in the volume, absent from the plane", col:"#7fb2ff",
    story:"Water casts nothing, so the plane holds no record of it.",
@@ -674,8 +674,8 @@ var SECTIONS=[
       warm world is what makes cyan sing. Embers rise, and the void warms
       every twenty seconds or so - the eruption, without drawing a
       volcano at it. */
-   theme:{sky:[0x1d0f0b,0x0a0504], block:0x7a5548, scene:"dunes",
-          paper:0x5a3423, ink:0x1e1109,
+   theme:{sky:[0x241a38,0x63382a], block:0x8a6152, scene:"dunes",
+          ink:0x1e1109,
           air:{col:0xffa45c, n:22, rise:.22, drift:.10, size:.075}}},
   /* Purple, because a crate is drawn pale violet in the world - the section
      wears the colour of the piece it teaches. It is deliberately pinker and
@@ -687,15 +687,15 @@ var SECTIONS=[
    story:"You can edit what they see. That is the one thing they cannot do.",
    /* DUST. Drifting sideways rather than rising or falling, because this is
       the section about pushing things along a row. */
-   theme:{sky:[0x241d10,0x100c06], block:0x7d6f52, scene:"ruins",
-          paper:0x584a2e, ink:0x1c1710,
+   theme:{sky:[0x1e2734,0x4f4630], block:0x8d7f5e, scene:"ruins",
+          ink:0x1c1710,
           air:{col:0xe0cd9a, n:18, rise:.02, drift:.20, size:.085}}},
   {at:48, name:"V · EXTRA", sub:"unlocked by the Census — the long ones", col:"#3fc4d4", locked:true,
    story:"The parts of the world that were never counted.",
    /* NOCTURNE. Almost nothing moves out here, which is the point - it is
       the shelf past the last warden, where the counting stopped. */
    theme:{sky:[0x0b0c16,0x05050b], block:0x4c4a66, scene:"shards",
-          paper:0x322e4e, ink:0x11101a,
+          ink:0x11101a,
           stars:{n:30, col:0xc9c4ee, seed:61},
           air:{col:0x8a86b8, n:10, rise:.03, drift:.02, size:.07}}}
 ];

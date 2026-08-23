@@ -445,11 +445,54 @@ function sceneryTex(kind){
     // the mouth itself, so there is something solid at the centre of it
     x.fillStyle="rgba(255,236,186,.9)";
     x.beginPath();x.ellipse(cgx,cgy,vw*.11,5,0,0,Math.PI*2);x.fill();
-    // lava running down one flank
-    x.strokeStyle="rgba(255,120,40,.7)";x.lineWidth=3;x.lineCap="round";
-    x.beginPath();x.moveTo(vx0+vw*.05,H-vh+4);
-    x.lineTo(vx0+vw*.16,H-vh*.55);x.lineTo(vx0+vw*.12,H-vh*.2);x.lineTo(vx0+vw*.2,H);
-    x.stroke();
+    /* LAVA COMES OUT OF IT, rather than a line being drawn on it. A single
+       stroke reads as a crack in the rock; what says "flowing" is a stream
+       that STARTS NARROW AT THE MOUTH AND WIDENS AS IT FALLS, splits, and
+       ends in something pooled and bright at the foot. So each flow is a
+       tapered polygon down one flank, with a hotter core inside it. */
+    function flow(x0,dir,n){
+      var pts=[], px2=x0, py2=H-vh+6, wdt=3;
+      for(var i2=0;i2<n;i2++){
+        pts.push([px2,py2,wdt]);
+        py2+=(vh-6)/n;
+        px2+=dir*(vw*.5-vw*.12)/n*(.55+q()*.9);   // follows the cone's flank
+        wdt+=1.0+q()*1.9;                          // gathers as it falls
+      }
+      pts.push([px2,H,wdt+3]);
+      // outer, cooler edge
+      x.fillStyle="rgba(212,74,22,.62)";
+      x.beginPath();
+      for(var a2=0;a2<pts.length;a2++)x.lineTo(pts[a2][0]-pts[a2][2],pts[a2][1]);
+      for(var b2=pts.length-1;b2>=0;b2--)x.lineTo(pts[b2][0]+pts[b2][2],pts[b2][1]);
+      x.closePath();x.fill();
+      // hotter core, narrower, so the stream has depth rather than being flat
+      x.fillStyle="rgba(255,190,84,.72)";
+      x.beginPath();
+      for(var a3=0;a3<pts.length;a3++)x.lineTo(pts[a3][0]-pts[a3][2]*.42,pts[a3][1]);
+      for(var b3=pts.length-1;b3>=0;b3--)x.lineTo(pts[b3][0]+pts[b3][2]*.42,pts[b3][1]);
+      x.closePath();x.fill();
+      return px2;
+    }
+    var f1=flow(vx0+vw*.03, 1,7);
+    var f2=flow(vx0-vw*.03,-1,7);
+    flow(vx0+vw*.01,1,4);                 // a third, shorter, that peters out
+    // pooled and burning at the foot of it, which is where a flow ends up
+    [f1,f2].forEach(function(fx){
+      var pg=x.createRadialGradient(fx,H,2,fx,H,46);
+      pg.addColorStop(0,"rgba(255,214,130,.9)");
+      pg.addColorStop(.4,"rgba(255,120,40,.45)");
+      pg.addColorStop(1,"rgba(255,90,30,0)");
+      x.fillStyle=pg;
+      x.beginPath();x.arc(fx,H,46,Math.PI,Math.PI*2);x.fill();
+    });
+    // spatter thrown clear of the mouth
+    for(var sp2=0;sp2<14;sp2++){
+      x.fillStyle=q()<.5?"#ffca55":"#ff7a28";
+      var sr=2+q()*3;
+      x.beginPath();
+      x.arc(vx0+(q()-.5)*vw*.55, H-vh-q()*36, sr,0,Math.PI*2);
+      x.fill();
+    }
   }
   var t=new THREE.CanvasTexture(c);
   /* Tiled twice for the bands that are pure texture, and ONCE for hell -
@@ -631,15 +674,26 @@ function applyTheme(th){
      as two games. A section now owns both pictures: `paper` is what the
      plane is printed on and `ink` is what its silhouettes are printed in,
      and both default to the old pair when a section does not say. */
-  /* THE PLANE'S GROUND IS THIS SECTION'S GROUND, LIFTED. It used to be near
-     white, and folding a night meadow landed you on a sheet of paper - the
-     two halves were reported, twice, as not feeling like one world. `paper`
-     is now a lighter relative of the section's own sky, so the fold changes
-     the LIGHT rather than the place. */
-  colPaper.setHex(th.paper||0x2a3350);
+  /* THE PLANE'S GROUND IS THE SECTION'S OWN SKY, BARELY LIFTED - and it is
+     DERIVED rather than authored, so it cannot drift away from the sky it is
+     supposed to be. Hand-picked papers were tried twice and were wrong twice
+     in the same direction: the first set was near-white, the second was a
+     "lighter relative" that still came out as a bright blue day over a night
+     meadow. A section only has to say what its sky is.
+
+     PAPER_LIFT is the whole cue. At 0 the fold changes no colour at all; at
+     1 it would be white. It is small on purpose - what tells you that you
+     are flat is the world collapsing and the button reading GO 3D, and every
+     time this number has been raised the plane has stopped looking like the
+     same place. */
+  if(th.paper!==undefined)colPaper.setHex(th.paper);
+  else{
+    colPaper.setHex(th.sky[0]);
+    colPaper.lerp(WHITE,PAPER_LIFT);
+  }
   colInk.setHex(th.ink||0x1a1c2b);
   document.documentElement.style.setProperty("--paper",
-    "#"+(th.paper||0xe6e1d3).toString(16).padStart(6,"0"));
+    "#"+colPaper.getHexString());
   document.documentElement.style.setProperty("--ink",
     "#"+(th.ink||0x1a1c2b).toString(16).padStart(6,"0"));
   /* A BLOCK OUTLIVES ITS LEVEL. syncMeshes keys meshes by cell and addMesh
@@ -1600,6 +1654,8 @@ function fireFlames(tips,ft,rx,rz){
    flat is the world visibly collapsing, the grid coming in and the button
    saying GO 3D, not the picture changing its palette. */
 var INK_SETTLE=0.18;
+var PAPER_LIFT=0.20;
+var WHITE=new THREE.Color(0xffffff);
 
 var tmp=new THREE.Vector3();
 var lastFrame=0;
