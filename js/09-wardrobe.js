@@ -357,7 +357,7 @@ function outlineFor(obj,bg){
    colours multiply the block's texture, so a saturated one would double the
    hue and come out as ink. Anything with a surface of its own is tinted from
    here only enough to say which piece it is. */
-var colGlass=new THREE.Color(0x8fdcf6);
+var colGlass=new THREE.Color(0x62b8f0);   // bluer: it is water, not ice
 var colAnchor=new THREE.Color(0xd9a441);
 var colCrate=new THREE.Color(0x9b7fd4);
 var colCrateHeld=new THREE.Color(0xb08a5c);

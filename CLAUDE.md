@@ -758,8 +758,16 @@ picture with a puzzle sitting on top.
   *under* the thing being played.
 - **It is raised off the bottom edge**, because the control bar lives there.
 - **Faded right out in the plane**: there is no distance in a silhouette.
+- **Stars are fixed, not drifting** — that is the whole difference between a
+  star and a mote — seeded so a section's sky is the same sky every time, and
+  kept to the upper half of the frame, because a star behind a block is a
+  star nobody sees.
 - **Trees are rounded canopies in three hazed ranks, kept to the lower half
-  of the band.** The first cut was one row of stacked conifer skirts and read
+  of the band, scattered rather than spaced.** The step between them runs
+  from well under a canopy width to well over it, so they clump and leave
+  open ground; an even step reads as a fence. A band of grass tufts along the
+  bottom joins them to the picture — without it the trunks ended in mid-air
+  and the wood looked pasted on. The first cut was one row of stacked conifer skirts and read
   as a sawblade; the second ran canopies to the top of the canvas and became
   a wall the puzzle sat on. What sells distance is the pale haze *between*
   the ranks, and it is a gradient — a flat wash put a hard horizontal line
@@ -774,19 +782,42 @@ picture with a puzzle sitting on top.
   is a hunter, and a shape a player could mistake for one is a lie the fight
   has to pay for.
 
-### The plane is the same place, seen flat
+### The plane is the world, flattened
 
-**A section owns both pictures.** `theme.paper` and `theme.ink` set
-`colPaper`/`colInk` per section, so folding out of a hell level and folding
-out of a meadow no longer land on identical stationery. It was reported,
-correctly, as the 2D world looking like it belonged to a different game.
+**`INK_SETTLE` (0.18) is the whole control.** It is how far a block settles
+toward ink when the world folds: 1 is the old behaviour — everything becomes
+a black silhouette on paper — and 0 keeps the world exactly as it looked
+standing up. It went from 1 to 0.18 because the plane was reported, twice, as
+looking like a different game: a grass block folded into a black rectangle
+and nothing but the geometry said the two pictures were the same place.
 
-**And the surface survives the fold, faintly.** `map` multiplies colour, and
-once colour is nearly ink the multiply is black on black — so in the plane
-the same texture is driven through **`emissive`** instead (`inkLift`), which
-*lifts* the grain off the silhouette rather than darkening it. Kept low and
-ramped on `flatT²`: the plane is still a silhouette, and this is only the
-difference between paper that is blank and paper that is printed.
+**What tells you that you are flat is not the palette.** It is the world
+visibly collapsing, the grid coming in, and the button saying `GO 3D`. The
+picture does not have to change colour to say it, and when it did, it said
+something untrue instead.
+
+Consequences worth knowing:
+
+- **`theme.paper` still exists and is now a light tint of the section's own
+  sky**, not neutral stationery — the ground under a flattened meadow is a
+  pale sky blue, under hell a warm ash.
+- **The horizon stays, receded** (`1-flatT*.62`) rather than fading out. Now
+  that a folded block keeps its colour, a horizon that vanished was the last
+  thing still insisting the plane is somewhere else.
+- **`inkLift()` is gone.** Driving the texture through `emissive` was a
+  workaround for colour having gone black; with the colour still there the
+  map multiplies normally and the grain simply shows.
+- **Stars are hidden in the plane.** The plane has no sky.
+
+### Water moves
+
+The texture is shared by every water block in the world, so **scrolling its
+offset animates all of them for the cost of two numbers a frame**. Only V is
+scrolled — the atlas is `[ side | top ]`, so scrolling U would bleed the
+surface into the sides. On top of that the whole mesh carries a few
+hundredths of a cell of swell, **phased off the block's own x and z** so a
+pool ripples instead of pumping in unison, and suppressed as the world folds
+because a wave in a silhouette is noise.
 
 ### Fire in the plane
 

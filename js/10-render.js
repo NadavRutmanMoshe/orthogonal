@@ -70,6 +70,12 @@ function initGL(){
   liquidEdgeGeo=new THREE.EdgesGeometry(new THREE.BoxGeometry(1,.98,1));
   TEX={stone:stoneTex(),grass:grassTex(),basalt:basaltTex(),
        water:waterTex(),lava:lavaTex()};
+  /* WATER MOVES. The texture is shared by every water block in the world, so
+     scrolling its offset animates all of them for the cost of two numbers a
+     frame - and because the atlas is [ side | top ], scrolling only V keeps
+     each half in its own column and the surface never bleeds into the sides.
+     Two speeds crossed against each other, so the swell never visibly loops. */
+  TEX.water.wrapS=TEX.water.wrapT=THREE.RepeatWrapping;
   spikeGeo=new THREE.ConeGeometry(.13,.36,4);
   // Taller and thinner than the old spike tip, and five-sided so it reads as
   // a flame rather than as a pyramid at the sizes this game draws.
@@ -151,7 +157,8 @@ function initGL(){
    floating in a swatch. `scene.background` is dropped when it is up,
    because the quad is now what paints every pixel behind the world. */
 var flameGeo=null,waterGeo=null,fireGeo=null,liquidEdgeGeo=null,TEX=null;
-var skyQuad=null, airField=null, airPhase=0, flareT=0, flareEvery=0, skyWarm=0;
+var skyQuad=null, airField=null, starField=null;
+var airPhase=0, flareT=0, flareEvery=0, skyWarm=0;
 var colSkyTop=new THREE.Color(0x141a2e), colSkyBot=new THREE.Color(0x0a0e1a);
 var colAir=new THREE.Color(0x8fa4cc);
 
@@ -191,6 +198,26 @@ function setSkyColors(warm){
 /* One quad per mote, unlit and tiny. They are rebuilt when a section
    changes rather than pooled at a fixed maximum, because a section changes
    about once every ten levels and the largest field in the game is 22. */
+/* STARS. Fixed to the sky rather than drifting through it, which is the
+   whole difference between a star and a mote: they twinkle in place and they
+   do not wander. Seeded, so a section's sky is the same sky every time it is
+   opened - a constellation that reshuffles is not a constellation. */
+function makeStars(spec){
+  var grp=new THREE.Group(), q=rnd(spec.seed||77);
+  for(var i=0;i<spec.n;i++){
+    var big=q()<.14;
+    var st=new THREE.Mesh(new THREE.CircleGeometry(big?.035:.019,6),
+      new THREE.MeshBasicMaterial({color:spec.col||0xffffff,transparent:true,
+        opacity:0,depthWrite:false,fog:false}));
+    st.renderOrder=-990;
+    /* Kept out of the lower third: that is where the horizon and most of the
+       puzzle live, and a star behind a block is a star nobody sees. */
+    st.userData={x:q(), y:.55+q()*.44, ph:q()*Math.PI*2,
+                 sp:.4+q()*1.4, a:(big?.9:.55)*(.5+q()*.5)};
+    grp.add(st);
+  }
+  return grp;
+}
 function makeAir(spec){
   var grp=new THREE.Group();
   for(var i=0;i<spec.n;i++){
@@ -245,7 +272,11 @@ function sceneryTex(kind){
       x.fillStyle=r[1];
       var px=-30;
       while(px<W+30){
-        var w=r[2]*(.6+q()*.8), h=r[3]*(.6+q()*.7), by=H-4-(1-r[0])*10;
+        /* SCATTERED, not spaced. The step below runs from well under a
+           canopy width to well over it, so trees clump and then leave gaps
+           of open ground - an even step is what made the first two cuts read
+           as a fence or a hedge rather than as a wood. */
+        var w=r[2]*(.55+q()*.95), h=r[3]*(.55+q()*.85), by=H-4-(1-r[0])*10;
         // trunk
         x.fillRect(px-Math.max(1.5,w*.05),by-h*.42,Math.max(3,w*.1),h*.42);
         // canopy: three overlapping lumps, biggest in the middle
@@ -255,11 +286,25 @@ function sceneryTex(kind){
             x.ellipse(px+l[0],by+l[1],l[2],l[2]*(.72+q()*.4),0,0,Math.PI*2);
             x.fill();
           });
-        px+=w*(.52+q()*.4);
+        px+=w*(.34+q()*1.5);
       }
       /* Haze as a GRADIENT, not a flat rectangle. A flat wash put a hard
          horizontal line across the forest, which reads as a seam in the
          drawing rather than as air between the ranks. */
+      /* GROUND UNDER THEM. Without it the trunks ended in mid-air and the
+         wood read as cut out and pasted on; a band of tufts is what joins
+         the trees to the bottom of the picture. */
+      if(r[0]===1){
+        x.fillStyle="#12281a";x.fillRect(0,H-16,W,16);
+        for(var gx=-4;gx<W+4;){
+          var gw=7+q()*13, gh=5+q()*13;
+          x.fillStyle=q()<.5?"#1b3a24":"#16311d";
+          x.beginPath();
+          x.moveTo(gx,H);x.quadraticCurveTo(gx+gw*.5,H-gh*1.5,gx+gw,H);
+          x.closePath();x.fill();
+          gx+=gw*(.4+q()*.7);
+        }
+      }
       if(r[4]){
         var hz=x.createLinearGradient(0,H-84,0,H);
         hz.addColorStop(0,"rgba(122,158,150,.02)");
@@ -362,7 +407,10 @@ function layoutAtmosphere(){
        horizon behind the d-pad. */
     sceneQuad.scale.set(w*1.25,h*.30,1);
     sceneQuad.position.y=-h*.19;
-    sceneQuad.material.opacity=.9*(1-flatT);
+    /* Kept in the plane, receded rather than removed. Now that a folded
+       block holds its own colour, a horizon that vanished was the last thing
+       still insisting the plane is somewhere else. */
+    sceneQuad.material.opacity=.9*(1-flatT*.62);
   }
   if(demonGrp){
     var dk=demonGrp.children;
@@ -373,7 +421,18 @@ function layoutAtmosphere(){
       dq.scale.setScalar(du.sc*h*.055);
       dq.position.set((du.x-.5)*w*1.1,
         -h*.155+Math.sin(airPhase*1.6+du.ph)*h*.010,-243);
-      dq.material.opacity=.85*(1-flatT);
+      dq.material.opacity=.85*(1-flatT*.62);
+    }
+  }
+  if(starField){
+    var sk=starField.children;
+    for(var si=0;si<sk.length;si++){
+      var st=sk[si],su=st.userData;
+      st.position.set((su.x-.5)*w*1.05,(su.y-.5)*h*1.05,-246);
+      st.scale.setScalar(h*.055);
+      // twinkle, and gone once the world is flat - the plane has no sky
+      var tw=.55+.45*Math.sin(airPhase*su.sp*3.1+su.ph);
+      st.material.opacity=su.a*tw*(1-flatT);
     }
   }
   if(!airField)return;
@@ -448,6 +507,10 @@ function applyTheme(th){
   if(airField){camera.remove(airField);airField.traverse(function(o){
     if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});}
   airField=makeAir(th.air);camera.add(airField);
+  if(starField){camera.remove(starField);starField.traverse(function(o){
+    if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});
+    starField=null;}
+  if(th.stars){starField=makeStars(th.stars);camera.add(starField);}
   if(sceneQuad){camera.remove(sceneQuad);
     sceneQuad.geometry.dispose();sceneQuad.material.map.dispose();
     sceneQuad.material.dispose();sceneQuad=null;}
@@ -628,16 +691,16 @@ function stoneTex(){
    pixels. The surface half gets the glints. */
 function waterTex(){
   return surf(function(x,S){
-    wash(x,0,S,"#bcdff2");
+    wash(x,0,S,"#8fc8ef");
     var q=rnd(17);
     for(var y=0;y<S;y+=7){
-      x.fillStyle=q()<.5?"#a9d3ea":"#cbe9f8";
+      x.fillStyle=q()<.5?"#72b4e4":"#a6d6f5";
       x.beginPath();x.moveTo(0,y);
       for(var px=0;px<=S;px+=16)x.lineTo(px,y+Math.sin(px*.09+y)*2.4);
       x.lineTo(S,y+5);x.lineTo(0,y+5);x.closePath();x.fill();
     }
-    wash(x,S,S,"#dff3fe");
-    blobs(x,S,S,26,13,["#eefaff","#cfeafb","#ffffff"],19,.6);
+    wash(x,S,S,"#b7dffa");
+    blobs(x,S,S,26,13,["#d9f0ff","#96caf0","#ffffff"],19,.6);
   });
 }
 /* LAVA. Flowing veins between crust plates, not a checker of hot cells. */
@@ -1331,7 +1394,7 @@ function fireFlames(tips,ft,rx,rz){
        leaves intact - rx/rz come from the current view, so the row reads as a
        row from whichever side the world was folded. */
     var fx=u.fx*rx, fz=u.fx*rz;
-    c.position.set(u.vx+(fx-u.vx)*t, .42+.30*t, u.vz+(fz-u.vz)*t);
+    c.position.set(u.vx+(fx-u.vx)*t, .42+.14*t, u.vz+(fz-u.vz)*t);
     // smaller when flat, and four of them, so the row does not become a wall
     var sc=1-.34*t;
     c.scale.set((.86+fl*.18)*sc,u.h*fl*sc,1);
@@ -1343,13 +1406,13 @@ function fireFlames(tips,ft,rx,rz){
   }
 }
 
-var liftC=new THREE.Color();
-function inkLift(m,ft){
-  if(!m.material.emissiveMap&&m.material.map)m.material.emissiveMap=m.material.map;
-  if(!m.material.emissive)return;
-  liftC.copy(colPaper).multiplyScalar(.115);
-  m.material.emissive.copy(liftC).multiplyScalar(Math.max(0,ft*ft));
-}
+/* How far a block settles toward ink when the world folds. 1 is the old
+   behaviour - everything becomes a black silhouette on paper - and 0 keeps
+   the world exactly as it looked standing up. Low, because the plane was
+   reported as looking like a different game: what tells you that you are
+   flat is the world visibly collapsing, the grid coming in and the button
+   saying GO 3D, not the picture changing its palette. */
+var INK_SETTLE=0.18;
 
 var tmp=new THREE.Vector3();
 var lastFrame=0;
@@ -1368,6 +1431,10 @@ function animate(now){
      the air fades back rather than stopping, because the plane is a place
      too and a dead sky there would read as the game having switched off. */
   airPhase+=dtMs*.0009;
+  if(TEX&&TEX.water){
+    TEX.water.offset.y=(airPhase*.055)%1;
+    TEX.water.offset.x=(Math.sin(airPhase*.31)*.006);
+  }
   if(flareEvery){
     flareT+=dtMs;
     if(flareT>flareEvery)flareT=0;
@@ -1453,32 +1520,42 @@ function animate(now){
       m.userData.edge.material.opacity=.55+perilPulse*.45;
       m.material.opacity=1;
     } else if(m.userData.glass){
-      // glass has no place in the plane, so it dissolves as the world folds
+      /* The surface rises and falls. One shared geometry means the plate
+         cannot be moved per block, so the swell is carried on the whole
+         mesh's Y - a few hundredths of a cell, phased off the block's own
+         position so a pool of them ripples rather than pumping in unison.
+         Suppressed as the world folds: a wave in a silhouette is noise. */
+      m.position.y+=Math.sin(airPhase*2.6+b[0]*1.7+b[2]*2.3)*.022*(1-flatT);
+      // water has no place in the plane, so it spills as the world folds
       var o=Math.max(0,.62*(1-flatT*1.9));
       m.material.opacity=o;
       m.userData.edge.material.opacity=Math.max(0,.95*(1-flatT*1.9));
       m.material.color.copy(colGlass);
     } else if(m.userData.kind===4){
       // fire stays legible when flat - the lethal column is the whole point
-      m.material.color.copy(colSpike).lerp(colInk,flatT*.4);
+      m.material.color.copy(colSpike).lerp(colInk,flatT*INK_SETTLE*.6);
       if(m.userData.tips)fireFlames(m.userData.tips,flatT,rx,rz);
       applyDepth(m,b,pdepth,tdvx,tdvz,flatT);
     } else if(m.userData.anchor){
       // anchors stay legible once flat - they're the reason the fold matters
-      m.material.color.copy(colAnchor).lerp(colInk,flatT*.55);
+      m.material.color.copy(colAnchor).lerp(colInk,flatT*INK_SETTLE*.8);
       m.userData.edge.material.opacity=.85;
       applyDepth(m,b,pdepth,tdvx,tdvz,flatT);
     } else {
+      /* THE PLANE IS THE WORLD, FLATTENED - not a second picture of it.
+
+         This used to run all the way to ink, so a grass block folded into a
+         black rectangle and the two halves of the game looked like two
+         games. It now settles only INK_SETTLE of the way, which keeps the
+         hue and the surface: fold a meadow and you get a meadow lying down.
+
+         That also retired inkLift(). Driving the texture through emissive
+         was a workaround for colour having gone black, and with the colour
+         still there the map multiplies normally and the grain simply
+         shows. */
       var base=ghosted.has(k)?colGhost:colBlock;
-      m.material.color.copy(base).lerp(colInk,flatT);
+      m.material.color.copy(base).lerp(colInk,flatT*INK_SETTLE);
       applyDepth(m,b,pdepth,tdvx,tdvz,flatT);
-      /* THE SURFACE SURVIVES THE FOLD, faintly. `map` multiplies colour, and
-         once colour is nearly ink the multiply is black on black - so in the
-         plane the same texture is driven through EMISSIVE instead, which
-         lifts the grain off the silhouette rather than darkening it. Kept
-         low: the plane is still a silhouette, and this is the difference
-         between paper that is blank and paper that is printed. */
-      inkLift(m,flatT);
     }
   }
 
@@ -1499,7 +1576,7 @@ function animate(now){
     // highlight in the block loop above never saw it.
     var cperil=perilSet&&perilSet[K(cb[0],cb[1],cb[2])];
     cm.material.color.copy(cperil?colPeril:(held?colCrateHeld:colCrate))
-      .lerp(colInk,flatT*.75);
+      .lerp(colInk,flatT*INK_SETTLE);
     if(cm.children[0])
       cm.children[0].material.color.set(
         cperil?0xff4d5e:(held?0xffd98a:0xe0d4ff));

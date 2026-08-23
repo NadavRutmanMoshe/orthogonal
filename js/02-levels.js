@@ -653,8 +653,9 @@ var SECTIONS=[
    /* Olive rather than a true green, and that is the same don't-camouflage
       rule one level up: the goal is a saturated teal-green wireframe and it
       appears in EVERY section, so no section may sit on its hue. */
-   theme:{sky:[0x2c4a63,0x16283a], block:0xbdbdbd, surface:"grass",
-          scene:"trees", paper:0xe9ead6, ink:0x1b2a1e,
+   theme:{sky:[0x1d3a58,0x0e1c2e], block:0xbdbdbd, surface:"grass",
+          scene:"trees", paper:0xcfe0ee, ink:0x1b2a1e,
+          stars:{n:46, col:0xdfe9ff, seed:19},
           air:{col:0xd8e8b0, n:14, rise:.05, drift:.09, size:.075}}},
   {at:17, name:"II · SPIKES", sub:"a hazard you cannot see until you fold", col:"#e0455f",
    story:"Some of what is down there did not survive being flattened.",
@@ -695,6 +696,7 @@ var SECTIONS=[
       the shelf past the last warden, where the counting stopped. */
    theme:{sky:[0x0b0c16,0x05050b], block:0x4c4a66,
           paper:0xdcd8ea, ink:0x14121e,
+          stars:{n:30, col:0xc9c4ee, seed:61},
           air:{col:0x8a86b8, n:10, rise:.03, drift:.02, size:.07}}}
 ];
 
