@@ -1699,6 +1699,40 @@ exclusive — every gesture also has a key and, unless hidden, a button:
 
 ---
 
+## The landing indicator — rule 5, shown instead of stated
+
+**"You return on the block nearest the camera, unless an anchor is among the
+candidates" is the single thing that cost the first real playtester the
+most.** It is stated once in `First Fold` and never shown again.
+
+**It cannot be drawn while you are flat.** Every candidate is at the same
+screen position there — that is what folding *means* — so there is nothing to
+point at. It is drawn at the moment it happens instead: standing up rings the
+block you landed on, and dimmer, the ones you did not.
+
+- **Only when there was a choice.** `land.length > 1`, or nothing was decided
+  and a marker would be noise. That is why it is silent on most levels and
+  turns up exactly on the ones that turn on the rule.
+- **The winner wears the colour of whatever decided it** — amber when an
+  anchor overrode the rule, the goal's green when it was simply nearest — and
+  the losers a dim version of the same, so the choice reads as one picture.
+- **The rings draw forever; the sentence is budgeted.** `LAND_HINT_TIMES` (3)
+  in `settings.landHints`. The rings are free and answer faster than words; a
+  line of text on every fold would be nagging.
+- **It goes in `flashCue`'s note slot, not `flash()`.** A toast lands at the
+  top of the screen across the level's own hint text — the collision that
+  slot was built to fix — and the note slot also sits near the rings rather
+  than at the opposite end of the screen from them.
+- **`landFrame` clears on `flat`, not on `flatT`.** flatT is still near 1 for
+  the first frames after standing up, because the world is only starting to
+  rise, so testing it threw the hint away on the frame it was created.
+
+**`loadSettings()` is a whitelist and a key that is not read there does not
+exist.** `settings.landHints`, `slowOffers` and `noSlowOffer` are all written
+by `saveSettings()` and were silently forgotten on every reload until they
+were added to it — which mattered most for `noSlowOffer`, since that one is
+the player saying *stop*.
+
 ## How big the world is drawn
 
 **The frustum fits the arena to the SCREEN, not to the largest of its three

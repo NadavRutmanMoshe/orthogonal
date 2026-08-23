@@ -873,6 +873,28 @@ function doUnflatten(){
   pushHistory();moveCount++;
   player.x=b.x;player.z=b.z;player.y=flatPos.y;
   flat=false;flatTarget=0;SFX.unfold();
+  /* RULE 5, SHOWN. Only when the column actually held a choice - see
+     showLanding() - so it is silent on the levels where nothing was decided
+     and speaks on the ones that turn on it. The sentence goes with it the
+     first few times only: after that the rings say it faster than words. */
+  if(typeof showLanding==="function"&&land.length>1){
+    b.yStand=flatPos.y;
+    showLanding(land,b,!!b.anchor);
+    var seen=settings.landHints||0;
+    if(seen<LAND_HINT_TIMES){
+      settings.landHints=seen+1;saveSettings();
+      /* flashCue's note slot, not flash(): a toast lands at the top of the
+         screen across the level's own hint text, which is exactly the
+         collision that slot was made to fix. Down by the controls it also
+         sits where the rings are, rather than at the opposite end of the
+         screen from the thing it is describing. */
+      setTimeout(function(){
+        flashCue(null,b.anchor
+          ?"the anchor held you \u2014 an anchor beats the nearest block"
+          :"you return on the block nearest the camera");
+      },340);
+    }
+  }
   if(tutC)tutC.unflat++;
   if(R.deadly3(player.x,player.y,player.z)){die("spike");return;}
   if(bossContact())return;         // you came back down on top of one

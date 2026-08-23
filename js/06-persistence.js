@@ -85,6 +85,18 @@ function loadSettings(){
           if(o.pace===PACES[p].v)settings.pace=o.pace;
         if(o.mastery==="on"||o.mastery==="auto")settings.mastery=o.mastery;
         if(o.tutor==="gesture"||o.tutor==="buttons")settings.tutor=o.tutor;
+        /* THE COUNTERS HAVE TO BE ON THIS LIST OR THEY DO NOT EXIST. This
+           function is a whitelist, deliberately - see the volume note above -
+           so a key that is written by saveSettings() and not read here is
+           silently forgotten on every reload. `noSlowOffer` is the one that
+           matters: it is the player saying stop, and it has to still be true
+           tomorrow. Bounded rather than trusted, because a hand-edited save
+           should not be able to switch help off with a nonsense value. */
+        if(o.noSlowOffer===true)settings.noSlowOffer=true;
+        if(typeof o.slowOffers==="number"&&o.slowOffers>=0)
+          settings.slowOffers=Math.min(99,o.slowOffers|0);
+        if(typeof o.landHints==="number"&&o.landHints>=0)
+          settings.landHints=Math.min(99,o.landHints|0);
         // o.verbs may exist in settings saved before the wording was settled.
         // Ignoring it is the migration: everyone lands on GO 2D / GO 3D.
       }catch(e){}

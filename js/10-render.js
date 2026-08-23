@@ -1853,6 +1853,73 @@ function drainWater(){
   if(typeof SFX!=="undefined"&&SFX.spill)SFX.spill();
 }
 
+/* ============================================================
+   THE LANDING INDICATOR - rule 5, shown instead of stated
+   ============================================================
+   "You return on the block nearest the camera, unless an anchor is among
+   them" is stated once in the tutorial and never shown again, and it is the
+   single thing that cost the first real playtester the most. It cannot be
+   drawn while you are FLAT - every candidate is at the same screen position
+   there, which is what folding means - so it is drawn at the moment it
+   happens: standing up rings the block you landed on and, dimmer, the ones
+   you did not.
+
+   It only appears WHEN THERE WAS A CHOICE. On a column with one supporting
+   block nothing was decided and a marker would be noise; the rule has
+   nothing to teach there. That is also why it stays quiet on most levels and
+   turns up exactly on the ones that turn on it. */
+var LAND_MS=1600, landGeo=null, landRings=[], landHint=null;
+function landRing(i){
+  if(!landGeo)landGeo=new THREE.EdgesGeometry(new THREE.BoxGeometry(1.06,1.06,1.06));
+  while(landRings.length<=i){
+    var m=new THREE.LineSegments(landGeo,new THREE.LineBasicMaterial({
+      color:0xffffff,transparent:true,opacity:0,depthTest:false}));
+    m.renderOrder=930;m.visible=false;
+    scene.add(m);landRings.push(m);
+  }
+  return landRings[i];
+}
+/* `land` holds the squares you could have STOOD IN; the block that holds you
+   up is the one below each, which is what gets ringed. */
+function showLanding(land,win,isAnchor){
+  if(!land||land.length<2)return;
+  landHint={t:0,anchor:!!isAnchor,cells:land.map(function(c){
+    return {x:c.x,y:win.yStand-1,z:c.z,win:(c.x===win.x&&c.z===win.z)};
+  })};
+}
+function landFrame(dtMs){
+  var i;
+  if(!landHint){for(i=0;i<landRings.length;i++)landRings[i].visible=false;return;}
+  landHint.t+=dtMs;
+  /* Cleared when the player FOLDS AGAIN, which is `flat` - not flatT. flatT
+     is still near 1 on the first frames after standing up, because the world
+     is only starting to rise, so testing it threw the hint away on the very
+     frame it was created. */
+  if(landHint.t>LAND_MS||flat){
+    landHint=null;
+    for(i=0;i<landRings.length;i++)landRings[i].visible=false;
+    return;
+  }
+  var p=landHint.t/LAND_MS;
+  // in over the first fifth - the world is still standing up before that -
+  // and out over the last third, so it never just vanishes
+  var fade=Math.min(1,p/.2)*Math.min(1,(1-p)/.34);
+  for(i=0;i<landHint.cells.length;i++){
+    var c=landHint.cells[i],m=landRing(i);
+    m.visible=true;
+    m.position.set(c.x,c.y,c.z);
+    /* The winner in the colour of whatever decided it - amber when an anchor
+       overrode the rule, the goal's green when it was simply the nearest -
+       and the ones that lost in a dim version of the same, so the choice is
+       one picture rather than two. */
+    var win=c.win;
+    m.material.color.setHex(landHint.anchor?(win?0xffd98a:0x6b5a38)
+                                           :(win?0x35c2a5:0x2f5a55));
+    m.material.opacity=(win?.95:.42)*fade;
+  }
+  for(;i<landRings.length;i++)landRings[i].visible=false;
+}
+
 var tmp=new THREE.Vector3();
 var lastFrame=0;
 function animate(now){
@@ -1887,6 +1954,7 @@ function animate(now){
   } else skyWarm=0;
   setSkyColors(skyWarm);
   layoutAtmosphere();
+  landFrame(dtMs);
   /* playerMesh rather than `player`, because the mesh is where the player is
      actually drawn - already eased, and already in plane coordinates when
      flat - so the camera cannot arrive somewhere the cube has not. */
