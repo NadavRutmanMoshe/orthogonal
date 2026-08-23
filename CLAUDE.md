@@ -710,6 +710,14 @@ violet, the exact pair that fails for the roughly one man in twelve with a
 colour vision deficiency. They keep their shapes until they get forms of
 their own.
 
+**A crate is obsidian**: a near-black glassy body with sharp facets and
+violet fire in the cracks. It is the first piece whose texture also drives
+`emissiveMap`, which is what makes the veins *light* the block rather than
+being painted on it — a multiply alone leaves a vein exactly as dark as the
+body it runs through. It keeps its two-bar marker, because obsidian and
+basalt are both near-black and until a crate has a form of its own the marker
+is the thing that says which is which.
+
 **Surfaces are drawn, never loaded**, one canvas per look, laid out as
 `[ side | top ]` in one image. `mergeBoxes` remaps the UVs so faces +Y/-Y
 sample the right half and the four sides the left. **This is the only way to
@@ -778,7 +786,15 @@ picture with a puzzle sitting on top.
   quad visible until its falloff was pulled inside its edges.
 - **The plume ramps on `skyWarm`**, the same value that warms the sky, so the
   eruption and the flare are one event rather than two things that happen
-  near each other. It idles at .16 so the mountain is never dead.
+  near each other.
+- **NOTHING IN THE BAKED TEXTURE CAN MOVE**, and that is the price of the
+  horizon being one quad and one draw call. The volcano was reported as not
+  moving because everything in it — the cone, the flows, the crater — is
+  painted into the scenery texture. Motion has to be drawn *on top*: sparks
+  thrown out of the mouth (`makeSparks`), and a plume that **breathes at
+  idle** as well as swelling on the flare. A glow that only moves once every
+  seventeen seconds is a still picture for sixteen of them, which is exactly
+  what "it is not moving" meant.
 - **`r[2]` bit twice.** After the spires, the mesas and the columns were
   written with `r[3]` on three-entry rows and came out `NaN` tall, invisible
   and silent, exactly as documented above. There is now a check for it:

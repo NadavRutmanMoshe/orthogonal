@@ -69,7 +69,7 @@ function initGL(){
   edgeGeo=new THREE.EdgesGeometry(new THREE.BoxGeometry(.9,.9,.9));
   liquidEdgeGeo=new THREE.EdgesGeometry(new THREE.BoxGeometry(1,.98,1));
   TEX={stone:stoneTex(),grass:grassTex(),basalt:basaltTex(),
-       water:waterTex(),lava:lavaTex()};
+       water:waterTex(),lava:lavaTex(),obsidian:obsidianTex()};
   /* WATER MOVES. The texture is shared by every water block in the world, so
      scrolling its offset animates all of them for the cost of two numbers a
      frame - and because the atlas is [ side | top ], scrolling only V keeps
@@ -545,7 +545,28 @@ function makePlume(){
   m.renderOrder=-975;m.position.z=-244;
   return m;
 }
-var sceneQuad=null, demonGrp=null, plumeQuad=null;
+/* EMBERS OFF THE CRATER, which is what actually makes the mountain move.
+   The lava flows are baked into the scenery texture - one quad, one draw
+   call, and that is why the horizon is free - so nothing in them can
+   animate. Motion has to come from things drawn ON TOP of it: sparks
+   thrown out of the mouth, and a glow that surges.
+
+   They rise fast, drift, and die out well before the top of the band, so the
+   eye reads them as coming FROM the crater rather than as more weather. */
+function makeSparks(n){
+  var g=new THREE.Group();
+  for(var i=0;i<n;i++){
+    var q=new THREE.Mesh(new THREE.CircleGeometry(.012,8),
+      new THREE.MeshBasicMaterial({color:0xffb04a,transparent:true,opacity:0,
+        depthWrite:false,fog:false,blending:THREE.AdditiveBlending}));
+    q.renderOrder=-968;
+    q.userData={t:Math.random(), sp:.55+Math.random()*.9,
+                dx:(Math.random()-.5)*.9, sz:.6+Math.random()*1.1};
+    g.add(q);
+  }
+  return g;
+}
+var sceneQuad=null, demonGrp=null, plumeQuad=null, sparkGrp=null;
 function makeScenery(kind){
   var m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),
     new THREE.MeshBasicMaterial({map:sceneryTex(kind),transparent:true,
@@ -598,10 +619,30 @@ function layoutAtmosphere(){
        just above the crater. Derived from those numbers rather than nudged
        against a screenshot, so a change to the band moves it correctly. */
     var cx=(0.68-.5)*w*1.25, cy=-h*.19+(0.775-.5)*h*.30;
-    plumeQuad.scale.set(h*.17,h*.17,1);
-    plumeQuad.position.set(cx,cy+h*.035,-244);
-    // idles low and swells on the flare, so the mountain is always alive
-    plumeQuad.material.opacity=(.16+skyWarm*.84)*(1-flatT*.5);
+    /* BREATHES AT IDLE as well as swelling on the flare. A glow that only
+       moves once every seventeen seconds is a still picture for sixteen of
+       them, which is what "it is not moving" meant. */
+    var breathe=.16+.07*Math.sin(airPhase*1.35)+.04*Math.sin(airPhase*3.1+1.4);
+    var heat=Math.min(1,breathe+skyWarm*.9);
+    plumeQuad.scale.set(h*.17*(1+heat*.35),h*.17*(1+heat*.5),1);
+    plumeQuad.position.set(cx,cy+h*.035+h*heat*.03,-244);
+    plumeQuad.material.opacity=heat*(1-flatT*.5);
+    if(sparkGrp){
+      var sk2=sparkGrp.children;
+      for(var qi=0;qi<sk2.length;qi++){
+        var sq=sk2[qi],su2=sq.userData;
+        su2.t+=(.0045+skyWarm*.006)*su2.sp;
+        if(su2.t>1)su2.t-=1;
+        var rise=su2.t;
+        sq.position.set(cx+su2.dx*h*.10*rise,
+                        cy+h*.02+rise*h*.30, -243);
+        sq.scale.setScalar(h*.26*su2.sz*(1-rise*.55));
+        /* Brightest just after they leave the mouth and gone before the top,
+           so they read as thrown rather than as drifting. */
+        sq.material.opacity=Math.max(0,(1-rise)*(1-rise)*(rise<.10?rise/.10:1))
+          *(.5+skyWarm*.5)*(1-flatT*.6);
+      }
+    }
   }
   if(demonGrp){
     var dk=demonGrp.children;
@@ -742,11 +783,15 @@ function applyTheme(th){
       if(o.material)o.material.dispose();});demonGrp=null;}
   if(plumeQuad){camera.remove(plumeQuad);plumeQuad.geometry.dispose();
     plumeQuad.material.map.dispose();plumeQuad.material.dispose();plumeQuad=null;}
+  if(sparkGrp){camera.remove(sparkGrp);sparkGrp.traverse(function(o){
+    if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});
+    sparkGrp=null;}
   if(th.scene){
     sceneQuad=makeScenery(th.scene);camera.add(sceneQuad);
     if(th.scene==="hell"){
       demonGrp=makeDemons(4);camera.add(demonGrp);
       plumeQuad=makePlume();camera.add(plumeQuad);
+      sparkGrp=makeSparks(16);camera.add(sparkGrp);
     }
   }
   setSkyColors(0);
@@ -915,6 +960,49 @@ function basaltTex(){
       var vx=(v<5?0:S)+q()*S, vy=q()*S;
       x.moveTo(vx,vy);
       for(var k=0;k<3;k++){vx+=(q()-.5)*34;vy+=(q()-.5)*34;x.lineTo(vx,vy);}
+      x.stroke();
+    }
+  });
+}
+/* OBSIDIAN, for the crate. Volcanic glass: a near-black body with sharp
+   conchoidal facets and violet fire running in the cracks. The crate is the
+   one piece that edits what the plane records, so a block with something
+   burning inside it is the right kind of strange - and it is the first piece
+   whose texture is also driven through `emissive`, which is what makes the
+   veins light the block rather than just being painted on it.
+
+   It keeps its two-bar marker. Obsidian and basalt are both near-black, and
+   until a crate has a FORM of its own the marker is the thing that says
+   which is which - the same rule that let water drop its ring. */
+function obsidianTex(){
+  return surf(function(x,S){
+    wash(x,0,S,"#241f33");
+    var q=rnd(67);
+    for(var i=0;i<30;i++){                 // facets, angular and glassy
+      x.fillStyle=["#2c2540","#1b1728","#352c4c","#221d31"][Math.floor(q()*4)];
+      var bx=q()*S, by=q()*S, r=9+q()*16;
+      x.beginPath();
+      for(var a=0;a<4;a++){
+        var an=a/4*Math.PI*2+q()*.8, rad=r*(.45+q());
+        var px=bx+Math.cos(an)*rad, py=by+Math.sin(an)*rad;
+        a?x.lineTo(px,py):x.moveTo(px,py);
+      }
+      x.closePath();x.fill();
+    }
+    wash(x,S,S,"#2a2440");
+    for(var j=0;j<24;j++){
+      x.fillStyle=["#332b4c","#201b30","#3d3358"][Math.floor(q()*3)];
+      x.fillRect(S+q()*S,q()*S,8+q()*18,7+q()*15);
+    }
+    // the fire in the cracks, on both halves
+    for(var v=0;v<13;v++){
+      var ox=v<7?0:S;
+      x.strokeStyle=q()<.45?"#d9b0ff":"#9a5cf0";
+      x.lineWidth=1+q()*2.6;x.lineCap="round";
+      x.beginPath();
+      var vx=ox+q()*S, vy=q()*S;
+      x.moveTo(vx,vy);
+      for(var k=0;k<3;k++){vx+=(q()-.5)*38;vy+=(q()-.5)*38;x.lineTo(vx,vy);}
       x.stroke();
     }
   });
@@ -1205,9 +1293,14 @@ function buildDynamic(){
   for(var i=0;i<gCrates.length;i++){
     var m=new THREE.Mesh(boxGeo,
       new THREE.MeshLambertMaterial({color:colCrate.clone(),vertexColors:true,
-        // deliberately NOT the section's surface: a crate is a thing you
-        // brought, not a piece of the ground you are standing on
-        map:TEX?TEX.stone:null}));
+        /* Obsidian, and deliberately NOT the section's surface: a crate is a
+           thing you brought, not a piece of the ground you stand on. The
+           same texture goes on emissiveMap so the violet in the cracks LIGHTS
+           the block - the body is near-black, and a multiply alone would
+           leave the veins as dark as everything else. */
+        map:TEX?TEX.obsidian:null,
+        emissiveMap:TEX?TEX.obsidian:null,
+        emissive:new THREE.Color(0x2a1046)}));
     m.add(new THREE.LineSegments(edgeGeo,
       new THREE.LineBasicMaterial({color:0xe0d4ff,transparent:true,opacity:.8})));
     var cmk=new THREE.Group();

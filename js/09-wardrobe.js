@@ -366,8 +366,11 @@ function outlineFor(obj,bg){
    here only enough to say which piece it is. */
 var colGlass=new THREE.Color(0x62b8f0);   // bluer: it is water, not ice
 var colAnchor=new THREE.Color(0xd9a441);
-var colCrate=new THREE.Color(0x9b7fd4);
-var colCrateHeld=new THREE.Color(0xb08a5c);
+/* Near-white, because the OBSIDIAN texture carries the violet now - these
+   colours multiply the map, and a saturated tint would double the hue into
+   ink. Same reason water and fire were eased off. */
+var colCrate=new THREE.Color(0xc4b6e8);
+var colCrateHeld=new THREE.Color(0xe0c49a);   // held fast on an anchor: warmer
 var colKey=new THREE.Color(0xf2d16b);
 // Fire. Charred body under hot flames - see the fire block in 10-render.js.
 var colSpike=new THREE.Color(0xd9c0b4);   // the lava crust carries the heat
