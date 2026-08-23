@@ -912,14 +912,14 @@ up, so a re-fold shows the trace again.
 - **Only a move that exists drains it.** The plane has no up or down, so
   draining on any press let a stray swipe empty the water without the player
   having gone anywhere.
-- **ONLY THE SQUARE YOU ARE STANDING ON keeps its water.** The trace answers
-  exactly one question — why am I not falling through this square — so it is
-  needed on one block and nowhere else; showing every water block's trace
+- **ONE BLOCK — the one you folded on — and it does not follow you.** The
+  trace answers exactly one question, *why am I not falling through this
+  square*, so it is needed on the single block that was under the player at
+  the moment of the fold. A trace that filled the next block as you arrived
   made the plane look like it still had water in it, which is the opposite of
-  what the rule says. It follows the player: step onto another water block
-  and that one fills while the one behind drains. Eased per mesh
-  (`userData.tr`) rather than switched, so arriving and leaving both read as
-  the water doing something.
+  what the rule says. `markWaterTrace()` captures it in the volume, before
+  the fold resolves, because "the block I was standing on" is a fact about
+  the world before it collapsed.
 
 ### Fire in the plane
 
@@ -1699,6 +1699,36 @@ exclusive — every gesture also has a key and, unless hidden, a button:
 
 ---
 
+## How big the world is drawn
+
+**The frustum fits the arena to the SCREEN, not to the largest of its three
+spans.** The old fit was `max(spanX, spanZ, spanY)*.72 + 3.4` measured against
+the frustum's *half width*, so on a portrait phone a tall narrow level was
+framed as though it were as wide as it is tall and every block came out
+small. The first real playtester could not read the board, and **a puzzle you
+cannot see is not a difficulty problem.**
+
+`fitViewSize()` computes what the arena actually needs on each axis and takes
+the larger:
+
+- **screen-right** is x or z depending on the view, so the worst case over the
+  four views is the larger of the two spans;
+- **screen-up** is height *plus* depth, because the camera leans by `tilt`
+  (.62) and a cell of depth therefore costs .62 of a cell vertically — the
+  same coincidence `legible.js` is about.
+
+Blocks came out **1.6× to 1.8× bigger** across the campaign. Two things to
+know before touching it:
+
+- **Portrait and landscape convert the two requirements into `vs`
+  differently** — half-width is `vs` and half-height `vs/a` in portrait, the
+  other way round in landscape. Getting it backwards is silent: it only shows
+  as bad framing on one orientation.
+- **The control bar does not change the size on a phone.** Width is the
+  binding constraint in portrait and the bar costs height, so `padH` only
+  matters in landscape or on a very wide arena. Do not assume hiding the bar
+  buys size — it was measured and it does not.
+
 ## Things worth knowing before you change them
 
 - **Verify claims with the solver rather than asserting them.** `node
@@ -2037,18 +2067,16 @@ tested and failed, plus where this sits in the PCG literature, are in
   asks iOS to keep its hands off a two-finger move, and `user-scalable=no` is
   ignored there — `touch-action:none` on the body is what should hold it, and
   that has not been tested on a device.
-- **The follow camera is on trial, not settled.** `FOLLOW` and
-  `FOLLOW_ZOOM` at the top of `js/10-render.js` put the camera on the player
-  instead of on the arena; `FOLLOW=0` is exactly the old camera and the whole
-  thing comes out in one line. It is there to answer a real complaint — that
-  a block one square back and a block one square higher draw in the same place
-  — by giving depth back as *motion*: step in depth and the world slides
-  vertically, step sideways and it slides sideways. Measured before shipping:
-  with the player parked in every arena's worst corner, every hunter spawn of
-  every phase is still on screen (worst 0.87 of the way to the edge), so it
-  does not hide the pack. What is unmeasured is whether it feels better, and
-  the known cost is that a level whose start square is a corner frames
-  lopsidedly — `FOLLOW` below 1 trades the motion cue back for framing.
+- **The follow camera is OFF, and the bigger world is why.** `FOLLOW=0` is
+  the old, arena-framing camera. It was on trial to give depth back as
+  *motion* — step in depth and the world slides vertically — and it worked at
+  the old framing, where every hunter spawn stayed on screen with the player
+  in the worst corner (worst 0.87). It does not survive the bigger world:
+  measured again after the frustum change, **every boss and trial had spawns
+  outside the frustum** with the player in a corner, worst 1.38. Being able
+  to see the puzzle beats a motion cue, especially on the two kinds of level
+  that already beat the first real playtester. `FOLLOW=1` brings it back at
+  the cost of that framing.
 - **Two-finger tap only rotates right.** There is no left-rotate gesture.
 - **The gesture tutorial has no keyboard half yet**, which is why
   `defaultTutor()` sends a fine pointer to the button lesson. The intended
