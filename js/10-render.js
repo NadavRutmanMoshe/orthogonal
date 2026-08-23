@@ -40,7 +40,20 @@ var viewSize=10,viewSizeT=10;
                  they are the ones where a fixed frame made everything tiny.
    Set FOLLOW to 0 and this is the old camera exactly.
    ============================================================ */
-var FOLLOW=1, FOLLOW_ZOOM=9;
+/* FOLLOW IS OFF, and the bigger world is why.
+
+   The follow camera existed to give depth back as motion: step in depth and
+   the world slides vertically. It was always on trial rather than settled.
+   The frustum now fits the arena to the SCREEN rather than to the larger of
+   its three spans, which makes every block about 1.6x bigger - and at that
+   size a camera that pans to the player pushes the far side of a boss arena
+   off the edge. Measured: with the player parked in each arena corner, every
+   boss and trial had spawns outside the frustum (worst 1.38 of the way out).
+
+   Being able to see the puzzle beats a motion cue, particularly on the two
+   kinds of level that already beat the first real playtester. Set FOLLOW
+   back to 1 and the pan returns, at the cost of that framing. */
+var FOLLOW=0, FOLLOW_ZOOM=9;
 var followT=new THREE.Vector3();
 var colVoid=new THREE.Color(0x0f1424),colPaper=new THREE.Color(0xe6e1d3);
 var colBlock=new THREE.Color(0x5a6d94),colInk=new THREE.Color(0x1a1c2b);
@@ -1342,8 +1355,43 @@ function recomputeBounds(){
     a[j]=Math.min(a[j],pts[i][j]);b[j]=Math.max(b[j],pts[i][j]);
   }
   centerT.set((a[0]+b[0])/2,(a[1]+b[1])/2+.5,(a[2]+b[2])/2);
-  viewSizeT=Math.max(b[0]-a[0],b[2]-a[2],b[1]-a[1])*.72+3.4;
+  /* THE ARENA'S EXTENT ON SCREEN, not the largest of its three spans.
+
+     The old fit took max(spanX, spanZ, spanY) against the frustum's HALF
+     WIDTH, which on a portrait phone threw away most of the screen: a tall,
+     narrow level was framed as though it were as wide as it is tall, and
+     every block came out small. The first real playtester could not see the
+     puzzle, and a puzzle you cannot read is not a difficulty problem.
+
+     Screen-right is x or z depending on the view, so the worst case over the
+     four views is the larger of the two. Screen-up is height PLUS depth,
+     because the camera leans by `tilt` (.62) and a cell of depth therefore
+     costs .62 of a cell vertically - the same coincidence legible.js is
+     about. */
+  arenaSW=Math.max(b[0]-a[0],b[2]-a[2])+1;      // +1: blocks are a cell wide
+  arenaSH=(b[1]-a[1])+1+.62*arenaSW;
   arenaLo=a.slice();arenaHi=b.slice();
+  viewSizeT=fitViewSize();
+}
+/* Both axes have to fit, so take whichever demands more room. The vertical
+   requirement is multiplied by the aspect because in portrait the frustum's
+   half-height is vs/a, so a vertical need of H means vs >= H*a. */
+var arenaSW=8, arenaSH=8;
+function fitViewSize(){
+  var w=window.innerWidth||430,h=window.innerHeight||760,a=w/h;
+  /* Margins in cells. The top always carries the level name and its hint;
+     the bottom carries the control bar only when there is one, and the
+     default layout is now GESTURES with no bar at all - which is most of
+     why there is room to do this. */
+  var padW=1.0, padH=barIsUp()?3.0:1.7;
+  /* updateFrustum sets half-width = vs and half-height = vs/a in PORTRAIT,
+     and half-width = vs*a, half-height = vs in LANDSCAPE - so the two
+     requirements convert into vs differently in each. Getting this backwards
+     is silent: it only shows as a badly framed level on one orientation. */
+  var needW,needH;
+  if(a>=1){ needW=(arenaSW/2+padW)/a; needH=arenaSH/2+padH; }
+  else    { needW=arenaSW/2+padW;     needH=(arenaSH/2+padH)*a; }
+  return Math.max(3.2,needW,needH);
 }
 /* The pack.
 
@@ -1661,8 +1709,27 @@ function buildGrid(){
     new THREE.LineBasicMaterial({color:0x1a1c2b,transparent:true,opacity:0}));
   scene.add(gridLines);
 }
+/* HOW MUCH OF THE SCREEN THE WORLD FILLS. Below 1 the frustum tightens and
+   every block gets bigger - which is the whole point: the first real
+   playtester could not see the puzzle, and a puzzle you cannot read is not a
+   difficulty problem.
+
+   Two values, because the control bar is the only thing competing for the
+   space. The default layout is now GESTURES with no bar at all, so that case
+   should take the room the bar used to hold; with the bar up a little is
+   given back so the world is not sitting behind the d-pad.
+
+   It multiplies a frustum that was already computed to FIT THE ARENA, so
+   these cannot go much below .8 without cropping the biggest boards - the
+   88-block BOSS IV arena is the one to check against. */
+function barIsUp(){
+  var u=(typeof settings!=="undefined"&&settings.ui)||"full";
+  // a tutorial forces the bar back on whatever the layout says
+  return u!=="none"||document.body.classList.contains("tut");
+}
 function updateFrustum(){
   var w=window.innerWidth,h=window.innerHeight,a=w/h;
+  if(L&&L.blocks&&L.blocks.length)viewSizeT=fitViewSize();
   var vs=viewSize*(h<640?1.2:1)*(app==="edit"?1.12:1);
   if(a>=1){camera.left=-vs*a;camera.right=vs*a;camera.top=vs;camera.bottom=-vs;}
   else{camera.left=-vs;camera.right=vs;camera.top=vs/a;camera.bottom=-vs/a;}
@@ -1737,6 +1804,12 @@ function fireFlames(tips,ft,rx,rz){
    flat is the world visibly collapsing, the grid coming in and the button
    saying GO 3D, not the picture changing its palette. */
 var INK_SETTLE=0.18;
+/* How far the plane's ground lifts off the section's sky when the world
+   folds. Small on purpose - see the note in CLAUDE.md; at 0 the fold changes
+   no colour at all, and every time this has been raised the plane has
+   stopped looking like the same place. */
+var PAPER_LIFT=0.20;
+var WHITE=new THREE.Color(0xffffff);
 /* WATER IN THE PLANE - a trace, then a drain.
 
    Water casts nothing into the silhouette; that is the rule and it has not
@@ -1750,36 +1823,35 @@ var INK_SETTLE=0.18;
    water was there, it is leaving, and by the time you have moved it is not
    coming back. The trace is deliberately shallow and unlit so it never looks
    like ground you could return to. */
-/* ONLY THE SQUARE YOU ARE STANDING ON keeps its water. The trace exists to
-   answer one question - why am I not falling through this square - so it is
-   needed on exactly one block and nowhere else. Showing every water block's
-   trace made the plane look like it still had water in it, which is the
-   opposite of what the rule says.
+/* THE WATER YOU FOLDED ON, and only that one.
 
-   It follows you: step onto another water block and that one fills, the one
-   behind you drains. Eased per mesh rather than switched, so arriving and
-   leaving both read as the water doing something. */
-function drainWater(){
-  if(!flat)return;
-  if(typeof SFX!=="undefined"&&SFX.spill&&typeof standingOnWater==="function"
-     &&standingOnWater())SFX.spill();
-}
-/* Is the block under the player, in the plane, water? Asked of the same
-   coordinates the trace is drawn from, so the splash and the picture can
-   never disagree. */
-function standingOnWater(){
-  if(!flat||!flatPos||!L||!L.blocks)return false;
-  var ax=AX[view],rx=ax.r[0],rz=ax.r[2];
+   The trace answers exactly one question - why am I not falling through this
+   square - so it is needed on the single block that was under the player at
+   the moment they folded. It does NOT follow them: a trace that fills the
+   next block as you arrive makes the plane look like it still has water in
+   it, which is the opposite of what the rule says. One block, left behind,
+   draining.
+
+   Captured in the volume rather than derived in the plane, because "the
+   block I was standing on" is a fact about the world before it collapsed and
+   is the same fact whichever way the fold went. */
+var traceKey=null, traceDrain=0, traceDrainT=0;
+function markWaterTrace(){
+  traceKey=null;traceDrain=0;traceDrainT=0;
+  if(!L||!L.blocks||!player)return;
   for(var i=0;i<L.blocks.length;i++){
     var b=L.blocks[i];
     if((b[3]||0)!==1)continue;
-    if(b[1]!==flatPos.y-1)continue;
-    if(Math.abs(b[0]*rx+b[2]*rz-flatPos.u)<.01)return true;
+    if(b[0]===player.x&&b[1]===player.y-1&&b[2]===player.z){
+      traceKey=K(b[0],b[1],b[2]);return;
+    }
   }
-  return false;
 }
-var PAPER_LIFT=0.20;
-var WHITE=new THREE.Color(0xffffff);
+function drainWater(){
+  if(!flat||!traceKey||traceDrainT)return;
+  traceDrainT=1;
+  if(typeof SFX!=="undefined"&&SFX.spill)SFX.spill();
+}
 
 var tmp=new THREE.Vector3();
 var lastFrame=0;
@@ -1798,6 +1870,8 @@ function animate(now){
      the air fades back rather than stopping, because the plane is a place
      too and a dead sky there would read as the game having switched off. */
   airPhase+=dtMs*.0009;
+  if(!flat&&flatT<.5){traceKey=null;traceDrainT=0;traceDrain=0;}
+  traceDrain+=(traceDrainT-traceDrain)*Math.min(1,dtMs*.006);
   if(TEX&&TEX.water){
     TEX.water.offset.y=(airPhase*.055)%1;
     TEX.water.offset.x=(Math.sin(airPhase*.31)*.006);
@@ -1905,14 +1979,9 @@ function animate(now){
          the trace is what is left directly under their feet. Draining then
          sinks it out of the square from there. */
       var ft2=Math.max(0,Math.min(1,(flatT-.35)/.65));
-      /* The one block the player is standing on, and only that one. b[1] is
-         the block's own height and flatPos.y is the player's, so the block
-         underfoot is one below. */
-      var mineW=(flat&&flatPos&&b[1]===flatPos.y-1&&
-                 Math.abs(u-flatPos.u)<.01)?1:0;
-      if(m.userData.tr===undefined)m.userData.tr=0;
-      m.userData.tr+=(mineW-m.userData.tr)*.16;
-      var tr=m.userData.tr;
+      // the one block that was under the player when they folded, and only
+      // that one; it drains on their first step and does not come back
+      var tr=(k===traceKey)?(1-traceDrain):0;
       var ky=1-ft2*.74;
       m.scale.y=ky;
       // sinks out of the square as it empties, so leaving reads as draining

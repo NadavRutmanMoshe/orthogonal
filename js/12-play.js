@@ -842,6 +842,9 @@ function doFlatten(){
   lastSolidDepth=R.dOf(view,player.x,player.z);
   pushHistory();moveCount++;
   flatPos={u:pu,y:player.y};
+  /* Captured BEFORE the fold resolves, while the player is still standing on
+     something in the volume - afterwards there is only a silhouette. */
+  if(typeof markWaterTrace==="function")markWaterTrace();
   flat=true;flatTarget=1;SFX.fold();
   /* The water spilling out of the plane. Only on a level that has any, so
      it is a fact about this world rather than a flourish on every fold -
