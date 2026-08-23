@@ -674,7 +674,7 @@ var SECTIONS=[
       warm world is what makes cyan sing. Embers rise, and the void warms
       every twenty seconds or so - the eruption, without drawing a
       volcano at it. */
-   theme:{sky:[0x1d0f0b,0x0a0504], block:0x7a5548, flare:22000,
+   theme:{sky:[0x1d0f0b,0x0a0504], block:0x7a5548, scene:"dunes",
           paper:0x5a3423, ink:0x1e1109,
           air:{col:0xffa45c, n:22, rise:.22, drift:.10, size:.075}}},
   /* Purple, because a crate is drawn pale violet in the world - the section
@@ -687,14 +687,14 @@ var SECTIONS=[
    story:"You can edit what they see. That is the one thing they cannot do.",
    /* DUST. Drifting sideways rather than rising or falling, because this is
       the section about pushing things along a row. */
-   theme:{sky:[0x241d10,0x100c06], block:0x7d6f52,
+   theme:{sky:[0x241d10,0x100c06], block:0x7d6f52, scene:"ruins",
           paper:0x584a2e, ink:0x1c1710,
           air:{col:0xe0cd9a, n:18, rise:.02, drift:.20, size:.085}}},
   {at:48, name:"V · EXTRA", sub:"unlocked by the Census — the long ones", col:"#3fc4d4", locked:true,
    story:"The parts of the world that were never counted.",
    /* NOCTURNE. Almost nothing moves out here, which is the point - it is
       the shelf past the last warden, where the counting stopped. */
-   theme:{sky:[0x0b0c16,0x05050b], block:0x4c4a66,
+   theme:{sky:[0x0b0c16,0x05050b], block:0x4c4a66, scene:"shards",
           paper:0x322e4e, ink:0x11101a,
           stars:{n:30, col:0xc9c4ee, seed:61},
           air:{col:0x8a86b8, n:10, rise:.03, drift:.02, size:.07}}}

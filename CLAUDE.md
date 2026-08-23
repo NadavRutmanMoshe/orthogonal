@@ -758,6 +758,26 @@ picture with a puzzle sitting on top.
   *under* the thing being played.
 - **It is raised off the bottom edge**, because the control bar lives there.
 - **Faded right out in the plane**: there is no distance in a silhouette.
+- **Every section has a horizon now**: a treeline, hell's ridge, canyon
+  mesas, broken columns, and a few floating slabs for the shelf. Flat tops,
+  spikes, canopies and pillars are four silhouettes nobody can confuse, which
+  is the point — a section should be identifiable from its skyline alone.
+- **`repeat.set(2,1)` for a band that is pure texture, `1` for one with a
+  LANDMARK in it.** Hell has a volcano, and a volcano that tiles is two
+  volcanoes.
+- **The volcano's crater is a radial gradient filled through a circular
+  path.** A linear gradient in a `fillRect` draws a visible box — the ramp
+  runs one way and the other three edges stop dead — which on a dark ridge
+  reads as a lit rectangle sitting on the mountain. Anything glowing has to
+  fade out on every side it has, and the same mistake made the plume's own
+  quad visible until its falloff was pulled inside its edges.
+- **The plume ramps on `skyWarm`**, the same value that warms the sky, so the
+  eruption and the flare are one event rather than two things that happen
+  near each other. It idles at .16 so the mountain is never dead.
+- **`r[2]` bit twice.** After the spires, the mesas and the columns were
+  written with `r[3]` on three-entry rows and came out `NaN` tall, invisible
+  and silent, exactly as documented above. There is now a check for it:
+  sample each horizon's base row and assert it has opaque dark pixels.
 - **Stars are fixed, not drifting** — that is the whole difference between a
   star and a mote — seeded so a section's sky is the same sky every time, and
   kept to the upper half of the frame, because a star behind a block is a
@@ -821,7 +841,14 @@ Consequences worth knowing:
 - **`inkLift()` is gone.** Driving the texture through `emissive` was a
   workaround for colour having gone black; with the colour still there the
   map multiplies normally and the grain simply shows.
-- **Stars are hidden in the plane.** The plane has no sky.
+- **Stars stay in the plane**, dimmed. The plane is the same sky in different
+  light now, so a sky that emptied on the fold was the last thing still
+  saying otherwise.
+- **The grid is the editor's.** It used to draw in the plane as the cue that
+  you were flat, back when flat also meant a different palette. A ruled
+  overlay across a meadow was the one thing left that looked like a diagram
+  rather than a place; the collapse, the sky lifting and the button reading
+  `GO 3D` all say it without one.
 
 ### Water moves
 

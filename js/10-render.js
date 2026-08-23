@@ -202,18 +202,45 @@ function setSkyColors(warm){
    whole difference between a star and a mote: they twinkle in place and they
    do not wander. Seeded, so a section's sky is the same sky every time it is
    opened - a constellation that reshuffles is not a constellation. */
+/* A four-point sparkle: two long thin quads crossed. Cheap, and it is the
+   shape everybody draws when they mean "star" rather than "dot". */
+var starGeo=null;
+function makeStarGeo(){
+  var a=new THREE.PlaneGeometry(.10,.016), b=new THREE.PlaneGeometry(.016,.10);
+  return mergeRaw([a,b]);
+}
+function mergeRaw(gs){
+  var pos=[],uv=[],idx=[],base=0;
+  gs.forEach(function(g){
+    var gp=g.attributes.position.array,gu=g.attributes.uv.array,gi=g.index.array,i;
+    for(i=0;i<gp.length;i++)pos.push(gp[i]);
+    for(i=0;i<gu.length;i++)uv.push(gu[i]);
+    for(i=0;i<gi.length;i++)idx.push(gi[i]+base);
+    base+=gp.length/3;g.dispose();
+  });
+  var o=new THREE.BufferGeometry();
+  o.setAttribute("position",new THREE.Float32BufferAttribute(pos,3));
+  o.setAttribute("uv",new THREE.Float32BufferAttribute(uv,2));
+  o.setIndex(idx);
+  return o;
+}
 function makeStars(spec){
+  if(!starGeo)starGeo=makeStarGeo();
   var grp=new THREE.Group(), q=rnd(spec.seed||77);
   for(var i=0;i<spec.n;i++){
-    var big=q()<.14;
-    var st=new THREE.Mesh(new THREE.CircleGeometry(big?.035:.019,6),
+    /* Three grades rather than two, and the brightest get a four-point
+       sparkle instead of a bigger dot: past a certain size a disc reads as a
+       bubble, and what says "star" is the cross, not the area. */
+    var g=q(), grade=g<.08?2:(g<.3?1:0);
+    var st=new THREE.Mesh(grade===2?starGeo:new THREE.CircleGeometry(
+        grade===1?.026:.015,6),
       new THREE.MeshBasicMaterial({color:spec.col||0xffffff,transparent:true,
         opacity:0,depthWrite:false,fog:false}));
     st.renderOrder=-990;
     /* Kept out of the lower third: that is where the horizon and most of the
        puzzle live, and a star behind a block is a star nobody sees. */
-    st.userData={x:q(), y:.55+q()*.44, ph:q()*Math.PI*2,
-                 sp:.4+q()*1.4, a:(big?.9:.55)*(.5+q()*.5)};
+    st.userData={x:q(), y:.55+q()*.44, ph:q()*Math.PI*2, grade:grade,
+                 sp:.4+q()*1.4, a:(grade===2?1:grade===1?.7:.5)*(.55+q()*.45)};
     grp.add(st);
   }
   return grp;
@@ -312,6 +339,50 @@ function sceneryTex(kind){
         x.fillStyle=hz;x.fillRect(0,H-84,W,84);
       }
     });
+  } else if(kind==="dunes"){
+    /* III - a canyon at dusk. Layered mesas rather than peaks: flat tops and
+       vertical sides, which is the one horizon shape that is neither a
+       treeline nor a ridge of spikes, so the three sections cannot be
+       confused at a glance. */
+    var g2=x.createLinearGradient(0,H,0,H-110);
+    g2.addColorStop(0,"rgba(255,170,96,.5)");g2.addColorStop(1,"rgba(210,110,60,0)");
+    x.fillStyle=g2;x.fillRect(0,H-110,W,110);
+    [[.4,"#5a3324",44],[.75,"#2e1a14",72]].forEach(function(r){
+      x.fillStyle=r[1];
+      var px=-40;
+      while(px<W+40){
+        var w=70+q()*130, h=r[2]*(.5+q()*.8);
+        x.fillRect(px,H-h,w,h);                       // the mesa
+        x.fillRect(px+w*.2,H-h-6-q()*10,w*.5,10);     // a cap on some of them
+        px+=w*(.55+q()*.7);
+      }
+    });
+  } else if(kind==="ruins"){
+    /* IV - broken columns. The crates section is the one about moving things
+       that were put somewhere, so its horizon is a place things were put. */
+    var g3=x.createLinearGradient(0,H,0,H-96);
+    g3.addColorStop(0,"rgba(220,196,140,.34)");g3.addColorStop(1,"rgba(180,150,96,0)");
+    x.fillStyle=g3;x.fillRect(0,H-96,W,96);
+    [[.4,"#4a412c",52],[.8,"#241f15",84]].forEach(function(r){
+      x.fillStyle=r[1];
+      var px=-30;
+      while(px<W+30){
+        var w=14+q()*22, h=r[2]*(.35+q()*1.0);
+        x.fillRect(px,H-h,w,h);
+        if(q()<.45)x.fillRect(px-4,H-h-7,w+8,7);      // a broken capital
+        px+=w*(.7+q()*2.4);                            // widely, unevenly spaced
+      }
+    });
+  } else if(kind==="shards"){
+    /* V - the shelf past the last warden. Almost nothing: a few slabs
+       hanging in the dark, because it is the part of the world that was
+       never counted and should look like nowhere. */
+    x.fillStyle="#161426";
+    for(var i2=0;i2<16;i2++){
+      var sx=q()*W, sy=H-10-q()*90, sw=18+q()*54, sh=5+q()*16;
+      x.save();x.translate(sx,sy);x.rotate((q()-.5)*.5);
+      x.fillRect(-sw/2,-sh/2,sw,sh);x.restore();
+    }
   } else {
     // HELL: jagged basalt spires, and a molten line burning along their feet
     /* The glow goes down FIRST and has to be strong, because the spires are
@@ -344,9 +415,47 @@ function sceneryTex(kind){
         px+=w*(.42+q()*.34);
       }
     });
+    /* THE VOLCANO. One cone, off centre, taller than everything on the ridge
+       and drawn last so it stands in front of it - the eruption already
+       existed as a colour in the sky (theme.flare) and had nothing to erupt
+       FROM, which is what made it read as the screen flickering rather than
+       as a place doing something. The crater is a bright notch; the plume
+       above it is a separate quad, because it has to breathe with the flare
+       and a baked texture cannot. */
+    var vx0=W*.68, vw=176, vh=106;
+    x.fillStyle="#0a0406";
+    x.beginPath();
+    x.moveTo(vx0-vw/2,H);
+    x.lineTo(vx0-vw*.12,H-vh);
+    x.lineTo(vx0+vw*.12,H-vh);
+    x.lineTo(vx0+vw/2,H);
+    x.closePath();x.fill();
+    /* The crater is a RADIAL glow filled through a circular path. A linear
+       gradient in a fillRect draws a visible box - the ramp only runs one
+       way and the other three edges end abruptly - which on a dark ridge
+       reads as a lit rectangle sitting on the mountain. Anything glowing
+       needs to fade out on every side it has. */
+    var cgx=vx0, cgy=H-vh+4, cgr=vw*.30;
+    var cg=x.createRadialGradient(cgx,cgy,1,cgx,cgy,cgr);
+    cg.addColorStop(0,"rgba(255,224,150,.95)");
+    cg.addColorStop(.35,"rgba(255,150,54,.55)");
+    cg.addColorStop(1,"rgba(255,90,30,0)");
+    x.fillStyle=cg;
+    x.beginPath();x.arc(cgx,cgy,cgr,0,Math.PI*2);x.fill();
+    // the mouth itself, so there is something solid at the centre of it
+    x.fillStyle="rgba(255,236,186,.9)";
+    x.beginPath();x.ellipse(cgx,cgy,vw*.11,5,0,0,Math.PI*2);x.fill();
+    // lava running down one flank
+    x.strokeStyle="rgba(255,120,40,.7)";x.lineWidth=3;x.lineCap="round";
+    x.beginPath();x.moveTo(vx0+vw*.05,H-vh+4);
+    x.lineTo(vx0+vw*.16,H-vh*.55);x.lineTo(vx0+vw*.12,H-vh*.2);x.lineTo(vx0+vw*.2,H);
+    x.stroke();
   }
   var t=new THREE.CanvasTexture(c);
-  t.wrapS=THREE.RepeatWrapping;t.repeat.set(2,1);
+  /* Tiled twice for the bands that are pure texture, and ONCE for hell -
+     it has a volcano in it, and a volcano that repeats is two volcanoes.
+     Anything with a landmark in it has to map across the band exactly once. */
+  t.wrapS=THREE.RepeatWrapping;t.repeat.set(kind==="hell"?1:2,1);
   return t;
 }
 /* THE THINGS MOVING IN IT. Small dark silhouettes with two lit eyes,
@@ -368,7 +477,32 @@ function demonTex(){
   x.fillRect(24,26,5,4);x.fillRect(35,26,5,4);
   return new THREE.CanvasTexture(c);
 }
-var sceneQuad=null, demonGrp=null;
+/* The plume over the crater. A separate quad because it has to ramp with
+   `skyWarm` - the same value that warms the sky - so the sky brightening and
+   the mountain throwing something up are one event rather than two things
+   that happen near each other. Additive, so it reads as light rather than as
+   a grey shape pasted on a dark ridge. */
+function makePlume(){
+  var c=document.createElement("canvas");c.width=128;c.height=128;
+  var x=c.getContext("2d");
+  /* Centred, and the falloff reaches zero at 0.44 of the canvas - well
+     inside its own edges. The first cut put the source on the bottom edge
+     with a radius larger than the canvas, so the gradient was still bright
+     where it ran out of pixels and the quad's own rectangle was visible on
+     screen. An additive quad shows every edge you leave it. */
+  var g=x.createRadialGradient(64,64,2,64,64,56);
+  g.addColorStop(0,"rgba(255,214,140,.95)");
+  g.addColorStop(.30,"rgba(255,130,50,.40)");
+  g.addColorStop(.70,"rgba(255,90,32,.10)");
+  g.addColorStop(1,"rgba(255,80,30,0)");
+  x.fillStyle=g;x.fillRect(0,0,128,128);
+  var m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),
+    new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,
+      opacity:0,depthWrite:false,fog:false,blending:THREE.AdditiveBlending}));
+  m.renderOrder=-975;m.position.z=-244;
+  return m;
+}
+var sceneQuad=null, demonGrp=null, plumeQuad=null;
 function makeScenery(kind){
   var m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),
     new THREE.MeshBasicMaterial({map:sceneryTex(kind),transparent:true,
@@ -412,6 +546,20 @@ function layoutAtmosphere(){
        still insisting the plane is somewhere else. */
     sceneQuad.material.opacity=.9*(1-flatT*.62);
   }
+  if(plumeQuad){
+    /* Sat over the crater, which the texture puts at 0.68 of its width and
+       the quad repeats twice - so 0.34 of the visible span, measured from
+       the same numbers rather than eyeballed against a screenshot. */
+    /* The crater sits at 0.68 across and 0.775 up its own canvas, the band
+       is scaled w*1.25 by h*.30 and centred at -h*.19, and the plume hangs
+       just above the crater. Derived from those numbers rather than nudged
+       against a screenshot, so a change to the band moves it correctly. */
+    var cx=(0.68-.5)*w*1.25, cy=-h*.19+(0.775-.5)*h*.30;
+    plumeQuad.scale.set(h*.17,h*.17,1);
+    plumeQuad.position.set(cx,cy+h*.035,-244);
+    // idles low and swells on the flare, so the mountain is always alive
+    plumeQuad.material.opacity=(.16+skyWarm*.84)*(1-flatT*.5);
+  }
   if(demonGrp){
     var dk=demonGrp.children;
     for(var di=0;di<dk.length;di++){
@@ -429,10 +577,14 @@ function layoutAtmosphere(){
     for(var si=0;si<sk.length;si++){
       var st=sk[si],su=st.userData;
       st.position.set((su.x-.5)*w*1.05,(su.y-.5)*h*1.05,-246);
-      st.scale.setScalar(h*.055);
-      // twinkle, and gone once the world is flat - the plane has no sky
+      st.scale.setScalar(h*.055*(su.grade===2?1.35:1));
+      /* THEY STAY IN THE PLANE. The plane is the same sky in different light
+         now, not a sheet of paper, so a sky that emptied on the fold was the
+         last thing still saying otherwise. Dimmed rather than removed,
+         because the ground is brighter there and a star has to lose the
+         contrast a brighter ground takes from it anyway. */
       var tw=.55+.45*Math.sin(airPhase*su.sp*3.1+su.ph);
-      st.material.opacity=su.a*tw*(1-flatT);
+      st.material.opacity=su.a*tw*(1-flatT*.55);
     }
   }
   if(!airField)return;
@@ -534,9 +686,14 @@ function applyTheme(th){
   if(demonGrp){camera.remove(demonGrp);
     demonGrp.traverse(function(o){if(o.geometry)o.geometry.dispose();
       if(o.material)o.material.dispose();});demonGrp=null;}
+  if(plumeQuad){camera.remove(plumeQuad);plumeQuad.geometry.dispose();
+    plumeQuad.material.map.dispose();plumeQuad.material.dispose();plumeQuad=null;}
   if(th.scene){
     sceneQuad=makeScenery(th.scene);camera.add(sceneQuad);
-    if(th.scene==="hell"){demonGrp=makeDemons(4);camera.add(demonGrp);}
+    if(th.scene==="hell"){
+      demonGrp=makeDemons(4);camera.add(demonGrp);
+      plumeQuad=makePlume();camera.add(plumeQuad);
+    }
   }
   setSkyColors(0);
 }
@@ -642,22 +799,35 @@ function wash(x,ox,S,base){x.fillStyle=base;x.fillRect(ox,0,S,S);}
    even fringe: an even fringe is the tell. */
 function grassTex(){
   return surf(function(x,S){
+    /* THE SIDE IS EARTH WITH STONES IN IT, and the grass sits on it as a
+       LIP rather than as a fringe of teeth. The first cut drew a row of
+       quadratic spikes hanging down and it read as a comb; what makes a cut
+       bank of turf legible is a solid band of green with a soft, uneven
+       underside and a darker line where the two materials meet. */
     wash(x,0,S,"#a9744a");
-    blobs(x,0,S,50,11,["#9c6a42","#b57e51","#8f6039","#c08a5c"],7,.55);
+    blobs(x,0,S,44,12,["#9a6840","#b8825a","#8d5e39"],7,.55);
+    blobs(x,0,S,22,5,["#7d5433","#c49a72"],23,.7);          // stones in the earth
     var q=rnd(31);
-    // tufts spilling down the side, each its own depth and width
-    for(var gx=-6;gx<S+6;){
-      var w=10+q()*16, h=9+q()*20;
-      x.fillStyle=q()<.5?"#5aa83f":"#6cbb4a";
-      x.beginPath();
-      x.moveTo(gx,0);x.lineTo(gx+w,0);
-      x.quadraticCurveTo(gx+w*.5,h*1.5,gx,0);
-      x.closePath();x.fill();
-      x.fillRect(gx,0,w,h*.45);
-      gx+=w*.72;
+    var lip=Math.round(S*.26);
+    x.fillStyle="#5aa83f";x.fillRect(0,0,S,lip*.62);
+    for(var gx=0;gx<S;gx+=4){                                // uneven underside
+      var d=lip*(.5+q()*.62);
+      x.fillStyle=q()<.5?"#5aa83f":"#4d9435";
+      x.fillRect(gx,0,5,d);
     }
-    wash(x,S,S,"#61b344");
-    blobs(x,S,S,46,12,["#57a63c","#6ec24d","#4e9836","#7fd05a"],13,.5);
+    x.fillStyle="rgba(50,86,36,.55)";x.fillRect(0,lip*.5,S,3); // the meeting line
+    x.fillStyle="#6cbb4a";x.fillRect(0,0,S,4);                 // lit top edge
+
+    /* THE TOP IS CLUMPS, NOT NOISE. Three greens in overlapping patches with
+       a few blades picked out - a lawn read from above is a mottle at this
+       size, and an even speckle reads as static. */
+    wash(x,S,S,"#5faa41");
+    blobs(x,S,S,26,17,["#569f39","#69bb4c"],13,.55);
+    blobs(x,S,S,18,10,["#7ccb5c","#4a8f33"],41,.65);
+    for(var i=0;i<70;i++){
+      x.fillStyle=q()<.5?"#83d264":"#478c31";
+      x.fillRect(S+q()*S,q()*S,2,3+q()*4);
+    }
   });
 }
 /* ASHSTONE, for the hell section. Angular shards rather than round blobs -
@@ -1707,7 +1877,13 @@ function animate(now){
   // The ground swings from the void to paper as the world folds, so the
   // player's rim has to be re-picked against it rather than set once.
   outlineFor(playerMesh,scene.background);
-  if(gridLines) gridLines.material.opacity=(app==="edit"?.09:0)+.16*flatT;
+  /* THE GRID IS THE EDITOR'S NOW. It used to draw in the plane as the cue
+     that you were flat, back when flat also meant a different palette. The
+     plane is the same world in different light now - the collapse itself,
+     the sky lifting and the button reading GO 3D all say it - and a ruled
+     overlay across a meadow was the one thing left that looked like a
+     diagram rather than a place. Raise the second term to bring it back. */
+  if(gridLines) gridLines.material.opacity=(app==="edit"?.09+.16*flatT:0);
 
   renderer.render(scene,camera);
 }
