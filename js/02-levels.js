@@ -281,8 +281,17 @@ var LEVELS=[
    blocks:box(0,8,0,0,0,6,[]),
    start:[1,1,1]},
 {name:"13 — Sharp",
-   hint:"Red blocks kill you underfoot. In the volume you simply walk around them.",
-   blocks:[[0,0,0],[-4,0,1],[-3,0,1],[-2,0,1],[-1,0,1,4],[-1,1,-1]],
+   hint:"Fire kills you underfoot. In the volume you simply walk around it.",
+   /* [0,0,1] IS THERE SO THE PLAYER CAN BURN. The fire sat in a row the
+      player could not reach on foot, so the only way to meet it was to fold
+      into its column - which is the section's second lesson, not its first.
+      One block puts the start pad next to the fire row: step forward, step
+      left, and the piece introduces itself the way a hazard should.
+
+      It changes nothing else. The solution is the same six moves it always
+      was (FLAT ← ← ← ← POP), so the fold shortcut is intact and the block
+      is a door rather than a path. */
+   blocks:[[0,0,0],[0,0,1],[-4,0,1],[-3,0,1],[-2,0,1],[-1,0,1,4],[-1,1,-1]],
    start:[0,1,0],goal:[-4,1,1],rotate:true},
 {name:"14 — Cast a Shadow",
    hint:"It was nowhere near you. Then you folded.",

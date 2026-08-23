@@ -1369,7 +1369,7 @@ function recomputeBounds(){
      costs .62 of a cell vertically - the same coincidence legible.js is
      about. */
   arenaSW=Math.max(b[0]-a[0],b[2]-a[2])+1;      // +1: blocks are a cell wide
-  arenaSH=(b[1]-a[1])+1+.62*arenaSW;
+  arenaSH=(b[1]-a[1])+1+CAM_TILT*arenaSW;
   arenaLo=a.slice();arenaHi=b.slice();
   viewSizeT=fitViewSize();
 }
@@ -1745,6 +1745,40 @@ function onResize(){
 // looks like it's beside you. Everything sharing your depth stays full colour;
 // everything else desaturates toward the background with distance, so "in your
 // row" and "behind your row" are visible at a glance.
+/* HOW HARD DEPTH IS PUSHED BACK. Raised once the blocks carried surfaces:
+   the fade lerps material.color toward the void, and against a textured
+   block that reads as much less separation than it did against a flat one -
+   the texture's own colour survives the multiply and keeps the block
+   looking present. */
+/* DEPTH IS A STEP, NOT A RAMP.
+
+   Screen-vertical in this projection is height and depth added together, so
+   a block one further back and one higher land in the same place. The only
+   thing separating them is this shading - and it used to be a smooth ramp
+   from the player's own depth, which meant the FIRST cell of difference,
+   the one that actually decides whether a step is a walk or a fall, cost
+   almost nothing (.12) and was invisible. The blocks that lie are the ones
+   a single cell away; the ones six away were never confusing.
+
+   So the first cell costs DEPTH_STEP outright and DEPTH_SLOPE only grades
+   what is behind it. Your own depth slice is lit and everything else has
+   visibly receded, which is a categorical statement rather than a gradient
+   the eye has to measure. */
+var DEPTH_STEP=.34, DEPTH_SLOPE=.09, DEPTH_CAP=.68;
+
+/* HOW FAR THE CAMERA LEANS - the one structural lever on depth ambiguity.
+
+   At .62 a cell of height is 1.90 cells of depth on screen, so a block two
+   further back draws within a twentieth of a cell of one a step LOWER, and
+   the level has told the player something untrue. tools/legible.js measures
+   it: 30 levels flagged at .62, and small nudges do nothing because the
+   coincidence simply moves to a different pair. There is a cliff at about
+   .95 (1 : 1.24), where the count falls to 11 - but that is a real change to
+   how the game looks, so it is the owner's call, not a fix to apply quietly.
+
+   It is a named constant so the question can be ASKED - fitViewSize() reads
+   it too, and changing one without the other reframes every level. */
+var CAM_TILT=.62;
 var depthTint=new THREE.Color();
 function applyDepth(mesh,base,pd,dvx,dvz,ft){
   if(ft>.5)return;                        // in the plane, depth is meaningless
@@ -1755,7 +1789,7 @@ function applyDepth(mesh,base,pd,dvx,dvz,ft){
       mesh.userData.glass?.95:(mesh.userData.kind?.85:.55);
     return;
   }
-  var f=Math.min(.62,diff*.12)*(1-ft*2);
+  var f=Math.min(DEPTH_CAP,DEPTH_STEP+(diff-1)*DEPTH_SLOPE)*(1-ft*2);
   depthTint.copy(colVoid);
   mesh.material.color.lerp(depthTint,f);
   if(mesh.userData.edge)
@@ -1931,8 +1965,18 @@ function lookCue(){
   if(want!==lookLit){lookLit=want;el.classList.toggle("look",want);}
   if(flat&&planePeek>.5&&!peekCounted){
     peekCounted=true;
-    if(tutC)tutC.peek=(tutC.peek||0)+1;
-    if(typeof tutPoke==="function")tutPoke("bLook");
+    if(tutC){
+      tutC.peek=(tutC.peek||0)+1;
+      if(typeof tutPoke==="function")tutPoke("bLook");
+      /* AND SYNC, or the tutorial locks the player out. Peek is the only
+         thing that satisfies a step without going through one of the four
+         verbs, and those are what normally call syncHud - so the counter
+         moved on, the step advanced, and the coach, the cue and the GUIDED
+         LOCK all stayed on the old step. The lock was still only accepting
+         the eye, so the next press of GO 3D did nothing at all and the
+         tutorial was stuck on the step it had already finished. */
+      if(typeof syncHud==="function")syncHud();
+    }
   }
   if(planePeek<.05)peekCounted=false;
 }
@@ -2079,7 +2123,7 @@ function animate(now){
   var dvx=Math.sin(a),dvz=Math.cos(a);
   var ta=viewAngle*Math.PI/180;
   var tdvx=Math.sin(ta),tdvz=Math.cos(ta),rx=Math.cos(ta),rz=-Math.sin(ta);
-  var tilt=(1-flatT)*.62;
+  var tilt=(1-flatT)*CAM_TILT;
   if(dying)shakeT=Math.min(1,shakeT+.12); else shakeT*=.86;
   var sh=shakeT*.35;
   camera.position.set(center.x+dvx*40+(Math.random()-.5)*sh,

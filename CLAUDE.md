@@ -1866,6 +1866,25 @@ know before touching it:
   the camera off-axis so you can read depth **without spending a move**. Peeking
   touches only the camera — `ta`/`tdvx`/`tdvz` carry the true fold axis and every
   geometry transform uses those.
+- **THE DEPTH FADE IS A STEP, NOT A RAMP, AND THAT WAS MEASURED.** It used to
+  be `diff * .12`, so the *first* cell of depth — the one that decides whether
+  a step is a walk or a fall — cost almost nothing and was invisible. Count
+  the blocks that actually mislead somebody (`legible.js`'s ghosts, at the
+  strictest reading) by how far they are from the player's own square and the
+  answer is unambiguous: **50% are one cell away, 37% are two, and 13% are
+  everything else.** The confusing block is nearly always the near one, and it
+  was the one being shaded least. So `DEPTH_STEP` (.34) is charged outright
+  for the first cell and `DEPTH_SLOPE` (.09) only grades what is behind it —
+  your own slice is lit and everything else has visibly receded, which is a
+  categorical statement rather than a gradient the eye has to measure.
+- **It is an improvement, not the fix, and the difference matters.** The
+  ambiguity is geometric: screen-vertical is height and depth added together,
+  so two different places genuinely draw in one place and no amount of tone
+  separates them for somebody who reads a dark block as a dark *material*.
+  The structural lever is `CAM_TILT`, now a named constant read by both the
+  camera and `fitViewSize()` — at .95 `legible.js` falls from 30 flagged
+  levels to 11. It is a large change to how the game looks, so it is the
+  owner's decision and is deliberately left at .62.
 - **Hints are free and unlimited** so nobody gets stuck, but each one lowers the
   star cap: 0 hints → 3★, 1–2 → 2★, 3–4 → 1★, 5+ → 0★. This replaced a
   metered/timer design deliberately — an energy timer teaches people to close
