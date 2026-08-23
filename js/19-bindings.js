@@ -30,14 +30,47 @@ bind("bSkipTo",function(){
   $("intro").classList.add("gone");
   audio();levelPicker();
 });
+/* PEEK: HOLD IT, OR TAP TO LATCH IT.
+
+   It was hold-only, which on a phone means keeping a thumb on a corner
+   button while reading the middle of the screen - your hand covers part of
+   the board, and it is not what an older player reaches for. A quick TAP now
+   latches it on; holding still works exactly as it did, and a second tap
+   turns it off.
+
+   The latch drops itself after PEEK_LATCH_MS and on the next thing the
+   player does, so it can never be left switched on by accident - which is
+   what made hold-only defensible in the first place. */
+var PEEK_LATCH_MS=4200, peekLatch=false, peekLatchTimer=null, peekDownAt=0;
+function peekSet(on){
+  peekTarget=on?1:0;
+  var el=document.getElementById("bLook");
+  if(el)el.classList.toggle("held",!!on);
+}
+function peekUnlatch(){
+  if(!peekLatch)return;
+  peekLatch=false;clearTimeout(peekLatchTimer);peekLatchTimer=null;peekSet(false);
+}
 (function(){
   var el=$("bLook");
-  function on(e){e.preventDefault();peekTarget=1;el.classList.add("held");}
-  function off(){peekTarget=0;el.classList.remove("held");}
-  el.addEventListener("pointerdown",on);
-  el.addEventListener("pointerup",off);
-  el.addEventListener("pointerleave",off);
-  el.addEventListener("pointercancel",off);
+  el.addEventListener("pointerdown",function(e){
+    e.preventDefault();
+    if(peekLatch){peekUnlatch();peekDownAt=0;return;}   // a tap while latched turns it off
+    peekDownAt=Date.now();peekSet(true);
+  });
+  function up(){
+    if(!peekDownAt)return;
+    var quick=Date.now()-peekDownAt<260;
+    peekDownAt=0;
+    if(quick){
+      peekLatch=true;peekSet(true);
+      clearTimeout(peekLatchTimer);
+      peekLatchTimer=setTimeout(peekUnlatch,PEEK_LATCH_MS);
+    } else peekSet(false);
+  }
+  el.addEventListener("pointerup",up);
+  el.addEventListener("pointerleave",function(){if(peekDownAt)up();});
+  el.addEventListener("pointercancel",function(){peekDownAt=0;peekUnlatch();peekSet(false);});
   el.addEventListener("click",function(e){e.preventDefault();});
 })();
 bind("bRetry",function(){
@@ -113,7 +146,7 @@ bind("eTest",function(){
 });
 
 window.addEventListener("keyup",function(e){
-  if(e.key.toLowerCase()==="shift")peekTarget=0;
+  if(e.key.toLowerCase()==="shift"){peekLatch=false;peekSet(false);}
 });
 /* The keys that drive the game, as a set, so one test can hold them all off
    while a full-bleed screen is up. Everything not in here stays live behind
@@ -138,7 +171,7 @@ window.addEventListener("keydown",function(e){
   else if((k==="u"||(k==="z"&&app==="play"))&&app==="play"){undoMove();SFX.undo();}
   else if(k==="h"&&app==="play"){showHint();}
   else if(k==="m"){muted=!muted;flash(muted?"sound off":"sound on");}
-  else if(k==="shift"){peekTarget=1;}
+  else if(k==="shift"){peekSet(true);}
   else if(k==="z"&&app==="edit"){undo();}
   /* Escape is the key everyone already presses. It closes whatever panel is
      open first and only opens the menu from a clear screen, because a key

@@ -475,7 +475,15 @@ function tutGuide(){
   var btn=mv?TUT_MOVE_BTN[mv]:null;
   if(i>=0){
     var step=L.tut[i];
-    if(!btn||btn===step.cue)
+    /* A STEP THAT ASKS FOR A FREE ACTION IS NEVER OFF-SCRIPT. The override
+       below exists because a player who wanders away from the lesson should
+       be told the next MOVE rather than the next line - and it works because
+       every step so far has asked for a move the solver also wants. Peek is
+       not a move: it costs nothing, changes nothing, and the solver has no
+       opinion about it, so it would be overridden on every single frame and
+       the step could never be shown at all. `free:true` says the step stands
+       on its own. */
+    if(step.free||!btn||btn===step.cue)
       return {idx:i,say:"<i>"+(i+1)+" / "+L.tut.length+"</i>"+step.say,
               cue:step.cue,lock:step.lock};
     return {idx:i,say:"<i>"+(i+1)+" / "+L.tut.length+"</i>"+

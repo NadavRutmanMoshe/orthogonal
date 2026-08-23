@@ -1730,6 +1730,32 @@ ones you did not; peeking draws the same rings live, placed with the same
 interpolation the block loop uses so they sit on their blocks through the
 whole rise.
 
+**PEEK IS THE FOURTH VERB, and it is treated as one now.** The first real
+playtester reached for it in the plane *before it did anything* — the
+affordance was already legible and the game silently ignored a correct
+instinct. So:
+
+- **The eye lights when looking would tell you something** — flat, with more
+  than one block in your column, which is the only situation where the
+  landing rule decides something invisible. Judged every frame in `lookCue()`
+  rather than in `syncHud`, for the same reason the boss's fold cue is: the
+  answer changes when the player moves in the plane, not when a button is
+  pressed. Quieter and slower than `peril` and `strike`, because those two
+  are about to cost you a life and this one is an offer.
+- **Tap latches it, holding still works.** Hold-only meant keeping a thumb on
+  a corner button while reading the middle of the screen. The latch drops
+  itself after `PEEK_LATCH_MS` and on the next thing the player does, which
+  is what made hold-only defensible in the first place.
+- **`00 — First Fold` teaches it**, in a step placed *before* standing up,
+  because that is the moment it answers something.
+
+**A TUTORIAL STEP THAT ASKS FOR A FREE ACTION NEEDS `free:true`.** `tutGuide`
+replaces a step's line with the next *move* whenever the solver disagrees
+with it, which is right for the three verbs the solver knows. Peek is not a
+move — it costs nothing, changes nothing, and the solver has no opinion — so
+without the flag the step is overridden on every frame and can never be
+shown. This bit once, exactly that way.
+
 **"The front", not "nearest the camera".** The old phrase names a direction
 the player cannot see; the new one is a word they already own. Player-facing
 text says *the front*; the code and this file may still say nearest, because
@@ -2136,6 +2162,11 @@ tested and failed, plus where this sits in the PCG literature, are in
   to see the puzzle beats a motion cue, especially on the two kinds of level
   that already beat the first real playtester. `FOLLOW=1` brings it back at
   the cost of that framing.
+- **A fold preview is the obvious next thing and is not built.** The owner's
+  idea, worth testing: a control that shows *which blocks you would travel
+  to* if you folded along the current axis — the mirror of peek, answering
+  the question one move earlier. It must not replace `GO 2D`; it would be its
+  own control, and on the default layout that means a gesture as well.
 - **Two-finger tap only rotates right.** There is no left-rotate gesture.
 - **The gesture tutorial has no keyboard half yet**, which is why
   `defaultTutor()` sends a fine pointer to the button lesson. The intended

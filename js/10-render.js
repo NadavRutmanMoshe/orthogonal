@@ -1909,6 +1909,34 @@ function landLive(){
     })};
   return true;
 }
+/* THE EYE LIGHTS WHEN LOOKING WOULD TELL YOU SOMETHING - flat, and more than
+   one block in your silhouette column. That is the only situation where the
+   landing rule decides something the player cannot see, so the button
+   advertises itself exactly then and is quiet the rest of the time, which is
+   what stops it becoming wallpaper. Judged every frame rather than in
+   syncHud for the same reason the boss's fold cue is: the answer changes
+   when the player moves in the plane, not when a button is pressed.
+
+   It also counts the peek for the tutorial - an EFFECTIVE peek, one where
+   the world actually rose, rather than a button press that went nowhere. */
+var lookLit=false, peekCounted=false;
+function lookCue(){
+  var el=document.getElementById("bLook");
+  if(!el)return;
+  var want=false;
+  if(app==="play"&&flat&&!dying&&!levelOver()&&R&&flatPos){
+    var land=R.landings(view,flatPos.u,flatPos.y,liveCrates());
+    want=land.length>1&&planePeek<.05;
+  }
+  if(want!==lookLit){lookLit=want;el.classList.toggle("look",want);}
+  if(flat&&planePeek>.5&&!peekCounted){
+    peekCounted=true;
+    if(tutC)tutC.peek=(tutC.peek||0)+1;
+    if(typeof tutPoke==="function")tutPoke("bLook");
+  }
+  if(planePeek<.05)peekCounted=false;
+}
+
 function landFrame(dtMs){
   var i;
   if(landHint&&landHint.live)landHint=null;   // rebuilt below while peeking
@@ -2017,6 +2045,7 @@ function animate(now){
   setSkyColors(skyWarm);
   layoutAtmosphere();
   landFrame(dtMs);
+  lookCue();
   /* playerMesh rather than `player`, because the mesh is where the player is
      actually drawn - already eased, and already in plane coordinates when
      flat - so the camera cannot arrive somewhere the cube has not. */

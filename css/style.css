@@ -82,6 +82,14 @@
   .flatbtn.strike{border-color:var(--goal);color:var(--goal);
     animation:strikepulse .9s ease-in-out infinite}
   @keyframes strikepulse{50%{background:rgba(53,194,165,.2)}}
+  /* THE EYE, LIT WHEN LOOKING WOULD ACTUALLY TELL YOU SOMETHING - flat, with
+     more than one block in your column. Slower and quieter than the two
+     above it: those two are about to cost you a life, this one is an offer.
+     Same goal colour as the strike cue, because both mean "there is
+     something you can do here". */
+  button.rnd.look{border-color:var(--goal);color:var(--goal);
+    animation:lookpulse 1.9s ease-in-out infinite}
+  @keyframes lookpulse{50%{background:rgba(53,194,165,.14)}}
   .tiny{height:28px;font-size:9.5px;letter-spacing:.1em;color:var(--fg-dim);padding:0 8px}
   .tinyrow{display:flex;gap:4px;justify-content:flex-end}
 

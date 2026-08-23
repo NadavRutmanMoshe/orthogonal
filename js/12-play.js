@@ -820,6 +820,7 @@ function levelHasWater(){
   return false;
 }
 function doFlatten(){
+  if(typeof peekUnlatch==="function")peekUnlatch();
   if(bossHolding())return;
   if(tutBlocks("bFlat"))return;
   tutPoke("bFlat");
@@ -862,6 +863,7 @@ function doFlatten(){
   else if(spiked) setTimeout(function(){die("spike");},420);
 }
 function doUnflatten(){
+  if(typeof peekUnlatch==="function")peekUnlatch();
   if(bossHolding())return;
   if(tutBlocks("bFlat"))return;
   tutPoke("bFlat");
@@ -903,6 +905,7 @@ function doUnflatten(){
 }
 function press(dir){
   if(app!=="play"||levelOver())return;
+  if(typeof peekUnlatch==="function")peekUnlatch();
   // A tutorial step that names a control accepts only that control - but only
   // once the guide is actually up. Until then everything works and every input
   // pushes the guide further away.

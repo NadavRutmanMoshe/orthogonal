@@ -57,6 +57,15 @@ var LEVELS=[
       cue:"bFlat",done:function(c){return c.flat>=1;}},
      {say:"Depth is gone, so the block that was floating out in front is simply next to you. Walk across.",
       cue:"bRight",done:function(c){return c.m2>=3;}},
+     /* PEEK IS THE FOURTH VERB and this is the only place it is taught. It
+        goes BEFORE standing up, not after, because that is the moment it
+        answers something: flat, you cannot see depth, and the block you come
+        back on is decided by a direction the screen is not showing you.
+        `want:"flat"` so a player who stood up early is told the way back
+        rather than asked to do something they cannot. */
+     {say:"Flat, you cannot see depth at all — two blocks are hiding in this column.<br>Hold the <b>eye</b> to look before you stand up.",
+      want:"flat",cue:"bLook",free:true,
+      done:function(c){return (c.peek||0)>=1;}},
      {say:"{do:3d} to stand up.<br>Two blocks share this column, and you always come back on the one at <b>the front</b> — nearest you, the green one.",
       cue:"bFlat",done:function(c){return c.unflat>=1;}}
    ]},
