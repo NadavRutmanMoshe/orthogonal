@@ -1453,6 +1453,20 @@ function enterEditor(){
 }
 function enterPlay(level,idx,fromEd){
   app="play";fromEditor=!!fromEd;
+  /* THE HOME SCREEN COMES DOWN HERE, not at the call sites. It is a
+     full-bleed overlay at z-index 11, so a level loaded while it is up plays
+     invisibly behind it - and hidePanel() actively puts its plinth *back*
+     when it closes a panel over it, so the map's PLAY button loaded the
+     level and then restored the screen hiding it. Reported as "PLAY AGAIN
+     takes me to the menu"; the level had in fact started.
+
+     homeHide() used to have exactly one caller, CONTINUE - so every other
+     way into a level (the map, a resumed session, testing from the editor)
+     had this bug. enterPlay is the funnel all of them go through, which is
+     the same reasoning as the tutorial's gate living on the four verbs
+     rather than on the bindings. It is guarded on homeUp(), so calling it
+     when the screen is already down costs nothing. */
+  homeHide();
   hidePanel();ghosted.clear();
   $("editBarWrap").classList.remove("on");
   $("editBar").classList.remove("on");
