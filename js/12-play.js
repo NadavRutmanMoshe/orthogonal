@@ -40,7 +40,7 @@ function die(kind){
        if they would rather - the offer is a door, not a wall. */
     if(kind==="boss"||kind==="trial"){
       var n=noteFail(levelKey);
-      if(n>=STRUGGLE_OFFER)setTimeout(struggleOffer,520);
+      if(n%STRUGGLE_OFFER===0)setTimeout(struggleOffer,520);
     }
   },kind==="crush"?1050:820);
 }
@@ -843,7 +843,6 @@ function doFlatten(){
   pushHistory();moveCount++;
   flatPos={u:pu,y:player.y};
   flat=true;flatTarget=1;SFX.fold();
-  waterDrain=0;waterDrainT=0;waterDrained=false;   // the trace is back
   /* The water spilling out of the plane. Only on a level that has any, so
      it is a fact about this world rather than a flourish on every fold -
      and layered over fold() rather than replacing it, because the fold is
@@ -1101,14 +1100,31 @@ function resetLevel(){
   buildGrid();syncHud();
   playerMesh.position.set(player.x,player.y,player.z);
 }
-/* THE OFFER. Everything it needs already exists - grantSkip() is the one
-   call a rewarded video has to reach, and adsFor() prices it - so this is a
-   second door onto the same room, opened at the moment the player is
-   actually stuck rather than only from the map.
+/* HELP THAT ESCALATES, offered every third loss on a clock level.
 
-   The rule it keeps is the rule the map keeps: ADS BUY PROGRESS, NEVER
-   SCORE. A skip is not in `progress`, so it awards no stars by construction,
-   and the level stays on the map to be played whenever they want it. */
+   Straight to "skip this" was wrong: it hands over the only two levels in
+   the game with a real-time component the moment they get hard, and a player
+   who is nearly there is told to give up. The order is now the order a
+   person would actually try - MAKE IT SLOWER FIRST, and only offer the way
+   past once slowing has run out.
+
+   So on every third loss: if the clock can still be slowed, offer that and
+   point at the exact setting; if it is already at its slowest, offer the
+   skip. A player who was already on SLOW therefore sees the skip on their
+   first offer, which is right - there is nothing else left to try.
+
+   The slow offer can be declined, so the second one carries DON'T SHOW ME
+   AGAIN. That is a global preference rather than a per-level one: somebody
+   who does not want the game suggesting things does not want it per level. */
+function paceSlower(){
+  for(var i=0;i<PACES.length;i++)
+    if(PACES[i].v<paceScale())return PACES[i];      // PACES runs fast to slow
+  return null;
+}
+function offerShell(title,lead,acts,note){
+  showPanel("<h3>"+title+"</h3><div class='mn'>"+lead+"</div>"+
+            "<div class='ma'>"+acts+"</div><div class='mn'>"+note+"</div>");
+}
 function struggleOffer(){
   if(!L||levelOver()||panelOpen()||screenUp())return;
   /* Only a clock level can reach this, and asserting it here rather than
@@ -1116,16 +1132,48 @@ function struggleOffer(){
      ordinary level a TRIAL if this is ever called from somewhere new. */
   if(!B&&!TR)return;
   if(typeof skips!=="undefined"&&skips[levelKey])return;
-  var kind=B?"BOSS":"TRIAL", ads=3;
-  showPanel(
-    "<h3>"+kind+" · "+esc(L.name)+"</h3>"+
-    "<div class='mn'>This one has beaten you "+(fails[levelKey]||STRUGGLE_OFFER)+
-      " times. You can go past it and come back whenever you like.</div>"+
-    "<div class='ma'><button class='ad' id='sgAd'>SKIP THIS "+kind+
-      " · WATCH "+ads+" ADS</button>"+
-    "<button class='qt' id='sgNo'>KEEP TRYING</button></div>"+
-    "<div class='mn'>A skip awards <b>no stars</b> and leaves the level "+
-    "on the map, still playable. Ads buy progress, never score.</div>");
+  var kind=B?"BOSS":"TRIAL";
+  var beat=(fails[levelKey]||STRUGGLE_OFFER)+" times";
+  var slower=settings.noSlowOffer?null:paceSlower();
+
+  if(slower){
+    settings.slowOffers=(settings.slowOffers||0)+1;
+    var again=settings.slowOffers>=2;
+    saveSettings();
+    offerShell(esc(L.name),
+      "This one has beaten you "+beat+". A "+kind.toLowerCase()+" is the only "+
+      "kind of level that does not wait for you \u2014 you can slow its clock "+
+      "down, and it costs you nothing.",
+      "<button class='ad' id='sgSlow'>SLOW THE CLOCK \u00b7 "+slower.label+
+        " ("+slower.pct+"%)</button>"+
+      "<button class='qt' id='sgNo'>KEEP TRYING</button>"+
+      (again?"<button class='qt' id='sgNever'>DON'T SHOW ME AGAIN</button>":""),
+      "It slows every part of the fight together, so it keeps its shape. "+
+      "<b>No stars are lost.</b> You can change it any time under "+
+      "<b>Menu \u203a Real time \u203a Pace</b>.");
+    bind("sgNo",function(){hidePanel();});
+    if(again)bind("sgNever",function(){
+      settings.noSlowOffer=true;saveSettings();hidePanel();
+      flash("no more suggestions");
+    });
+    bind("sgSlow",function(){
+      settings.pace=slower.v;saveSettings();hidePanel();
+      flash("clocks at "+slower.pct+"%");
+    });
+    return;
+  }
+
+  /* Nothing left to slow, so this is the way past. It reaches grantSkip()
+     and nothing else, which is what keeps the rule the map keeps: ADS BUY
+     PROGRESS, NEVER SCORE. A skip is not in `progress`, so it awards no
+     stars by construction and the level stays on the map, still playable. */
+  offerShell(esc(L.name),
+    "This one has beaten you "+beat+", and the clock is already as slow as it "+
+    "goes. You can go past it and come back whenever you like.",
+    "<button class='ad' id='sgAd'>SKIP THIS "+kind+" \u00b7 WATCH 3 ADS</button>"+
+    "<button class='qt' id='sgNo'>KEEP TRYING</button>",
+    "A skip awards <b>no stars</b> and leaves the level on the map, still "+
+    "playable. Ads buy progress, never score.");
   bind("sgNo",function(){hidePanel();});
   /* Not gated on an ad here, for the same reason grantSkip() is not: there
      is no provider yet, and a button that silently did nothing would be
@@ -1135,7 +1183,7 @@ function struggleOffer(){
     grantSkip(levelKey);
     clearFails(levelKey);
     hidePanel();
-    flash("skipped · no stars for a skip");
+    flash("skipped \u00b7 no stars for a skip");
     levelPicker();
   });
 }

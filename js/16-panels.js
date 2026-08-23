@@ -326,6 +326,8 @@ function menuPanel(){
     settings.volume=defaultVolume();settings.volTouched=false;
     settings.brightness=1;settings.ui="full";settings.pace=1;
     settings.tutor=defaultTutor();
+    // including "stop suggesting things": a reset is a reset
+    settings.slowOffers=0;settings.noSlowOffer=false;
     muted=false;
     applyVolume();
     applyBrightness();applyUI();saveSettings();syncHud();

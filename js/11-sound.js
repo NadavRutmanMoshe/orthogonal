@@ -57,8 +57,13 @@ function defaultTutor(){
    three stars. "on" forces that look everywhere, so the celebration can be
    looked at without earning it four times over. It changes nothing but the
    drawing: no stars move, nothing unlocks. */
+/* slowOffers counts how many times the game has suggested slowing a clock,
+   and noSlowOffer is the player saying stop. Both are global rather than
+   per level: somebody who does not want to be offered help does not want it
+   again on the next boss either. */
 var settings={volume:defaultVolume(),brightness:1,ui:"full",volTouched:false,
-              pace:1,mastery:"auto",tutor:defaultTutor()};
+              pace:1,mastery:"auto",tutor:defaultTutor(),
+              slowOffers:0,noSlowOffer:false};
 
 /* PACE — how fast the two real-time things run.
 

@@ -1750,12 +1750,33 @@ var INK_SETTLE=0.18;
    water was there, it is leaving, and by the time you have moved it is not
    coming back. The trace is deliberately shallow and unlit so it never looks
    like ground you could return to. */
-var waterDrain=0, waterDrainT=0, waterDrained=false;
+/* ONLY THE SQUARE YOU ARE STANDING ON keeps its water. The trace exists to
+   answer one question - why am I not falling through this square - so it is
+   needed on exactly one block and nowhere else. Showing every water block's
+   trace made the plane look like it still had water in it, which is the
+   opposite of what the rule says.
+
+   It follows you: step onto another water block and that one fills, the one
+   behind you drains. Eased per mesh rather than switched, so arriving and
+   leaving both read as the water doing something. */
 function drainWater(){
-  if(waterDrained||!flat)return;
-  waterDrained=true;waterDrainT=1;
-  if(typeof SFX!=="undefined"&&SFX.spill&&typeof levelHasWater==="function"
-     &&levelHasWater())SFX.spill();
+  if(!flat)return;
+  if(typeof SFX!=="undefined"&&SFX.spill&&typeof standingOnWater==="function"
+     &&standingOnWater())SFX.spill();
+}
+/* Is the block under the player, in the plane, water? Asked of the same
+   coordinates the trace is drawn from, so the splash and the picture can
+   never disagree. */
+function standingOnWater(){
+  if(!flat||!flatPos||!L||!L.blocks)return false;
+  var ax=AX[view],rx=ax.r[0],rz=ax.r[2];
+  for(var i=0;i<L.blocks.length;i++){
+    var b=L.blocks[i];
+    if((b[3]||0)!==1)continue;
+    if(b[1]!==flatPos.y-1)continue;
+    if(Math.abs(b[0]*rx+b[2]*rz-flatPos.u)<.01)return true;
+  }
+  return false;
 }
 var PAPER_LIFT=0.20;
 var WHITE=new THREE.Color(0xffffff);
@@ -1777,8 +1798,6 @@ function animate(now){
      the air fades back rather than stopping, because the plane is a place
      too and a dead sky there would read as the game having switched off. */
   airPhase+=dtMs*.0009;
-  if(!flat&&flatT<.5){waterDrainT=0;waterDrained=false;}
-  waterDrain+=(waterDrainT-waterDrain)*Math.min(1,dtMs*.0055);
   if(TEX&&TEX.water){
     TEX.water.offset.y=(airPhase*.055)%1;
     TEX.water.offset.x=(Math.sin(airPhase*.31)*.006);
@@ -1886,10 +1905,19 @@ function animate(now){
          the trace is what is left directly under their feet. Draining then
          sinks it out of the square from there. */
       var ft2=Math.max(0,Math.min(1,(flatT-.35)/.65));
+      /* The one block the player is standing on, and only that one. b[1] is
+         the block's own height and flatPos.y is the player's, so the block
+         underfoot is one below. */
+      var mineW=(flat&&flatPos&&b[1]===flatPos.y-1&&
+                 Math.abs(u-flatPos.u)<.01)?1:0;
+      if(m.userData.tr===undefined)m.userData.tr=0;
+      m.userData.tr+=(mineW-m.userData.tr)*.16;
+      var tr=m.userData.tr;
       var ky=1-ft2*.74;
       m.scale.y=ky;
-      m.position.y+=.5*(1-ky)-ft2*waterDrain*1.15;
-      m.material.opacity=.78*(1-ft2)+.40*ft2*(1-waterDrain);
+      // sinks out of the square as it empties, so leaving reads as draining
+      m.position.y+=.5*(1-ky)-ft2*(1-tr)*1.15;
+      m.material.opacity=.78*(1-ft2)+.40*ft2*tr;
       m.userData.edge.material.opacity=Math.max(0,.95*(1-ft2*1.6));
       m.material.color.copy(colGlass);
     } else if(m.userData.kind===4){

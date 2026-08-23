@@ -912,6 +912,14 @@ up, so a re-fold shows the trace again.
 - **Only a move that exists drains it.** The plane has no up or down, so
   draining on any press let a stray swipe empty the water without the player
   having gone anywhere.
+- **ONLY THE SQUARE YOU ARE STANDING ON keeps its water.** The trace answers
+  exactly one question — why am I not falling through this square — so it is
+  needed on one block and nowhere else; showing every water block's trace
+  made the plane look like it still had water in it, which is the opposite of
+  what the rule says. It follows the player: step onto another water block
+  and that one fills while the one behind drains. Eased per mesh
+  (`userData.tr`) rather than switched, so arriving and leaving both read as
+  the water doing something.
 
 ### Fire in the plane
 
@@ -1069,15 +1077,30 @@ level data changed to make it.
 - **`mapReach()` counts solved levels only, never skips.** Counting a skip
   would drag the rolling window forward with it and quietly hand over
   everything in between — the exact levels the skip exists to leave for later.
-- **THE GAME OFFERS THE SKIP AFTER THREE REAL LOSSES**, rather than waiting
-  to be asked. `fails` counts full losses per level — lives run out, not a
+- **THE GAME OFFERS HELP EVERY THIRD LOSS ON A CLOCK LEVEL, and it
+  escalates.** `fails` counts full losses per level — lives run out, not a
   life spent — persisted beside `skips`, moved by `LEVEL_RENAMES` like
   everything else, and cleared the moment the level is beaten, so it tracks
-  the *current* run of failures rather than a lifetime total. At
-  `STRUGGLE_OFFER` (3) `struggleOffer()` puts the map's own offer up after
-  the reset, not instead of it: the board is back and KEEP TRYING is right
-  there, so it is a door rather than a wall. It reaches `grantSkip()` and
-  nothing else, so it inherits the rule — ads buy progress, never score.
+  the *current* run of failures rather than a lifetime total. Every
+  `STRUGGLE_OFFER` (3) losses, `struggleOffer()` puts up **the next thing a
+  person would actually try**:
+  - **the clock can still be slowed** → offer that, and name the exact
+    setting (`Menu › Real time › Pace`). It costs no stars.
+  - **already at the slowest** → offer the skip.
+
+  So a player who is already on SLOW sees the skip on their *first* offer,
+  which is right: there is nothing else left to try. **Going straight to
+  "skip this" was the wrong first move** — it hands over the only two levels
+  with a real-time component the moment they get hard, and tells somebody who
+  is nearly there to give up.
+- **The slow offer can be declined, so the second one carries DON'T SHOW ME
+  AGAIN** (`settings.noSlowOffer`, cleared by the settings reset). It is
+  global rather than per level: somebody who does not want the game
+  suggesting things does not want it on the next boss either.
+- **The offer goes up after the reset, not instead of it.** The board is back
+  and KEEP TRYING is right there, so it is a door rather than a wall. The
+  skip reaches `grantSkip()` and nothing else, so it inherits the rule — ads
+  buy progress, never score.
 - **`grantSkip(name)` is the single call site a rewarded video needs.** It is
   not gated on an ad here, because there is no provider yet and a button that
   silently did nothing would be worse than one that plainly works. Wiring the
