@@ -230,20 +230,41 @@ function sceneryTex(kind){
   x.clearRect(0,0,W,H);
   var q=rnd(kind==="trees"?101:211);
   if(kind==="trees"){
-    /* Two ranks: a pale far rank and a dark near one, so the treeline has
-       depth without a second quad. Conifers, because a blob on a stick reads
-       as a tree at 30px and a broadleaf does not. */
-    [[.30,"#20351f",26,74],[.62,"#0f1e10",34,104]].forEach(function(r){
-      for(var tx=-20;tx<W+20;tx+=r[2]*(.55+q()*.5)){
-        var h=r[3]*(.7+q()*.6), bx=tx, by=H-6;
-        x.fillStyle=r[1];
-        x.fillRect(bx-3,by-h*.22,6,h*.22);          // trunk
-        for(var tier=0;tier<3;tier++){              // three skirts
-          var tw=(r[2]*.62)*(1-tier*.24), ty=by-h*.22-tier*(h*.26);
-          x.beginPath();
-          x.moveTo(bx,ty-h*.34);x.lineTo(bx+tw,ty);x.lineTo(bx-tw,ty);
-          x.closePath();x.fill();
-        }
+    /* THREE RANKS WITH HAZE BETWEEN THEM, and rounded canopies rather than
+       stacked triangles. The first cut was one row of conifer skirts and it
+       read as a sawblade - a treeline is a mass with a bumpy top edge, and
+       what sells the distance is the pale band BETWEEN the ranks, not the
+       detail in any one of them. */
+    /* Kept to the lower half of the band: the first cut ran canopies to the
+       top of the canvas and the forest became a wall the puzzle sat on top
+       of. A treeline is a strip along the bottom of the sky. */
+    var ranks=[[.22,"#2b4a3a",30,34,1],
+               [.5, "#1c3628",38,46,1],
+               [1,  "#0d1f16",48,60,0]];
+    ranks.forEach(function(r){
+      x.fillStyle=r[1];
+      var px=-30;
+      while(px<W+30){
+        var w=r[2]*(.6+q()*.8), h=r[3]*(.6+q()*.7), by=H-4-(1-r[0])*10;
+        // trunk
+        x.fillRect(px-Math.max(1.5,w*.05),by-h*.42,Math.max(3,w*.1),h*.42);
+        // canopy: three overlapping lumps, biggest in the middle
+        [[0,-h*.72,w*.52],[-w*.34,-h*.5,w*.4],[w*.34,-h*.52,w*.38]]
+          .forEach(function(l){
+            x.beginPath();
+            x.ellipse(px+l[0],by+l[1],l[2],l[2]*(.72+q()*.4),0,0,Math.PI*2);
+            x.fill();
+          });
+        px+=w*(.52+q()*.4);
+      }
+      /* Haze as a GRADIENT, not a flat rectangle. A flat wash put a hard
+         horizontal line across the forest, which reads as a seam in the
+         drawing rather than as air between the ranks. */
+      if(r[4]){
+        var hz=x.createLinearGradient(0,H-84,0,H);
+        hz.addColorStop(0,"rgba(122,158,150,.02)");
+        hz.addColorStop(1,"rgba(122,158,150,.19)");
+        x.fillStyle=hz;x.fillRect(0,H-84,W,84);
       }
     });
   } else {
@@ -382,6 +403,18 @@ function applyTheme(th){
   colVoid.setHex(th.sky[1]);            // depth shading fades toward the far sky
   colBlock.setHex(th.block);
   colAir.setHex(th.air.col);
+  /* THE PLANE IS THE SAME PLACE, SEEN FLAT. It used to be one paper and one
+     ink for the whole game, so folding out of a hell level and folding out
+     of a meadow landed you on identical stationery and the two halves read
+     as two games. A section now owns both pictures: `paper` is what the
+     plane is printed on and `ink` is what its silhouettes are printed in,
+     and both default to the old pair when a section does not say. */
+  colPaper.setHex(th.paper||0xe6e1d3);
+  colInk.setHex(th.ink||0x1a1c2b);
+  document.documentElement.style.setProperty("--paper",
+    "#"+(th.paper||0xe6e1d3).toString(16).padStart(6,"0"));
+  document.documentElement.style.setProperty("--ink",
+    "#"+(th.ink||0x1a1c2b).toString(16).padStart(6,"0"));
   /* A BLOCK OUTLIVES ITS LEVEL. syncMeshes keys meshes by cell and addMesh
      returns early when one is already there, so a block standing in the same
      place in the next level is REUSED - which is right, and which means it
@@ -492,80 +525,139 @@ function surf(draw){
 }
 function rnd(seed){var v=seed>>>0||1;return function(){
   v^=v<<13;v^=v>>>17;v^=v<<5;return ((v>>>0)%100000)/100000;};}
-/* Chunky cells rather than per-pixel noise - what makes a surface read as
-   blocky is the SIZE of its grain, not the palette. */
-function grain(x,ox,S,cell,cols,seed){
+/* THE GRAIN IS DELIBERATELY NOT A PIXEL GRID.
+
+   The first cut of these drew square cells on a 16x16 lattice, which is a
+   very particular published game's look and close enough to it to be a risk
+   worth not taking with something that is going to be sold. Nothing was ever
+   copied - there are no image files in this project and every pixel here is
+   drawn by this code - but a style can be recognisable without a single
+   asset changing hands, and that is the thing to move away from.
+
+   So the grain is ROUNDED and IRREGULAR: overlapping blobs on a jittered
+   lattice rather than aligned squares, with a soft second pass over the top.
+   It reads as hand-painted rather than as voxel art, it keeps the chunky
+   legibility at 40px, and it is nobody else's. */
+function blobs(x,ox,S,n,r,cols,seed,jit){
   var q=rnd(seed);
-  for(var gy=0;gy<S;gy+=cell)for(var gx=0;gx<S;gx+=cell){
+  for(var i=0;i<n;i++){
     x.fillStyle=cols[Math.floor(q()*cols.length)];
-    x.fillRect(ox+gx,gy,cell,cell);
+    var bx=ox+q()*S, by=q()*S, rr=r*(.6+q()*.9);
+    x.beginPath();
+    // a lumpy disc: six points at wobbling radii, which is what stops these
+    // reading as a spray of perfect circles
+    for(var a=0;a<6;a++){
+      var an=a/6*Math.PI*2, rad=rr*(1+(q()-.5)*(jit||.5));
+      var px=bx+Math.cos(an)*rad, py=by+Math.sin(an)*rad;
+      a?x.lineTo(px,py):x.moveTo(px,py);
+    }
+    x.closePath();x.fill();
   }
 }
-/* GRASS. Green on top, earth down the sides, and the blades hanging over
-   the top edge of the side face - which is the one detail that makes the
-   two halves read as one block rather than as a green lid on a brown box. */
+function wash(x,ox,S,base){x.fillStyle=base;x.fillRect(ox,0,S,S);}
+
+/* GRASS. Brighter and warmer than the obvious green - closer to a platformer
+   than to a survival game - over a clay side rather than a brown dirt one.
+   The blades over the top edge are ROUNDED TUFTS of varying depth, not an
+   even fringe: an even fringe is the tell. */
 function grassTex(){
   return surf(function(x,S){
-    grain(x,0,S,8,["#7a5a3c","#6d4f34","#845f40","#735439","#8a6746"],7);
-    // the fringe: grass spilling a few cells down the side
+    wash(x,0,S,"#a9744a");
+    blobs(x,0,S,50,11,["#9c6a42","#b57e51","#8f6039","#c08a5c"],7,.55);
     var q=rnd(31);
-    for(var gx=0;gx<S;gx+=8){
-      var h=8+Math.floor(q()*3)*8;
-      x.fillStyle=q()<.5?"#5f8f42":"#6d9c4a";
-      x.fillRect(gx,0,8,h);
+    // tufts spilling down the side, each its own depth and width
+    for(var gx=-6;gx<S+6;){
+      var w=10+q()*16, h=9+q()*20;
+      x.fillStyle=q()<.5?"#5aa83f":"#6cbb4a";
+      x.beginPath();
+      x.moveTo(gx,0);x.lineTo(gx+w,0);
+      x.quadraticCurveTo(gx+w*.5,h*1.5,gx,0);
+      x.closePath();x.fill();
+      x.fillRect(gx,0,w,h*.45);
+      gx+=w*.72;
     }
-    grain(x,S,S,8,["#5f8f42","#6d9c4a","#55833b","#74a551","#639446"],13);
+    wash(x,S,S,"#61b344");
+    blobs(x,S,S,46,12,["#57a63c","#6ec24d","#4e9836","#7fd05a"],13,.5);
   });
 }
-/* BASALT, for the hell section. Near-black rock with molten veins in it -
-   the ground of the place rather than more fire, so a fire BLOCK is still
-   the brightest thing standing on it. */
+/* ASHSTONE, for the hell section. Angular shards rather than round blobs -
+   the one surface that should read as broken rather than as grown - with
+   veins that taper rather than step. */
 function basaltTex(){
   return surf(function(x,S){
-    grain(x,0,S,8,["#2c2830","#332d36","#26222a","#3a333e","#2a2530"],5);
-    grain(x,S,S,8,["#332d36","#2a252e","#3b3440","#2e2833","#37303c"],11);
-    var q=rnd(23);
-    for(var i=0;i<7;i++){          // veins, both halves
-      x.fillStyle=i%2?"#7a3320":"#9c4526";
-      var vx=q()*S, vy=q()*S, ln=2+Math.floor(q()*3);
-      for(var j=0;j<ln;j++){
-        x.fillRect(vx,vy,8,8);
-        x.fillRect(S+vx,vy,8,8);
-        vx+=(q()<.5?8:-8); vy+=8;
+    wash(x,0,S,"#2f2a34");
+    var q=rnd(5);
+    for(var i=0;i<44;i++){          // shards, both halves
+      var ox=q()<.5?0:S;
+      x.fillStyle=["#39323f","#282430","#42394a","#2c2733"][Math.floor(q()*4)];
+      var bx=ox+q()*S, by=q()*S, r=7+q()*13;
+      x.beginPath();
+      for(var a=0;a<5;a++){
+        var an=a/5*Math.PI*2+q()*.5, rad=r*(.5+q());
+        var px=bx+Math.cos(an)*rad, py=by+Math.sin(an)*rad;
+        a?x.lineTo(px,py):x.moveTo(px,py);
       }
+      x.closePath();x.fill();
+    }
+    wash(x,S,S,"#36303c");
+    for(var j=0;j<30;j++){
+      x.fillStyle=["#403845","#2e2934","#484052","#332e3a"][Math.floor(q()*4)];
+      x.fillRect(S+q()*S,q()*S,6+q()*14,5+q()*11);
+    }
+    for(var v=0;v<9;v++){           // molten veins, tapering
+      x.strokeStyle=v%2?"#8d3a1e":"#bf5526";
+      x.lineWidth=1+q()*3.4;
+      x.beginPath();
+      var vx=(v<5?0:S)+q()*S, vy=q()*S;
+      x.moveTo(vx,vy);
+      for(var k=0;k<3;k++){vx+=(q()-.5)*34;vy+=(q()-.5)*34;x.lineTo(vx,vy);}
+      x.stroke();
     }
   });
 }
 function stoneTex(){
   return surf(function(x,S){
-    grain(x,0,S,8,["#e8e8e8","#dedede","#f0f0f0","#d6d6d6","#e2e2e2"],3);
-    grain(x,S,S,8,["#f4f4f4","#eaeaea","#fbfbfb","#e4e4e4","#efefef"],9);
+    wash(x,0,S,"#e6e6e6");
+    blobs(x,0,S,40,12,["#dcdcdc","#efefef","#d2d2d2"],3,.5);
+    wash(x,S,S,"#f1f1f1");
+    blobs(x,S,S,36,13,["#e8e8e8","#fbfbfb","#dedede"],9,.5);
   });
 }
-/* WATER. A darker body under a bright surface, with the surface carrying
-   the highlights - which is where a liquid actually shows its light. */
+/* WATER. Horizontal swell rather than a speckle - a liquid is banded, and
+   banding is also the thing that most separates this from a cube of blue
+   pixels. The surface half gets the glints. */
 function waterTex(){
   return surf(function(x,S){
-    grain(x,0,S,8,["#cfe8f5","#bcdcee","#dcf0fa","#c6e3f2","#b4d6ea"],17);
-    grain(x,S,S,8,["#eaf8ff","#d4eefc","#ffffff","#dff3fe","#c9e9fa"],19);
-    var q=rnd(41);                  // a few brighter cells: glints
-    for(var i=0;i<14;i++)
-      {x.fillStyle="#ffffff";x.fillRect(S+Math.floor(q()*16)*8,Math.floor(q()*16)*8,8,8);}
+    wash(x,0,S,"#bcdff2");
+    var q=rnd(17);
+    for(var y=0;y<S;y+=7){
+      x.fillStyle=q()<.5?"#a9d3ea":"#cbe9f8";
+      x.beginPath();x.moveTo(0,y);
+      for(var px=0;px<=S;px+=16)x.lineTo(px,y+Math.sin(px*.09+y)*2.4);
+      x.lineTo(S,y+5);x.lineTo(0,y+5);x.closePath();x.fill();
+    }
+    wash(x,S,S,"#dff3fe");
+    blobs(x,S,S,26,13,["#eefaff","#cfeafb","#ffffff"],19,.6);
   });
 }
-/* LAVA. Charred crust with molten cracks through it, brightest on the
-   surface - a magma block, not a bonfire. */
+/* LAVA. Flowing veins between crust plates, not a checker of hot cells. */
 function lavaTex(){
   return surf(function(x,S){
-    grain(x,0,S,8,["#4a2018","#3a1712","#57271b","#421c15","#5e2c1e"],29);
-    grain(x,S,S,8,["#5a2418","#481d14","#63301d","#3f1a12","#552315"],37);
+    wash(x,0,S,"#43201a");
+    blobs(x,0,S,34,13,["#3a1a15","#4e281e","#301410"],29,.6);
+    wash(x,S,S,"#4c2118");
+    blobs(x,S,S,30,14,["#411c14","#57291c","#35150f"],37,.6);
     var q=rnd(53);
-    for(var i=0;i<26;i++){
-      var cx=Math.floor(q()*16)*8, cy=Math.floor(q()*16)*8;
-      x.fillStyle=q()<.4?"#ffd24a":(q()<.7?"#ff8c2a":"#e8541c");
-      x.fillRect(S+cx,cy,8,8);
-      if(q()<.5)x.fillRect(S+cx+8,cy,8,8);
-      if(q()<.35){x.fillStyle="#c4441a";x.fillRect(cx,cy,8,8);}
+    for(var v=0;v<16;v++){
+      var ox=v<5?0:S;
+      x.strokeStyle=q()<.4?"#ffc63f":(q()<.7?"#ff8322":"#e04a17");
+      x.lineWidth=2+q()*5;
+      x.lineCap="round";
+      x.beginPath();
+      var vx=ox+q()*S, vy=q()*S;
+      x.moveTo(vx,vy);
+      for(var k=0;k<3;k++){vx+=(q()-.5)*40;vy+=(q()-.5)*40;x.lineTo(vx,vy);}
+      x.stroke();
     }
   });
 }
@@ -722,15 +814,22 @@ function addMesh(x,y,z,kind){
        Five flames of different heights rather than four matched cones: fire
        is the one piece that should never look machined. Each carries its own
        phase so the group flickers out of step with itself. */
+    /* FOUR, because four is what the plane needs. In the volume they cluster
+       on the crust; flattened they line up in a row standing OFF the top of
+       the block with a visible gap, which is the arrangement that survives a
+       silhouette: a gap says "this is not part of that block", and a row of
+       four says fire where two could be anything. Both layouts are carried
+       per flame and `fireFlames` crossfades between them on flatT. */
     var tips=new THREE.Group();
-    var FL=[[-.15,-.10,.82],[.14,.12,1.04]];
+    var FL=[[-.17,-.13,.74],[.16,-.11,.94],[-.14,.15,.88],[.18,.14,.68]];
     for(var fi=0;fi<FL.length;fi++){
       var c=new THREE.Mesh(flameGeo,new THREE.MeshBasicMaterial({
         vertexColors:true, transparent:true, opacity:.9,
         depthWrite:false, side:THREE.DoubleSide}));
-      c.position.set(FL[fi][0],.42,FL[fi][1]);
-      c.scale.set(1,FL[fi][2],1);
-      c.userData={h:FL[fi][2],ph:Math.random()*Math.PI*2};
+      c.userData={h:FL[fi][2],ph:Math.random()*Math.PI*2,
+                  vx:FL[fi][0],vz:FL[fi][1],
+                  // evenly spaced across the cell when flat
+                  fx:(fi-1.5)*.235};
       tips.add(c);
     }
     m.userData.tips=tips;
@@ -1220,21 +1319,36 @@ function applyDepth(mesh,base,pd,dvx,dvz,ft){
    they can say what they have to say. In the volume they sit on the block
    and behave normally, because there depth is information rather than a
    thing in the way. */
-function fireFlames(tips,ft){
+function fireFlames(tips,ft,rx,rz){
   tips.visible=true;
-  var over=ft>.5;
-  tips.position.y=over?.34*(ft-.5)*2:0;
+  var over=ft>.5, t=Math.max(0,Math.min(1,(ft-.35)/.5));
+  tips.position.y=0;
   var kids=tips.children;
   for(var i=0;i<kids.length;i++){
     var c=kids[i],u=c.userData;
     var fl=.80+.20*Math.sin(airPhase*7.5+u.ph)+.06*Math.sin(airPhase*17+u.ph*3);
-    c.scale.set(.86+fl*.18,u.h*fl,1);
+    /* Flattened they spread along SCREEN-RIGHT, which is the axis the fold
+       leaves intact - rx/rz come from the current view, so the row reads as a
+       row from whichever side the world was folded. */
+    var fx=u.fx*rx, fz=u.fx*rz;
+    c.position.set(u.vx+(fx-u.vx)*t, .42+.30*t, u.vz+(fz-u.vz)*t);
+    // smaller when flat, and four of them, so the row does not become a wall
+    var sc=1-.34*t;
+    c.scale.set((.86+fl*.18)*sc,u.h*fl*sc,1);
     // turned flat-on to the camera: a flame has no side to show
     if(camera)c.quaternion.copy(camera.quaternion);
     c.material.opacity=(.72+fl*.26)*(over?1:.92);
     c.material.depthTest=!over;
     c.renderOrder=over?940:0;
   }
+}
+
+var liftC=new THREE.Color();
+function inkLift(m,ft){
+  if(!m.material.emissiveMap&&m.material.map)m.material.emissiveMap=m.material.map;
+  if(!m.material.emissive)return;
+  liftC.copy(colPaper).multiplyScalar(.115);
+  m.material.emissive.copy(liftC).multiplyScalar(Math.max(0,ft*ft));
 }
 
 var tmp=new THREE.Vector3();
@@ -1347,7 +1461,7 @@ function animate(now){
     } else if(m.userData.kind===4){
       // fire stays legible when flat - the lethal column is the whole point
       m.material.color.copy(colSpike).lerp(colInk,flatT*.4);
-      if(m.userData.tips)fireFlames(m.userData.tips,flatT);
+      if(m.userData.tips)fireFlames(m.userData.tips,flatT,rx,rz);
       applyDepth(m,b,pdepth,tdvx,tdvz,flatT);
     } else if(m.userData.anchor){
       // anchors stay legible once flat - they're the reason the fold matters
@@ -1358,6 +1472,13 @@ function animate(now){
       var base=ghosted.has(k)?colGhost:colBlock;
       m.material.color.copy(base).lerp(colInk,flatT);
       applyDepth(m,b,pdepth,tdvx,tdvz,flatT);
+      /* THE SURFACE SURVIVES THE FOLD, faintly. `map` multiplies colour, and
+         once colour is nearly ink the multiply is black on black - so in the
+         plane the same texture is driven through EMISSIVE instead, which
+         lifts the grain off the silhouette rather than darkening it. Kept
+         low: the plane is still a silhouette, and this is the difference
+         between paper that is blank and paper that is printed. */
+      inkLift(m,flatT);
     }
   }
 

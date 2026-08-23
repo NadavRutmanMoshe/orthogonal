@@ -718,10 +718,20 @@ multiply of one `material.color` makes two colours. The map is a *relative*
 statement, so `material.color` still carries the section tint, the depth
 fade, the peril red and the lerp to ink — the block loop never changed.
 
-- `magFilter` is `NearestFilter`: the blocky read is the point, and a
+- `magFilter` is `NearestFilter`: the chunky read is the point, and a
   smoothed 128px texture is just mush at play size.
-- **Grain is drawn in 8px cells, not per pixel.** What makes a surface read as
-  blocky is the size of the grain, not the palette.
+- **THE GRAIN IS DELIBERATELY NOT A PIXEL GRID, and that is a commercial
+  decision rather than a taste one.** The first cut drew square cells on a
+  16px lattice, which is a very particular published game's look. Nothing was
+  ever copied — there are no image files in this project and every pixel is
+  drawn by `10-render.js` — but a style is recognisable without an asset
+  changing hands, and this game is meant to be sold. So the grain is rounded
+  and irregular (`blobs`, lumpy six-point discs on a jittered lattice), the
+  greens are brighter and warmer than the obvious ones, the sides are clay
+  rather than dirt, and water and lava are drawn as **flowing bands and veins**
+  rather than as hot and cold cells. Basalt is the one angular surface,
+  because it should read as broken rather than as grown. **If you retouch
+  these, keep them off the lattice.**
 - **A section's stone colour goes near-white when it has a surface**
   (`0xbdbdbd` for grass), because the texture is carrying the hue and a
   saturated tint would double it into ink.
@@ -748,6 +758,12 @@ picture with a puzzle sitting on top.
   *under* the thing being played.
 - **It is raised off the bottom edge**, because the control bar lives there.
 - **Faded right out in the plane**: there is no distance in a silhouette.
+- **Trees are rounded canopies in three hazed ranks, kept to the lower half
+  of the band.** The first cut was one row of stacked conifer skirts and read
+  as a sawblade; the second ran canopies to the top of the canvas and became
+  a wall the puzzle sat on. What sells distance is the pale haze *between*
+  the ranks, and it is a gradient — a flat wash put a hard horizontal line
+  across the forest that read as a seam in the drawing.
 - **`[depth, colour, height]` is three entries and the height is `r[2]`.** It
   was written as `r[3]` to match the treeline's four-entry rows, which made
   every spire `NaN` tall — and **canvas draws nothing for a NaN path and
@@ -758,6 +774,20 @@ picture with a puzzle sitting on top.
   is a hunter, and a shape a player could mistake for one is a lie the fight
   has to pay for.
 
+### The plane is the same place, seen flat
+
+**A section owns both pictures.** `theme.paper` and `theme.ink` set
+`colPaper`/`colInk` per section, so folding out of a hell level and folding
+out of a meadow no longer land on identical stationery. It was reported,
+correctly, as the 2D world looking like it belonged to a different game.
+
+**And the surface survives the fold, faintly.** `map` multiplies colour, and
+once colour is nearly ink the multiply is black on black — so in the plane
+the same texture is driven through **`emissive`** instead (`inkLift`), which
+*lifts* the grain off the silhouette rather than darkening it. Kept low and
+ramped on `flatT²`: the plane is still a silhouette, and this is only the
+difference between paper that is blank and paper that is printed.
+
 ### Fire in the plane
 
 **A flame is a lick, not a cone.** Four cones on a block was reported as
@@ -766,7 +796,15 @@ one, which is the one thing a flame is not. It is a flat tapered strip with
 the colour in its vertices — white-hot at the base, gone at the tip — turned
 to face the camera every frame, so there is no solidity to shade.
 
-**The flames rise clear of the block when the world folds, and stop testing
+**Four flames, and in the plane they stand OFF the block with a gap.** In the
+volume they cluster on the crust; flattened they line up evenly across the
+cell, above it, smaller, spread along **screen-right** — the axis the fold
+leaves intact, so the row reads as a row from whichever side you folded. The
+gap is the load-bearing part: it says *this is not part of that block*, which
+is the whole problem a silhouette creates. Both layouts live on each flame
+and `fireFlames` crossfades them on `flatT`.
+
+**They rise clear of the block when the world folds, and stop testing
 depth.** Flattened, every block at every depth lands in one silhouette square,
 so a fire block behind a stone one is drawn inside it and there is nothing to
 see — in the square a player most needs to know is lethal. So in the plane
