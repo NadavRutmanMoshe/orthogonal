@@ -697,7 +697,74 @@ rule one level up put `I · FUNDAMENTALS` on olive rather than a true green:
 the goal is a saturated teal-green wireframe and it appears in *every*
 section.
 
+### Surfaces, and why water lost its ring
+
+**Water and fire are their own shape now** — a full cell with a surface plate
+a little below the top (`makeLiquidGeo`), where stone is the inset case with
+the lit rim. They are told apart in silhouette before a colour is read, which
+is what retired water's marker.
+
+**The other two markers stay, and the reason is the reason they exist.** An
+anchor and a crate still differ from stone by *colour alone* — amber against
+violet, the exact pair that fails for the roughly one man in twelve with a
+colour vision deficiency. They keep their shapes until they get forms of
+their own.
+
+**Surfaces are drawn, never loaded**, one canvas per look, laid out as
+`[ side | top ]` in one image. `mergeBoxes` remaps the UVs so faces +Y/-Y
+sample the right half and the four sides the left. **This is the only way to
+get two hues onto one block**: a grass block is green over brown, and no
+multiply of one `material.color` makes two colours. The map is a *relative*
+statement, so `material.color` still carries the section tint, the depth
+fade, the peril red and the lerp to ink — the block loop never changed.
+
+- `magFilter` is `NearestFilter`: the blocky read is the point, and a
+  smoothed 128px texture is just mush at play size.
+- **Grain is drawn in 8px cells, not per pixel.** What makes a surface read as
+  blocky is the size of the grain, not the palette.
+- **A section's stone colour goes near-white when it has a surface**
+  (`0xbdbdbd` for grass), because the texture is carrying the hue and a
+  saturated tint would double it into ink.
+
+**A block outlives its level, and that bit.** `syncMeshes` keys meshes by cell
+and `addMesh` returns early when one is already there, so a block standing in
+the same place in the next level is *reused* — and keeps the surface it was
+built with. Crossing from grass into basalt left every shared cell wearing the
+old ground. `applyTheme` now drops all block meshes when the surface changes
+and lets `syncMeshes` rebuild them.
+
+### Scenery
+
+One textured quad on the camera, per section: a treeline, or the ridge and the
+things moving along it. Silhouettes rather than lit scenery, because the game
+is an orthographic abstraction and a rendered forest behind it is a different
+picture with a puzzle sitting on top.
+
+- **The glow is drawn before the ridge and has to be strong.** A near-black
+  spire on a near-black sky is nothing; the bright band is what the silhouette
+  is a silhouette *against*.
+- **Broad and low, never needles.** The first cut ran spires to 132px of a
+  160px canvas and grew a picket fence up through the puzzle. A horizon sits
+  *under* the thing being played.
+- **It is raised off the bottom edge**, because the control bar lives there.
+- **Faded right out in the plane**: there is no distance in a silhouette.
+- **`[depth, colour, height]` is three entries and the height is `r[2]`.** It
+  was written as `r[3]` to match the treeline's four-entry rows, which made
+  every spire `NaN` tall — and **canvas draws nothing for a NaN path and
+  throws nothing either**, so the band rendered as a bare gradient and looked
+  like a colour choice rather than a bug. If a procedural drawing comes out
+  empty, sample the canvas before re-picking the colours.
+- **The demons are scenery and never enter the world.** Nothing on that band
+  is a hunter, and a shape a player could mistake for one is a lie the fight
+  has to pay for.
+
 ### Fire in the plane
+
+**A flame is a lick, not a cone.** Four cones on a block was reported as
+looking bad and it did: a cone is a solid object with a lit side and a dark
+one, which is the one thing a flame is not. It is a flat tapered strip with
+the colour in its vertices — white-hot at the base, gone at the tip — turned
+to face the camera every frame, so there is no solidity to shade.
 
 **The flames rise clear of the block when the world folds, and stop testing
 depth.** Flattened, every block at every depth lands in one silhouette square,

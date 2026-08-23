@@ -653,16 +653,20 @@ var SECTIONS=[
    /* Olive rather than a true green, and that is the same don't-camouflage
       rule one level up: the goal is a saturated teal-green wireframe and it
       appears in EVERY section, so no section may sit on its hue. */
-   theme:{sky:[0x1b2416,0x0c110a], block:0x6f8259,
-          air:{col:0xc2d69a, n:16, rise:.10, drift:.06, size:.09}}},
+   theme:{sky:[0x2c4a63,0x16283a], block:0xbdbdbd, surface:"grass",
+          scene:"trees",
+          air:{col:0xd8e8b0, n:14, rise:.05, drift:.09, size:.075}}},
   {at:17, name:"II · SPIKES", sub:"a hazard you cannot see until you fold", col:"#e0455f",
    story:"Some of what is down there did not survive being flattened.",
-   /* FROST, and it is the opposite of the obvious choice. This section
-      teaches fire, so it is the one section that must not be warm: cold
-      stone is what makes a fire block the loudest thing on the screen.
-      Falling motes, so the field reads as the reverse of the ember one. */
-   theme:{sky:[0x0e2233,0x061019], block:0x54748c,
-          air:{col:0xbfe2f5, n:20, rise:-.12, drift:.05, size:.08}}},
+   /* HELL, and it is DARK hell rather than bright. This section teaches
+      fire, and a glowing orange world swallows a fire block whole - that was
+      rendered and it is the exact failure the desaturation rule exists to
+      catch. So the ground is near-black basalt with molten veins in it, the
+      sky is a deep ember glow low down, and the brightest thing standing
+      anywhere on it is still the piece the section is about. */
+   theme:{sky:[0x1a0a10,0x3a0f0a], block:0xc8c8c8, surface:"basalt",
+          scene:"hell", flare:17000,
+          air:{col:0xff9a4a, n:24, rise:.20, drift:.07, size:.07}}},
   {at:26, name:"III · GLASS", sub:"solid in the volume, absent from the plane", col:"#7fb2ff",
    story:"Water casts nothing, so the plane holds no record of it.",
    /* EMBER, for the same inverted reason: this section teaches water, so a

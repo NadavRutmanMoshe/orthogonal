@@ -64,11 +64,22 @@ function initGL(){
      call site. The edges are cut from the CASE (.9), not from a full cell,
      or a hairline would float in the seam the inset creates. */
   boxGeo=makeBlockGeo();
+  waterGeo=makeLiquidGeo(1.55);   // a bright surface: water shows its light there
+  fireGeo =makeLiquidGeo(1.30);   // a molten crust, hot but not white
   edgeGeo=new THREE.EdgesGeometry(new THREE.BoxGeometry(.9,.9,.9));
+  liquidEdgeGeo=new THREE.EdgesGeometry(new THREE.BoxGeometry(1,.98,1));
+  TEX={stone:stoneTex(),grass:grassTex(),basalt:basaltTex(),
+       water:waterTex(),lava:lavaTex()};
   spikeGeo=new THREE.ConeGeometry(.13,.36,4);
   // Taller and thinner than the old spike tip, and five-sided so it reads as
   // a flame rather than as a pyramid at the sizes this game draws.
-  flameGeo=new THREE.ConeGeometry(.115,.40,5);
+  /* A LICK, NOT A CONE. Four cones on a block was the note that the fire
+     looked bad, and it did: a cone is a solid object with a lit side and a
+     dark one, which is the one thing a flame is not. This is a flat tapered
+     strip with the colour written into its vertices - white-hot and opaque
+     at the base, orange in the middle, gone at the tip - turned to face the
+     camera every frame. No solidity to shade, so nothing to look wrong. */
+  flameGeo=makeFlameGeo();
   // Every piece also carries a shape on its top face, so the mechanics stay
   // legible without relying on colour. Roughly one man in twelve has some
   // colour vision deficiency, and violet-versus-red is exactly the pair that
@@ -139,7 +150,7 @@ function initGL(){
    colours - a flat clear colour is what made the world look like it was
    floating in a swatch. `scene.background` is dropped when it is up,
    because the quad is now what paints every pixel behind the world. */
-var flameGeo=null;
+var flameGeo=null,waterGeo=null,fireGeo=null,liquidEdgeGeo=null,TEX=null;
 var skyQuad=null, airField=null, airPhase=0, flareT=0, flareEvery=0, skyWarm=0;
 var colSkyTop=new THREE.Color(0x141a2e), colSkyBot=new THREE.Color(0x0a0e1a);
 var colAir=new THREE.Color(0x8fa4cc);
@@ -199,12 +210,151 @@ function makeAir(spec){
   grp.userData.spec=spec;
   return grp;
 }
+/* ============================================================
+   SCENERY - the far band, drawn once per section
+   ============================================================
+   A silhouette strip across the bottom of the sky: treeline, or the spires
+   and the things moving between them. It is ONE textured quad on the camera,
+   so it costs a draw call and never has to be reconciled with the fold, the
+   rotation or the depth shading - it is behind the world, always, by
+   construction.
+
+   Silhouettes rather than lit scenery on purpose. The game is an
+   orthographic abstraction and a rendered forest behind it would be a
+   different picture with the puzzle sitting on top; a dark band reads as
+   distance and stays out of the way of the one thing that has to be read. */
+function sceneryTex(kind){
+  var W=512,H=160,c=document.createElement("canvas");
+  c.width=W;c.height=H;
+  var x=c.getContext("2d");
+  x.clearRect(0,0,W,H);
+  var q=rnd(kind==="trees"?101:211);
+  if(kind==="trees"){
+    /* Two ranks: a pale far rank and a dark near one, so the treeline has
+       depth without a second quad. Conifers, because a blob on a stick reads
+       as a tree at 30px and a broadleaf does not. */
+    [[.30,"#20351f",26,74],[.62,"#0f1e10",34,104]].forEach(function(r){
+      for(var tx=-20;tx<W+20;tx+=r[2]*(.55+q()*.5)){
+        var h=r[3]*(.7+q()*.6), bx=tx, by=H-6;
+        x.fillStyle=r[1];
+        x.fillRect(bx-3,by-h*.22,6,h*.22);          // trunk
+        for(var tier=0;tier<3;tier++){              // three skirts
+          var tw=(r[2]*.62)*(1-tier*.24), ty=by-h*.22-tier*(h*.26);
+          x.beginPath();
+          x.moveTo(bx,ty-h*.34);x.lineTo(bx+tw,ty);x.lineTo(bx-tw,ty);
+          x.closePath();x.fill();
+        }
+      }
+    });
+  } else {
+    // HELL: jagged basalt spires, and a molten line burning along their feet
+    /* The glow goes down FIRST and has to be strong, because the spires are
+       drawn over it and a near-black spire on a near-black sky is nothing at
+       all. The bright band is what the silhouette is a silhouette against -
+       that was the first cut's mistake, and it is the whole trick of a
+       skyline. */
+    var g=x.createLinearGradient(0,H,0,H-118);
+    g.addColorStop(0,"rgba(255,132,44,.95)");
+    g.addColorStop(.45,"rgba(226,74,30,.45)");
+    g.addColorStop(1,"rgba(180,40,20,0)");
+    x.fillStyle=g;x.fillRect(0,H-118,W,118);
+    /* [depth, colour, height] - three entries, so the height is r[2]. It was
+       written as r[3] to match the treeline's four-entry rows above, which
+       made every spire NaN tall: canvas draws nothing at all for a NaN path
+       and throws nothing either, so the band rendered as a bare gradient and
+       looked like a colour choice rather than a bug. */
+    /* Broad and low, not needles. The first cut ran to 132px on a 160px
+       canvas and grew a picket fence up through the puzzle - a horizon has
+       to sit UNDER the thing being played, so the tallest spire is about a
+       third of the band and the bases overlap into a ridge. */
+    [[.35,"#3b1c26",40],[.7,"#0d0508",58]].forEach(function(r){
+      x.fillStyle=r[1];
+      var px=-40;
+      while(px<W+40){
+        var w=54+q()*76, h=r[2]*(.55+q()*.75);
+        x.beginPath();
+        x.moveTo(px,H);x.lineTo(px+w*.5,H-h);x.lineTo(px+w,H);
+        x.closePath();x.fill();
+        px+=w*(.42+q()*.34);
+      }
+    });
+  }
+  var t=new THREE.CanvasTexture(c);
+  t.wrapS=THREE.RepeatWrapping;t.repeat.set(2,1);
+  return t;
+}
+/* THE THINGS MOVING IN IT. Small dark silhouettes with two lit eyes,
+   drifting across the far band - the residents, seen at a distance. They are
+   part of the scenery layer and never enter the world: nothing here is a
+   hunter, and a shape a player could mistake for one would be a lie the
+   fight has to pay for. */
+function demonTex(){
+  var S=64,c=document.createElement("canvas");c.width=S;c.height=S;
+  var x=c.getContext("2d");
+  x.clearRect(0,0,S,S);
+  x.fillStyle="#0b0508";
+  x.beginPath();                       // hunched body
+  x.moveTo(32,10);x.lineTo(48,26);x.lineTo(44,52);x.lineTo(20,52);x.lineTo(16,26);
+  x.closePath();x.fill();
+  x.beginPath();x.moveTo(18,14);x.lineTo(24,4);x.lineTo(26,16);x.closePath();x.fill();
+  x.beginPath();x.moveTo(46,14);x.lineTo(40,4);x.lineTo(38,16);x.closePath();x.fill();
+  x.fillStyle="#ff8a3c";
+  x.fillRect(24,26,5,4);x.fillRect(35,26,5,4);
+  return new THREE.CanvasTexture(c);
+}
+var sceneQuad=null, demonGrp=null;
+function makeScenery(kind){
+  var m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),
+    new THREE.MeshBasicMaterial({map:sceneryTex(kind),transparent:true,
+      opacity:.9,depthWrite:false,fog:false}));
+  m.renderOrder=-980;m.position.z=-245;
+  return m;
+}
+function makeDemons(n){
+  var g=new THREE.Group(),tex=demonTex();
+  for(var i=0;i<n;i++){
+    var q=new THREE.Mesh(new THREE.PlaneGeometry(.5,.5),
+      new THREE.MeshBasicMaterial({map:tex,transparent:true,opacity:.0,
+        depthWrite:false,fog:false}));
+    q.renderOrder=-970;
+    q.userData={x:Math.random(),sp:.35+Math.random()*.5,
+                ph:Math.random()*Math.PI*2,sc:.7+Math.random()*.7};
+    g.add(q);
+  }
+  return g;
+}
+
 /* Sized to the frustum every frame, because the frustum follows the arena
    and the player - a sky sized once is the wrong size on the next level. */
 function layoutAtmosphere(){
   if(!skyQuad)return;
   var w=(camera.right-camera.left)/camera.zoom, h=(camera.top-camera.bottom)/camera.zoom;
   skyQuad.scale.set(w*1.2,h*1.2,1);
+  /* The band sits on the lower third and is scaled to the frustum like the
+     sky, so it holds its place on screen while the camera follows the
+     player. Faded right out in the plane: there is no distance in a
+     silhouette, and a horizon behind a flat world is a horizon in a picture
+     that has no depth to put it in. */
+  if(sceneQuad){
+    /* Raised off the bottom edge rather than sitting on it: the control bar
+       lives down there, so a horizon at the very foot of the frustum is a
+       horizon behind the d-pad. */
+    sceneQuad.scale.set(w*1.25,h*.30,1);
+    sceneQuad.position.y=-h*.19;
+    sceneQuad.material.opacity=.9*(1-flatT);
+  }
+  if(demonGrp){
+    var dk=demonGrp.children;
+    for(var di=0;di<dk.length;di++){
+      var dq=dk[di],du=dq.userData;
+      du.x+=du.sp*.00035;
+      if(du.x>1.15)du.x=-.15;
+      dq.scale.setScalar(du.sc*h*.055);
+      dq.position.set((du.x-.5)*w*1.1,
+        -h*.155+Math.sin(airPhase*1.6+du.ph)*h*.010,-243);
+      dq.material.opacity=.85*(1-flatT);
+    }
+  }
   if(!airField)return;
   var kids=airField.children, sp=airField.userData.spec;
   for(var i=0;i<kids.length;i++){
@@ -232,6 +382,22 @@ function applyTheme(th){
   colVoid.setHex(th.sky[1]);            // depth shading fades toward the far sky
   colBlock.setHex(th.block);
   colAir.setHex(th.air.col);
+  /* A BLOCK OUTLIVES ITS LEVEL. syncMeshes keys meshes by cell and addMesh
+     returns early when one is already there, so a block standing in the same
+     place in the next level is REUSED - which is right, and which means it
+     keeps the surface it was built with. Crossing from grass into basalt
+     left the cells the two levels had in common wearing the old section's
+     ground. So when the surface changes, the meshes go, and syncMeshes
+     rebuilds them against the new one. */
+  var nextTex=(TEX&&th.surface&&TEX[th.surface])||(TEX&&TEX.stone)||null;
+  if(nextTex!==curStoneTex&&typeof meshes==="object"&&meshes){
+    for(var mk in meshes){
+      var mm=meshes[mk];
+      scene.remove(mm);if(mm.material)mm.material.dispose();
+      delete meshes[mk];
+    }
+  }
+  curStoneTex=nextTex;
   /* Started a third of the way in rather than at zero: at zero the swell
      lands about a second after the level opens, which is precisely when the
      player is reading the board and reads as the game glitching rather than
@@ -249,11 +415,28 @@ function applyTheme(th){
   if(airField){camera.remove(airField);airField.traverse(function(o){
     if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});}
   airField=makeAir(th.air);camera.add(airField);
+  if(sceneQuad){camera.remove(sceneQuad);
+    sceneQuad.geometry.dispose();sceneQuad.material.map.dispose();
+    sceneQuad.material.dispose();sceneQuad=null;}
+  if(demonGrp){camera.remove(demonGrp);
+    demonGrp.traverse(function(o){if(o.geometry)o.geometry.dispose();
+      if(o.material)o.material.dispose();});demonGrp=null;}
+  if(th.scene){
+    sceneQuad=makeScenery(th.scene);camera.add(sceneQuad);
+    if(th.scene==="hell"){demonGrp=makeDemons(4);camera.add(demonGrp);}
+  }
   setSkyColors(0);
 }
 /* Which section a level belongs to, asked by index so it works for the
    editor and the library too - both hand back no section, and no section
    means the default sky. */
+/* Which surface this section's stone wears. Read at block-build time, which
+   is after applyTheme() has run for the level - loadLevel sets the theme
+   before it ever asks for a mesh, and that ordering is the whole reason this
+   can be a global rather than an argument threaded through addMesh. */
+var curStoneTex=null;
+function stoneSurface(){return curStoneTex||TEX.stone;}
+
 function themeForLevel(idx){
   if(typeof SECTIONS==="undefined"||idx==null||idx<0)return null;
   var found=null;
@@ -281,6 +464,112 @@ function themeForLevel(idx){
    past 1, so a section that tints the stone tints the rim with it. That is
    what lets a section own the look without a second palette to keep in
    sync. */
+/* ============================================================
+   SURFACES - one canvas per look, [ side | top ] in one image
+   ============================================================
+   These carry HUE, which is the thing per-face brightness could not do: a
+   grass block is a green top over brown sides, and no multiply of one colour
+   makes two. material.color still does everything it did - section tint,
+   depth fade, peril red, the lerp to ink - and three.js multiplies the map
+   by it, so a texture is a *relative* statement about a block and the block
+   loop stays untouched.
+
+   Everything is drawn, not loaded. There are no assets in this game and
+   there is no build step to add them with.
+
+   Seeded off the cell, never Math.random at draw time: a wall that
+   reshuffles itself every level is not a material. */
+function surf(draw){
+  var S=128,c=document.createElement("canvas");
+  c.width=S*2;c.height=S;
+  var x=c.getContext("2d");
+  x.fillStyle="#fff";x.fillRect(0,0,S*2,S);
+  draw(x,S);
+  var t=new THREE.CanvasTexture(c);
+  t.magFilter=THREE.NearestFilter;      // the blocky read this was asked for
+  t.minFilter=THREE.LinearMipmapLinearFilter;
+  return t;
+}
+function rnd(seed){var v=seed>>>0||1;return function(){
+  v^=v<<13;v^=v>>>17;v^=v<<5;return ((v>>>0)%100000)/100000;};}
+/* Chunky cells rather than per-pixel noise - what makes a surface read as
+   blocky is the SIZE of its grain, not the palette. */
+function grain(x,ox,S,cell,cols,seed){
+  var q=rnd(seed);
+  for(var gy=0;gy<S;gy+=cell)for(var gx=0;gx<S;gx+=cell){
+    x.fillStyle=cols[Math.floor(q()*cols.length)];
+    x.fillRect(ox+gx,gy,cell,cell);
+  }
+}
+/* GRASS. Green on top, earth down the sides, and the blades hanging over
+   the top edge of the side face - which is the one detail that makes the
+   two halves read as one block rather than as a green lid on a brown box. */
+function grassTex(){
+  return surf(function(x,S){
+    grain(x,0,S,8,["#7a5a3c","#6d4f34","#845f40","#735439","#8a6746"],7);
+    // the fringe: grass spilling a few cells down the side
+    var q=rnd(31);
+    for(var gx=0;gx<S;gx+=8){
+      var h=8+Math.floor(q()*3)*8;
+      x.fillStyle=q()<.5?"#5f8f42":"#6d9c4a";
+      x.fillRect(gx,0,8,h);
+    }
+    grain(x,S,S,8,["#5f8f42","#6d9c4a","#55833b","#74a551","#639446"],13);
+  });
+}
+/* BASALT, for the hell section. Near-black rock with molten veins in it -
+   the ground of the place rather than more fire, so a fire BLOCK is still
+   the brightest thing standing on it. */
+function basaltTex(){
+  return surf(function(x,S){
+    grain(x,0,S,8,["#2c2830","#332d36","#26222a","#3a333e","#2a2530"],5);
+    grain(x,S,S,8,["#332d36","#2a252e","#3b3440","#2e2833","#37303c"],11);
+    var q=rnd(23);
+    for(var i=0;i<7;i++){          // veins, both halves
+      x.fillStyle=i%2?"#7a3320":"#9c4526";
+      var vx=q()*S, vy=q()*S, ln=2+Math.floor(q()*3);
+      for(var j=0;j<ln;j++){
+        x.fillRect(vx,vy,8,8);
+        x.fillRect(S+vx,vy,8,8);
+        vx+=(q()<.5?8:-8); vy+=8;
+      }
+    }
+  });
+}
+function stoneTex(){
+  return surf(function(x,S){
+    grain(x,0,S,8,["#e8e8e8","#dedede","#f0f0f0","#d6d6d6","#e2e2e2"],3);
+    grain(x,S,S,8,["#f4f4f4","#eaeaea","#fbfbfb","#e4e4e4","#efefef"],9);
+  });
+}
+/* WATER. A darker body under a bright surface, with the surface carrying
+   the highlights - which is where a liquid actually shows its light. */
+function waterTex(){
+  return surf(function(x,S){
+    grain(x,0,S,8,["#cfe8f5","#bcdcee","#dcf0fa","#c6e3f2","#b4d6ea"],17);
+    grain(x,S,S,8,["#eaf8ff","#d4eefc","#ffffff","#dff3fe","#c9e9fa"],19);
+    var q=rnd(41);                  // a few brighter cells: glints
+    for(var i=0;i<14;i++)
+      {x.fillStyle="#ffffff";x.fillRect(S+Math.floor(q()*16)*8,Math.floor(q()*16)*8,8,8);}
+  });
+}
+/* LAVA. Charred crust with molten cracks through it, brightest on the
+   surface - a magma block, not a bonfire. */
+function lavaTex(){
+  return surf(function(x,S){
+    grain(x,0,S,8,["#4a2018","#3a1712","#57271b","#421c15","#5e2c1e"],29);
+    grain(x,S,S,8,["#5a2418","#481d14","#63301d","#3f1a12","#552315"],37);
+    var q=rnd(53);
+    for(var i=0;i<26;i++){
+      var cx=Math.floor(q()*16)*8, cy=Math.floor(q()*16)*8;
+      x.fillStyle=q()<.4?"#ffd24a":(q()<.7?"#ff8c2a":"#e8541c");
+      x.fillRect(S+cx,cy,8,8);
+      if(q()<.5)x.fillRect(S+cx+8,cy,8,8);
+      if(q()<.35){x.fillStyle="#c4441a";x.fillRect(cx,cy,8,8);}
+    }
+  });
+}
+
 function mergeBoxes(parts){
   var pos=[],nor=[],uv=[],col=[],idx=[],base=0;
   for(var i=0;i<parts.length;i++){
@@ -296,6 +585,20 @@ function mergeBoxes(parts){
        face without touching a single position. */
     var v=[p.xp,p.xn,p.top,p.bot,p.zp,p.zn];
     for(var f=0;f<6;f++)for(var k=0;k<4;k++)col.push(v[f],v[f],v[f]);
+    /* ATLAS UVs. Every texture in here is [ side | top ] side by side, and
+       the same fixed face order lets the two halves be assigned without a
+       second geometry: faces 2 and 3 (+Y, -Y) sample the right half, the
+       four sides sample the left. This is what makes a grass block possible
+       at all - a green top over brown sides is two different HUES, which no
+       amount of per-face brightness can produce. */
+    var uo=uv.length-gu.length;
+    for(var f2=0;f2<6;f2++){
+      var top=(f2===2||f2===3);
+      for(var k2=0;k2<4;k2++){
+        var ui=uo+(f2*4+k2)*2;
+        uv[ui]=uv[ui]*0.5+(top?0.5:0);
+      }
+    }
     for(j=0;j<gi.length;j++)idx.push(gi[j]+base);
     base+=gp.length/3;
     g.dispose();
@@ -322,6 +625,38 @@ function faceVals(o){
    thin bars ride the top edges at well over 1 - they are the lit rim, and
    being geometry rather than a line they survive the fold and the depth
    fade like everything else. */
+/* WATER AND FIRE ARE THEIR OWN SHAPE NOW, and that is what retires their
+   symbol. A full cell rather than an inset case, with a distinct surface
+   plate a little below the top - which is exactly how a liquid reads: it
+   fills its cell and its surface is a place you can see. Neither carries the
+   lit rim; a rim is what stone has.
+
+   THE MARKERS ARE NOT ALL GONE. Water's ring went because water no longer
+   looks like anything else. An anchor and a crate still differ from stone by
+   COLOUR ALONE - amber against violet, which is the exact pair that fails
+   for the roughly one man in twelve with a colour vision deficiency - so
+   they keep their shapes until they get forms of their own too. */
+function makeLiquidGeo(surfaceLift){
+  return mergeBoxes([
+    faceVals({w:1,h:.88,d:1,y:-.06, top:.92,bot:.44,xp:.92,xn:.68,zp:.98,zn:.64}),
+    faceVals({w:1,h:.05,d:1,y:.405, top:surfaceLift,bot:.5,
+              xp:surfaceLift*.8,xn:surfaceLift*.66,zp:surfaceLift*.85,zn:surfaceLift*.62})
+  ]);
+}
+function makeFlameGeo(){
+  var g=new THREE.BufferGeometry();
+  // a five-point strip: wide at the foot, pinched to nothing at the tip
+  var W=.105;
+  g.setAttribute("position",new THREE.Float32BufferAttribute([
+    -W,0,0,  W,0,0,  -W*.72,.19,0,  W*.72,.19,0,
+    -W*.34,.34,0, W*.34,.34,0,  0,.48,0],3));
+  g.setAttribute("color",new THREE.Float32BufferAttribute([
+    1,.96,.72, 1,.96,.72,  1,.72,.24, 1,.72,.24,
+    1,.44,.12, 1,.44,.12,  .9,.24,.08],3));
+  g.setIndex([0,1,2, 1,3,2, 2,3,4, 3,5,4, 4,5,6]);
+  g.computeVertexNormals();
+  return g;
+}
 function makeBlockGeo(){
   var parts=[faceVals({w:.9,h:.9,d:.9})];
   var r=.465,t=.075;
@@ -342,29 +677,32 @@ function addMesh(x,y,z,kind){
        stone it came out muddy teal rather than cyan. It still dissolves
        completely as the world folds; that is the mechanic, not the look. */
     ? new THREE.MeshLambertMaterial({color:colGlass.clone(),transparent:true,
-        opacity:.62,vertexColors:true})
+        opacity:.78,vertexColors:true,map:TEX.water})
     : new THREE.MeshLambertMaterial({vertexColors:true,
+        map:spike?TEX.lava:(anchor?TEX.stone:stoneSurface()),
         color:(anchor?colAnchor:spike?colSpike:colBlock).clone()});
-  var m=new THREE.Mesh(boxGeo,mat);
+  /* THE FORM IS THE LABEL. Stone keeps the case-and-rim; water and fire are
+     full cells with a surface plate, so they are told apart in silhouette
+     before a single colour is read. */
+  var m=new THREE.Mesh(glass?waterGeo:(spike?fireGeo:boxGeo),mat);
   m.position.set(x,y,z);
   m.userData.base=[x,y,z];
   m.userData.glass=glass;
   m.userData.anchor=anchor;
   m.userData.kind=kind||0;
-  var edge=new THREE.LineSegments(edgeGeo,
+  var edge=new THREE.LineSegments((glass||spike)?liquidEdgeGeo:edgeGeo,
     new THREE.LineBasicMaterial({
       color:glass?0xbdeaf7:(anchor?0xffd98a:(spike?0xff8a72:0x0f1424)),
       transparent:true,opacity:glass?.95:(anchor||spike?.85:.35)}));
   m.userData.edge=edge;
   m.add(edge);
-  if(kind===1||kind===2||kind===3){
+  /* Kind 1 has no marker any more: water is a shape now, not a colour with
+     a ring on it. Kinds 2 and 3 keep theirs - see makeLiquidGeo. */
+  if(kind===2||kind===3){
     var mk=new THREE.Group();
     var mmat=new THREE.MeshBasicMaterial({
-      color:kind===1?0xd6f2fb:kind===2?0xffe9b8:0xece2ff});
-    if(kind===1){
-      var ring=new THREE.Mesh(markGeo.glass,mmat);
-      ring.rotation.x=-Math.PI/2;mk.add(ring);
-    } else if(kind===2){
+      color:kind===2?0xffe9b8:0xece2ff});
+    if(kind===2){
       mk.add(new THREE.Mesh(markGeo.anchor,mmat));
     } else {
       var b1=new THREE.Mesh(markGeo.crate,mmat);
@@ -385,11 +723,12 @@ function addMesh(x,y,z,kind){
        is the one piece that should never look machined. Each carries its own
        phase so the group flickers out of step with itself. */
     var tips=new THREE.Group();
-    var FL=[[-.26,-.22,1.00],[.24,-.26,.72],[-.20,.26,.86],[.28,.22,.62],[.02,.02,1.22]];
+    var FL=[[-.15,-.10,.82],[.14,.12,1.04]];
     for(var fi=0;fi<FL.length;fi++){
       var c=new THREE.Mesh(flameGeo,new THREE.MeshBasicMaterial({
-        color:fi===4?0xffd48a:0xff7a3c, transparent:true, opacity:.92}));
-      c.position.set(FL[fi][0],.5+FL[fi][2]*.19,FL[fi][1]);
+        vertexColors:true, transparent:true, opacity:.9,
+        depthWrite:false, side:THREE.DoubleSide}));
+      c.position.set(FL[fi][0],.42,FL[fi][1]);
       c.scale.set(1,FL[fi][2],1);
       c.userData={h:FL[fi][2],ph:Math.random()*Math.PI*2};
       tips.add(c);
@@ -462,7 +801,10 @@ function buildDynamic(){
   clearDynamic();
   for(var i=0;i<gCrates.length;i++){
     var m=new THREE.Mesh(boxGeo,
-      new THREE.MeshLambertMaterial({color:colCrate.clone(),vertexColors:true}));
+      new THREE.MeshLambertMaterial({color:colCrate.clone(),vertexColors:true,
+        // deliberately NOT the section's surface: a crate is a thing you
+        // brought, not a piece of the ground you are standing on
+        map:TEX?TEX.stone:null}));
     m.add(new THREE.LineSegments(edgeGeo,
       new THREE.LineBasicMaterial({color:0xe0d4ff,transparent:true,opacity:.8})));
     var cmk=new THREE.Group();
@@ -886,7 +1228,9 @@ function fireFlames(tips,ft){
   for(var i=0;i<kids.length;i++){
     var c=kids[i],u=c.userData;
     var fl=.80+.20*Math.sin(airPhase*7.5+u.ph)+.06*Math.sin(airPhase*17+u.ph*3);
-    c.scale.set(.92+fl*.12,u.h*fl,.92+fl*.12);
+    c.scale.set(.86+fl*.18,u.h*fl,1);
+    // turned flat-on to the camera: a flame has no side to show
+    if(camera)c.quaternion.copy(camera.quaternion);
     c.material.opacity=(.72+fl*.26)*(over?1:.92);
     c.material.depthTest=!over;
     c.renderOrder=over?940:0;

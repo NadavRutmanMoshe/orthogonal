@@ -353,12 +353,16 @@ function outlineFor(obj,bg){
    there is nothing of it left in the silhouette. Pushed toward a real cyan
    from the old pale grey-blue so it stays the loudest thing in a warm
    section, which is the section that teaches it. */
-var colGlass=new THREE.Color(0x4fd2f2);
+/* Near-white now, because the WATER SURFACE carries the blue. These
+   colours multiply the block's texture, so a saturated one would double the
+   hue and come out as ink. Anything with a surface of its own is tinted from
+   here only enough to say which piece it is. */
+var colGlass=new THREE.Color(0x8fdcf6);
 var colAnchor=new THREE.Color(0xd9a441);
 var colCrate=new THREE.Color(0x9b7fd4);
 var colCrateHeld=new THREE.Color(0xb08a5c);
 var colKey=new THREE.Color(0xf2d16b);
 // Fire. Charred body under hot flames - see the fire block in 10-render.js.
-var colSpike=new THREE.Color(0x9c3a2c);
+var colSpike=new THREE.Color(0xd9c0b4);   // the lava crust carries the heat
 var spikeGeo=null;
 var boxGeo,edgeGeo;
