@@ -1180,19 +1180,15 @@ function addMesh(x,y,z,kind){
       transparent:true,opacity:glass?.95:(anchor||spike?.85:.35)}));
   m.userData.edge=edge;
   m.add(edge);
-  /* Kind 1 has no marker any more: water is a shape now, not a colour with
-     a ring on it. Kinds 2 and 3 keep theirs - see makeLiquidGeo. */
-  if(kind===2||kind===3){
+  /* ONLY THE ANCHOR STILL CARRIES A SYMBOL. Water became a shape and lost
+     its ring; a crate became obsidian - near-black glass with violet fire in
+     it, which no other piece looks remotely like - and lost its bars. The
+     anchor is the last piece that is still ordinary stone in a different
+     colour, so it is the last one that needs a mark on it. */
+  if(kind===2){
     var mk=new THREE.Group();
-    var mmat=new THREE.MeshBasicMaterial({
-      color:kind===2?0xffe9b8:0xece2ff});
-    if(kind===2){
-      mk.add(new THREE.Mesh(markGeo.anchor,mmat));
-    } else {
-      var b1=new THREE.Mesh(markGeo.crate,mmat);
-      var b2=new THREE.Mesh(markGeo.crate,mmat);
-      b2.rotation.y=Math.PI/2;mk.add(b1);mk.add(b2);
-    }
+    mk.add(new THREE.Mesh(markGeo.anchor,
+      new THREE.MeshBasicMaterial({color:0xffe9b8})));
     mk.position.y=.54;
     m.userData.mark=mk;m.add(mk);
   }
@@ -1303,13 +1299,7 @@ function buildDynamic(){
         emissive:new THREE.Color(0x2a1046)}));
     m.add(new THREE.LineSegments(edgeGeo,
       new THREE.LineBasicMaterial({color:0xe0d4ff,transparent:true,opacity:.8})));
-    var cmk=new THREE.Group();
-    var cmat=new THREE.MeshBasicMaterial({color:0xece2ff});
-    var cb1=new THREE.Mesh(markGeo.crate,cmat);
-    var cb2=new THREE.Mesh(markGeo.crate,cmat);
-    cb2.rotation.y=Math.PI/2;
-    cmk.add(cb1);cmk.add(cb2);cmk.position.y=.54;
-    m.userData.mark=cmk;m.add(cmk);
+    // no mark: obsidian says crate on its own - see addMesh
     scene.add(m);crateMeshes.push(m);
     m.position.set(gCrates[i][0],gCrates[i][1],gCrates[i][2]);
   }
@@ -1747,6 +1737,26 @@ function fireFlames(tips,ft,rx,rz){
    flat is the world visibly collapsing, the grid coming in and the button
    saying GO 3D, not the picture changing its palette. */
 var INK_SETTLE=0.18;
+/* WATER IN THE PLANE - a trace, then a drain.
+
+   Water casts nothing into the silhouette; that is the rule and it has not
+   moved. But a player who folds while standing ON water was left hanging
+   over nothing, which reads as a bug rather than as a mechanic. So the fold
+   leaves the water behind as a shallow trace under their feet, and their
+   first step in the plane DRAINS it - it sinks out of the square and is
+   gone.
+
+   That is the honest version of the rule rather than a softening of it: the
+   water was there, it is leaving, and by the time you have moved it is not
+   coming back. The trace is deliberately shallow and unlit so it never looks
+   like ground you could return to. */
+var waterDrain=0, waterDrainT=0, waterDrained=false;
+function drainWater(){
+  if(waterDrained||!flat)return;
+  waterDrained=true;waterDrainT=1;
+  if(typeof SFX!=="undefined"&&SFX.spill&&typeof levelHasWater==="function"
+     &&levelHasWater())SFX.spill();
+}
 var PAPER_LIFT=0.20;
 var WHITE=new THREE.Color(0xffffff);
 
@@ -1767,6 +1777,8 @@ function animate(now){
      the air fades back rather than stopping, because the plane is a place
      too and a dead sky there would read as the game having switched off. */
   airPhase+=dtMs*.0009;
+  if(!flat&&flatT<.5){waterDrainT=0;waterDrained=false;}
+  waterDrain+=(waterDrainT-waterDrain)*Math.min(1,dtMs*.0055);
   if(TEX&&TEX.water){
     TEX.water.offset.y=(airPhase*.055)%1;
     TEX.water.offset.x=(Math.sin(airPhase*.31)*.006);
@@ -1862,10 +1874,15 @@ function animate(now){
          position so a pool of them ripples rather than pumping in unison.
          Suppressed as the world folds: a wave in a silhouette is noise. */
       m.position.y+=Math.sin(airPhase*2.6+b[0]*1.7+b[2]*2.3)*.022*(1-flatT);
-      // water has no place in the plane, so it spills as the world folds
-      var o=Math.max(0,.62*(1-flatT*1.9));
-      m.material.opacity=o;
-      m.userData.edge.material.opacity=Math.max(0,.95*(1-flatT*1.9));
+      /* Solid in the volume; a shallow trace once flat, which drains away on
+         the player's first step. The trace sits low in the cell and takes no
+         edge, so it reads as what is LEFT of the water rather than as water
+         you could stand on. */
+      var ft2=Math.max(0,Math.min(1,(flatT-.35)/.65));
+      m.position.y-=ft2*(.34+waterDrain*.72);
+      m.scale.y=1-ft2*(.62+waterDrain*.34);
+      m.material.opacity=.78*(1-ft2)+.34*ft2*(1-waterDrain);
+      m.userData.edge.material.opacity=Math.max(0,.95*(1-ft2*1.6));
       m.material.color.copy(colGlass);
     } else if(m.userData.kind===4){
       // fire stays legible when flat - the lethal column is the whole point

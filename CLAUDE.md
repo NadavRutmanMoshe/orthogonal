@@ -704,11 +704,12 @@ a little below the top (`makeLiquidGeo`), where stone is the inset case with
 the lit rim. They are told apart in silhouette before a colour is read, which
 is what retired water's marker.
 
-**The other two markers stay, and the reason is the reason they exist.** An
-anchor and a crate still differ from stone by *colour alone* — amber against
-violet, the exact pair that fails for the roughly one man in twelve with a
-colour vision deficiency. They keep their shapes until they get forms of
-their own.
+**Only the anchor still carries a symbol.** Water became a shape and lost its
+ring; a crate became obsidian and lost its bars. The anchor is the last piece
+that is still ordinary stone in a different colour — amber — so it is the
+last one that needs a mark. **The rule is that a marker is what stands in for
+a form a piece does not yet have**, and it comes off the moment the piece
+gets one; it was never decoration.
 
 **A crate is obsidian**: a near-black glassy body with sharp facets and
 violet fire in the cracks. It is the first piece whose texture also drives
@@ -884,6 +885,24 @@ surface into the sides. On top of that the whole mesh carries a few
 hundredths of a cell of swell, **phased off the block's own x and z** so a
 pool ripples instead of pumping in unison, and suppressed as the world folds
 because a wave in a silhouette is noise.
+
+### Water in the plane — a trace, then a drain
+
+Water casts nothing into the silhouette; that is the rule and it has not
+moved. But a player who folded while standing **on** water was left hanging
+over nothing, which reads as a bug rather than as a mechanic.
+
+So the fold leaves the water behind as a **shallow trace** under their feet —
+sunk low in the cell, no edge on it, dimmer than it was standing up — and
+their **first step in the plane drains it**: it sinks out of the square, the
+spill plays, and it is gone. `drainWater()` is called from `press()` before
+the move resolves, so the splash starts on the frame the player leaves.
+
+That is the honest version of the rule rather than a softening of it: the
+water was there, it is leaving, and once you have moved it is not coming
+back. The trace is deliberately shallow and unlit so it never looks like
+ground you could return to. `doFlatten` resets it, and so does standing back
+up, so a re-fold shows the trace again.
 
 ### Fire in the plane
 

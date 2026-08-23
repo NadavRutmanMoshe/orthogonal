@@ -836,6 +836,7 @@ function doFlatten(){
   pushHistory();moveCount++;
   flatPos={u:pu,y:player.y};
   flat=true;flatTarget=1;SFX.fold();
+  waterDrain=0;waterDrainT=0;waterDrained=false;   // the trace is back
   /* The water spilling out of the plane. Only on a level that has any, so
      it is a fact about this world rather than a flourish on every fold -
      and layered over fold() rather than replacing it, because the fold is
@@ -879,7 +880,11 @@ function press(dir){
             dir==="up"?"bUp":"bDown";
   if(tutBlocks(tutId))return;
   tutPoke(tutId);
-  if(flat){ if(dir==="left")move2(-1); else if(dir==="right")move2(1); return; }
+  /* THE FIRST STEP IN THE PLANE DRAINS THE WATER. Folded, the water is left
+     as a trace under your feet - see waterDrain in 10-render.js - and moving
+     is what takes it away. Set before the move rather than after, so the
+     splash starts on the same frame the player leaves. */
+  if(flat){ drainWater(); if(dir==="left")move2(-1); else if(dir==="right")move2(1); return; }
   var r=AX[view].r,d=AX[view].d;
   if(dir==="left")move3(-r[0],-r[2],dir);
   else if(dir==="right")move3(r[0],r[2],dir);
