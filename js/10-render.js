@@ -59,9 +59,16 @@ function initGL(){
   dir1=new THREE.DirectionalLight(0xfff0e0,.85);dir1.position.set(6,10,8);scene.add(dir1);
   dir2=new THREE.DirectionalLight(0x88aaff,.35);dir2.position.set(-7,4,-6);scene.add(dir2);
 
-  boxGeo=new THREE.BoxGeometry(1,1,1);
-  edgeGeo=new THREE.EdgesGeometry(boxGeo);
+  /* Blocks and crates are the only things that use these two, so the
+     redesign is a swap here rather than a new name threaded through every
+     call site. The edges are cut from the CASE (.9), not from a full cell,
+     or a hairline would float in the seam the inset creates. */
+  boxGeo=makeBlockGeo();
+  edgeGeo=new THREE.EdgesGeometry(new THREE.BoxGeometry(.9,.9,.9));
   spikeGeo=new THREE.ConeGeometry(.13,.36,4);
+  // Taller and thinner than the old spike tip, and five-sided so it reads as
+  // a flame rather than as a pyramid at the sizes this game draws.
+  flameGeo=new THREE.ConeGeometry(.115,.40,5);
   // Every piece also carries a shape on its top face, so the mechanics stay
   // legible without relying on colour. Roughly one man in twelve has some
   // colour vision deficiency, and violet-versus-red is exactly the pair that
@@ -118,13 +125,225 @@ function initGL(){
   onResize();animate();
 }
 
+/* ============================================================
+   THE SKY AND THE AIR - what makes a section feel like somewhere
+   ============================================================
+   Both hang off the CAMERA, not off the scene, which is the trick that
+   makes them cost nothing to think about: the camera turns in 90 degree
+   steps and the player never sees these move with it, so they read as
+   screen-space atmosphere rather than as objects in the world that the
+   fold would have to account for. Neither writes depth, and both sit at
+   the far plane, so nothing in the puzzle is ever occluded by weather.
+
+   The sky is one quad with a two-stop vertical gradient baked into vertex
+   colours - a flat clear colour is what made the world look like it was
+   floating in a swatch. `scene.background` is dropped when it is up,
+   because the quad is now what paints every pixel behind the world. */
+var flameGeo=null;
+var skyQuad=null, airField=null, airPhase=0, flareT=0, flareEvery=0, skyWarm=0;
+var colSkyTop=new THREE.Color(0x141a2e), colSkyBot=new THREE.Color(0x0a0e1a);
+var colAir=new THREE.Color(0x8fa4cc);
+
+function makeSky(){
+  var g=new THREE.PlaneGeometry(1,1);
+  /* PlaneGeometry's four verts run top-left, top-right, bottom-left,
+     bottom-right, so the two stops are written straight into the colour
+     attribute - the material stays white and does no tinting of its own.
+     Both stops are real colours rather than a white-to-black ramp times a
+     material colour, because a single multiply cannot make two hues. */
+  g.setAttribute("color",new THREE.Float32BufferAttribute(new Float32Array(12),3));
+  var m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({
+    vertexColors:true,depthWrite:false,depthTest:false,fog:false}));
+  m.renderOrder=-1000;
+  m.position.z=-250;
+  return m;
+}
+var skyT=new THREE.Color(),skyB=new THREE.Color();
+var colFlare=new THREE.Color(0xff7a3c);
+/* THE SKY FOLDS TO PAPER TOO. It replaced scene.background, and that was
+   being lerped void-to-paper every frame as the world flattens - the plane
+   is a different place, not a different camera, and a gradient that stayed
+   dark behind a white page would be the one thing on screen that had not
+   noticed. Both stops go, and the flare is scaled out with them. */
+function setSkyColors(warm){
+  if(!skyQuad)return;
+  skyT.copy(colSkyTop);skyB.copy(colSkyBot);
+  if(warm>0){skyT.lerp(colFlare,warm*.20);skyB.lerp(colFlare,warm*.09);}
+  skyT.lerp(colPaper,flatT);skyB.lerp(colPaper,flatT);
+  var a=skyQuad.geometry.attributes.color, ar=a.array;
+  ar[0]=skyT.r;ar[1]=skyT.g;ar[2]=skyT.b;
+  ar[3]=skyT.r;ar[4]=skyT.g;ar[5]=skyT.b;
+  ar[6]=skyB.r;ar[7]=skyB.g;ar[8]=skyB.b;
+  ar[9]=skyB.r;ar[10]=skyB.g;ar[11]=skyB.b;
+  a.needsUpdate=true;
+}
+/* One quad per mote, unlit and tiny. They are rebuilt when a section
+   changes rather than pooled at a fixed maximum, because a section changes
+   about once every ten levels and the largest field in the game is 22. */
+function makeAir(spec){
+  var grp=new THREE.Group();
+  for(var i=0;i<spec.n;i++){
+    /* Round, not square: a drifting square reads as debris, and at eight
+       segments a circle costs the same. depthTest stays ON - three.js
+       renders transparent objects after opaque ones whatever their
+       renderOrder, so without it the weather draws over the puzzle. */
+    var q=new THREE.Mesh(new THREE.CircleGeometry(spec.size*.5,8),
+      new THREE.MeshBasicMaterial({color:colAir.clone(),transparent:true,
+        opacity:.0,depthWrite:false,fog:false}));
+    q.renderOrder=-900;
+    q.userData={ x:Math.random(), y:Math.random(),
+                 sp:.5+Math.random()*1.1, ph:Math.random()*Math.PI*2,
+                 a:.10+Math.random()*.28 };
+    grp.add(q);
+  }
+  grp.userData.spec=spec;
+  return grp;
+}
+/* Sized to the frustum every frame, because the frustum follows the arena
+   and the player - a sky sized once is the wrong size on the next level. */
+function layoutAtmosphere(){
+  if(!skyQuad)return;
+  var w=(camera.right-camera.left)/camera.zoom, h=(camera.top-camera.bottom)/camera.zoom;
+  skyQuad.scale.set(w*1.2,h*1.2,1);
+  if(!airField)return;
+  var kids=airField.children, sp=airField.userData.spec;
+  for(var i=0;i<kids.length;i++){
+    var q=kids[i],u=q.userData;
+    u.y+=sp.rise*u.sp*.0016;
+    u.x+=sp.drift*u.sp*.0016;
+    if(u.y>1.1)u.y=-.1; if(u.y<-.1)u.y=1.1;
+    if(u.x>1.1)u.x=-.1; if(u.x<-.1)u.x=1.1;
+    q.position.set((u.x-.5)*w*1.05,(u.y-.5)*h*1.05,-240);
+    /* Faded at both edges of the field. Anything that crosses a boundary is
+       necessarily half-drawn while it crosses, which is the same reason the
+       map's ambient cubes never touch an edge. */
+    var edge=Math.min(1,Math.min(u.y,1-u.y)*6)*Math.min(1,Math.min(u.x,1-u.x)*6);
+    var tw=.72+.28*Math.sin(airPhase*2.4+u.ph);
+    q.material.opacity=u.a*edge*tw*(1-flatT*.75);
+  }
+}
+/* A section's own weather. `flare` warms the whole void for a beat every
+   `flare` milliseconds - the eruption, expressed as the sky doing something
+   rather than as a mountain drawn behind an abstract puzzle. */
+function applyTheme(th){
+  if(!th)th={sky:[0x0f1424,0x080b14],block:0x5a6d94,
+             air:{col:0x8fa4cc,n:12,rise:.06,drift:.04,size:.09}};
+  colSkyTop.setHex(th.sky[0]);colSkyBot.setHex(th.sky[1]);
+  colVoid.setHex(th.sky[1]);            // depth shading fades toward the far sky
+  colBlock.setHex(th.block);
+  colAir.setHex(th.air.col);
+  /* Started a third of the way in rather than at zero: at zero the swell
+     lands about a second after the level opens, which is precisely when the
+     player is reading the board and reads as the game glitching rather than
+     as weather. */
+  flareEvery=th.flare||0;flareT=flareEvery*.34;
+  document.documentElement.style.setProperty("--void",
+    "#"+th.sky[1].toString(16).padStart(6,"0"));
+  if(!scene)return;
+  if(!skyQuad){skyQuad=makeSky();camera.add(skyQuad);scene.add(camera);}
+  /* scene.background is kept even though the quad now paints every pixel
+     behind the world: the animation loop lerps it void-to-paper and hands
+     it to outlineFor() as "what the player is drawn against", which is
+     still exactly what it is. Nulling it was tried and threw once a frame. */
+  if(!scene.background)scene.background=colVoid.clone();
+  if(airField){camera.remove(airField);airField.traverse(function(o){
+    if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});}
+  airField=makeAir(th.air);camera.add(airField);
+  setSkyColors(0);
+}
+/* Which section a level belongs to, asked by index so it works for the
+   editor and the library too - both hand back no section, and no section
+   means the default sky. */
+function themeForLevel(idx){
+  if(typeof SECTIONS==="undefined"||idx==null||idx<0)return null;
+  var found=null;
+  for(var i=0;i<SECTIONS.length;i++)if(SECTIONS[i].at<=idx)found=SECTIONS[i];
+  return found?found.theme:null;
+}
+
+/* ============================================================
+   THE BLOCK, AND WHAT A SECTION DOES TO IT
+   ============================================================
+   A block used to be a bare cube in one flat colour, and the note from
+   playtesting was that it did not feel like a game. It is now a dark case
+   with a lit rim - the "SIGNAL" language, picked from three rendered
+   candidates.
+
+   TWO THINGS MAKE THIS FREE. It is ONE merged geometry shared by every
+   block in the world, so a block is still exactly one mesh and one draw
+   call. And the per-face brightness is baked into a vertex-colour
+   attribute, which three.js multiplies by material.color - and
+   material.color is rewritten every frame by the block loop (depth fade,
+   peril red, the lerp to ink as you fold). So the whole redesign inherits
+   all of that behaviour without the block loop changing by a line.
+
+   The rim is a value, not a colour: it is the same hue as the body pushed
+   past 1, so a section that tints the stone tints the rim with it. That is
+   what lets a section own the look without a second palette to keep in
+   sync. */
+function mergeBoxes(parts){
+  var pos=[],nor=[],uv=[],col=[],idx=[],base=0;
+  for(var i=0;i<parts.length;i++){
+    var p=parts[i];
+    var g=new THREE.BoxGeometry(p.w,p.h,p.d);
+    g.translate(p.x||0,p.y||0,p.z||0);
+    var gp=g.attributes.position.array,gn=g.attributes.normal.array,
+        gu=g.attributes.uv.array,gi=g.index.array,j;
+    for(j=0;j<gp.length;j++){pos.push(gp[j]);nor.push(gn[j]);}
+    for(j=0;j<gu.length;j++)uv.push(gu[j]);
+    /* BoxGeometry lays out six faces of four verts in a fixed order -
+       +X -X +Y -Y +Z -Z - which is what lets a brightness be assigned per
+       face without touching a single position. */
+    var v=[p.xp,p.xn,p.top,p.bot,p.zp,p.zn];
+    for(var f=0;f<6;f++)for(var k=0;k<4;k++)col.push(v[f],v[f],v[f]);
+    for(j=0;j<gi.length;j++)idx.push(gi[j]+base);
+    base+=gp.length/3;
+    g.dispose();
+  }
+  var out=new THREE.BufferGeometry();
+  out.setAttribute("position",new THREE.Float32BufferAttribute(pos,3));
+  out.setAttribute("normal",new THREE.Float32BufferAttribute(nor,3));
+  out.setAttribute("uv",new THREE.Float32BufferAttribute(uv,2));
+  out.setAttribute("color",new THREE.Float32BufferAttribute(col,3));
+  out.setIndex(idx);
+  return out;
+}
+function faceVals(o){
+  /* THE BODY CARRIES THE SECTION'S COLOUR, so it is lit rather than dark.
+     The first cut of this language was deliberately murky - it looked clean
+     in isolation and left a section's palette nowhere to live, which is the
+     whole reason sections have palettes. The rim still separates one block
+     from the next; it does not have to do it by being the only lit thing. */
+  var d={top:1.34,bot:.50,xp:.98,xn:.70,zp:1.04,zn:.66};
+  for(var k in o)d[k]=o[k];
+  return d;
+}
+/* The case is inset so the void shows between blocks as a seam, and four
+   thin bars ride the top edges at well over 1 - they are the lit rim, and
+   being geometry rather than a line they survive the fold and the depth
+   fade like everything else. */
+function makeBlockGeo(){
+  var parts=[faceVals({w:.9,h:.9,d:.9})];
+  var r=.465,t=.075;
+  parts.push(faceVals({w:1,h:t,d:t,y:.462,z:r, top:1.85,bot:1.5,xp:1.8,xn:1.65,zp:1.85,zn:1.6}));
+  parts.push(faceVals({w:1,h:t,d:t,y:.462,z:-r,top:1.85,bot:1.5,xp:1.8,xn:1.65,zp:1.85,zn:1.6}));
+  parts.push(faceVals({w:t,h:t,d:1,y:.462,x:r, top:1.85,bot:1.5,xp:1.8,xn:1.65,zp:1.85,zn:1.6}));
+  parts.push(faceVals({w:t,h:t,d:1,y:.462,x:-r,top:1.85,bot:1.5,xp:1.8,xn:1.65,zp:1.85,zn:1.6}));
+  return mergeBoxes(parts);
+}
+
 function addMesh(x,y,z,kind){
   var k=K(x,y,z);
   if(meshes[k])return;
   var glass=kind===1, anchor=kind===2, spike=kind===4;
   var mat=glass
-    ? new THREE.MeshLambertMaterial({color:colGlass.clone(),transparent:true,opacity:.5})
-    : new THREE.MeshLambertMaterial({
+    /* Water reads through a warm section, which is where it is taught, so it
+       is carried a little more solid than the old glass - at .5 over dark
+       stone it came out muddy teal rather than cyan. It still dissolves
+       completely as the world folds; that is the mechanic, not the look. */
+    ? new THREE.MeshLambertMaterial({color:colGlass.clone(),transparent:true,
+        opacity:.62,vertexColors:true})
+    : new THREE.MeshLambertMaterial({vertexColors:true,
         color:(anchor?colAnchor:spike?colSpike:colBlock).clone()});
   var m=new THREE.Mesh(boxGeo,mat);
   m.position.set(x,y,z);
@@ -156,13 +375,25 @@ function addMesh(x,y,z,kind){
     m.userData.mark=mk;m.add(mk);
   }
   if(spike){
+    /* FIRE, not spikes. Same rule exactly - solid, casts like stone, kills
+       you underfoot - but "you burn if you touch it" is a sentence a player
+       already knows, where "a spike you cannot see until you fold" had to be
+       taught. Nothing in 03-rules.js changed and no level was re-verified,
+       because kind 4 still means kind 4; this is what it wears.
+
+       Five flames of different heights rather than four matched cones: fire
+       is the one piece that should never look machined. Each carries its own
+       phase so the group flickers out of step with itself. */
     var tips=new THREE.Group();
-    [[-.24,-.24],[.24,-.24],[-.24,.24],[.24,.24]].forEach(function(o){
-      var c=new THREE.Mesh(spikeGeo,
-        new THREE.MeshBasicMaterial({color:0xff8a72}));
-      c.position.set(o[0],.62,o[1]);
+    var FL=[[-.26,-.22,1.00],[.24,-.26,.72],[-.20,.26,.86],[.28,.22,.62],[.02,.02,1.22]];
+    for(var fi=0;fi<FL.length;fi++){
+      var c=new THREE.Mesh(flameGeo,new THREE.MeshBasicMaterial({
+        color:fi===4?0xffd48a:0xff7a3c, transparent:true, opacity:.92}));
+      c.position.set(FL[fi][0],.5+FL[fi][2]*.19,FL[fi][1]);
+      c.scale.set(1,FL[fi][2],1);
+      c.userData={h:FL[fi][2],ph:Math.random()*Math.PI*2};
       tips.add(c);
-    });
+    }
     m.userData.tips=tips;
     m.add(tips);
   }
@@ -231,7 +462,7 @@ function buildDynamic(){
   clearDynamic();
   for(var i=0;i<gCrates.length;i++){
     var m=new THREE.Mesh(boxGeo,
-      new THREE.MeshLambertMaterial({color:colCrate.clone()}));
+      new THREE.MeshLambertMaterial({color:colCrate.clone(),vertexColors:true}));
     m.add(new THREE.LineSegments(edgeGeo,
       new THREE.LineBasicMaterial({color:0xe0d4ff,transparent:true,opacity:.8})));
     var cmk=new THREE.Group();
@@ -637,6 +868,31 @@ function applyDepth(mesh,base,pd,dvx,dvz,ft){
       (mesh.userData.glass?.95:.35)*(1-f*1.1));
 }
 
+/* THE FLAMES, AND WHY THEY CLIMB WHEN THE WORLD FOLDS.
+
+   Flattened, every block at every depth lands in one silhouette square, so a
+   fire block behind a stone one is drawn inside it and there is nothing to
+   see - which is exactly the square a player most needs to know is lethal.
+   So in the plane the flames rise clear of the cell and stop testing depth:
+   they are drawn over whatever shares the column, which is the only place
+   they can say what they have to say. In the volume they sit on the block
+   and behave normally, because there depth is information rather than a
+   thing in the way. */
+function fireFlames(tips,ft){
+  tips.visible=true;
+  var over=ft>.5;
+  tips.position.y=over?.34*(ft-.5)*2:0;
+  var kids=tips.children;
+  for(var i=0;i<kids.length;i++){
+    var c=kids[i],u=c.userData;
+    var fl=.80+.20*Math.sin(airPhase*7.5+u.ph)+.06*Math.sin(airPhase*17+u.ph*3);
+    c.scale.set(.92+fl*.12,u.h*fl,.92+fl*.12);
+    c.material.opacity=(.72+fl*.26)*(over?1:.92);
+    c.material.depthTest=!over;
+    c.renderOrder=over?940:0;
+  }
+}
+
 var tmp=new THREE.Vector3();
 var lastFrame=0;
 function animate(now){
@@ -649,6 +905,22 @@ function animate(now){
   flatT+=(flatTarget-flatT)*.14;
   if(Math.abs(flatTarget-flatT)<.002)flatT=flatTarget;
   viewAngle+=(viewAngleTarget-viewAngle)*.16;
+  /* THE WEATHER. Driven off real frame time like the fight clocks, so it
+     runs at the same rate on a 120Hz phone and a loaded one - and folded,
+     the air fades back rather than stopping, because the plane is a place
+     too and a dead sky there would read as the game having switched off. */
+  airPhase+=dtMs*.0009;
+  if(flareEvery){
+    flareT+=dtMs;
+    if(flareT>flareEvery)flareT=0;
+    /* A slow swell and a slower fall - most of the cycle is nothing at all,
+       which is what makes the beat land when it arrives. */
+    var fp=flareT/flareEvery;
+    if(fp<.05)skyWarm=fp/.05; else if(fp<.22)skyWarm=1-(fp-.05)/.17; else skyWarm=0;
+    skyWarm=Math.max(0,skyWarm)*(1-flatT*.8);
+  } else skyWarm=0;
+  setSkyColors(skyWarm);
+  layoutAtmosphere();
   /* playerMesh rather than `player`, because the mesh is where the player is
      actually drawn - already eased, and already in plane coordinates when
      flat - so the camera cannot arrive somewhere the cube has not. */
@@ -724,14 +996,14 @@ function animate(now){
       m.material.opacity=1;
     } else if(m.userData.glass){
       // glass has no place in the plane, so it dissolves as the world folds
-      var o=Math.max(0,.5*(1-flatT*1.9));
+      var o=Math.max(0,.62*(1-flatT*1.9));
       m.material.opacity=o;
       m.userData.edge.material.opacity=Math.max(0,.95*(1-flatT*1.9));
       m.material.color.copy(colGlass);
     } else if(m.userData.kind===4){
-      // spikes stay legible when flat - the lethal column is the whole point
+      // fire stays legible when flat - the lethal column is the whole point
       m.material.color.copy(colSpike).lerp(colInk,flatT*.4);
-      if(m.userData.tips)m.userData.tips.visible=flatT<.6;
+      if(m.userData.tips)fireFlames(m.userData.tips,flatT);
       applyDepth(m,b,pdepth,tdvx,tdvz,flatT);
     } else if(m.userData.anchor){
       // anchors stay legible once flat - they're the reason the fold matters

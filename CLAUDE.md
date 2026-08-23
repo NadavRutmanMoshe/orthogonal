@@ -96,8 +96,17 @@ If you add a top-level `var`, check it is not a Window property name.
 
 ## Levels
 
-Block format is `[x,y,z,k]` where k is 0 stone, 1 glass, 2 anchor, 3 crate,
-4 spike. Levels may carry `keys: [[x,y,z]]`.
+Block format is `[x,y,z,k]` where k is 0 stone, 1 water, 2 anchor, 3 crate,
+4 fire. Levels may carry `keys: [[x,y,z]]`.
+
+**Kinds 1 and 4 were renamed, not changed.** Glass became **water** and a
+spike became **fire**: identical rules, identical solver, not one level
+re-verified. The code still says `glass` and `spike` throughout, the same way
+it still says "fold" for a verb the button calls `GO 2D` — the names are good
+and renaming them would be a large diff that fixes nothing. What changed is
+that each now carries a *reason*: water spills, which is why the plane has no
+record of it; fire burns you, which is a sentence a player already knows where
+"a spike you cannot see until you fold" had to be taught.
 
 - **Glass** is solid but casts nothing: ground in the volume, a hole in the plane.
 - **An anchor** holds whatever arrives on it. It overrides the nearest-camera
@@ -604,6 +613,107 @@ Working notes. They are worth running when the *rules* change; they are not
 worth running to tune a number the owner is about to feel out anyway.
 
 ---
+
+---
+
+## The look — the block, the sky and the air
+
+**The complaint was that it had good mechanics and did not feel like a game**,
+and the first answer — a finer texture on a flat cube — was correctly rejected
+as a finish rather than a redesign. What landed changes the *shape* and the
+*value structure* of a block, and gives every section its own weather.
+
+### The block
+
+A block is a dark case with a **lit rim** — one of three languages rendered
+side by side and picked from the screenshots. Two things make it free:
+
+- **It is one merged geometry shared by every block in the world**
+  (`makeBlockGeo`, built by `mergeBoxes`), so a block is still exactly one
+  mesh and one draw call. The rim is four thin bars riding the top edges,
+  geometry rather than lines, so it survives the fold and the depth fade like
+  everything else.
+- **Per-face brightness is baked into a vertex-colour attribute**, which
+  three.js multiplies by `material.color` — and `material.color` is rewritten
+  every frame by the block loop (depth fade, peril red, the lerp to ink). So
+  the whole redesign inherited that behaviour without the block loop changing
+  by a line. This is the same trick a texture would have used, and it is the
+  reason to reach for `map` or `color` attributes rather than for the one
+  channel the game already owns.
+- **The rim is a value, not a colour** — the body's hue pushed past 1 — so a
+  section that tints the stone tints the rim with it, and there is no second
+  palette to keep in sync.
+- **`boxGeo` and `edgeGeo` were swapped in place** rather than joined by a new
+  name, because blocks and crates are the only things that used them.
+  `edgeGeo` is cut from the **case** (.9), not from a full cell, or a hairline
+  floats in the seam the inset creates.
+
+### The sky and the air
+
+Both hang off the **camera**, not the scene. The camera turns in 90° steps and
+the player never sees these move with it, so they read as screen-space
+atmosphere rather than as objects in the world the fold would have to account
+for.
+
+- **The sky is one quad with two real gradient stops** written into its colour
+  attribute — not a white-to-black ramp times a material colour, because one
+  multiply cannot make two hues.
+- **It folds to paper with everything else.** It replaced `scene.background`,
+  which was being lerped void-to-paper every frame; a gradient that stayed
+  dark behind a white page would be the one thing on screen that had not
+  noticed. `scene.background` is **kept alive anyway** — the loop still hands
+  it to `outlineFor()` as "what the player is drawn against". Nulling it was
+  tried and threw once a frame.
+- **The air is a handful of round motes**, rebuilt per section. Round because a
+  drifting square reads as debris; and **`depthTest` stays on**, because
+  three.js renders transparent objects after opaque ones whatever their
+  `renderOrder`, so without it the weather draws over the puzzle.
+- **A section may `flare`** — the void warms for a beat every `flare` ms. That
+  is the eruption, expressed as the sky doing something rather than as a
+  mountain drawn behind an abstract puzzle. It starts a third of the way into
+  its cycle: from zero it landed about a second after the level opened, while
+  the player was still reading the board, and read as a glitch.
+
+### What a section does — and the one rule that keeps it safe
+
+`SECTIONS[].theme` is a sky gradient, a stone colour and an ambient field.
+`col` beside it is a **UI** colour that has to read as a tab on a dark panel;
+they are deliberately not the same value. `applyTheme()` runs once per level
+from `loadLevel`, not per frame.
+
+**THE STONE IS DESATURATED ON PURPOSE.** The pieces carry fixed identities —
+fire is orange, water is cyan, a crate is violet, an anchor is amber — and
+they are what a puzzle is made of. A saturated world was rendered and it hid
+the piece it was teaching: a red world swallowed a fire block whole, a blue
+one swallowed water. **Muted world, saturated pieces, and both read.** If you
+raise a `block` value, go and look at that section's fire and water before you
+keep it.
+
+**The pairing is permuted, and that is the point.** Each section's own colour
+*is* the colour of the piece it teaches, so theming it in that colour
+camouflages exactly what it exists to show. So the fire section is **frost**
+and the water section is **ember** — each spotlights its own piece. The same
+rule one level up put `I · FUNDAMENTALS` on olive rather than a true green:
+the goal is a saturated teal-green wireframe and it appears in *every*
+section.
+
+### Fire in the plane
+
+**The flames rise clear of the block when the world folds, and stop testing
+depth.** Flattened, every block at every depth lands in one silhouette square,
+so a fire block behind a stone one is drawn inside it and there is nothing to
+see — in the square a player most needs to know is lethal. So in the plane
+they climb and draw over whatever shares the column (`fireFlames`). In the
+volume they sit on the block and behave normally, because there depth is
+information rather than something in the way.
+
+### The spill
+
+`SFX.spill()` is `noiseFall` — the same two parts as `noiseRise` with the
+bandpass ramp inverted. A riser climbs because something is arriving; a spill
+falls because something is leaving. It plays on a fold **only on a level that
+has water**, layered over `fold()` rather than replacing it, because the fold
+is still the move the player made.
 
 ## The map
 
@@ -1713,6 +1823,11 @@ tested and failed, plus where this sits in the PCG literature, are in
    but not crate or key ones, and its 59% hit rate means hand-checking a
    batch.
 3. **A crate trial**, per the limitation above.
+3a. **Move `IV · CRATES` in front of `III · GLASS`** — the owner's call, taken
+   and deferred deliberately because it is not a reorder: crate levels teach
+   against geometry that assumes what came before, several later levels mix
+   the two, and every affected level needs re-verifying and a
+   `LEVEL_RENAMES` entry. Worth doing, worth doing on its own.
 4. **Negative constraint tracking in the composer.** Synthesis is still greedy
    and violations are only caught at verification. Recording "this silhouette
    column must stay empty" as each move demands it would fail fast. The one

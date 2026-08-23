@@ -295,6 +295,30 @@ function toneAt(c,f,at,dur,type,vol,slideTo){
    *approaching* is broadband noise swept through a resonant filter, so the
    top edge of the sound climbs while the body stays wide.  One short buffer
    of white noise, one bandpass with a ramp on it. */
+/* WATER SPILLING - the opposite shape to noiseRise, and built out of the
+   same two parts. A riser climbs a bandpass because something is arriving;
+   a spill FALLS, wide at the top and closing to a gurgle, because something
+   is leaving. It plays when the world folds on a level that has water in
+   it, which is the moment the plane loses it - the mechanic already said
+   water casts nothing, and this is the game finally saying why.
+
+   Deliberately quiet (.03 against the riser's .042): it is a texture under
+   the fold, not an event competing with it. */
+function noiseFall(c,at,dur,vol){
+  var len=Math.floor(c.sampleRate*(dur+.2));
+  var buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);
+  for(var i=0;i<len;i++)d[i]=Math.random()*2-1;
+  var src=c.createBufferSource();src.buffer=buf;
+  var bp=c.createBiquadFilter();bp.type="bandpass";bp.Q.value=1.1;
+  bp.frequency.setValueAtTime(3800,at);
+  bp.frequency.exponentialRampToValueAtTime(320,at+dur);
+  var g=c.createGain();
+  g.gain.setValueAtTime(.0001,at);
+  g.gain.exponentialRampToValueAtTime(vol,at+dur*.18);
+  g.gain.exponentialRampToValueAtTime(.0001,at+dur+.12);
+  src.connect(bp);bp.connect(g);g.connect(out(c));
+  src.start(at);src.stop(at+dur+.14);
+}
 function noiseRise(c,at,dur,vol){
   var len=Math.floor(c.sampleRate*(dur+.2));
   var buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);
@@ -329,6 +353,15 @@ var SFX={
     blip(196,.5,"sine",.05,392);
     setTimeout(function(){blip(392,.34,"sine",.04,588);},70);
     setTimeout(function(){blip(588,.3,"triangle",.028);},150);
+  },
+  /* The spill. Two droplets over the falling noise, pitched down rather
+     than up, so it reads as draining away. Rides on top of fold() rather
+     than replacing it - the fold is still the move being made. */
+  spill:function(){
+    var c=audio();if(!c)return;      // same accessor blip() uses
+    noiseFall(c,c.currentTime,.34,.030);
+    blip(880,.10,"sine",.016,392);
+    setTimeout(function(){blip(660,.12,"sine",.013,247);},90);
   },
   turn:function(){blip(420,.07,"triangle",.03);},
   die:function(){blip(220,.5,"sawtooth",.05,55);},

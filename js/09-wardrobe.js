@@ -347,11 +347,18 @@ function outlineFor(obj,bg){
   obj.userData.outlines.forEach(function(e){e.material.color.copy(outlineCol);});
 }
 
-var colGlass=new THREE.Color(0x7fc4d8);
+/* WATER, not glass. The rule is untouched - solid in the volume, casting
+   nothing into the plane - but "water" is a reason where "glass" was only
+   a fact: it holds you up, and when the world folds it spills, which is why
+   there is nothing of it left in the silhouette. Pushed toward a real cyan
+   from the old pale grey-blue so it stays the loudest thing in a warm
+   section, which is the section that teaches it. */
+var colGlass=new THREE.Color(0x4fd2f2);
 var colAnchor=new THREE.Color(0xd9a441);
 var colCrate=new THREE.Color(0x9b7fd4);
 var colCrateHeld=new THREE.Color(0xb08a5c);
 var colKey=new THREE.Color(0xf2d16b);
-var colSpike=new THREE.Color(0x8a3040);
+// Fire. Charred body under hot flames - see the fire block in 10-render.js.
+var colSpike=new THREE.Color(0x9c3a2c);
 var spikeGeo=null;
 var boxGeo,edgeGeo;

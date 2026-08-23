@@ -622,15 +622,55 @@ var LEVELS=[
    is the thing a player needs, the story is the thing a player enjoys, and
    keeping them apart means the map can drop the fiction without losing the
    description. Never longer than one line at panel width. */
+/* THEME - what a section does to the world.
+
+   `col` above is a UI colour: it has to read as a tab and a trail on a dark
+   panel. `theme` is a *place*, and the two are deliberately not the same
+   value. A theme is three things: a two-stop gradient for the void, the
+   stone colour, and an ambient field drifting behind the world.
+
+   THE STONE IS DESATURATED ON PURPOSE, and that is the whole rule that
+   makes this safe. The pieces carry fixed identities now - fire is orange,
+   water is cyan, a crate is violet, an anchor is amber - and they are the
+   things a puzzle is made of. Rendering a section in a saturated hue was
+   tried and hid the piece it was teaching: a red world swallowed a fire
+   block whole, a blue one swallowed water. Muted world, saturated pieces,
+   and both read. If you raise the saturation of a `block` here, go and look
+   at that section's fire and water blocks before you keep it.
+
+   `air` is the ambient field - the drifting motes behind everything. `n` is
+   how many, and it is small on purpose: this runs behind a puzzle, not
+   instead of one. */
 var SECTIONS=[
   {at:0, name:"PROLOGUE", sub:"walking, folding, turning — one verb each", col:"#7183a6",
-   story:"Nothing has noticed you yet."},
+   story:"Nothing has noticed you yet.",
+   theme:{sky:[0x141a2e,0x0a0e1a], block:0x5a6d94,
+          air:{col:0x8fa4cc, n:14, rise:.06, drift:.05, size:.10}}},
   {at:3, name:"I · FUNDAMENTALS", sub:"one verb: collapse the world and cross the gap", col:"#35c2a5",
-   story:"Every fold is a visit. The plane keeps count."},
+   story:"Every fold is a visit. The plane keeps count.",
+   /* MOSS. Spores drifting upward - the gentlest field in the game, for the
+      section a new player is deciding in. */
+   /* Olive rather than a true green, and that is the same don't-camouflage
+      rule one level up: the goal is a saturated teal-green wireframe and it
+      appears in EVERY section, so no section may sit on its hue. */
+   theme:{sky:[0x1b2416,0x0c110a], block:0x6f8259,
+          air:{col:0xc2d69a, n:16, rise:.10, drift:.06, size:.09}}},
   {at:17, name:"II · SPIKES", sub:"a hazard you cannot see until you fold", col:"#e0455f",
-   story:"Some of what is down there did not survive being flattened."},
+   story:"Some of what is down there did not survive being flattened.",
+   /* FROST, and it is the opposite of the obvious choice. This section
+      teaches fire, so it is the one section that must not be warm: cold
+      stone is what makes a fire block the loudest thing on the screen.
+      Falling motes, so the field reads as the reverse of the ember one. */
+   theme:{sky:[0x0e2233,0x061019], block:0x54748c,
+          air:{col:0xbfe2f5, n:20, rise:-.12, drift:.05, size:.08}}},
   {at:26, name:"III · GLASS", sub:"solid in the volume, absent from the plane", col:"#7fb2ff",
-   story:"Glass casts nothing, so the plane holds no record of it."},
+   story:"Water casts nothing, so the plane holds no record of it.",
+   /* EMBER, for the same inverted reason: this section teaches water, so a
+      warm world is what makes cyan sing. Embers rise, and the void warms
+      every twenty seconds or so - the eruption, without drawing a
+      volcano at it. */
+   theme:{sky:[0x1d0f0b,0x0a0504], block:0x7a5548, flare:22000,
+          air:{col:0xffa45c, n:22, rise:.22, drift:.10, size:.075}}},
   /* Purple, because a crate is drawn pale violet in the world - the section
      wears the colour of the piece it teaches. It is deliberately pinker and
      lighter than the boss's #a274ff so the two are not the same purple; the
@@ -638,9 +678,17 @@ var SECTIONS=[
      apart. This is the closest any section gets to a reserved colour, and
      the pair should be pulled further apart when the boss is revisited. */
   {at:36, name:"IV · CRATES", sub:"change the plane by moving the volume", col:"#c07ae0",
-   story:"You can edit what they see. That is the one thing they cannot do."},
+   story:"You can edit what they see. That is the one thing they cannot do.",
+   /* DUST. Drifting sideways rather than rising or falling, because this is
+      the section about pushing things along a row. */
+   theme:{sky:[0x241d10,0x100c06], block:0x7d6f52,
+          air:{col:0xe0cd9a, n:18, rise:.02, drift:.20, size:.085}}},
   {at:48, name:"V · EXTRA", sub:"unlocked by the Census — the long ones", col:"#3fc4d4", locked:true,
-   story:"The parts of the world that were never counted."}
+   story:"The parts of the world that were never counted.",
+   /* NOCTURNE. Almost nothing moves out here, which is the point - it is
+      the shelf past the last warden, where the counting stopped. */
+   theme:{sky:[0x0b0c16,0x05050b], block:0x4c4a66,
+          air:{col:0x8a86b8, n:10, rise:.03, drift:.02, size:.07}}}
 ];
 
 /* Levels have been renumbered more than once. Progress is keyed by name,

@@ -800,6 +800,18 @@ function levelOver(){
   if(!panelOpen()&&!$("won").classList.contains("on"))$("won").classList.add("on");
   return true;
 }
+/* Kind 1 is water now, and it is the only kind whose absence from the plane
+   is a *thing that happens* rather than a static fact - so the sound needs
+   to know whether this level has any. Cheap and re-asked per fold rather
+   than cached: a level's blocks never change, but the editor and the
+   composer both hand loadLevel a fresh object, and a cache keyed on nothing
+   would answer for the previous one. */
+function levelHasWater(){
+  var b=L&&L.blocks;
+  if(!b)return false;
+  for(var i=0;i<b.length;i++)if(b[i][3]===1)return true;
+  return false;
+}
 function doFlatten(){
   if(bossHolding())return;
   if(tutBlocks("bFlat"))return;
@@ -823,7 +835,13 @@ function doFlatten(){
   lastSolidDepth=R.dOf(view,player.x,player.z);
   pushHistory();moveCount++;
   flatPos={u:pu,y:player.y};
-  flat=true;flatTarget=1;SFX.fold();collectHere();
+  flat=true;flatTarget=1;SFX.fold();
+  /* The water spilling out of the plane. Only on a level that has any, so
+     it is a fact about this world rather than a flourish on every fold -
+     and layered over fold() rather than replacing it, because the fold is
+     still the move the player made. */
+  if(SFX.spill&&levelHasWater())SFX.spill();
+  collectHere();
   if(tutC)tutC.flat++;
   bossFoldCrush();
   syncHud();saveSession();
@@ -1069,6 +1087,13 @@ function loadLevel(level,idx){
   clearCue();
   L=level;R=makeRules(L);
   if(idx!==undefined)lvIndex=idx;
+  /* THE SECTION OWNS THE WORLD. Asked here, once per level, rather than per
+     frame: a section is a property of where you are in the campaign, and
+     changing sky and weather every frame would be paying for a lookup that
+     changes about once every ten levels. A level with no section - the
+     editor, the library, a composed level - gets the default sky. */
+  if(typeof applyTheme==="function")
+    applyTheme(playSource==="builtin"?themeForLevel(lvIndex):null);
   $("lvName").textContent=L.name;
   $("lvHint").textContent=L.hint;
   $("won").classList.remove("on");
