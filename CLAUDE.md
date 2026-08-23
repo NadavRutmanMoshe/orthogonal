@@ -904,6 +904,15 @@ back. The trace is deliberately shallow and unlit so it never looks like
 ground you could return to. `doFlatten` resets it, and so does standing back
 up, so a re-fold shows the trace again.
 
+- **The trace hangs from the TOP of the cell, not the bottom.** Scaling a
+  mesh shrinks it about its own centre, so thinning it left the water on the
+  floor of the square while the player stood on the square's ceiling — which
+  reads as standing on air above a puddle. Raising by half the height lost
+  keeps the *surface* where it was.
+- **Only a move that exists drains it.** The plane has no up or down, so
+  draining on any press let a stray swipe empty the water without the player
+  having gone anywhere.
+
 ### Fire in the plane
 
 **A flame is a lick, not a cone.** Four cones on a block was reported as
@@ -1060,6 +1069,15 @@ level data changed to make it.
 - **`mapReach()` counts solved levels only, never skips.** Counting a skip
   would drag the rolling window forward with it and quietly hand over
   everything in between — the exact levels the skip exists to leave for later.
+- **THE GAME OFFERS THE SKIP AFTER THREE REAL LOSSES**, rather than waiting
+  to be asked. `fails` counts full losses per level — lives run out, not a
+  life spent — persisted beside `skips`, moved by `LEVEL_RENAMES` like
+  everything else, and cleared the moment the level is beaten, so it tracks
+  the *current* run of failures rather than a lifetime total. At
+  `STRUGGLE_OFFER` (3) `struggleOffer()` puts the map's own offer up after
+  the reset, not instead of it: the board is back and KEEP TRYING is right
+  there, so it is a door rather than a wall. It reaches `grantSkip()` and
+  nothing else, so it inherits the rule — ads buy progress, never score.
 - **`grantSkip(name)` is the single call site a rewarded video needs.** It is
   not gated on an ad here, because there is no provider yet and a button that
   silently did nothing would be worse than one that plainly works. Wiring the
@@ -2062,7 +2080,16 @@ tested and failed, plus where this sits in the PCG literature, are in
    mid-level.
 7. **Keys.** Currently cut. Collecting them in the plane tied them to the fold,
    but they still read as an errand rather than a puzzle.
-8. **Ad integration.** Nothing is wired. When wrapped with Capacitor the
+8. **Explain the four things that beat the first real playtester** — the
+   owner's mother, who died repeatedly on trials and bosses. In order of how
+   much they cost her: **which block you land on** coming out of a fold (the
+   one nearest the camera, unless an anchor overrides it — rule 5, stated in
+   the tutorial and never shown again), **how a trial works** (three cores,
+   a sweeping plane, three lives), **how a boss works** (the line is both its
+   attack and yours), and **why a block turns red** (`foldPeril` — it is
+   about to crush you). None of these has a teaching moment after the
+   tutorial. Agreed as its own job, deliberately not bundled with the art.
+9. **Ad integration.** Nothing is wired. When wrapped with Capacitor the
    rewarded-video callback should call `grantShards(n)`, `grantAdView(id)` or
    `grantSkip(name)` — three hooks, one per thing an ad can buy. Rewarded-only
    by design: skip a level, or buy shards. No interstitials — they pay poorly

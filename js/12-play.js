@@ -35,6 +35,13 @@ function die(kind){
     playerMesh.scale.set(1,1,1);
     if(spend){spendLife();return;}
     resetLevel();
+    /* A REAL LOSS on a clock, counted. Offered after the reset rather than
+       instead of it, so the board is back and the player can simply carry on
+       if they would rather - the offer is a door, not a wall. */
+    if(kind==="boss"||kind==="trial"){
+      var n=noteFail(levelKey);
+      if(n>=STRUGGLE_OFFER)setTimeout(struggleOffer,520);
+    }
   },kind==="crush"?1050:820);
 }
 /* One life, and back to the start with everything else intact: the cores you
@@ -884,7 +891,14 @@ function press(dir){
      as a trace under your feet - see waterDrain in 10-render.js - and moving
      is what takes it away. Set before the move rather than after, so the
      splash starts on the same frame the player leaves. */
-  if(flat){ drainWater(); if(dir==="left")move2(-1); else if(dir==="right")move2(1); return; }
+  /* Only a move that exists drains it. The plane has no up or down - those
+     two do nothing here - so draining on any press meant a stray swipe
+     emptied the water without the player having gone anywhere. */
+  if(flat){
+    if(dir==="left"){drainWater();move2(-1);}
+    else if(dir==="right"){drainWater();move2(1);}
+    return;
+  }
   var r=AX[view].r,d=AX[view].d;
   if(dir==="left")move3(-r[0],-r[2],dir);
   else if(dir==="right")move3(r[0],r[2],dir);
@@ -946,6 +960,7 @@ function win(){
     // star. starsEarned() already sums best-per-level, so this keeps the
     // flight and the total telling the same story.
     // A level with a clock is scored on lives, not moves - see betterRecord().
+    if(typeof clearFails==="function")clearFails(levelKey);
     var rec=(B||TR)?lives:effective;
     var prev=progress[levelKey];
     starsBefore=starsForRecord(L,prev);
@@ -1086,6 +1101,45 @@ function resetLevel(){
   buildGrid();syncHud();
   playerMesh.position.set(player.x,player.y,player.z);
 }
+/* THE OFFER. Everything it needs already exists - grantSkip() is the one
+   call a rewarded video has to reach, and adsFor() prices it - so this is a
+   second door onto the same room, opened at the moment the player is
+   actually stuck rather than only from the map.
+
+   The rule it keeps is the rule the map keeps: ADS BUY PROGRESS, NEVER
+   SCORE. A skip is not in `progress`, so it awards no stars by construction,
+   and the level stays on the map to be played whenever they want it. */
+function struggleOffer(){
+  if(!L||levelOver()||panelOpen()||screenUp())return;
+  /* Only a clock level can reach this, and asserting it here rather than
+     trusting the call site is what stops the header confidently calling an
+     ordinary level a TRIAL if this is ever called from somewhere new. */
+  if(!B&&!TR)return;
+  if(typeof skips!=="undefined"&&skips[levelKey])return;
+  var kind=B?"BOSS":"TRIAL", ads=3;
+  showPanel(
+    "<h3>"+kind+" · "+esc(L.name)+"</h3>"+
+    "<div class='mn'>This one has beaten you "+(fails[levelKey]||STRUGGLE_OFFER)+
+      " times. You can go past it and come back whenever you like.</div>"+
+    "<div class='ma'><button class='ad' id='sgAd'>SKIP THIS "+kind+
+      " · WATCH "+ads+" ADS</button>"+
+    "<button class='qt' id='sgNo'>KEEP TRYING</button></div>"+
+    "<div class='mn'>A skip awards <b>no stars</b> and leaves the level "+
+    "on the map, still playable. Ads buy progress, never score.</div>");
+  bind("sgNo",function(){hidePanel();});
+  /* Not gated on an ad here, for the same reason grantSkip() is not: there
+     is no provider yet, and a button that silently did nothing would be
+     worse than one that plainly works. When the SDK is wired, its completion
+     callback calls grantSkip() and nothing else on this path changes. */
+  bind("sgAd",function(){
+    grantSkip(levelKey);
+    clearFails(levelKey);
+    hidePanel();
+    flash("skipped · no stars for a skip");
+    levelPicker();
+  });
+}
+
 function loadLevel(level,idx){
   // A cue is a 3.2s pulse, so without this one outlives the level it was
   // about and greets you on the next one.

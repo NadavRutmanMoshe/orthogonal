@@ -882,13 +882,15 @@ L96 14 L0 14 Z' fill='%23fff'/></svg>");
     font-weight:700;letter-spacing:-.015em;margin:4px 0 0;color:var(--fg)}
   .msheet .mm{font-size:10.5px;color:var(--fg-dim);margin-top:5px}
   .msheet .mm .g{color:var(--goal)} .msheet .mm .a{color:#6fa8ff}
-  .msheet .ma{display:flex;flex-direction:column;gap:6px;margin-top:12px}
-  .msheet .ma button{height:42px;font-size:10.5px;letter-spacing:.13em}
+  /* Shared with the panel, because the struggle offer is the same offer the
+     map makes and should not be a second visual language for it. */
+  .msheet .ma,.panel .ma{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+  .msheet .ma button,.panel .ma button{height:42px;font-size:10.5px;letter-spacing:.13em}
   .msheet .ma .go{border-color:var(--goal);color:var(--goal);font-weight:600;
     background:rgba(53,194,165,.09)}
-  .msheet .ma .ad{border-color:#6fa8ff;color:#6fa8ff;background:rgba(111,168,255,.08)}
-  .msheet .ma .qt{height:32px;font-size:9.5px;color:var(--fg-dim);border-color:var(--rule)}
-  .msheet .mn{font-size:9.5px;color:var(--fg-dim);line-height:1.65;margin-top:9px}
+  .msheet .ma .ad,.panel .ma .ad{border-color:#6fa8ff;color:#6fa8ff;background:rgba(111,168,255,.08)}
+  .msheet .ma .qt,.panel .ma .qt{height:32px;font-size:9.5px;color:var(--fg-dim);border-color:var(--rule)}
+  .msheet .mn,.panel .mn{font-size:9.5px;color:var(--fg-dim);line-height:1.65;margin-top:9px}
   .msheet .mn b{color:var(--fg);font-weight:500}
 
   .mlegend{display:grid;grid-template-columns:auto 1fr;gap:9px 11px;align-items:center;

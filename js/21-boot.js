@@ -34,7 +34,7 @@ enterPlay(LEVELS[0],0,false);
    them. `Promise.all` never rejects here - every one of these catches its own
    failure and resolves - so a denied storage lands on the first-run path,
    which is the correct reading of "there is nothing saved". */
-Promise.all([progLoad(),skipLoad(),loadSettings(),loadWardrobe(),loadSession()])
+Promise.all([progLoad(),skipLoad(),failLoad(),loadSettings(),loadWardrobe(),loadSession()])
   .then(function(){
     // nothingBehind() is in 16-panels.js, beside the other progress helpers,
     // because the home screen asks it too - to choose between START and

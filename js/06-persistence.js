@@ -177,6 +177,46 @@ function progSave(){
    a skipped level is worth exactly zero stars by construction rather than by
    remembering to subtract it. Migrated by name for the same reason progress
    is: a rename must not silently re-lock what somebody has already opened. */
+/* HOW MANY TIMES A CLOCK LEVEL HAS BEATEN YOU, kept per level and persisted.
+
+   A boss or a trial is the only place in the game where losing costs the
+   whole attempt, and it is where the first real playtester got stuck. After
+   STRUGGLE_OFFER full losses the game offers a way past rather than waiting
+   to be asked - the map already allows a skip on a landmark, and this is the
+   same door opened at the moment it is actually wanted.
+
+   Counted only on a REAL loss - lives run out - not on a life spent, and
+   cleared when the level is finally beaten, so the offer follows the current
+   run of failures rather than a lifetime total. */
+var FAIL_KEY="orthogonal:fails", fails={}, STRUGGLE_OFFER=3;
+function failLoad(){
+  if(!window.storage)return Promise.resolve();
+  return window.storage.get(FAIL_KEY).then(function(r){
+    if(r&&r.value){try{fails=JSON.parse(r.value)||{};}catch(e){fails={};}}
+    /* Renames move the count with the level, exactly as they move progress
+       and skips - a landmark that beat you three times under its old name
+       has still beaten you three times. */
+    if(typeof LEVEL_RENAMES!=="undefined")for(var old in LEVEL_RENAMES){
+      var now=LEVEL_RENAMES[old];
+      if(fails[old]===undefined||old===now)continue;
+      if(fails[now]===undefined)fails[now]=fails[old];
+      delete fails[old];
+    }
+  }).catch(function(){fails={};});
+}
+function failSave(){
+  if(!window.storage)return Promise.resolve();
+  return window.storage.set(FAIL_KEY,JSON.stringify(fails)).catch(function(){});
+}
+function noteFail(name){
+  if(!name)return 0;
+  fails[name]=(fails[name]||0)+1;failSave();
+  return fails[name];
+}
+function clearFails(name){
+  if(!name||fails[name]===undefined)return;
+  delete fails[name];failSave();
+}
 function skipLoad(){
   if(!window.storage)return Promise.resolve();
   return window.storage.get(SKIP_KEY).then(function(r){

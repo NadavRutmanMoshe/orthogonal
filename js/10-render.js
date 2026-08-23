@@ -1878,10 +1878,18 @@ function animate(now){
          the player's first step. The trace sits low in the cell and takes no
          edge, so it reads as what is LEFT of the water rather than as water
          you could stand on. */
+      /* THE TRACE HANGS FROM THE TOP OF THE CELL, not the bottom. Scaling a
+         mesh shrinks it about its own centre, so simply thinning it left the
+         water lying on the floor of the square while the player stood on the
+         square's ceiling - which looked like standing on air above a puddle.
+         Raising by half the height lost keeps the SURFACE where it was, so
+         the trace is what is left directly under their feet. Draining then
+         sinks it out of the square from there. */
       var ft2=Math.max(0,Math.min(1,(flatT-.35)/.65));
-      m.position.y-=ft2*(.34+waterDrain*.72);
-      m.scale.y=1-ft2*(.62+waterDrain*.34);
-      m.material.opacity=.78*(1-ft2)+.34*ft2*(1-waterDrain);
+      var ky=1-ft2*.74;
+      m.scale.y=ky;
+      m.position.y+=.5*(1-ky)-ft2*waterDrain*1.15;
+      m.material.opacity=.78*(1-ft2)+.40*ft2*(1-waterDrain);
       m.userData.edge.material.opacity=Math.max(0,.95*(1-ft2*1.6));
       m.material.color.copy(colGlass);
     } else if(m.userData.kind===4){
