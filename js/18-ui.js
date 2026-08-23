@@ -126,8 +126,23 @@ function toggleWardrobe(){
   wardrobePanel("shape");
 }
 
+/* Rec. 709 luma, the same weighting everything else uses to decide whether
+   a background is light. .55 rather than .5 so a mid-tone is treated as dark:
+   getting this wrong costs legibility in one direction and nothing in the
+   other. */
+function paperIsLight(){
+  if(typeof colPaper==="undefined"||!colPaper)return true;
+  return (colPaper.r*.2126+colPaper.g*.7152+colPaper.b*.0722)>.55;
+}
 function syncHud(){
-  document.body.classList.toggle("flat",flat);
+  /* THE CHROME FOLLOWS THE GROUND, NOT THE STATE. body.flat swaps the HUD to
+     dark-on-light, which was right when the plane was a sheet of paper and
+     is wrong now that it is the section's own ground lifted a little - dark
+     text on a night meadow is unreadable. So it is asked of the colour
+     rather than of the verb: light paper gets the light theme, and a dark
+     one keeps the chrome it already had. A wardrobe world with a pale paper
+     still behaves exactly as it always did. */
+  document.body.classList.toggle("flat",flat&&paperIsLight());
   document.body.classList.toggle("tut",!!(app==="play"&&L&&L.tut));
   /* A gesture tutorial takes the bar off, which is the exact opposite of what
      `tut` does - `tut` forces it back on over the layout preference, because

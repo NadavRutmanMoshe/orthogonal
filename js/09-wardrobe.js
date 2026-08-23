@@ -183,6 +183,13 @@ function applyPalette(){
   css.setProperty("--void","#"+v.void.toString(16).padStart(6,"0"));
   css.setProperty("--paper","#"+p.paper.toString(16).padStart(6,"0"));
   css.setProperty("--ink","#"+p.ink.toString(16).padStart(6,"0"));
+  /* THE SECTION HAS THE LAST WORD. Sections own the world now, and this runs
+     on every skin change - which is after loadLevel has set the section's
+     theme - so without putting it back a trip to the wardrobe left the level
+     wearing the default palette until it was next loaded. applyTheme() only
+     re-applies colours when the theme has not changed, so this is cheap. */
+  if(typeof applyTheme==="function"&&typeof curTheme!=="undefined"&&curTheme)
+    applyTheme(curTheme);
 }
 function applySkin(){
   if(!playerMesh)return;

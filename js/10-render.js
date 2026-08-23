@@ -455,9 +455,20 @@ function layoutAtmosphere(){
 /* A section's own weather. `flare` warms the whole void for a beat every
    `flare` milliseconds - the eruption, expressed as the sky doing something
    rather than as a mountain drawn behind an abstract puzzle. */
+/* Kept so the wardrobe can put it back. applyPalette() writes colVoid,
+   colBlock, colPaper and colInk from the equipped world, and it runs on
+   every skin change - which is *after* loadLevel has set the section's, so
+   without this a trip to the wardrobe left the level wearing the default
+   world until the next load. */
+var curTheme=null;
 function applyTheme(th){
   if(!th)th={sky:[0x0f1424,0x080b14],block:0x5a6d94,
              air:{col:0x8fa4cc,n:12,rise:.06,drift:.04,size:.09}};
+  /* The fields are only rebuilt when the section actually changes. Colours
+     are cheap and always re-applied; motes, stars and scenery are meshes,
+     and rebuilding them because somebody equipped a hat would be silly. */
+  var same=(th===curTheme);
+  curTheme=th;
   colSkyTop.setHex(th.sky[0]);colSkyBot.setHex(th.sky[1]);
   colVoid.setHex(th.sky[1]);            // depth shading fades toward the far sky
   colBlock.setHex(th.block);
@@ -468,7 +479,12 @@ function applyTheme(th){
      as two games. A section now owns both pictures: `paper` is what the
      plane is printed on and `ink` is what its silhouettes are printed in,
      and both default to the old pair when a section does not say. */
-  colPaper.setHex(th.paper||0xe6e1d3);
+  /* THE PLANE'S GROUND IS THIS SECTION'S GROUND, LIFTED. It used to be near
+     white, and folding a night meadow landed you on a sheet of paper - the
+     two halves were reported, twice, as not feeling like one world. `paper`
+     is now a lighter relative of the section's own sky, so the fold changes
+     the LIGHT rather than the place. */
+  colPaper.setHex(th.paper||0x2a3350);
   colInk.setHex(th.ink||0x1a1c2b);
   document.documentElement.style.setProperty("--paper",
     "#"+(th.paper||0xe6e1d3).toString(16).padStart(6,"0"));
@@ -504,6 +520,7 @@ function applyTheme(th){
      it to outlineFor() as "what the player is drawn against", which is
      still exactly what it is. Nulling it was tried and threw once a frame. */
   if(!scene.background)scene.background=colVoid.clone();
+  if(same&&airField){setSkyColors(skyWarm);return;}
   if(airField){camera.remove(airField);airField.traverse(function(o){
     if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});}
   airField=makeAir(th.air);camera.add(airField);

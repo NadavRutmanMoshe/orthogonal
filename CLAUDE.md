@@ -798,9 +798,23 @@ something untrue instead.
 
 Consequences worth knowing:
 
-- **`theme.paper` still exists and is now a light tint of the section's own
-  sky**, not neutral stationery — the ground under a flattened meadow is a
-  pale sky blue, under hell a warm ash.
+- **`theme.paper` is a LIFTED version of the section's own sky, not paper.**
+  The first attempt made it a pale tint and the plane still read as a sheet
+  of stationery — folding a night meadow landed you on white. It is now a
+  lighter relative of the same hue, so **the fold changes the light rather
+  than the place**: the meadow goes to daylight blue, hell goes to a hot
+  red. There is no neutral paper left in the game.
+- **The chrome follows the ground, not the verb.** `body.flat` swaps the HUD
+  to dark-on-light, which was right when the plane was paper and is wrong on
+  a night meadow. `syncHud` now asks `paperIsLight()` — Rec. 709 luma over
+  `colPaper`, thresholded at .55 so a mid-tone counts as dark — so a dark
+  section keeps the chrome it already had, and a wardrobe world with a pale
+  paper still behaves exactly as it always did.
+- **`applyPalette()` puts the section back.** Sections own the world now, and
+  the wardrobe writes `colVoid`/`colBlock`/`colPaper`/`colInk` on every skin
+  change — which happens *after* `loadLevel` set the theme — so it ends by
+  re-applying `curTheme`. `applyTheme` only rebuilds the motes, stars and
+  scenery when the theme actually changed, so that call is cheap.
 - **The horizon stays, receded** (`1-flatT*.62`) rather than fading out. Now
   that a folded block keeps its colour, a horizon that vanished was the last
   thing still insisting the plane is somewhere else.
