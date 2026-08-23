@@ -57,7 +57,7 @@ var LEVELS=[
       cue:"bFlat",done:function(c){return c.flat>=1;}},
      {say:"Depth is gone, so the block that was floating out in front is simply next to you. Walk across.",
       cue:"bRight",done:function(c){return c.m2>=3;}},
-     {say:"{do:3d} to stand up.<br>Two blocks share this column, and you always come back on the one <b>nearest the camera</b> — the green one.",
+     {say:"{do:3d} to stand up.<br>Two blocks share this column, and you always come back on the one at <b>the front</b> — nearest you, the green one.",
       cue:"bFlat",done:function(c){return c.unflat>=1;}}
    ]},
 {name:"00 — First Turn",
@@ -128,7 +128,7 @@ var LEVELS=[
       rather than the other way round. A landing that is *wrong* while
       looking right is the first time the game asks the player to doubt what
       they can see, and there is no column in statsFor() for that. */
-   hint:"Two blocks share that column. You return on the one nearest the camera.",
+   hint:"Two blocks share that column. You come back on the one at the front.",
    blocks:[[0,0,0],[1,0,-3],[2,0,-12],[3,0,-3],[4,0,-12],[5,0,-8],[6,0,-8],[6,0,-2]],
    start:[0,1,0],goal:[6,1,-8],rotate:true},
 {name:"04 — Halfway Across",

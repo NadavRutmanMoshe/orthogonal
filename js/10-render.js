@@ -1869,6 +1869,16 @@ function drainWater(){
    nothing to teach there. That is also why it stays quiet on most levels and
    turns up exactly on the ones that turn on it. */
 var LAND_MS=1600, landGeo=null, landRings=[], landHint=null;
+var planePeek=0, PEEK_RISE=.82;
+/* Where standing up would put you, asked while flat. The same two calls
+   doUnflatten makes, so the preview and the move cannot disagree. */
+function peekLanding(){
+  if(!flat||!R||!flatPos)return null;
+  var land=R.landings(view,flatPos.u,flatPos.y,liveCrates());
+  if(!land.length)return null;
+  var win=R.pick(land);
+  return {land:land,win:win};
+}
 function landRing(i){
   if(!landGeo)landGeo=new THREE.EdgesGeometry(new THREE.BoxGeometry(1.06,1.06,1.06));
   while(landRings.length<=i){
@@ -1887,9 +1897,28 @@ function showLanding(land,win,isAnchor){
     return {x:c.x,y:win.yStand-1,z:c.z,win:(c.x===win.x&&c.z===win.z)};
   })};
 }
+/* The rings the preview draws. Live rather than timed: they belong to the
+   peek and go with it, where the ones after a real landing fade on a clock. */
+function landLive(){
+  if(!flat||planePeek<.05)return false;
+  var lp=peekLanding();
+  if(!lp||lp.land.length<1)return false;
+  landHint={t:0,live:true,anchor:!!lp.win.anchor,
+    cells:lp.land.map(function(c){
+      return {x:c.x,y:flatPos.y-1,z:c.z,win:(c.x===lp.win.x&&c.z===lp.win.z)};
+    })};
+  return true;
+}
 function landFrame(dtMs){
   var i;
-  if(!landHint){for(i=0;i<landRings.length;i++)landRings[i].visible=false;return;}
+  if(landHint&&landHint.live)landHint=null;   // rebuilt below while peeking
+  if(!landLive()&&!landHint){
+    for(i=0;i<landRings.length;i++)landRings[i].visible=false;return;
+  }
+  if(landHint.live){
+    var lf=Math.min(1,(planePeek-.05)/.35);
+    landRingsDraw(lf);return;
+  }
   landHint.t+=dtMs;
   /* Cleared when the player FOLDS AGAIN, which is `flat` - not flatT. flatT
      is still near 1 on the first frames after standing up, because the world
@@ -1903,11 +1932,19 @@ function landFrame(dtMs){
   var p=landHint.t/LAND_MS;
   // in over the first fifth - the world is still standing up before that -
   // and out over the last third, so it never just vanishes
-  var fade=Math.min(1,p/.2)*Math.min(1,(1-p)/.34);
+  landRingsDraw(Math.min(1,p/.2)*Math.min(1,(1-p)/.34));
+}
+/* Placed with the same interpolation the block loop uses, so a ring sits on
+   its block through the whole rise rather than only at the ends of it. */
+function landRingsDraw(fade){
+  var i, ta=viewAngle*Math.PI/180;
+  var dvx=Math.sin(ta),dvz=Math.cos(ta),rx=Math.cos(ta),rz=-Math.sin(ta);
   for(i=0;i<landHint.cells.length;i++){
     var c=landHint.cells[i],m=landRing(i);
     m.visible=true;
-    m.position.set(c.x,c.y,c.z);
+    var cu=c.x*rx+c.z*rz, cd=c.x*dvx+c.z*dvz, cfd=cd*.012;
+    var cpx=cu*rx+cfd*dvx, cpz=cu*rz+cfd*dvz;
+    m.position.set(c.x+(cpx-c.x)*flatT,c.y,c.z+(cpz-c.z)*flatT);
     /* The winner in the colour of whatever decided it - amber when an anchor
        overrode the rule, the goal's green when it was simply the nearest -
        and the ones that lost in a dim version of the same, so the choice is
@@ -1929,8 +1966,33 @@ function animate(now){
   var dtMs=lastFrame?Math.max(0,(now||0)-lastFrame):16;
   lastFrame=now||0;
   if(!L)return;
-  flatT+=(flatTarget-flatT)*.14;
-  if(Math.abs(flatTarget-flatT)<.002)flatT=flatTarget;
+  /* PEEK IN THE PLANE IS A PREVIEW UN-FOLD.
+
+     Flattened, every candidate block is at the same screen position - that
+     is what folding means - so the landing rule operates on information the
+     player cannot see, and no amount of better wording fixes that. The eye
+     button already means "see depth without spending a move", and it was
+     switched OFF in the plane. Held there it now raises the world back
+     toward the volume, most of the way but never all of it, and drops it
+     again on release. Nothing is committed: `flat` and `flatPos` do not
+     move, only the number the renderer draws from.
+
+     It works by lowering the TARGET flatT eases toward, which is why it
+     costs nothing else: every part of the drawing already reads flatT -
+     positions, the sky, the depth fade, the fire's flames - so the whole
+     world previews together rather than in pieces. flatT is a render value
+     and nothing outside this file reads it; `flat` is the state. */
+  var wantLean=flat?0:peekTarget, wantPlane=(flat&&!dying)?peekTarget:0;
+  planePeek+=(wantPlane-planePeek)*.15;
+  if(planePeek<.002)planePeek=0;
+  var ftWant=flatTarget*(1-planePeek*PEEK_RISE);
+  /* Standing up is SLOWER than folding, so the return reads as a journey
+     rather than a cut - it is the one moment that shows you travelling to
+     the front of the stack. Not on a clock: there, half a second is a real
+     cost and the fight has to stay honest. */
+  var ftRate=(ftWant<flatT&&!B&&!TR)?.085:.14;
+  flatT+=(ftWant-flatT)*ftRate;
+  if(Math.abs(ftWant-flatT)<.002)flatT=ftWant;
   viewAngle+=(viewAngleTarget-viewAngle)*.16;
   /* THE WEATHER. Driven off real frame time like the fight clocks, so it
      runs at the same rate on a 120Hz phone and a loaded one - and folded,
@@ -1973,8 +2035,9 @@ function animate(now){
   var pv=viewSize;viewSize+=(vsWant-viewSize)*.12;
   if(Math.abs(pv-viewSize)>.005)updateFrustum();
 
-  if(flat)peekTarget=0;                  // peeking is meaningless in the plane
-  peek+=(peekTarget-peek)*.12;
+  // the camera lean is for the volume; in the plane the same button drives
+  // planePeek above instead, which is a preview rather than an angle
+  peek+=(wantLean-peek)*.12;
   // A live two-finger drag belongs to the finger; a released one springs back
   // to nothing. Turning is meaningless in the plane, same as peeking.
   if(flat)turnDrag=0;
@@ -2121,6 +2184,13 @@ function animate(now){
   var srcX,srcY,srcZ;
   if(app==="edit"){srcX=L.start[0];srcY=L.start[1];srcZ=L.start[2];}
   else{srcX=player.x;srcY=player.y;srcZ=player.z;}
+  /* While peeking in the plane the player is drawn rising onto the block
+     they WOULD land on, not the one they folded from - which is the whole
+     answer to "where do I come back". Outside the peek this is unchanged. */
+  if(flat&&planePeek>.01){
+    var lp=peekLanding();
+    if(lp){srcX=lp.win.x;srcZ=lp.win.z;srcY=flatPos.y;}
+  }
   var pu=flat?flatPos.u:(srcX*rx+srcZ*rz), py=flat?flatPos.y:srcY;
   var fx=pu*rx+1.2*tdvx,fz=pu*rz+1.2*tdvz;
   tmp.set(srcX+(fx-srcX)*flatT, srcY+(py-srcY)*flatT, srcZ+(fz-srcZ)*flatT);

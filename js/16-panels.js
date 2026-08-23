@@ -1271,7 +1271,7 @@ function legendPanel(){
     "<div class='leg'><i style='background:#7fc4d8;opacity:.65'></i><span><b>Glass</b> \u00b7 ring \u2014 "+
       "solid to stand on, but casts nothing. Ground in the volume, a hole in the plane.</span></div>"+
     "<div class='leg'><i style='background:#d9a441'></i><span><b>Anchor</b> \u00b7 gem \u2014 "+
-      "claims you when you unfold, instead of the block nearest the camera. "+
+      "claims you when you unfold, instead of the block at the front. "+
       "Turning reaches either <i>end</i> of a column of candidates; only an "+
       "anchor reaches one in the <i>middle</i>. It also holds a <b>crate</b> "+
       "fast: once a crate rests on amber it can never be shoved again, so "+

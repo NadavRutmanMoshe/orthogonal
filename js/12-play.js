@@ -890,8 +890,8 @@ function doUnflatten(){
          screen from the thing it is describing. */
       setTimeout(function(){
         flashCue(null,b.anchor
-          ?"the anchor held you \u2014 an anchor beats the nearest block"
-          :"you return on the block nearest the camera");
+          ?"the anchor held you \u2014 an anchor beats the front block"
+          :"you come back on the block at the front");
       },340);
     }
   }

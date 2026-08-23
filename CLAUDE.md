@@ -1705,10 +1705,35 @@ exclusive — every gesture also has a key and, unless hidden, a button:
 candidates" is the single thing that cost the first real playtester the
 most.** It is stated once in `First Fold` and never shown again.
 
-**It cannot be drawn while you are flat.** Every candidate is at the same
-screen position there — that is what folding *means* — so there is nothing to
-point at. It is drawn at the moment it happens instead: standing up rings the
-block you landed on, and dimmer, the ones you did not.
+**It cannot be drawn while you are flat — so the plane is where PEEK now
+works.** Every candidate is at the same screen position in the plane, which
+is what folding *means*, so the rule operates on information the player
+cannot see and no wording fixes that. Three things answer it together:
+
+1. **Peek in the plane is a preview un-fold.** The eye button already means
+   "see depth without spending a move" and was switched off when flat. Held
+   there it raises the world back toward the volume — most of the way, never
+   all of it — and drops it on release. It works by lowering the *target*
+   `flatT` eases toward, which is why it costs nothing else: every part of
+   the drawing already reads `flatT`, so the whole world previews together.
+   `flatT` is a render value and nothing outside `10-render.js` reads it;
+   `flat` and `flatPos` are the state and do not move.
+2. **The player is drawn on the block they WOULD land on** while peeking, not
+   the one they folded from. `peekLanding()` makes the same two calls
+   `doUnflatten` makes, so the preview and the move cannot disagree.
+3. **Standing up is slower than folding** (`.085` against `.14`), so the
+   return reads as a journey to the front of the stack rather than a cut.
+   Not on a clock: there half a second is a real cost.
+
+**And the rings.** Standing up rings the block you landed on, and dimmer, the
+ones you did not; peeking draws the same rings live, placed with the same
+interpolation the block loop uses so they sit on their blocks through the
+whole rise.
+
+**"The front", not "nearest the camera".** The old phrase names a direction
+the player cannot see; the new one is a word they already own. Player-facing
+text says *the front*; the code and this file may still say nearest, because
+there the camera is a real thing.
 
 - **Only when there was a choice.** `land.length > 1`, or nothing was decided
   and a marker would be noise. That is why it is silent on most levels and
