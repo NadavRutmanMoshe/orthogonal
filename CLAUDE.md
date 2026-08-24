@@ -150,7 +150,8 @@ each. A landmark must not be able to break a save.
 **Section I is long on purpose.** It is twelve levels where the others are
 seven to ten, because it is the section a new player is *in* while they are
 deciding whether to keep playing. Its first four now score 14, 21, 16, 28
-against a tutorial that ends at 12; before that the first thing after the
+against a tutorial that now ends at 14 — `00 — First Landing` hands straight
+over to `01` at the same score; before that the first thing after the
 tutorial was 21 and the third was `brutal`.
 
 **The order is the owner's call, and once it overrules the curve.** `02` and
@@ -1411,7 +1412,7 @@ it has to be able to end it.
 
 ## The tutorial
 
-Three levels, one new verb each: walking, collapsing, turning. They carry
+Four levels, one new verb each: walking, collapsing, turning, landing. They carry
 `tutorial: true`, which means **no par and no stars**. A level whose job is
 teaching should not also grade you, and it should not feed the star economy.
 `loadLevel` does not even ask the solver about them — its answer for a teaching
@@ -1552,6 +1553,32 @@ lesson used to say "collapse the world", then "Collapse", then "flatten", then
 "stand back up", while the button in front of the player read `GO 2D` — four
 names for one verb, none of them the one on screen, in the three levels whose
 whole job is naming things.
+
+**`00 — First Landing` is rule 5 made compulsory, and it is the owner's
+design.** `First Fold` *mentions* the landing rule while teaching the fold —
+the near block there is also the goal, so a player who understood none of it
+still won. This level is the same rule with nothing else in it: **two blocks
+in one silhouette column, five apart in depth, and a 180° turn between them.**
+From the opening view you are standing on the near one, so folding would only
+pop you back onto yourself; turn around and the same two blocks swap places,
+and the identical fold carries you across. Same geometry, same verb, opposite
+answer.
+
+- **It is forced, and that is checkable.** `solve()` says the level is exactly
+  `rot+ rot+ FLAT POP`. There is no walking route — the gap is five wide — so
+  a player cannot finish it without the rule having done the work.
+- **THE WASTED FOLD CANNOT BE TAUGHT, and the solver is why.** The obvious
+  stronger version lets the player fold in the opening view first and *watch*
+  nothing happen. It does not work: `tutGuide()` replaces any step whose `cue`
+  disagrees with the solver's next move, so a step asking for a move the
+  solver would not make is overridden on every frame — the same mechanism
+  `free:true` exists to escape, and a fold is not free. A three-block version
+  was tried and BFS collapses it to the same four moves. **The contrast has to
+  be carried by the geometry and the prose, never by a move.**
+- **`First Turn`'s last line was retuned, not left alone.** It used to say
+  "turning is how you choose which one catches you", which is this level's
+  sentence. Its own subject is what *shares* a column at all. Two levels
+  teaching the same thing is a bug and the curve will not catch it.
 
 **`00 — First Fold` has two blocks in the goal column, and that is the lesson.**
 Rule 5 used to be *stated* there and never *shown*: the column held one block,
@@ -1746,8 +1773,13 @@ instinct. So:
   a corner button while reading the middle of the screen. The latch drops
   itself after `PEEK_LATCH_MS` and on the next thing the player does, which
   is what made hold-only defensible in the first place.
-- **`00 — First Fold` teaches it**, in a step placed *before* standing up,
-  because that is the moment it answers something.
+- **`00 — First Landing` teaches it**, in a step placed *before* standing up,
+  because that is the moment it answers something. It used to be taught in
+  `00 — First Fold` and that was one level too early: the eye arriving a
+  press before `GO 3D`, while the fold itself was still new, read as part of
+  standing up rather than as a control of its own, and a player who pressed
+  it was then facing a second unfamiliar button. Moved, it is the only new
+  control in the level whose whole question it answers.
 
 **A TUTORIAL STEP THAT ASKS FOR A FREE ACTION NEEDS `free:true`.** `tutGuide`
 replaces a step's line with the next *move* whenever the solver disagrees
@@ -2242,13 +2274,15 @@ tested and failed, plus where this sits in the PCG literature, are in
    but they still read as an errand rather than a puzzle.
 8. **Explain the four things that beat the first real playtester** — the
    owner's mother, who died repeatedly on trials and bosses. In order of how
-   much they cost her: **which block you land on** coming out of a fold (the
-   one nearest the camera, unless an anchor overrides it — rule 5, stated in
-   the tutorial and never shown again), **how a trial works** (three cores,
-   a sweeping plane, three lives), **how a boss works** (the line is both its
-   attack and yours), and **why a block turns red** (`foldPeril` — it is
-   about to crush you). None of these has a teaching moment after the
-   tutorial. Agreed as its own job, deliberately not bundled with the art.
+   much they cost her: **which block you land on** coming out of a fold,
+   **how a trial works** (three cores, a sweeping plane, three lives), **how
+   a boss works** (the line is both its attack and yours), and **why a block
+   turns red** (`foldPeril` — it is about to crush you).
+   **The first is done**: the landing rings show it on every fold that
+   decides something, peek in the plane previews it, and `00 — First Landing`
+   now makes the rule compulsory before the campaign starts. The other three
+   still have no teaching moment after the tutorial, and a trial and a boss
+   are the two places a player is least able to stop and work one out.
 9. **Ad integration.** Nothing is wired. When wrapped with Capacitor the
    rewarded-video callback should call `grantShards(n)`, `grantAdView(id)` or
    `grantSkip(name)` — three hooks, one per thing an ad can buy. Rewarded-only

@@ -57,16 +57,13 @@ var LEVELS=[
       cue:"bFlat",done:function(c){return c.flat>=1;}},
      {say:"Depth is gone, so the block that was floating out in front is simply next to you. Walk across.",
       cue:"bRight",done:function(c){return c.m2>=3;}},
-     /* PEEK IS THE FOURTH VERB and this is the only place it is taught. It
-        goes BEFORE standing up, not after, because that is the moment it
-        answers something: flat, you cannot see depth, and the block you come
-        back on is decided by a direction the screen is not showing you.
-        `want:"flat"` so a player who stood up early is told the way back
-        rather than asked to do something they cannot. */
-     {say:"Flat, you cannot see depth at all — two blocks are hiding in this column.<br>Hold the <b>eye</b> to look before you stand up.",
-      want:"flat",cue:"bLook",free:true,
-      done:function(c){return (c.peek||0)>=1;}},
-     {say:"{do:3d} to stand up.<br>Two blocks share this column, and you always come back on the one at <b>the front</b> — nearest you, the green one.",
+     /* PEEK IS NOT TAUGHT HERE ANY MORE - it moved to `00 — First Landing`.
+        This level is where the fold itself is learned, and the eye arriving
+        one press before GO 3D put three new controls in one lesson: it read
+        as part of standing up rather than as a thing of its own, and a
+        player who pressed it was then facing a second unfamiliar button.
+        It belongs in the level whose whole question is the one it answers. */
+     {say:"{do:3d} to stand up.<br>Two blocks share this column, and you come back on the one at <b>the front</b> — nearest you, the green one.",
       cue:"bFlat",done:function(c){return c.unflat>=1;}}
    ]},
 {name:"00 — First Turn",
@@ -78,12 +75,55 @@ var LEVELS=[
       cue:"bRotR",done:function(c,st){return st.view===1;}},
      {say:"From here the two blocks are in the <b>same column</b>.<br>{do:2d}.",
       cue:"bFlat",done:function(c){return c.flat>=1;}},
-     {say:"{do:3d}. Nearest the camera is now the block that was out of reach — so turning is how you choose which one catches you.",
+     {say:"{do:3d}. The block that was out of reach is the one that catches you — turning decided what shared a column at all.",
+      cue:"bFlat",done:function(c){return c.unflat>=1;}}
+   ]},
+{name:"00 — First Landing",
+   hint:"Two blocks in one column. Which of them catches you is decided by where the camera is.",
+   /* RULE 5, FORCED. "You come back on the block nearest the camera" was
+      stated once in First Fold and never made to matter - there the near
+      block was also the goal, so a player who understood none of it still
+      won. It is the single thing that cost the first real playtester the
+      most, and it had no teaching moment after the tutorial.
+
+      Two blocks in one silhouette column, five apart in depth, with no way
+      to walk between them. From the opening view the player is standing on
+      the NEAR one, so folding here would pop them straight back onto
+      themselves. Turn 180 degrees and the same two blocks swap places: the
+      far one is at the front now, and the identical fold carries you across.
+      Same geometry, same verb, opposite answer - which is the rule stated as
+      an experiment rather than as a sentence.
+
+      Nothing else is possible, and that is the point: solve() says this level
+      is exactly `rot+ rot+ FLAT POP`. A three-block version that would have
+      let the player MAKE the useless fold first was tried and does not work -
+      the solver collapses it to the same four moves, and tutGuide() replaces
+      any step whose cue disagrees with the solver, so a deliberately wasted
+      move cannot be taught at all. The contrast has to be carried by the
+      geometry and by the prose, never by a move. */
+   blocks:[[0,0,0],[0,0,-5]],
+   start:[0,1,0],goal:[0,1,-5],rotate:true,tutorial:true,
+   tut:[
+     {say:"Two blocks, one column, and a gap far too wide to walk.<br>You are standing on the one at <b>the front</b>, so folding from here would only bring you back to yourself. {do:turnr} twice.",
+      cue:"bRotR",done:function(c,st){return st.view===2;}},
+     {say:"The same two blocks from the other side — and the far one is at the front now.<br>{do:2d}.",
+      cue:"bFlat",done:function(c){return c.flat>=1;}},
+     /* PEEK IS THE FOURTH VERB and this is where it is taught, moved out of
+        First Fold. There it arrived while the fold itself was still being
+        learned; here the player already owns both halves of it, the eye is
+        the only new control, and it is the direct answer to the question the
+        level is asking. `want:"flat"` so a player who stood up early is told
+        the way back rather than asked for something they cannot do. */
+     {say:"Flat, depth is invisible — so look before you commit.<br>Hold the <b>eye</b>: the ring marks the block that is about to catch you.",
+      want:"flat",cue:"bLook",free:true,
+      done:function(c){return (c.peek||0)>=1;}},
+     {say:"{do:3d}. You always return on the block at <b>the front</b> — and which block that is, is what turning decides.",
       cue:"bFlat",done:function(c){return c.unflat>=1;}}
    ]},
 /* The three levels below (01, 02 and 04) exist because the curve had a
    hole exactly where a new player stands. The tutorial ends at a difficulty
-   score of 12 and the first thing waiting was 21, then 31 — a player was in
+   score of 14 (First Landing, the last of them) and the first thing waiting
+   was 21, then 31 — a player was in
    `brutal` by their fourth level, in the one section that is supposed to be
    teaching. Every other section opens with two or three gentle levels; this
    one opened with a cliff. Scores now run 14, 16, 21, 28, 31.
@@ -660,11 +700,11 @@ var LEVELS=[
    how many, and it is small on purpose: this runs behind a puzzle, not
    instead of one. */
 var SECTIONS=[
-  {at:0, name:"PROLOGUE", sub:"walking, folding, turning — one verb each", col:"#7183a6",
+  {at:0, name:"PROLOGUE", sub:"walking, folding, turning, landing — one verb each", col:"#7183a6",
    story:"Nothing has noticed you yet.",
    theme:{sky:[0x141a2e,0x0a0e1a], block:0x5a6d94, ink:0x14172a,
           air:{col:0x8fa4cc, n:14, rise:.06, drift:.05, size:.10}}},
-  {at:3, name:"I · FUNDAMENTALS", sub:"one verb: collapse the world and cross the gap", col:"#35c2a5",
+  {at:4, name:"I · FUNDAMENTALS", sub:"one verb: collapse the world and cross the gap", col:"#35c2a5",
    story:"Every fold is a visit. The plane keeps count.",
    /* MOSS. Spores drifting upward - the gentlest field in the game, for the
       section a new player is deciding in. */
@@ -675,7 +715,7 @@ var SECTIONS=[
           scene:"trees", ink:0x16241a,
           stars:{n:46, col:0xdfe9ff, seed:19},
           air:{col:0xd8e8b0, n:14, rise:.05, drift:.09, size:.075}}},
-  {at:17, name:"II · SPIKES", sub:"a hazard you cannot see until you fold", col:"#e0455f",
+  {at:18, name:"II · SPIKES", sub:"a hazard you cannot see until you fold", col:"#e0455f",
    story:"Some of what is down there did not survive being flattened.",
    /* HELL, and it is DARK hell rather than bright. This section teaches
       fire, and a glowing orange world swallows a fire block whole - that was
@@ -686,7 +726,7 @@ var SECTIONS=[
    theme:{sky:[0x1a0a10,0x3a0f0a], block:0xc8c8c8, surface:"basalt",
           scene:"hell", flare:17000, ink:0x24100e,
           air:{col:0xff9a4a, n:24, rise:.20, drift:.07, size:.07}}},
-  {at:26, name:"III · GLASS", sub:"solid in the volume, absent from the plane", col:"#7fb2ff",
+  {at:27, name:"III · GLASS", sub:"solid in the volume, absent from the plane", col:"#7fb2ff",
    story:"Water casts nothing, so the plane holds no record of it.",
    /* EMBER, for the same inverted reason: this section teaches water, so a
       warm world is what makes cyan sing. Embers rise, and the void warms
@@ -701,14 +741,14 @@ var SECTIONS=[
      boss also carries its four-arc ring, which is what actually tells them
      apart. This is the closest any section gets to a reserved colour, and
      the pair should be pulled further apart when the boss is revisited. */
-  {at:36, name:"IV · CRATES", sub:"change the plane by moving the volume", col:"#c07ae0",
+  {at:37, name:"IV · CRATES", sub:"change the plane by moving the volume", col:"#c07ae0",
    story:"You can edit what they see. That is the one thing they cannot do.",
    /* DUST. Drifting sideways rather than rising or falling, because this is
       the section about pushing things along a row. */
    theme:{sky:[0x1e2734,0x4f4630], block:0x8d7f5e, scene:"ruins",
           ink:0x1c1710,
           air:{col:0xe0cd9a, n:18, rise:.02, drift:.20, size:.085}}},
-  {at:48, name:"V · EXTRA", sub:"unlocked by the Census — the long ones", col:"#3fc4d4", locked:true,
+  {at:49, name:"V · EXTRA", sub:"unlocked by the Census — the long ones", col:"#3fc4d4", locked:true,
    story:"The parts of the world that were never counted.",
    /* NOCTURNE. Almost nothing moves out here, which is the point - it is
       the shelf past the last warden, where the counting stopped. */
