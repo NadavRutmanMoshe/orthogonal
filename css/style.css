@@ -433,6 +433,19 @@
     padding-top:11px;border-top:1px solid var(--rule);
     font-size:9.5px;line-height:1.6;text-align:center;
     color:color-mix(in srgb,#a274ff 55%,var(--fg-dim))}
+  /* THE TUTORIAL'S EXPLANATION CARD. Same full-bleed dim as a win card - it
+     is the same kind of object, a screen that has taken the game away for a
+     moment - with a paragraph that is meant to be *read* rather than glanced
+     at, so it is wider, taller-leaded and left-aligned inside a centred
+     column. Emphasis is the goal colour because that is already the colour of
+     the ring the card is describing and of the button it is about to ask for;
+     the card and the world then say the one thing in one hue. */
+  .tutcard{gap:20px}
+  .tutcard h2{max-width:min(84vw,24ch);text-align:center;line-height:1.3}
+  .tutcard p{max-width:min(84vw,42ch);font-size:11px;line-height:1.85;
+    text-align:left;color:var(--fg-dim)}
+  .tutcard p b{color:var(--goal);font-weight:500}
+  .tutcard button{min-width:120px}
   .wonrow{display:flex;gap:8px;align-items:center}
   .won button{height:42px;padding:0 22px;border-color:var(--goal);color:var(--goal)}
   #bRetry{border-color:var(--rule);color:var(--fg-dim);gap:7px}
@@ -583,6 +596,11 @@
       var(--panel)}
   .panel.map.on{display:flex}
   body.mapopen .startotal{display:none}
+  /* And behind a tutorial's explanation card. The total sits at z-index 30 so
+     it can be seen going up over a win card, which is the moment it is news;
+     over a card that is explaining a rule it is a number with nothing to do
+     with what is being read. */
+  body.carded .startotal{display:none}
   /* Ambient cubes, behind everything the panel draws. Deliberately a child of
      the panel: `body>canvas` scopes the game's own renderer, and a canvas
      that escaped into body would be pinned over the whole viewport by it. */

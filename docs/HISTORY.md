@@ -375,6 +375,79 @@ get machine-verified, always.
 
 ---
 
+## Teaching rule 5: three attempts, and what a tutorial step can be
+
+Rule 5 — *you come back on the block at the front* — cost the first real
+playtester more than anything else in the game. Three levels have now been
+built to teach it and the differences between them are the interesting part.
+
+**Attempt one was a sentence.** `00 — First Fold` said it while teaching the
+fold. It could not work: the goal column there held one block, so the rule
+described an event with no alternative. **You cannot teach a tie-break with
+nothing to break.**
+
+**Attempt two was a demonstration, and it was too quiet.** `00 — First
+Landing` put two blocks in one silhouette column five apart in depth, with a
+180° turn between them, so the same fold from the opposite side lands
+somewhere else. The geometry is right and is still the level. What it lacked
+was that *nothing said what to watch*. The player folded, popped back onto
+themselves, turned, folded, and crossed — and both halves look identical
+until you already know the rule, which is the thing being taught. It also
+forced a peek step, which asked for a preview of a landing the level had not
+yet said existed. The owner played it and did not like it, in those terms.
+
+**Attempt three is an experiment that is actually run.** Same geometry, plus
+three pieces of machinery that did not exist:
+
+- an **explanation card** (`card:{h,p}` on a step): a full-bleed screen the
+  player acknowledges, because this is the one rule with nothing to look at
+  while it happens — both candidates are at the same screen position the
+  instant you fold, which is what folding means;
+- a **derived world marker** (`show:"landing"`): the landing rings, held up
+  for the length of a step instead of flashed after a landing, built from the
+  same `R.landings()`/`R.pick()` pair `doUnflatten()` calls, so it moves to
+  the other block on the half turn on its own;
+- a **step that gates the other verbs from the first frame** (`hold:true`),
+  because an experiment only proves something if both halves happen in order.
+
+Three findings from building it are worth keeping.
+
+**A ring is not enough on the block you are standing on.** The first half of
+the level points at the block under the player's feet, and there a wireframe
+cube is swallowed by the block's own lit rim and by the player sitting on it.
+The one square the lesson was about was the one square the marker could not
+be seen on. The fix is to tint the block itself, and to lift *both*
+candidates out of the depth fade — the loser is five cells back and was
+nearly invisible, in a lesson that needs two blocks visible to make "one of
+them was chosen" mean anything.
+
+**"THE WASTED FOLD CANNOT BE TAUGHT" was wrong, and knowing why it was
+believed matters.** `tutGuide()` overrides any step whose cue disagrees with
+the solver's next move, and the solver never folds from the opening view, so
+the step really was overridden on every frame. `free:true` was the documented
+escape and it was rejected on the grounds that *a fold is not free*. That is
+true — the level is no longer walked in the solver's own move count — and it
+is simply not a cost here, because a tutorial has no par and no stars. The
+rule that survives is the narrower one: **`free:true` on a step that asks for
+a real move is safe only where nothing is scored.**
+
+**The colonnade is the legibility bug, admitted.** Screen-vertical is height
+and depth added together, so the far block draws about three cells *above*
+the near one, and a first-time player reads it as higher — in the level whose
+whole subject is depth. `tools/legible.js` has been printing this class of
+lie for the whole campaign. Two rows of stone running the length of the gap
+give the eye something to count. Getting them somewhere harmless took three
+tries and each failure is a different rule: at `y=0` they become landing
+candidates in views 1 and 3, where the player's silhouette column runs along
+depth, so a wandering player folds and is teleported onto an unreachable
+rail; at `y=1` they share the player's own row and crush any fold taken from
+view 1; at `y=2` they are outside `R.landings()` (which wants a block at
+`y=0` under a clear `y=1`) and one row above anything that could crush.
+**Decoration in this game is not free — it has to be checked against
+`landings`, `siloSolid` and `solve` in all four views, not just looked at.**
+
+---
+
 ## Publishing overwrote the artifact with a build from the wrong branch
 
 Worth recording because it cost nothing in git and could have cost everything.

@@ -182,6 +182,18 @@
   <button class="tiny" id="bSkipTo" style="height:30px;padding:0 14px">PICK A LEVEL</button>
 </div>
 
+<!-- THE TUTORIAL'S EXPLANATION CARD. One rule in this game cannot be taught
+     by cueing a button, because the two blocks it decides between are at the
+     same screen position the moment you fold; see tutCardSync() in
+     js/15-tutorial.js. It borrows .won's full-bleed dim so a card and a win
+     card are plainly the same kind of object, and answers screenUp() so the
+     keyboard and both clocks stop while it is being read. -->
+<div class="won tutcard" id="tutcard">
+  <h2 id="tutcardH"></h2>
+  <p id="tutcardP"></p>
+  <button id="bTutOk">OK</button>
+</div>
+
 <div class="won" id="won">
   <h2 id="wonTitle">Solved</h2>
   <p id="wonSub"></p>

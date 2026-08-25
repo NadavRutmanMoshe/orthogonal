@@ -1490,6 +1490,13 @@ opts out with `lock:false`.
   tutorial. Against a game that is already dark, a permanent dark overlay does
   not read as "here is the button", it reads as "the game is dark". Appearing
   is most of the signal, so it has to have been absent.
+- **`hold:true` on a step gates the other verbs from the first frame, and it
+  does not bring the dim with it.** One level asks — see `00 — First
+  Landing` — because it is an experiment rather than a puzzle and both halves
+  have to happen in order. `tutBlocks()` answers it out of the current step,
+  so it re-derives like everything else here; the dim still waits for
+  hesitation, and a *blocked press* brings it up at once, which turns a
+  button that did nothing into a button that says why.
 - **The wait counts only time the player could have used.** `tutTick()` polls
   and accrues `TUT_HELP_MS` worth of *playable* idle — `tutPlayable()` is the
   same question `bossFrame` asks, so the intro card, an open menu and a death
@@ -1564,17 +1571,91 @@ pop you back onto yourself; turn around and the same two blocks swap places,
 and the identical fold carries you across. Same geometry, same verb, opposite
 answer.
 
+**It is now run as an experiment rather than offered as one**, on the owner's
+call after playing the first version: say the rule in words, point at the
+block it names, make the player perform both halves in order, and say it again
+from the other side. Seven steps — a card, fold, stand up, half turn, a second
+card, fold, stand up — and the middle five are gated, so the two folds
+genuinely happen in that order.
+
 - **It is forced, and that is checkable.** `solve()` says the level is exactly
-  `rot+ rot+ FLAT POP`. There is no walking route — the gap is five wide — so
-  a player cannot finish it without the rule having done the work.
-- **THE WASTED FOLD CANNOT BE TAUGHT, and the solver is why.** The obvious
-  stronger version lets the player fold in the opening view first and *watch*
-  nothing happen. It does not work: `tutGuide()` replaces any step whose `cue`
-  disagrees with the solver's next move, so a step asking for a move the
-  solver would not make is overridden on every frame — the same mechanism
-  `free:true` exists to escape, and a fold is not free. A three-block version
-  was tried and BFS collapses it to the same four moves. **The contrast has to
-  be carried by the geometry and the prose, never by a move.**
+  `rot+ rot+ FLAT POP`, and it is impossible with the fold locked out and
+  impossible with rotation locked out. There is no walking route — the gap is
+  five wide — so a player cannot finish it without the rule having done the
+  work.
+- **THE WASTED FOLD IS TAUGHT NOW, and that reverses an earlier finding.**
+  It used to be impossible: `tutGuide()` replaces any step whose `cue`
+  disagrees with the solver's next move, and the solver never folds from the
+  opening view, so a step asking for that fold was overridden on every frame.
+  `free:true` is the escape hatch and it now carries that one step. The
+  reason it was rejected before — "a fold is not free" — is true and is the
+  cost: the level is no longer walked in the solver's own move count. **That
+  costs exactly nothing here, because a tutorial has no par and no stars**,
+  and it would not be safe on a scored level. A three-block version that tried
+  to make the wasted fold *optimal* instead was tried and BFS collapses it to
+  the same four moves; the geometry cannot carry this, only the script can.
+- **A step may be forced from the first frame (`hold:true`), and this is the
+  only level that asks.** The guided lock normally arms on hesitation, which
+  is right for a hint and wrong for an experiment: an experiment only proves
+  anything if both halves happen, in order, and a player who wanders off does
+  not get a wrong answer, they get no answer — on the rule that has cost more
+  playtesters more lives than anything else in the game. **The gate and the
+  dim stay two things**: `hold` refuses the other three verbs at once, while
+  the dark overlay still waits, because a permanent dim reads as "the game is
+  dark". A blocked press brings the dim up immediately instead, which is the
+  one moment a player is owed an explanation for a button doing nothing.
+- **The explanation card is words, and it is words on purpose.** Everything
+  else in the tutorial cues a control and lets pressing it be the
+  explanation. This rule cannot be taught that way: the two blocks it decides
+  between are at *the same screen position* the instant you fold — that is
+  what folding means — so there is nothing to watch and no press that reveals
+  it. `card:{h,p}` on a step puts up a full-bleed card the player has to
+  acknowledge; `tutC.card` counts acknowledgements, so a step is still a
+  predicate over a counter and a restart simply re-reads them. It answers
+  `screenUp()`, which is what stops the keyboard, both clocks and the
+  hesitation timer running behind it, and its prose goes through `tutWords()`
+  so it names the verb the way the button does.
+- **The rings are up BEHIND the card, not after it**, because a card is where
+  the phrase *the block at the front* is first used and the marker is what
+  that phrase points at. `show` is carried separately from `card` in
+  `tutGuide()` for exactly that.
+- **The marker is derived, never authored** — `R.landings()` and `R.pick()`,
+  the same pair `doUnflatten()` itself calls — so it cannot point anywhere
+  the fold would not put you, and it moves to the other block on the half
+  turn *on its own*. A level listing its two blocks by hand would be a second
+  copy of rule 5 waiting to disagree with the first.
+- **A ring is not enough on the block you are standing on**, and that is the
+  first half of this level. Under the player a wireframe cube is swallowed by
+  the block's own lit rim and by the player sitting on it, so the one square
+  the lesson was pointing at was the one square the marker could not be seen
+  on. The block itself is tinted as well (`tutMarkSet` in the block loop),
+  and **both candidates come out of the depth fade** — the loser is five
+  cells back and would otherwise be nearly gone, in a lesson that needs the
+  player to see two blocks in order to understand that one was chosen. Peril
+  still outranks it: a warning that you are about to be crushed beats a
+  lesson.
+- **THE EYE IS NO LONGER FORCED.** It used to be step 3 and it asked the
+  player to preview a landing they had not yet been told existed. It is still
+  live, still lights in the plane, and the last line of the level names it;
+  it is simply not a hoop.
+- **THE COLONNADE IS A RULER AND NOTHING ELSE.** Screen-vertical here is
+  height and depth added together, so the far block draws about three cells
+  *above* the near one and a first-time player reads it as higher rather than
+  as further back — the exact lie `tools/legible.js` hunts for, in the level
+  whose whole subject is depth. Two rows of stone running the length of the
+  gap give the eye something to count, and the depth fade grades them so
+  "further" has a visible direction. **It is at `y=2`, `x=±2`, and every part
+  of that is load-bearing**: `x=±2` keeps it two squares clear, so stepping
+  toward it is a fall into nothing exactly as before, and its silhouette
+  column is never the player's in views 0 and 2; `y=2` keeps it out of
+  `R.landings()`, which wants a block at `y=0` under a clear `y=1`, so it can
+  never become a landing candidate in views 1 and 3 where its column *is* the
+  player's — and it casts one row above the player, so it can never crush a
+  fold either. At `y=0` it hands a wandering player a landing on an
+  unreachable rail; at `y=1` it crushes any fold taken from view 1. Verified
+  inert against `solve()`, `R.landings()` and `R.siloSolid()` in all four
+  views. `legible.js` gains one level and two flags, both on squares *on top
+  of the colonnade*, which nothing can stand on.
 - **`First Turn`'s last line was retuned, not left alone.** It used to say
   "turning is how you choose which one catches you", which is this level's
   sentence. Its own subject is what *shares* a column at all. Two levels
@@ -1773,20 +1854,27 @@ instinct. So:
   a corner button while reading the middle of the screen. The latch drops
   itself after `PEEK_LATCH_MS` and on the next thing the player does, which
   is what made hold-only defensible in the first place.
-- **`00 — First Landing` teaches it**, in a step placed *before* standing up,
-  because that is the moment it answers something. It used to be taught in
-  `00 — First Fold` and that was one level too early: the eye arriving a
-  press before `GO 3D`, while the fold itself was still new, read as part of
-  standing up rather than as a control of its own, and a player who pressed
-  it was then facing a second unfamiliar button. Moved, it is the only new
-  control in the level whose whole question it answers.
+- **`00 — First Landing` NAMES IT AND DOES NOT FORCE IT**, in the level's
+  last line. It was a compulsory step there for one build and the owner
+  played it and cut it: the step asked the player to preview a landing the
+  level had not yet told them existed, so the eye read as another hoop rather
+  than as the answer to a question they were already asking. It had already
+  been moved once, out of `00 — First Fold`, where it was a press before
+  `GO 3D` while the fold itself was still new and read as part of standing
+  up. Named rather than demanded, it is offered at the point the player has
+  just been shown what it would be *for* — and the button lights on its own
+  in the plane, which is the affordance the first playtester reached for
+  before it did anything.
 
 **A TUTORIAL STEP THAT ASKS FOR A FREE ACTION NEEDS `free:true`.** `tutGuide`
 replaces a step's line with the next *move* whenever the solver disagrees
 with it, which is right for the three verbs the solver knows. Peek is not a
 move — it costs nothing, changes nothing, and the solver has no opinion — so
 without the flag the step is overridden on every frame and can never be
-shown. This bit once, exactly that way.
+shown. This bit once, exactly that way. **The same hatch now carries a step
+that asks for a move the solver would not make** — the deliberately wasted
+fold in `00 — First Landing`. That is a wider use than the flag was built
+for and it is only safe where nothing is scored; see that level's notes.
 
 **"The front", not "nearest the camera".** The old phrase names a direction
 the player cannot see; the new one is a word they already own. Player-facing
@@ -2278,11 +2366,21 @@ tested and failed, plus where this sits in the PCG literature, are in
    **how a trial works** (three cores, a sweeping plane, three lives), **how
    a boss works** (the line is both its attack and yours), and **why a block
    turns red** (`foldPeril` — it is about to crush you).
-   **The first is done**: the landing rings show it on every fold that
-   decides something, peek in the plane previews it, and `00 — First Landing`
-   now makes the rule compulsory before the campaign starts. The other three
-   still have no teaching moment after the tutorial, and a trial and a boss
-   are the two places a player is least able to stop and work one out.
+   **The first is done, and done twice over**: the landing rings show it on
+   every fold that decides something, peek in the plane previews it, and
+   `00 — First Landing` now *states* the rule on a card, marks the block it
+   names, and forces both halves of the experiment before the campaign
+   starts. **The machinery that took is worth reusing for the other three** —
+   an explanation card (`card:{h,p}` on a tutorial step), a derived world
+   marker (`show:"landing"`) and a step that gates the other verbs
+   (`hold:true`) are between them a way to say a rule in words, point at the
+   thing it is about, and make the player do it. What is missing for a trial
+   and a boss is not the machinery but the *place*: neither has a teaching
+   level, and neither can stop for one, because both run on a clock. The
+   cheapest shape is probably a turn-based tutorial level per mechanic in
+   front of `TRIAL I` and `BOSS I`. **Playtest `00 — First Landing` first**;
+   if a card mid-level reads as an interruption rather than as an
+   explanation, none of the rest should be built on it.
 9. **Ad integration.** Nothing is wired. When wrapped with Capacitor the
    rewarded-video callback should call `grantShards(n)`, `grantAdView(id)` or
    `grantSkip(name)` — three hooks, one per thing an ad can buy. Rewarded-only

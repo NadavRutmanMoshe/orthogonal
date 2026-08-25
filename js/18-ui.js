@@ -108,8 +108,14 @@ function panelOpen(){return $("panel").classList.contains("on");}
    through levelOver(), which re-shows the card rather than swallowing the
    input - the card is the only thing that explains why nothing is
    responding, and that behaviour is worth keeping exactly as it is. */
+/* The tutorial's explanation card is in here for exactly the reasons above:
+   it covers the world, so it swallows taps by being there, and the keyboard
+   and the two clocks would carry on regardless. It is also what makes
+   tutPlayable() false while a card is being read, so time spent reading one
+   is not counted as hesitation. */
 function screenUp(){
-  return homeUp()||!$("intro").classList.contains("gone");
+  return homeUp()||!$("intro").classList.contains("gone")||
+         (typeof tutCardUp==="function"&&tutCardUp());
 }
 function syncCorners(){
   var m=$("bMenu"), w=$("bWard");

@@ -46,10 +46,20 @@ var skips={};
 var bossPause=0;
 var tutC=null, tutShown=-1, tutLock=null, tutHelpTimer=null,
     tutIdle=0, tutWait=0, tutCued=null;
+/* Whether the current tutorial step wants the landing candidates ringed in
+   the world. Set by tutSync and read by the render loop, rather than the
+   renderer asking the tutorial every frame: every verb that can move the
+   rings - walking, folding, and above all turning - already ends in
+   syncHud(), so a value written there is never stale. */
+var tutMark=false;
 function tutReset(){
-  tutC={m3:0,m2:0,flat:0,unflat:0,rot:0,climb:0,peek:0,
+  /* `card` counts explanation cards the player has acknowledged. It is a
+     counter and not a flag for the same reason every other one here is: a
+     step is a predicate over these, so "the second card" is `card>=2` and a
+     player who restarts, undoes or dies simply re-reads them in order. */
+  tutC={m3:0,m2:0,flat:0,unflat:0,rot:0,climb:0,peek:0,card:0,
         d:{left:0,right:0,up:0,down:0}};
-  tutShown=-1;
+  tutShown=-1;tutMark=false;
 }
 var muted=false;
 // Boss fights. B is null on every ordinary level and every check below is

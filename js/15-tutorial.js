@@ -304,8 +304,33 @@ function tutWords(s){
 var TUT_HELP_MS=1000;    // before the first help on a step
 var TUT_AGAIN_MS=2600;   // after the player has used the right control once
 
+/* Which controls the tutorial is refusing right now.
+
+   Normally this is the guided lock and nothing else: it arms on hesitation,
+   so a player who is following along is never gated at all.
+
+   A STEP MAY ASK TO BE FORCED FROM THE FIRST FRAME (`hold:true`), and one
+   level needs it. `00 - First Landing` is an experiment - fold here, then
+   fold again from the other side, and watch the same verb answer
+   differently - and an experiment only proves anything if both halves
+   actually happen in that order. A player who wanders off does not get a
+   wrong answer, they get no answer, on the rule that has cost more
+   playtesters more lives than anything else in the game.
+
+   The gate and the dim are deliberately still two things. `hold` refuses the
+   other three verbs immediately; the dark overlay still waits for hesitation,
+   because a permanent dim does not read as "here is the button", it reads as
+   "the game is dark" - which is the finding the guided lock was rebuilt
+   around and is not worth losing. What a blocked press does instead is bring
+   the dim up at once: a press that does nothing is the one moment a player is
+   owed an explanation, and that is exactly what the dim says. */
 function tutBlocks(id){
-  return app==="play" && tutLock !== null && tutLock !== id;
+  if(app!=="play")return false;
+  if(tutLock!==null)return tutLock!==id;
+  var g=tutGuide();
+  if(!g||!g.hold||!g.cue||id===g.cue)return false;
+  tutEngage();                 // say why, rather than swallowing the press
+  return true;
 }
 /* Called by the four verbs with the control the player actually used.
 
@@ -475,6 +500,7 @@ function tutGuide(){
   var btn=mv?TUT_MOVE_BTN[mv]:null;
   if(i>=0){
     var step=L.tut[i];
+    var extra={card:step.card||null,show:step.show||null,hold:!!step.hold};
     /* A STEP THAT ASKS FOR A FREE ACTION IS NEVER OFF-SCRIPT. The override
        below exists because a player who wanders away from the lesson should
        be told the next MOVE rather than the next line - and it works because
@@ -485,12 +511,19 @@ function tutGuide(){
        on its own. */
     if(step.free||!btn||btn===step.cue)
       return {idx:i,say:"<i>"+(i+1)+" / "+L.tut.length+"</i>"+step.say,
-              cue:step.cue,lock:step.lock};
+              cue:step.cue,lock:step.lock,
+              card:extra.card,show:extra.show,hold:extra.hold};
+    /* Off-script: the solver speaks, so the card and the forced gate go with
+       the line they belonged to. A card explains the move the step was about
+       to ask for, and holding the player to a control the solver has just
+       overruled would gate them out of their own recovery. */
     return {idx:i,say:"<i>"+(i+1)+" / "+L.tut.length+"</i>"+
-            (TUT_MOVE_SAY[mv]||step.say),cue:btn,lock:step.lock};
+            (TUT_MOVE_SAY[mv]||step.say),cue:btn,lock:step.lock,
+            card:null,show:extra.show,hold:false};
   }
   if(!btn)return null;                       // finished, or nothing to suggest
-  return {idx:-1,say:TUT_MOVE_SAY[mv],cue:btn,lock:undefined};
+  return {idx:-1,say:TUT_MOVE_SAY[mv],cue:btn,lock:undefined,
+          card:null,show:null,hold:false};
 }
 function tutStep(){
   if(app!=="play"||!L||!L.tut||!tutC)return -1;
@@ -502,7 +535,14 @@ function tutStep(){
 function tutSync(){
   var el=$("coach");if(!el)return;
   var g=dying?null:tutGuide();
+  /* The card first, and the coach reads its answer. They are two ways of
+     saying one thing and only one of them may be on screen: while a card is
+     up it IS the coach, full-bleed and holding the player still, and a second
+     copy of the lesson behind it at the foot of the screen is noise. */
+  var carded=tutCardSync(g);
+  tutMark=!!(g&&g.show==="landing");
   if(!g){el.classList.remove("on");tutShown=-2;tutUnlock();return;}
+  if(carded){el.classList.remove("on");tutShown=g.idx;tutUnlock();return;}
   el.innerHTML=tutWords(g.say);
   el.classList.add("on");
   // Re-asserted every time rather than only on a change: tutCueTo is a no-op
@@ -528,6 +568,57 @@ function tutSync(){
     tutRelease();
     tutArm();
   }
+}
+/* ============================================================
+   THE EXPLANATION CARD
+   ============================================================
+   Everything else in the tutorial cues a control and lets the player find out
+   what it did, which is the right way round for a verb: pressing it is the
+   explanation. One rule cannot be taught that way. "You come back on the
+   block at the front" is a statement about two blocks that are at the SAME
+   screen position the instant you fold - that is what folding means - so
+   there is nothing to look at while it happens and no press that reveals it.
+
+   So it is said. Once, in words, before the move that demonstrates it, on a
+   card the player has to acknowledge; and then again from the other side,
+   where the identical sentence has the opposite answer. Being a full-bleed
+   screen is the point rather than a cost: it stops the clock (see
+   screenUp(), which tutPlayable() and both real-time frames already ask), it
+   holds the player still, and it cannot be walked past by accident.
+
+   Returns whether a card is up, because the coach needs to know. */
+function tutCardSync(g){
+  var el=$("tutcard"); if(!el)return false;
+  var card=(g&&!dying)?g.card:null;
+  if(!card){
+    if(el.classList.contains("on")){
+      el.classList.remove("on");document.body.classList.remove("carded");
+    }
+    return false;
+  }
+  if(!el.classList.contains("on")){
+    $("tutcardH").textContent=card.h||"";
+    // tutWords, so a card names the verb the way the button in front of the
+    // player names it - the same reason the coach's own prose goes through it.
+    $("tutcardP").innerHTML=tutWords(card.p||"");
+    el.classList.add("on");document.body.classList.add("carded");
+  }
+  return true;
+}
+/* The card is a screen, so it has to answer screenUp() - which is what keeps
+   the keyboard, the boss clock and the trial clock from running behind it. */
+function tutCardUp(){
+  var el=$("tutcard");
+  return !!el&&el.classList.contains("on");
+}
+/* OK. The step is a predicate over a counter like every other one, so this
+   does not advance anything - it records that the card was read and lets
+   tutStep() work out the rest. */
+function tutCardOk(){
+  if(!tutCardUp()||!tutC)return;
+  tutC.card=(tutC.card||0)+1;
+  SFX.hint();                 // the same small "noted" tone a hint lands on
+  syncHud();
 }
 /* .tutlive rather than .cue, because the cue is a 3.2-second pulse and the
    lock lasts as long as the step does. Keying the highlight off the pulse

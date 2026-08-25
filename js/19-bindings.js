@@ -22,6 +22,10 @@ bind("bBegin",function(){
   $("intro").classList.add("gone");
   audio();applyBrightness();     // first gesture unlocks sound
 });
+/* The explanation card's one way out. Nothing else on the card is live, and
+   nothing behind it is: it answers screenUp(), so the four verbs, both
+   clocks and the game keys are all held off while it is being read. */
+bind("bTutOk",tutCardOk);
 bind("hContinue",homeGo);
 bind("hLevels",function(){audio();levelPicker();});
 bind("hWard",function(){audio();wardrobePanel("shape");});
@@ -159,6 +163,11 @@ window.addEventListener("keydown",function(e){
   /* An overlay swallows taps by being there; a keyboard does not care what
      is on top. Without this the arrow keys walked the player around a level
      nobody could see, behind the title screen. */
+  /* The tutorial's card is dismissed before that test, not after: space is a
+     game key, so the guard below would swallow it - and space is the key a
+     hand already resting on the keyboard is on. It cannot fold the world from
+     here in any case, because the card is itself part of screenUp(). */
+  if((k==="enter"||k===" ")&&tutCardUp()){tutCardOk();e.preventDefault();return;}
   if(GAME_KEYS[k]&&screenUp())return;
   if(k==="arrowleft"||k==="a"){press("left");e.preventDefault();}
   else if(k==="arrowright"||k==="d"){press("right");e.preventDefault();}

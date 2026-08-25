@@ -80,45 +80,97 @@ var LEVELS=[
    ]},
 {name:"00 — First Landing",
    hint:"Two blocks in one column. Which of them catches you is decided by where the camera is.",
-   /* RULE 5, FORCED. "You come back on the block nearest the camera" was
-      stated once in First Fold and never made to matter - there the near
-      block was also the goal, so a player who understood none of it still
-      won. It is the single thing that cost the first real playtester the
-      most, and it had no teaching moment after the tutorial.
+   /* RULE 5, FORCED, AND EXPLAINED BEFORE IT IS ASKED FOR.
 
-      Two blocks in one silhouette column, five apart in depth, with no way
-      to walk between them. From the opening view the player is standing on
-      the NEAR one, so folding here would pop them straight back onto
-      themselves. Turn 180 degrees and the same two blocks swap places: the
-      far one is at the front now, and the identical fold carries you across.
-      Same geometry, same verb, opposite answer - which is the rule stated as
-      an experiment rather than as a sentence.
+      "You come back on the block nearest the camera" was stated once in
+      First Fold and never made to matter - there the near block was also the
+      goal, so a player who understood none of it still won. It is the single
+      thing that cost the first real playtester the most.
 
-      Nothing else is possible, and that is the point: solve() says this level
-      is exactly `rot+ rot+ FLAT POP`. A three-block version that would have
-      let the player MAKE the useless fold first was tried and does not work -
-      the solver collapses it to the same four moves, and tutGuide() replaces
-      any step whose cue disagrees with the solver, so a deliberately wasted
-      move cannot be taught at all. The contrast has to be carried by the
-      geometry and by the prose, never by a move. */
-   blocks:[[0,0,0],[0,0,-5]],
+      Two blocks in one silhouette column, five apart in depth, with no way to
+      walk between them. From the opening view the player is standing on the
+      NEAR one, so folding here pops them straight back onto themselves. Turn
+      180 degrees and the same two blocks swap places: the far one is at the
+      front now, and the identical fold carries them across. Same geometry,
+      same verb, opposite answer.
+
+      THE WASTED FOLD IS NOW TAUGHT, and that reverses an earlier finding.
+      It used to be impossible: tutGuide() replaces any step whose cue
+      disagrees with the solver's next move, and the solver never folds from
+      the opening view, so a step asking for it was overridden on every frame.
+      `free:true` is the escape hatch and it now carries this step. The cost
+      is that the level is no longer walked in the solver's own move count -
+      which costs nothing at all here, because a tutorial has no par and no
+      stars. It would not be safe on a scored level.
+
+      The two `card` steps are the other half. Everything else in the tutorial
+      cues a control and lets the player discover what it did; this rule
+      cannot be discovered, because both candidates are at the same screen
+      position the moment you fold. So it is said in words, once, before the
+      move that demonstrates it - and then said again from the other side,
+      where the same sentence has the opposite answer.
+
+      THE EYE IS NO LONGER FORCED. It used to be step 3, and it asked the
+      player to preview a landing they had not yet been told existed. Peek is
+      still live and still lights in the plane; it is simply not a hoop.
+
+      THE COLONNADE IS A RULER AND NOTHING ELSE. Screen-vertical in this
+      projection is height and depth added together, so the far block draws
+      about three cells ABOVE the near one and a first-time player reads it as
+      higher rather than as further back - the exact lie tools/legible.js
+      hunts for, in the level whose whole subject is depth. Two rows of stone
+      running the length of the gap give the eye something to count, and the
+      depth fade grades them so "further" has a visible direction.
+
+      It is at y=2, x=+/-2, and every part of that is load-bearing:
+        - x=+/-2 keeps it two squares clear, so stepping toward it is a fall
+          into nothing exactly as it was before, and its silhouette column is
+          never the player's in views 0 and 2;
+        - y=2 keeps it out of R.landings(), which wants a block at y=0 under a
+          clear y=1, so it can never become a landing candidate in views 1 and
+          3 where its silhouette column IS the player's; and it casts at y=2,
+          one above the player's own row, so it can never crush a fold either.
+      At y=0 or y=1 each of those fails in turn: at y=0 it hands a wandering
+      player a landing on an unreachable rail, at y=1 it crushes any fold
+      taken from view 1. Verified inert - solve() still says the level is
+      exactly `rot+ rot+ FLAT POP` and still says it is impossible without
+      the fold. */
+   blocks:[[0,0,0],[0,0,-5]].concat(
+     box(-2,-2,2,2,-5,0,[]), box(2,2,2,2,-5,0,[])),
    start:[0,1,0],goal:[0,1,-5],rotate:true,tutorial:true,
    tut:[
-     {say:"Two blocks, one column, and a gap far too wide to walk.<br>You are standing on the one at <b>the front</b>, so folding from here would only bring you back to yourself. {do:turnr} twice.",
-      cue:"bRotR",done:function(c,st){return st.view===2;}},
-     {say:"The same two blocks from the other side — and the far one is at the front now.<br>{do:2d}.",
-      cue:"bFlat",done:function(c){return c.flat>=1;}},
-     /* PEEK IS THE FOURTH VERB and this is where it is taught, moved out of
-        First Fold. There it arrived while the fold itself was still being
-        learned; here the player already owns both halves of it, the eye is
-        the only new control, and it is the direct answer to the question the
-        level is asking. `want:"flat"` so a player who stood up early is told
-        the way back rather than asked for something they cannot do. */
-     {say:"Flat, depth is invisible — so look before you commit.<br>Hold the <b>eye</b>: the ring marks the block that is about to catch you.",
-      want:"flat",cue:"bLook",free:true,
-      done:function(c){return (c.peek||0)>=1;}},
-     {say:"{do:3d}. You always return on the block at <b>the front</b> — and which block that is, is what turning decides.",
-      cue:"bFlat",done:function(c){return c.unflat>=1;}}
+     {card:{h:"Which block catches you",
+            p:"<b>{to2}</b> flattens the world. <b>{to3}</b> has to <b>choose</b> where to put you back — and it always picks the block at <b>the front</b>: the one nearest you along the way you are looking.<br><br>So folding from here and folding from the far side are <b>not the same move</b>. You are about to do both."},
+      /* The rings are up BEHIND the card, not after it. The card names
+         "the block at the front" and the marker is what that phrase points
+         at; a sentence about a ring, read on a screen with no ring on it,
+         is a sentence the player has to hold in their head until it turns
+         out to be true. `show` is carried separately from `card` in
+         tutGuide() precisely so a step can do both. */
+      free:true,show:"landing",say:"",
+      done:function(c){return (c.card||0)>=1;}},
+     /* free:true, because the solver would rather turn first and this fold is
+        the whole demonstration. hold:true, because "force him to press GO 2D"
+        is what the level is for - see tutBlocks(). */
+     {say:"The ring marks the block at <b>the front</b> — and it is the one already under you. Fold from here and it is the one that catches you.<br>{do:2d}.",
+      show:"landing",cue:"bFlat",free:true,hold:true,
+      done:function(c){return c.flat>=1;}},
+     {say:"{do:3d}.",
+      show:"landing",cue:"bFlat",hold:true,
+      done:function(c){return c.unflat>=1;}},
+     {say:"Nothing moved: the front block was the one you were standing on.<br>Now the other side. {do:turnr} twice.",
+      cue:"bRotR",hold:true,
+      done:function(c,st){return st.view===2;}},
+     {card:{h:"Same blocks, other side",
+            p:"You have not moved and the world has not changed. But you are looking from the opposite direction now, so <b>the far block is at the front</b> — and the ring has moved onto it.<br><br>The fold that went nowhere a moment ago is about to carry you the whole way across."},
+      free:true,show:"landing",say:"",
+      done:function(c){return (c.card||0)>=2;}},
+     {say:"The ring is on the far block now.<br>{do:2d}.",
+      show:"landing",cue:"bFlat",hold:true,
+      done:function(c){return c.flat>=2;}},
+     {say:"{do:3d} — and across. Same two blocks, same verb, opposite answer: turning is what decides which one is at the front.<br>The <b>eye</b> button previews it whenever you are flat.",
+      show:"landing",cue:"bFlat",hold:true,
+      done:function(c){return c.unflat>=2;}}
    ]},
 /* The three levels below (01, 02 and 04) exist because the curve had a
    hole exactly where a new player stands. The tutorial ends at a difficulty

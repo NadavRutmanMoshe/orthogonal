@@ -13,6 +13,17 @@ var twinCross=null,twinTether=null;
 var trialSlab,trialEdge;
 var colPeril=new THREE.Color(0x8f3b52);
 var perilSet=null,perilCleanup=[],perilPulse=0;
+/* The tutorial's landing marker, as the block loop sees it: cell key -> 1 for
+   the block that will catch you, 2 for one that lost the tie. Built by
+   tutLandMark() out of the same R.landings()/R.pick() pair the fold itself
+   uses, and read a few hundred lines below. It is a second channel on top of
+   the rings because a RING IS NOT ENOUGH ON THE BLOCK YOU ARE STANDING ON -
+   which is exactly the block the first half of `00 - First Landing` is about.
+   Under the player, a wireframe cube is swallowed by the block's own lit rim
+   and by the player sitting on it, so the one square the lesson is pointing
+   at was the one square the marker could not be seen on. */
+var tutMarkSet=null;
+var colTutMark=new THREE.Color(0x2e8f78);
 var crateMeshes=[],keyMeshes=[],goalGhost=null,trialMarks=[];
 var amb,dir1,dir2;
 var center=new THREE.Vector3(),centerT=new THREE.Vector3();
@@ -1981,9 +1992,63 @@ function lookCue(){
   if(planePeek<.05)peekCounted=false;
 }
 
+/* THE TUTORIAL'S OWN RINGS - the same drawing, held up instead of flashed.
+
+   `00 - First Landing` has to point at a block and say "that one catches
+   you", then turn the world around and point at the other one. The rings
+   after a real landing already say exactly that, so this is not a second
+   marker: it is the same one, kept on screen for as long as the step lasts
+   and computed the same way.
+
+   DERIVED, NEVER AUTHORED. The cells come from the same R.landings() /
+   R.pick() pair that doUnflatten() itself calls, so the ring cannot point
+   anywhere the fold would not put you - which matters most on the half turn,
+   where the ring has to move to the other block on its own. A level that
+   listed its two blocks by hand would be a second copy of rule 5 waiting to
+   disagree with the first.
+
+   Silent unless the column actually held a choice, exactly like the landing
+   hint: one candidate decided nothing and a ring around it would be pointing
+   at the only thing there is. */
+var TUT_RING_BREATH=2600;
+var tutRingT=0;
+function tutLandMark(dtMs){
+  if(typeof tutMark==="undefined"||!tutMark)return false;
+  if(app!=="play"||dying||!R)return false;
+  var u,y;
+  if(flat){ if(!flatPos)return false; u=flatPos.u; y=flatPos.y; }
+  else { u=R.uOf(view,player.x,player.z); y=player.y; }
+  var land=R.landings(view,u,y,liveCrates());
+  if(land.length<2)return false;
+  var win=R.pick(land);
+  landHint={t:0,live:true,anchor:!!win.anchor,cells:land.map(function(c){
+    return {x:c.x,y:y-1,z:c.z,win:(c.x===win.x&&c.z===win.z)};
+  })};
+  /* The blocks themselves as well as the rings. Both candidates come out of
+     the depth fade - the loser in this level is five cells back and would
+     otherwise be nearly gone, in a lesson that needs the player to see two
+     blocks in order to understand that one of them was chosen - and the
+     winner is tinted outright, which is the only marker that survives being
+     stood on. Registered with perilCleanup so its edge colour is put back
+     the frame the step ends. */
+  tutMarkSet={};
+  for(var mi=0;mi<landHint.cells.length;mi++){
+    var mc=landHint.cells[mi], mk=K(mc.x,mc.y,mc.z);
+    tutMarkSet[mk]=mc.win?1:2;
+    if(perilCleanup.indexOf(mk)<0)perilCleanup.push(mk);
+  }
+  // A slow breath rather than a steady outline: it has to read as something
+  // the game is saying now, not as an edge the block happens to have. Slow
+  // enough not to compete with the pulse on the button it is asking for.
+  tutRingT=(tutRingT+dtMs)%TUT_RING_BREATH;
+  landRingsDraw(.84+.16*Math.sin(tutRingT/TUT_RING_BREATH*Math.PI*2));
+  return true;
+}
 function landFrame(dtMs){
   var i;
+  tutMarkSet=null;                            // rebuilt below, once, per frame
   if(landHint&&landHint.live)landHint=null;   // rebuilt below while peeking
+  if(tutLandMark(dtMs))return;
   if(!landLive()&&!landHint){
     for(i=0;i<landRings.length;i++)landRings[i].visible=false;return;
   }
@@ -2164,6 +2229,21 @@ function animate(now){
       m.userData.edge.material.color.set(0xff4d5e);
       m.userData.edge.material.opacity=.55+perilPulse*.45;
       m.material.opacity=1;
+    } else if(tutMarkSet&&tutMarkSet[k]){
+      /* The tutorial pointing at a block. Out of the depth fade for the same
+         reason peril is - the whole point is that these two are far apart in
+         depth, so fading the far one hides the thing being taught - and the
+         winner tinted the goal's own green, because "this is where you come
+         back" and "this is where you are going" are the same promise and the
+         rings already say it in that colour. Steady rather than pulsing: the
+         ring above it breathes, the button below it pulses, and a third
+         rhythm on the block itself would be noise. Peril still outranks it:
+         a warning that you are about to be crushed beats a lesson. */
+      var twin=tutMarkSet[k]===1;
+      m.material.color.copy(twin?colTutMark:colBlock).lerp(colInk,flatT*INK_SETTLE);
+      m.userData.edge.material.color.set(twin?0x35c2a5:0x2f5a55);
+      m.userData.edge.material.opacity=twin?.95:.55;
+      m.material.opacity=1;
     } else if(m.userData.glass){
       /* The surface rises and falls. One shared geometry means the plate
          cannot be moved per block, so the swell is carried on the whole
@@ -2320,13 +2400,15 @@ function animate(now){
   if(perilCleanup.length){
     for(var pc=0;pc<perilCleanup.length;pc++){
       var pm=meshes[perilCleanup[pc]];
-      if(!pm||(perilSet&&perilSet[perilCleanup[pc]]))continue;
+      if(!pm||(perilSet&&perilSet[perilCleanup[pc]])||
+         (tutMarkSet&&tutMarkSet[perilCleanup[pc]]))continue;
       var pk=pm.userData.kind;
       pm.userData.edge.material.color.set(
         pk===1?0xbdeaf7:pk===2?0xffd98a:pk===4?0xff8a72:0x0f1424);
       pm.userData.edge.material.opacity=pk===1?.95:(pk===2||pk===4?.85:.35);
     }
-    perilCleanup=perilCleanup.filter(function(kk){return perilSet&&perilSet[kk];});
+    perilCleanup=perilCleanup.filter(function(kk){
+      return (perilSet&&perilSet[kk])||(tutMarkSet&&tutMarkSet[kk]);});
   }
   var sealed=app==="play"&&keyMeshes.length&&keysLeft()>0;
   // Amber, not green, on anything with a clock: the colour is the promise
