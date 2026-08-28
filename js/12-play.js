@@ -322,22 +322,33 @@ function replayStart(mode,who,line){
      would have answered. If the player was already facing that way the swing
      is nothing, and that is worth showing too - it says the fold was there
      to be taken. On a kill the camera keeps the view the player won in. */
-  /* THE ANGLE THAT KILLED YOU, and there is exactly one of the four.
-     Take the view whose screen-right IS the charge direction: then the thing
-     enters from the left of the screen and runs at you to the right, which is
-     the only one of the four angles that shows the charge travelling rather
-     than pointing at or away from the camera. Turned to by the shortest way
+  /* THE ANGLE THAT KILLED YOU IS THE ONE LOOKING ALONG THE LINE, and that is
+     a right angle away from where this started.
+
+     The first version took the view whose screen-RIGHT is the charge
+     direction, so the thing entered from the left and ran at you across the
+     screen. It is a fine drawing of a charge and it is the wrong drawing of
+     THIS charge, because it does not show why the charge is a kill. The kill
+     is a shared silhouette column, and a silhouette column is what you get by
+     collapsing the DEPTH axis - so the two of you only land in one square
+     when the camera is looking down the line you share. Across it, the fold
+     at the end squashes the row sideways and you stay two separate things on
+     screen, which is precisely the question the replay exists to answer.
+
+     So: the view whose depth axis IS the charge direction. `AX[v].d` points
+     at the camera, so matching it to the direction the charge travels puts
+     the hunter at the back and you at the front - it comes at you out of the
+     screen, and when it folds, it lands on you. Turned to by the shortest way
      round, so the swing never goes the long way for a right angle. */
-  var swing=0;
+  var swing=0, want=view;
   if(mode==="death"&&line&&(line.dx||line.dz)){
-    var want=view;
     for(var v=0;v<4;v++)
-      if(AX[v].r[0]===line.dx&&AX[v].r[2]===line.dz){want=v;break;}
+      if(AX[v].d[0]===line.dx&&AX[v].d[2]===line.dz){want=v;break;}
     var d=(want-view+4)%4;
     if(d===3)d=-1;
     swing=d*90;
   }
-  rep={mode:mode,i:i0,t0:repBuf[i0].t,t1:t1,ms:0,fold:0,foldMs:0,
+  rep={mode:mode,i:i0,t0:repBuf[i0].t,t1:t1,ms:0,fold:0,foldMs:0,view:want,
        who:who||null,line:line||null,
        vat:viewAngleTarget,angle:viewAngleTarget+swing,
        saved:{x:player.x,y:player.y,z:player.z,flat:flat,
@@ -357,8 +368,17 @@ function replayStart(mode,who,line){
 function replayPose(f){
   player.x=f.x;player.y=f.y;player.z=f.z;
   flat=!!f.f;flatTarget=f.f?1:0;
-  if(f.f)flatPos={u:f.u,y:f.fy};
-  view=f.v;
+  /* THE VIEW IS THE CAMERA'S, NOT THE RECORDED ONE, and the silhouette is
+     recomputed to match it. The renderer derives every position from
+     `viewAngle`, so the picture was already right - but `flatPos.u` is a
+     coordinate in whichever view it was measured in, and a death replay
+     deliberately swings a right angle away from that. Left alone, a player
+     who was flat during the filmed seconds would be drawn in the wrong
+     column, in the film whose whole subject is which column you share.
+     `player.x/z` are untouched by folding, so the square is always there to
+     re-project from. */
+  view=rep?rep.view:f.v;
+  if(f.f)flatPos={u:R.uOf(view,f.x,f.z),y:f.fy};
   hunters.length=0;
   for(var i=0;i<f.h.length;i++){
     var a=f.h[i];

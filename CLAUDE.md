@@ -612,12 +612,28 @@ walk into a wall.
   **including the kill that wins the fight**, which the first version skipped
   because `bossAdvance()` goes straight to `win()` there and the card cut off
   the film the moment it was earned.
-- **There is exactly one angle that killed you, and it is not a choice.**
-  Take the view whose screen-right *is* the charge direction: then the thing
-  enters from the left of the screen and runs at you to the right. The other
-  three angles show the charge pointing at or away from the camera, where an
-  instant attack that crosses the arena is a dot that gets bigger. Turned to
-  by the shortest way round.
+- **THE ANGLE THAT KILLED YOU IS THE ONE LOOKING ALONG THE LINE**, and it
+  took two tries to get there. The first version took the view whose
+  screen-*right* is the charge direction, so the thing entered from the left
+  and ran at you across the screen. That is a fine drawing of a charge and
+  the wrong drawing of *this* charge, because it never shows why the charge
+  is a kill: the kill is a shared silhouette column, a silhouette column is
+  what you get by collapsing the **depth** axis, and so the two of you only
+  land in one square when the camera is looking **down** the line you share.
+  Across it, the fold at the end squashes the row sideways and you stay two
+  separate things on screen — which is exactly the question the replay
+  exists to answer. So it is the view whose depth axis *is* the charge
+  direction; `AX[v].d` points at the camera, so that puts the hunter at the
+  back and you at the front, and when it folds, it lands on you. Turned to by
+  the shortest way round.
+- **The replay's `view` is the camera's, and the silhouette is recomputed to
+  match.** The renderer derives every position from `viewAngle`, so the
+  picture was already right — but `flatPos.u` is a coordinate in whichever
+  view it was measured in, and a death replay deliberately swings a right
+  angle away from that. Left alone, a player who was flat during the filmed
+  seconds is drawn in the wrong column, in the film whose whole subject is
+  which column you share. `player.x/z` are untouched by folding, so the
+  square is always there to re-project from.
 - **A replay has to look like one.** It runs slower than life
   (`REP_RATE` .55), and it wears the three things film has used to say *this
   is footage* since before games existed: bars top and bottom, a wash over
