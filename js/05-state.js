@@ -133,6 +133,25 @@ var deathPending=false;
 var SLOWMO_MS=620, SLOWMO_RATE=.3;
 var slowMoMs=0;
 function slowMo(){ slowMoMs=SLOWMO_MS; }
+/* THE KILL CAM - the charge replayed from the side it came from.
+
+   A hunter's charge is instant and it is the one event in the fight a player
+   most needs to understand: which line it was, and why folding would have
+   answered it. So when one lands, the fight stops, the camera swings to the
+   view in which that line runs across the screen - the way the thing that
+   charged you had it lined up - and the world folds onto the player. It is
+   the hunter's own verb, done to you, in the one view where you can see it
+   happen.
+
+   It is entirely a RENDER effect and touches no state. `viewAngleTarget` is
+   pushed and restored, and the fold rides `flatT`, which is a render value
+   that nothing outside 10-render.js reads - the same seam peek already uses.
+   `view`, `flat` and `flatPos` do not move, so the board the player gets
+   back is exactly the board they left.
+
+   Its clock is real time, like slow motion's and for the same reason. */
+var KILLCAM_MS=1250;
+var killCamMs=0, killCamAngle=0, killCamReturn=0, killCamFold=0;
 /* Trials. T is null on every level that isn't one, and like B every check is
    guarded on it. It deliberately spends the same `lives` a boss does: a level
    is either on a clock or it isn't, never both, and one counter means the HUD,

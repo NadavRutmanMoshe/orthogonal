@@ -269,9 +269,25 @@ the same curve, so the shadow darkening and the block arriving are one event.
 - **The slab is the plane's indicator now, and only the plane's.** In the
   volume the blocks answer both *where* and *how long*, on the squares, where
   it can be acted on; a red pane on top of that is a second drawing of one
-  fact, so it drops to a frame with almost no fill. Flat is unchanged and
-  opposite: the marks are hidden there, the whole board goes red, and that is
-  still the only warning that the fold you are in is the wrong one.
+  fact, so it drops to a frame with almost no fill.
+- **AND THE ROW FALLS IN THE PLANE TOO, ALL THE WAY ACROSS.** Flat, the
+  per-square shadows are hidden — they would point at world blocks that are
+  not there any more — so for one build the blocks fell only in the volume
+  and the plane got a red wash instead. That is a drawing that contradicts
+  itself: a block lands on you with nothing above you. The rule says the
+  opposite and says it plainly — flattened you are at every depth at once, so
+  you are standing on *every* square of that slice together — so the honest
+  picture is a rank of blocks straight across the whole board at the height
+  you are standing on. `drawPlaneFall()` builds it off the arena's own u
+  range. A slice you could still dodge (one with a screen-right component,
+  which survives the fold as a single column) drops one block, on that
+  column. The wash stays but comes down to .30: it is the ground the row is
+  read against now, not the message.
+- **The blocks have teeth.** Four points on the underside, so a falling cube
+  reads as a thing that crushes rather than as one being delivered.
+  Deliberately *not* the fire block's orange, which was the first idea: that
+  colour is a piece with rules of its own, and borrowing it would say the
+  trial's hazard is something you can learn to walk around.
 
 **The warning is drawn on the squares, not in the air.** A plane carries a
 position only seen *edge-on*, where it is a wall standing somewhere on screen.
@@ -566,6 +582,23 @@ walk into a wall.
   The Census was already saying it too: they live in the plane. A hunter that
   can genuinely fold is a sixth design and a different question; see
   `docs/HISTORY.md`.
+- **THE KILL CAM: the charge replayed from the side it came from.** A
+  hunter's charge is instant and it is the one event a player most needs to
+  understand — which line it was, and why folding would have answered it. So
+  when one lands the fight stops, the camera swings to the view in which that
+  line runs *across* the screen, and the world folds onto the player. It is
+  the hunter's own verb, done to you, in the one view where you can watch it
+  happen. If the player was already facing that way the swing is nothing, and
+  that is worth showing too: it says the fold was there to be taken.
+- **It is entirely a render effect and touches no state.** `viewAngleTarget`
+  is pushed and restored by `killCamEnd()`, and the fold rides `flatT`, which
+  is a render value nothing outside `10-render.js` reads — the same seam peek
+  already uses. `view`, `flat` and `flatPos` do not move, so the board handed
+  back is exactly the board the player left. It is ticked in the render loop
+  on **real** time, because `bossFrame` is stopped for precisely the things
+  the cam plays over; `bossFrame` returns while it runs and `bossHolding()`
+  refuses all four verbs, so no window — the shield included — is spent on a
+  piece of film.
 - **Slow motion on the two moments the fight is decided.** A kill and a hit
   are both instant, and both happen on a beat the player is already reacting
   to, so the thing they most need to see — which column it was, which line it

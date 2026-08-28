@@ -1360,6 +1360,7 @@ function buildTrialMarks(){
       new THREE.EdgesGeometry(new THREE.BoxGeometry(.88,.88,.88)),
       new THREE.LineBasicMaterial({color:0xffb3ba,transparent:true,opacity:0}));
     fall.add(fedge);fall.userData.edge=fedge;
+    addCrushTeeth(fall);
     scene.add(fall);
     m.userData.fall=fall;
     scene.add(m);trialMarks.push(m);
@@ -1695,6 +1696,7 @@ function drawTrial(rx,rz){
   if(!trialSlab)return;
   if(!TR||app!=="play"||!TR.beats.length){
     trialSlab.visible=trialEdge.visible=false;
+    for(var pf=0;pf<planeFalls.length;pf++)planeFalls[pf].visible=false;
     for(var q=0;q<trialMarks.length;q++){
       trialMarks[q].visible=false;
       if(trialMarks[q].userData.fall)trialMarks[q].userData.fall.visible=false;
@@ -1772,16 +1774,92 @@ function drawTrial(rx,rz){
      that no longer exists. The whole board going red is the correct answer
      there, and the only warning that the fold you are in is the wrong one. */
   var edgeOnly = flatT<=.5;
-  var wash = edgeOnly ? .07 : 1;
+  // Flat, the row of falling blocks is the subject and the wash is the ground
+  // it is read against, so the wash comes down enough to let them show.
+  var wash = edgeOnly ? .07 : .30;
   trialSlab.material.opacity=(live?(.62+trialFlash*.3):(.15+ph*ph*.3))*wash;
   trialEdge.material.opacity=(live?1:(.5+ph*.4))*(edgeOnly?.22:1);
   trialSlab.visible=trialEdge.visible=true;
   drawTrialMarks(sw,ph,live);
+  drawPlaneFall(sw,ph,live,rx,rz);
 }
 /* The tiles. Flat only in the volume: in the plane the world is a silhouette
    and a marker sitting on a world block would be pointing at a place that is
    not there any more - the slab is the right shape for that case and already
    says it. */
+/* THE ROW THAT FALLS ON THE PLANE.
+
+   Flat, the world is a silhouette, so the per-square shadows are hidden -
+   they would be pointing at world blocks that are not there any more. But
+   the blocks still have to fall, and they have to fall EVERYWHERE, because
+   that is precisely what the rule says: flattened you are at every depth at
+   once, so you are standing on every square of the slice together. A hazard
+   that is only drawn where a block happens to be leaves the player watching
+   something land beside them and taking a life for it.
+
+   So in the plane the drawing is a rank of blocks straight across the board,
+   at the height the player is standing on. When the slice is one you COULD
+   dodge - an axis with a screen-right component, so it survives the fold as
+   a single column - only that column falls. When it is the view axis, the
+   whole row does, which is the one warning the plane gives. */
+var planeFalls=[];
+function planeFall(i){
+  while(planeFalls.length<=i){
+    var m=new THREE.Mesh(new THREE.BoxGeometry(.86,.86,.86),
+      new THREE.MeshBasicMaterial({color:0xff4d5e,transparent:true,
+        opacity:0,depthWrite:false}));
+    var e=new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.BoxGeometry(.88,.88,.88)),
+      new THREE.LineBasicMaterial({color:0xffb3ba,transparent:true,opacity:0}));
+    m.add(e);m.userData.edge=e;
+    addCrushTeeth(m);
+    m.renderOrder=902;m.visible=false;
+    scene.add(m);planeFalls.push(m);
+  }
+  return planeFalls[i];
+}
+function drawPlaneFall(sw,ph,live,rx,rz){
+  var n=0;
+  if(TR&&app==="play"&&flatT>.5&&flatPos&&sw.axis!=="y"){
+    var comp=sw.axis==="x"?AX[view].r[0]:AX[view].r[2];
+    var us=[];
+    if(comp!==0)us.push(sw.at*comp);
+    else{
+      // the whole board: every u the arena spans, so the row reaches the
+      // player wherever they are standing in it
+      var uA=arenaLo[0]*AX[view].r[0]+arenaLo[2]*AX[view].r[2];
+      var uB=arenaHi[0]*AX[view].r[0]+arenaHi[2]*AX[view].r[2];
+      var lo=Math.min(uA,uB)-1, hi=Math.max(uA,uB)+1;
+      for(var u=lo;u<=hi;u++)us.push(u);
+    }
+    var y=flatPos.y, drop=live?0:FALL_H*(1-ph*ph);
+    for(var i=0;i<us.length;i++){
+      var m=planeFall(n++);
+      m.visible=true;
+      m.position.set(us[i]*rx,y-.5+.44+drop,us[i]*rz);
+      m.scale.set(live?1.1:1,live?.5:1,live?1.1:1);
+      m.material.opacity=live?.95:(.30+ph*.5);
+      if(m.userData.edge)m.userData.edge.material.opacity=live?1:(.35+ph*.55);
+    }
+  }
+  for(var k=n;k<planeFalls.length;k++)planeFalls[k].visible=false;
+}
+/* Four points under a falling block, so it reads as a thing that crushes
+   rather than as a cube being delivered. Deliberately not the fire block's
+   orange: that colour is a piece with rules of its own, and borrowing it
+   here would say the trial's hazard is something you can learn to walk
+   around. Red, and pointed. */
+function addCrushTeeth(m){
+  if(!spikeGeo)return;
+  var mat=new THREE.MeshBasicMaterial({color:0xffb3ba,transparent:true,
+    opacity:.85,depthWrite:false});
+  [[-.24,-.24],[.24,-.24],[-.24,.24],[.24,.24]].forEach(function(o){
+    var t=new THREE.Mesh(spikeGeo,mat);
+    t.position.set(o[0],-.52,o[1]);
+    t.rotation.x=Math.PI;
+    m.add(t);
+  });
+}
 function drawTrialMarks(sw,ph,live){
   var hidden=flatT>.5;
   var here=null;
@@ -2329,6 +2407,28 @@ function animate(now){
   planePeek+=(wantPlane-planePeek)*.15;
   if(planePeek<.002)planePeek=0;
   var ftWant=flatTarget*(1-planePeek*PEEK_RISE);
+  /* THE KILL CAM. Ticked here rather than in bossFrame, because bossFrame is
+     stopped for exactly the things the cam plays over - the hit, and a death
+     if that was the last life. Real time for the same reason slow motion is:
+     it is a piece of film, not a beat of the fight.
+
+     The swing is a push on viewAngleTarget, restored by killCamEnd; the fold
+     is a floor under flatT, which is a render value nothing outside this file
+     reads. Neither `view` nor `flat` moves, so the board handed back is the
+     board the player left. */
+  if(killCamMs>0){
+    killCamMs=Math.max(0,killCamMs-dtMs);
+    viewAngleTarget=killCamAngle;
+    var kp=1-killCamMs/KILLCAM_MS;
+    // swing first, then fold: the line has to be legible before it closes
+    var kf=Math.max(0,Math.min(1,(kp-.42)/.34));
+    killCamFold=kf*kf*(3-2*kf);
+    if(killCamMs<=0&&typeof killCamEnd==="function")killCamEnd();
+  }
+  if(killCamFold>0){
+    ftWant=Math.max(ftWant,killCamFold);
+    if(killCamMs<=0)killCamFold=Math.max(0,killCamFold-dtMs/420);
+  }
   /* Standing up is SLOWER than folding, so the return reads as a journey
      rather than a cut - it is the one moment that shows you travelling to
      the front of the stack. Not on a clock: there, half a second is a real

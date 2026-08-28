@@ -109,7 +109,7 @@ function respawn(){
 function bossReset(){
   bossPause=0;phaseNoteEnd();
   bossHp=B?B.hp:0;bossFlash=0;bossHitFlash=0;bossCreepMs=0;bossGraceMs=0;
-  shieldMs=0;deathPending=false;slowMoMs=0;
+  shieldMs=0;deathPending=false;slowMoMs=0;killCamEnd();
   hunters=[];twinCore=0;twinAt=null;bossPhase=0;
   if(B&&B.twin)twinSpawn(0);
   else if(B){bossRestoreArena();bossEnterPhase(false);}
@@ -280,7 +280,26 @@ function bossAdvance(){
 }
 /* Held while the card is up: nothing walks, nothing lands, nothing you press
    does anything. Read by the four verbs and by bossFrame. */
-function bossHolding(){return bossPause>0;}
+/* Nothing answers while the board is being handed back to the player - a
+   phase boundary, or a kill cam replaying the charge that just landed. */
+function bossHolding(){return bossPause>0||killCamMs>0;}
+/* Swing to the view in which the line runs ACROSS the screen, which is the
+   one where you can watch it travel and the one a fold along it would have
+   answered. If the player is already facing that way the swing is nothing,
+   and that is worth showing too: it says the fold was there to be taken. */
+function killCamStart(line){
+  if(!B||killCamMs>0)return;
+  var alongX=!!line.dx;
+  var par=alongX?(AX[view].r[0]!==0):(AX[view].r[2]!==0);
+  killCamReturn=viewAngleTarget;
+  killCamAngle=viewAngleTarget+(par?0:90);
+  killCamFold=0;
+  killCamMs=KILLCAM_MS;
+}
+function killCamEnd(){
+  if(killCamMs>0)viewAngleTarget=killCamReturn;
+  killCamMs=0;killCamFold=0;
+}
 function phaseNote(text){
   var el=$("phaseNote");if(!el)return;
   el.innerHTML="<b>phase "+(bossPhase+1)+" of "+B.phases.length+"</b><i>"+
@@ -371,6 +390,12 @@ function bossFrame(dt){
     if(bossPause<=0)phaseNoteEnd();
     return;
   }
+  /* And nothing moves while the kill cam is playing. The camera is swung and
+     the world is folded, so the board on screen is not the board the player
+     would be acting on - and every window here, the shield included, should
+     be waiting for them rather than running through a piece of film. Its own
+     clock is real time, in the render loop. */
+  if(killCamMs>0)return;
   if(bossGraceMs>0)bossGraceMs=Math.max(0,bossGraceMs-dt);
   if(shieldMs>0&&!deathPending)shieldMs=Math.max(0,shieldMs-dt);
   if(!hunters.length)return;
@@ -429,10 +454,13 @@ function bossFrame(dt){
       if(!h.line){h.lock=0;continue;}          // you broke the line: it walks
       h.lock-=dt;
       if(h.lock<=0){
+        // Captured before the lock is cleared: the kill cam is about the line
+        // that just fired, and two lines below there is no line any more.
+        var fired=h.line;
         h.lock=0;h.line=null;
         h.x=player.x;h.y=player.y;h.z=player.z;   // the charge, all at once
         SFX.shot();shakeT=1;
-        bossHurt("it came down the line");
+        bossHurt("it came down the line",fired);
         return;
       }
       continue;
@@ -578,10 +606,13 @@ function bossCrushable(){
     if(doomedCell(hunters[i].x,hunters[i].y,hunters[i].z,cr))return true;
   return false;
 }
-function bossHurt(why){
+function bossHurt(why,line){
   if(shielded())return;        // asserted here as well as at the call site
   lives--;
   SFX.die();shakeT=1;slowMo();
+  // The charge is the one hit worth replaying: it is instant, it comes from
+  // across the arena, and folding was the answer to it.
+  if(line)killCamStart(line);
   bossGraceMs=B.grace;
   shieldMs=SHIELD_MS;
   var bar=$("bossBar");
@@ -627,7 +658,7 @@ function bossTakeCrate(idx){
    ============================================================ */
 function trialReset(){
   trialMs=0;trialBeat=-1;trialFlash=0;trialGrace=0;trialTicked=-1;trialCore=0;
-  shieldMs=0;deathPending=false;slowMoMs=0;
+  shieldMs=0;deathPending=false;slowMoMs=0;killCamEnd();
   if(TR)lives=BOSS_LIVES;
 }
 function trialFrame(dt){
