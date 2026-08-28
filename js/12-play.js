@@ -111,6 +111,7 @@ function bossReset(){
   bossHp=B?B.hp:0;bossFlash=0;bossHitFlash=0;bossCreepMs=0;bossGraceMs=0;
   shieldMs=0;deathPending=false;slowMoMs=0;
   rep=null;bossPendingAdvance=false;replayClear();
+  document.body.classList.remove("replaying");
   hunters=[];twinCore=0;twinAt=null;bossPhase=0;
   if(B&&B.twin)twinSpawn(0);
   else if(B){bossRestoreArena();bossEnterPhase(false);}
@@ -321,10 +322,20 @@ function replayStart(mode,who,line){
      would have answered. If the player was already facing that way the swing
      is nothing, and that is worth showing too - it says the fold was there
      to be taken. On a kill the camera keeps the view the player won in. */
+  /* THE ANGLE THAT KILLED YOU, and there is exactly one of the four.
+     Take the view whose screen-right IS the charge direction: then the thing
+     enters from the left of the screen and runs at you to the right, which is
+     the only one of the four angles that shows the charge travelling rather
+     than pointing at or away from the camera. Turned to by the shortest way
+     round, so the swing never goes the long way for a right angle. */
   var swing=0;
-  if(mode==="death"&&line){
-    var par=line.dx?(AX[view].r[0]!==0):(AX[view].r[2]!==0);
-    swing=par?0:90;
+  if(mode==="death"&&line&&(line.dx||line.dz)){
+    var want=view;
+    for(var v=0;v<4;v++)
+      if(AX[v].r[0]===line.dx&&AX[v].r[2]===line.dz){want=v;break;}
+    var d=(want-view+4)%4;
+    if(d===3)d=-1;
+    swing=d*90;
   }
   rep={mode:mode,i:i0,t0:repBuf[i0].t,t1:t1,ms:0,fold:0,foldMs:0,
        who:who||null,line:line||null,
@@ -334,6 +345,10 @@ function replayStart(mode,who,line){
               h:hunters.map(function(h){
                 return {x:h.x,y:h.y,z:h.z,lock:h.lock,line:h.line,doom:h.doom,
                         ms:h.ms,step:h.step,shy:h.shy};})}};
+  document.body.classList.add("replaying");
+  var lab=$("replayNote");
+  if(lab)lab.textContent=mode==="death"?"the line it came down"
+                                       :"the fold that cleared it";
   return true;
 }
 /* Write a recorded frame over the live state. Safe because the fight is
@@ -368,6 +383,7 @@ function replayEnd(){
   hunters.length=0;
   for(var i=0;i<sv.h.length;i++)hunters.push(sv.h[i]);
   rep=null;
+  document.body.classList.remove("replaying");
   buildGrid();syncHud();
   // A phase that was waiting for the replay to finish starts now.
   if(bossPendingAdvance){bossPendingAdvance=false;bossAdvance();}
@@ -682,9 +698,11 @@ function bossFoldCrush(){
      to finish - starting it now would leave replayEnd() restoring a board
      that had already moved on. */
   if(!hunters.length){
-    if(bossPhase+1<B.phases.length&&replayStart("kill")){
-      bossPendingAdvance=true;syncHud();return;
-    }
+    /* Including the kill that WINS the fight, which the first version
+       skipped: bossAdvance() goes straight to win() there, so the film was
+       cut off by the card the moment it was earned. The advance - phase or
+       win - waits behind the replay either way. */
+    if(replayStart("kill")){bossPendingAdvance=true;syncHud();return;}
     bossAdvance();return;
   }
   flash(doomed.length>1?(doomed.length+" in one square · "+hunters.length+" left"):
@@ -712,28 +730,32 @@ function bossHurt(why,who,line){
   if(shielded())return;        // asserted here as well as at the call site
   lives--;
   SFX.die();shakeT=1;slowMo();
-  /* The replay goes up AFTER the life is counted and after the out-of-lives
-     check above, so the last life ends the level rather than playing a film
-     over a death animation. */
-  replayStart("death",who,line||null);
   bossGraceMs=B.grace;
   shieldMs=SHIELD_MS;
   var bar=$("bossBar");
   if(bar){bar.classList.remove("hurt");void bar.offsetWidth;bar.classList.add("hurt");}
   if(lives<=0){die("boss");return;}
   flash(why+" · "+lives+" "+(lives===1?"life":"lives")+" left");
-  /* They are thrown back to where they started and you are not moved at all.
-     Sending the player home was what the gunfight did, and it made every hit
-     cost the position you had spent twenty seconds building - which is a
-     punishment for being hit *and* for having played well. The pack losing
-     its ground is punishment enough, and it buys you the beat of grace to
-     use it. */
+  /* AND YOU GO HOME TOO, which reverses an earlier call on the owner's say.
+     The argument against it stands - a hit costs you the position you spent
+     twenty seconds building, on top of the life - but a hit is also the
+     moment the board changes most, and being put back somewhere known,
+     standing, facing the way the level opens, is what makes the next phase
+     of the fight readable rather than a scramble from wherever you were
+     caught. It happens BEFORE the replay starts, so the pose the replay
+     saves and restores is the one the player is meant to come back to. */
   var spawns=B.twin?B.at:B.phases[bossPhase].at;
   for(var i=0;i<hunters.length;i++){
     var a=spawns[i%spawns.length];
     hunters[i].x=a[0];hunters[i].y=a[1];hunters[i].z=a[2];
     hunters[i].ms=0;hunters[i].lock=0;hunters[i].line=null;hunters[i].shy=0;
   }
+  bossSendHome();
+  /* The replay goes up last: after the life is counted, after the out-of-lives
+     check, and after everything has been put back where the player will
+     resume from - so the pose it saves and restores is the one they are meant
+     to come back to. */
+  replayStart("death",who,line||null);
   syncHud();
 }
 // A crate shoved onto a hunter is the other way to kill one, and it costs a
@@ -763,6 +785,7 @@ function trialReset(){
   trialMs=0;trialBeat=-1;trialFlash=0;trialGrace=0;trialTicked=-1;trialCore=0;
   shieldMs=0;deathPending=false;slowMoMs=0;
   rep=null;bossPendingAdvance=false;replayClear();
+  document.body.classList.remove("replaying");
   if(TR)lives=BOSS_LIVES;
 }
 function trialFrame(dt){

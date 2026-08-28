@@ -179,8 +179,8 @@ function slowMo(){ slowMoMs=SLOWMO_MS; }
        interrupt a fight that is still running. */
 var REP_HZ=20;                 // one sample every 50ms
 var REP_KEEP=6000;             // how much history the ring holds
-var REP_DEATH_MS=2200, REP_KILL_MS=1600;   // how much of it each mode shows
-var REP_RATE=.78;               // played back slower than it happened
+var REP_DEATH_MS=1900, REP_KILL_MS=1500;   // how much of it each mode shows
+var REP_RATE=.55;               // played back slower than it happened
 var REP_FOLD_MS=520, REP_HOLD_MS=260;      // the fold at the end, and a beat on it
 var repBuf=[], repT=0, repAcc=0;
 var rep=null;

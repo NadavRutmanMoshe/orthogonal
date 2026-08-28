@@ -397,6 +397,46 @@
     .sprompt{animation:none;opacity:.6}
   }
 
+  /* THE REPLAY. Bars, a wash and a label - the three things that have said
+     "this is footage, not the thing itself" since before games existed. The
+     wash is a flat overlay rather than a filter on the canvas: a filter on a
+     full-screen WebGL canvas is repainted every frame and this runs on a
+     phone during the most expensive moment in the game. */
+  .replayui{position:fixed;inset:0;z-index:14;pointer-events:none;opacity:0;
+    transition:opacity .28s ease}
+  body.replaying .replayui{opacity:1}
+  .replayui .rdim{position:absolute;inset:0;
+    background:radial-gradient(ellipse at 50% 45%,
+      rgba(10,14,26,.10),rgba(6,9,18,.52) 78%)}
+  .rbar{position:absolute;left:0;right:0;height:8.5vh;background:#05070e;
+    transform:scaleY(0);transition:transform .3s cubic-bezier(.2,.9,.3,1)}
+  .rbar.top{top:0;transform-origin:top}
+  .rbar.bot{bottom:0;transform-origin:bottom}
+  body.replaying .rbar{transform:scaleY(1)}
+  /* Under the lower bar, where a subtitle goes - over the top one it landed
+     across the level's own name and hint, which are the two lines that say
+     which fight this is. */
+  .rlabel{position:absolute;left:0;right:0;bottom:calc(8.5vh + 16px);
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:10px;letter-spacing:.28em;text-transform:uppercase;
+    color:#e8eefc}
+  .rlabel b{font-weight:600}
+  /* The recording dot, which is the one part that moves - a still label over
+     a moving picture reads as a watermark rather than as a state. */
+  .rlabel s{width:7px;height:7px;border-radius:50%;background:#ff4d5e;
+    text-decoration:none;animation:rdot 1.1s ease-in-out infinite}
+  @keyframes rdot{0%,100%{opacity:1}50%{opacity:.25}}
+  .rlabel i{font-style:normal;letter-spacing:.12em;text-transform:none;
+    font-size:9.5px;color:#9fb0d0}
+  @media (prefers-reduced-motion: reduce){
+    .rbar{transition:none}
+    .rlabel s{animation:none}
+  }
+  /* The controls are inert while it plays, and they should look it. */
+  body.replaying #playBar,body.replaying .hud{opacity:.32;
+    transition:opacity .28s ease}
+
   .won{position:fixed;inset:0;display:none;flex-direction:column;z-index:20;
     align-items:center;justify-content:center;gap:16px;
     background:rgba(15,20,36,.86)}

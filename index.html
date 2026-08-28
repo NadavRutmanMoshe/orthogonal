@@ -62,6 +62,17 @@
 </div>
 <div class="phasenote" id="phaseNote"></div>
 
+<!-- THE REPLAY'S OWN CHROME. A replay that looks exactly like play is just
+     the game behaving oddly, so it gets the two things film has used for the
+     same job forever: bars top and bottom, and a label saying what it is.
+     Everything here is inert - the fight is frozen underneath. -->
+<div class="replayui" id="replayUI" aria-hidden="true">
+  <div class="rdim"></div>
+  <div class="rbar top"></div>
+  <div class="rbar bot"></div>
+  <div class="rlabel"><s></s><b>REPLAY</b><i id="replayNote"></i></div>
+</div>
+
 <div class="bar on" id="playBarWrap">
   <div id="playBar" class="on">
     <div class="dpad">

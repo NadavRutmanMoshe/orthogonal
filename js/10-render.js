@@ -2152,7 +2152,10 @@ function buildShield(){
 }
 function shieldFrame(){
   if(!shieldFill)return;
-  var on=app==="play"&&(B||TR)&&shieldMs>0&&!dying;
+  /* Never during a replay: the film is of a moment when there was no shield,
+     and drawing one round a recorded pose says the player was protected in a
+     second they very much were not. */
+  var on=app==="play"&&(B||TR)&&shieldMs>0&&!dying&&!rep;
   shieldFill.visible=shieldShell.visible=!!on;
   if(!on)return;
   var t=Math.min(1,shieldMs/SHIELD_MS);              // 1 at the hit, 0 at the end
@@ -2457,7 +2460,7 @@ function animate(now){
       Math.max(arenaLo[0],Math.min(arenaHi[0],sub.x)),
       Math.max(arenaLo[1],Math.min(arenaHi[1]+1,sub.y))+.5,
       Math.max(arenaLo[2],Math.min(arenaHi[2],sub.z)));
-    repFollow.lerp(centerT,.35);      // still mostly the arena, leaning to them
+    repFollow.lerp(centerT,.5);       // half way: a lean, not a lock
     center.lerp(repFollow,.10);
   } else if(FOLLOW>0&&app==="play"&&playerMesh){
     followT.copy(playerMesh.position);

@@ -608,7 +608,27 @@ walk into a wall.
   it follows the hunter that hit you, from the view in which its line runs
   across the screen, and ends by folding the world onto you. On a **kill** it
   only runs on the fold that CLEARS a phase — killing one of a pair ends
-  nothing, and a film there would interrupt a fight that is still going.
+  nothing, and a film there would interrupt a fight that is still going —
+  **including the kill that wins the fight**, which the first version skipped
+  because `bossAdvance()` goes straight to `win()` there and the card cut off
+  the film the moment it was earned.
+- **There is exactly one angle that killed you, and it is not a choice.**
+  Take the view whose screen-right *is* the charge direction: then the thing
+  enters from the left of the screen and runs at you to the right. The other
+  three angles show the charge pointing at or away from the camera, where an
+  instant attack that crosses the arena is a dot that gets bigger. Turned to
+  by the shortest way round.
+- **A replay has to look like one.** It runs slower than life
+  (`REP_RATE` .55), and it wears the three things film has used to say *this
+  is footage* since before games existed: bars top and bottom, a wash over
+  the world, and a label. Without them it was reported, fairly, as the game
+  behaving oddly. The wash is a flat overlay and not a filter on the canvas —
+  a filter on a full-screen WebGL canvas repaints every frame, on a phone, at
+  the most expensive moment in the game. The HUD and the control bar dim with
+  it, because they are inert and should look it.
+- **No shield bubble in the film.** It is a recording of a moment when there
+  was no shield, and a bubble round a recorded pose says the player was
+  protected in a second they very much were not.
 - **It records state, not inputs, and that is a decision rather than a
   shortcut.** The two families are re-simulation from recorded inputs plus a
   seed, and a ring of state snapshots. The first is tiny and needs exact
@@ -664,9 +684,14 @@ walk into a wall.
   survivors of a fold get for surviving it, so a fold that kills nothing is
   worse than free; `creep` tightens the whole pack every few seconds whatever
   you do. Both floor out at `floorStep` so it stays human.
-- **A hit throws the pack back to its spawns and does not move you.** Sending
-  the player home costs the position they spent twenty seconds building — a
-  punishment for being hit *and* for having played well.
+- **A hit throws the pack back to its spawns AND sends you home**, which
+  reverses an earlier call, on the owner's say. The old argument stands — it
+  costs the position you spent twenty seconds building, on top of the life —
+  but a hit is the moment the board changes most, and being put back
+  somewhere known, standing, facing the way the level opens, is what makes
+  what follows readable rather than a scramble from wherever you were caught.
+  It happens **before** the replay starts, so the pose the replay saves and
+  restores is the one the player is meant to come back to.
 - **Clearing a phase throws *you* back to your corner** (`bossSendHome`),
   which is the deliberate opposite. Killing means folding and folding means
   being where it is, so the square beside a spawn is the best in the arena:
