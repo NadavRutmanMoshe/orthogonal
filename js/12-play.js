@@ -335,15 +335,20 @@ function replayStart(mode,who,line){
      at the end squashes the row sideways and you stay two separate things on
      screen, which is precisely the question the replay exists to answer.
 
-     So: the view whose depth axis IS the charge direction. `AX[v].d` points
-     at the camera, so matching it to the direction the charge travels puts
-     the hunter at the back and you at the front - it comes at you out of the
-     screen, and when it folds, it lands on you. Turned to by the shortest way
-     round, so the swing never goes the long way for a right angle. */
+     So: the view whose depth axis is the charge direction REVERSED. AX[v].d
+     points at the camera, so matching it to where the charge came FROM puts
+     the hunter at the front and you behind it - which is the half of this
+     that is the owner's call and the right one. The film is the other side's
+     point of view: you are looking over the thing that killed you, down the
+     line it took, at yourself at the far end of it. Then the fold closes that
+     depth and the two of you land in one square, which is the kill.
+
+     Turned to by the shortest way round, so the swing never goes the long way
+     for a right angle. */
   var swing=0, want=view;
   if(mode==="death"&&line&&(line.dx||line.dz)){
     for(var v=0;v<4;v++)
-      if(AX[v].d[0]===line.dx&&AX[v].d[2]===line.dz){want=v;break;}
+      if(AX[v].d[0]===-line.dx&&AX[v].d[2]===-line.dz){want=v;break;}
     var d=(want-view+4)%4;
     if(d===3)d=-1;
     swing=d*90;

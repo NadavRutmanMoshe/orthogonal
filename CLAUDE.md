@@ -622,10 +622,14 @@ walk into a wall.
   land in one square when the camera is looking **down** the line you share.
   Across it, the fold at the end squashes the row sideways and you stay two
   separate things on screen — which is exactly the question the replay
-  exists to answer. So it is the view whose depth axis *is* the charge
-  direction; `AX[v].d` points at the camera, so that puts the hunter at the
-  back and you at the front, and when it folds, it lands on you. Turned to by
-  the shortest way round.
+  exists to answer. So it is the view whose depth axis is the charge
+  direction **reversed**: `AX[v].d` points at the camera, so matching it to
+  where the charge came *from* puts the hunter at the front and you behind
+  it — you are looking over the thing that killed you, down the line it took,
+  at yourself at the far end. Then the fold closes that depth and the two of
+  you land in one square, which is the kill. The 180 is the owner's call and
+  the right one: the film belongs to the other side, so the other side is
+  what the camera is behind. Turned to by the shortest way round.
 - **The replay's `view` is the camera's, and the silhouette is recomputed to
   match.** The renderer derives every position from `viewAngle`, so the
   picture was already right — but `flatPos.u` is a coordinate in whichever
