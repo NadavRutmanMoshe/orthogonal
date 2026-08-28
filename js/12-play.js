@@ -49,11 +49,31 @@ function die(kind){
    rather than left where you were, because you got here by falling out of
    the world or being crushed - there is nowhere to leave you. */
 function spendLife(){
+  /* THE SHIELD ABSORBS IT, and you are still put back.
+
+     This is the half of the fix that matters. A hit sets the shield, and a
+     hit is very often followed within the same moment by a fall - you were
+     mid-step, or the square you were pulled back onto was the edge - which
+     used to charge a second life for one mistake. The consequence still
+     happens: you fell out of the world and there is nowhere to leave you, so
+     you go back to the start. It is the *life* that is not spent. */
+  if(shieldMs>0){
+    flash("shielded \u00b7 no life lost");
+    respawn();
+    return;
+  }
   lives--;
   if(lives<=0){die(TR?"trial":"boss");return;}
   flash(lives+" "+(lives===1?"life":"lives")+" left");
   if(TR)trialGrace=TR.period;
   if(B)bossGraceMs=B.grace;
+  shieldMs=SHIELD_MS;
+  respawn();
+}
+/* Back to the start with everything else intact - the cores you have taken,
+   the clock, the pack's damage. Factored out of spendLife() because the
+   shield needs the repositioning without the accounting. */
+function respawn(){
   moveHistory=[];
   initDynamic();buildDynamic();
   player={x:L.start[0],y:L.start[1],z:L.start[2]};
@@ -80,6 +100,7 @@ function spendLife(){
 function bossReset(){
   bossPause=0;phaseNoteEnd();
   bossHp=B?B.hp:0;bossFlash=0;bossHitFlash=0;bossCreepMs=0;bossGraceMs=0;
+  shieldMs=0;
   hunters=[];twinCore=0;twinAt=null;bossPhase=0;
   if(B&&B.twin)twinSpawn(0);
   else if(B){bossRestoreArena();bossEnterPhase(false);}
@@ -339,6 +360,7 @@ function bossFrame(dt){
     return;
   }
   if(bossGraceMs>0)bossGraceMs=Math.max(0,bossGraceMs-dt);
+  if(shieldMs>0)shieldMs=Math.max(0,shieldMs-dt);
   if(!hunters.length)return;
 
   /* The creep. Nothing about this fight stops you from running in circles,
@@ -480,7 +502,7 @@ function bossContact(){
   return false;
 }
 function hunterTouching(h){
-  if(bossGraceMs>0)return false;
+  if(bossGraceMs>0||shieldMs>0)return false;
   if(flat)return R.uOf(view,h.x,h.z)===flatPos.u&&h.y===flatPos.y;
   return h.x===player.x&&h.y===player.y&&h.z===player.z;
 }
@@ -545,9 +567,11 @@ function bossCrushable(){
   return false;
 }
 function bossHurt(why){
+  if(shieldMs>0)return;        // asserted here as well as at the call site
   lives--;
   SFX.die();shakeT=1;
   bossGraceMs=B.grace;
+  shieldMs=SHIELD_MS;
   var bar=$("bossBar");
   if(bar){bar.classList.remove("hurt");void bar.offsetWidth;bar.classList.add("hurt");}
   if(lives<=0){die("boss");return;}
@@ -591,6 +615,7 @@ function bossTakeCrate(idx){
    ============================================================ */
 function trialReset(){
   trialMs=0;trialBeat=-1;trialFlash=0;trialGrace=0;trialTicked=-1;trialCore=0;
+  shieldMs=0;
   if(TR)lives=BOSS_LIVES;
 }
 function trialFrame(dt){
@@ -605,6 +630,9 @@ function trialFrame(dt){
   dt=Math.min(dt,90)*paceScale();
   if(trialFlash>0)trialFlash=Math.max(0,trialFlash-dt/300);
   if(trialGrace>0)trialGrace=Math.max(0,trialGrace-dt);
+  // On the fight's own clock, like every other window here, so the pace
+  // setting scales it and it does not run while the fight is paused.
+  if(shieldMs>0)shieldMs=Math.max(0,shieldMs-dt);
   var was=TR.live(trialMs);
   trialMs+=dt;
   var live=TR.live(trialMs);
@@ -617,7 +645,7 @@ function trialFrame(dt){
   if(!live)return;
   // One beat can only take one life, however long you stand in it: the sweep
   // lands once, it is not a floor that stays lethal.
-  if(trialBeat===beat||trialGrace>0)return;
+  if(trialBeat===beat||trialGrace>0||shieldMs>0)return;
   var sw=TR.beatAt(trialMs);
   var hit=flat ? TR.hits(sw,view,"2",flatPos.u,flatPos.y,0)
                : TR.hits(sw,view,"3",player.x,player.y,player.z);
@@ -635,9 +663,11 @@ function trialFrame(dt){
    are pulled out of, because it is where being caught means being caught
    everywhere. */
 function trialHurt(){
+  if(shieldMs>0)return;        // asserted here as well as at the call site
   lives--;
   SFX.die();shakeT=1;
   trialGrace=TR.period;
+  shieldMs=SHIELD_MS;
   var bar=$("bossBar");
   if(bar){bar.classList.remove("hurt");void bar.offsetWidth;bar.classList.add("hurt");}
   if(lives<=0){die("trial");return;}

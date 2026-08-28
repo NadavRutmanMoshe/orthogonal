@@ -290,6 +290,36 @@ find out, which costs a move on a clock. So:
   your clock and the pack's damage intact; only running out is a real reset.
   Restarting the level for a mistimed step took back the rhythm you had spent
   two crossings learning, which turned three crossings into one tightrope.
+- **A life lost buys a shield, and nothing can take a second one while it is
+  up.** `SHIELD_MS` (1000) is set wherever a life is spent and asked wherever
+  one would be. It exists because a clock level had *three* ways to charge you
+  and no single place that said "you have just been charged": `bossGraceMs`
+  stopped hunters touching you again, `trialGrace` stopped the sweep landing
+  twice, and neither had any opinion about `die()` — so being caught by the
+  sweep and then falling out of the world in the same moment cost two lives
+  for one mistake. Reported from a playtest, on a trial. The shield does
+  **not** tick while you are dying, because it shares the fight's clock and
+  the fight is paused through a death animation — which is exactly the window
+  the bug lived in, and 820ms of animation must not eat the second it is
+  covering. When it absorbs a `die()` the *consequence* still happens: you
+  fell out of the world, so you go back to the start (`respawn()`, factored
+  out of `spendLife()`). It is only the life that is not spent.
+- **The shield is drawn, because invulnerability you cannot see is
+  invulnerability you will not use.** A bubble round the player: a faint fill
+  in their own colour, and a ring **turned to face the camera every frame**,
+  in the rim colour `outlineFor()` re-picks from the background so it reads
+  against the void and the paper alike. A wireframe sphere was the obvious
+  drawing and does not survive the size — the player is about thirty pixels
+  across and at 14×10, then 10×6, the cage closed into a fuzzy ball that
+  buried them. A circle reads at any size and leaves them visible inside it.
+  It swells as it expires, so it reads as running out rather than as
+  switching off.
+- **The bubble replaces the blink while it is up.** They are two different
+  promises — the blink says "the sweep cannot land on you", the bubble says
+  "nothing at all can take a life" — and the bubble's is stronger and
+  shorter, so it speaks first and the blink carries the rest of the beat.
+  Drawing both gives you a bubble around a player flickering in and out of
+  existence, which reads as a rendering fault.
 - **A sweep hit costs a life and nothing else.** You keep your square, the clock
   keeps its count, and you get one beat of grace, spent visibly as a blink.
   Resetting the clock on a hit is what made the arena appear to switch off;
@@ -562,6 +592,11 @@ walk into a wall.
   gift, renewed. `bossArena()` checks it, per phase.
 - **A hit throws the pack back to the *current phase's* spawns**, and the
   arena keeps whatever has risen. Losing a life does not rewind the fight.
+- **And it buys a shield: one second in which nothing can take a second
+  life**, drawn as a bubble round the player. It is shared with the trial and
+  the reasoning is written up there — `bossGraceMs` only ever stopped hunters
+  touching you again, and had no opinion about falling out of the world in
+  the same moment.
 - **On a clock, the `GO 2D` button is re-judged every frame** in the render
   loop rather than in `syncHud`. It is the one place a button class is not
   owned by `syncHud`, and it has to be: hunters move while you do not, so a

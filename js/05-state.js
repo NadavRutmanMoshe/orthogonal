@@ -82,6 +82,27 @@ var bossPhase=0;
 // and the cell that centre sits on. Null on every other fight.
 var twinCore=0, twinAt=null;
 var BOSS_LIVES=3;
+/* THE SHIELD - one beat in which nothing at all can take a second life.
+
+   Every clock level had three separate ways to be charged a life and no one
+   place that said "you have just been charged". `bossGraceMs` stopped
+   hunters touching you again, `trialGrace` stopped the sweep landing twice,
+   and neither of them had any opinion about die() - so being caught by the
+   sweep and then falling out of the world in the same moment cost two lives
+   for one mistake. Reported from a playtest, on a trial.
+
+   So there is now one window, set wherever a life is spent and consulted
+   wherever one would be, and it is drawn: a bubble round the player for as
+   long as it lasts. Invulnerability you cannot see is invulnerability you
+   will not use, which is the same reason the grace beat has always blinked.
+
+   It does not tick while you are dying, because it shares the fight's clock
+   and the fight is paused through a death animation - which is exactly the
+   window the bug lived in. That is deliberate: the fall that follows a hit
+   is the case this exists for, and 820ms of death animation must not be
+   allowed to eat the second it is being covered by. */
+var SHIELD_MS=1000;
+var shieldMs=0;
 /* Trials. T is null on every level that isn't one, and like B every check is
    guarded on it. It deliberately spends the same `lives` a boss does: a level
    is either on a clock or it isn't, never both, and one counter means the HUD,

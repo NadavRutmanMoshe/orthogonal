@@ -485,6 +485,59 @@ the level asks.
 
 ---
 
+## Two lives for one mistake, and the shape of the fix
+
+Reported from a playtest of a trial: get caught by the sweep and fall out of
+the world in the same moment, and you were charged **two** lives.
+
+The cause is worth recording because nothing about it was a mistake locally.
+A clock level had grown three separate ways to spend a life, each with its own
+guard, and each guard only knew about its own:
+
+- `bossGraceMs` — set on a hunter hit, and consulted by `bossContact()`. It
+  stops a *hunter* touching you again.
+- `trialGrace` — set on a sweep hit, and consulted by `trialFrame`. It stops
+  the *sweep* landing twice in a beat.
+- `die()` → `spendLife()` — falling, spikes, folding into a wall. **Guarded by
+  neither.**
+
+Every one of those is correct on its own terms, and the sentence "you have
+just been charged a life" was written nowhere. So the fix was not to add a
+fourth special case but to add the missing concept: one window, set wherever a
+life is spent, asked wherever one would be.
+
+Three details fell out of building it that were not obvious going in.
+
+**It must not tick while you are dying.** The shield shares the fight's clock,
+and the fight is paused through a death animation — which sounds like an
+oversight and is in fact exactly the window the bug lived in. The reported
+sequence is *hit, then fall*, and a fall spends 820ms in `die()` before it
+charges anything. On real time the shield would be almost gone by then; on the
+fight's clock it is untouched, so the case it exists for is the case it
+covers.
+
+**Absorbing a death is not the same as cancelling it.** You fell out of the
+world; there is nowhere to leave you. So `respawn()` was factored out of
+`spendLife()` and the shield takes the accounting without the consequence —
+you still go back to the start, you simply are not charged.
+
+**The drawing had to be re-done twice, and the size was why.** A wireframe
+sphere is the obvious bubble. The player is about thirty pixels across, and at
+14×10 segments the cage closes into a fuzzy ball that buries them — the
+opposite of what a shield around somebody should do. 10×6 was no better. What
+works is a **ring turned to face the camera every frame**, the same trick the
+flames use: one clean outline reads at any size and leaves the player visible
+inside it. The ring borrows `outlineCol`, the rim colour `outlineFor()`
+already re-picks from the background every frame, so it reads against the void
+and the paper alike without a second colour to keep in sync.
+
+And it replaces the grace blink while it is up rather than running beside it.
+A bubble around a player flickering in and out of existence reads as a
+rendering fault, and the two are different promises anyway: the blink says the
+sweep cannot land on you, the bubble says nothing at all can take a life.
+
+---
+
 ## Publishing overwrote the artifact with a build from the wrong branch
 
 Worth recording because it cost nothing in git and could have cost everything.

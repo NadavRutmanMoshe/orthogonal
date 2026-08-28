@@ -152,6 +152,7 @@ function initGL(){
       opacity:.42,side:THREE.DoubleSide}));
   footMesh.rotation.x=-Math.PI/2;
   scene.add(footMesh);
+  buildShield();
 
   goalMesh=new THREE.Mesh(new THREE.BoxGeometry(.5,.5,.5),
     new THREE.MeshBasicMaterial({color:0x35c2a5,wireframe:true}));
@@ -1945,6 +1946,71 @@ function drainWater(){
    block nothing was decided and a marker would be noise; the rule has
    nothing to teach there. That is also why it stays quiet on most levels and
    turns up exactly on the ones that turn on it. */
+/* ============================================================
+   THE SHIELD BUBBLE - one beat in which nothing can take a life
+   ============================================================
+   A clock level had three ways to charge you a life and no single place that
+   said "you have just been charged", so being caught by the sweep and then
+   falling out of the world in the same moment cost two of them. The window
+   that fixes it is in 05-state.js; this is the half the player sees, and it
+   has to be seen: the whole reason a life was not spent is invisible
+   otherwise, and a player who cannot tell they are protected will not use it.
+
+   Two shells, and each answers a different problem:
+
+   * the FILL is the player's own colour, because whose shield this is, is the
+     content of the drawing - `applySkin` recolours it exactly as it recolours
+     the shadow under their feet;
+   * the SHELL is a wireframe in `outlineCol`, the rim colour `outlineFor()`
+     re-picks from the current background every frame. That is already this
+     game's answer to "a colour that reads against both the void and the
+     paper", and the alternative is a bubble that vanishes in the plane on a
+     white skin.
+
+   It SWELLS as it expires rather than only fading, so it reads as running out
+   rather than as switching off - a bubble that simply dims looks like it
+   might still be there. */
+var shieldFill=null, shieldShell=null;
+function buildShield(){
+  /* A RING TURNED TO FACE THE CAMERA, NOT A WIREFRAME SPHERE. A wire sphere
+     was the obvious drawing and it does not survive the size this is rendered
+     at: the player is about thirty pixels across, and at that scale even a
+     coarse 10x6 cage closes into a fuzzy ball that buries them - which is the
+     opposite of what a shield around somebody should do. Both 14x10 and 10x6
+     were rendered and neither read.
+
+     A circle does. It is the same trick the flames use - a flat thing turned
+     to the camera every frame, so there is no solidity to shade - and one
+     clean outline around the player says "bubble" at any size while leaving
+     them visible inside it. */
+  shieldFill=new THREE.Mesh(new THREE.SphereGeometry(.52,16,10),
+    new THREE.MeshBasicMaterial({color:0xd6336c,transparent:true,
+      opacity:0,depthWrite:false}));
+  shieldShell=new THREE.Mesh(new THREE.TorusGeometry(.56,.024,6,30),
+    new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,
+      opacity:0,depthWrite:false}));
+  shieldFill.renderOrder=940;shieldShell.renderOrder=941;
+  shieldFill.visible=shieldShell.visible=false;
+  scene.add(shieldFill);scene.add(shieldShell);
+}
+function shieldFrame(){
+  if(!shieldFill)return;
+  var on=app==="play"&&(B||TR)&&shieldMs>0&&!dying;
+  shieldFill.visible=shieldShell.visible=!!on;
+  if(!on)return;
+  var t=Math.min(1,shieldMs/SHIELD_MS);              // 1 at the hit, 0 at the end
+  var puff=1+.07*Math.sin(Date.now()*.011);
+  var sc=puff*(1.06-.12*t);
+  shieldFill.position.copy(playerMesh.position);
+  shieldShell.position.copy(playerMesh.position);
+  shieldShell.quaternion.copy(camera.quaternion);   // always edge-on to nobody
+  shieldFill.scale.setScalar(sc);shieldShell.scale.setScalar(sc);
+  var fade=Math.min(1,t/.28);                        // out over the last quarter
+  shieldFill.material.opacity=.10*fade;
+  shieldShell.material.opacity=.60*fade;
+  shieldShell.material.color.copy(outlineCol);
+}
+
 var LAND_MS=1600, landGeo=null, landRings=[], landHint=null;
 var planePeek=0, PEEK_RISE=.82;
 /* Where standing up would put you, asked while flat. The same two calls
@@ -2427,9 +2493,18 @@ function animate(now){
     playerMesh.scale.set(1+squash*.55,1-squash,1+squash*.55);
   }
   playerMesh.rotation.y=a;
-  // Blinking through the beat of grace after a trial hit. Invulnerability
-  // you cannot see is invulnerability you will not use.
-  playerMesh.visible=!(trialGrace>0&&Math.floor(Date.now()/85)%2===0);
+  /* Blinking through the beat of grace after a trial hit. Invulnerability
+     you cannot see is invulnerability you will not use.
+
+     THE BUBBLE REPLACES THE BLINK WHILE IT IS UP, rather than running beside
+     it. They are two different promises - the blink says "the sweep cannot
+     land on you", the bubble says "nothing at all can take a life" - and the
+     bubble's is the stronger and the shorter, so it speaks first. Drawing
+     both meant a bubble around a player flickering in and out of existence,
+     which reads as a rendering fault rather than as protection. When the
+     bubble goes, the blink is still there for the rest of the beat. */
+  playerMesh.visible=shieldMs>0||
+    !(trialGrace>0&&Math.floor(Date.now()/85)%2===0);
   if(footMesh){
     footMesh.visible=!dying;
     footMesh.position.set(playerMesh.position.x,
@@ -2495,6 +2570,8 @@ function animate(now){
   // The ground swings from the void to paper as the world folds, so the
   // player's rim has to be re-picked against it rather than set once.
   outlineFor(playerMesh,scene.background);
+  // After outlineFor, because the shell borrows the rim colour it just picked.
+  shieldFrame();
   /* THE GRID IS THE EDITOR'S NOW. It used to draw in the plane as the cue
      that you were flat, back when flat also meant a different palette. The
      plane is the same world in different light now - the collapse itself,

@@ -200,6 +200,10 @@ function applySkin(){
   scene.add(playerMesh);
   var col=findBy(SKIN_COLORS,wardrobe.color).hex;
   if(footMesh)footMesh.material.color.setHex(col);
+  // The shield bubble is the player's own colour for the same reason the
+  // shadow under their feet is: whose shield it is, is the content of it.
+  if(typeof shieldFill!=="undefined"&&shieldFill)
+    shieldFill.material.color.setHex(col);
   document.documentElement.style.setProperty("--player",
     "#"+col.toString(16).padStart(6,"0"));
 }
