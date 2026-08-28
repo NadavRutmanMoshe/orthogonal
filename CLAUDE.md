@@ -1166,6 +1166,40 @@ falls because something is leaving. It plays on a fold **only on a level that
 has water**, layered over `fold()` rather than replacing it, because the fold
 is still the move the player made.
 
+## The brief — tried on a trial and a boss, and taken out again
+
+For a while a trial and a boss each opened with a full-bleed card explaining
+themselves, twice per kind and then never again. The machinery worked and the
+reasoning still holds: `cardPut()` answers `screenUp()`, and `screenUp()` is
+what both clocks ask before they run, so the fight was genuinely stopped
+while the card was being read.
+
+**It stopped being needed, and that is the interesting part.** The falling
+blocks, the folding telegraph and the replay each ended up saying on the
+board what a paragraph of the card had been saying in words — and once all
+three landed, the card was explaining a picture the player was already
+looking at. A card like that is read once and dismissed unread from then on,
+which is worse than not having one.
+
+What is left is one sentence per kind, in the level's own `hint`:
+
+| | |
+|---|---|
+| a trial | *Three lives, three places to visit.* |
+| a boss | *A game of catch: whoever shifts the other into their own square first wins.* |
+
+Each adds one short clause for what is particular to that arena — the
+spikes, the glass, the crate, the high ground — and nothing else. **"Shifts"
+is deliberate**: it is the word `cue()` already speaks for the fold ("2D
+shift"), so the hint names the verb the way the game does everywhere else.
+
+Restoring the card is a `cardPut(h, p, "brief")` from `loadLevel` plus a
+counter in settings, exactly as it was. `cardOwner` is the seam it needs — a
+card raised by anything other than a tutorial step must not advance a step
+nobody completed — and it is deliberately still there.
+
+---
+
 ## The map
 
 **The level picker is a path, one section at a time.** A run of levels, a
@@ -2141,12 +2175,13 @@ there the camera is a real thing.
   rise, so testing it threw the hint away on the frame it was created.
 
 **`loadSettings()` is a whitelist and a key that is not read there does not
-exist.** `settings.landHints`, `slowOffers`, `noSlowOffer`, `trialBriefs`
-and `bossBriefs` are all written
+exist.** `settings.landHints`, `slowOffers` and `noSlowOffer` are all written
 by `saveSettings()` and were silently forgotten on every reload until they
 were added to it — which mattered most for `noSlowOffer`, since that one is
-the player saying *stop*, and for the two brief counters, since without them
-the trial and boss cards come back for ever.
+the player saying *stop*. **A key whose feature is removed comes out of the
+whitelist with it**, or the trap runs the other way and the list slowly fills
+with settings nothing reads. `trialBriefs` and `bossBriefs` went that way
+when the brief cards did.
 
 ## How big the world is drawn
 
@@ -2618,13 +2653,15 @@ tested and failed, plus where this sits in the PCG literature, are in
    an explanation card (`card:{h,p}` on a tutorial step), a derived world
    marker (`show:"landing"`) and a step that gates the other verbs
    (`hold:true`) are between them a way to say a rule in words, point at the
-   thing it is about, and make the player do it. What is missing for a trial
-   and a boss is not the machinery but the *place*: neither has a teaching
-   level, and neither can stop for one, because both run on a clock. The
-   cheapest shape is probably a turn-based tutorial level per mechanic in
-   front of `TRIAL I` and `BOSS I`. **Playtest `00 — First Landing` first**;
-   if a card mid-level reads as an interruption rather than as an
-   explanation, none of the rest should be built on it.
+   thing it is about, and make the player do it. **The second and third are
+   done, and not with a card.** Both got one and both stopped needing it: the
+   falling blocks, the folding telegraph and the replay each say on the board
+   what a paragraph had been saying in words, and one line in each level's
+   `hint` carries what is left — see **The brief**, above. What is left is the
+   fourth, why a block turns red (`foldPeril`), which is turn-based and so
+   could still take a real teaching level. The lesson from the three that are
+   finished: **a card is what you reach for when the picture cannot be made to
+   say it — not before.**
 9. **Ad integration.** Nothing is wired. When wrapped with Capacitor the
    rewarded-video callback should call `grantShards(n)`, `grantAdView(id)` or
    `grantSkip(name)` — three hooks, one per thing an ad can buy. Rewarded-only

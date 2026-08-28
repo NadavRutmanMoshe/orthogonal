@@ -654,67 +654,23 @@ function tutCardSync(g){
   }
   return true;
 }
-/* ============================================================
-   THE BRIEF - a trial and a boss, explained before the clock starts
-   ============================================================
-   These are the two levels a player cannot be taught by playing, because
-   both run in real time: there is no moment in either to stop and work out
-   what the red slice is, or why folding kills the thing chasing you. They
-   are also, in order, the second and third of the four things that beat the
-   first real playtester.
+/* THE BRIEF IS GONE, and it is one function if it is ever wanted back.
 
-   A tutorial level in front of each was the obvious answer and is the
-   expensive one - two new levels, each teaching a mechanic that only exists
-   on a clock, in a game whose tutorial is turn-based. The card already
-   built for rule 5 does most of that job for a fraction of it: it is
-   full-bleed, it answers screenUp(), and screenUp() is what both clocks
-   already ask before they run. So the fight is genuinely stopped while it is
-   being explained, with the arena visible behind the words.
+   A trial and a boss each opened with a card explaining themselves, twice per
+   kind and then never again. It worked and it is not needed: the falling
+   blocks, the folding telegraph and the replay say all of it on the board,
+   and each level's own hint now carries the one sentence that is left -
+   "three lives, three places to visit", "a game of catch: whoever shifts the
+   other into their own square first wins". A card that explains what the
+   picture already says is a card the player reads once and then dismisses
+   unread, which is worse than none.
 
-   SHOWN A COUPLE OF TIMES AND THEN NOT AGAIN. `CLOCK_BRIEFS` (2) per kind,
-   counted in settings the way the landing hint is, because a player restarts
-   a boss a great deal and a card that came back every time would be the
-   thing they remember about the fight. Twice is enough to have read it once
-   and confirmed it once; after that the HUD and the arena say it. */
-var CLOCK_BRIEFS=2;
-var TRIAL_BRIEF={h:"On the clock",p:
-  "Same goal as every level — reach the <b>amber mark</b>. Then it moves, "+
-  "twice. Three in all, and this one does not wait for you.<br><br>"+
-  "Watch the floor. A row of squares lights up red, and a moment later "+
-  "<b>blocks fall out of the sky onto every one of them</b>. Being on one "+
-  "when they land costs a life. The red is your warning and it always comes "+
-  "first.<br><br>"+
-  "<b>Flat, they land on you wherever you are.</b> Flattened, you are at "+
-  "every depth at once — so you are standing on every square of that row "+
-  "together. <b>{to2}</b> while the board is red is a life, from anywhere. "+
-  "Turn first, or fold between the drops.<br><br>"+
-  "<b>Three lives, three marks.</b>"};
-var BOSS_BRIEF={h:"The line is both of yours",p:
-  "No goal here, only a fight. It hunts you, on a clock.<br><br>"+
-  "Get onto its <b>row or column</b> and it stops and <b>starts folding that "+
-  "line flat</b> — a red wall along it, coming down. When it lands, it has "+
-  "come the whole way down the line and it costs you a life. Step off the "+
-  "line and it stops.<br><br>"+
-  "<b>You can fold first.</b> Press <b>{to2}</b> while it shares your "+
-  "flattened column and it is the one that is crushed. The <b>{to2}</b> "+
-  "button turns <b>green</b> the moment that is on.<br><br>"+
-  "Which line you can win is decided by which way you are facing — so the "+
-  "answer is often to <b>turn</b>, and then fold.<br><br>"+
-  "<b>Three phases, three lives.</b>"};
-/* Raised from loadLevel, after the board is built, so the arena is already
-   behind the words. Immediately rather than after a beat: the clocks are only
-   stopped once the card is actually up, and a boss would take a step in the
-   gap. */
-function maybeBrief(){
-  if(app!=="play"||!L)return;
-  if(typeof B==="undefined")return;
-  var key=B?"bossBriefs":(TR?"trialBriefs":null);
-  if(!key)return;
-  var seen=settings[key]||0;
-  if(seen>=CLOCK_BRIEFS)return;
-  settings[key]=seen+1;saveSettings();
-  cardPut(B?BOSS_BRIEF.h:TRIAL_BRIEF.h,B?BOSS_BRIEF.p:TRIAL_BRIEF.p,"brief");
-}
+   Restoring it is a `cardPut(h,p,"brief")` from loadLevel and a counter in
+   settings, exactly as it was; `cardOwner` below is the seam it needs and is
+   deliberately still here.
+
+   The tutorial's own cards are untouched - that rule cannot be shown, which
+   is the whole reason they exist. */
 /* The card is a screen, so it has to answer screenUp() - which is what keeps
    the keyboard, the boss clock and the trial clock from running behind it. */
 function tutCardUp(){

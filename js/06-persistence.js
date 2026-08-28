@@ -97,14 +97,6 @@ function loadSettings(){
           settings.slowOffers=Math.min(99,o.slowOffers|0);
         if(typeof o.landHints==="number"&&o.landHints>=0)
           settings.landHints=Math.min(99,o.landHints|0);
-        /* loadSettings is a whitelist and a key that is not read here does
-           not exist - it is written on every save and silently forgotten on
-           every reload. These two are how many times the trial and boss
-           briefs have been shown; without them the card comes back for ever. */
-        if(typeof o.trialBriefs==="number"&&o.trialBriefs>=0)
-          settings.trialBriefs=Math.min(99,o.trialBriefs|0);
-        if(typeof o.bossBriefs==="number"&&o.bossBriefs>=0)
-          settings.bossBriefs=Math.min(99,o.bossBriefs|0);
         // o.verbs may exist in settings saved before the wording was settled.
         // Ignoring it is the migration: everyone lands on GO 2D / GO 3D.
       }catch(e){}

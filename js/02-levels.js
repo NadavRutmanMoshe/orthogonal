@@ -288,7 +288,7 @@ var LEVELS=[
    It used to sit after four levels; the four new gentle ones would have
    pushed it to ninth, so it came back to fifth, and no save noticed. */
 {name:"TRIAL I — The Metronome",
-   hint:"The red slice lands on the beat. Cross in the gaps between.",
+   hint:"Three lives, three places to visit.",
    /* THE SLICES RUN DOWN THE DEPTH AXIS, and that is the difficulty of a
       trial rather than a detail of this one.
 
@@ -366,7 +366,7 @@ var LEVELS=[
    start:[0,1,0],goal:[0,5,0],rotate:true},
 {name:"BOSS I — The Sighting",
    won:"Something in the plane has seen you. It will not be the only one.",
-   hint:"It walks onto your line and plants. Fold while it shares your silhouette column and it lands in your square instead. The arena does not stay this empty.",
+   hint:"A game of catch: whoever shifts the other into their own square first wins. The arena does not stay this empty.",
    /* The first fight anyone meets, and the shape every later one repeats.
       Four phases, and each one changes the question rather than the speed:
       one slow hunter on a bare floor, so the line can be learned with nothing
@@ -429,7 +429,7 @@ var LEVELS=[
    blocks:[[0,0,0],[3,3,-2,4],[-2,0,0],[-2,0,1],[-4,1,2],[-2,1,2],[-5,0,1,4]],
    start:[0,1,0],goal:[-4,2,2],rotate:true},
 {name:"TRIAL II — Sharp Rhythm",
-   hint:"Spikes take the squares you would have dodged into. Walk to the edge before you fold — the near columns are poisoned.",
+   hint:"Three lives, three places to visit. Spikes take the squares you would have dodged into.",
    trial:{period:2200,fire:320,
           /* Two depth slices and one across, and the mix is forced rather
              than chosen: this level's spikes were placed to take the squares
@@ -465,7 +465,7 @@ var LEVELS=[
    start:[0,1,0],goal:[-1,1,-5],rotate:true},
 {name:"BOSS II — The Record",
    won:"You are on the list now. It is a short list.",
-   hint:"The ground bites here. A spike casts like stone, so its column kills them exactly as well as a pillar's does — and it kills you underfoot, which a pillar never does.",
+   hint:"A game of catch: whoever shifts the other into their own square first wins. The ground bites here: a spike shields them like a pillar, and kills you underfoot.",
    /* Cover and spikes together in phase two, so the section's piece is part
       of "the arena finishes rising" rather than something smuggled in later.
       Phases three and four then change only the opponent - see BOSS I. */
@@ -500,7 +500,7 @@ var LEVELS=[
    blocks:[[0,0,0],[-2,0,1],[-3,0,1],[-2,1,1,1],[-8,2,0],[-11,2,0,1]],
    start:[0,1,0],goal:[-11,3,0],rotate:true},
 {name:"TRIAL III — The Depth Slice",
-   hint:"A slice down the axis you are looking along cannot be dodged flat — there, you are at every depth. Fold between those beats, or turn until it is one you can step out of.",
+   hint:"Three lives, three places to visit. Flat you are at every depth, so a row coming down the way you are looking cannot be dodged.",
    trial:{period:2100,fire:300,
           /* All three on depth, which is what the name promised. This is the
              most fold-heavy route in the game - every leg flattens - so it is
@@ -533,7 +533,7 @@ var LEVELS=[
    start:[0,1,0],goal:[3,2,-1],rotate:true},
 {name:"BOSS III — The Search",
    won:"They can only count what casts a shadow. This world is larger than their record of it.",
-   hint:"Glass casts nothing. The pillars you can see through are the ones that will not kill them — check which shadow you are herding them into.",
+   hint:"A game of catch: whoever shifts the other into their own square first wins. Glass casts nothing, so the pillars you can see through are the ones that will not protect them.",
    /* Stone and glass rise together in phase two, so the lesson of the arena -
       the pillars you can see through are the ones you can still attack from -
       is learned against one hunter and then tested against two on exactly
@@ -567,7 +567,7 @@ var LEVELS=[
    blocks:[[4,2,1],[1,0,4],[2,0,4],[3,0,4],[0,0,0],[2,1,4,3]],
    start:[0,1,0],goal:[4,3,1],rotate:true},
 {name:"TRIAL IV — Every Slice",
-   hint:"Three axes now, and the high ground is one of them. The crossing happens up here — so does the slice that owns this height.",
+   hint:"Three lives, three places to visit. Three axes now, and the high ground is one of them.",
    trial:{period:2000,fire:320,
           /* Still every axis - that is this one's whole idea - but weighted
              onto depth now that depth is the axis which punishes the fold. */
@@ -611,7 +611,7 @@ var LEVELS=[
    start:[0,1,0],goal:[2,3,5],rotate:true},
 {name:"BOSS IV — The Census",
    won:"The count is closed, and you are not in it.",
-   hint:"Everything the game knows, one piece at a time. The crates are the attack that still works when the geometry is against you — shove one into a column that had no shadow in it.",
+   hint:"A game of catch: whoever shifts the other into their own square first wins. A crate is the attack that still works when the geometry is against you.",
    /* The finale, so phase two brings the whole game at once - stone, spike,
       glass and the crates. The crates in particular can only ever arrive in
       one phase: rebuilding the crate list is what puts them on the board, and
