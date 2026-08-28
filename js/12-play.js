@@ -109,7 +109,8 @@ function respawn(){
 function bossReset(){
   bossPause=0;phaseNoteEnd();
   bossHp=B?B.hp:0;bossFlash=0;bossHitFlash=0;bossCreepMs=0;bossGraceMs=0;
-  shieldMs=0;deathPending=false;slowMoMs=0;killCamEnd();
+  shieldMs=0;deathPending=false;slowMoMs=0;
+  rep=null;bossPendingAdvance=false;replayClear();
   hunters=[];twinCore=0;twinAt=null;bossPhase=0;
   if(B&&B.twin)twinSpawn(0);
   else if(B){bossRestoreArena();bossEnterPhase(false);}
@@ -282,23 +283,114 @@ function bossAdvance(){
    does anything. Read by the four verbs and by bossFrame. */
 /* Nothing answers while the board is being handed back to the player - a
    phase boundary, or a kill cam replaying the charge that just landed. */
-function bossHolding(){return bossPause>0||killCamMs>0;}
-/* Swing to the view in which the line runs ACROSS the screen, which is the
-   one where you can watch it travel and the one a fold along it would have
-   answered. If the player is already facing that way the swing is nothing,
-   and that is worth showing too: it says the fold was there to be taken. */
-function killCamStart(line){
-  if(!B||killCamMs>0)return;
-  var alongX=!!line.dx;
-  var par=alongX?(AX[view].r[0]!==0):(AX[view].r[2]!==0);
-  killCamReturn=viewAngleTarget;
-  killCamAngle=viewAngleTarget+(par?0:90);
-  killCamFold=0;
-  killCamMs=KILLCAM_MS;
+function bossHolding(){return bossPause>0||!!rep;}
+/* ============================================================
+   THE REPLAY - recorder and control. See 05-state.js for the design.
+   ============================================================ */
+function replayClear(){repBuf=[];repT=0;repAcc=0;}
+/* Sampled off the render loop's real frame time, and only while the fight is
+   genuinely in front of the player - the same question bossFrame asks - so a
+   paused board does not fill the ring with copies of one moment. */
+function replayTick(dtReal){
+  if(!B||app!=="play"||rep)return;
+  if(dying||levelDone||bossPause>0||panelOpen()||screenUp())return;
+  repAcc+=dtReal;
+  if(repAcc<1000/REP_HZ)return;
+  repT+=repAcc;repAcc=0;
+  var hs=[];
+  for(var i=0;i<hunters.length;i++){
+    var h=hunters[i];
+    hs.push([h.x,h.y,h.z,h.lock||0,h.doom?1:0,
+             h.line?(h.line.dx||0):0,h.line?(h.line.dz||0):0]);
+  }
+  repBuf.push({t:repT,x:player.x,y:player.y,z:player.z,
+               f:flat?1:0,u:flat&&flatPos?flatPos.u:0,
+               fy:flat&&flatPos?flatPos.y:0,v:view,h:hs});
+  while(repBuf.length>1&&repT-repBuf[0].t>REP_KEEP)repBuf.shift();
 }
-function killCamEnd(){
-  if(killCamMs>0)viewAngleTarget=killCamReturn;
-  killCamMs=0;killCamFold=0;
+/* `who` is the hunter to follow on a death, and `line` the one that fired.
+   On a kill both are absent and the camera stays on the player. */
+function replayStart(mode,who,line){
+  if(!B||rep||repBuf.length<2)return false;
+  var span=mode==="death"?REP_DEATH_MS:REP_KILL_MS;
+  var t1=repBuf[repBuf.length-1].t, t0=Math.max(repBuf[0].t,t1-span);
+  var i0=0;
+  while(i0<repBuf.length-1&&repBuf[i0].t<t0)i0++;
+  /* WHICH VIEW. The one where the killing line runs ACROSS the screen: that
+     is where you can watch it travel, and it is the view a fold along it
+     would have answered. If the player was already facing that way the swing
+     is nothing, and that is worth showing too - it says the fold was there
+     to be taken. On a kill the camera keeps the view the player won in. */
+  var swing=0;
+  if(mode==="death"&&line){
+    var par=line.dx?(AX[view].r[0]!==0):(AX[view].r[2]!==0);
+    swing=par?0:90;
+  }
+  rep={mode:mode,i:i0,t0:repBuf[i0].t,t1:t1,ms:0,fold:0,foldMs:0,
+       who:who||null,line:line||null,
+       vat:viewAngleTarget,angle:viewAngleTarget+swing,
+       saved:{x:player.x,y:player.y,z:player.z,flat:flat,
+              fu:flatPos?flatPos.u:0,fy:flatPos?flatPos.y:0,view:view,
+              h:hunters.map(function(h){
+                return {x:h.x,y:h.y,z:h.z,lock:h.lock,line:h.line,doom:h.doom,
+                        ms:h.ms,step:h.step,shy:h.shy};})}};
+  return true;
+}
+/* Write a recorded frame over the live state. Safe because the fight is
+   frozen for the whole replay - and it is what makes every drawing path work
+   on the playback for free. */
+function replayPose(f){
+  player.x=f.x;player.y=f.y;player.z=f.z;
+  flat=!!f.f;flatTarget=f.f?1:0;
+  if(f.f)flatPos={u:f.u,y:f.fy};
+  view=f.v;
+  hunters.length=0;
+  for(var i=0;i<f.h.length;i++){
+    var a=f.h[i];
+    hunters.push({x:a[0],y:a[1],z:a[2],lock:a[3],doom:!!a[4],
+                  line:a[3]>0?{dx:a[5],dz:a[6]}:null,ms:0,step:600,shy:0});
+  }
+}
+function replayEnd(){
+  if(!rep)return;
+  var sv=rep.saved;
+  player.x=sv.x;player.y=sv.y;player.z=sv.z;
+  flat=sv.flat;flatTarget=sv.flat?1:0;
+  if(sv.flat)flatPos={u:sv.fu,y:sv.fy};
+  view=sv.view;
+  /* Restored UNCONDITIONALLY. The first version of this guarded the restore
+     on the cam still running, and the caller had already stopped it one line
+     earlier - so viewAngleTarget kept the 90 degrees the swing had added
+     while `view` did not, and from then on the arrows moved the player at a
+     right angle to the screen. Reported, exactly, as up/down/left/right
+     getting stuck after a kill. */
+  viewAngleTarget=sv.vat!==undefined?sv.vat:rep.vat;
+  hunters.length=0;
+  for(var i=0;i<sv.h.length;i++)hunters.push(sv.h[i]);
+  rep=null;
+  buildGrid();syncHud();
+  // A phase that was waiting for the replay to finish starts now.
+  if(bossPendingAdvance){bossPendingAdvance=false;bossAdvance();}
+}
+/* Driven from the render loop on REAL time, because bossFrame is stopped for
+   exactly the things the replay plays over. */
+function replayFrame(dtReal){
+  if(!rep)return;
+  if(rep.ms<rep.t1-rep.t0){
+    rep.ms=Math.min(rep.t1-rep.t0,rep.ms+dtReal*REP_RATE);
+    var t=rep.t0+rep.ms;
+    while(rep.i<repBuf.length-1&&repBuf[rep.i+1].t<=t)rep.i++;
+    replayPose(repBuf[rep.i]);
+    return;
+  }
+  replayPose(repBuf[repBuf.length-1]);
+  /* And the last beat: the world folds onto the player. On a death that is
+     the hunter's own verb being used on them; on a kill it is the fold they
+     actually made, replayed. */
+  rep.foldMs+=dtReal;
+  var k=Math.min(1,rep.foldMs/REP_FOLD_MS);
+  rep.fold=k*k*(3-2*k);
+  if(rep.foldMs>REP_FOLD_MS+REP_HOLD_MS)replayEnd();
 }
 function phaseNote(text){
   var el=$("phaseNote");if(!el)return;
@@ -395,7 +487,7 @@ function bossFrame(dt){
      would be acting on - and every window here, the shield included, should
      be waiting for them rather than running through a piece of film. Its own
      clock is real time, in the render loop. */
-  if(killCamMs>0)return;
+  if(rep)return;
   if(bossGraceMs>0)bossGraceMs=Math.max(0,bossGraceMs-dt);
   if(shieldMs>0&&!deathPending)shieldMs=Math.max(0,shieldMs-dt);
   if(!hunters.length)return;
@@ -436,7 +528,7 @@ function bossFrame(dt){
         return R.uOf(view,c.x,c.z)===R.uOf(view,twinAt.x,twinAt.z);
       },true);
       if(tn&&!hunterAt(tn.x,tn.y,tn.z,t)){th.x=tn.x;th.y=tn.y;th.z=tn.z;}
-      if(hunterTouching(th)){bossHurt("it closed on you");return;}
+      if(hunterTouching(th)){bossHurt("it closed on you",th);return;}
     }
     var al=twinAligned();
     hunters[0].doom=hunters[1].doom=al&&!flat;
@@ -460,7 +552,7 @@ function bossFrame(dt){
         h.lock=0;h.line=null;
         h.x=player.x;h.y=player.y;h.z=player.z;   // the charge, all at once
         SFX.shot();shakeT=1;
-        bossHurt("it came down the line",fired);
+        bossHurt("it came down the line",h,fired);
         return;
       }
       continue;
@@ -488,7 +580,7 @@ function bossFrame(dt){
     // Never onto another hunter's square: two of them in one cell reads as
     // one of them, and the pack should look like a pack.
     if(nx&&!hunterAt(nx.x,nx.y,nx.z,i)){h.x=nx.x;h.y=nx.y;h.z=nx.z;}
-    if(hunterTouching(h)){bossHurt("it reached you");return;}
+    if(hunterTouching(h)){bossHurt("it reached you",h);return;}
     // Lined up, so it plants. The beat that follows is the whole fight.
     h.line=huntLine(h,cr);
     if(h.line){
@@ -538,7 +630,7 @@ function hunterAt(x,y,z,skip){
 function bossContact(){
   if(!B||dying||levelDone)return false;
   for(var i=0;i<hunters.length;i++)
-    if(hunterTouching(hunters[i])){bossHurt("you walked into it");return true;}
+    if(hunterTouching(hunters[i])){bossHurt("you walked into it",hunters[i]);return true;}
   return false;
 }
 function hunterTouching(h){
@@ -584,7 +676,17 @@ function bossFoldCrush(){
     hunters[s].step=Math.max(B.floorStep,hunters[s].step*B.rage);
   // The board is clear, so the fight moves on. Only the last phase running
   // out is the win.
-  if(!hunters.length){bossAdvance();return;}
+  /* THE LAST KILL OF A PHASE GETS A REPLAY, and only that one. Killing one
+     of a pair ends nothing and the fight is still running, so a film there
+     would interrupt the thing it is about. The advance waits for the replay
+     to finish - starting it now would leave replayEnd() restoring a board
+     that had already moved on. */
+  if(!hunters.length){
+    if(bossPhase+1<B.phases.length&&replayStart("kill")){
+      bossPendingAdvance=true;syncHud();return;
+    }
+    bossAdvance();return;
+  }
   flash(doomed.length>1?(doomed.length+" in one square · "+hunters.length+" left"):
         ("folded onto it · "+hunters.length+" left"));
   syncHud();
@@ -606,13 +708,14 @@ function bossCrushable(){
     if(doomedCell(hunters[i].x,hunters[i].y,hunters[i].z,cr))return true;
   return false;
 }
-function bossHurt(why,line){
+function bossHurt(why,who,line){
   if(shielded())return;        // asserted here as well as at the call site
   lives--;
   SFX.die();shakeT=1;slowMo();
-  // The charge is the one hit worth replaying: it is instant, it comes from
-  // across the arena, and folding was the answer to it.
-  if(line)killCamStart(line);
+  /* The replay goes up AFTER the life is counted and after the out-of-lives
+     check above, so the last life ends the level rather than playing a film
+     over a death animation. */
+  replayStart("death",who,line||null);
   bossGraceMs=B.grace;
   shieldMs=SHIELD_MS;
   var bar=$("bossBar");
@@ -658,7 +761,8 @@ function bossTakeCrate(idx){
    ============================================================ */
 function trialReset(){
   trialMs=0;trialBeat=-1;trialFlash=0;trialGrace=0;trialTicked=-1;trialCore=0;
-  shieldMs=0;deathPending=false;slowMoMs=0;killCamEnd();
+  shieldMs=0;deathPending=false;slowMoMs=0;
+  rep=null;bossPendingAdvance=false;replayClear();
   if(TR)lives=BOSS_LIVES;
 }
 function trialFrame(dt){

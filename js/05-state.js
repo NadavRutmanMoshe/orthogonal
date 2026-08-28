@@ -133,25 +133,59 @@ var deathPending=false;
 var SLOWMO_MS=620, SLOWMO_RATE=.3;
 var slowMoMs=0;
 function slowMo(){ slowMoMs=SLOWMO_MS; }
-/* THE KILL CAM - the charge replayed from the side it came from.
+/* ============================================================
+   THE REPLAY - the last few seconds, played back from the other side
+   ============================================================
+   A charge is instant and it comes from across the arena, so the one event a
+   player most needs to understand is over before they have looked at it: which
+   line it was, where the thing came from, and why folding would have answered
+   it. A still camera swung at the moment of the hit says some of that. Playing
+   the seconds BEFORE it says all of it - you watch it walk onto your row, you
+   watch it plant, and then you watch it do to you the one thing you could have
+   done to it first.
 
-   A hunter's charge is instant and it is the one event in the fight a player
-   most needs to understand: which line it was, and why folding would have
-   answered it. So when one lands, the fight stops, the camera swings to the
-   view in which that line runs across the screen - the way the thing that
-   charged you had it lined up - and the world folds onto the player. It is
-   the hunter's own verb, done to you, in the one view where you can see it
-   happen.
+   HOW IT RECORDS, and why this way. There are two families of replay system.
+   One re-simulates from recorded inputs and a seed: tiny, and it needs the
+   simulation to be exactly deterministic. This one is not and cannot cheaply
+   be - the pack advances on wall-clock `dt`, so a frame that arrives 3ms late
+   changes where everything is, and a replay would drift from what the player
+   actually saw. The other records STATE at a fixed cadence and plays it back.
+   It costs memory instead, and here that argument is not close: the whole
+   world is a handful of integer cells, so six seconds at 20Hz is 120 frames
+   of about a dozen numbers each - a few kilobytes, allocated once and reused
+   as a ring. It is also exact by construction, which is the property that
+   matters, because a replay that disagrees with what just happened is worse
+   than none.
 
-   It is entirely a RENDER effect and touches no state. `viewAngleTarget` is
-   pushed and restored, and the fold rides `flatT`, which is a render value
-   that nothing outside 10-render.js reads - the same seam peek already uses.
-   `view`, `flat` and `flatPos` do not move, so the board the player gets
-   back is exactly the board they left.
+   20Hz is chosen and not tuned: everything in this fight moves in whole cells
+   on beats of 600ms and up, so a sample every 50ms captures every position
+   the game was ever actually in. There is nothing to interpolate.
 
-   Its clock is real time, like slow motion's and for the same reason. */
-var KILLCAM_MS=1250;
-var killCamMs=0, killCamAngle=0, killCamReturn=0, killCamFold=0;
+   HOW IT PLAYS BACK. The fight is frozen (bossHolding refuses all four verbs
+   and bossFrame returns), and each frame the recorded pose is written into
+   `player`, `flat`, `flatPos`, `view` and `hunters`. That is deliberate and
+   it is safe precisely because nothing else is running: every drawing path -
+   the fold, the telegraph pane, the depth fade, the peril tint - then works
+   on the replay exactly as it works on the live fight, for no extra code. The
+   live state is saved at the start and put back at the end, so the board the
+   player gets handed back is the board they left.
+
+   Two modes:
+     - DEATH: follows the hunter that hit you, from the view in which its line
+       runs across the screen, and ends by folding the world onto you - its
+       own verb, done to you, in the view where you can watch it happen.
+     - KILL: only on the fold that CLEARS a phase, from your own side. Killing
+       one of a pair is not the end of anything and a replay there would
+       interrupt a fight that is still running. */
+var REP_HZ=20;                 // one sample every 50ms
+var REP_KEEP=6000;             // how much history the ring holds
+var REP_DEATH_MS=2200, REP_KILL_MS=1600;   // how much of it each mode shows
+var REP_RATE=.78;               // played back slower than it happened
+var REP_FOLD_MS=520, REP_HOLD_MS=260;      // the fold at the end, and a beat on it
+var repBuf=[], repT=0, repAcc=0;
+var rep=null;
+// A phase clear that is waiting for its replay to finish before it happens.
+var bossPendingAdvance=false;
 /* Trials. T is null on every level that isn't one, and like B every check is
    guarded on it. It deliberately spends the same `lives` a boss does: a level
    is either on a clock or it isn't, never both, and one counter means the HUD,

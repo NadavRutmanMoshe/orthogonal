@@ -77,7 +77,7 @@ anything; everything before it only declares.
 | `js/09-wardrobe.js` | Skins, palettes, the star economy, the display case. |
 | `js/10-render.js` | three.js scene, depth shading, the animation loop. |
 | `js/11-sound.js` | Web Audio oscillator blips and the master limiter. No assets. Also `settings`, `VERBS`, `applyUI()`. |
-| `js/12-play.js` | The verbs: move, shove, collapse, restore, die, win. Also the fight and the trial clock. |
+| `js/12-play.js` | The verbs: move, shove, collapse, restore, die, win. Also the fight, the trial clock, and the replay. |
 | `js/13-gestures.js` | Swipe / tap / two-finger tap on the world. |
 | `js/14-editor.js` | Tap-to-place editor, verify, minimize. |
 | `js/15-tutorial.js` | Control cues, the coach, the ghost hand, hints. |
@@ -270,6 +270,16 @@ the same curve, so the shadow darkening and the block arriving are one event.
   volume the blocks answer both *where* and *how long*, on the squares, where
   it can be acted on; a red pane on top of that is a second drawing of one
   fact, so it drops to a frame with almost no fill.
+- **ONE RANK, BOTH PICTURES.** The volume used to drop a block only on the
+  squares that happened to have floor under them while the plane dropped a
+  row straight across, so a player who folded watched blocks arrive where
+  nothing had been hanging a moment earlier. `drawFallRank()` builds both
+  from the same beat and the same curve, and they differ only in which axis
+  the rank runs along: in the volume the length of the slice, across the
+  arena, **at the height the player is standing at** — which is the honest
+  height, because the slice is lethal at every one and theirs is the one that
+  decides whether they live; in the plane along screen-right, across the
+  whole board. The floor plates stay as the shadows.
 - **AND THE ROW FALLS IN THE PLANE TOO, ALL THE WAY ACROSS.** Flat, the
   per-square shadows are hidden — they would point at world blocks that are
   not there any more — so for one build the blocks fell only in the volume
@@ -548,6 +558,13 @@ walk into a wall.
 
 ### Details that are load-bearing
 
+- **A charge needs the same height, not just the same row.** `bossLine()`
+  used to check only x and z, so a hunter standing on a pillar had a line on
+  a player on the floor below it and charged straight through the block it
+  was standing on. Everything else already agreed height mattered —
+  `foldKills()` checks it, `hunterTouching()` checks it, and `bosssim` had to
+  be told about it before it would stop climbing pillars — so the line was
+  the one place the rule was missing.
 - **It plants to charge.** While a lock is held it does not walk, so the line
   you are shown is the line that fires — a telegraph that drifts is not a
   telegraph — and its stillness is the tell before the line even brightens.
@@ -582,23 +599,49 @@ walk into a wall.
   The Census was already saying it too: they live in the plane. A hunter that
   can genuinely fold is a sixth design and a different question; see
   `docs/HISTORY.md`.
-- **THE KILL CAM: the charge replayed from the side it came from.** A
-  hunter's charge is instant and it is the one event a player most needs to
-  understand — which line it was, and why folding would have answered it. So
-  when one lands the fight stops, the camera swings to the view in which that
-  line runs *across* the screen, and the world folds onto the player. It is
-  the hunter's own verb, done to you, in the one view where you can watch it
-  happen. If the player was already facing that way the swing is nothing, and
-  that is worth showing too: it says the fold was there to be taken.
-- **It is entirely a render effect and touches no state.** `viewAngleTarget`
-  is pushed and restored by `killCamEnd()`, and the fold rides `flatT`, which
-  is a render value nothing outside `10-render.js` reads — the same seam peek
-  already uses. `view`, `flat` and `flatPos` do not move, so the board handed
-  back is exactly the board the player left. It is ticked in the render loop
-  on **real** time, because `bossFrame` is stopped for precisely the things
-  the cam plays over; `bossFrame` returns while it runs and `bossHolding()`
-  refuses all four verbs, so no window — the shield included — is spent on a
-  piece of film.
+- **THE REPLAY: the last seconds, played back from the other side.** A charge
+  is instant and it comes from across the arena, so the one event a player
+  most needs to understand is over before they have looked at it. A still
+  camera swung at the moment of the hit says some of it; playing the seconds
+  *before* it says all of it — you watch the thing walk onto your row, plant,
+  and then do to you the one move you could have made first. On a **death**
+  it follows the hunter that hit you, from the view in which its line runs
+  across the screen, and ends by folding the world onto you. On a **kill** it
+  only runs on the fold that CLEARS a phase — killing one of a pair ends
+  nothing, and a film there would interrupt a fight that is still going.
+- **It records state, not inputs, and that is a decision rather than a
+  shortcut.** The two families are re-simulation from recorded inputs plus a
+  seed, and a ring of state snapshots. The first is tiny and needs exact
+  determinism, which this fight does not have and cannot cheaply be given —
+  the pack advances on wall-clock `dt`, so a frame arriving 3ms late moves
+  everything and the replay would drift from what the player actually saw.
+  The second costs memory, and here that argument is not close: the world is
+  a handful of integer cells, so six seconds at **20Hz** is 120 frames of
+  about a dozen numbers. 20Hz is not a tuned number — everything moves in
+  whole cells on beats of 600ms and up, so a sample every 50ms catches every
+  position the game was ever in and there is nothing to interpolate.
+- **Playback writes the recorded pose into the live state**, and that is safe
+  precisely because nothing is running: `bossHolding()` refuses all four
+  verbs and `bossFrame` returns. Every drawing path — the fold, the telegraph
+  pane, the depth fade, the peril tint — then works on the film exactly as it
+  works on the fight, for no extra code. The live state is saved at the start
+  and put back at the end.
+- **A phase clear WAITS for its replay** (`bossPendingAdvance`). Advancing
+  first would leave `replayEnd()` restoring a board that had already moved on
+  — the same class of bug as the twin's respawn and the phase-2 crush.
+- **The restore is unconditional, and the first version's was not.** It
+  guarded on the cam still running while the caller had stopped it a line
+  earlier, so `viewAngleTarget` kept the 90° the swing had added and `view`
+  did not — and from then on the arrows moved the player at a right angle to
+  the screen. Reported exactly as up/down/left/right getting stuck after a
+  kill. **A camera that borrows a state value has to give it back on every
+  path out.**
+- **The camera follows its subject, and only here.** `FOLLOW` is off in play
+  because the bigger world put hunter spawns outside the frustum; during a
+  replay nothing is being played, so following is free — and it is what makes
+  the film read as somebody's point of view rather than as the same board
+  with different things on it. It leans rather than locks (35% back toward
+  the arena centre) and zooms in a little, both clamped to the arena.
 - **Slow motion on the two moments the fight is decided.** A kill and a hit
   are both instant, and both happen on a beat the player is already reacting
   to, so the thing they most need to see — which column it was, which line it

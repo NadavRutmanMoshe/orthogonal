@@ -485,6 +485,64 @@ the level asks.
 
 ---
 
+## The replay: why state snapshots and not input re-simulation
+
+A charge is instant and comes from across the arena, so the one event a player
+most needs to understand is over before they have looked at it. The answer
+that worked was not a better still camera but the seconds *before* the hit:
+you watch the thing walk onto your row, plant, and then do to you the move you
+could have made first.
+
+There are two families of replay system and the choice between them was not
+close here.
+
+**Deterministic input replay** records inputs plus a seed and re-simulates.
+It is tiny — a few hundred bytes for a whole match — and it is what fighting
+games and RTS games use, because their simulations are fixed-step and exactly
+reproducible. This fight is neither. The pack advances on wall-clock `dt`, so
+a frame that arrives three milliseconds late puts every hunter somewhere
+slightly different, and a re-simulation would drift away from what the player
+actually saw. A replay that disagrees with the thing it is replaying is worse
+than no replay: it teaches the wrong lesson about the exact moment it exists
+to explain.
+
+**State-snapshot recording** stores the world at a fixed cadence into a ring
+buffer and plays it back. It costs memory rather than determinism, and here
+that cost is nothing: the world is a handful of integer cells, so six seconds
+at 20Hz is 120 frames of about a dozen numbers each — a few kilobytes,
+allocated once. It is exact by construction.
+
+**20Hz was picked, not tuned.** Everything in this fight moves in whole cells
+on beats of 600ms and up, so a sample every 50ms captures every position the
+game was ever actually in. There is nothing to interpolate and no smoothing to
+get right, which is the quiet advantage of a grid game.
+
+**Playback writes the recorded pose into the live state**, rather than drawing
+a parallel set of ghosts. That sounds reckless and is safe for one specific
+reason: the fight is frozen for the whole replay — `bossHolding()` refuses all
+four verbs and `bossFrame` returns — so nothing else is reading or advancing
+it. What it buys is every drawing path for free: the fold, the telegraph pane,
+the depth fade, the peril tint and the shield bubble all work on the film
+exactly as they work on the fight, with no second implementation to keep in
+sync. The live state is saved at the start and restored at the end.
+
+Two things fell out of building it.
+
+**A phase clear has to wait for its replay.** Advancing first and filming
+afterwards leaves the restore putting back a board that had already moved on —
+which is the twin's old respawn bug and the phase-2 crush bug for the third
+time. `bossPendingAdvance` holds the advance until the film ends.
+
+**A camera that borrows a state value must give it back on every path out.**
+The first version restored `viewAngleTarget` under a guard that the caller had
+already invalidated one line earlier, so the 90° the swing added was never
+taken off while `view` never changed — and from then on the arrows moved the
+player at a right angle to the screen. It was reported exactly that way:
+up/down/left/right getting stuck after a kill. The fix is one word, but the
+rule is worth more than the fix.
+
+---
+
 ## Retelling two mechanics instead of redesigning them
 
 Both real-time levels were reported as hard to understand, and the owner's

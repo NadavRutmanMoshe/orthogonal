@@ -347,6 +347,15 @@ function bossNext(R,from,to,cr,lineTo,avoid){
    from that column. One piece of geometry, both jobs, opposite signs. */
 function bossLine(R,from,to,cr){
   var dx=0,dz=0;
+  /* SAME HEIGHT, OR THERE IS NO LINE. It used to check only x and z, so a
+     hunter standing on a pillar had a line on a player on the floor below it
+     and charged straight through the block it was standing on. Every other
+     part of the fight already agreed height mattered - foldKills() checks
+     h.y===p.y, hunterTouching() checks it, and bosssim had to be told about
+     it before it would stop climbing pillars - so the line was the one place
+     the rule was missing. A charge is a thing that comes down a row at you;
+     it needs to be able to see you along that row. */
+  if(from.y!==to.y)return null;
   if(from.z===to.z&&from.x!==to.x)dx=Math.sign(to.x-from.x);
   else if(from.x===to.x&&from.z!==to.z)dz=Math.sign(to.z-from.z);
   else return null;

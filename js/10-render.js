@@ -54,6 +54,7 @@ function buildTints(){
 var crateMeshes=[],keyMeshes=[],goalGhost=null,trialMarks=[];
 var amb,dir1,dir2;
 var center=new THREE.Vector3(),centerT=new THREE.Vector3();
+var repFade=0, repFollow=new THREE.Vector3();
 var viewSize=10,viewSizeT=10;
 
 /* ============================================================
@@ -1285,12 +1286,7 @@ function removeMesh(x,y,z){
 function clearDynamic(){
   crateMeshes.forEach(function(m){scene.remove(m);m.material.dispose();});
   keyMeshes.forEach(function(m){scene.remove(m);m.geometry.dispose();m.material.dispose();});
-  trialMarks.forEach(function(m){
-    // The block that falls into it is a scene child of its own, not a child
-    // of the plate, so it has to be taken down here too or it outlives the level.
-    var fa=m.userData.fall;
-    if(fa){scene.remove(fa);fa.geometry.dispose();fa.material.dispose();}
-    scene.remove(m);m.geometry.dispose();m.material.dispose();});
+  trialMarks.forEach(function(m){scene.remove(m);m.geometry.dispose();m.material.dispose();});
   crateMeshes=[];keyMeshes=[];trialMarks=[];
 }
 /* ONE PLATE PER SQUARE THE SWEEP IS ABOUT TO TAKE.
@@ -1338,31 +1334,9 @@ function buildTrialMarks(){
     ring.position.z=.002;
     m.add(ring);m.userData.ring=ring;
     m.userData.cell=[cx,cy,cz];
-    /* THE THING THAT FALLS INTO THE SHADOW.
-
-       The slice used to be a translucent red pane and nothing else, which is
-       an abstraction a player has to be told about. A block falling out of
-       the sky onto a marked square is a sentence everybody already knows, and
-       it costs nothing to say: the shadow was already being drawn, the hit
-       rule is untouched, and the block simply rides the same beat the plate's
-       own ramp rides.
-
-       It matters that the WHOLE SLICE falls at once. The lethal thing here is
-       a slice and not a square - flattened you are every depth at once, so
-       you stand in all of it - and that is the entire reason a trial is about
-       the fold rather than about walking. One bomb per square would be a
-       prettier drawing of a different game. */
-    var fall=new THREE.Mesh(new THREE.BoxGeometry(.86,.86,.86),
-      new THREE.MeshBasicMaterial({color:0xff4d5e,transparent:true,
-        opacity:0,depthWrite:false}));
-    fall.visible=false;fall.renderOrder=902;
-    var fedge=new THREE.LineSegments(
-      new THREE.EdgesGeometry(new THREE.BoxGeometry(.88,.88,.88)),
-      new THREE.LineBasicMaterial({color:0xffb3ba,transparent:true,opacity:0}));
-    fall.add(fedge);fall.userData.edge=fedge;
-    addCrushTeeth(fall);
-    scene.add(fall);
-    m.userData.fall=fall;
+    /* The shadow, and only the shadow. The block that falls into it is
+       drawn by drawFallRank(), which runs the whole slice rather than the
+       squares that happen to have floor under them - see there for why. */
     scene.add(m);trialMarks.push(m);
   }
 }
@@ -1697,10 +1671,7 @@ function drawTrial(rx,rz){
   if(!TR||app!=="play"||!TR.beats.length){
     trialSlab.visible=trialEdge.visible=false;
     for(var pf=0;pf<planeFalls.length;pf++)planeFalls[pf].visible=false;
-    for(var q=0;q<trialMarks.length;q++){
-      trialMarks[q].visible=false;
-      if(trialMarks[q].userData.fall)trialMarks[q].userData.fall.visible=false;
-    }
+    for(var q=0;q<trialMarks.length;q++)trialMarks[q].visible=false;
     return;
   }
   var sw=TR.beatAt(trialMs), span=20;
@@ -1781,27 +1752,42 @@ function drawTrial(rx,rz){
   trialEdge.material.opacity=(live?1:(.5+ph*.4))*(edgeOnly?.22:1);
   trialSlab.visible=trialEdge.visible=true;
   drawTrialMarks(sw,ph,live);
-  drawPlaneFall(sw,ph,live,rx,rz);
+  drawFallRank(sw,ph,live,rx,rz);
 }
 /* The tiles. Flat only in the volume: in the plane the world is a silhouette
    and a marker sitting on a world block would be pointing at a place that is
    not there any more - the slab is the right shape for that case and already
    says it. */
-/* THE ROW THAT FALLS ON THE PLANE.
+/* THE RANK OF BLOCKS THAT FALLS ON THE SLICE - one drawing, both pictures.
 
-   Flat, the world is a silhouette, so the per-square shadows are hidden -
-   they would be pointing at world blocks that are not there any more. But
-   the blocks still have to fall, and they have to fall EVERYWHERE, because
-   that is precisely what the rule says: flattened you are at every depth at
-   once, so you are standing on every square of the slice together. A hazard
-   that is only drawn where a block happens to be leaves the player watching
-   something land beside them and taking a life for it.
+   The lethal thing is a whole slice: every square of it, at every depth and
+   every height, at once. So the honest drawing is a rank of blocks running
+   the length of it, and the two halves of the game have to show the SAME
+   rank or they contradict each other. For one build the volume dropped a
+   block only on the squares that happened to have floor under them, while
+   the plane dropped a row straight across - and a player who folded watched
+   blocks arrive in places nothing had been hanging over a moment earlier.
 
-   So in the plane the drawing is a rank of blocks straight across the board,
-   at the height the player is standing on. When the slice is one you COULD
-   dodge - an axis with a screen-right component, so it survives the fold as
-   a single column - only that column falls. When it is the view axis, the
-   whole row does, which is the one warning the plane gives. */
+   So both are built here, from the same beat and the same curve, and they
+   differ only in which axis the rank runs along:
+
+     - IN THE VOLUME it runs the length of the slice, across the arena, at
+       the height the player is standing at. That is the honest height: the
+       slice is lethal at every one, and the player's own is the one that
+       decides whether they live. For anybody standing in the slice the
+       blocks land exactly on their square.
+     - IN THE PLANE it runs along screen-right, across the whole board, at
+       the height they are standing on there - because flattened they are at
+       every depth at once and so standing on all of it together.
+
+   A slice you could still dodge - one with a screen-right component, which
+   survives the fold as a single column - drops one block in the plane, on
+   that column, which is what says it is dodgeable.
+
+   Height falls as ph*ph rather than linearly, because that is what falling
+   looks like: barely moving while there is still time, quick at the end. It
+   is the same curve the floor plate's own ramp uses, so the shadow darkening
+   and the block arriving are one event. */
 var planeFalls=[];
 function planeFall(i){
   while(planeFalls.length<=i){
@@ -1818,25 +1804,33 @@ function planeFall(i){
   }
   return planeFalls[i];
 }
-function drawPlaneFall(sw,ph,live,rx,rz){
-  var n=0;
-  if(TR&&app==="play"&&flatT>.5&&flatPos&&sw.axis!=="y"){
-    var comp=sw.axis==="x"?AX[view].r[0]:AX[view].r[2];
-    var us=[];
-    if(comp!==0)us.push(sw.at*comp);
-    else{
-      // the whole board: every u the arena spans, so the row reaches the
-      // player wherever they are standing in it
-      var uA=arenaLo[0]*AX[view].r[0]+arenaLo[2]*AX[view].r[2];
-      var uB=arenaHi[0]*AX[view].r[0]+arenaHi[2]*AX[view].r[2];
-      var lo=Math.min(uA,uB)-1, hi=Math.max(uA,uB)+1;
-      for(var u=lo;u<=hi;u++)us.push(u);
+function drawFallRank(sw,ph,live,rx,rz){
+  var n=0, i;
+  if(TR&&app==="play"&&sw.axis!=="y"&&!dying){
+    var cells=[], y;
+    if(flatT>.5&&flatPos){
+      y=flatPos.y;
+      var comp=sw.axis==="x"?AX[view].r[0]:AX[view].r[2];
+      if(comp!==0)cells.push([sw.at*comp*rx,sw.at*comp*rz]);
+      else{
+        var uA=arenaLo[0]*AX[view].r[0]+arenaLo[2]*AX[view].r[2];
+        var uB=arenaHi[0]*AX[view].r[0]+arenaHi[2]*AX[view].r[2];
+        for(var u=Math.min(uA,uB)-1;u<=Math.max(uA,uB)+1;u++)
+          cells.push([u*rx,u*rz]);
+      }
+    } else {
+      y=player.y;
+      // the slice runs along the axis it is NOT thin in
+      if(sw.axis==="x")
+        for(var z=arenaLo[2]-1;z<=arenaHi[2]+1;z++)cells.push([sw.at,z]);
+      else
+        for(var x=arenaLo[0]-1;x<=arenaHi[0]+1;x++)cells.push([x,sw.at]);
     }
-    var y=flatPos.y, drop=live?0:FALL_H*(1-ph*ph);
-    for(var i=0;i<us.length;i++){
+    var drop=live?0:FALL_H*(1-ph*ph);
+    for(i=0;i<cells.length;i++){
       var m=planeFall(n++);
       m.visible=true;
-      m.position.set(us[i]*rx,y-.5+.44+drop,us[i]*rz);
+      m.position.set(cells[i][0],y-.5+.44+drop,cells[i][1]);
       m.scale.set(live?1.1:1,live?.5:1,live?1.1:1);
       m.material.opacity=live?.95:(.30+ph*.5);
       if(m.userData.edge)m.userData.edge.material.opacity=live?1:(.35+ph*.55);
@@ -1864,8 +1858,8 @@ function drawTrialMarks(sw,ph,live){
   var hidden=flatT>.5;
   var here=null;
   for(var i=0;i<trialMarks.length;i++){
-    var m=trialMarks[i], c=m.userData.cell, fa=m.userData.fall;
-    if(hidden){m.visible=false;if(fa)fa.visible=false;continue;}
+    var m=trialMarks[i], c=m.userData.cell;
+    if(hidden){m.visible=false;continue;}
     m.visible=true;
     /* EVERY standable square is outlined, not only the lethal ones.
 
@@ -1888,7 +1882,6 @@ function drawTrialMarks(sw,ph,live){
         m.userData.ring.material.opacity=.2;
       }
       m.scale.setScalar(1);
-      if(fa)fa.visible=false;
       continue;
     }
     if(m.userData.ring)m.userData.ring.material.color.setHex(0xff8a94);
@@ -1903,24 +1896,6 @@ function drawTrialMarks(sw,ph,live){
     m.scale.setScalar(mine?1.04+(live?.06:0):1);
     if(m.userData.ring)
       m.userData.ring.material.opacity=(live?1:.5+ph*.5)*(mine?1:.75);
-    /* And the block that is going to land in it. Height falls as ph*ph
-       rather than linearly, because that is what falling looks like: barely
-       moving while there is still time, and quick at the end. It is the same
-       curve the plate's own ramp already used, so the shadow darkening and
-       the block arriving are one event rather than two.
-
-       On the beat it lands, squashed and bright, sitting IN the square - it
-       is the thing that just killed whatever was standing there, so it has to
-       occupy the square rather than hover over it. */
-    if(fa){
-      fa.visible=true;
-      var drop=live?0:FALL_H*(1-ph*ph);
-      fa.position.set(c[0],c[1]-.5+.44+drop,c[2]);
-      fa.scale.set(live?1.1:1,live?.5:1,live?1.1:1);
-      fa.material.opacity=live?.95:(.30+ph*.5);
-      if(fa.userData.edge)
-        fa.userData.edge.material.opacity=live?1:(.35+ph*.55);
-    }
   }
   // Drawn last so it sits over its neighbours rather than z-fighting them.
   if(here)here.renderOrder=903;
@@ -2407,27 +2382,23 @@ function animate(now){
   planePeek+=(wantPlane-planePeek)*.15;
   if(planePeek<.002)planePeek=0;
   var ftWant=flatTarget*(1-planePeek*PEEK_RISE);
-  /* THE KILL CAM. Ticked here rather than in bossFrame, because bossFrame is
-     stopped for exactly the things the cam plays over - the hit, and a death
-     if that was the last life. Real time for the same reason slow motion is:
-     it is a piece of film, not a beat of the fight.
+  /* THE REPLAY. Ticked here rather than in bossFrame, because bossFrame is
+     stopped for exactly the things the replay plays over - and it runs on
+     real time, because it is a piece of film rather than a beat of the fight.
 
-     The swing is a push on viewAngleTarget, restored by killCamEnd; the fold
-     is a floor under flatT, which is a render value nothing outside this file
-     reads. Neither `view` nor `flat` moves, so the board handed back is the
-     board the player left. */
-  if(killCamMs>0){
-    killCamMs=Math.max(0,killCamMs-dtMs);
-    viewAngleTarget=killCamAngle;
-    var kp=1-killCamMs/KILLCAM_MS;
-    // swing first, then fold: the line has to be legible before it closes
-    var kf=Math.max(0,Math.min(1,(kp-.42)/.34));
-    killCamFold=kf*kf*(3-2*kf);
-    if(killCamMs<=0&&typeof killCamEnd==="function")killCamEnd();
-  }
-  if(killCamFold>0){
-    ftWant=Math.max(ftWant,killCamFold);
-    if(killCamMs<=0)killCamFold=Math.max(0,killCamFold-dtMs/420);
+     The pose itself is written into the game state by replayFrame(); all this
+     does is the two things that are purely picture: hold the camera at the
+     angle the replay chose, and floor flatT with the closing fold. flatT is a
+     render value that nothing outside this file reads, the same seam peek
+     uses, so the fold at the end costs the board nothing. */
+  if(typeof replayFrame==="function")replayFrame(dtMs);
+  if(rep){
+    viewAngleTarget=rep.angle;
+    if(rep.fold>0)ftWant=Math.max(ftWant,rep.fold);
+    repFade=1;
+  } else if(repFade>0){
+    // the fold unwinds after the film ends rather than snapping back
+    repFade=Math.max(0,repFade-dtMs/420);
   }
   /* Standing up is SLOWER than folding, so the return reads as a journey
      rather than a cut - it is the one moment that shows you travelling to
@@ -2464,7 +2435,31 @@ function animate(now){
   /* playerMesh rather than `player`, because the mesh is where the player is
      actually drawn - already eased, and already in plane coordinates when
      flat - so the camera cannot arrive somewhere the cube has not. */
-  if(FOLLOW>0&&app==="play"&&playerMesh){
+  /* THE REPLAY FOLLOWS ITS SUBJECT. The arena camera is deliberately still
+     during play - FOLLOW is off, because the bigger world put hunter spawns
+     outside the frustum - but during a replay nothing is being played, so
+     following is free and it is what makes the film read as somebody's point
+     of view rather than as the board with different things on it. Clamped to
+     the arena for the same reason the follow camera was: an unbounded follow
+     drifts into the void the moment its subject stands on an edge. */
+  if(rep&&app==="play"){
+    var sub=(rep.mode==="death"&&hunters.length)?hunters[0]:player;
+    if(rep.mode==="death"&&rep.who&&hunters.length){
+      // the one that hit you, matched by where it was standing at the end
+      var best=hunters[0], bd=1e9;
+      for(var ri=0;ri<hunters.length;ri++){
+        var d=Math.abs(hunters[ri].x-rep.who.x)+Math.abs(hunters[ri].z-rep.who.z);
+        if(d<bd){bd=d;best=hunters[ri];}
+      }
+      sub=best;
+    }
+    repFollow.set(
+      Math.max(arenaLo[0],Math.min(arenaHi[0],sub.x)),
+      Math.max(arenaLo[1],Math.min(arenaHi[1]+1,sub.y))+.5,
+      Math.max(arenaLo[2],Math.min(arenaHi[2],sub.z)));
+    repFollow.lerp(centerT,.35);      // still mostly the arena, leaning to them
+    center.lerp(repFollow,.10);
+  } else if(FOLLOW>0&&app==="play"&&playerMesh){
     followT.copy(playerMesh.position);
     // Clamped to the arena so the camera never drifts out into pure void
     // looking at nothing, which is what an unbounded follow does the moment
@@ -2475,7 +2470,10 @@ function animate(now){
     if(FOLLOW<1)followT.lerp(centerT,1-FOLLOW);
     center.lerp(followT,.12);
   } else center.lerp(centerT,.12);
-  var vsWant=(FOLLOW>0&&app==="play")?Math.min(viewSizeT,FOLLOW_ZOOM):viewSizeT;
+  // The replay leans in a little as well, which is the other half of it
+  // reading as a camera rather than as the same wide board.
+  var vsWant=(FOLLOW>0&&app==="play")?Math.min(viewSizeT,FOLLOW_ZOOM)
+           : rep?viewSizeT*.86 : viewSizeT;
   var pv=viewSize;viewSize+=(vsWant-viewSize)*.12;
   if(Math.abs(pv-viewSize)>.005)updateFrustum();
 
@@ -2767,6 +2765,7 @@ function animate(now){
 
   if(bossFlash>0)bossFlash=Math.max(0,bossFlash-.055);
   bossFrame(dtMs);trialFrame(dtMs);
+  if(typeof replayTick==="function")replayTick(dtMs);
   amb.intensity=.45+.55*flatT;
   dir1.intensity=.85*(1-flatT);
   dir2.intensity=.35*(1-flatT);
