@@ -131,7 +131,7 @@ five levels in, each section is interrupted by a **trial**:
 
 | | | |
 |---|---|---|
-| I · FUNDAMENTALS | 12 + trial + boss | turn, depth — the fold itself is the tutorial's job |
+| I · FUNDAMENTALS | 14 + trial + boss | turn, depth — and the landing rule, revealed mid-section |
 | II · SPIKES | 7 + trial + boss | spikes before glass — a hazard reads faster than an absence |
 | III · GLASS | 8 + trial + boss | ends on glass + spikes |
 | IV · CRATES | 10 + trial + boss | ends on crate + glass + spikes |
@@ -147,22 +147,34 @@ because gating a bonus on 100% turns a reward into a chore.
 section would renumber every level after it and cost a `LEVEL_RENAMES` entry
 each. A landmark must not be able to break a save.
 
-**Section I is long on purpose.** It is twelve levels where the others are
-seven to ten, because it is the section a new player is *in* while they are
-deciding whether to keep playing. Its first four now score 14, 21, 16, 28
-against a tutorial that now ends at 14 — `00 — First Landing` hands straight
-over to `01` at the same score; before that the first thing after the
-tutorial was 21 and the third was `brutal`.
+**Section I is long on purpose, and it is now a section with a reveal in the
+middle of it.** It runs
+`01, 02a, 02b, 02, 04, TRIAL I, 00 — First Landing, 03, 05 …` and the shape
+of that is the whole point:
 
-**The order is the owner's call, and once it overrules the curve.** `02` and
-`03` were swapped after playtesting, so the section reads 14, **21, 16**, 28
-— a dip that `curve.js` flags and that is meant to be there. `The Near One`
-scores lower and plays harder: it is the first time the game asks the player
-to distrust where the fold puts them, which is a rule rather than a view, and
-`statsFor()` counts moves, folds and turns and has no column for that. A
-rotation is worth more to the tier model than a subtlety is. Every other step
-in the section still answers to the curve; this one answers to having played
-it.
+- **Everything before the trial is naive.** Every column those five levels
+  ever pop in holds exactly one block, so `R.landings()` is never asked to
+  choose and coming back always puts you somewhere obvious. Checked, not
+  assumed: walk each optimal path and count the candidates at every POP, and
+  the first level where the number is ever 2 is `05 — Two Windows` — the
+  first level *after* the reveal.
+- **The reveal is `00 — First Landing`, moved out of the tutorial.** It used
+  to be the fourth thing a player ever did, which is the worst possible
+  moment for it: they had no model of the fold yet, so there was nothing to
+  correct. Now it arrives as a reward for beating a clock, opens with two
+  cards, and has five levels of quiet assumption behind it.
+- **`03 — The Near One` follows it rather than preceding it.** It puts a
+  decoy in the goal's column, so it *punishes* the naive model — which is a
+  trap before the reveal and a test after it. Its own optimal path still pops
+  on a single candidate; the decoy is what a wrong route finds.
+- **The numbers are deliberately not sequential** (`01, 02a, 02b, 02, 04, …
+  03, 05`). Numbering is global, so making it sequential means renaming every
+  level in the game and a `LEVEL_RENAMES` entry each — and the owner intends
+  to re-cut this run again. The order is the array's; the number is only a
+  name.
+
+The measured curve out of a tutorial that ends at 11 is **14, 12, 19, 21,
+28**, every step inside the +10 the opening allows.
 
 **Two levels teaching the same thing is a bug, and the curve will not catch
 it.** `03 — The Other Axis` and `04 — Turn to see` scored 19 and 21 and
@@ -1658,7 +1670,12 @@ it has to be able to end it.
 
 ## The tutorial
 
-Four levels, one new verb each: walking, collapsing, turning, landing. They carry
+**Three levels, one new verb each: walking, collapsing, turning.** The fourth
+— `00 — First Landing`, the landing rule — **is no longer here**: it now sits
+after `TRIAL I`, because a rule about where the fold puts you cannot be
+corrected in somebody who has not yet formed a guess about it. See Levels
+above for the shape of that. It keeps `tutorial: true` and everything below
+still applies to it. They carry
 `tutorial: true`, which means **no par and no stars**. A level whose job is
 teaching should not also grade you, and it should not feed the star economy.
 `loadLevel` does not even ask the solver about them — its answer for a teaching
@@ -1819,10 +1836,43 @@ answer.
 
 **It is now run as an experiment rather than offered as one**, on the owner's
 call after playing the first version: say the rule in words, point at the
-block it names, make the player perform both halves in order, and say it again
-from the other side. Seven steps — a card, fold, stand up, half turn, a second
-card, fold, stand up — and the middle five are gated, so the two folds
-genuinely happen in that order.
+block it names, and make the player perform both halves in order.
+
+**BOTH CARDS ARE UP FRONT NOW, AND THE LEVEL RUNS ON CUES ALONE.** The second
+used to arrive mid-level, after the half turn, which was right while this was
+a tutorial in the opening minutes. It is wrong now that the level arrives off
+the back of `TRIAL I` as a reveal: the whole shape is *here is a rule, now go
+and see it*, and a card in the middle explains a thing the player is halfway
+through doing. Seven steps — two cards, then fold, stand up, half turn, fold,
+stand up — with the five moves gated so the two folds genuinely happen in
+order.
+
+**"THE LOWEST", NOT "NEAREST THE CAMERA", AND THAT IS THE OWNER'S FRAMING.**
+Nearest the camera is the true statement and it is useless to a player: they
+have never been told there is a camera. What they can *see* is that the block
+they land on is the **lowest** of the ones stacked in their column — and it
+is the same block every time, because screen-vertical here is height plus
+depth and every landing candidate is at the same height, so the further one
+always draws higher. Said as *the lowest*, the rule is checkable by looking;
+said as *nearest the camera*, it has to be taken on trust. The one thing the
+wording must not do is read as **height** — "it drags you down to the lowest
+point" would teach a rule the game does not have.
+
+**It is slower and softer than the opening tutorials** (`tutWait` 4200,
+`tutSoft`). This is no longer played by somebody who has never seen the game;
+it is played by somebody who has just beaten a trial and been handed a rule.
+The guided lock waits four seconds rather than one, and dims to a sixth of
+its usual weight when it does arrive — the player is meant to be looking at
+the two blocks and working it out, and a dark overlay dropping after a second
+says "you are stuck" to somebody who is simply thinking. The greyed buttons
+still carry the gate; only the board stops going dark with them.
+
+**Two cards in a row have to repaint.** `tutCardSync` only wrote the card
+when it was raising the element from nothing, which was fine while every card
+had an ordinary step between it and the next one — the card came down in
+between and went back up with new text. Back to back, the second never
+brought the element down, so the player acknowledged the first one twice. It
+compares the heading now.
 
 - **It is forced, and that is checkable.** `solve()` says the level is exactly
   `rot+ rot+ FLAT POP`, and it is impossible with the fold locked out and

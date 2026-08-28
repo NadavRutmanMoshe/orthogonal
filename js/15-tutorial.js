@@ -376,11 +376,18 @@ function tutPlayable(){
    Counting ticks instead means a wait spent reading the intro, or the menu,
    or watching a death animation is not hesitation and does not accrue. */
 var TUT_TICK=120;
+/* A LEVEL MAY ASK FOR A LONGER FUSE. `L.tutWait` overrides the first wait,
+   because how long "stuck" takes depends on what the step is asking for: a
+   player who has been told which arrow to press is stuck after a second, and
+   a player who has just been handed a rule and two blocks to check it against
+   is still thinking after four. Only the FIRST wait is overridden - once they
+   have used the right control on a step, TUT_AGAIN_MS is already the long
+   one. */
 function tutArm(ms){
   clearTimeout(tutHelpTimer);
   tutHelpTimer=null;
   tutIdle=0;
-  tutWait=ms||TUT_HELP_MS;
+  tutWait=ms||(L&&L.tutWait)||TUT_HELP_MS;
   tutTick();
 }
 function tutTick(){
@@ -613,8 +620,10 @@ var tutCardTimer=null, tutCardArm=0;
    raised it rather than guessed from the level, or a card put up over a
    tutorial by something else would advance a step nobody completed. */
 var cardOwner=null;
+var cardShown=null;
 function cardPut(h,p,owner){
   var el=$("tutcard"); if(!el)return;
+  cardShown=h;
   $("tutcardH").textContent=h||"";
   // tutWords, so a card names the verb the way the button in front of the
   // player names it - the same reason the coach's own prose goes through it.
@@ -624,7 +633,7 @@ function cardPut(h,p,owner){
 }
 function cardClear(){
   var el=$("tutcard"); if(!el)return;
-  cardOwner=null;
+  cardOwner=null;cardShown=null;
   if(!el.classList.contains("on"))return;
   el.classList.remove("on");document.body.classList.remove("carded");
 }
@@ -639,8 +648,14 @@ function tutCardSync(g){
     if(cardOwner==="tut")cardClear();
     return false;
   }
-  if(!el.classList.contains("on")){
-    if(card.wait){
+  /* TWO CARDS IN A ROW REPAINT, and the first version did not. The card was
+     only written when it was being raised from nothing, which was fine while
+     every card had a normal step between it and the next one - the card came
+     down in between and went back up with new text. `00 — First Landing`
+     now opens with two of them back to back, so the second never brought the
+     element down and the player acknowledged card one twice. */
+  if(!el.classList.contains("on")||cardShown!==card.h){
+    if(card.wait&&!el.classList.contains("on")){
       if(!tutCardArm)tutCardArm=Date.now();
       var left=card.wait-(Date.now()-tutCardArm);
       if(left>0){
@@ -730,12 +745,19 @@ function tutEngage(){
   tutCueTo(g.cue);
   tutLock=g.cue;
   document.body.classList.add("tutlock");
+  /* And a lighter dim where the level asks for one. The overlay's job is
+     "this is the only control I accept"; on a level whose subject is a rule
+     rather than a button, the same darkness reads as the game switching off
+     while the player is still looking at the thing they were told to look
+     at. */
+  document.body.classList.toggle("tutsoft",!!(L&&L.tutSoft));
 }
 function tutRelease(){
   clearTimeout(tutHelpTimer);tutHelpTimer=null;
   if(tutLock===null)return;
   tutLock=null;
   document.body.classList.remove("tutlock");
+  document.body.classList.remove("tutsoft");
 }
 // Everything off: the tutorial is over, or there is no step asking for a control.
 function tutUnlock(){ tutRelease(); tutCueTo(null); tutGhost(null); }

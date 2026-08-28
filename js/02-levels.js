@@ -78,8 +78,119 @@ var LEVELS=[
      {say:"{do:3d}. The block that was out of reach is the one that catches you — turning decided what shared a column at all.",
       cue:"bFlat",done:function(c){return c.unflat>=1;}}
    ]},
+{name:"01 — Scattered Steps",
+   /* Six blocks at six unrelated depths. Flat, they are a staircase — which
+      is the tutorial's lesson again, but with the answer no longer written
+      on screen and with height in it, so the plane has to be *read* rather
+      than walked. One fold, no turn: nothing here is a decision yet. */
+   hint:"Six blocks, six depths, nothing to walk on. Depth is the only thing in the way.",
+   blocks:[[0,0,0],[1,1,-8],[2,1,-3],[3,2,-9],[4,2,-6],[5,3,-4]],
+   start:[0,1,0],goal:[5,4,-4],rotate:true},
+{name:"02a — The Bridge Behind",
+   hint:"Nothing to walk on. The way across is a row of blocks that is not beside you — it is behind you.",
+   /* THE NAIVE MODEL, ON PURPOSE. Every column in this level holds exactly
+      one block, so R.landings() never has a choice to make and GO 3D always
+      puts the player back somewhere obvious. That is the whole job: the
+      landing rule is what `00 — First Landing` reveals AFTER the trial, and
+      it only reads as a revelation if the player has spent four levels
+      quietly assuming there was nothing to reveal. Checked, not assumed -
+      tools/land.js walks the optimal path and reports how many candidates
+      each POP had, and every one of these is 1. */
+   blocks:[[0,0,0],[1,0,-3],[2,0,-3],[3,0,-3],[4,0,-6]],
+   start:[0,1,0],goal:[4,1,-6],rotate:true},
+{name:"02b — Turn, Then Cross",
+   hint:"The bridge is there. It is just not on the axis you are looking down.",
+   /* The same lesson as 02a with a turn in front of it: the fold you are
+      facing goes nowhere, and the one a quarter turn away crosses the whole
+      level. Every column is one block deep here too, so the landing is still
+      never a decision - that comes after the trial. */
+   blocks:[[0,0,0],[6,0,-1],[6,0,-2],[6,0,-3],[3,0,-4]],
+   start:[0,1,0],goal:[3,1,-4],rotate:true},
+{name:"02 — Turn to see",
+   /* Kept over "03 — The Other Axis", which was cut for teaching the same
+      lesson: both were "the bridge only exists along the other axis". This one
+      is the older of the two and the better picture - a wall standing off to
+      one side turns out to be the bridge, which is one object read two ways
+      rather than three loose blocks that happen to line up.
+
+      IT SITS BEFORE `The Near One` DESPITE SCORING HIGHER (21 against 16),
+      and that is the one place in the campaign where the order deliberately
+      contradicts tools/curve.js. Playtested, this one is the easier of the
+      two: it asks for a rotation, which the tutorial has just taught, and
+      once you are looking down the right axis the answer is on screen. The
+      Near One asks you to *distrust* where the fold puts you, which is a
+      rule rather than a view, and the tier model cannot see that - it counts
+      moves, folds and turns, and a rotation is worth more to it than a
+      subtlety is. See the note on the next level. */
+   hint:"Nothing to walk on from here. There is, from the side.",
+   blocks:(function(){var b=[];b.push([0,0,0]);b.push([3,0,5]);box(7,7,0,0,1,4,b);return b;})(),
+   start:[0,1,0],goal:[3,1,5],rotate:true},
+{name:"04 — Halfway Across",
+   /* The first level where one fold is not enough, which is the idea every
+      hard level in the game is built on. The plane is walled at the fourth
+      column — two blocks stacked, so there is no step up — and the way past
+      is to stand up, climb two in the volume, and flatten again from the new
+      height, where the silhouette is a different shape.
+
+      The wall is at a *different depth* from the climb, on purpose. Put the
+      same blocks on the route and they block the volume too; put them near
+      the camera and they only close the plane, which is exactly the
+      distinction the level is teaching. */
+   hint:"The plane runs out. Stand up, climb, and flatten again from up there.",
+   blocks:[[0,0,0],[1,0,-9],[2,0,-6],[3,1,-1],[3,2,-1],
+           [3,1,-6],[4,2,-6],[5,2,-9],[6,2,-4]],
+   start:[0,1,0],goal:[6,3,-4],rotate:true},
+/* A trial sits in the middle of a section, not at the end of one: four or
+   five levels that wait for you, and then one that does not. It carries no
+   number for the same reason a boss doesn't - the campaign's numbering is
+   the run of ordinary levels, and a landmark that renumbered everything
+   after it would cost every saved star to insert (see LEVEL_RENAMES).
+
+   Which is also why it could be moved here for free when the section grew.
+   It used to sit after four levels; the four new gentle ones would have
+   pushed it to ninth, so it came back to fifth, and no save noticed. */
+{name:"TRIAL I — The Metronome",
+   hint:"Three lives, three places to visit.",
+   /* THE SLICES RUN DOWN THE DEPTH AXIS, and that is the difficulty of a
+      trial rather than a detail of this one.
+
+      A sweep along the axis you are *looking* along cannot be dodged in the
+      plane at all: flattened, you are the projection of every depth at once,
+      so you stand in every slice of that axis simultaneously. Views 0 and 2
+      both look down z. So while a z-slice is live, being flat in the opening
+      view is death wherever you stand - and the fold stops being free.
+
+      These used to be x-slices, which are precisely the ones you can safely
+      be flat under in the starting view, so the clock never had an opinion
+      about the one verb the game has. Now the crossing has to be timed
+      *between* beats, or taken from a view turned 90 degrees off the one the
+      silhouette needs - which costs the move you were trying to save.
+
+      The `at` values are the three rows the player actually stands in: z=0
+      on the near island, z=4 and z=6 on the far one. A slice that threatens
+      nobody is decoration. z=0 cannot be first - the player respawns there,
+      and trialSafety() rejects a beat that is live where you are born. */
+   trial:{period:2500,fire:340,
+          beats:[{axis:"z",at:4},{axis:"z",at:0},{axis:"z",at:6}],
+          cores:[[7,1,4],[0,1,2],[6,1,6]]},
+   /* The far side is offset in depth as well as across, and that is
+      structural rather than decorative: two platforms sharing a row of z can
+      be joined by one turn and one fold, and the solver finds that in four
+      moves flat. A trial that ends before its second beat is not a trial. */
+   blocks:(function(){var b=[];box(0,2,0,0,0,2,b);box(5,7,0,0,4,6,b);
+     b.push([3,0,9]);b.push([4,0,9]);return b;})(),
+   start:[0,1,0],goal:[7,1,4],rotate:true},
 {name:"00 — First Landing",
-   hint:"Two blocks in one column. Which of them catches you is decided by where the camera is.",
+   hint:"Two blocks in one column. Which of them catches you is decided by which way you are looking.",
+   /* SLOWER AND SOFTER THAN THE OPENING TUTORIALS. This one is no longer
+      played in the first two minutes by somebody who has never seen the
+      game - it is played by somebody who has just beaten a trial, and who is
+      being told a rule rather than shown a button. So the guided lock waits
+      much longer before it engages (`tutWait`), and when it does the world
+      dims far less (`tutSoft`): the player is meant to be looking at the two
+      blocks and working it out, and a dark overlay dropping on them after a
+      second says "you are stuck" to somebody who is simply thinking. */
+   tutWait:4200, tutSoft:true,
    /* RULE 5, FORCED, AND EXPLAINED BEFORE IT IS ASKED FOR.
 
       "You come back on the block nearest the camera" was stated once in
@@ -164,20 +275,41 @@ var LEVELS=[
    tint:[[0,0,0,0x4a7fd6],[0,0,-5,0xd8dbe0]],
    start:[0,1,0],goal:[0,1,-5],rotate:true,tutorial:true,
    tut:[
-     {card:{h:"Which block catches you",
-            p:"There are two blocks here — a <b>blue</b> one and a <b>pale</b> one — and they are in the same column, far apart in depth.<br><br><b>{to2}</b> flattens the world. <b>{to3}</b> then has to <b>choose</b> which of them to put you back on, and it always picks the one at <b>the front</b>: nearest you, along the way you are looking.<br><br>So folding from here and folding from the far side are <b>not the same move</b>. You are about to do both."},
-      /* The rings are up BEHIND the card, not after it. The card names
-         "the block at the front" and the marker is what that phrase points
-         at; a sentence about a ring, read on a screen with no ring on it,
-         is a sentence the player has to hold in their head until it turns
-         out to be true. `show` is carried separately from `card` in
-         tutGuide() precisely so a step can do both. */
+     /* BOTH CARDS UP FRONT, AND THE LEVEL THEN RUNS ON CUES ALONE.
+
+        The reveal is now a thing that happens TO the player when they come
+        off TRIAL I, rather than a lesson threaded through a level - so it is
+        said once, in two pages, and then the level is the demonstration.
+        The second card used to arrive mid-level, after the half turn, and
+        that was right while this was a tutorial in the opening minutes; it
+        is wrong now that the whole point is "here is a rule, now go and see
+        it". A card in the middle would be explaining a thing the player is
+        halfway through doing. */
+     {card:{h:"There are rules here",
+            p:"You have made it past the first clock, so you are ready for something this world has not told you yet.<br><br>It is about what happens when you come back."},
+      free:true,say:"",done:function(c){return (c.card||0)>=1;}},
+     /* THE RULE, AND THE OWNER'S FRAMING OF IT.
+
+        "Nearest the camera" is the true statement and it is useless to a
+        player: they have never been told there is a camera. What they can
+        SEE is that the block they land on is the lowest of the ones stacked
+        in their column - and the two are the same block every time, because
+        screen-vertical here is height plus depth and every landing candidate
+        is at the same height. So the further one always draws higher. Said
+        as "the lowest", the rule is checkable by looking; said as "nearest
+        the camera", it has to be taken on trust.
+
+        The rings are up behind both cards, because "the lowest of the blocks
+        in your column" is a phrase that wants something to point at. */
+     {card:{h:"You come back to the front",
+            p:"Going flat costs you depth. Coming back to <b>3D</b> always drops you onto <b>the front of your column</b> — and on screen the front is the <b>lowest</b> of the blocks stacked there.<br><br>So two views can show you the <b>same flat world</b> and hand you back a <b>different block</b>. Here are two of them: a <b>blue</b> one and a <b>pale</b> one, in one column, far apart in depth."},
       free:true,show:"landing",say:"",
-      done:function(c){return (c.card||0)>=1;}},
+      done:function(c){return (c.card||0)>=2;}},
      /* free:true, because the solver would rather turn first and this fold is
-        the whole demonstration. hold:true, because "force him to press GO 2D"
-        is what the level is for - see tutBlocks(). */
-     {say:"The <b>blue</b> block is at the front — it is the one lit and ringed, and it is the one already under you. Fold from here and it is the one that catches you.<br>{do:2d}.",
+        the whole demonstration. hold:true, because forcing the two folds in
+        order is what makes this an experiment rather than a suggestion - see
+        tutBlocks(). */
+     {say:"The <b>blue</b> block is lit: it is the lowest of the two, so it is the one at the front — and it is already under you. Fold from here and it is the one that catches you.<br>{do:2d}.",
       show:"landing",cue:"bFlat",free:true,hold:true,
       done:function(c){return c.flat>=1;}},
      {say:"{do:3d}.",
@@ -186,64 +318,34 @@ var LEVELS=[
      {say:"Nothing moved: the blue block was at the front, and you were on it.<br>Now go round to the other side. {do:turnr} twice.",
       cue:"bRotR",hold:true,
       done:function(c,st){return st.view===2;}},
-     /* A BEAT BEFORE THIS ONE ARRIVES. The step opens the instant the second
-        turn commits and the turn takes about 450ms to settle, so the card was
-        landing on a world still swinging round, over a change the player had
-        not had a moment to look at - and this card's whole subject is that
-        change. The coach goes quiet, the world finishes turning, and then it
-        speaks. See tutCardSync(). */
-     {card:{wait:1100,h:"Same blocks, other side",
-            p:"Look at the two blocks. You have not moved and neither have they — but you are looking from the opposite side now, so the <b>pale</b> one is nearer to you than the <b>blue</b> one.<br><br>Which means the pale one is at <b>the front</b>, and the light has moved onto it. The fold that went nowhere a moment ago is about to carry you the whole way across."},
-      free:true,show:"landing",say:"",
-      done:function(c){return (c.card||0)>=2;}},
-     {say:"The <b>pale</b> block is lit now.<br>{do:2d}.",
+     {say:"Same two blocks, and you have not moved — but the <b>pale</b> one is the lower one now, so it is the one at the front. The light has moved onto it.<br>{do:2d}.",
       show:"landing",cue:"bFlat",hold:true,
       done:function(c){return c.flat>=2;}},
      {say:"{do:3d} — and across. Same two blocks, same verb, opposite answer: turning is what decides which one is at the front.<br>The <b>eye</b> button previews it whenever you are flat.",
       show:"landing",cue:"bFlat",hold:true,
       done:function(c){return c.unflat>=2;}}
    ]},
-/* The three levels below (01, 02 and 04) exist because the curve had a
-   hole exactly where a new player stands. The tutorial ends at a difficulty
-   score of 14 (First Landing, the last of them) and the first thing waiting
-   was 21, then 31 — a player was in
-   `brutal` by their fourth level, in the one section that is supposed to be
-   teaching. Every other section opens with two or three gentle levels; this
-   one opened with a cliff. Scores now run 14, 16, 21, 28, 31.
+/* THE OPENING RUN, AND WHY IT IS ALL NAIVE. 01, 02a, 02b, 02 and 04 run
+   14, 12, 19, 21, 28 out of a tutorial that ends at 11 - every step inside
+   the +10 the curve allows.
 
-   Each teaches one clause of the rules rather than combining several, and
-   none of them uses a special block: fundamentals is stone only.
+   What they have in common matters more than the scores. **Every column any
+   of them ever pops in holds exactly one block**, so R.landings() is never
+   asked to choose and GO 3D always puts the player back somewhere obvious.
+   That is deliberate: the landing rule is revealed AFTER TRIAL I, and a
+   revelation needs five levels of quietly assuming there is nothing to
+   reveal. It is checked rather than assumed - walk each optimal path and
+   count the candidates at every POP, and the first level where the number is
+   ever 2 is `05 — Two Windows`, which is the first level after the reveal.
 
-   The measured scores now run 14, 21, 16, 28, 31: 02 and 03 were swapped
-   after playtesting, against what curve.js says, because the rule level
-   played harder than the rotation level. The reasoning is on both entries. */
-{name:"01 — Scattered Steps",
-   /* Six blocks at six unrelated depths. Flat, they are a staircase — which
-      is the tutorial's lesson again, but with the answer no longer written
-      on screen and with height in it, so the plane has to be *read* rather
-      than walked. One fold, no turn: nothing here is a decision yet. */
-   hint:"Six blocks, six depths, nothing to walk on. Depth is the only thing in the way.",
-   blocks:[[0,0,0],[1,1,-8],[2,1,-3],[3,2,-9],[4,2,-6],[5,3,-4]],
-   start:[0,1,0],goal:[5,4,-4],rotate:true},
-{name:"02 — Turn to see",
-   /* Kept over "03 — The Other Axis", which was cut for teaching the same
-      lesson: both were "the bridge only exists along the other axis". This one
-      is the older of the two and the better picture - a wall standing off to
-      one side turns out to be the bridge, which is one object read two ways
-      rather than three loose blocks that happen to line up.
+   `03 — The Near One` used to sit in this run and does not any more: it puts
+   a decoy in the goal's column, so it PUNISHES the naive model at a point
+   where the game has not yet corrected it. It now sits immediately after the
+   reveal, where being caught by the decoy is the lesson landing rather than a
+   trap. Its optimal path still pops on a single candidate; the decoy is what
+   a wrong route finds.
 
-      IT SITS BEFORE `The Near One` DESPITE SCORING HIGHER (21 against 16),
-      and that is the one place in the campaign where the order deliberately
-      contradicts tools/curve.js. Playtested, this one is the easier of the
-      two: it asks for a rotation, which the tutorial has just taught, and
-      once you are looking down the right axis the answer is on screen. The
-      Near One asks you to *distrust* where the fold puts you, which is a
-      rule rather than a view, and the tier model cannot see that - it counts
-      moves, folds and turns, and a rotation is worth more to it than a
-      subtlety is. See the note on the next level. */
-   hint:"Nothing to walk on from here. There is, from the side.",
-   blocks:(function(){var b=[];b.push([0,0,0]);b.push([3,0,5]);box(7,7,0,0,1,4,b);return b;})(),
-   start:[0,1,0],goal:[3,1,5],rotate:true},
+   None of these uses a special block: fundamentals is stone only. */
 {name:"03 — The Near One",
    /* Rule 5, on its own. The goal's column holds two blocks and you come
       back on the one nearest the camera, which is not the goal — so you have
@@ -263,61 +365,6 @@ var LEVELS=[
    hint:"Two blocks share that column. You come back on the one at the front.",
    blocks:[[0,0,0],[1,0,-3],[2,0,-12],[3,0,-3],[4,0,-12],[5,0,-8],[6,0,-8],[6,0,-2]],
    start:[0,1,0],goal:[6,1,-8],rotate:true},
-{name:"04 — Halfway Across",
-   /* The first level where one fold is not enough, which is the idea every
-      hard level in the game is built on. The plane is walled at the fourth
-      column — two blocks stacked, so there is no step up — and the way past
-      is to stand up, climb two in the volume, and flatten again from the new
-      height, where the silhouette is a different shape.
-
-      The wall is at a *different depth* from the climb, on purpose. Put the
-      same blocks on the route and they block the volume too; put them near
-      the camera and they only close the plane, which is exactly the
-      distinction the level is teaching. */
-   hint:"The plane runs out. Stand up, climb, and flatten again from up there.",
-   blocks:[[0,0,0],[1,0,-9],[2,0,-6],[3,1,-1],[3,2,-1],
-           [3,1,-6],[4,2,-6],[5,2,-9],[6,2,-4]],
-   start:[0,1,0],goal:[6,3,-4],rotate:true},
-/* A trial sits in the middle of a section, not at the end of one: four or
-   five levels that wait for you, and then one that does not. It carries no
-   number for the same reason a boss doesn't - the campaign's numbering is
-   the run of ordinary levels, and a landmark that renumbered everything
-   after it would cost every saved star to insert (see LEVEL_RENAMES).
-
-   Which is also why it could be moved here for free when the section grew.
-   It used to sit after four levels; the four new gentle ones would have
-   pushed it to ninth, so it came back to fifth, and no save noticed. */
-{name:"TRIAL I — The Metronome",
-   hint:"Three lives, three places to visit.",
-   /* THE SLICES RUN DOWN THE DEPTH AXIS, and that is the difficulty of a
-      trial rather than a detail of this one.
-
-      A sweep along the axis you are *looking* along cannot be dodged in the
-      plane at all: flattened, you are the projection of every depth at once,
-      so you stand in every slice of that axis simultaneously. Views 0 and 2
-      both look down z. So while a z-slice is live, being flat in the opening
-      view is death wherever you stand - and the fold stops being free.
-
-      These used to be x-slices, which are precisely the ones you can safely
-      be flat under in the starting view, so the clock never had an opinion
-      about the one verb the game has. Now the crossing has to be timed
-      *between* beats, or taken from a view turned 90 degrees off the one the
-      silhouette needs - which costs the move you were trying to save.
-
-      The `at` values are the three rows the player actually stands in: z=0
-      on the near island, z=4 and z=6 on the far one. A slice that threatens
-      nobody is decoration. z=0 cannot be first - the player respawns there,
-      and trialSafety() rejects a beat that is live where you are born. */
-   trial:{period:2500,fire:340,
-          beats:[{axis:"z",at:4},{axis:"z",at:0},{axis:"z",at:6}],
-          cores:[[7,1,4],[0,1,2],[6,1,6]]},
-   /* The far side is offset in depth as well as across, and that is
-      structural rather than decorative: two platforms sharing a row of z can
-      be joined by one turn and one fold, and the solver finds that in four
-      moves flat. A trial that ends before its second beat is not a trial. */
-   blocks:(function(){var b=[];box(0,2,0,0,0,2,b);box(5,7,0,0,4,6,b);
-     b.push([3,0,9]);b.push([4,0,9]);return b;})(),
-   start:[0,1,0],goal:[7,1,4],rotate:true},
 {name:"05 — Two Windows",
    hint:"Cross in the plane, land, turn, and do it again from the other side.",
    blocks:[[0,0,0],[1,0,0],[2,1,-4],[3,2,-5],[4,3,-6],[4,3,-5],[1,3,-5]],
@@ -787,7 +834,7 @@ var SECTIONS=[
    story:"Nothing has noticed you yet.",
    theme:{sky:[0x141a2e,0x0a0e1a], block:0x5a6d94, ink:0x14172a,
           air:{col:0x8fa4cc, n:14, rise:.06, drift:.05, size:.10}}},
-  {at:4, name:"I · FUNDAMENTALS", sub:"one verb: collapse the world and cross the gap", col:"#35c2a5",
+  {at:3, name:"I · FUNDAMENTALS", sub:"one verb: collapse the world and cross the gap", col:"#35c2a5",
    story:"Every fold is a visit. The plane keeps count.",
    /* MOSS. Spores drifting upward - the gentlest field in the game, for the
       section a new player is deciding in. */
@@ -798,7 +845,7 @@ var SECTIONS=[
           scene:"trees", ink:0x16241a,
           stars:{n:46, col:0xdfe9ff, seed:19},
           air:{col:0xd8e8b0, n:14, rise:.05, drift:.09, size:.075}}},
-  {at:18, name:"II · SPIKES", sub:"a hazard you cannot see until you fold", col:"#e0455f",
+  {at:20, name:"II · SPIKES", sub:"a hazard you cannot see until you fold", col:"#e0455f",
    story:"Some of what is down there did not survive being flattened.",
    /* HELL, and it is DARK hell rather than bright. This section teaches
       fire, and a glowing orange world swallows a fire block whole - that was
@@ -809,7 +856,7 @@ var SECTIONS=[
    theme:{sky:[0x1a0a10,0x3a0f0a], block:0xc8c8c8, surface:"basalt",
           scene:"hell", flare:17000, ink:0x24100e,
           air:{col:0xff9a4a, n:24, rise:.20, drift:.07, size:.07}}},
-  {at:27, name:"III · GLASS", sub:"solid in the volume, absent from the plane", col:"#7fb2ff",
+  {at:29, name:"III · GLASS", sub:"solid in the volume, absent from the plane", col:"#7fb2ff",
    story:"Water casts nothing, so the plane holds no record of it.",
    /* EMBER, for the same inverted reason: this section teaches water, so a
       warm world is what makes cyan sing. Embers rise, and the void warms
@@ -824,14 +871,14 @@ var SECTIONS=[
      boss also carries its four-arc ring, which is what actually tells them
      apart. This is the closest any section gets to a reserved colour, and
      the pair should be pulled further apart when the boss is revisited. */
-  {at:37, name:"IV · CRATES", sub:"change the plane by moving the volume", col:"#c07ae0",
+  {at:39, name:"IV · CRATES", sub:"change the plane by moving the volume", col:"#c07ae0",
    story:"You can edit what they see. That is the one thing they cannot do.",
    /* DUST. Drifting sideways rather than rising or falling, because this is
       the section about pushing things along a row. */
    theme:{sky:[0x1e2734,0x4f4630], block:0x8d7f5e, scene:"ruins",
           ink:0x1c1710,
           air:{col:0xe0cd9a, n:18, rise:.02, drift:.20, size:.085}}},
-  {at:49, name:"V · EXTRA", sub:"unlocked by the Census — the long ones", col:"#3fc4d4", locked:true,
+  {at:51, name:"V · EXTRA", sub:"unlocked by the Census — the long ones", col:"#3fc4d4", locked:true,
    story:"The parts of the world that were never counted.",
    /* NOCTURNE. Almost nothing moves out here, which is the point - it is
       the shelf past the last warden, where the counting stopped. */

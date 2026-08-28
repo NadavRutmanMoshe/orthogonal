@@ -1013,6 +1013,16 @@ body.tutlock::before{content:"";position:fixed;inset:0;z-index:5;
   animation:tutdim .45s ease both}
 body.flat.tutlock::before{background:rgba(90,84,68,.30)}
 @keyframes tutdim{from{opacity:0}to{opacity:1}}
+/* A LIGHTER DIM WHERE THE LEVEL ASKS FOR ONE (`L.tutSoft`). The overlay says
+   "this is the only control I accept", and on `00 — First Landing` that is
+   true but secondary: the player has just been handed a rule and two blocks
+   to check it against, and the world is the thing they are supposed to be
+   looking at. At the full weight the lesson goes dark exactly while it is
+   being read. The greyed buttons still carry the gate; this only stops the
+   board going with them. */
+body.tutlock.tutsoft::before{background:rgba(4,7,16,.16)}
+body.flat.tutlock.tutsoft::before{background:rgba(90,84,68,.12)}
+body.tutlock.tutsoft #playBar button{opacity:.3}
 
 /* Green for as long as the step is asking for this control - which is not the
    same span as the dim, and must not be tied to it. A step can want three
