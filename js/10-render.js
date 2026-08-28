@@ -11,6 +11,8 @@ var scene,camera,renderer,meshes={},playerMesh,goalMesh,gridLines,groundPlane,fo
 var huntMeshes=[],lineMeshes=[];
 var twinCross=null,twinTether=null;
 var trialSlab,trialEdge;
+// How high above its square a slice's block starts the beat.
+var FALL_H=4.2;
 var colPeril=new THREE.Color(0x8f3b52);
 var perilSet=null,perilCleanup=[],perilPulse=0;
 /* The tutorial's landing marker, as the block loop sees it: cell key -> 1 for
@@ -1283,7 +1285,12 @@ function removeMesh(x,y,z){
 function clearDynamic(){
   crateMeshes.forEach(function(m){scene.remove(m);m.material.dispose();});
   keyMeshes.forEach(function(m){scene.remove(m);m.geometry.dispose();m.material.dispose();});
-  trialMarks.forEach(function(m){scene.remove(m);m.geometry.dispose();m.material.dispose();});
+  trialMarks.forEach(function(m){
+    // The block that falls into it is a scene child of its own, not a child
+    // of the plate, so it has to be taken down here too or it outlives the level.
+    var fa=m.userData.fall;
+    if(fa){scene.remove(fa);fa.geometry.dispose();fa.material.dispose();}
+    scene.remove(m);m.geometry.dispose();m.material.dispose();});
   crateMeshes=[];keyMeshes=[];trialMarks=[];
 }
 /* ONE PLATE PER SQUARE THE SWEEP IS ABOUT TO TAKE.
@@ -1331,6 +1338,30 @@ function buildTrialMarks(){
     ring.position.z=.002;
     m.add(ring);m.userData.ring=ring;
     m.userData.cell=[cx,cy,cz];
+    /* THE THING THAT FALLS INTO THE SHADOW.
+
+       The slice used to be a translucent red pane and nothing else, which is
+       an abstraction a player has to be told about. A block falling out of
+       the sky onto a marked square is a sentence everybody already knows, and
+       it costs nothing to say: the shadow was already being drawn, the hit
+       rule is untouched, and the block simply rides the same beat the plate's
+       own ramp rides.
+
+       It matters that the WHOLE SLICE falls at once. The lethal thing here is
+       a slice and not a square - flattened you are every depth at once, so
+       you stand in all of it - and that is the entire reason a trial is about
+       the fold rather than about walking. One bomb per square would be a
+       prettier drawing of a different game. */
+    var fall=new THREE.Mesh(new THREE.BoxGeometry(.86,.86,.86),
+      new THREE.MeshBasicMaterial({color:0xff4d5e,transparent:true,
+        opacity:0,depthWrite:false}));
+    fall.visible=false;fall.renderOrder=902;
+    var fedge=new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.BoxGeometry(.88,.88,.88)),
+      new THREE.LineBasicMaterial({color:0xffb3ba,transparent:true,opacity:0}));
+    fall.add(fedge);fall.userData.edge=fedge;
+    scene.add(fall);
+    m.userData.fall=fall;
     scene.add(m);trialMarks.push(m);
   }
 }
@@ -1471,10 +1502,33 @@ function huntMesh(){
    whichever way you are looking, and the whole tension of the fight is that
    the axis you must *fold* along to answer it may not be the one you are
    facing. Showing it swing around with the camera would tell that lie. */
+/* IT FOLDS THE ROW ONTO YOU, and the drawing says so now.
+
+   The charge used to be a thin bar that simply brightened, which is a
+   perfectly clear warning about a thing the player has no name for. But this
+   game has exactly one verb, and the attack is already the same shape as it:
+   a hunter on your row is a hunter in your silhouette column the moment you
+   face along that row, which is why folding is the answer to it. So the
+   telegraph is a PANE standing along the line that collapses to nothing as
+   the beat closes - the fold, done to that row, by the other side.
+
+   Nothing about the rules moved. It is the same line, the same beat and the
+   same hit; it is told in the vocabulary the player already owns, so "it is
+   folding onto me and I can fold first" is a sentence they can arrive at by
+   looking. The fiction was already saying it: the hunters live in the plane.
+
+   Still drawn in the volume and never folded with the world - the charge
+   happens along that row whichever way you are looking, and the whole tension
+   is that the axis you must fold along to answer it may not be the one you
+   are facing. */
 function lineMesh(){
-  var g=new THREE.Mesh(new THREE.BoxGeometry(1,.06,.06),
+  var g=new THREE.Mesh(new THREE.BoxGeometry(1,1,.06),
     new THREE.MeshBasicMaterial({color:0xff4d5e,transparent:true,opacity:.5,
-      depthWrite:false}));
+      depthWrite:false,side:THREE.DoubleSide}));
+  var e=new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,.06)),
+    new THREE.LineBasicMaterial({color:0xff8a94,transparent:true,opacity:.7}));
+  g.add(e);g.userData.edge=e;
   g.renderOrder=880;
   scene.add(g);
   return g;
@@ -1494,8 +1548,20 @@ function drawLines(){
     }
     var mx=(h.x+tx)/2, mz=(h.z+tz)/2;
     var lx=Math.abs(tx-h.x)+.25, lz=Math.abs(tz-h.z)+.25;
-    m.scale.set(lx,1,lz);
-    m.position.set(mx,h.y-.2,mz);
+    /* The pane stands along the line and comes down onto it. Height falls
+       with the beat, so what the player watches is the row being flattened -
+       and it lands as a bar at floor level exactly when the charge fires.
+       The box is 1x1x.06, so the thin axis has to be turned to lie along the
+       line: scaled on x it is a pane facing down z, and a line running in z
+       needs it turned a quarter turn. */
+    var run=1-Math.min(1,h.lock/bossAim());
+    var hgt=Math.max(.07,1.15*(1-run*run));
+    if(Math.abs(tz-h.z)>Math.abs(tx-h.x)){
+      m.rotation.y=Math.PI/2; m.scale.set(lz,hgt,1);
+    } else {
+      m.rotation.y=0;         m.scale.set(lx,hgt,1);
+    }
+    m.position.set(mx,h.y-.5+hgt/2,mz);
     // full bright as the beat closes: this is the last thing you see before
     // it is standing on you
     var t=1-Math.min(1,h.lock/bossAim());
@@ -1515,6 +1581,9 @@ function drawLines(){
        than as harmless. */
     m.material.color.setHex(0xff4d5e);
     m.material.opacity=Math.min(1,m.material.opacity+(h.doom?perilPulse*.32:0));
+    // The rim is what carries the pane's shape while the fill is still faint,
+    // and it is what is left when the pane has closed to a bar.
+    if(m.userData.edge)m.userData.edge.material.opacity=.45+t*t*.55;
     m.visible=true;
   }
   for(var k=n;k<lineMeshes.length;k++)lineMeshes[k].visible=false;
@@ -1626,7 +1695,10 @@ function drawTrial(rx,rz){
   if(!trialSlab)return;
   if(!TR||app!=="play"||!TR.beats.length){
     trialSlab.visible=trialEdge.visible=false;
-    for(var q=0;q<trialMarks.length;q++)trialMarks[q].visible=false;
+    for(var q=0;q<trialMarks.length;q++){
+      trialMarks[q].visible=false;
+      if(trialMarks[q].userData.fall)trialMarks[q].userData.fall.visible=false;
+    }
     return;
   }
   var sw=TR.beatAt(trialMs), span=20;
@@ -1668,8 +1740,9 @@ function drawTrial(rx,rz){
 
      Same test the hit rule uses. AX[view].r is screen-right, so a slice whose
      axis has no screen-right component is one you are looking down. */
-  var faceOn = sw.axis!=="y" &&
-    (sw.axis==="x"?AX[view].r[0]:AX[view].r[2])===0;
+  /* faceOn is no longer consulted: the fill is decided by whether you are
+     flat, because in the volume the falling blocks answer both "where" and
+     "how long" on the squares themselves, whichever way the slice is turned. */
   trialSlab.scale.set(sx,sy,sz);
   trialSlab.position.set(px,py,pz);
   trialEdge.scale.copy(trialSlab.scale);
@@ -1686,8 +1759,20 @@ function drawTrial(rx,rz){
      is a frame you can see rather than something running off the screen -
      because "a slice is charging" still has to be legible even in the view
      where "which slice" is the tiles' job. */
-  var edgeOnly = faceOn && flatT<=.5;
-  var wash = edgeOnly ? .10 : 1;
+  /* THE SLAB IS THE PLANE'S INDICATOR NOW, AND ONLY THE PLANE'S.
+
+     In the volume the falling blocks carry the whole message - where the
+     slice is, and how long is left - and they say it on the squares rather
+     than in the air, which is where it can be acted on. A full red pane on
+     top of them is a second drawing of one fact, so it drops to a frame with
+     barely any fill.
+
+     Flat is the opposite and unchanged: there the marks are hidden, because
+     the world is a silhouette and a marker on a world block points at a place
+     that no longer exists. The whole board going red is the correct answer
+     there, and the only warning that the fold you are in is the wrong one. */
+  var edgeOnly = flatT<=.5;
+  var wash = edgeOnly ? .07 : 1;
   trialSlab.material.opacity=(live?(.62+trialFlash*.3):(.15+ph*ph*.3))*wash;
   trialEdge.material.opacity=(live?1:(.5+ph*.4))*(edgeOnly?.22:1);
   trialSlab.visible=trialEdge.visible=true;
@@ -1701,8 +1786,8 @@ function drawTrialMarks(sw,ph,live){
   var hidden=flatT>.5;
   var here=null;
   for(var i=0;i<trialMarks.length;i++){
-    var m=trialMarks[i], c=m.userData.cell;
-    if(hidden){m.visible=false;continue;}
+    var m=trialMarks[i], c=m.userData.cell, fa=m.userData.fall;
+    if(hidden){m.visible=false;if(fa)fa.visible=false;continue;}
     m.visible=true;
     /* EVERY standable square is outlined, not only the lethal ones.
 
@@ -1725,6 +1810,7 @@ function drawTrialMarks(sw,ph,live){
         m.userData.ring.material.opacity=.2;
       }
       m.scale.setScalar(1);
+      if(fa)fa.visible=false;
       continue;
     }
     if(m.userData.ring)m.userData.ring.material.color.setHex(0xff8a94);
@@ -1739,6 +1825,24 @@ function drawTrialMarks(sw,ph,live){
     m.scale.setScalar(mine?1.04+(live?.06:0):1);
     if(m.userData.ring)
       m.userData.ring.material.opacity=(live?1:.5+ph*.5)*(mine?1:.75);
+    /* And the block that is going to land in it. Height falls as ph*ph
+       rather than linearly, because that is what falling looks like: barely
+       moving while there is still time, and quick at the end. It is the same
+       curve the plate's own ramp already used, so the shadow darkening and
+       the block arriving are one event rather than two.
+
+       On the beat it lands, squashed and bright, sitting IN the square - it
+       is the thing that just killed whatever was standing there, so it has to
+       occupy the square rather than hover over it. */
+    if(fa){
+      fa.visible=true;
+      var drop=live?0:FALL_H*(1-ph*ph);
+      fa.position.set(c[0],c[1]-.5+.44+drop,c[2]);
+      fa.scale.set(live?1.1:1,live?.5:1,live?1.1:1);
+      fa.material.opacity=live?.95:(.30+ph*.5);
+      if(fa.userData.edge)
+        fa.userData.edge.material.opacity=live?1:(.35+ph*.55);
+    }
   }
   // Drawn last so it sits over its neighbours rather than z-fighting them.
   if(here)here.renderOrder=903;

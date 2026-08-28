@@ -109,7 +109,7 @@ function respawn(){
 function bossReset(){
   bossPause=0;phaseNoteEnd();
   bossHp=B?B.hp:0;bossFlash=0;bossHitFlash=0;bossCreepMs=0;bossGraceMs=0;
-  shieldMs=0;deathPending=false;
+  shieldMs=0;deathPending=false;slowMoMs=0;
   hunters=[];twinCore=0;twinAt=null;bossPhase=0;
   if(B&&B.twin)twinSpawn(0);
   else if(B){bossRestoreArena();bossEnterPhase(false);}
@@ -358,6 +358,9 @@ function bossFrame(dt){
      and aim, creep, rage, grace - slows together and keeps its ratio to the
      others. A phase is a set of dials; pace must not be another one. */
   dt=Math.min(dt,90)*paceScale();
+  /* Counted down on REAL time and applied to the fight's, or the slowing
+     would slow the thing that ends it. */
+  if(slowMoMs>0){slowMoMs=Math.max(0,slowMoMs-dt);dt*=SLOWMO_RATE;}
   if(bossHitFlash>0)bossHitFlash=Math.max(0,bossHitFlash-dt/380);
   if(bossFlash>0)bossFlash=Math.max(0,bossFlash-dt/300);
   /* The held breath, before the grace beat rather than inside it: grace is
@@ -527,7 +530,7 @@ function bossFoldCrush(){
   if(B.twin){
     if(!twinAligned())return;
     bossHp--;bossHitFlash=1;
-    SFX.strike();shakeT=1;
+    SFX.strike();shakeT=1;slowMo();
     if(bossHp<=0){hunters=[];buildGrid();win();return;}
     /* A core goes, and the centre moves. Leaving it where it was would mean
        the answer is in the same place three times running, and the second
@@ -544,7 +547,7 @@ function bossFoldCrush(){
   if(!doomed.length)return;
   for(var d=doomed.length-1;d>=0;d--)hunters.splice(doomed[d],1);
   bossHitFlash=1;
-  SFX.strike();shakeT=1;
+  SFX.strike();shakeT=1;slowMo();
   /* What the survivors get for surviving. A fold that kills nothing is now
      worse than free, and a fold that kills one of three leaves the other two
      angrier - so the fight accelerates toward its own end rather than
@@ -578,7 +581,7 @@ function bossCrushable(){
 function bossHurt(why){
   if(shielded())return;        // asserted here as well as at the call site
   lives--;
-  SFX.die();shakeT=1;
+  SFX.die();shakeT=1;slowMo();
   bossGraceMs=B.grace;
   shieldMs=SHIELD_MS;
   var bar=$("bossBar");
@@ -624,7 +627,7 @@ function bossTakeCrate(idx){
    ============================================================ */
 function trialReset(){
   trialMs=0;trialBeat=-1;trialFlash=0;trialGrace=0;trialTicked=-1;trialCore=0;
-  shieldMs=0;deathPending=false;
+  shieldMs=0;deathPending=false;slowMoMs=0;
   if(TR)lives=BOSS_LIVES;
 }
 function trialFrame(dt){
@@ -637,6 +640,7 @@ function trialFrame(dt){
   // the pace setting - see paceScale() in 11-sound.js for why it is one
   // multiplication here rather than a slower `period` and `fire`.
   dt=Math.min(dt,90)*paceScale();
+  if(slowMoMs>0){slowMoMs=Math.max(0,slowMoMs-dt);dt*=SLOWMO_RATE;}
   if(trialFlash>0)trialFlash=Math.max(0,trialFlash-dt/300);
   if(trialGrace>0)trialGrace=Math.max(0,trialGrace-dt);
   // On the fight's own clock, like every other window here, so the pace
@@ -675,7 +679,7 @@ function trialFrame(dt){
 function trialHurt(){
   if(shielded())return;        // asserted here as well as at the call site
   lives--;
-  SFX.die();shakeT=1;
+  SFX.die();shakeT=1;slowMo();
   trialGrace=TR.period;
   shieldMs=SHIELD_MS;
   var bar=$("bossBar");
@@ -902,8 +906,8 @@ function doFlatten(){
   /* COMMITTED NOW, DRAWN IN 420ms. Declaring it is what stops a charge
      landing in that gap and taking a second life for a moment the player has
      already lost - see deathPending in 05-state.js. */
-  if(wall||crush){deathPending=true;setTimeout(function(){die("crush");},420);}
-  else if(spiked){deathPending=true;setTimeout(function(){die("spike");},420);}
+  if(wall||crush){deathPending=true;slowMo();setTimeout(function(){die("crush");},420);}
+  else if(spiked){deathPending=true;slowMo();setTimeout(function(){die("spike");},420);}
 }
 function doUnflatten(){
   if(typeof peekUnlatch==="function")peekUnlatch();

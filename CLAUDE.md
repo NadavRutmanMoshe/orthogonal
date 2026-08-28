@@ -249,6 +249,30 @@ Two consequences worth knowing before changing a beat list:
   not a bug in either piece — it is what happens when a hazard is authored
   against a specific sweep.
 
+**THE HAZARD IS BLOCKS FALLING OUT OF THE SKY, and that is the whole
+redesign.** For a long time the attack was a translucent red pane and nothing
+else — an abstraction a player has to be told about, which on a clock is the
+one thing there is no time for. A block falling onto a marked square is a
+sentence everybody already owns. **The rule did not move**: the plates were
+already being drawn, `TR.hits` is untouched, `trialSafety()` is untouched, and
+the block simply rides the beat the plate's own ramp already rode. Height
+falls as `ph²` rather than linearly, because that is what falling looks
+like — barely moving while there is still time, quick at the end — and it is
+the same curve, so the shadow darkening and the block arriving are one event.
+
+- **THE WHOLE SLICE FALLS AT ONCE, and that is not a detail.** The lethal
+  thing here is a slice and not a square: flattened you are every depth at
+  once, so you stand in all of it, which is the entire reason a trial is
+  about the fold rather than about walking. One bomb per square was the
+  first idea and it is a prettier drawing of a different game — separate
+  per-cell hazards make folding no longer uniquely fatal.
+- **The slab is the plane's indicator now, and only the plane's.** In the
+  volume the blocks answer both *where* and *how long*, on the squares, where
+  it can be acted on; a red pane on top of that is a second drawing of one
+  fact, so it drops to a frame with almost no fill. Flat is unchanged and
+  opposite: the marks are hidden there, the whole board goes red, and that is
+  still the only warning that the fold you are in is the wrong one.
+
 **The warning is drawn on the squares, not in the air.** A plane carries a
 position only seen *edge-on*, where it is a wall standing somewhere on screen.
 Face-on it is a sheet of colour over everything — and orthographically it does
@@ -530,6 +554,27 @@ walk into a wall.
   `GO 2D` button turns green and pulses — and being answerable only *adds*
   brightness to the line, so the contested one reads as live rather than as
   harmless. Three cues, one danger reading that never inverts.
+- **IT FOLDS THE ROW ONTO YOU, and the telegraph says so.** The charge used
+  to be a thin bar that brightened — a perfectly clear warning about a thing
+  the player has no name for. It is a **pane standing along the line that
+  collapses to nothing as the beat closes**: the fold, done to that row, by
+  the other side. Nothing about the rules moved and nothing needed
+  re-verifying; it is the same line, the same beat and the same hit, told in
+  the one verb the player already owns. It works because the attack was
+  already that shape — a hunter on your row *is* a hunter in your silhouette
+  column the moment you face along that row, which is why folding answers it.
+  The Census was already saying it too: they live in the plane. A hunter that
+  can genuinely fold is a sixth design and a different question; see
+  `docs/HISTORY.md`.
+- **Slow motion on the two moments the fight is decided.** A kill and a hit
+  are both instant, and both happen on a beat the player is already reacting
+  to, so the thing they most need to see — which column it was, which line it
+  came down — is over before they have looked at it. `slowMo()` runs the
+  fight at `SLOWMO_RATE` for `SLOWMO_MS`, as one multiplication on `dt` in the
+  same place `paceScale()` lives, so every window slows together and keeps its
+  ratio. Its own counter runs on **real** time, or the slowing would slow the
+  thing that ends it. Fired on a kill, on a hit, and when a fold into a wall
+  is committed.
 - **The telegraph is drawn in the volume and does not fold with the world.**
   The charge happens along that row whichever way you are looking, and the
   whole tension is that the axis you must fold along to answer it may not be

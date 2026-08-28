@@ -485,6 +485,58 @@ the level asks.
 
 ---
 
+## Retelling two mechanics instead of redesigning them
+
+Both real-time levels were reported as hard to understand, and the owner's
+instinct for each was a redesign. In both cases what actually shipped was the
+same rule told in a vocabulary the player already had — and the reason is the
+same reason both times.
+
+**The trial's slice became blocks falling out of the sky.** The hazard was a
+translucent red pane, which is an abstraction a player has to be told about,
+on the one kind of level where there is no time to be told. A block falling
+onto a marked square needs no explanation at all. The rule did not move: the
+warning plates were already drawn, `TR.hits` and `trialSafety()` are
+untouched, and the block rides the beat the plate's ramp already rode.
+
+The important constraint is the one that nearly got lost. The first idea was
+**a bomb on each square**, and that is a prettier drawing of a *different
+game*: the lethal thing here is a **slice**, not a square, because flattened
+you are every depth at once and therefore standing on all of it. That is the
+entire reason a trial is about the fold rather than about walking — it is why
+the slices were moved onto the depth axis in the first place. Separate
+per-cell hazards make folding no longer uniquely fatal. So the whole slice
+falls together, and the mechanic survives the redecoration intact.
+
+**The boss's charge became a fold.** The proposal was to give the hunter a
+real dimension-shift: it folds too, and whoever folds first wins the line.
+That survives the test that killed four earlier designs — the kill and the
+attack stay one event on one square, so there is nothing to farm — but it
+fails a different one. Orthogonal has three slow buttons and no dexterity
+ceiling; a fight decided by who presses first is a reaction race, which is the
+one axis this game cannot tune, and the phases exist precisely because
+tightening execution was the wrong knob.
+
+What it turned out to want was already there. **A hunter on your row *is* a
+hunter in your silhouette column the moment you face along that row** — which
+is why folding answers the charge at all. So the telegraph is now a pane
+standing along the line that collapses to nothing as the beat closes: the
+fold, done to that row, by the other side. Same line, same beat, same hit,
+nothing to re-verify — and "it is folding onto me, and I can fold first" is
+now a sentence a player can reach by looking. The sixth design is still
+available if the retelling is not enough; it needs a full `bosssim` run and a
+beat-telegraphed fold rather than a free one.
+
+**And slow motion, on the two moments the fight is decided.** A kill and a hit
+are both instant, and both land on a beat the player is already reacting to,
+so the thing they most need to see is over before they have looked at it. One
+multiplication on `dt`, in the same place `paceScale()` lives, so every window
+in the fight slows together and keeps its ratio to the others. Its own counter
+runs on real time — slowing the clock would otherwise slow the thing that ends
+the slowing.
+
+---
+
 ## Two lives for one mistake, and the shape of the fix
 
 Reported from a playtest of a trial: get caught by the sweep and fall out of

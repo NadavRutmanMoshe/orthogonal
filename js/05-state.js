@@ -116,6 +116,23 @@ var shieldMs=0;
    It also stops the shield decaying, so the second the shield is worth is
    still there when the death finally resolves. */
 var deathPending=false;
+/* SLOW MOTION, on the two moments the fight is decided.
+
+   Both a kill and a hit are instant and both happen on a beat the player is
+   already reacting to, so the thing they most need to see - which column it
+   was, which line it came down - is over before they have looked at it. The
+   fight runs at a fraction of speed for a moment afterwards instead: the
+   event has time to be read, and the beat that follows it is one the player
+   can still answer.
+
+   It scales `dt` at the top of bossFrame and trialFrame, one multiplication
+   in the same place paceScale() lives, so every window in the fight - aim,
+   step, creep, rage, the grace beats - slows together and keeps its ratio to
+   the others. The counter itself runs on REAL time, or slowing the clock
+   would slow the thing that ends the slowing. */
+var SLOWMO_MS=620, SLOWMO_RATE=.3;
+var slowMoMs=0;
+function slowMo(){ slowMoMs=SLOWMO_MS; }
 /* Trials. T is null on every level that isn't one, and like B every check is
    guarded on it. It deliberately spends the same `lives` a boss does: a level
    is either on a clock or it isn't, never both, and one counter means the HUD,

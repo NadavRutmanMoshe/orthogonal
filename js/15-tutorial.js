@@ -678,25 +678,28 @@ function tutCardSync(g){
    and confirmed it once; after that the HUD and the arena say it. */
 var CLOCK_BRIEFS=2;
 var TRIAL_BRIEF={h:"On the clock",p:
-  "This one does not wait for you. <b>Three amber cores</b>, one at a time — "+
-  "reach one and the next appears somewhere else.<br><br>"+
-  "A <b>red slice</b> charges in plain sight and then goes live for an "+
-  "instant. Being in it when it lands costs a life. The squares it will take "+
-  "are marked on the floor.<br><br>"+
-  "<b>Flat, it takes you wherever you stand.</b> The slice runs down the axis "+
-  "you are looking along, and flattened you are every depth at once — so "+
-  "<b>{to2}</b> while the board is red is a life, from any square. Turn "+
-  "first, or fold between beats.<br><br>"+
-  "<b>Three lives, three cores.</b>"};
+  "Same goal as every level — reach the <b>amber mark</b>. Then it moves, "+
+  "twice. Three in all, and this one does not wait for you.<br><br>"+
+  "Watch the floor. A row of squares lights up red, and a moment later "+
+  "<b>blocks fall out of the sky onto every one of them</b>. Being on one "+
+  "when they land costs a life. The red is your warning and it always comes "+
+  "first.<br><br>"+
+  "<b>Flat, they land on you wherever you are.</b> Flattened, you are at "+
+  "every depth at once — so you are standing on every square of that row "+
+  "together. <b>{to2}</b> while the board is red is a life, from anywhere. "+
+  "Turn first, or fold between the drops.<br><br>"+
+  "<b>Three lives, three marks.</b>"};
 var BOSS_BRIEF={h:"The line is both of yours",p:
-  "No goal here. It hunts you, on a clock.<br><br>"+
-  "Get onto its <b>row or column</b> and it stops, the line lights, and at "+
-  "the end of that beat it <b>charges the whole way down it</b>. That costs "+
-  "a life — step off the line to cancel it.<br><br>"+
-  "<b>The same line is how you kill it.</b> Press <b>{to2}</b> while it "+
-  "shares your flattened column and it dies there instead. The button turns "+
-  "<b>green</b> the moment that is on — and which line you can win depends on "+
-  "which way you face, so the answer is often to <b>turn first</b>.<br><br>"+
+  "No goal here, only a fight. It hunts you, on a clock.<br><br>"+
+  "Get onto its <b>row or column</b> and it stops and <b>starts folding that "+
+  "line flat</b> — a red wall along it, coming down. When it lands, it has "+
+  "come the whole way down the line and it costs you a life. Step off the "+
+  "line and it stops.<br><br>"+
+  "<b>You can fold first.</b> Press <b>{to2}</b> while it shares your "+
+  "flattened column and it is the one that is crushed. The <b>{to2}</b> "+
+  "button turns <b>green</b> the moment that is on.<br><br>"+
+  "Which line you can win is decided by which way you are facing — so the "+
+  "answer is often to <b>turn</b>, and then fold.<br><br>"+
   "<b>Three phases, three lives.</b>"};
 /* Raised from loadLevel, after the board is built, so the arena is already
    behind the words. Immediately rather than after a beat: the clocks are only
