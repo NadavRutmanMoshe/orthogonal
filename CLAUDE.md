@@ -304,6 +304,17 @@ find out, which costs a move on a clock. So:
   covering. When it absorbs a `die()` the *consequence* still happens: you
   fell out of the world, so you go back to the start (`respawn()`, factored
   out of `spendLife()`). It is only the life that is not spent.
+- **`deathPending` freezes the shield the moment a fatal move is COMMITTED,
+  not when it lands**, and that is what makes a second of shield worth a
+  second. Folding into a wall or onto a spike is deliberately not instant —
+  `doFlatten` lets the fold play out and schedules the death 420ms later,
+  because being crushed has to be seen to happen — and the fight runs through
+  those 420ms. So the animation was eating most of the window: measured, a
+  hit followed by a fold into a pillar **800ms later still cost two lives**,
+  which is the exact case that was reported on a boss. Frozen at the commit
+  point, the shield covers a full second of the player's own reaction time.
+  It also stops a charge landing inside that 420ms and taking a life for a
+  moment already lost. One predicate, `shielded()`, is what every path asks.
 - **The shield is drawn, because invulnerability you cannot see is
   invulnerability you will not use.** A bubble round the player: a faint fill
   in their own colour, and a ring **turned to face the camera every frame**,
@@ -1708,31 +1719,19 @@ genuinely happen in that order.
   player to preview a landing they had not yet been told existed. It is still
   live, still lights in the plane, and the last line of the level names it;
   it is simply not a hoop.
-- **THE COLONNADE IS A RULER AND NOTHING ELSE, AND IT IS GLASS.**
-  Screen-vertical here is height and depth added together, so the far block
-  draws about three cells *above* the near one and a first-time player reads
-  it as higher rather than as further back — the exact lie
-  `tools/legible.js` hunts for, in the level whose whole subject is depth.
-  Two rows running the length of the gap give the eye something to count, and
-  the depth fade grades them so "further" has a visible direction. **It is
-  glass because a ruler has to be inert**, and "solid in the volume, absent
-  from the plane" is precisely what glass means — so it can sit on the ground
-  beside the player without ever becoming a silhouette they can climb, a
-  landing they can be teleported onto, or a block that crushes a fold. Stone
-  cannot do that anywhere near the floor: at `y=0` it hands a wandering
-  player a landing on an unreachable rail in views 1 and 3, at `y=1` it
-  crushes any fold taken from view 1. Stone at `y=2`, above all of it, was
-  the first version and it read as floating. The other two halves are
-  `x=±2`, which keeps it two squares clear so stepping toward it is a fall
-  into nothing exactly as before, and `z=-1..-4`, which keeps it out of the
-  two squares the player ever occupies so it is never a landing candidate in
-  views 1 and 3 either. Verified inert against `solve()`, `R.landings()` and
-  `R.siloSolid()` in all four views. `legible.js` gains one level and two
-  flags, both on squares *on top of the rails*, which nothing can stand on.
-  **It is the one place glass appears before Section III teaches it** — it is
-  unreachable and the lesson never mentions it, so it reads as scenery, but
-  it is a real exception to "fundamentals is stone only" and worth a
-  playtest.
+- **THERE IS NO RULER, AND THAT IS THE OWNER'S CALL.** Screen-vertical here
+  is height and depth added together, so the far block draws about three
+  cells *above* the near one and a first-time player can read it as higher
+  rather than as further back. Two rows running the length of the gap were
+  built to give the eye something to count. Stone could only go at `y=2`,
+  above everything, where it read as floating; glass could sit on the ground
+  because it casts nothing; and the blocks were briefly two cells tall to
+  plant them — which is raising the blocks rather than lowering what is
+  beside them, and not what was asked. The answer taken is to try the lesson
+  with **neither**, and see whether the colours and the cards carry it alone.
+  If they do not, the ruler is a paste-back of eight glass blocks at `y=0`,
+  `x=±2`, `z=-1..-4` and nothing else — that exact placement is verified
+  inert, and `docs/HISTORY.md` has the three that were not.
 - **`First Turn`'s last line was retuned, not left alone.** It used to say
   "turning is how you choose which one catches you", which is this level's
   sentence. Its own subject is what *shares* a column at all. Two levels

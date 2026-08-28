@@ -103,6 +103,19 @@ var BOSS_LIVES=3;
    allowed to eat the second it is being covered by. */
 var SHIELD_MS=1000;
 var shieldMs=0;
+/* A DEATH THAT IS COMMITTED BUT HAS NOT LANDED YET.
+
+   Folding into a wall or onto a spike is deliberately not instant: doFlatten
+   lets the fold play out and schedules the death 420ms later, because being
+   crushed has to be seen to happen. The fight keeps running through those
+   420ms - so a charge could land in the gap and take a life for a moment the
+   player had already lost. Two hearts, one mistake, which is the same bug the
+   shield was built for wearing a different hat: the shield covers the time
+   AFTER a life is spent, and this covers the time after one is committed.
+
+   It also stops the shield decaying, so the second the shield is worth is
+   still there when the death finally resolves. */
+var deathPending=false;
 /* Trials. T is null on every level that isn't one, and like B every check is
    guarded on it. It deliberately spends the same `lives` a boss does: a level
    is either on a clock or it isn't, never both, and one counter means the HUD,

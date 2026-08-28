@@ -141,48 +141,27 @@ var LEVELS=[
       plane one column off the player's, so `solve()` finds "fold, step left,
       pop, step right" and the level is solvable WITHOUT ROTATING AT ALL.
       Geometry in this game is never decoration - width becomes a bridge in
-      the plane and height becomes a lie on screen. The two blocks are one
-      cell wide and two cells tall and they differ in colour only.
+      the plane and height becomes a lie on screen.
 
-      The bodies at y=-1 are inert: R.landings() wants a block at y=0 under a
-      clear y=1, so only the tops are ever candidates, and nothing below the
-      player's feet can crush a fold or hold up a silhouette they can reach.
+      NO RULER, AND ONE CELL EACH, WHICH IS WHERE THE OWNER LANDED. Screen
+      vertical here is height and depth added together, so the far block draws
+      about three cells ABOVE the near one and a first-time player can read it
+      as higher rather than as further back. Two rows running the length of the
+      gap were built to give the eye something to count: stone could only sit
+      at y=2, above everything, where it read as floating, and glass could sit
+      on the ground because it casts nothing. The blocks were also briefly two
+      cells tall, to plant them - and raising the blocks is not the same as
+      lowering what is beside them, which is what was actually asked for. So
+      the answer is to try the lesson with neither, and see whether colour and
+      the cards carry it alone.
 
-      THE COLONNADE IS A RULER AND NOTHING ELSE. Screen-vertical in this
-      projection is height and depth added together, so the far block draws
-      about three cells ABOVE the near one and a first-time player reads it as
-      higher rather than as further back - the exact lie tools/legible.js
-      hunts for, in the level whose whole subject is depth. Two rows running
-      the length of the gap give the eye something to count, and the depth
-      fade grades them so "further" has a visible direction.
-
-      IT IS GLASS, AND IT IS GLASS BECAUSE IT HAS TO CAST NOTHING. A ruler
-      has to be inert, and in this game "solid in the volume, absent from the
-      plane" is exactly what glass means - so it can sit on the ground beside
-      the player without ever becoming a silhouette they can climb, a landing
-      they can be teleported onto, or a block that crushes a fold. Stone
-      cannot do that anywhere near the floor: at y=0 it hands a wandering
-      player a landing on an unreachable rail in views 1 and 3, and at y=1 it
-      crushes any fold taken from view 1. Stone was tried at y=2, above all of
-      that, and the owner is right that it read as floating.
-
-      The other two halves of keeping it inert:
-        - x=+/-2 keeps it two squares clear, so stepping toward it is a fall
-          into nothing exactly as it was before, and its silhouette column is
-          never the player's in views 0 and 2;
-        - z=-1..-4 keeps it out of the two squares the player ever occupies,
-          so it is never a landing candidate in views 1 and 3 either, where
-          the silhouette column runs down z.
-      Verified inert - solve() still says the level is exactly
-      `rot+ rot+ FLAT POP`, still impossible without the fold and without
-      rotation, and R.landings() is unchanged in all four views. */
-   blocks:[[0,0,0],[0,-1,0],
-           [0,0,-5],[0,-1,-5]]
-     // the ruler: glass, so it is solid to look at and absent from the plane
-     .concat([[-2,0,-1,1],[-2,0,-2,1],[-2,0,-3,1],[-2,0,-4,1],
-              [ 2,0,-1,1],[ 2,0,-2,1],[ 2,0,-3,1],[ 2,0,-4,1]]),
-   tint:[[0,0,0,0x4a7fd6],[0,-1,0,0x3a63a8],
-         [0,0,-5,0xd8dbe0],[0,-1,-5,0xa9adb6]],
+      If the depth still does not read, the ruler is a paste-back of eight
+      glass blocks at y=0, x=+/-2, z=-1..-4 and nothing else - that exact
+      placement is verified inert, and docs/HISTORY.md has the three that were
+      not. The geometry is otherwise the one this level has always had; the
+      only thing ever added to it is a hue. */
+   blocks:[[0,0,0],[0,0,-5]],
+   tint:[[0,0,0,0x4a7fd6],[0,0,-5,0xd8dbe0]],
    start:[0,1,0],goal:[0,1,-5],rotate:true,tutorial:true,
    tut:[
      {card:{h:"Which block catches you",

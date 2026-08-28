@@ -24,6 +24,9 @@
 function die(kind){
   if(dying)return;
   dying=kind;dyingT=0;
+  // It has landed, so `dying` is the guard from here - both clocks stop dead
+  // while it plays out, which is what deathPending was standing in for.
+  deathPending=false;
   var spend=(B||TR)&&kind!=="boss"&&kind!=="trial";
   flash(kind==="fall"?"you fell":
         kind==="spike"?"something sharp was in that column":
@@ -48,6 +51,12 @@ function die(kind){
    have taken, the clock, the pack's damage. You are put back at the start
    rather than left where you were, because you got here by falling out of
    the world or being crushed - there is nowhere to leave you. */
+/* Has this moment already cost a life, or is it about to? One question, asked
+   everywhere a life could be taken, so the three ways to lose one can no
+   longer each charge for the same mistake. */
+function shielded(){
+  return shieldMs>0||deathPending;
+}
 function spendLife(){
   /* THE SHIELD ABSORBS IT, and you are still put back.
 
@@ -100,7 +109,7 @@ function respawn(){
 function bossReset(){
   bossPause=0;phaseNoteEnd();
   bossHp=B?B.hp:0;bossFlash=0;bossHitFlash=0;bossCreepMs=0;bossGraceMs=0;
-  shieldMs=0;
+  shieldMs=0;deathPending=false;
   hunters=[];twinCore=0;twinAt=null;bossPhase=0;
   if(B&&B.twin)twinSpawn(0);
   else if(B){bossRestoreArena();bossEnterPhase(false);}
@@ -360,7 +369,7 @@ function bossFrame(dt){
     return;
   }
   if(bossGraceMs>0)bossGraceMs=Math.max(0,bossGraceMs-dt);
-  if(shieldMs>0)shieldMs=Math.max(0,shieldMs-dt);
+  if(shieldMs>0&&!deathPending)shieldMs=Math.max(0,shieldMs-dt);
   if(!hunters.length)return;
 
   /* The creep. Nothing about this fight stops you from running in circles,
@@ -502,7 +511,7 @@ function bossContact(){
   return false;
 }
 function hunterTouching(h){
-  if(bossGraceMs>0||shieldMs>0)return false;
+  if(bossGraceMs>0||shielded())return false;
   if(flat)return R.uOf(view,h.x,h.z)===flatPos.u&&h.y===flatPos.y;
   return h.x===player.x&&h.y===player.y&&h.z===player.z;
 }
@@ -567,7 +576,7 @@ function bossCrushable(){
   return false;
 }
 function bossHurt(why){
-  if(shieldMs>0)return;        // asserted here as well as at the call site
+  if(shielded())return;        // asserted here as well as at the call site
   lives--;
   SFX.die();shakeT=1;
   bossGraceMs=B.grace;
@@ -615,7 +624,7 @@ function bossTakeCrate(idx){
    ============================================================ */
 function trialReset(){
   trialMs=0;trialBeat=-1;trialFlash=0;trialGrace=0;trialTicked=-1;trialCore=0;
-  shieldMs=0;
+  shieldMs=0;deathPending=false;
   if(TR)lives=BOSS_LIVES;
 }
 function trialFrame(dt){
@@ -631,8 +640,9 @@ function trialFrame(dt){
   if(trialFlash>0)trialFlash=Math.max(0,trialFlash-dt/300);
   if(trialGrace>0)trialGrace=Math.max(0,trialGrace-dt);
   // On the fight's own clock, like every other window here, so the pace
-  // setting scales it and it does not run while the fight is paused.
-  if(shieldMs>0)shieldMs=Math.max(0,shieldMs-dt);
+  // setting scales it and it does not run while the fight is paused - nor
+  // while a death is already committed and only waiting to be drawn.
+  if(shieldMs>0&&!deathPending)shieldMs=Math.max(0,shieldMs-dt);
   var was=TR.live(trialMs);
   trialMs+=dt;
   var live=TR.live(trialMs);
@@ -645,7 +655,7 @@ function trialFrame(dt){
   if(!live)return;
   // One beat can only take one life, however long you stand in it: the sweep
   // lands once, it is not a floor that stays lethal.
-  if(trialBeat===beat||trialGrace>0||shieldMs>0)return;
+  if(trialBeat===beat||trialGrace>0||shielded())return;
   var sw=TR.beatAt(trialMs);
   var hit=flat ? TR.hits(sw,view,"2",flatPos.u,flatPos.y,0)
                : TR.hits(sw,view,"3",player.x,player.y,player.z);
@@ -663,7 +673,7 @@ function trialFrame(dt){
    are pulled out of, because it is where being caught means being caught
    everywhere. */
 function trialHurt(){
-  if(shieldMs>0)return;        // asserted here as well as at the call site
+  if(shielded())return;        // asserted here as well as at the call site
   lives--;
   SFX.die();shakeT=1;
   trialGrace=TR.period;
@@ -889,8 +899,11 @@ function doFlatten(){
   // Something else already occupies that square in the plane. Let the fold
   // play out, then close on the player. A half of the twin counts: it is
   // solid there, and folding into one is folding into a wall.
-  if(wall||crush) setTimeout(function(){die("crush");},420);
-  else if(spiked) setTimeout(function(){die("spike");},420);
+  /* COMMITTED NOW, DRAWN IN 420ms. Declaring it is what stops a charge
+     landing in that gap and taking a second life for a moment the player has
+     already lost - see deathPending in 05-state.js. */
+  if(wall||crush){deathPending=true;setTimeout(function(){die("crush");},420);}
+  else if(spiked){deathPending=true;setTimeout(function(){die("spike");},420);}
 }
 function doUnflatten(){
   if(typeof peekUnlatch==="function")peekUnlatch();

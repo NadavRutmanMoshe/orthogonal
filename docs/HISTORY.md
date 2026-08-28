@@ -508,6 +508,24 @@ life is spent, asked wherever one would be.
 
 Three details fell out of building it that were not obvious going in.
 
+**And it must not tick between a fatal move being committed and landing** —
+which is the half that was missed on the first pass, and the half the owner
+reported next, on a boss. Folding into a wall is deliberately not instant:
+`doFlatten` lets the fold play out and schedules the death 420ms later,
+because being crushed has to be seen to happen. The fight runs through those
+420ms, so the animation was eating most of the window a hit had just bought.
+Measured before and after: a hit followed by a fold into a pillar **800ms
+later cost two lives**, and now costs one. `deathPending` freezes the shield
+from the moment the move is committed, so a second of shield is a second of
+the *player's* time rather than a second the animation spends. It also stops
+a charge landing inside that 420ms and taking a life for a moment already
+lost.
+
+The general lesson is the same one that produced the bug in the first place:
+**a guard has to be expressed in the player's clock, not the renderer's.**
+Every window here — the grace beats, the shield — is time the player has to
+act in, and any of it spent on an animation is time they never had.
+
 **It must not tick while you are dying.** The shield shares the fight's clock,
 and the fight is paused through a death animation — which sounds like an
 oversight and is in fact exactly the window the bug lived in. The reported
