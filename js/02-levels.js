@@ -114,33 +114,79 @@ var LEVELS=[
       player to preview a landing they had not yet been told existed. Peek is
       still live and still lights in the plane; it is simply not a hoop.
 
+      THE TWO BLOCKS HAVE FIXED IDENTITIES, AND THAT IS THE OWNER'S CALL.
+      The lesson is "same two blocks, opposite answer", which the player can
+      only check if they can TELL THE TWO BLOCKS APART through the half turn.
+      Two identical grey cubes swap screen positions when you turn, so a
+      highlight that swaps with them is ambiguous: did the blocks move, or did
+      the marker? So each carries a colour that never changes - the near one
+      blue, the far one bone - and the moving highlight sits on top of that
+      rather than instead of it. Each is two cells tall as well, which plants
+      them: a cube hanging in space reads as a marker, a plinth reads as a
+      place.
+
+      `tint` is level-scoped decoration and nothing else, deliberately: it
+      does not create a block KIND, so it cannot collide with the piece
+      vocabulary (fire orange, water cyan, crate violet, anchor amber) and no
+      rule anywhere asks about it. Blue and bone are the two hues that
+      vocabulary leaves free.
+
+      THE IDENTITY IS COLOUR AND NOT SHAPE, AND THAT WAS MEASURED TWICE.
+      Making the far platform TALLER (a four-cell pillar) put two of its
+      blocks within 0.14 cells of where ground would be for the very first
+      press of the level - tools/legible.js flags it from the start square,
+      which is the exact lie this level exists to correct, so shape-by-height
+      is the one axis that cannot carry identity here. Making it WIDER (three
+      cells across) was worse and quieter: the extra square casts into the
+      plane one column off the player's, so `solve()` finds "fold, step left,
+      pop, step right" and the level is solvable WITHOUT ROTATING AT ALL.
+      Geometry in this game is never decoration - width becomes a bridge in
+      the plane and height becomes a lie on screen. The two blocks are one
+      cell wide and two cells tall and they differ in colour only.
+
+      The bodies at y=-1 are inert: R.landings() wants a block at y=0 under a
+      clear y=1, so only the tops are ever candidates, and nothing below the
+      player's feet can crush a fold or hold up a silhouette they can reach.
+
       THE COLONNADE IS A RULER AND NOTHING ELSE. Screen-vertical in this
       projection is height and depth added together, so the far block draws
       about three cells ABOVE the near one and a first-time player reads it as
       higher rather than as further back - the exact lie tools/legible.js
-      hunts for, in the level whose whole subject is depth. Two rows of stone
-      running the length of the gap give the eye something to count, and the
-      depth fade grades them so "further" has a visible direction.
+      hunts for, in the level whose whole subject is depth. Two rows running
+      the length of the gap give the eye something to count, and the depth
+      fade grades them so "further" has a visible direction.
 
-      It is at y=2, x=+/-2, and every part of that is load-bearing:
+      IT IS GLASS, AND IT IS GLASS BECAUSE IT HAS TO CAST NOTHING. A ruler
+      has to be inert, and in this game "solid in the volume, absent from the
+      plane" is exactly what glass means - so it can sit on the ground beside
+      the player without ever becoming a silhouette they can climb, a landing
+      they can be teleported onto, or a block that crushes a fold. Stone
+      cannot do that anywhere near the floor: at y=0 it hands a wandering
+      player a landing on an unreachable rail in views 1 and 3, and at y=1 it
+      crushes any fold taken from view 1. Stone was tried at y=2, above all of
+      that, and the owner is right that it read as floating.
+
+      The other two halves of keeping it inert:
         - x=+/-2 keeps it two squares clear, so stepping toward it is a fall
           into nothing exactly as it was before, and its silhouette column is
           never the player's in views 0 and 2;
-        - y=2 keeps it out of R.landings(), which wants a block at y=0 under a
-          clear y=1, so it can never become a landing candidate in views 1 and
-          3 where its silhouette column IS the player's; and it casts at y=2,
-          one above the player's own row, so it can never crush a fold either.
-      At y=0 or y=1 each of those fails in turn: at y=0 it hands a wandering
-      player a landing on an unreachable rail, at y=1 it crushes any fold
-      taken from view 1. Verified inert - solve() still says the level is
-      exactly `rot+ rot+ FLAT POP` and still says it is impossible without
-      the fold. */
-   blocks:[[0,0,0],[0,0,-5]].concat(
-     box(-2,-2,2,2,-5,0,[]), box(2,2,2,2,-5,0,[])),
+        - z=-1..-4 keeps it out of the two squares the player ever occupies,
+          so it is never a landing candidate in views 1 and 3 either, where
+          the silhouette column runs down z.
+      Verified inert - solve() still says the level is exactly
+      `rot+ rot+ FLAT POP`, still impossible without the fold and without
+      rotation, and R.landings() is unchanged in all four views. */
+   blocks:[[0,0,0],[0,-1,0],
+           [0,0,-5],[0,-1,-5]]
+     // the ruler: glass, so it is solid to look at and absent from the plane
+     .concat([[-2,0,-1,1],[-2,0,-2,1],[-2,0,-3,1],[-2,0,-4,1],
+              [ 2,0,-1,1],[ 2,0,-2,1],[ 2,0,-3,1],[ 2,0,-4,1]]),
+   tint:[[0,0,0,0x4a7fd6],[0,-1,0,0x3a63a8],
+         [0,0,-5,0xd8dbe0],[0,-1,-5,0xa9adb6]],
    start:[0,1,0],goal:[0,1,-5],rotate:true,tutorial:true,
    tut:[
      {card:{h:"Which block catches you",
-            p:"<b>{to2}</b> flattens the world. <b>{to3}</b> has to <b>choose</b> where to put you back — and it always picks the block at <b>the front</b>: the one nearest you along the way you are looking.<br><br>So folding from here and folding from the far side are <b>not the same move</b>. You are about to do both."},
+            p:"There are two blocks here — a <b>blue</b> one and a <b>pale</b> one — and they are in the same column, far apart in depth.<br><br><b>{to2}</b> flattens the world. <b>{to3}</b> then has to <b>choose</b> which of them to put you back on, and it always picks the one at <b>the front</b>: nearest you, along the way you are looking.<br><br>So folding from here and folding from the far side are <b>not the same move</b>. You are about to do both."},
       /* The rings are up BEHIND the card, not after it. The card names
          "the block at the front" and the marker is what that phrase points
          at; a sentence about a ring, read on a screen with no ring on it,
@@ -152,20 +198,26 @@ var LEVELS=[
      /* free:true, because the solver would rather turn first and this fold is
         the whole demonstration. hold:true, because "force him to press GO 2D"
         is what the level is for - see tutBlocks(). */
-     {say:"The ring marks the block at <b>the front</b> — and it is the one already under you. Fold from here and it is the one that catches you.<br>{do:2d}.",
+     {say:"The <b>blue</b> block is at the front — it is the one lit and ringed, and it is the one already under you. Fold from here and it is the one that catches you.<br>{do:2d}.",
       show:"landing",cue:"bFlat",free:true,hold:true,
       done:function(c){return c.flat>=1;}},
      {say:"{do:3d}.",
       show:"landing",cue:"bFlat",hold:true,
       done:function(c){return c.unflat>=1;}},
-     {say:"Nothing moved: the front block was the one you were standing on.<br>Now the other side. {do:turnr} twice.",
+     {say:"Nothing moved: the blue block was at the front, and you were on it.<br>Now go round to the other side. {do:turnr} twice.",
       cue:"bRotR",hold:true,
       done:function(c,st){return st.view===2;}},
-     {card:{h:"Same blocks, other side",
-            p:"You have not moved and the world has not changed. But you are looking from the opposite direction now, so <b>the far block is at the front</b> — and the ring has moved onto it.<br><br>The fold that went nowhere a moment ago is about to carry you the whole way across."},
+     /* A BEAT BEFORE THIS ONE ARRIVES. The step opens the instant the second
+        turn commits and the turn takes about 450ms to settle, so the card was
+        landing on a world still swinging round, over a change the player had
+        not had a moment to look at - and this card's whole subject is that
+        change. The coach goes quiet, the world finishes turning, and then it
+        speaks. See tutCardSync(). */
+     {card:{wait:1100,h:"Same blocks, other side",
+            p:"Look at the two blocks. You have not moved and neither have they — but you are looking from the opposite side now, so the <b>pale</b> one is nearer to you than the <b>blue</b> one.<br><br>Which means the pale one is at <b>the front</b>, and the light has moved onto it. The fold that went nowhere a moment ago is about to carry you the whole way across."},
       free:true,show:"landing",say:"",
       done:function(c){return (c.card||0)>=2;}},
-     {say:"The ring is on the far block now.<br>{do:2d}.",
+     {say:"The <b>pale</b> block is lit now.<br>{do:2d}.",
       show:"landing",cue:"bFlat",hold:true,
       done:function(c){return c.flat>=2;}},
      {say:"{do:3d} — and across. Same two blocks, same verb, opposite answer: turning is what decides which one is at the front.<br>The <b>eye</b> button previews it whenever you are flat.",

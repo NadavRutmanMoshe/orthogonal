@@ -435,16 +435,53 @@ a real move is safe only where nothing is scored.**
 and depth added together, so the far block draws about three cells *above*
 the near one, and a first-time player reads it as higher — in the level whose
 whole subject is depth. `tools/legible.js` has been printing this class of
-lie for the whole campaign. Two rows of stone running the length of the gap
-give the eye something to count. Getting them somewhere harmless took three
-tries and each failure is a different rule: at `y=0` they become landing
-candidates in views 1 and 3, where the player's silhouette column runs along
-depth, so a wandering player folds and is teleported onto an unreachable
-rail; at `y=1` they share the player's own row and crush any fold taken from
-view 1; at `y=2` they are outside `R.landings()` (which wants a block at
-`y=0` under a clear `y=1`) and one row above anything that could crush.
+lie for the whole campaign. Two rows running the length of the gap give the
+eye something to count. Getting them somewhere harmless took four tries and
+each failure is a different rule:
+
+- **stone at `y=0`** becomes a landing candidate in views 1 and 3, where the
+  player's silhouette column runs along depth — a wandering player folds and
+  is teleported onto an unreachable rail;
+- **stone at `y=1`** shares the player's own row and crushes any fold taken
+  from view 1;
+- **stone at `y=2`** is inert — outside `R.landings()`, which wants a block
+  at `y=0` under a clear `y=1`, and one row above anything that could crush —
+  and the owner played it and said it looked like it was floating, which it
+  was;
+- **glass at `y=0`** is the answer, and it is the answer for a reason that
+  reads backwards from the piece's definition. A ruler has to be inert, and
+  *solid in the volume, absent from the plane* is exactly what glass means.
+  On the ground it can never become a silhouette to climb, a plane floor, or
+  a crusher; trimmed to `z=-1..-4` it never shares either square the player
+  occupies, so it is not a landing candidate either.
+
 **Decoration in this game is not free — it has to be checked against
 `landings`, `siloSolid` and `solve` in all four views, not just looked at.**
+
+**And identity is colour, because the two other axes both broke something.**
+The owner asked for the two platforms to differ in colour *and* shape, so a
+player can track them through the half turn. Colour is safe: `L.tint` is a
+hue on ordinary stone, no kind, no rule. Shape is not, and both attempts
+failed in a way worth recording, because both looked completely reasonable:
+
+- **taller** — a four-cell pillar under the far platform — put two of its
+  blocks within 0.14 cells of where ground would be for the *first press of
+  the level*. `legible.js` flags it from the start square. Height is the one
+  axis this projection conflates with depth, so shape-by-height is exactly
+  the lie the level exists to correct.
+- **wider** — three cells across — was worse and silent. The extra square
+  casts into the plane one column off the player's, so `solve()` finds
+  "fold, step left, pop, step right" and **the level becomes solvable
+  without ever rotating**. The whole point of the level, gone, with nothing
+  on screen to say so.
+
+Width becomes a bridge in the plane; height becomes a lie on screen. The
+identity that survives is a hue, and the highlight had to move off hue as a
+result: it is a slow *brightening* of whatever colour the block already has,
+because a highlight that repaints the winner makes the two blocks swap colour
+at the same instant they swap screen position — and then the player cannot
+tell whether the blocks moved or the marker did, which is the only question
+the level asks.
 
 ---
 

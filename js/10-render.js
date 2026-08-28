@@ -23,7 +23,32 @@ var perilSet=null,perilCleanup=[],perilPulse=0;
    and by the player sitting on it, so the one square the lesson is pointing
    at was the one square the marker could not be seen on. */
 var tutMarkSet=null;
-var colTutMark=new THREE.Color(0x2e8f78);
+/* LEVEL-SCOPED DECORATION, and nothing a rule ever asks about.
+
+   `L.tint` is a list of [x,y,z,hex]: cells that are painted a fixed colour
+   for as long as that level is loaded. It exists for `00 - First Landing`,
+   where the player has to be able to tell two blocks apart THROUGH a half
+   turn - two identical grey cubes swap screen position when you turn, so a
+   highlight that swaps with them cannot say whether the blocks moved or the
+   marker did. A fixed colour can.
+
+   Deliberately NOT a block kind. Kinds carry rules and a fixed vocabulary
+   (fire orange, water cyan, crate violet, anchor amber); this is a hue on a
+   piece of ordinary stone, it changes nothing about the world, and no level
+   outside the tutorial uses it. It multiplies exactly where colBlock did, so
+   it inherits the section tint's place in the chain, the depth fade and the
+   lerp toward ink for free. */
+var tintSet=null, tintCol={};
+function buildTints(){
+  tintSet=null;
+  if(!L||!L.tint||!L.tint.length)return;
+  tintSet={};
+  for(var i=0;i<L.tint.length;i++){
+    var t=L.tint[i], k=K(t[0],t[1],t[2]);
+    tintSet[k]=t[3];
+    if(!tintCol[t[3]])tintCol[t[3]]=new THREE.Color(t[3]);
+  }
+}
 var crateMeshes=[],keyMeshes=[],goalGhost=null,trialMarks=[];
 var amb,dir1,dir2;
 var center=new THREE.Vector3(),centerT=new THREE.Vector3();
@@ -1338,6 +1363,13 @@ function buildDynamic(){
 }
 
 function syncMeshes(){
+  /* Here rather than in loadLevel, because this is the one function every
+     path that changes L goes through - the campaign, the editor, the library
+     and the composer all end in it - and a tint table that belonged to the
+     previous level would paint whichever of its cells the next one happens to
+     share. It nulls itself when a level has no `tint`, so an ordinary level
+     is exactly as it was. */
+  buildTints();
   var want={};
   for(var i=0;i<L.blocks.length;i++){
     var b=L.blocks[i],k=K(b[0],b[1],b[2]);
@@ -2011,7 +2043,8 @@ function lookCue(){
    hint: one candidate decided nothing and a ring around it would be pointing
    at the only thing there is. */
 var TUT_RING_BREATH=2600;
-var tutRingT=0;
+var tutRingT=0, tutRingBreath=0;
+var colWhite=new THREE.Color(0xffffff);
 function tutLandMark(dtMs){
   if(typeof tutMark==="undefined"||!tutMark)return false;
   if(app!=="play"||dying||!R)return false;
@@ -2041,7 +2074,10 @@ function tutLandMark(dtMs){
   // the game is saying now, not as an edge the block happens to have. Slow
   // enough not to compete with the pulse on the button it is asking for.
   tutRingT=(tutRingT+dtMs)%TUT_RING_BREATH;
-  landRingsDraw(.84+.16*Math.sin(tutRingT/TUT_RING_BREATH*Math.PI*2));
+  // 0..1, shared with the block loop so the ring and the block it is around
+  // breathe as one thing rather than as two that happen to be near each other
+  tutRingBreath=.5+.5*Math.sin(tutRingT/TUT_RING_BREATH*Math.PI*2);
+  landRingsDraw(.84+.16*(tutRingBreath*2-1));
   return true;
 }
 function landFrame(dtMs){
@@ -2230,19 +2266,35 @@ function animate(now){
       m.userData.edge.material.opacity=.55+perilPulse*.45;
       m.material.opacity=1;
     } else if(tutMarkSet&&tutMarkSet[k]){
-      /* The tutorial pointing at a block. Out of the depth fade for the same
-         reason peril is - the whole point is that these two are far apart in
-         depth, so fading the far one hides the thing being taught - and the
-         winner tinted the goal's own green, because "this is where you come
-         back" and "this is where you are going" are the same promise and the
-         rings already say it in that colour. Steady rather than pulsing: the
-         ring above it breathes, the button below it pulses, and a third
-         rhythm on the block itself would be noise. Peril still outranks it:
+      /* The tutorial pointing at a block.
+
+         THE HIGHLIGHT SITS ON TOP OF THE BLOCK'S IDENTITY RATHER THAN
+         REPLACING IT. It used to repaint the winner green, which is the
+         colour the rings use - and that is wrong here for two reasons. The
+         goal is already a green wireframe sitting on the far block, so in the
+         second half of the level everything at the front of the screen was
+         green; and repainting the winner means the two blocks swap COLOUR on
+         the half turn at the same moment they swap screen position, so a
+         player cannot tell whether the blocks moved or the marker did - which
+         is the one question the level exists to answer.
+
+         So the body keeps its own hue and the highlight is BRIGHTNESS: the
+         block at the front breathes, brightened and lifted, and wears a
+         bright rim. A block that is visibly alive is unmistakable even with
+         the player sitting on it, which is the case a ring alone cannot
+         cover.
+
+         Both candidates come out of the depth fade, winner and loser alike:
+         the whole point is that they are far apart in depth, so fading the
+         far one hides the thing being taught. Peril still outranks all of it -
          a warning that you are about to be crushed beats a lesson. */
       var twin=tutMarkSet[k]===1;
-      m.material.color.copy(twin?colTutMark:colBlock).lerp(colInk,flatT*INK_SETTLE);
+      var tbase=(tintSet&&tintSet[k]!==undefined)?tintCol[tintSet[k]]:colBlock;
+      m.material.color.copy(tbase);
+      if(twin)m.material.color.lerp(colWhite,.20+.16*tutRingBreath);
+      m.material.color.lerp(colInk,flatT*INK_SETTLE);
       m.userData.edge.material.color.set(twin?0x35c2a5:0x2f5a55);
-      m.userData.edge.material.opacity=twin?.95:.55;
+      m.userData.edge.material.opacity=twin?(.7+.3*tutRingBreath):.5;
       m.material.opacity=1;
     } else if(m.userData.glass){
       /* The surface rises and falls. One shared geometry means the plate
@@ -2295,7 +2347,9 @@ function animate(now){
          was a workaround for colour having gone black, and with the colour
          still there the map multiplies normally and the grain simply
          shows. */
-      var base=ghosted.has(k)?colGhost:colBlock;
+      var base=ghosted.has(k)?colGhost
+             : (tintSet&&tintSet[k]!==undefined)?tintCol[tintSet[k]]
+             : colBlock;
       m.material.color.copy(base).lerp(colInk,flatT*INK_SETTLE);
       applyDepth(m,b,pdepth,tdvx,tdvz,flatT);
     }

@@ -1628,34 +1628,76 @@ genuinely happen in that order.
   first half of this level. Under the player a wireframe cube is swallowed by
   the block's own lit rim and by the player sitting on it, so the one square
   the lesson was pointing at was the one square the marker could not be seen
-  on. The block itself is tinted as well (`tutMarkSet` in the block loop),
-  and **both candidates come out of the depth fade** — the loser is five
-  cells back and would otherwise be nearly gone, in a lesson that needs the
-  player to see two blocks in order to understand that one was chosen. Peril
-  still outranks it: a warning that you are about to be crushed beats a
-  lesson.
+  on. The block itself is lit as well (`tutMarkSet` in the block loop), and
+  **both candidates come out of the depth fade** — the loser is five cells
+  back and would otherwise be nearly gone, in a lesson that needs the player
+  to see two blocks in order to understand that one was chosen. Peril still
+  outranks it: a warning that you are about to be crushed beats a lesson.
+- **THE HIGHLIGHT IS BRIGHTNESS, NOT HUE, AND THE TWO BLOCKS HAVE FIXED
+  COLOURS.** `L.tint` paints the near platform blue and the far one bone, for
+  the length of that level only, and the light that says *this one is at the
+  front* is a slow brightening on top of whichever hue is already there. It
+  used to repaint the winner green and that was wrong twice: the goal is
+  already a green wireframe on the far block, so the second half of the level
+  went green everywhere; and repainting means the blocks swap colour at the
+  same instant they swap screen position, so the player cannot tell whether
+  the blocks moved or the marker did — which is the only question the level
+  asks. With a fixed hue they can watch blue and bone trade places, which is
+  the lesson happening in front of them.
+- **`tint` is decoration and deliberately not a block kind.** Kinds carry
+  rules and a fixed vocabulary — fire orange, water cyan, crate violet,
+  anchor amber — and blue and bone are what that vocabulary leaves free.
+  Nothing outside the tutorial uses it, it multiplies exactly where
+  `colBlock` did (so it inherits the section tint, the depth fade and the
+  lerp to ink for nothing), and it is rebuilt in `syncMeshes` because that is
+  the one function every path that changes `L` goes through.
+- **IDENTITY IS COLOUR AND NOT SHAPE, AND THAT WAS MEASURED TWICE.** Making
+  the far platform *taller* put two of its blocks within 0.14 cells of where
+  ground would be for the first press of the level — `legible.js` flags it
+  from the start square, which is the exact lie this level exists to correct,
+  so height cannot carry identity here. Making it *wider* was worse and
+  quieter: the extra square casts into the plane one column off the player's,
+  and `solve()` then finds "fold, step left, pop, step right" — **the level
+  became solvable without rotating at all**. Width becomes a bridge in the
+  plane and height becomes a lie on screen; the two platforms are one cell
+  wide, two cells tall, and differ in colour only.
+- **A card may wait a beat before it arrives (`card.wait`).** The second one
+  opens the instant the half turn commits, and the turn takes about 450ms to
+  settle, so it was landing on a world still swinging round — over the very
+  change it is about. The coach goes quiet, the world finishes turning, the
+  player gets a moment with the new view, and then it speaks. The wait is
+  wall time rather than the guided lock's playable-idle: this is a beat in a
+  sequence the game is running, not a measurement of whether the player has
+  stalled.
 - **THE EYE IS NO LONGER FORCED.** It used to be step 3 and it asked the
   player to preview a landing they had not yet been told existed. It is still
   live, still lights in the plane, and the last line of the level names it;
   it is simply not a hoop.
-- **THE COLONNADE IS A RULER AND NOTHING ELSE.** Screen-vertical here is
-  height and depth added together, so the far block draws about three cells
-  *above* the near one and a first-time player reads it as higher rather than
-  as further back — the exact lie `tools/legible.js` hunts for, in the level
-  whose whole subject is depth. Two rows of stone running the length of the
-  gap give the eye something to count, and the depth fade grades them so
-  "further" has a visible direction. **It is at `y=2`, `x=±2`, and every part
-  of that is load-bearing**: `x=±2` keeps it two squares clear, so stepping
-  toward it is a fall into nothing exactly as before, and its silhouette
-  column is never the player's in views 0 and 2; `y=2` keeps it out of
-  `R.landings()`, which wants a block at `y=0` under a clear `y=1`, so it can
-  never become a landing candidate in views 1 and 3 where its column *is* the
-  player's — and it casts one row above the player, so it can never crush a
-  fold either. At `y=0` it hands a wandering player a landing on an
-  unreachable rail; at `y=1` it crushes any fold taken from view 1. Verified
-  inert against `solve()`, `R.landings()` and `R.siloSolid()` in all four
-  views. `legible.js` gains one level and two flags, both on squares *on top
-  of the colonnade*, which nothing can stand on.
+- **THE COLONNADE IS A RULER AND NOTHING ELSE, AND IT IS GLASS.**
+  Screen-vertical here is height and depth added together, so the far block
+  draws about three cells *above* the near one and a first-time player reads
+  it as higher rather than as further back — the exact lie
+  `tools/legible.js` hunts for, in the level whose whole subject is depth.
+  Two rows running the length of the gap give the eye something to count, and
+  the depth fade grades them so "further" has a visible direction. **It is
+  glass because a ruler has to be inert**, and "solid in the volume, absent
+  from the plane" is precisely what glass means — so it can sit on the ground
+  beside the player without ever becoming a silhouette they can climb, a
+  landing they can be teleported onto, or a block that crushes a fold. Stone
+  cannot do that anywhere near the floor: at `y=0` it hands a wandering
+  player a landing on an unreachable rail in views 1 and 3, at `y=1` it
+  crushes any fold taken from view 1. Stone at `y=2`, above all of it, was
+  the first version and it read as floating. The other two halves are
+  `x=±2`, which keeps it two squares clear so stepping toward it is a fall
+  into nothing exactly as before, and `z=-1..-4`, which keeps it out of the
+  two squares the player ever occupies so it is never a landing candidate in
+  views 1 and 3 either. Verified inert against `solve()`, `R.landings()` and
+  `R.siloSolid()` in all four views. `legible.js` gains one level and two
+  flags, both on squares *on top of the rails*, which nothing can stand on.
+  **It is the one place glass appears before Section III teaches it** — it is
+  unreachable and the lesson never mentions it, so it reads as scenery, but
+  it is a real exception to "fundamentals is stone only" and worth a
+  playtest.
 - **`First Turn`'s last line was retuned, not left alone.** It used to say
   "turning is how you choose which one catches you", which is this level's
   sentence. Its own subject is what *shares* a column at all. Two levels

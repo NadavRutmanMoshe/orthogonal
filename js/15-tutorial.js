@@ -586,17 +586,46 @@ function tutSync(){
    screenUp(), which tutPlayable() and both real-time frames already ask), it
    holds the player still, and it cannot be walked past by accident.
 
-   Returns whether a card is up, because the coach needs to know. */
+   A CARD MAY WAIT A BEAT BEFORE IT ARRIVES (`card.wait`), and the second one
+   in `00 - First Landing` does. That step opens the instant a half turn
+   completes, and the turn itself takes about 450ms to settle - so the card
+   was landing on a world that was still moving, over a change the player had
+   not had a moment to look at. The card is the sentence ABOUT that change,
+   and a sentence about something you have not seen yet is one you have to
+   hold in your head. So the coach goes quiet, the world finishes turning, the
+   player gets a beat with the new view, and then it speaks.
+
+   The wait is wall time and not playable-idle like the guided lock's: this is
+   a beat in a sequence the game is running, not a measurement of whether the
+   player has stalled. It re-enters through syncHud rather than drawing
+   itself, so there is still exactly one place that decides what is on screen.
+
+   Returns whether a card owns the screen, because the coach needs to know -
+   and it owns it during the wait too, so the beat is genuinely quiet rather
+   than a step's own line flashing up for a second first. */
+var tutCardTimer=null, tutCardArm=0;
 function tutCardSync(g){
   var el=$("tutcard"); if(!el)return false;
   var card=(g&&!dying)?g.card:null;
   if(!card){
+    tutCardArm=0;
+    if(tutCardTimer){clearTimeout(tutCardTimer);tutCardTimer=null;}
     if(el.classList.contains("on")){
       el.classList.remove("on");document.body.classList.remove("carded");
     }
     return false;
   }
   if(!el.classList.contains("on")){
+    if(card.wait){
+      if(!tutCardArm)tutCardArm=Date.now();
+      var left=card.wait-(Date.now()-tutCardArm);
+      if(left>0){
+        if(!tutCardTimer)tutCardTimer=setTimeout(function(){
+          tutCardTimer=null;syncHud();
+        },left+20);
+        return true;                 // ours, but silent: watch the world
+      }
+    }
     $("tutcardH").textContent=card.h||"";
     // tutWords, so a card names the verb the way the button in front of the
     // player names it - the same reason the coach's own prose goes through it.
