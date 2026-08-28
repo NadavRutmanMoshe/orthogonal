@@ -604,15 +604,39 @@ function tutSync(){
    and it owns it during the wait too, so the beat is genuinely quiet rather
    than a step's own line flashing up for a second first. */
 var tutCardTimer=null, tutCardArm=0;
+/* WHO PUT THE CARD UP, kept in one place because two things now can.
+
+   A tutorial step raises one and is satisfied by it being acknowledged; a
+   trial or a boss raises one on the way in and simply wants it read. They are
+   the same object on screen and the same answer to screenUp(), so they share
+   everything except what OK means - and that has to be decided by whoever
+   raised it rather than guessed from the level, or a card put up over a
+   tutorial by something else would advance a step nobody completed. */
+var cardOwner=null;
+function cardPut(h,p,owner){
+  var el=$("tutcard"); if(!el)return;
+  $("tutcardH").textContent=h||"";
+  // tutWords, so a card names the verb the way the button in front of the
+  // player names it - the same reason the coach's own prose goes through it.
+  $("tutcardP").innerHTML=tutWords(p||"");
+  cardOwner=owner;
+  el.classList.add("on");document.body.classList.add("carded");
+}
+function cardClear(){
+  var el=$("tutcard"); if(!el)return;
+  cardOwner=null;
+  if(!el.classList.contains("on"))return;
+  el.classList.remove("on");document.body.classList.remove("carded");
+}
 function tutCardSync(g){
   var el=$("tutcard"); if(!el)return false;
   var card=(g&&!dying)?g.card:null;
   if(!card){
     tutCardArm=0;
     if(tutCardTimer){clearTimeout(tutCardTimer);tutCardTimer=null;}
-    if(el.classList.contains("on")){
-      el.classList.remove("on");document.body.classList.remove("carded");
-    }
+    // A brief is not ours to take down - it is on a level with no steps at
+    // all, so this runs with g null and would clear it on the next redraw.
+    if(cardOwner==="tut")cardClear();
     return false;
   }
   if(!el.classList.contains("on")){
@@ -626,13 +650,67 @@ function tutCardSync(g){
         return true;                 // ours, but silent: watch the world
       }
     }
-    $("tutcardH").textContent=card.h||"";
-    // tutWords, so a card names the verb the way the button in front of the
-    // player names it - the same reason the coach's own prose goes through it.
-    $("tutcardP").innerHTML=tutWords(card.p||"");
-    el.classList.add("on");document.body.classList.add("carded");
+    cardPut(card.h,card.p,"tut");
   }
   return true;
+}
+/* ============================================================
+   THE BRIEF - a trial and a boss, explained before the clock starts
+   ============================================================
+   These are the two levels a player cannot be taught by playing, because
+   both run in real time: there is no moment in either to stop and work out
+   what the red slice is, or why folding kills the thing chasing you. They
+   are also, in order, the second and third of the four things that beat the
+   first real playtester.
+
+   A tutorial level in front of each was the obvious answer and is the
+   expensive one - two new levels, each teaching a mechanic that only exists
+   on a clock, in a game whose tutorial is turn-based. The card already
+   built for rule 5 does most of that job for a fraction of it: it is
+   full-bleed, it answers screenUp(), and screenUp() is what both clocks
+   already ask before they run. So the fight is genuinely stopped while it is
+   being explained, with the arena visible behind the words.
+
+   SHOWN A COUPLE OF TIMES AND THEN NOT AGAIN. `CLOCK_BRIEFS` (2) per kind,
+   counted in settings the way the landing hint is, because a player restarts
+   a boss a great deal and a card that came back every time would be the
+   thing they remember about the fight. Twice is enough to have read it once
+   and confirmed it once; after that the HUD and the arena say it. */
+var CLOCK_BRIEFS=2;
+var TRIAL_BRIEF={h:"On the clock",p:
+  "This one does not wait for you. <b>Three amber cores</b>, one at a time — "+
+  "reach one and the next appears somewhere else.<br><br>"+
+  "A <b>red slice</b> charges in plain sight and then goes live for an "+
+  "instant. Being in it when it lands costs a life. The squares it will take "+
+  "are marked on the floor.<br><br>"+
+  "<b>Flat, it takes you wherever you stand.</b> The slice runs down the axis "+
+  "you are looking along, and flattened you are every depth at once — so "+
+  "<b>{to2}</b> while the board is red is a life, from any square. Turn "+
+  "first, or fold between beats.<br><br>"+
+  "<b>Three lives, three cores.</b>"};
+var BOSS_BRIEF={h:"The line is both of yours",p:
+  "No goal here. It hunts you, on a clock.<br><br>"+
+  "Get onto its <b>row or column</b> and it stops, the line lights, and at "+
+  "the end of that beat it <b>charges the whole way down it</b>. That costs "+
+  "a life — step off the line to cancel it.<br><br>"+
+  "<b>The same line is how you kill it.</b> Press <b>{to2}</b> while it "+
+  "shares your flattened column and it dies there instead. The button turns "+
+  "<b>green</b> the moment that is on — and which line you can win depends on "+
+  "which way you face, so the answer is often to <b>turn first</b>.<br><br>"+
+  "<b>Three phases, three lives.</b>"};
+/* Raised from loadLevel, after the board is built, so the arena is already
+   behind the words. Immediately rather than after a beat: the clocks are only
+   stopped once the card is actually up, and a boss would take a step in the
+   gap. */
+function maybeBrief(){
+  if(app!=="play"||!L)return;
+  if(typeof B==="undefined")return;
+  var key=B?"bossBriefs":(TR?"trialBriefs":null);
+  if(!key)return;
+  var seen=settings[key]||0;
+  if(seen>=CLOCK_BRIEFS)return;
+  settings[key]=seen+1;saveSettings();
+  cardPut(B?BOSS_BRIEF.h:TRIAL_BRIEF.h,B?BOSS_BRIEF.p:TRIAL_BRIEF.p,"brief");
 }
 /* The card is a screen, so it has to answer screenUp() - which is what keeps
    the keyboard, the boss clock and the trial clock from running behind it. */
@@ -644,9 +722,16 @@ function tutCardUp(){
    does not advance anything - it records that the card was read and lets
    tutStep() work out the rest. */
 function tutCardOk(){
-  if(!tutCardUp()||!tutC)return;
-  tutC.card=(tutC.card||0)+1;
+  if(!tutCardUp())return;
   SFX.hint();                 // the same small "noted" tone a hint lands on
+  if(cardOwner==="brief"){
+    /* A brief is read and gone. Nothing was completed, so nothing advances -
+       and it is taken down here rather than by the next redraw, because on a
+       trial or a boss there is no coach running to take it down at all. */
+    cardClear();syncHud();return;
+  }
+  if(!tutC)return;
+  tutC.card=(tutC.card||0)+1;
   syncHud();
 }
 /* .tutlive rather than .cue, because the cue is a 3.2-second pulse and the

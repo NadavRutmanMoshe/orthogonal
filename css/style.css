@@ -440,7 +440,12 @@
      column. Emphasis is the goal colour because that is already the colour of
      the ring the card is describing and of the button it is about to ask for;
      the card and the world then say the one thing in one hue. */
-  .tutcard{gap:20px}
+  /* Scrolls rather than overflowing. A tutorial step's card is three lines
+     and a trial's brief is four paragraphs, and .won is a centred fixed
+     overlay with no scroll of its own - so on a short phone the longest card
+     would have run its OK button off the bottom edge with no way to reach it. */
+  .tutcard{gap:20px;overflow-y:auto;padding:24px 0;
+    justify-content:safe center}
   .tutcard h2{max-width:min(84vw,24ch);text-align:center;line-height:1.3}
   .tutcard p{max-width:min(84vw,42ch);font-size:11px;line-height:1.85;
     text-align:left;color:var(--fg-dim)}

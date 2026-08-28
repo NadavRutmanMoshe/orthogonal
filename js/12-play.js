@@ -1294,4 +1294,10 @@ function loadLevel(level,idx){
   syncMeshes();buildGrid();syncHud();
   center.copy(centerT);viewSize=viewSizeT;onResize();
   playerMesh.position.set(player.x,player.y,player.z);
+  /* Last, so the arena is already built behind it - and a trial and a boss
+     are the two levels that cannot be taught by playing them, because both
+     run in real time. The card answers screenUp(), which is what both clocks
+     ask before they run, so the fight is genuinely stopped while it is being
+     read. See maybeBrief() in 15-tutorial.js. */
+  if(typeof maybeBrief==="function")maybeBrief();
 }

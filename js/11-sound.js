@@ -63,7 +63,8 @@ function defaultTutor(){
    again on the next boss either. */
 var settings={volume:defaultVolume(),brightness:1,ui:"full",volTouched:false,
               pace:1,mastery:"auto",tutor:defaultTutor(),
-              slowOffers:0,noSlowOffer:false,landHints:0};
+              slowOffers:0,noSlowOffer:false,landHints:0,
+              trialBriefs:0,bossBriefs:0};
 /* How many times the landing rule is spelled out in words. The rings keep
    drawing forever - they are free and they answer the question faster than a
    sentence does - but a line of text on every fold would be nagging. */

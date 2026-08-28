@@ -1975,10 +1975,12 @@ there the camera is a real thing.
   rise, so testing it threw the hint away on the frame it was created.
 
 **`loadSettings()` is a whitelist and a key that is not read there does not
-exist.** `settings.landHints`, `slowOffers` and `noSlowOffer` are all written
+exist.** `settings.landHints`, `slowOffers`, `noSlowOffer`, `trialBriefs`
+and `bossBriefs` are all written
 by `saveSettings()` and were silently forgotten on every reload until they
 were added to it — which mattered most for `noSlowOffer`, since that one is
-the player saying *stop*.
+the player saying *stop*, and for the two brief counters, since without them
+the trial and boss cards come back for ever.
 
 ## How big the world is drawn
 
