@@ -371,8 +371,29 @@ function replayStart(mode,who,line){
      is the one angle that cannot show what happened. `player.x/z` survive
      folding, so both positions are there to measure. */
   if(mode==="death"&&who&&line&&!line.dx&&!line.dz){
-    var dv=AX[view].d;
-    var hdep=who.x*dv[0]+who.z*dv[2], pdep=player.x*dv[0]+player.z*dv[2];
+    /* MEASURED FROM THE SQUARE THE FILM DRAWS YOU AT, not from `player.x/z`.
+       While flat those are the square you folded FROM, which is wherever you
+       happened to start and can sit on either side of the hunter - so the
+       direction came out backwards about half the time, and the film put the
+       thing that killed you behind you. Reported from a screenshot.
+
+       replayPose() stands a flat pose up on the square it would come back
+       to, so that is the position the camera has to reason about. It is
+       R.pick() on the player's own column, which returns the candidate
+       nearest the camera IN THE RECORDED VIEW - and the block the hunter is
+       standing on is one of those candidates, because a hunter only has a
+       line on a flat player at the player's own height. So the drawn player
+       is always at or in front of the hunter in that view, the sign is always
+       the same, and the camera always ends up a half turn round. The
+       arithmetic is kept rather than folded into a constant because it is the
+       arithmetic that explains why. */
+    var dv=AX[view].d, pxz={x:player.x,z:player.z};
+    if(flatPos){
+      var fl=R.landings(view,flatPos.u,flatPos.y,liveCrates());
+      if(fl.length){var fb=R.pick(fl);pxz={x:fb.x,z:fb.z};}
+    }
+    var hdep=who.x*dv[0]+who.z*dv[2];
+    var pdep=pxz.x*dv[0]+pxz.z*dv[2];
     var sg=(pdep>=hdep)?1:-1;
     line={dx:dv[0]*sg,dz:dv[2]*sg};
   }

@@ -735,6 +735,18 @@ walk into a wall.
   toward you. Without that the flat deaths got no swing and played from
   whatever angle the player happened to be facing, which is the one angle
   that cannot show what happened.
+- **And that sign is measured from the square the film DRAWS you at, not
+  from `player.x/z`.** While flat those are the square you folded *from*,
+  which is wherever you happened to start and sits on either side of the
+  hunter about half the time — so the direction came out backwards half the
+  time and the film put the thing that killed you behind you. The position
+  the camera has to reason about is the one `replayPose()` uses: `R.pick()`
+  on the player's own column in the **recorded** view. Because the block the
+  hunter stands on is always one of those candidates — a hunter only has a
+  line on a flat player at the player's own height — the drawn player is
+  always at or in front of it, so a flat death always ends up a half turn
+  round. The arithmetic is kept rather than folded into a constant, because
+  it is the arithmetic that explains why.
 - **It records state, not inputs, and that is a decision rather than a
   shortcut.** The two families are re-simulation from recorded inputs plus a
   seed, and a ring of state snapshots. The first is tiny and needs exact
