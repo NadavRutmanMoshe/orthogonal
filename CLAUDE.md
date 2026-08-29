@@ -646,6 +646,14 @@ walk into a wall.
   **including the kill that wins the fight**, which the first version skipped
   because `bossAdvance()` goes straight to `win()` there and the card cut off
   the film the moment it was earned.
+- **And the last death gets one, which was skipped for the same reason.**
+  That path goes straight to `die("boss")`, and `die()` takes the board away
+  820ms later. It is the worst one to skip: the run has just ended and the
+  player is about to fight the whole thing again, which is exactly when they
+  want to know what happened. `bossPendingDeath` holds the reset behind the
+  film, the way `bossPendingAdvance` holds a phase clear — and it is checked
+  first in `replayEnd()`, because if the run is over there is no phase to
+  advance into.
 - **THE ANGLE THAT KILLED YOU IS THE ONE LOOKING ALONG THE LINE**, and it
   took two tries to get there. The first version took the view whose
   screen-*right* is the charge direction, so the thing entered from the left

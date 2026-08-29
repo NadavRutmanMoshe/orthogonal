@@ -186,6 +186,10 @@ var repBuf=[], repT=0, repAcc=0;
 var rep=null;
 // A phase clear that is waiting for its replay to finish before it happens.
 var bossPendingAdvance=false;
+/* And the same for the last life. The run ending is the moment a player most
+   wants the film - they are about to fight the whole thing again - so the
+   reset waits behind it exactly as a phase clear does. */
+var bossPendingDeath=false;
 /* Trials. T is null on every level that isn't one, and like B every check is
    guarded on it. It deliberately spends the same `lives` a boss does: a level
    is either on a clock or it isn't, never both, and one counter means the HUD,

@@ -110,7 +110,7 @@ function bossReset(){
   bossPause=0;phaseNoteEnd();
   bossHp=B?B.hp:0;bossFlash=0;bossHitFlash=0;bossCreepMs=0;bossGraceMs=0;
   shieldMs=0;deathPending=false;slowMoMs=0;
-  rep=null;bossPendingAdvance=false;replayClear();
+  rep=null;bossPendingAdvance=false;bossPendingDeath=false;replayClear();
   document.body.classList.remove("replaying");
   hunters=[];twinCore=0;twinAt=null;bossPhase=0;
   if(B&&B.twin)twinSpawn(0);
@@ -469,7 +469,9 @@ function replayEnd(){
   rep=null;
   document.body.classList.remove("replaying");
   buildGrid();syncHud();
-  // A phase that was waiting for the replay to finish starts now.
+  /* Whatever was waiting for the film happens now. The last death is checked
+     first: if the run is over there is no phase to advance into. */
+  if(bossPendingDeath){bossPendingDeath=false;die("boss");return;}
   if(bossPendingAdvance){bossPendingAdvance=false;bossAdvance();}
 }
 /* Driven from the render loop on REAL time, because bossFrame is stopped for
@@ -819,7 +821,18 @@ function bossHurt(why,who,line){
   shieldMs=SHIELD_MS;
   var bar=$("bossBar");
   if(bar){bar.classList.remove("hurt");void bar.offsetWidth;bar.classList.add("hurt");}
-  if(lives<=0){die("boss");return;}
+  /* THE LAST DEATH GETS ITS FILM TOO, and the first version skipped it for
+     the same reason the winning kill was skipped: this path goes straight to
+     die(), and die() takes the board away 820ms later. It is the worst one to
+     skip - the run has just ended and the player is about to fight the whole
+     thing again, which is precisely when they want to know what happened.
+     The reset waits behind the replay, like a phase clear does. */
+  if(lives<=0){
+    if(replayStart("death",who,line||null)){
+      bossPendingDeath=true;syncHud();return;
+    }
+    die("boss");return;
+  }
   flash(why+" · "+lives+" "+(lives===1?"life":"lives")+" left");
   /* AND YOU GO HOME TOO, which reverses an earlier call on the owner's say.
      The argument against it stands - a hit costs you the position you spent
@@ -869,7 +882,7 @@ function bossTakeCrate(idx){
 function trialReset(){
   trialMs=0;trialBeat=-1;trialFlash=0;trialGrace=0;trialTicked=-1;trialCore=0;
   shieldMs=0;deathPending=false;slowMoMs=0;
-  rep=null;bossPendingAdvance=false;replayClear();
+  rep=null;bossPendingAdvance=false;bossPendingDeath=false;replayClear();
   document.body.classList.remove("replaying");
   if(TR)lives=BOSS_LIVES;
 }
