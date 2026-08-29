@@ -376,7 +376,43 @@ function replayStart(mode,who,line){
     var sg=(pdep>=hdep)?1:-1;
     line={dx:dv[0]*sg,dz:dv[2]*sg};
   }
+  /* AND A KILL IS THE SAME RULE WITH THE OTHER SUBJECT. The film always puts
+     whoever it is about NEAREST THE CAMERA: on a death that is the hunter, so
+     you watch over its shoulder; on a kill it is you, so the thing you folded
+     onto is behind you.
+
+     WHAT ACTUALLY FIXED THE REPORTED BUG IS THE MARK, NOT THIS. A kill was
+     replaying from the victim's side, and the cause was the last frame: it
+     was taken up to 50ms before the fold, so it held the player STANDING at
+     their real square rather than flat - and a standing player is at their
+     own depth, which is behind the victim as often as not. replayMark() in
+     bossFoldCrush now takes the frame after `flat` is set and before the
+     splice, so the film ends with the player flat and the victim still on the
+     board; replayPose() then stands them up on the square they would come
+     back to, which is the FRONT-MOST block of their column.
+
+     Which is why this branch is nearly always a no-op, and worth keeping
+     anyway. The victim shares the player's column at the player's own height,
+     so the block it is standing on is one of the player's landing candidates,
+     and R.pick() takes the nearest - so the player is at or in front of it by
+     construction. The exception is an anchor: pick() prefers amber over
+     nearest, so on an arena with one in that column the player can land
+     BEHIND the thing they just killed, and then the camera has to go round.
+     Only two of the four views run along the shared column, `view` and its
+     opposite, so it is a choice between them rather than a search. */
   var swing=0, want=view;
+  if(mode==="kill"&&who){
+    var kd=AX[view].d;
+    var pxz={x:player.x,z:player.z};
+    if(flat&&flatPos){
+      var kl=R.landings(view,flatPos.u,flatPos.y,liveCrates());
+      if(kl.length){var kb=R.pick(kl);pxz={x:kb.x,z:kb.z};}
+    }
+    var pdp=pxz.x*kd[0]+pxz.z*kd[2], vdp=who.x*kd[0]+who.z*kd[2];
+    want=(pdp>=vdp)?view:(view+2)%4;
+    var kdel=(want-view+4)%4;
+    swing=(kdel===2?2:0)*90;
+  }
   if(mode==="death"&&line&&(line.dx||line.dz)){
     for(var v=0;v<4;v++)
       if(AX[v].d[0]===-line.dx&&AX[v].d[2]===-line.dz){want=v;break;}
@@ -767,6 +803,11 @@ function bossFoldCrush(){
   for(var i=0;i<hunters.length;i++)
     if(doomedCell(hunters[i].x,hunters[i].y,hunters[i].z,cr))doomed.push(i);
   if(!doomed.length)return;
+  /* The kill frame, and the thing that was killed - both taken before the
+     splice, because a replay of a kill has nothing to show once the victim
+     has been removed from the board. */
+  replayMark();
+  var victim=hunters[doomed[0]];
   for(var d=doomed.length-1;d>=0;d--)hunters.splice(doomed[d],1);
   bossHitFlash=1;
   SFX.strike();shakeT=1;slowMo();
@@ -788,7 +829,7 @@ function bossFoldCrush(){
        skipped: bossAdvance() goes straight to win() there, so the film was
        cut off by the card the moment it was earned. The advance - phase or
        win - waits behind the replay either way. */
-    if(replayStart("kill")){bossPendingAdvance=true;syncHud();return;}
+    if(replayStart("kill",victim)){bossPendingAdvance=true;syncHud();return;}
     bossAdvance();return;
   }
   flash(doomed.length>1?(doomed.length+" in one square · "+hunters.length+" left"):

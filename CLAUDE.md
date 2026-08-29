@@ -707,6 +707,20 @@ walk into a wall.
   hunter shares, which is what the kill *is*, so they line up by
   construction — and a plane step then reads as a sideways step in the
   volume, which is what it was.
+- **A kill puts YOU nearest the camera, and the fix for that was the mark
+  rather than the angle.** A kill was replaying from the victim's side, and
+  the cause was the last recorded frame: taken up to 50ms before the fold, it
+  held the player *standing* at their real square rather than flat — and a
+  standing player is at their own depth, which is behind the victim as often
+  as not. `replayMark()` in `bossFoldCrush` now takes the frame after `flat`
+  is set and before the splice, so the film ends with the player flat and the
+  victim still on the board, and `replayPose()` stands them up on the
+  front-most block of their column. The camera's own kill-side swing is then
+  nearly always a no-op — the victim shares the column at the player's height,
+  so the block under it is one of their landing candidates and `R.pick()`
+  takes the nearest. It is kept for the one case that breaks that: `pick()`
+  prefers amber over nearest, so an anchor in that column can land the player
+  *behind* the thing they just killed.
 - **The last frame has to be the kill itself.** Sampling at 20Hz means the
   newest frame can be 50ms stale, and 50ms is exactly the window in which a
   charge crosses the arena and lands — so the film ended a moment *before*
