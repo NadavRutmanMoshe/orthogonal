@@ -327,7 +327,14 @@ function replayMark(){
 }
 /* `who` is the hunter to follow on a death, and `line` the one that fired.
    On a kill both are absent and the camera stays on the player. */
-function replayStart(mode,who,line){
+/* `at` is the board AS IT WAS at the moment being filmed - position, flat,
+   view, silhouette column, and where the other one was standing. On a death
+   it has to be passed, because bossHurt resets all of it before the film
+   starts; on a kill nothing has moved yet, so the live state is the moment
+   and `at` is built from it. */
+function replayStart(mode,who,line,at){
+  if(!at)at={x:player.x,y:player.y,z:player.z,flat:flat,view:view,
+             u:flatPos?flatPos.u:0,fy:flatPos?flatPos.y:0,h:who||null};
   if(!B||rep||repBuf.length<2)return false;
   var span=mode==="death"?REP_DEATH_MS:REP_KILL_MS;
   var t1=repBuf[repBuf.length-1].t, t0=Math.max(repBuf[0].t,t1-span);
@@ -387,9 +394,9 @@ function replayStart(mode,who,line){
        the same, and the camera always ends up a half turn round. The
        arithmetic is kept rather than folded into a constant because it is the
        arithmetic that explains why. */
-    var dv=AX[view].d, pxz={x:player.x,z:player.z};
-    if(flatPos){
-      var fl=R.landings(view,flatPos.u,flatPos.y,liveCrates());
+    var dv=AX[at.view].d, pxz={x:at.x,z:at.z};
+    if(at.flat){
+      var fl=R.landings(at.view,at.u,at.fy,liveCrates());
       if(fl.length){var fb=R.pick(fl);pxz={x:fb.x,z:fb.z};}
     }
     var hdep=who.x*dv[0]+who.z*dv[2];
@@ -421,22 +428,28 @@ function replayStart(mode,who,line){
      BEHIND the thing they just killed, and then the camera has to go round.
      Only two of the four views run along the shared column, `view` and its
      opposite, so it is a choice between them rather than a search. */
+  /* Defaults to where the camera already is, not to where the kill was: with
+     no line to reason from there is no swing, and `rep.view` has to match the
+     angle the film is actually rendered at. */
   var swing=0, want=view;
   if(mode==="kill"&&who){
-    var kd=AX[view].d;
-    var pxz={x:player.x,z:player.z};
-    if(flat&&flatPos){
-      var kl=R.landings(view,flatPos.u,flatPos.y,liveCrates());
+    var kd=AX[at.view].d;
+    var pxz={x:at.x,z:at.z};
+    if(at.flat){
+      var kl=R.landings(at.view,at.u,at.fy,liveCrates());
       if(kl.length){var kb=R.pick(kl);pxz={x:kb.x,z:kb.z};}
     }
     var pdp=pxz.x*kd[0]+pxz.z*kd[2], vdp=who.x*kd[0]+who.z*kd[2];
-    want=(pdp>=vdp)?view:(view+2)%4;
-    var kdel=(want-view+4)%4;
-    swing=(kdel===2?2:0)*90;
+    want=(pdp>=vdp)?at.view:(at.view+2)%4;
+    swing=((want-at.view+4)%4===2?2:0)*90;
   }
   if(mode==="death"&&line&&(line.dx||line.dz)){
     for(var v=0;v<4;v++)
       if(AX[v].d[0]===-line.dx&&AX[v].d[2]===-line.dz){want=v;break;}
+    /* Measured from where the camera IS, not from where it was at the kill -
+       bossSendHome has already turned it back to the opening view, and
+       viewAngleTarget went with it, so the swing has to be relative to that
+       or the film starts a right angle out. */
     var d=(want-view+4)%4;
     if(d===3)d=-1;
     swing=d*90;
@@ -876,7 +889,21 @@ function bossCrushable(){
 }
 function bossHurt(why,who,line){
   if(shielded())return;
-  replayMark();               // the kill pose, before the board moves off it        // asserted here as well as at the call site
+  replayMark();               // the kill pose, before the board moves off it
+  /* AND A COPY OF THE MOMENT, taken here for the same reason.
+
+     Everything below this line moves the board off the kill: the pack is
+     thrown back to its spawns, so `who` - a live hunter object - is standing
+     somewhere else by the time the replay starts; and bossSendHome() resets
+     `flat`, `flatPos` and `view` to the opening pose. The camera then worked
+     out which way round to film from a board that no longer described the
+     kill, which on a flat death is every input it has. Reported twice from
+     screenshots, and fixed by copying rather than by reordering: the reset
+     has to happen before the film so the player is put back somewhere known,
+     and the film has to know where they were. */
+  var at={x:player.x,y:player.y,z:player.z,flat:flat,view:view,
+          u:flatPos?flatPos.u:0,fy:flatPos?flatPos.y:0,
+          h:who?{x:who.x,y:who.y,z:who.z}:null};        // asserted here as well as at the call site
   lives--;
   SFX.die();shakeT=1;slowMo();
   bossGraceMs=B.grace;
@@ -890,7 +917,7 @@ function bossHurt(why,who,line){
      thing again, which is precisely when they want to know what happened.
      The reset waits behind the replay, like a phase clear does. */
   if(lives<=0){
-    if(replayStart("death",who,line||null)){
+    if(replayStart("death",at.h,line||null,at)){
       bossPendingDeath=true;syncHud();return;
     }
     die("boss");return;
@@ -915,7 +942,7 @@ function bossHurt(why,who,line){
      check, and after everything has been put back where the player will
      resume from - so the pose it saves and restores is the one they are meant
      to come back to. */
-  replayStart("death",who,line||null);
+  replayStart("death",at.h,line||null,at);
   syncHud();
 }
 // A crate shoved onto a hunter is the other way to kill one, and it costs a

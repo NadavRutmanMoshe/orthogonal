@@ -735,7 +735,18 @@ walk into a wall.
   toward you. Without that the flat deaths got no swing and played from
   whatever angle the player happened to be facing, which is the one angle
   that cannot show what happened.
-- **And that sign is measured from the square the film DRAWS you at, not
+- **THE FILM IS TOLD THE MOMENT, BECAUSE THE BOARD HAS ALREADY LEFT IT.**
+  Everything in `bossHurt` after the hit moves off the kill: the pack is
+  thrown back to its spawns, so the hunter object the replay was handed is
+  standing somewhere else by the time it starts; and `bossSendHome()` resets
+  `flat`, `flatPos` and `view` to the opening pose. So the camera worked out
+  which way round to film from a board that no longer described the kill —
+  which on a flat death is *every* input it has, and it showed as the thing
+  that killed you being behind you. Reported twice from screenshots. Fixed by
+  copying rather than reordering: the reset has to happen before the film, so
+  the player is put back somewhere known, and the film has to be handed the
+  moment. `at` is that copy, taken beside `replayMark()`.
+- **And the sign is measured from the square the film DRAWS you at, not
   from `player.x/z`.** While flat those are the square you folded *from*,
   which is wherever you happened to start and sits on either side of the
   hunter about half the time — so the direction came out backwards half the
