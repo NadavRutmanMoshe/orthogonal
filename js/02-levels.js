@@ -851,15 +851,20 @@ var SECTIONS=[
           air:{col:0x8fa4cc, n:14, rise:.06, drift:.05, size:.10}}},
   {at:3, name:"I · FUNDAMENTALS", sub:"one verb: collapse the world and cross the gap", col:"#35c2a5",
    story:"Every fold is a visit. The plane keeps count.",
-   /* MOSS. Spores drifting upward - the gentlest field in the game, for the
-      section a new player is deciding in. */
-   /* Olive rather than a true green, and that is the same don't-camouflage
-      rule one level up: the goal is a saturated teal-green wireframe and it
-      appears in EVERY section, so no section may sit on its hue. */
+   /* NATURE, and the element the section wears. Olive rather than a true
+      green, which is the same don't-camouflage rule one level up: the goal
+      is a saturated teal-green wireframe and it appears in EVERY section,
+      so no section may sit on its hue.
+
+      LEAVES rather than spores. The field falls now instead of rising, it
+      tumbles as it goes, and it crosses on the same wind the treeline leans
+      to - one number moving three things is what makes air read as air
+      rather than as three separate animations. */
    theme:{sky:[0x1d3a58,0x0e1c2e], block:0xbdbdbd, surface:"grass",
-          scene:"trees", ink:0x16241a,
+          scene:"trees", ink:0x16241a, amb:"birds",
           stars:{n:46, col:0xdfe9ff, seed:19},
-          air:{col:0xd8e8b0, n:14, rise:.05, drift:.09, size:.075}}},
+          air:{col:0xcfe08e, n:18, rise:-.10, drift:.16, size:.085,
+               kind:"leaf"}}},
   {at:21, name:"II · SPIKES", sub:"a hazard you cannot see until you fold", col:"#e0455f",
    story:"Some of what is down there did not survive being flattened.",
    /* HELL, and it is DARK hell rather than bright. This section teaches
@@ -869,30 +874,43 @@ var SECTIONS=[
       sky is a deep ember glow low down, and the brightest thing standing
       anywhere on it is still the piece the section is about. */
    theme:{sky:[0x1a0a10,0x3a0f0a], block:0xc8c8c8, surface:"basalt",
-          scene:"hell", flare:17000, ink:0x24100e,
+          scene:"hell", flare:17000, ink:0x24100e, amb:"fire",
           air:{col:0xff9a4a, n:24, rise:.20, drift:.07, size:.07}}},
   {at:30, name:"III · GLASS", sub:"solid in the volume, absent from the plane", col:"#7fb2ff",
    story:"Water casts nothing, so the plane holds no record of it.",
-   /* EMBER, for the same inverted reason: this section teaches water, so a
-      warm world is what makes cyan sing. Embers rise, and the void warms
-      every twenty seconds or so - the eruption, without drawing a
-      volcano at it. */
-   theme:{sky:[0x241a38,0x63382a], block:0x8a6152, scene:"dunes",
-          ink:0x1e1109,
-          air:{col:0xffa45c, n:22, rise:.22, drift:.10, size:.075}}},
-  /* Purple, because a crate is drawn pale violet in the world - the section
-     wears the colour of the piece it teaches. It is deliberately pinker and
-     lighter than the boss's #a274ff so the two are not the same purple; the
-     boss also carries its four-arc ring, which is what actually tells them
-     apart. This is the closest any section gets to a reserved colour, and
-     the pair should be pulled further apart when the boss is revisited. */
-  {at:40, name:"IV · CRATES", sub:"change the plane by moving the volume", col:"#c07ae0",
+   /* THE SEA, AT SUNSET, and the sunset is not decoration. This section
+      teaches water, and a blue world swallows a cyan water block whole -
+      which is the exact failure the desaturation rule exists to catch. So
+      the water is in the HORIZON, where it can be an ocean with boats and a
+      shore on it, and the sky over it stays warm, where it makes cyan sing.
+      Both readings satisfied by putting each one where it belongs.
+
+      Spray rather than embers: the field is fine, pale and slow now, lifted
+      off the sea rather than thrown up out of a fire. */
+   theme:{sky:[0x2a1e3c,0x6b3a2c], block:0x8a6152, scene:"ocean",
+          ink:0x101e28, amb:"sea",
+          air:{col:0xdff0f6, n:20, rise:.14, drift:.12, size:.06}}},
+  /* SAND, and it moved off violet for two reasons at once. Violet is what a
+     CRATE is drawn in, so the section that teaches crates was theming itself
+     in the colour of the piece it exists to show - the camouflage rule,
+     broken in the one place it matters most. And violet is the boss's, in
+     every section, which made this the closest any section came to a
+     reserved colour. Sand fixes both: a crate's violet is now the most
+     saturated thing on a warm neutral ground.
+
+     Kept pale and low in chroma so it does not collide with the trial's
+     amber either - that one is a saturated #e0a03c, and this is a washed
+     tan two steps away from it. The node shapes are what tell those apart
+     anyway; the colour only has to not confuse them. */
+  {at:40, name:"IV · CRATES", sub:"change the plane by moving the volume", col:"#d9bd83",
    story:"You can edit what they see. That is the one thing they cannot do.",
-   /* DUST. Drifting sideways rather than rising or falling, because this is
-      the section about pushing things along a row. */
-   theme:{sky:[0x1e2734,0x4f4630], block:0x8d7f5e, scene:"ruins",
-          ink:0x1c1710,
-          air:{col:0xe0cd9a, n:18, rise:.02, drift:.20, size:.085}}},
+   /* THE DESERT AT NOON. Grains blowing sideways rather than rising, which
+      is both what sand does and what this section is about - pushing things
+      along a row. The sky is the one in the game that is bright rather than
+      deep, because heat is the whole read. */
+   theme:{sky:[0x3d3a52,0x7a5c33], block:0x9a8a68, scene:"desert",
+          ink:0x2a2114, amb:"wind",
+          air:{col:0xf0dcae, n:26, rise:.02, drift:.34, size:.055}}},
   {at:52, name:"V · EXTRA", sub:"unlocked by the Census — the long ones", col:"#3fc4d4", locked:true,
    story:"The parts of the world that were never counted.",
    /* NOCTURNE. Almost nothing moves out here, which is the point - it is

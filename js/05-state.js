@@ -26,7 +26,7 @@ var foldSlamT=0, foldSlamDir=-1;
    up is the slower of the two because it is the one moment that shows you
    travelling to the front of the stack. On a clock both are cut short - the
    fight cannot wait most of a second for the picture. */
-var FOLD_MS_IN=680, FOLD_MS_OUT=880, FOLD_MS_CLOCK=420;
+var FOLD_MS_IN=520, FOLD_MS_OUT=620, FOLD_MS_CLOCK=380;
 /* The tween's own state, owned by 10-render.js. `foldLast` is what the loop
    last wrote to flatT, which is how an external write to it is noticed. */
 var foldBase=0, foldFrom=0, foldP=1, foldWas=0, foldLast=0;

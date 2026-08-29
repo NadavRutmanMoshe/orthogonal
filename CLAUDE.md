@@ -1049,13 +1049,35 @@ one swallowed water. **Muted world, saturated pieces, and both read.** If you
 raise a `block` value, go and look at that section's fire and water before you
 keep it.
 
-**The pairing is permuted, and that is the point.** Each section's own colour
-*is* the colour of the piece it teaches, so theming it in that colour
-camouflages exactly what it exists to show. So the fire section is **frost**
-and the water section is **ember** — each spotlights its own piece. The same
-rule one level up put `I · FUNDAMENTALS` on olive rather than a true green:
-the goal is a saturated teal-green wireframe and it appears in *every*
+**THE SECTIONS ARE ELEMENTS: nature, fire, water, sand.** That is the owner's
+call and it reverses a permutation this file used to argue for — the old rule
+put the fire section in *frost* and the water section in *ember*, on the
+grounds that theming a section in the colour of the piece it teaches
+camouflages exactly what it exists to show. The camouflage risk is real and
+has been paid for rather than ignored: **the element lives in the horizon,
+the weather and the sound, and the sky over it still leans the other way.**
+So section III is an ocean at *sunset* — unmistakably water, with a warm sky
+that keeps a cyan water block singing — and section II keeps its near-black
+basalt under a fiery sky rather than glowing orange. The desaturation rule
+below is untouched, and it is still the check: **if you raise a section's
+`block` value, go and look at that section's fire and water.**
+
+**`IV · CRATES` moved off violet onto sand**, which fixes the one place the
+old permutation was broken anyway: a crate is drawn violet, so the section
+teaching crates was wearing the colour of its own piece. Sand is kept pale
+and low in chroma so it does not collide with the trial's saturated amber
+either; the node shapes are what actually tell those apart.
+
+The same rule one level up put `I · FUNDAMENTALS` on olive rather than a true
+green: the goal is a saturated teal-green wireframe and it appears in *every*
 section.
+
+**Each section carries an `amb` and its own moving layer.** `theme.amb` names
+the ambience (`birds`, `fire`, `sea`, `wind`) and `theme.scene` names both
+the baked horizon and the sprites that go over it — `trees` brings birds,
+`hell` brings meteors, `ocean` brings sailing boats, `desert` brings a
+tumbleweed and a dust devil. One field decides both, so the sound and the
+picture cannot drift apart.
 
 ### Surfaces, and why water lost its ring
 
@@ -1111,6 +1133,41 @@ the same place in the next level is *reused* — and keeps the surface it was
 built with. Crossing from grass into basalt left every shared cell wearing the
 old ground. `applyTheme` now drops all block meshes when the surface changes
 and lets `syncMeshes` rebuild them.
+
+### The things that move in front of the horizon
+
+**The band is baked, so everything alive is a second layer.** `spriteTex()`
+builds one canvas texture per kind and `spriteGroup()` hangs a few planes
+off the camera sharing it; `layoutAtmosphere()` places them in **frustum
+fractions**, so they hold their place on screen while the camera follows the
+player, exactly as the sky and the band do. All of them fade with the fold —
+there is no distance in a silhouette, so there is nowhere for a bird to be.
+
+- **Birds are a V, and the flap is the V opening and closing** — a scale on
+  one axis, not a second drawing. At fifteen pixels a V is the whole of what
+  a bird is.
+- **The wind is one number moving three things.** `windAt()` is two sines at
+  unrelated rates, and it leans the treeline band, carries the birds and
+  blows the leaves. The treeline cannot move — it is baked — so what sells
+  wind is everything *else* agreeing about it. A horizon that leans while
+  nothing else does reads as the camera wobbling.
+- **Leaves fall and tumble** (`air.kind:"leaf"`). The tumble is a squash on
+  one axis rather than a spin, because these are little discs and a disc
+  turning on its own axis is still a disc.
+- **A meteor waits.** `wait` holds each one off screen for a few seconds
+  after it lands, so the sky is mostly empty and a streak is an event; a
+  continuous rain of them is a screensaver. They burn out before they reach
+  the ground.
+- **Boats sit on the waterline, and it is derived rather than nudged.** The
+  band is `h*.30` tall centred at `-h*.19` and the sea starts 96 rows up a
+  160-row texture, so the horizon is `-h*.34 + .6*h*.30`. Anywhere else and
+  the boat is the wrong size for the water it is on.
+- **The tumbleweed's spin is tied to its travel.** A ragged ball sliding
+  sideways is litter; one turning at the rate it moves is a tumbleweed. It is
+  the only sprite in the game that rotates on its own axis.
+- **The dust devil is one soft cone with the swirl painted into it.** A
+  hundred grains at that distance is a smudge that costs a hundred draw calls
+  to be.
 
 ### Scenery
 
@@ -1536,6 +1593,25 @@ level data changed to make it.
   boundary is necessarily half-drawn while it crosses, and a sliced cube reads
   as a rendering fault. The half-extent is `1.732*s`, not the `0.866*s` the
   face size suggests — `P()` spans `(px - pz*k)` over `[-2,2]`.
+- **EVERY SECTION HAS WEATHER BEHIND ITS TRAIL** (`mapWeather()`), on the
+  same 2D canvas the ambient cubes already use — no second context, and it
+  stops with the panel like everything else there. The map is where a section
+  is chosen, so it is the one screen where a section should be recognisable
+  before a word of it is read: branches climbing both edges with leaves
+  falling through them, meteors, an underwater column with fish and bubbles,
+  or a sun over dunes with grain blowing across.
+  - **The kind is keyed off the section's own `theme.scene`**, not a second
+    table, so the map and the world cannot drift apart: a section themed
+    `ocean` gets fish here by construction.
+  - **It is drawn behind the cubes and kept out of the middle column.**
+    Ambience you have to read around is not ambience.
+  - **The branches are a seeded walk**, so a section's tree is the same tree
+    every time it opens — the same reason the sky's stars are seeded.
+  - **The fish are told apart by shape, not colour.** A clownfish is a fat
+    teardrop with two pale bars, a dolphin is a long curve with a dorsal, a
+    turtle is a wide oval with four paddles, an octopus is a dome with legs
+    under it. At fifteen pixels colour is a second signal and never the
+    first.
 - **`syncCorners()` owns the map's chrome.** The running star total lives
   outside `.corner` at z-index 30 so it can sit over the win overlay, which
   also puts it over a near-full-height map and its own total. The one function
@@ -2361,8 +2437,8 @@ exclusive — every gesture also has a key and, unless hidden, a button:
   that**; if the turn ever feels mushy again, check the signs before touching
   `TURN_DEG`. `docs/HISTORY.md` has the worked example.
 - two-finger tap — turn right, unchanged: it is a drag that never travelled
-- **THE FOLD IS A TIMED TWEEN, NOT A LERP** (`FOLD_MS_IN` 680, `FOLD_MS_OUT`
-  880, `FOLD_MS_CLOCK` 420, in `js/05-state.js`). It used to be
+- **THE FOLD IS A TIMED TWEEN, NOT A LERP** (`FOLD_MS_IN` 520, `FOLD_MS_OUT`
+  620, `FOLD_MS_CLOCK` 380, in `js/05-state.js`). It used to be
   `flatT += (want-flatT)*rate`, which is an exponential ease-*out*: most of
   the travel happens in the first few frames and the rest is half a second of
   creeping the last two percent. So the verb the whole game is built on was
@@ -2378,6 +2454,16 @@ exclusive — every gesture also has a key and, unless hidden, a button:
   reset arriving in slow motion. `dtMs` is clamped, for the same reason the
   fight clocks clamp theirs. The crush delay in `doFlatten` moved 420 → 620
   to stay behind the picture.
+- **AND THE VERB IS REFUSED WHILE THE WORLD IS MOVING** (`folding()`). A
+  second press landing inside the fold used to do nothing visible — the state
+  turned round and the tween reversed — so a fast double press read as a
+  button that had stopped working. It is a stamp taken when the move
+  **commits**, not a read of the tween's `foldP`: `foldP` is reset by the
+  render loop, which has not run yet between two presses in the same tick,
+  so reading it let the second press straight through. Same reasoning as
+  `deathPending`, for the same reason. It releases at 85% of the duration,
+  because the last few percent of an ease-out is invisible and waiting for it
+  would feel like lag.
 - **Changing dimension jolts the camera and buzzes the phone** (`foldJolt()`
   in `js/12-play.js`, `haptic()` in `js/11-sound.js`). **It is two motions,
   and they say different things.** `shakeT` is impact — the same decaying
@@ -2726,6 +2812,36 @@ know before touching it:
   `shards()` only; `starsEarned()` and `wardrobe.spent` still do their real
   work, so buying exercises the true purchase path. **Set it back to `false`
   before shipping.**
+- **EVERY SECTION HAS AMBIENCE, and it is synthesised like everything else.**
+  `ambTo(kind)` is called from `applyTheme`, so the sound of a section arrives
+  with its sky and cannot be left behind by a level change; there are no audio
+  files in this project and there are not going to be any. Birds are
+  oscillators with a bend in them, the sea is noise with a slow envelope, the
+  wind is a narrow bandpass being swept by two LFOs at unrelated rates, and
+  the volcano's rumble is brown noise under a low-pass.
+  - **A bird sings a PHRASE, not a chirp.** One motif and one base pitch are
+    chosen per phrase from `AMB_MOTIF`, so two phrases running are
+    recognisably the same bird and never identical — which is what "random
+    but with a pattern" actually is. Every note glides, because a flat tone
+    reads as a beep.
+  - **The eruption is fired by the flare**, on the wrap rather than on a
+    threshold (a threshold crossed by a long frame is missed or hit twice),
+    so the mountain is one event that is seen and heard rather than two that
+    happen near each other.
+  - **One graph per section and one slow timer for all of it.** Continuous
+    parts are audio-rate and cost nothing per frame; the events that need
+    deciding come off a single 250ms tick, which is what keeps teardown to
+    one `clearInterval` and stops a stray bird arriving four sections later.
+  - **The noise buffer is crossfaded into itself at the seam**, or a
+    four-second loop clicks four times a minute.
+  - **It is quiet on purpose**: measured through the real chain, the whole
+    bed plus the documented worst-case pile-up (win chord + strike + step)
+    plus an eruption peaks at **1.0003 with 6 saturated samples in 370,000**,
+    against the 1.0082 in 88,000 the limiter was already built to survive. If
+    you raise a bed gain, re-measure that stack.
+  - **`audio()` refuses everything while muted**, so ambience simply does not
+    start; `ambSync()` is what puts it back on an unmute, and it is called
+    from both the `m` key and the volume row.
 - **Sound goes through a mastering chain** (`js/11-sound.js`): blips →
   `masterGain` (a fixed `MIX` drive) → limiter → `POST` → soft clipper →
   **`outGain`, the volume setting** → destination.

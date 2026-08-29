@@ -179,7 +179,8 @@ window.addEventListener("keydown",function(e){
   else if(k==="r"&&app==="play"){resetLevel();}
   else if((k==="u"||(k==="z"&&app==="play"))&&app==="play"){undoMove();SFX.undo();}
   else if(k==="h"&&app==="play"){showHint();}
-  else if(k==="m"){muted=!muted;flash(muted?"sound off":"sound on");}
+  else if(k==="m"){muted=!muted;flash(muted?"sound off":"sound on");
+    if(typeof ambSync==="function")ambSync();}
   else if(k==="shift"){peekSet(true);}
   else if(k==="z"&&app==="edit"){undo();}
   /* Escape is the key everyone already presses. It closes whatever panel is

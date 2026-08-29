@@ -211,7 +211,7 @@ function initGL(){
    because the quad is now what paints every pixel behind the world. */
 var flameGeo=null,waterGeo=null,fireGeo=null,liquidEdgeGeo=null,TEX=null;
 var skyQuad=null, airField=null, starField=null;
-var airPhase=0, flareT=0, flareEvery=0, skyWarm=0;
+var airPhase=0, flareT=0, flareEvery=0, skyWarm=0, lastFlareP=1;
 var colSkyTop=new THREE.Color(0x141a2e), colSkyBot=new THREE.Color(0x0a0e1a);
 var colAir=new THREE.Color(0x8fa4cc);
 
@@ -410,6 +410,115 @@ function sceneryTex(kind){
         px+=w*(.55+q()*.7);
       }
     });
+  } else if(kind==="ocean"){
+    /* III - THE SEA, AT THE END OF THE DAY. The section teaches water, so
+       the horizon is water; the sky above it stays warm rather than blue for
+       the reason the whole palette is built on - a blue world swallows a
+       cyan water block, which is the one piece this section exists to show.
+       Sunset over the sea keeps both: unmistakably ocean, and cyan still
+       sings against it.
+
+       Drawn as bands rather than as waves in perspective. Distance here is
+       carried by the crests getting shorter, paler and closer together
+       toward the horizon, which is what the eye actually reads. */
+    var sea=x.createLinearGradient(0,H-96,0,H);
+    sea.addColorStop(0,"#123448");sea.addColorStop(.45,"#0e2b3e");
+    sea.addColorStop(1,"#0a2233");
+    x.fillStyle=sea;x.fillRect(0,H-96,W,96);
+    // The glitter path: the sun's road on the water, brightest at the top.
+    var road=x.createLinearGradient(0,H-96,0,H-18);
+    road.addColorStop(0,"rgba(255,196,120,.55)");
+    road.addColorStop(1,"rgba(255,150,80,0)");
+    x.fillStyle=road;
+    x.beginPath();x.moveTo(W*.60,H-96);x.lineTo(W*.72,H-18);
+    x.lineTo(W*.30,H-18);x.lineTo(W*.52,H-96);x.closePath();x.fill();
+    /* Crests. Short dashes, and the two things that carry depth are their
+       LENGTH and their spacing - both grow toward the bottom of the band. */
+    for(var wy=H-94;wy<H-20;wy+=2.4){
+      var near=(wy-(H-94))/74;                     // 0 at the horizon, 1 near
+      var len=2+near*22, gap=6+near*40;
+      x.fillStyle="rgba(190,224,238,"+(.05+near*.20).toFixed(3)+")";
+      for(var wx=-gap*q();wx<W;wx+=gap*(.5+q()*1.2))
+        x.fillRect(wx,wy,len*(.4+q()*1.1),1+near*1.2);
+    }
+    /* THE BREAK. Two long crests near the shore with foam under them - the
+       one place the sea stops being a texture and becomes an event. */
+    [[H-34,.55],[H-25,.85]].forEach(function(b){
+      x.fillStyle="rgba(226,244,250,"+b[1]*.5+")";
+      x.beginPath();x.moveTo(-10,b[0]);
+      for(var bx=-10;bx<W+10;bx+=16)
+        x.lineTo(bx,b[0]-2.5-Math.abs(Math.sin(bx*.031))*4.5);
+      x.lineTo(W+10,b[0]+4);x.lineTo(-10,b[0]+4);x.closePath();x.fill();
+      for(var fx=-6;fx<W+6;fx+=3+q()*9){
+        x.fillStyle="rgba(236,250,255,"+(b[1]*(.10+q()*.4)).toFixed(3)+")";
+        x.beginPath();x.arc(fx,b[0]+1+q()*4,.8+q()*2.4,0,Math.PI*2);x.fill();
+      }
+    });
+    // THE SHORE. Wet sand first, because that is what the water leaves.
+    x.fillStyle="#3b3a3a";x.fillRect(0,H-20,W,20);
+    x.fillStyle="#4a4338";x.fillRect(0,H-16,W,16);
+    x.fillStyle="#5a5040";x.fillRect(0,H-9,W,9);
+    for(var sg=0;sg<220;sg++){
+      x.fillStyle="rgba(24,22,18,"+(.1+q()*.3).toFixed(2)+")";
+      x.fillRect(q()*W,H-18+q()*18,1+q()*2,1);
+    }
+  } else if(kind==="desert"){
+    /* IV - THE DESERT, AT NOON. The one horizon in the game lit from above
+       rather than from behind: everywhere else the band is a silhouette
+       against a glow, and here the glow is overhead and the dunes are pale.
+       That is the whole reason it cannot be confused with the canyon it
+       replaced, and it is why the sand section reads as heat rather than as
+       another dusk. */
+    var sky2=x.createLinearGradient(0,H-130,0,H-46);
+    sky2.addColorStop(0,"rgba(255,214,150,0)");
+    sky2.addColorStop(1,"rgba(255,206,140,.42)");
+    x.fillStyle=sky2;x.fillRect(0,H-130,W,84);
+    /* THE SUN, and it is a radial gradient filled through a circular path.
+       A linear gradient in a fillRect draws a visible box - the ramp runs
+       one way and the other three edges stop dead - which on a pale sky
+       reads as a lit rectangle rather than as a sun. */
+    var sunx=W*.74, suny=H-116, sr=44;
+    var sg2=x.createRadialGradient(sunx,suny,2,sunx,suny,sr);
+    sg2.addColorStop(0,"rgba(255,252,232,.95)");
+    sg2.addColorStop(.22,"rgba(255,236,176,.72)");
+    sg2.addColorStop(.55,"rgba(255,206,124,.24)");
+    sg2.addColorStop(1,"rgba(255,190,110,0)");
+    x.fillStyle=sg2;
+    x.beginPath();x.arc(sunx,suny,sr,0,Math.PI*2);x.fill();
+    x.fillStyle="rgba(255,250,226,.92)";
+    x.beginPath();x.arc(sunx,suny,10,0,Math.PI*2);x.fill();
+    /* DUNES AS CURVES, not as boxes. A dune has no vertical edge anywhere on
+       it, which is the whole difference between this and the mesas. */
+    [[.35,"#8a7048",26,H-52],[.62,"#6d573a",34,H-34],[1,"#4c3d2a",40,H-16]]
+      .forEach(function(r){
+        x.fillStyle=r[1];
+        x.beginPath();x.moveTo(-20,H);x.lineTo(-20,r[3]);
+        var dy=r[3];
+        for(var dx=-20;dx<W+40;){
+          var dw=60+q()*140, dh=r[2]*(.35+q()*1.0);
+          x.quadraticCurveTo(dx+dw*.5,dy-dh,dx+dw,dy-dh*(.1+q()*.3));
+          dy=dy-dh*(.1+q()*.3)+dh*(.1+q()*.35);
+          dx+=dw;
+        }
+        x.lineTo(W+40,H);x.closePath();x.fill();
+      });
+    /* ONE CACTUS. One, because a saguaro is a landmark and a row of them is
+       a hedge - and because the repeat is 1 for exactly this reason. */
+    var cx2=W*.22, cy2=H-40;
+    x.fillStyle="#20321f";
+    var arm=function(ax,ay,h2,w2){
+      x.beginPath();
+      x.moveTo(ax-w2,ay);x.lineTo(ax-w2,ay-h2+w2);
+      x.arc(ax,ay-h2+w2,w2,Math.PI,0);
+      x.lineTo(ax+w2,ay);x.closePath();x.fill();
+    };
+    arm(cx2,cy2,54,7);
+    x.save();x.translate(cx2-7,cy2-26);x.rotate(-Math.PI/2);
+    x.fillRect(0,-4.5,13,9);x.restore();
+    arm(cx2-19,cy2-13,26,4.5);
+    x.save();x.translate(cx2+7,cy2-34);x.rotate(Math.PI/2);
+    x.fillRect(0,-4,11,8);x.restore();
+    arm(cx2+17,cy2-22,20,4);
   } else if(kind==="ruins"){
     /* IV - broken columns. The crates section is the one about moving things
        that were put somewhere, so its horizon is a place things were put. */
@@ -551,7 +660,11 @@ function sceneryTex(kind){
   /* Tiled twice for the bands that are pure texture, and ONCE for hell -
      it has a volcano in it, and a volcano that repeats is two volcanoes.
      Anything with a landmark in it has to map across the band exactly once. */
-  t.wrapS=THREE.RepeatWrapping;t.repeat.set(kind==="hell"?1:2,1);
+  /* `repeat 2` for a band that is pure texture, `1` for one with a LANDMARK
+     in it: hell has a volcano, the desert has a sun and a cactus, and the
+     ocean has the sun's road on the water. Two of any of those is two suns. */
+  t.wrapS=THREE.RepeatWrapping;
+  t.repeat.set((kind==="hell"||kind==="desert"||kind==="ocean")?1:2,1);
   return t;
 }
 /* THE THINGS MOVING IN IT. Small dark silhouettes with two lit eyes,
@@ -620,6 +733,17 @@ function makeSparks(n){
   return g;
 }
 var sceneQuad=null, demonGrp=null, plumeQuad=null, sparkGrp=null;
+/* One slot per section's moving layer. They are all torn down together in
+   applyTheme, so a section that does not ask for one simply has none. */
+var birdGrp=null, meteorGrp=null, boatGrp=null, tumbleGrp=null, devilGrp=null;
+/* WIND, and it is one number the whole section reads. The treeline cannot
+   move - it is baked - so what sells wind is everything ELSE moving on the
+   same slow rhythm: the band leaning, the leaves crossing, the canopy
+   breathing. Two sines rather than one, so the gusts do not arrive on a
+   metronome. */
+function windAt(t){
+  return Math.sin(t*.55)*.6+Math.sin(t*.23+1.7)*.4;
+}
 function makeScenery(kind){
   var m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),
     new THREE.MeshBasicMaterial({map:sceneryTex(kind),transparent:true,
@@ -641,10 +765,184 @@ function makeDemons(n){
   return g;
 }
 
+/* ============================================================
+   THE THINGS THAT MOVE IN FRONT OF THE HORIZON
+
+   The scenery band is one baked texture on one quad, which is what makes a
+   horizon free - and it is also why NOTHING IN IT CAN MOVE. Every section's
+   life therefore comes from a second layer: a handful of small sprites on
+   the camera, drawn over the band, each with one job.
+
+   They share a shape. One canvas texture built once per kind, one group of
+   planes sharing it, and a per-frame walk in layoutAtmosphere() that places
+   them in FRUSTUM fractions rather than world units - so they hold their
+   place on screen while the camera follows the player, exactly as the sky
+   and the band do. All of them fade out with the fold: there is no distance
+   in a silhouette, so there is nowhere for a bird to be.
+   ============================================================ */
+function spriteTex(w,h,draw){
+  var c=document.createElement("canvas");
+  c.width=w;c.height=h;
+  draw(c.getContext("2d"),w,h);
+  var t=new THREE.CanvasTexture(c);
+  t.magFilter=THREE.LinearFilter;
+  return t;
+}
+function spriteGroup(n,tex,order,init){
+  var g=new THREE.Group();
+  for(var i=0;i<n;i++){
+    var m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),
+      new THREE.MeshBasicMaterial({map:tex,transparent:true,opacity:0,
+        depthWrite:false,fog:false}));
+    m.renderOrder=order;
+    m.userData=init(i);
+    g.add(m);
+  }
+  g.userData.tex=tex;
+  return g;
+}
+/* I - BIRDS. A V, because at fifteen pixels across that is the whole of what
+   a bird is; the flap is the V opening and closing, which is done by scaling
+   the sprite rather than by a second drawing. They cross in a loose skein -
+   each one keeps its own speed and its own height, so they string out and
+   bunch up the way birds do rather than flying in formation. */
+function makeBirds(n){
+  var tex=spriteTex(64,40,function(x,w,h){
+    x.strokeStyle="#0d1512";x.lineCap="round";
+    [[1,3.4],[0,0]].forEach(function(p,i){
+      x.lineWidth=i?3.0:5.2;
+      x.strokeStyle=i?"#16241d":"rgba(10,16,13,.5)";
+      x.beginPath();
+      x.moveTo(6,h*.30+p[1]);
+      x.quadraticCurveTo(w*.34,h*.72+p[1],w*.5,h*.40+p[1]);
+      x.quadraticCurveTo(w*.66,h*.72+p[1],w-6,h*.30+p[1]);
+      x.stroke();
+    });
+  });
+  return spriteGroup(n,tex,-966,function(){
+    return {x:Math.random()*1.4-.2, y:.52+Math.random()*.34,
+            sp:.9+Math.random()*1.5, ph:Math.random()*Math.PI*2,
+            fl:5+Math.random()*3.5, sc:.55+Math.random()*.75,
+            dir:Math.random()<.5?-1:1};
+  });
+}
+/* II - METEORS ON FIRE. Falling across the top of the sky rather than at the
+   player: this is weather over the volcano, not something aimed. Each is a
+   head with a trail behind it, baked pointing right and turned in the world,
+   so one texture serves every angle.
+
+   They arrive in their own time - `wait` holds a meteor off screen for a few
+   seconds after it lands, so the sky is mostly empty and a streak is an
+   event. A continuous rain of them reads as a screensaver. */
+function makeMeteors(n){
+  var tex=spriteTex(128,24,function(x,w,h){
+    var g=x.createLinearGradient(0,0,w,0);
+    g.addColorStop(0,"rgba(255,120,30,0)");
+    g.addColorStop(.55,"rgba(255,150,60,.30)");
+    g.addColorStop(.88,"rgba(255,206,120,.85)");
+    g.addColorStop(1,"rgba(255,246,214,0)");
+    x.fillStyle=g;
+    x.beginPath();
+    x.moveTo(0,h*.5);x.lineTo(w*.92,h*.5-4.6);
+    x.lineTo(w*.92,h*.5+4.6);x.closePath();x.fill();
+    var hd=x.createRadialGradient(w*.90,h*.5,.5,w*.90,h*.5,11);
+    hd.addColorStop(0,"rgba(255,252,238,.98)");
+    hd.addColorStop(.35,"rgba(255,208,120,.8)");
+    hd.addColorStop(1,"rgba(255,140,50,0)");
+    x.fillStyle=hd;
+    x.beginPath();x.arc(w*.90,h*.5,11,0,Math.PI*2);x.fill();
+  });
+  return spriteGroup(n,tex,-967,function(i){
+    return {t:1, wait:i*2.2+Math.random()*2.5, x0:Math.random(),
+            sp:.55+Math.random()*.5, sc:.7+Math.random()*.8,
+            ang:-.72-Math.random()*.34};
+  });
+}
+/* III - SAILING BOATS. Two of them, small, slow, and always ON the horizon
+   line - the sea's own scale is the thing they are there to give, and a boat
+   drawn anywhere but the waterline gives the wrong one. They bob on the same
+   phase clock the crests use, so the sea and the things on it agree. */
+function makeBoats(n){
+  var tex=spriteTex(64,64,function(x,w,h){
+    x.fillStyle="#101c26";
+    // hull
+    x.beginPath();
+    x.moveTo(w*.16,h*.72);x.lineTo(w*.86,h*.72);
+    x.lineTo(w*.74,h*.83);x.lineTo(w*.26,h*.83);x.closePath();x.fill();
+    // mast and two sails, the near one taller
+    x.fillRect(w*.49,h*.18,1.8,h*.54);
+    x.beginPath();
+    x.moveTo(w*.50,h*.17);x.lineTo(w*.50,h*.70);x.lineTo(w*.80,h*.70);
+    x.closePath();x.fill();
+    x.beginPath();
+    x.moveTo(w*.47,h*.26);x.lineTo(w*.47,h*.70);x.lineTo(w*.25,h*.70);
+    x.closePath();x.fill();
+  });
+  return spriteGroup(n,tex,-969,function(i){
+    return {x:i*.5+Math.random()*.3, sp:.010+Math.random()*.012,
+            ph:Math.random()*Math.PI*2, sc:.7+Math.random()*.5,
+            dir:i%2?-1:1};
+  });
+}
+/* IV - THE TUMBLEWEED AND THE DUST DEVIL, which are the two things a desert
+   is allowed to do while nothing else happens. The weed ROLLS - it is the
+   only sprite in the game that rotates on its own axis, and that rotation is
+   the whole read: a ragged ball sliding sideways is litter, one turning at
+   the rate it travels is a tumbleweed. */
+function makeTumble(n){
+  var tex=spriteTex(64,64,function(x,w,h){
+    var q2=rnd(41);
+    x.strokeStyle="#5c4a2c";x.lineCap="round";
+    for(var i=0;i<26;i++){
+      var a=q2()*Math.PI*2, r1=8+q2()*10, r2=16+q2()*13;
+      x.lineWidth=.8+q2()*1.4;
+      x.globalAlpha=.35+q2()*.5;
+      x.beginPath();
+      x.moveTo(32+Math.cos(a)*r1,32+Math.sin(a)*r1);
+      x.quadraticCurveTo(32+Math.cos(a+.5)*r2,32+Math.sin(a+.5)*r2,
+                         32+Math.cos(a+1.1)*r2*.9,32+Math.sin(a+1.1)*r2*.9);
+      x.stroke();
+    }
+    x.globalAlpha=1;
+  });
+  return spriteGroup(n,tex,-966,function(i){
+    return {x:-.2-i*.7, sp:.055+Math.random()*.05, r:Math.random()*6.3,
+            sc:.6+Math.random()*.5, ph:Math.random()*6.3};
+  });
+}
+/* And the devil: a column of lifted sand, wider at the top, leaning as it
+   goes. Drawn as one soft cone with the swirl painted into it rather than as
+   particles - a hundred grains at this distance is a smudge that costs a
+   hundred draw calls to be. */
+function makeDevil(){
+  var tex=spriteTex(64,128,function(x,w,h){
+    var g=x.createLinearGradient(0,h,0,0);
+    g.addColorStop(0,"rgba(214,186,132,0)");
+    g.addColorStop(.25,"rgba(222,196,142,.34)");
+    g.addColorStop(.75,"rgba(230,206,158,.24)");
+    g.addColorStop(1,"rgba(236,216,172,0)");
+    x.fillStyle=g;
+    x.beginPath();
+    x.moveTo(w*.42,h);x.quadraticCurveTo(w*.16,h*.5,w*.10,0);
+    x.lineTo(w*.90,0);x.quadraticCurveTo(w*.84,h*.5,w*.58,h);
+    x.closePath();x.fill();
+    x.strokeStyle="rgba(244,228,190,.20)";x.lineWidth=1.6;
+    for(var i=0;i<7;i++){
+      var yy=h-10-i*16, ww=6+i*3.4;
+      x.beginPath();
+      x.ellipse(w*.5+(i%2?2:-2),yy,ww,3.4,0,0,Math.PI*2);x.stroke();
+    }
+  });
+  return spriteGroup(1,tex,-967,function(){
+    return {x:-.15, sp:.028, ph:0};
+  });
+}
+
 /* Sized to the frustum every frame, because the frustum follows the arena
    and the player - a sky sized once is the wrong size on the next level. */
-function layoutAtmosphere(){
+function layoutAtmosphere(dtMs){
   if(!skyQuad)return;
+  dtMs=Math.min(dtMs||16,60);       // clamped like every other clock here
   var w=(camera.right-camera.left)/camera.zoom, h=(camera.top-camera.bottom)/camera.zoom;
   skyQuad.scale.set(w*1.2,h*1.2,1);
   /* The band sits on the lower third and is scaled to the frustum like the
@@ -697,6 +995,106 @@ function layoutAtmosphere(){
       }
     }
   }
+  /* THE SECTION'S OWN LIFE, placed in frustum fractions so it holds its
+     spot on screen while the camera follows the player. `atm` is the fade
+     every one of them shares: gone in the plane, because a silhouette has
+     no distance to put a bird in. */
+  var atm=1-flatT*.72;
+  if(birdGrp){
+    /* THE WIND MOVES THE WOOD. The treeline is baked, so the band itself
+       leans - a couple of pixels of x on a slow double sine - and the birds
+       are carried by the same number. A horizon that leans while nothing
+       else does reads as the camera wobbling; the two together read as air
+       moving through the picture. */
+    var wnd=windAt(airPhase);
+    if(sceneQuad){
+      sceneQuad.position.x=wnd*w*.004;
+      sceneQuad.scale.x=w*1.25*(1+wnd*.0016);
+    }
+    var bk=birdGrp.children;
+    for(var bi=0;bi<bk.length;bi++){
+      var bq=bk[bi],bu=bq.userData;
+      bu.x+=bu.dir*bu.sp*.00016*(1+wnd*.35);
+      if(bu.x>1.3)bu.x=-.3; else if(bu.x<-.3)bu.x=1.3;
+      var flap=Math.sin(airPhase*bu.fl+bu.ph);
+      var bs=h*.030*bu.sc;
+      // The flap is the V opening and closing, so it is scale, not a frame.
+      bq.scale.set(bs*bu.dir,bs*(.42+Math.abs(flap)*.62),1);
+      bq.position.set((bu.x-.5)*w*1.2,
+        (bu.y-.5)*h*1.02+Math.sin(airPhase*.7+bu.ph)*h*.012,-243);
+      bq.material.opacity=.62*atm;
+    }
+  }
+  if(meteorGrp){
+    var mk2=meteorGrp.children;
+    for(var mi=0;mi<mk2.length;mi++){
+      var mq=mk2[mi],mu=mq.userData;
+      if(mu.wait>0){
+        // Off screen between passes: a streak has to be an event, and a sky
+        // with one always in it is a screensaver.
+        mu.wait-=dtMs/1000;mq.material.opacity=0;continue;
+      }
+      mu.t-=dtMs/1000*mu.sp;
+      if(mu.t<=0){mu.t=1;mu.wait=2.5+Math.random()*7;mu.x0=Math.random();
+                  mu.ang=-.72-Math.random()*.34;continue;}
+      var mp=1-mu.t;                       // 0 at the top, 1 at the end
+      var mlen=h*.34*mu.sc;
+      mq.scale.set(mlen,mlen*.19,1);
+      mq.rotation.z=mu.ang;
+      mq.position.set((mu.x0-.5)*w*1.1+Math.cos(mu.ang)*mp*w*.5,
+                      h*.46-Math.abs(Math.sin(mu.ang))*mp*h*.62,-242);
+      // In quickly, out before it reaches the ground: it burns up.
+      mq.material.opacity=Math.min(1,Math.min(1,mp/.12)*(1-mp)*(1-mp)*1.5)*atm;
+    }
+  }
+  if(boatGrp){
+    var ok2=boatGrp.children;
+    for(var oi=0;oi<ok2.length;oi++){
+      var oq=ok2[oi],ou=oq.userData;
+      ou.x+=ou.dir*ou.sp*dtMs/1000*.12;
+      if(ou.x>1.25)ou.x=-.25; else if(ou.x<-.25)ou.x=1.25;
+      var bsz=h*.052*ou.sc;
+      oq.scale.set(bsz*ou.dir,bsz,1);
+      /* ON THE WATERLINE. The sea band starts h*.30 tall centred at -h*.19,
+         so its horizon is the top of that - anywhere else and the boat is
+         the wrong size for the sea it is on. */
+      /* ON THE WATERLINE, and it is derived rather than nudged. The band is
+         h*.30 tall centred at -h*.19, so its foot is at -h*.34; the sea
+         starts 96 rows up a 160-row texture, which is 0.6 of the way, so the
+         horizon sits at -h*.34 + .6*h*.30. Anywhere else and the boat is the
+         wrong size for the water it is on. */
+      oq.position.set((ou.x-.5)*w*1.15,
+        -h*.34+h*.30*.60-h*.008+Math.sin(airPhase*.9+ou.ph)*h*.004,-243);
+      oq.material.opacity=.8*atm;
+    }
+  }
+  if(tumbleGrp){
+    var tk=tumbleGrp.children;
+    for(var ti=0;ti<tk.length;ti++){
+      var tq=tk[ti],tu=tk[ti].userData;
+      tu.x+=tu.sp*dtMs/1000*.16;
+      if(tu.x>1.25){tu.x=-.25;tu.sp=.055+Math.random()*.05;}
+      var tsz=h*.036;
+      // Rolling: the spin rate is tied to the travel, which is the read.
+      tu.r+=tu.sp*dtMs/1000*3.4;
+      tq.rotation.z=-tu.r;
+      tq.scale.setScalar(tsz*tu.sc);
+      // Bounces along the dune line rather than sliding on it.
+      tq.position.set((tu.x-.5)*w*1.15,
+        -h*.245+Math.abs(Math.sin(tu.r*1.6))*h*.014,-242);
+      tq.material.opacity=.72*atm;
+    }
+  }
+  if(devilGrp){
+    var vq=devilGrp.children[0],vu=vq.userData;
+    vu.x+=vu.sp*dtMs/1000*.10;
+    if(vu.x>1.3)vu.x=-.3;
+    vq.scale.set(h*.10,h*.30,1);
+    vq.position.set((vu.x-.5)*w*1.15+Math.sin(airPhase*.6)*w*.01,
+                    -h*.13,-242);
+    // Fades in and out across its crossing, so it forms and collapses.
+    vq.material.opacity=Math.sin(Math.min(1,Math.max(0,vu.x))*Math.PI)*.85*atm;
+  }
   if(demonGrp){
     var dk=demonGrp.children;
     for(var di=0;di<dk.length;di++){
@@ -726,13 +1124,25 @@ function layoutAtmosphere(){
   }
   if(!airField)return;
   var kids=airField.children, sp=airField.userData.spec;
+  /* A LEAF FALLS ON THE WIND, which is two things a mote does not do: it
+     rides the same gust the treeline leans to, and it turns over as it goes.
+     Everything else about the field is unchanged, so a section that does not
+     ask for leaves behaves exactly as it always has. */
+  var leaf=sp.kind==="leaf", gust=leaf?windAt(airPhase):0;
   for(var i=0;i<kids.length;i++){
     var q=kids[i],u=q.userData;
     u.y+=sp.rise*u.sp*.0016;
-    u.x+=sp.drift*u.sp*.0016;
+    u.x+=(sp.drift+gust*.22)*u.sp*.0016;
     if(u.y>1.1)u.y=-.1; if(u.y<-.1)u.y=1.1;
     if(u.x>1.1)u.x=-.1; if(u.x<-.1)u.x=1.1;
     q.position.set((u.x-.5)*w*1.05,(u.y-.5)*h*1.05,-240);
+    if(leaf){
+      /* Tumbling, and it is a SQUASH rather than a spin: these are little
+         discs, and a disc turning on its own axis is a disc. Flattening it
+         on one axis while it rolls is what a leaf edge-on looks like. */
+      q.rotation.z=airPhase*(.5+u.sp)+u.ph;
+      q.scale.set(1,.35+.65*Math.abs(Math.sin(airPhase*(1.1+u.sp)+u.ph)),1);
+    }
     /* Faded at both edges of the field. Anything that crosses a boundary is
        necessarily half-drawn while it crosses, which is the same reason the
        map's ambient cubes never touch an edge. */
@@ -820,7 +1230,11 @@ function applyTheme(th){
      it to outlineFor() as "what the player is drawn against", which is
      still exactly what it is. Nulling it was tried and threw once a frame. */
   if(!scene.background)scene.background=colVoid.clone();
-  if(same&&airField){setSkyColors(skyWarm);return;}
+  if(same&&airField){
+    setSkyColors(skyWarm);
+    if(typeof ambTo==="function")ambTo(th.amb);   // a no-op when unchanged
+    return;
+  }
   if(airField){camera.remove(airField);airField.traverse(function(o){
     if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});}
   airField=makeAir(th.air);camera.add(airField);
@@ -839,15 +1253,35 @@ function applyTheme(th){
   if(sparkGrp){camera.remove(sparkGrp);sparkGrp.traverse(function(o){
     if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});
     sparkGrp=null;}
+  [birdGrp,meteorGrp,boatGrp,tumbleGrp,devilGrp].forEach(function(g){
+    if(!g)return;
+    camera.remove(g);
+    if(g.userData.tex)g.userData.tex.dispose();
+    g.traverse(function(o){
+      if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});
+  });
+  birdGrp=meteorGrp=boatGrp=tumbleGrp=devilGrp=null;
   if(th.scene){
     sceneQuad=makeScenery(th.scene);camera.add(sceneQuad);
     if(th.scene==="hell"){
       demonGrp=makeDemons(4);camera.add(demonGrp);
       plumeQuad=makePlume();camera.add(plumeQuad);
       sparkGrp=makeSparks(16);camera.add(sparkGrp);
+      meteorGrp=makeMeteors(3);camera.add(meteorGrp);
+    }
+    if(th.scene==="trees"){birdGrp=makeBirds(7);camera.add(birdGrp);}
+    if(th.scene==="ocean"){boatGrp=makeBoats(2);camera.add(boatGrp);}
+    if(th.scene==="desert"){
+      tumbleGrp=makeTumble(2);camera.add(tumbleGrp);
+      devilGrp=makeDevil();camera.add(devilGrp);
     }
   }
   setSkyColors(0);
+  /* THE SECTION'S SOUND ARRIVES WITH ITS SKY. Here rather than in loadLevel
+     so there is one place that knows what section you are in - and above the
+     `same` early return would be wrong for the opposite reason: a level that
+     does not change the theme must not restart the bed. */
+  if(typeof ambTo==="function")ambTo(th.amb);
 }
 /* Which section a level belongs to, asked by index so it works for the
    editor and the library too - both hand back no section, and no section
@@ -2460,11 +2894,16 @@ function animate(now){
     /* A slow swell and a slower fall - most of the cycle is nothing at all,
        which is what makes the beat land when it arrives. */
     var fp=flareT/flareEvery;
+    /* The mountain is heard on the frame the sky starts to warm, so the two
+       are one event. Fired on the wrap rather than on a threshold, because a
+       threshold crossed by a long frame can be missed or hit twice. */
+    if(fp<lastFlareP&&typeof ambErupt==="function")ambErupt();
+    lastFlareP=fp;
     if(fp<.05)skyWarm=fp/.05; else if(fp<.22)skyWarm=1-(fp-.05)/.17; else skyWarm=0;
     skyWarm=Math.max(0,skyWarm)*(1-flatT*.8);
   } else skyWarm=0;
   setSkyColors(skyWarm);
-  layoutAtmosphere();
+  layoutAtmosphere(dtMs);
   landFrame(dtMs);
   lookCue();
   /* playerMesh rather than `player`, because the mesh is where the player is

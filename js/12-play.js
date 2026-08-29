@@ -1259,6 +1259,11 @@ function levelHasWater(){
 var reduceMotion=(window.matchMedia&&
   window.matchMedia("(prefers-reduced-motion: reduce)"));
 function foldJolt(into){
+  /* Armed here because both verbs end up in this one function, which is the
+     same reason the tutorial's gate lives on the four verbs rather than on
+     the bindings. */
+  foldLockUntil=((typeof performance!=="undefined")?performance.now():Date.now())+
+    ((B||TR)?FOLD_MS_CLOCK:(into?FOLD_MS_IN:FOLD_MS_OUT))*.85;
   if(!(reduceMotion&&reduceMotion.matches)){
     /* Two motions, not one, because they say different things. The jitter is
        impact - the same decaying `shakeT` a hit uses - and the slam is
@@ -1275,9 +1280,35 @@ function foldJolt(into){
      a body. */
   if(typeof haptic==="function")haptic(into?[34,42,16]:[14,40,30]);
 }
+/* THE WORLD IS BUSY, so the verb is refused rather than queued.
+
+   The fold has a real duration now, and a second press landing inside it
+   used to do nothing at all: doUnflatten() ran, `flat` went back to false
+   and the tween turned round, so a fast double press looked like a button
+   that had stopped working. Refusing while the world is moving is the
+   honest version - the move you can see is the move that is happening - and
+   it costs nothing, because the two verbs are one button and pressing it
+   twice quickly is never something a player means.
+
+   It is a stamp taken when the move COMMITS rather than a read of the
+   tween's own `foldP`, and that is the difference between working and not:
+   `foldP` is reset by the render loop, which has not run yet between two
+   presses in the same tick - so the second press of a fast double still got
+   through. The same reasoning as deathPending, for the same reason.
+
+   It releases at 85% of the fold, so the button answers again slightly
+   before the picture finishes settling: the last few percent of an
+   ease-out is invisible, and waiting for it would feel like lag. Peek is
+   deliberately not covered - it is not a move. */
+var foldLockUntil=0;
+function folding(){
+  return !rep&&(typeof performance!=="undefined"?performance.now():Date.now())
+              <foldLockUntil;
+}
 function doFlatten(){
   if(typeof peekUnlatch==="function")peekUnlatch();
   if(bossHolding())return;
+  if(folding())return;
   if(tutBlocks("bFlat"))return;
   tutPoke("bFlat");
   if(dying||levelOver()||!canShift())return;
@@ -1328,6 +1359,7 @@ function doFlatten(){
 function doUnflatten(){
   if(typeof peekUnlatch==="function")peekUnlatch();
   if(bossHolding())return;
+  if(folding())return;
   if(tutBlocks("bFlat"))return;
   tutPoke("bFlat");
   if(dying||levelOver()||!canShift())return;

@@ -285,6 +285,7 @@ function menuPanel(){
     $("mVolV").textContent=v.value+"%";
     applyVolume();
     muted=settings.volume<=0;
+    if(typeof ambSync==="function")ambSync();
     saveSettings();
   });
   v.addEventListener("change",function(){if(!muted)SFX.turn();});
@@ -667,6 +668,261 @@ var mapSection=null;          // which tab is open; null means "where you are"
    ---------------------------------------------------------------------- */
 var mapBgRAF=0, mapBgCubes=null;
 var mapBgHold=null;
+/* ============================================================
+   THE SECTION'S OWN WEATHER, BEHIND ITS TRAIL
+
+   The map is where a section is chosen, so it is the one screen where a
+   section should be recognisable before a word of it is read. Each one gets
+   the element it is themed on, drawn on the same 2D canvas the ambient cubes
+   already use - no second context, no WebGL, and it stops dead with the
+   panel like everything else here.
+
+   Two rules hold it together. It is drawn BEHIND the cubes and the trail and
+   kept out of the middle column, because ambience you have to read around is
+   not ambience. And every piece of it is procedural: there is not an image
+   file in this project and there is not going to be one, so a fish is a few
+   arcs and a leaf is two curves.
+   ============================================================ */
+var mapWx=null, mapWxKind=null, mapWxT=0;
+/* Which element the open section wears. Keyed off the section's own scenery
+   rather than a second table, so the map and the world cannot drift apart:
+   a section themed `trees` gets leaves here, one themed `ocean` gets fish. */
+function mapWeatherKind(){
+  var sec=SECTIONS[mapSection===null?mapSecOf(mapHere()):mapSection];
+  var sc=sec&&sec.theme&&sec.theme.scene;
+  return sc==="trees"?"leaf":sc==="hell"?"meteor":
+         sc==="ocean"?"sea":sc==="desert"?"sand":null;
+}
+function mapWxMake(kind,W,H){
+  var a=[],i,R=Math.random;
+  /* Two greens and a turning-gold, weighted so most of what falls is still
+     green: a canopy that is entirely autumn is a different season. */
+  if(kind==="leaf")for(i=0;i<16;i++)a.push({
+    x:R(), y:R(), sp:.16+R()*.26, sw:.4+R()*1.1, ph:R()*6.3,
+    s:5+R()*6, col:R()<.62?"#6f9c4a":(R()<.5?"#87ab4e":"#b8913c")});
+  if(kind==="meteor")for(i=0;i<7;i++)a.push({
+    x:R(), y:R(), sp:.55+R()*.8, len:26+R()*40, ph:R()*6.3, w:1.6+R()*1.8});
+  if(kind==="sea"){
+    var fish=["clown","clown","dolphin","turtle","octopus","clown"];
+    for(i=0;i<6;i++)a.push({
+      x:R(), y:.10+R()*.8, sp:.05+R()*.09, ph:R()*6.3,
+      s:13+R()*13, dir:R()<.5?-1:1, kind:fish[i]});
+    for(i=0;i<18;i++)a.push({
+      bub:1, x:R(), y:R(), sp:.16+R()*.3, s:1.6+R()*3.4, ph:R()*6.3});
+  }
+  if(kind==="sand")for(i=0;i<34;i++)a.push({
+    x:R(), y:R(), sp:.5+R()*1.1, ph:R()*6.3, s:1+R()*2.2, a:.10+R()*.3});
+  return a;
+}
+/* A LEAF: two curves meeting at a point, with a midrib. Rotated as it falls,
+   which is the whole difference between a leaf and a speck. */
+function mapLeaf(x,s,r,col){
+  x.save();x.rotate(r);
+  x.fillStyle=col;
+  x.beginPath();
+  x.moveTo(0,-s);
+  x.quadraticCurveTo(s*.85,-s*.1,0,s);
+  x.quadraticCurveTo(-s*.85,-s*.1,0,-s);
+  x.fill();
+  x.strokeStyle="rgba(20,34,18,.45)";x.lineWidth=.8;
+  x.beginPath();x.moveTo(0,-s);x.lineTo(0,s);x.stroke();
+  x.restore();
+}
+/* THE BRANCHES. They reach in from both edges and climb the whole height,
+   which is the shape the trail itself has - a section is played from the
+   foot of the screen upward, so the wood grows the same way. Drawn from a
+   seeded walk so a section's tree is the same tree every time it opens. */
+function mapBranch(x,W,H,side,seed){
+  var q=rnd(seed), px=side>0?W+8:-8, py=H+10;
+  x.strokeStyle="rgba(38,58,34,.55)";x.lineCap="round";
+  var segs=[];
+  for(var i=0;i<9;i++){
+    var nx=px-side*(18+q()*40), ny=py-(H*.13+q()*H*.05);
+    segs.push([px,py,nx,ny]);
+    x.lineWidth=Math.max(1.4,7-i*.62);
+    x.beginPath();x.moveTo(px,py);
+    x.quadraticCurveTo(px-side*(6+q()*18),py-(H*.07),nx,ny);
+    x.stroke();
+    // a twig off most joints, and a cluster of leaves on the end of it
+    if(q()<.8){
+      var tx=nx-side*(12+q()*30), ty=ny-(6+q()*26);
+      x.lineWidth=1.5;
+      x.beginPath();x.moveTo(nx,ny);x.lineTo(tx,ty);x.stroke();
+      for(var l=0;l<3;l++){
+        x.save();x.translate(tx+(q()-.5)*16,ty+(q()-.5)*16);
+        mapLeaf(x,4+q()*4,q()*6.3,"rgba(96,140,68,.42)");
+        x.restore();
+      }
+    }
+    for(var l2=0;l2<2;l2++){
+      x.save();x.translate(nx+(q()-.5)*22,ny+(q()-.5)*18);
+      mapLeaf(x,4+q()*5,q()*6.3,"rgba(74,116,54,.38)");
+      x.restore();
+    }
+    px=nx;py=ny;
+    if(py<-20)break;
+  }
+}
+/* THE FISH. Four silhouettes that are told apart by shape alone at fifteen
+   pixels: a clownfish is a fat teardrop with two pale bars, a dolphin is a
+   long curve with a dorsal, a turtle is a wide oval with four paddles, an
+   octopus is a dome with legs under it. Colour is a second signal, never
+   the first. */
+function mapFish(x,f,t){
+  var s=f.s;
+  x.save();x.scale(f.dir,1);
+  if(f.kind==="clown"){
+    x.fillStyle="rgba(232,132,44,.55)";
+    x.beginPath();x.ellipse(0,0,s*.62,s*.4,0,0,Math.PI*2);x.fill();
+    x.beginPath();                                        // tail
+    x.moveTo(s*.5,0);x.lineTo(s*.95,-s*.34);x.lineTo(s*.95,s*.34);
+    x.closePath();x.fill();
+    x.fillStyle="rgba(245,238,228,.5)";
+    x.fillRect(-s*.30,-s*.34,s*.11,s*.68);
+    x.fillRect(s*.02,-s*.36,s*.10,s*.72);
+  } else if(f.kind==="dolphin"){
+    x.fillStyle="rgba(150,172,196,.5)";
+    x.beginPath();
+    x.moveTo(-s*.95,s*.02);
+    x.quadraticCurveTo(-s*.2,-s*.5,s*.62,-s*.16);
+    x.quadraticCurveTo(s*.95,-s*.05,s*.62,s*.2);
+    x.quadraticCurveTo(-s*.2,s*.42,-s*.95,s*.02);
+    x.fill();
+    x.beginPath();                                        // dorsal
+    x.moveTo(0,-s*.34);x.lineTo(s*.16,-s*.66);x.lineTo(s*.3,-s*.28);
+    x.closePath();x.fill();
+    x.beginPath();                                        // fluke
+    x.moveTo(-s*.85,0);x.lineTo(-s*1.15,-s*.3);
+    x.lineTo(-s*1.0,s*.02);x.lineTo(-s*1.15,s*.3);x.closePath();x.fill();
+  } else if(f.kind==="turtle"){
+    x.fillStyle="rgba(96,138,92,.5)";
+    [[-s*.62,s*.28],[s*.5,s*.3],[-s*.5,-s*.3],[s*.42,-s*.32]].forEach(function(p){
+      x.beginPath();x.ellipse(p[0],p[1],s*.26,s*.14,p[0]*p[1]>0?.6:-.6,0,6.3);
+      x.fill();
+    });
+    x.beginPath();x.ellipse(s*.72,0,s*.17,s*.14,0,0,6.3);x.fill();  // head
+    x.fillStyle="rgba(72,110,70,.62)";
+    x.beginPath();x.ellipse(0,0,s*.66,s*.44,0,0,Math.PI*2);x.fill();
+    x.strokeStyle="rgba(38,64,40,.5)";x.lineWidth=1;
+    x.beginPath();x.ellipse(0,0,s*.36,s*.24,0,0,Math.PI*2);x.stroke();
+  } else {
+    x.fillStyle="rgba(168,110,190,.5)";
+    x.beginPath();x.arc(0,-s*.1,s*.46,Math.PI,0);x.fill();
+    x.fillRect(-s*.46,-s*.1,s*.92,s*.16);
+    for(var i=0;i<5;i++){                                  // legs, curling
+      var lx=-s*.4+i*s*.2;
+      x.beginPath();x.moveTo(lx,s*.06);
+      x.quadraticCurveTo(lx+Math.sin(t*2+i)*s*.22,s*.5,
+                         lx+Math.sin(t*2+i)*s*.36,s*.78);
+      x.strokeStyle="rgba(168,110,190,.5)";x.lineWidth=s*.13;
+      x.lineCap="round";x.stroke();
+    }
+  }
+  x.restore();
+}
+function mapWeather(x,W,H,dt){
+  var kind=mapWeatherKind();
+  if(kind!==mapWxKind){mapWxKind=kind;mapWx=kind?mapWxMake(kind,W,H):null;}
+  if(!kind||!mapWx)return;
+  mapWxT+=dt/1000;
+  var t=mapWxT, i, p;
+  if(kind==="leaf"){
+    /* The wood is drawn once per frame rather than cached to a bitmap: it is
+       about forty strokes and this canvas is already clearing every frame.
+       Seeded, so it is the same tree each time the section opens. */
+    mapBranch(x,W,H,1,7);
+    mapBranch(x,W,H,-1,23);
+    for(i=0;i<mapWx.length;i++){
+      p=mapWx[i];
+      p.y+=p.sp*dt/9000;
+      p.x+=Math.sin(t*.7+p.ph)*.0009*p.sw;
+      if(p.y>1.08){p.y=-.08;p.x=Math.random();}
+      x.save();
+      x.translate(p.x*W,p.y*H);
+      x.globalAlpha=.55;
+      mapLeaf(x,p.s,t*1.6*p.sw+p.ph,p.col);
+      x.restore();
+    }
+    x.globalAlpha=1;
+  } else if(kind==="meteor"){
+    for(i=0;i<mapWx.length;i++){
+      p=mapWx[i];
+      p.y+=p.sp*dt/2600;
+      p.x-=p.sp*dt/7000;
+      if(p.y>1.15){p.y=-.15;p.x=.2+Math.random()*1.1;}
+      var mx=p.x*W, my=p.y*H;
+      var g=x.createLinearGradient(mx+p.len*.7,my-p.len,mx,my);
+      g.addColorStop(0,"rgba(255,120,30,0)");
+      g.addColorStop(.7,"rgba(255,158,60,.34)");
+      g.addColorStop(1,"rgba(255,222,150,.8)");
+      x.strokeStyle=g;x.lineWidth=p.w;x.lineCap="round";
+      x.beginPath();x.moveTo(mx+p.len*.7,my-p.len);x.lineTo(mx,my);x.stroke();
+      var hd=x.createRadialGradient(mx,my,0,mx,my,p.w*2.6);
+      hd.addColorStop(0,"rgba(255,248,226,.9)");
+      hd.addColorStop(1,"rgba(255,150,50,0)");
+      x.fillStyle=hd;
+      x.beginPath();x.arc(mx,my,p.w*2.6,0,Math.PI*2);x.fill();
+    }
+  } else if(kind==="sea"){
+    /* UNDERWATER, so the light comes from above: three slow shafts leaning
+       one way, which is the cheapest thing that says "below the surface"
+       before a single fish has swum past. */
+    for(i=0;i<3;i++){
+      var sx=W*(.18+i*.32)+Math.sin(t*.25+i)*W*.05;
+      var sg=x.createLinearGradient(sx,0,sx-W*.10,H);
+      sg.addColorStop(0,"rgba(150,220,240,.09)");
+      sg.addColorStop(1,"rgba(120,200,230,0)");
+      x.fillStyle=sg;
+      x.beginPath();x.moveTo(sx-W*.05,0);x.lineTo(sx+W*.05,0);
+      x.lineTo(sx-W*.06,H);x.lineTo(sx-W*.16,H);x.closePath();x.fill();
+    }
+    for(i=0;i<mapWx.length;i++){
+      p=mapWx[i];
+      if(p.bub){
+        p.y-=p.sp*dt/6000;
+        if(p.y<-.05){p.y=1.05;p.x=Math.random();}
+        var bx=p.x*W+Math.sin(t*1.6+p.ph)*4;
+        x.strokeStyle="rgba(198,236,248,.34)";x.lineWidth=1;
+        x.beginPath();x.arc(bx,p.y*H,p.s,0,Math.PI*2);x.stroke();
+        continue;
+      }
+      p.x+=p.dir*p.sp*dt/9000;
+      if(p.x>1.15){p.x=-.15;p.y=.1+Math.random()*.8;}
+      if(p.x<-.15){p.x=1.15;p.y=.1+Math.random()*.8;}
+      x.save();
+      x.translate(p.x*W,p.y*H+Math.sin(t*1.1+p.ph)*H*.012);
+      mapFish(x,p,t);
+      x.restore();
+    }
+  } else if(kind==="sand"){
+    /* THE SUN, high and hard, and the same radial-through-a-path the desert
+       horizon uses - a linear gradient in a rect draws a lit box. */
+    /* Below the header and the tabs, which own the top of the panel - a sun
+       drawn at the very top is a sun nobody sees. */
+    var cx=W*.80, cy=H*.20, r=Math.min(W,H)*.16;
+    var sg2=x.createRadialGradient(cx,cy,1,cx,cy,r);
+    sg2.addColorStop(0,"rgba(255,244,206,.5)");
+    sg2.addColorStop(.3,"rgba(255,222,150,.20)");
+    sg2.addColorStop(1,"rgba(255,200,120,0)");
+    x.fillStyle=sg2;x.beginPath();x.arc(cx,cy,r,0,Math.PI*2);x.fill();
+    x.fillStyle="rgba(255,248,222,.55)";
+    x.beginPath();x.arc(cx,cy,r*.17,0,Math.PI*2);x.fill();
+    // Dunes along the foot, so the grains have somewhere to blow across.
+    x.fillStyle="rgba(120,98,60,.16)";
+    x.beginPath();x.moveTo(0,H);
+    for(var dx2=0;dx2<=W;dx2+=W/6)
+      x.quadraticCurveTo(dx2+W/12,H-26-Math.sin(dx2*.01)*14,dx2+W/6,H-16);
+    x.lineTo(W,H);x.closePath();x.fill();
+    for(i=0;i<mapWx.length;i++){
+      p=mapWx[i];
+      p.x+=p.sp*dt/5200;
+      p.y+=Math.sin(t*2+p.ph)*.0007;
+      if(p.x>1.05){p.x=-.05;p.y=Math.random();}
+      x.fillStyle="rgba(238,216,170,"+p.a.toFixed(2)+")";
+      x.fillRect(p.x*W,p.y*H,p.s*2.4,p.s*.9);
+    }
+  }
+}
 function mapBgStop(){ if(mapBgRAF){cancelAnimationFrame(mapBgRAF);mapBgRAF=0;} }
 function mapBgStart(){
   var c=$("mBg");
@@ -722,6 +978,7 @@ function mapBgStart(){
     var dt=Math.min(60,now-last)||16; last=now;
     if(c.clientWidth!==W||c.clientHeight!==H)fit();
     x.clearRect(0,0,W,H);
+    mapWeather(x,W,H,reduce?0:dt);
     for(var i=0;i<mapBgCubes.length;i++){
       var cu=mapBgCubes[i];
       /* Kept a whole cube clear of every edge. Positioning by a fraction of
