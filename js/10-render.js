@@ -849,6 +849,41 @@ function makeBirds(n){
             dir:Math.random()<.5?-1:1};
   });
 }
+/* THE BIRD THAT IS SINGING, AND YOU CAN SEE WHICH ONE.
+
+   A call with nothing on screen making it is a sound effect. `ambBirdPhrase`
+   hands the moment over as it starts one, this picks whichever bird is most
+   visible - nearest the middle of the frame, because a ripple half off the
+   edge points at nothing - and marks it for the length of the phrase.
+
+   What the mark is: two arcs opening away from the bird, in the goal green
+   the game already uses for "look here", and the bird itself flapping harder
+   and riding up on each note. The arcs are the cue; the flap is what makes
+   the cue belong to that bird rather than float beside it. */
+var singGrp=null, singBird=-1, singT=0, singLen=1;
+function makeSing(){
+  var tex=spriteTex(64,64,function(x,w,h){
+    x.strokeStyle="rgba(150,240,205,.9)";x.lineCap="round";
+    // two arcs, opening rightward, thinning as they go out
+    [[16,4.4],[27,2.8]].forEach(function(a){
+      x.lineWidth=a[1];
+      x.beginPath();x.arc(12,32,a[0],-0.85,0.85);x.stroke();
+    });
+  });
+  return spriteGroup(2,tex,-965,function(i){return {d:i*.34};});
+}
+function birdSing(len){
+  if(!birdGrp||!birdGrp.children.length)return;
+  var best=-1,bd=9;
+  for(var i=0;i<birdGrp.children.length;i++){
+    var u=birdGrp.children[i].userData, d=Math.abs(u.x-.5);
+    // must be well inside the frame, or the ripple points off the edge
+    if(u.x<.18||u.x>.82)continue;
+    if(d<bd){bd=d;best=i;}
+  }
+  if(best<0)return;
+  singBird=best;singT=0;singLen=len||.9;
+}
 /* II - METEORS ON FIRE. Falling across the top of the sky rather than at the
    player: this is weather over the volcano, not something aimed. Each is a
    head with a trail behind it, baked pointing right and turned in the world,
@@ -1075,13 +1110,39 @@ function layoutAtmosphere(dtMs){
       var bq=bk[bi],bu=bq.userData;
       bu.x+=bu.dir*bu.sp*.00016*(1+wnd*.35);
       if(bu.x>1.3)bu.x=-.3; else if(bu.x<-.3)bu.x=1.3;
-      var flap=Math.sin(airPhase*bu.fl+bu.ph);
-      var bs=h*.030*bu.sc;
+      var sings=(bi===singBird&&singT<singLen);
+      var flap=Math.sin(airPhase*bu.fl*(sings?1.9:1)+bu.ph);
+      var bs=h*.030*bu.sc*(sings?1.22:1);
       // The flap is the V opening and closing, so it is scale, not a frame.
       bq.scale.set(bs*bu.dir,bs*(.42+Math.abs(flap)*.62),1);
-      bq.position.set((bu.x-.5)*w*1.2,
-        (bu.y-.5)*h*1.02+Math.sin(airPhase*.7+bu.ph)*h*.012,-243);
-      bq.material.opacity=.62*atm;
+      var by=(bu.y-.5)*h*1.02+Math.sin(airPhase*.7+bu.ph)*h*.012;
+      // A singing bird lifts on each note, which is what ties the ripple to it
+      if(sings)by+=Math.abs(Math.sin(airPhase*5.2))*h*.006;
+      bq.position.set((bu.x-.5)*w*1.2,by,-243);
+      bq.material.opacity=(sings?.85:.62)*atm;
+      if(sings){bu.sx=(bu.x-.5)*w*1.2;bu.sy=by;}
+    }
+    if(singGrp){
+      var sk3=singGrp.children;
+      if(singBird>=0&&singT<singLen){
+        singT+=dtMs/1000;
+        var su3=birdGrp.children[singBird].userData;
+        for(var si3=0;si3<sk3.length;si3++){
+          var sq3=sk3[si3], off=sk3[si3].userData.d;
+          // each arc repeats over the phrase, the second trailing the first
+          var ph3=((singT/.62)-off)%1;
+          if(ph3<0||singT<off*.62){sq3.material.opacity=0;continue;}
+          sq3.scale.setScalar(h*.05*(.5+ph3*1.5));
+          /* On the beak's side, whichever way it is flying - a call coming
+             out of a bird's back is the sort of thing nobody names and
+             everybody notices. */
+          var sd3=su3.dir||1;
+          sq3.scale.x*=sd3;
+          sq3.position.set((su3.sx||0)+sd3*(h*.028+ph3*h*.026),
+                           (su3.sy||0)+h*.012,-241);
+          sq3.material.opacity=(1-ph3)*(1-ph3)*.85*atm;
+        }
+      } else for(var sz=0;sz<sk3.length;sz++)sk3[sz].material.opacity=0;
     }
   }
   if(meteorGrp){
@@ -1386,14 +1447,16 @@ function applyTheme(th){
   if(sparkGrp){camera.remove(sparkGrp);sparkGrp.traverse(function(o){
     if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});
     sparkGrp=null;}
-  [birdGrp,meteorGrp,boatGrp,tumbleGrp,devilGrp,boomGrp,foamQuad].forEach(function(g){
+  [birdGrp,meteorGrp,boatGrp,tumbleGrp,devilGrp,boomGrp,foamQuad,singGrp]
+    .forEach(function(g){
     if(!g)return;
     camera.remove(g);
     if(g.userData.tex)g.userData.tex.dispose();
     g.traverse(function(o){
       if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});
   });
-  birdGrp=meteorGrp=boatGrp=tumbleGrp=devilGrp=boomGrp=null;foamQuad=null;
+  birdGrp=meteorGrp=boatGrp=tumbleGrp=devilGrp=boomGrp=singGrp=null;
+  foamQuad=null;singBird=-1;
   if(th.scene){
     sceneQuad=makeScenery(th.scene);camera.add(sceneQuad);
     if(th.scene==="hell"){
@@ -1403,7 +1466,11 @@ function applyTheme(th){
       meteorGrp=makeMeteors(3);camera.add(meteorGrp);
       boomGrp=makeBooms(3);camera.add(boomGrp);
     }
-    if(th.scene==="trees"){birdGrp=makeBirds(7);camera.add(birdGrp);}
+    if(th.scene==="trees"){
+      birdGrp=makeBirds(7);camera.add(birdGrp);
+      singGrp=makeSing();camera.add(singGrp);
+      singBird=-1;singT=0;
+    }
     if(th.scene==="ocean"){
       boatGrp=makeBoats(2);camera.add(boatGrp);
       foamQuad=makeFoam();camera.add(foamQuad);

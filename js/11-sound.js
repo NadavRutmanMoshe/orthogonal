@@ -199,12 +199,31 @@ var ambNoise=null;
 function ambNoiseBuf(c){
   if(ambNoise)return ambNoise;
   var len=Math.floor(c.sampleRate*4), b=c.createBuffer(1,len,c.sampleRate),
-      d=b.getChannelData(0), last=0;
-  for(var i=0;i<len;i++){
+      d=b.getChannelData(0), last=0, i;
+  for(i=0;i<len;i++){
     var w=Math.random()*2-1;
     last=(last+.02*w)/1.02;
-    d[i]=last*3.2;
+    d[i]=last;
   }
+  /* NORMALISED, AND THIS WAS THE WHOLE BUG BEHIND "too loud, and distorted".
+
+     A brown-noise integrator does not produce a signal in [-1,1] - it
+     wanders, and how far it wanders depends on the run. This buffer was
+     being scaled by a constant picked by eye, and measured at the master bus
+     it came out about fourteen times hotter than that: the sea bed alone
+     was +8 dBFS *before* the limiter and a meteor impact was +14, so every
+     one of those events was arriving as fourteen decibels of gain reduction.
+     What you heard was the limiter working, not the sound - which is exactly
+     the note, and why the gains looked reasonable while the result did not.
+
+     Normalising to a peak of 1 (with the DC wander taken out first) is what
+     makes every gain in this file mean what it says. Do not replace this
+     with a constant. */
+  var sum=0;
+  for(i=0;i<len;i++)sum+=d[i];
+  var dc=sum/len, pk=0;
+  for(i=0;i<len;i++){d[i]-=dc;var a=Math.abs(d[i]);if(a>pk)pk=a;}
+  if(pk>0)for(i=0;i<len;i++)d[i]/=pk;
   /* Crossfaded into itself at the seam, or a four-second loop clicks four
      times a minute - which is the one thing a bed must never do. */
   var f=Math.floor(c.sampleRate*.25);
@@ -215,10 +234,10 @@ function ambNoiseBuf(c){
   ambNoise=b;
   return b;
 }
-function ambSrc(c,dest){
+function ambSrc(c,dest,at){
   var s=c.createBufferSource();
   s.buffer=ambNoiseBuf(c);s.loop=true;s.loopEnd=3.75;
-  s.connect(dest);s.start();
+  s.connect(dest);s.start(at||0);
   AMB.nodes.push(s);
   /* Taken back out when it ends, or the list grows by three every wave and
      every meteor for as long as the section is open - and ambStop() then
@@ -269,6 +288,7 @@ function ambStop(){
    head instead of across the field. */
 function ambVoice(c,at,dur,vol,build){
   var g=c.createGain();
+  g.gain.value=0;                    // see the note in ambWave
   g.gain.setValueAtTime(.0001,at);
   g.connect(AMB.gain||out(c));
   // A little of every call into the room, which is most of what sells it.
@@ -296,21 +316,36 @@ function ambWhistle(c,at,f0,f1,dur,vol){
     });
   });
 }
-/* A buzzy element - the myna's rattle. A sawtooth through a bandpass, with
-   the filter swept, which is a mouth rather than a tone. */
-function ambRasp(c,at,f,dur,vol,q){
+/* A CROAK IS A RATTLE, NOT A SWEEP - and the sweep is what went wrong.
+
+   The first version was a sawtooth glided in pitch through a HIGH-Q bandpass
+   that was swept at the same time, which is, precisely, how you synthesise a
+   boing: a resonance falling fast over a tone that is also falling. It was
+   reported as a bungee rope and a trampoline, and that is exactly what it
+   was. Nothing about it was a bird.
+
+   What a croak actually is: a fixed low tone chopped into a fast rattle. So
+   the pitch holds still, the filter holds still and broad (Q 1.4, where the
+   old one was 9), and the character comes from an LFO chopping the gain at
+   fifty a second. There is nothing left in it that can glide, which is the
+   property that matters - a sweep is the one shape that reads as rubber. */
+function ambCroak(c,at,f,dur,vol){
   ambVoice(c,at,dur,vol,function(g){
-    g.gain.exponentialRampToValueAtTime(vol,at+.01);
-    g.gain.exponentialRampToValueAtTime(.0001,at+dur);
-    var o=c.createOscillator(), bp=c.createBiquadFilter();
+    g.gain.linearRampToValueAtTime(vol,at+.02);
+    g.gain.setValueAtTime(vol,at+dur*.65);
+    g.gain.linearRampToValueAtTime(.0001,at+dur);
+    var o=c.createOscillator(), bp=c.createBiquadFilter(),
+        am=c.createGain(), lfo=c.createOscillator(), lg=c.createGain();
     o.type="sawtooth";
-    o.frequency.setValueAtTime(f*.5,at);
-    o.frequency.linearRampToValueAtTime(f*.5*(.8+Math.random()*.5),at+dur);
-    bp.type="bandpass";bp.Q.value=q||6;
-    bp.frequency.setValueAtTime(f*1.8,at);
-    bp.frequency.linearRampToValueAtTime(f*(1.1+Math.random()),at+dur);
-    o.connect(bp);bp.connect(g);
-    o.start(at);o.stop(at+dur+.03);
+    o.frequency.value=f;                       // fixed: no glide anywhere
+    bp.type="bandpass";bp.frequency.value=f*2.6;bp.Q.value=1.4;
+    lfo.type="square";lfo.frequency.value=42+Math.random()*22;
+    lg.gain.value=.42;
+    am.gain.value=.55;                          // the LFO rides on this
+    lfo.connect(lg);lg.connect(am.gain);
+    o.connect(bp);bp.connect(am);am.connect(g);
+    o.start(at);lfo.start(at);
+    o.stop(at+dur+.03);lfo.stop(at+dur+.03);
   });
 }
 var AMB_MOTIF=[[0,4,7],[7,4,0],[0,0,5],[5,7,5,7],[0,7],[3,0,3,0,-2]];
@@ -321,10 +356,13 @@ function ambMyna(c){
   var base=1500*Math.pow(2,Math.floor(Math.random()*5)/5),
       m=AMB_MOTIF[Math.floor(Math.random()*AMB_MOTIF.length)],
       t=c.currentTime+.05, up=Math.random()<.5;
+  /* All whistled now. The buzzy element was the other half of the boing -
+     same swept resonance, shorter - and a myna whistling is still a myna;
+     what makes it one is the scatter of the phrase, not the timbre of any
+     one note. */
   for(var i=0;i<m.length;i++){
     var f=base*Math.pow(2,m[i]/12), d=.05+Math.random()*.06;
-    if(Math.random()<.35)ambRasp(c,t,f*.8,d*1.1,.016+Math.random()*.008,9);
-    else ambWhistle(c,t,up?f*.84:f*1.18,f,d,.020+Math.random()*.010);
+    ambWhistle(c,t,up?f*.88:f*1.13,f,d,.020+Math.random()*.010);
     t+=d+.035+Math.random()*.06;
   }
 }
@@ -334,7 +372,7 @@ function ambToucan(c){
   var f=290+Math.random()*140, n=2+Math.floor(Math.random()*3),
       t=c.currentTime+.05, gap=.30+Math.random()*.16;
   for(var i=0;i<n;i++){
-    ambRasp(c,t,f*(1+i*.03),.20+Math.random()*.07,.020,3.5);
+    ambCroak(c,t,f*(1+i*.03),.20+Math.random()*.07,.026);
     t+=gap;
   }
 }
@@ -345,8 +383,9 @@ function ambToucan(c){
 function ambCicada(c){
   var t=c.currentTime+.05, dur=4+Math.random()*4.5;
   var g=c.createGain(), bp=c.createBiquadFilter();
+  g.gain.value=0;                    // see the note in ambWave
   bp.type="bandpass";bp.frequency.value=3600+Math.random()*1800;bp.Q.value=3.2;
-  var s=ambSrc(c,bp);
+  var s=ambSrc(c,bp,t);
   var am=c.createGain();am.gain.value=0;
   bp.connect(am);am.connect(g);g.connect(AMB.gain||out(c));
   var lfo=c.createOscillator(), lg=c.createGain();
@@ -361,11 +400,18 @@ function ambCicada(c){
   try{s.stop(t+dur+.1);lfo.stop(t+dur+.1);}catch(e){}
   AMB.nodes.push(lfo);
 }
+/* WHICH BIRD IS SINGING, SHOWN. A call with nothing on screen doing it is a
+   sound effect; the same call with a bird visibly making it is a place. The
+   sound side is what knows a phrase has started, so it tells the picture -
+   the same direction the meteor's boom and the wave's foam already run in,
+   and the renderer picks which bird and draws the ripple. Guarded, because
+   the ambience runs on levels whose section has no birds in it at all. */
 function ambBirdPhrase(c){
-  var r=Math.random();
-  if(r<.16)ambCicada(c);
-  else if(r<.42)ambToucan(c);
-  else ambMyna(c);
+  var r=Math.random(), len;
+  if(r<.14){ambCicada(c);return;}             // not a bird, and never marked
+  if(r<.40){ambToucan(c);len=1.0;}
+  else{ambMyna(c);len=.85;}
+  if(typeof birdSing==="function")birdSing(len);
 }
 /* A WAVE IS THREE EVENTS, AND THE MIDDLE ONE IS THE POINT.
 
@@ -390,37 +436,65 @@ function ambWave(c){
   c=c||audio(); if(!c||!AMB.gain)return;
   var t=c.currentTime+.05, brk=t+WAVE_RISE;
   // the approach
+  /* GAIN ZERO FIRST, AND THIS IS THE BUG THAT MADE THE SEA UNLISTENABLE.
+
+     A GainNode is created at gain 1, and every envelope here schedules its
+     first value a moment in the FUTURE - so between `createGain()` and that
+     first setValueAtTime, a looping noise source was running through it at
+     full scale. For the wash below that window was the whole two-second
+     approach: measured, the sea peaked at 4.8 before the limiter (about
+     +14 dB) and the actual crash, at 0.26, was inaudible underneath it. That
+     is exactly the note - "the sound right before the wave breaks is too
+     loud", and "too loud" meaning the limiter, not the level.
+
+     The oscillator voices never had it, because an oscillator is started at
+     the same time its envelope begins. Anything fed by a source that is
+     ALREADY RUNNING has to be silenced at creation, on this line, before the
+     schedule is written. */
   var g=c.createGain(), lp=c.createBiquadFilter();
+  g.gain.value=0;
   lp.type="lowpass";lp.Q.value=.6;
   var s=ambSrc(c,lp);
   lp.connect(g);g.connect(AMB.gain);
-  lp.frequency.setValueAtTime(240,t);
-  lp.frequency.linearRampToValueAtTime(520,brk);
+  /* THE APPROACH IS THE QUIET PART, and it was not. Two seconds of low
+     noise ramping to .030 sat on top of the bed and arrived at the break
+     already at the level the break itself needed to be louder than - so the
+     swell was the loudest thing in the section and the crash had nowhere to
+     go. Half the level, and it now peaks a moment *before* the break rather
+     than at it, which is what leaves room for the hit. */
+  lp.frequency.setValueAtTime(220,t);
+  lp.frequency.linearRampToValueAtTime(460,brk);
   g.gain.setValueAtTime(.0001,t);
-  g.gain.linearRampToValueAtTime(.030,brk);
+  g.gain.linearRampToValueAtTime(.015,brk-.25);
+  g.gain.linearRampToValueAtTime(.010,brk);
   g.gain.linearRampToValueAtTime(.0001,brk+.35);
   try{s.stop(brk+.5);}catch(e){}
   // the crash, and then the wash draining out of it
   var g2=c.createGain(), hp=c.createBiquadFilter(), lp2=c.createBiquadFilter();
+  g2.gain.value=0;
   hp.type="highpass";hp.frequency.value=380;
   lp2.type="lowpass";lp2.Q.value=.5;
-  var s2=ambSrc(c,hp);
+  lp2.frequency.value=6500;          // set now, not stepped at the break
+  var s2=ambSrc(c,hp,brk);           // and it does not run until it breaks
   hp.connect(lp2);lp2.connect(g2);g2.connect(AMB.gain);
   lp2.frequency.setValueAtTime(6500,brk);
   lp2.frequency.exponentialRampToValueAtTime(900,brk+WAVE_WASH);
   g2.gain.setValueAtTime(.0001,brk);
-  g2.gain.linearRampToValueAtTime(.055,brk+.025);      // the hit
-  g2.gain.exponentialRampToValueAtTime(.016,brk+.9);   // into the hiss
+  /* The break can have its level back now that the approach is not sitting
+     on top of it: the whole reason it had to be trimmed was that it was
+     competing with two seconds of unattenuated noise. */
+  g2.gain.linearRampToValueAtTime(.052,brk+.045);      // the hit
+  g2.gain.exponentialRampToValueAtTime(.017,brk+.9);   // into the hiss
   g2.gain.exponentialRampToValueAtTime(.0001,brk+WAVE_WASH);
   try{s2.stop(brk+WAVE_WASH+.2);}catch(e){}
   // the weight under it: without this a break is a hiss rather than a mass
   var o=c.createOscillator(), og=c.createGain();
   o.type="sine";
-  o.frequency.setValueAtTime(110,brk);
-  o.frequency.exponentialRampToValueAtTime(48,brk+.8);
+  o.frequency.setValueAtTime(95,brk);
+  o.frequency.exponentialRampToValueAtTime(44,brk+.9);
   og.gain.setValueAtTime(.0001,brk);
-  og.gain.exponentialRampToValueAtTime(.026,brk+.05);
-  og.gain.exponentialRampToValueAtTime(.0001,brk+1.0);
+  og.gain.linearRampToValueAtTime(.022,brk+.08);
+  og.gain.exponentialRampToValueAtTime(.0001,brk+1.1);
   o.connect(og);og.connect(AMB.gain);
   o.start(brk);o.stop(brk+1.1);
 }
@@ -439,26 +513,34 @@ function ambBoom(far){
   var c=audio(); if(!c||!AMB.gain)return;
   var t=c.currentTime+.05+(far||0);
   // the crack, rolling off into a rumble
+  /* A DISTANT BOOM HAS NO EDGE ON IT. This was a 30ms attack on a broadband
+     burst plus a 40ms attack on a near-full-scale sine, which between them
+     hit the limiter hard enough that what you heard was the clipper working
+     rather than the impact - "too loud" and "distorted" are the same note.
+     A third of the level, and both attacks slowed to something an impact
+     three miles away would actually have: the air takes the edge off long
+     before the sound arrives. */
   var g=c.createGain(), lp=c.createBiquadFilter();
+  g.gain.value=0;                    // see the note in ambWave
   lp.type="lowpass";
-  lp.frequency.setValueAtTime(900,t);
-  lp.frequency.exponentialRampToValueAtTime(120,t+1.8);
-  var s=ambSrc(c,lp);
+  lp.frequency.setValueAtTime(620,t);
+  lp.frequency.exponentialRampToValueAtTime(110,t+2.0);
+  var s=ambSrc(c,lp,t);
   lp.connect(g);g.connect(AMB.gain);
   g.gain.setValueAtTime(.0001,t);
-  g.gain.linearRampToValueAtTime(.055,t+.03);
-  g.gain.exponentialRampToValueAtTime(.0001,t+2.2);
-  try{s.stop(t+2.4);}catch(e){}
-  // and the body of it
+  g.gain.linearRampToValueAtTime(.024,t+.09);
+  g.gain.exponentialRampToValueAtTime(.0001,t+2.4);
+  try{s.stop(t+2.6);}catch(e){}
+  // and the body of it, rolled off rather than struck
   var o=c.createOscillator(), og=c.createGain();
   o.type="sine";
-  o.frequency.setValueAtTime(72,t);
-  o.frequency.exponentialRampToValueAtTime(26,t+1.1);
+  o.frequency.setValueAtTime(58,t);
+  o.frequency.exponentialRampToValueAtTime(24,t+1.3);
   og.gain.setValueAtTime(.0001,t);
-  og.gain.exponentialRampToValueAtTime(.06,t+.04);
-  og.gain.exponentialRampToValueAtTime(.0001,t+1.4);
+  og.gain.linearRampToValueAtTime(.026,t+.11);
+  og.gain.exponentialRampToValueAtTime(.0001,t+1.6);
   o.connect(og);og.connect(AMB.gain);
-  o.start(t);o.stop(t+1.5);
+  o.start(t);o.stop(t+1.7);
 }
 /* HOW LOUD THE WHOLE BED IS, in one number, because "all of them were a bit
    higher than I expected" is a note about the layer rather than about any
@@ -539,7 +621,7 @@ function ambStart(kind){
     var cc=audio(); if(!cc)return;
     AMB.next-=.25;
     if(AMB.next>0)return;
-    if(kind==="birds"){ambBirdPhrase(cc);AMB.next=3.5+Math.random()*7;}
+    if(kind==="birds"){ambBirdPhrase(cc);AMB.next=2.2+Math.random()*3.8;}
     else if(kind==="wind"){
       /* A gust, and it is smaller than it was. Swelling to 1.7x was the
          second half of the alarm - the thing rose in pitch AND in volume,

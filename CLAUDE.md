@@ -2847,13 +2847,31 @@ know before touching it:
   - **THREE BIRDS, NOT ONE, AND THEY ARE SPECIES.** One voice — a triangle
     with a bend in it — was reported as not sounding like a bird, correctly:
     a single pure tone with a glide on it is a *whistle*. The wood now has a
-    **myna** (a mimic, so a rattle of unrelated whistled and buzzy elements
-    at speed), a **toucan** (not a whistle at all — a dry low croak, a pulsed
-    sawtooth through a narrow bandpass) and **cicadas** (a broadband buzz
+    **myna** (a mimic, so a scattered phrase of whistled notes at speed), a
+    **toucan** (a dry low croak) and **cicadas** (a broadband buzz
     amplitude-modulated at about seventy a second, swelling over four
-    seconds and out again). Each still plays a phrase off `AMB_MOTIF`, which
-    is what "random but with a pattern" means. Every voice goes through the
+    seconds and out again). Each plays a phrase off `AMB_MOTIF`, which is
+    what "random but with a pattern" means. Every voice goes through the
     game's reverb, because a call outdoors arrives with air around it.
+  - **A CROAK IS A RATTLE, NOT A SWEEP, and the sweep was a bungee rope.**
+    The croak was first built as a sawtooth glided in pitch through a
+    high-Q bandpass that was swept at the same time — which is precisely how
+    you synthesise a boing, and it was reported as a trampoline. A falling
+    resonance over a falling tone is the one shape that reads as rubber.
+    Now the pitch holds, the filter holds and is broad (Q 1.4 against 9), and
+    the character is an LFO chopping the gain at fifty a second. There is
+    nothing left in it that can glide. The myna lost its buzzy element for
+    the same reason and is all whistle now — what makes it a myna is the
+    scatter of the phrase, not the timbre of one note.
+  - **YOU CAN SEE WHICH BIRD IS SINGING.** A call with nothing on screen
+    making it is a sound effect; the same call with a bird visibly making it
+    is a place. `ambBirdPhrase` hands the moment to `birdSing()`, which picks
+    whichever bird is nearest the middle of the frame — a ripple half off the
+    edge points at nothing — and marks it for the length of the phrase: two
+    arcs opening from its beak side, and the bird itself flapping harder and
+    riding up on each note. The flap is what makes the cue belong to that
+    bird rather than float beside it. Phrases come every 2–6 seconds now
+    rather than every 4–11.
   - **Samples were asked for and synthesis is the answer.** There is no
     audio file anywhere in this project and there is a reason: the published
     build is one HTML file, its sandbox blocks fetching media, and a
@@ -2891,11 +2909,29 @@ know before touching it:
     body carrying most of it and the whistle a colour on top. The gust swells
     to 1.28× rather than 1.7× — rising in pitch *and* in volume together was
     the other half of the siren.
-  - **It is quiet on purpose**: measured through the real chain, the whole
-    bed plus the documented worst-case pile-up (win chord + strike + step)
-    plus a meteor impact peaks at **1.0004 with 15 saturated samples in
-    370,000**, against the 1.0082 in 88,000 the limiter was already built to
-    survive. If you raise a bed gain, re-measure that stack.
+  - **A GAIN NODE IS BORN AT 1, AND THAT WAS THE DISTORTION.** Every envelope
+    here schedules its first value a moment in the *future*, so between
+    `createGain()` and that first `setValueAtTime` a looping noise source was
+    running through it at full scale. For the wave's wash that window was the
+    whole two-second approach: measured at the master bus, the sea peaked at
+    **4.8 before the limiter** (about +14 dB) and the actual crash, at 0.26,
+    was inaudible underneath it — reported exactly as "the sound right before
+    the wave breaks is too loud", where too loud meant the limiter rather
+    than the level. The meteor impact had the same bug in a 50ms window and
+    measured 6.1. **Anything fed by a source that is already running must be
+    silenced at creation**; an oscillator voice never had it, because an
+    oscillator starts when its envelope does.
+  - **The noise buffer is normalised**, and that is what makes every gain in
+    the file mean what it says. A brown-noise integrator does not land in
+    [-1,1] — it wanders — so it was being scaled by a constant picked by eye.
+    Do not put the constant back.
+  - **The levels, measured pre-limiter, against a footstep at 0.63**: bird
+    bed .14, myna .34, toucan .40, meteor impact .45, sea bed + wave .32,
+    wind bed .24. Nothing in the ambience is louder than a footstep, and the
+    documented worst-case pile-up (win chord + strike + step) with the whole
+    bed and an impact under it now peaks at **0.98 with zero saturated
+    samples**, where it used to clip. If you raise a gain, re-measure that
+    stack — a limiter makes clipping quiet rather than obvious.
   - **`audio()` refuses everything while muted**, so ambience simply does not
     start; `ambSync()` is what puts it back on an unmute, and it is called
     from both the `m` key and the volume row.
