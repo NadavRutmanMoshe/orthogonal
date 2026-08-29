@@ -220,6 +220,14 @@ function ambSrc(c,dest){
   s.buffer=ambNoiseBuf(c);s.loop=true;s.loopEnd=3.75;
   s.connect(dest);s.start();
   AMB.nodes.push(s);
+  /* Taken back out when it ends, or the list grows by three every wave and
+     every meteor for as long as the section is open - and ambStop() then
+     walks a few hundred dead nodes on the way out of it. The beds never end,
+     so they stay in the list, which is exactly what teardown needs. */
+  s.onended=function(){
+    var i=AMB.nodes.indexOf(s);
+    if(i>=0)AMB.nodes.splice(i,1);
+  };
   return s;
 }
 function ambNode(n){AMB.nodes.push(n);return n;}
@@ -232,139 +240,292 @@ function ambStop(){
   }
   AMB.nodes=[];AMB.gain=null;AMB.kind=null;
 }
-/* A bird's call: one note with a bend in it. Real birdsong is almost all
-   glide - a flat tone reads as a beep - so every note sweeps, and which way
-   it sweeps is what makes one species sound different from another. */
-function ambChirp(c,at,f0,f1,dur,vol){
-  var o=c.createOscillator(), g=c.createGain();
-  o.type="triangle";
-  o.frequency.setValueAtTime(f0,at);
-  o.frequency.exponentialRampToValueAtTime(f1,at+dur*.7);
+/* THREE BIRDS, NOT ONE, AND THEY ARE SPECIES RATHER THAN CHIRPS.
+
+   The first version was one voice - a triangle with a bend in it - and it
+   was reported, correctly, as not sounding like a bird. A single pure tone
+   with a glide on it is a *whistle*; what makes a call sound alive is that
+   real birds are three different instruments. So the wood has three, chosen
+   from what the owner actually hears outside their window:
+
+   - a MYNA, which is a mimic and therefore a rattle of unrelated elements -
+     some whistled, some buzzy - at speed. Variety inside one phrase is the
+     whole character of it.
+   - a TOUCAN, which is not a whistle at all: a dry low croak, made here as a
+     pulsed sawtooth through a narrow bandpass so it rasps rather than rings.
+   - CICADAS, which are not a bird and are the reason the wood sounds like
+     somewhere warm: a broadband buzz amplitude-modulated at about seventy a
+     second, swelling in over a few seconds and out again.
+
+   SAMPLES WERE ASKED FOR AND ARE NOT WHAT THIS IS. There is not an audio
+   file anywhere in this project and there is a reason: the published build
+   is one HTML file, its sandbox blocks fetching media from anywhere, and a
+   recording someone else made carries a licence with it. Synthesised, a bird
+   costs about twenty lines and nothing else, and it can be tuned by the ear
+   that is complaining rather than re-sourced.
+
+   Every voice goes through the reverb the rest of the game uses, because a
+   call outdoors arrives with air around it and a dry one sits inside your
+   head instead of across the field. */
+function ambVoice(c,at,dur,vol,build){
+  var g=c.createGain();
   g.gain.setValueAtTime(.0001,at);
-  g.gain.exponentialRampToValueAtTime(vol,at+.012);
-  g.gain.exponentialRampToValueAtTime(.0001,at+dur);
-  o.connect(g);g.connect(AMB.gain||out(c));
-  o.start(at);o.stop(at+dur+.05);
+  g.connect(AMB.gain||out(c));
+  // A little of every call into the room, which is most of what sells it.
+  try{var w=c.createGain();w.gain.value=.5;g.connect(w);w.connect(reverb(c));}
+  catch(e){}
+  build(g);
+  return g;
 }
-/* A PHRASE, not a chirp - "random but with a pattern" is exactly what a
-   birdcall is. One motif is chosen per phrase (a shape: rising, falling, a
-   trill), a base pitch is chosen with it, and then the notes are that shape
-   at that pitch. So two phrases in a row are recognisably the same bird and
-   never identical. */
+/* One whistled note with a bend and a second partial over it. The partial is
+   what stops it being a sine: a real whistle has an overtone that comes and
+   goes as the pitch moves. */
+function ambWhistle(c,at,f0,f1,dur,vol){
+  ambVoice(c,at,dur,vol,function(g){
+    g.gain.exponentialRampToValueAtTime(vol,at+.014);
+    g.gain.setValueAtTime(vol,at+dur*.6);
+    g.gain.exponentialRampToValueAtTime(.0001,at+dur);
+    [[1,"triangle",1],[2.02,"sine",.28]].forEach(function(p){
+      var o=c.createOscillator(), og=c.createGain();
+      o.type=p[1];
+      o.frequency.setValueAtTime(f0*p[0],at);
+      o.frequency.exponentialRampToValueAtTime(f1*p[0],at+dur*.65);
+      og.gain.value=p[2];
+      o.connect(og);og.connect(g);
+      o.start(at);o.stop(at+dur+.04);
+    });
+  });
+}
+/* A buzzy element - the myna's rattle. A sawtooth through a bandpass, with
+   the filter swept, which is a mouth rather than a tone. */
+function ambRasp(c,at,f,dur,vol,q){
+  ambVoice(c,at,dur,vol,function(g){
+    g.gain.exponentialRampToValueAtTime(vol,at+.01);
+    g.gain.exponentialRampToValueAtTime(.0001,at+dur);
+    var o=c.createOscillator(), bp=c.createBiquadFilter();
+    o.type="sawtooth";
+    o.frequency.setValueAtTime(f*.5,at);
+    o.frequency.linearRampToValueAtTime(f*.5*(.8+Math.random()*.5),at+dur);
+    bp.type="bandpass";bp.Q.value=q||6;
+    bp.frequency.setValueAtTime(f*1.8,at);
+    bp.frequency.linearRampToValueAtTime(f*(1.1+Math.random()),at+dur);
+    o.connect(bp);bp.connect(g);
+    o.start(at);o.stop(at+dur+.03);
+  });
+}
 var AMB_MOTIF=[[0,4,7],[7,4,0],[0,0,5],[5,7,5,7],[0,7],[3,0,3,0,-2]];
-function ambBirdPhrase(c){
-  var base=1250*Math.pow(2,Math.floor(Math.random()*5)/5),
+/* The myna: four to seven elements, alternating whistled and buzzy, at
+   speed, on a motif so the phrase has a shape rather than being a spill of
+   notes. Same bird twice running, never the same phrase. */
+function ambMyna(c){
+  var base=1500*Math.pow(2,Math.floor(Math.random()*5)/5),
       m=AMB_MOTIF[Math.floor(Math.random()*AMB_MOTIF.length)],
       t=c.currentTime+.05, up=Math.random()<.5;
   for(var i=0;i<m.length;i++){
-    var f=base*Math.pow(2,m[i]/12), d=.055+Math.random()*.07;
-    ambChirp(c,t,up?f*.86:f*1.14,f,d,.030+Math.random()*.016);
-    t+=d+.045+Math.random()*.075;
+    var f=base*Math.pow(2,m[i]/12), d=.05+Math.random()*.06;
+    if(Math.random()<.35)ambRasp(c,t,f*.8,d*1.1,.016+Math.random()*.008,9);
+    else ambWhistle(c,t,up?f*.84:f*1.18,f,d,.020+Math.random()*.010);
+    t+=d+.035+Math.random()*.06;
   }
 }
-/* A WAVE: it arrives, it breaks, and then it drains. Three phases in one
-   envelope - a slow swell on a closed filter, a bright open moment at the
-   crest, and a long hiss going out. Anything shorter than about six seconds
-   reads as a machine rather than as the sea. */
-function ambWave(c){
-  var g=c.createGain(), lp=c.createBiquadFilter(), t=c.currentTime+.05;
-  lp.type="lowpass";lp.Q.value=.7;
-  var s=ambSrc(c,lp);
-  lp.connect(g);g.connect(AMB.gain||out(c));
-  var rise=1.6+Math.random()*1.1, wash=2.6+Math.random()*1.6;
-  lp.frequency.setValueAtTime(320,t);
-  lp.frequency.linearRampToValueAtTime(2600,t+rise);
-  lp.frequency.linearRampToValueAtTime(700,t+rise+wash);
-  g.gain.setValueAtTime(.0001,t);
-  g.gain.linearRampToValueAtTime(.055,t+rise);
-  g.gain.linearRampToValueAtTime(.028,t+rise+.5);
-  g.gain.linearRampToValueAtTime(.0001,t+rise+wash);
-  try{s.stop(t+rise+wash+.2);}catch(e){}
+/* The toucan: two to four dry croaks, low and evenly spaced, which is the
+   opposite shape to the myna's scatter and is what makes them tell apart. */
+function ambToucan(c){
+  var f=290+Math.random()*140, n=2+Math.floor(Math.random()*3),
+      t=c.currentTime+.05, gap=.30+Math.random()*.16;
+  for(var i=0;i<n;i++){
+    ambRasp(c,t,f*(1+i*.03),.20+Math.random()*.07,.020,3.5);
+    t+=gap;
+  }
 }
-/* THE MOUNTAIN, and it is the same event as the picture. The flare warms the
-   sky every `flare` milliseconds and this is fired from the same place, so
-   the eruption is one thing that is seen and heard rather than two things
-   that happen near each other. */
-function ambErupt(){
-  var c=audio(); if(!c||AMB.kind!=="fire"||!AMB.gain)return;
-  var t=c.currentTime+.05;
+/* Cicadas, and they are the thing that says the temperature. A band of noise
+   chopped at about seventy a second - which is amplitude modulation, so it
+   is one LFO on one gain - swelling over four or five seconds and going out
+   again. Sometimes, not always: a chorus that never stops is a fault. */
+function ambCicada(c){
+  var t=c.currentTime+.05, dur=4+Math.random()*4.5;
+  var g=c.createGain(), bp=c.createBiquadFilter();
+  bp.type="bandpass";bp.frequency.value=3600+Math.random()*1800;bp.Q.value=3.2;
+  var s=ambSrc(c,bp);
+  var am=c.createGain();am.gain.value=0;
+  bp.connect(am);am.connect(g);g.connect(AMB.gain||out(c));
+  var lfo=c.createOscillator(), lg=c.createGain();
+  lfo.type="sawtooth";lfo.frequency.value=62+Math.random()*22;
+  lg.gain.value=.5;
+  lfo.connect(lg);lg.connect(am.gain);lfo.start(t);
+  am.gain.setValueAtTime(.5,t);              // the LFO rides on this offset
+  g.gain.setValueAtTime(.0001,t);
+  g.gain.linearRampToValueAtTime(.030,t+1.6);
+  g.gain.setValueAtTime(.030,t+dur-1.8);
+  g.gain.linearRampToValueAtTime(.0001,t+dur);
+  try{s.stop(t+dur+.1);lfo.stop(t+dur+.1);}catch(e){}
+  AMB.nodes.push(lfo);
+}
+function ambBirdPhrase(c){
+  var r=Math.random();
+  if(r<.16)ambCicada(c);
+  else if(r<.42)ambToucan(c);
+  else ambMyna(c);
+}
+/* A WAVE IS THREE EVENTS, AND THE MIDDLE ONE IS THE POINT.
+
+   The first version was one gain ramp up and down through a sweeping filter,
+   and it was reported as not sounding like a wave - correctly, because a
+   smooth swell with no transient in it is a *whoosh*. What a breaking wave
+   actually is:
+
+   - the APPROACH: a low roll, closed right down, building for a couple of
+     seconds. Nothing bright in it at all - the sound of water moving, not of
+     water breaking.
+   - the CRASH: a fast broadband hit, 25ms of attack, with a thump under it.
+     This is the whole difference, and it is the thing the ear waits for.
+   - the WASH: a long hiss going out, the filter closing as it drains, twice
+     as long as the approach was.
+
+   `WAVE_BREAK` is where in the envelope the crash lands, and the renderer
+   uses the same number to start the foam sweeping up the beach - one event,
+   seen and heard, rather than two that happen near each other. */
+var WAVE_RISE=2.1, WAVE_BREAK=2.1, WAVE_WASH=3.4;
+function ambWave(c){
+  c=c||audio(); if(!c||!AMB.gain)return;
+  var t=c.currentTime+.05, brk=t+WAVE_RISE;
+  // the approach
   var g=c.createGain(), lp=c.createBiquadFilter();
-  lp.type="lowpass";lp.frequency.setValueAtTime(200,t);
-  lp.frequency.linearRampToValueAtTime(1400,t+.7);
-  lp.frequency.linearRampToValueAtTime(180,t+4.5);
+  lp.type="lowpass";lp.Q.value=.6;
+  var s=ambSrc(c,lp);
+  lp.connect(g);g.connect(AMB.gain);
+  lp.frequency.setValueAtTime(240,t);
+  lp.frequency.linearRampToValueAtTime(520,brk);
+  g.gain.setValueAtTime(.0001,t);
+  g.gain.linearRampToValueAtTime(.030,brk);
+  g.gain.linearRampToValueAtTime(.0001,brk+.35);
+  try{s.stop(brk+.5);}catch(e){}
+  // the crash, and then the wash draining out of it
+  var g2=c.createGain(), hp=c.createBiquadFilter(), lp2=c.createBiquadFilter();
+  hp.type="highpass";hp.frequency.value=380;
+  lp2.type="lowpass";lp2.Q.value=.5;
+  var s2=ambSrc(c,hp);
+  hp.connect(lp2);lp2.connect(g2);g2.connect(AMB.gain);
+  lp2.frequency.setValueAtTime(6500,brk);
+  lp2.frequency.exponentialRampToValueAtTime(900,brk+WAVE_WASH);
+  g2.gain.setValueAtTime(.0001,brk);
+  g2.gain.linearRampToValueAtTime(.055,brk+.025);      // the hit
+  g2.gain.exponentialRampToValueAtTime(.016,brk+.9);   // into the hiss
+  g2.gain.exponentialRampToValueAtTime(.0001,brk+WAVE_WASH);
+  try{s2.stop(brk+WAVE_WASH+.2);}catch(e){}
+  // the weight under it: without this a break is a hiss rather than a mass
+  var o=c.createOscillator(), og=c.createGain();
+  o.type="sine";
+  o.frequency.setValueAtTime(110,brk);
+  o.frequency.exponentialRampToValueAtTime(48,brk+.8);
+  og.gain.setValueAtTime(.0001,brk);
+  og.gain.exponentialRampToValueAtTime(.026,brk+.05);
+  og.gain.exponentialRampToValueAtTime(.0001,brk+1.0);
+  o.connect(og);og.connect(AMB.gain);
+  o.start(brk);o.stop(brk+1.1);
+}
+/* A METEOR LANDING, WHICH REPLACED THE ERUPTION.
+
+   The volcano used to boom every seventeen seconds along with the flare, and
+   the owner's note on it is the right one: nothing on that mountain visibly
+   erupts, so the sound was describing an event the picture never showed. A
+   meteor DOES visibly land - it crosses the sky and hits the ground behind
+   the ridge - so the boom moved onto the thing you can watch.
+
+   And it arrives late, on purpose. `ambBoom` is called on the frame of the
+   impact and delays itself by the distance: light first, sound afterwards,
+   which is the one cue that says the mountain is far away. */
+function ambBoom(far){
+  var c=audio(); if(!c||!AMB.gain)return;
+  var t=c.currentTime+.05+(far||0);
+  // the crack, rolling off into a rumble
+  var g=c.createGain(), lp=c.createBiquadFilter();
+  lp.type="lowpass";
+  lp.frequency.setValueAtTime(900,t);
+  lp.frequency.exponentialRampToValueAtTime(120,t+1.8);
   var s=ambSrc(c,lp);
   lp.connect(g);g.connect(AMB.gain);
   g.gain.setValueAtTime(.0001,t);
-  g.gain.linearRampToValueAtTime(.075,t+.55);
-  g.gain.linearRampToValueAtTime(.0001,t+4.5);
-  try{s.stop(t+4.7);}catch(e){}
-  // and the thump under it, which is what makes it a mountain and not a hiss
+  g.gain.linearRampToValueAtTime(.055,t+.03);
+  g.gain.exponentialRampToValueAtTime(.0001,t+2.2);
+  try{s.stop(t+2.4);}catch(e){}
+  // and the body of it
   var o=c.createOscillator(), og=c.createGain();
   o.type="sine";
-  o.frequency.setValueAtTime(64,t);
-  o.frequency.exponentialRampToValueAtTime(28,t+1.4);
+  o.frequency.setValueAtTime(72,t);
+  o.frequency.exponentialRampToValueAtTime(26,t+1.1);
   og.gain.setValueAtTime(.0001,t);
-  og.gain.exponentialRampToValueAtTime(.05,t+.12);
-  og.gain.exponentialRampToValueAtTime(.0001,t+1.6);
+  og.gain.exponentialRampToValueAtTime(.06,t+.04);
+  og.gain.exponentialRampToValueAtTime(.0001,t+1.4);
   o.connect(og);og.connect(AMB.gain);
-  o.start(t);o.stop(t+1.7);
+  o.start(t);o.stop(t+1.5);
 }
+/* HOW LOUD THE WHOLE BED IS, in one number, because "all of them were a bit
+   higher than I expected" is a note about the layer rather than about any
+   one section. Every gain below is a *relative* mix - a footstep against a
+   win chord - and this is the fader in front of all of it. */
+var AMB_LEVEL=.55;
 function ambStart(kind){
   var c=audio(); if(!c)return;
   AMB.kind=kind;
   var g=ambNode(c.createGain());
   g.gain.value=0;
-  // Faded in over a second and a half: a bed that switches on is a bed you
-  // notice, and the whole job of this one is not to be noticed arriving.
+  // Faded in over two seconds: a bed that switches on is a bed you notice,
+  // and the whole job of this one is not to be noticed arriving.
   g.gain.setValueAtTime(.0001,c.currentTime);
-  g.gain.linearRampToValueAtTime(1,c.currentTime+1.5);
+  g.gain.linearRampToValueAtTime(AMB_LEVEL,c.currentTime+2);
   g.connect(out(c));
   AMB.gain=g;
   var bed=null,lp,bp,lfo,lg;
   if(kind==="birds"){
-    // a hush of moving air under the wood, and nothing else continuous
+    /* A HUSH, and it is quieter than it was by more than half. The wood's
+       air was competing with the birds standing in it - which is backwards,
+       because the birds are the thing the section is for. */
     lp=ambNode(c.createBiquadFilter());
-    lp.type="lowpass";lp.frequency.value=420;lp.Q.value=.6;
-    bed=ambNode(c.createGain());bed.gain.value=.020;
+    lp.type="lowpass";lp.frequency.value=380;lp.Q.value=.6;
+    bed=ambNode(c.createGain());bed.gain.value=.008;
     ambSrc(c,lp);lp.connect(bed);bed.connect(g);
     lfo=ambNode(c.createOscillator());lfo.frequency.value=.055;
-    lg=ambNode(c.createGain());lg.gain.value=.010;
+    lg=ambNode(c.createGain());lg.gain.value=.004;
     lfo.connect(lg);lg.connect(bed.gain);lfo.start();
     AMB.next=1.5;
   } else if(kind==="fire"){
     lp=ambNode(c.createBiquadFilter());
     lp.type="lowpass";lp.frequency.value=130;lp.Q.value=.8;
-    bed=ambNode(c.createGain());bed.gain.value=.055;
+    bed=ambNode(c.createGain());bed.gain.value=.040;
     ambSrc(c,lp);lp.connect(bed);bed.connect(g);
     lfo=ambNode(c.createOscillator());lfo.frequency.value=.07;
-    lg=ambNode(c.createGain());lg.gain.value=.022;
+    lg=ambNode(c.createGain());lg.gain.value=.016;
     lfo.connect(lg);lg.connect(bed.gain);lfo.start();
-    AMB.next=1e9;                 // the flare fires the eruptions, not a timer
+    AMB.next=1e9;                 // the meteors boom, not a timer
   } else if(kind==="sea"){
     // the far water under the near breakers, so the sea is never silent
     lp=ambNode(c.createBiquadFilter());
-    lp.type="lowpass";lp.frequency.value=700;lp.Q.value=.7;
-    bed=ambNode(c.createGain());bed.gain.value=.026;
+    lp.type="lowpass";lp.frequency.value=650;lp.Q.value=.7;
+    bed=ambNode(c.createGain());bed.gain.value=.018;
     ambSrc(c,lp);lp.connect(bed);bed.connect(g);
-    AMB.next=.6;
+    AMB.next=1e9;                 // the renderer breaks the waves, not a timer
   } else if(kind==="wind"){
-    /* THE WHISTLE IS A NARROW BANDPASS BEING SWEPT. Wind through anything
-       is a resonance, and what makes it read as wind rather than as noise
-       is that the resonance MOVES - two LFOs at unrelated rates, so it
-       wanders instead of oscillating. */
+    /* IT WAS AN ALARM, AND THE Q IS WHY. A bandpass at Q 7 swept 500Hz
+       either side of 760 is a siren: narrow enough to be a pitch, and moving
+       enough to be a pitch that *changes*. Wind is the same idea with the
+       resonance an octave lower, four times broader, and wandering slowly
+       rather than sweeping - so it reads as air in a gap instead of as a
+       warning. The low body carries most of it now and the whistle is a
+       colour on top, which is the other half of the fix. */
     bp=ambNode(c.createBiquadFilter());
-    bp.type="bandpass";bp.frequency.value=760;bp.Q.value=7;
-    bed=ambNode(c.createGain());bed.gain.value=.042;
+    bp.type="bandpass";bp.frequency.value=340;bp.Q.value=2.2;
+    bed=ambNode(c.createGain());bed.gain.value=.022;
     ambSrc(c,bp);bp.connect(bed);bed.connect(g);
-    lfo=ambNode(c.createOscillator());lfo.frequency.value=.041;
-    lg=ambNode(c.createGain());lg.gain.value=320;
+    lfo=ambNode(c.createOscillator());lfo.frequency.value=.023;
+    lg=ambNode(c.createGain());lg.gain.value=110;
     lfo.connect(lg);lg.connect(bp.frequency);lfo.start();
-    var lfo2=ambNode(c.createOscillator());lfo2.frequency.value=.017;
-    var lg2=ambNode(c.createGain());lg2.gain.value=180;
+    var lfo2=ambNode(c.createOscillator());lfo2.frequency.value=.0091;
+    var lg2=ambNode(c.createGain());lg2.gain.value=62;
     lfo2.connect(lg2);lg2.connect(bp.frequency);lfo2.start();
-    // and a low body, so it is air moving rather than a kettle
+    // and the body of it, which is most of what a desert wind actually is
     var lp2=ambNode(c.createBiquadFilter());
-    lp2.type="lowpass";lp2.frequency.value=300;
+    lp2.type="lowpass";lp2.frequency.value=260;lp2.Q.value=.5;
     var bg=ambNode(c.createGain());bg.gain.value=.030;
     ambSrc(c,lp2);lp2.connect(bg);bg.connect(g);
     AMB.next=3;
@@ -379,15 +540,16 @@ function ambStart(kind){
     AMB.next-=.25;
     if(AMB.next>0)return;
     if(kind==="birds"){ambBirdPhrase(cc);AMB.next=3.5+Math.random()*7;}
-    else if(kind==="sea"){ambWave(cc);AMB.next=5+Math.random()*3.5;}
     else if(kind==="wind"){
-      // a gust: the whistle leans up and gets louder for a few seconds
+      /* A gust, and it is smaller than it was. Swelling to 1.7x was the
+         second half of the alarm - the thing rose in pitch AND in volume,
+         which is what a siren does and what wind does not. */
       var t=cc.currentTime;
       AMB.gain.gain.cancelScheduledValues(t);
       AMB.gain.gain.setValueAtTime(AMB.gain.gain.value,t);
-      AMB.gain.gain.linearRampToValueAtTime(1.7,t+1.4+Math.random());
-      AMB.gain.gain.linearRampToValueAtTime(1,t+4.5+Math.random()*2);
-      AMB.next=6+Math.random()*7;
+      AMB.gain.gain.linearRampToValueAtTime(AMB_LEVEL*1.28,t+2.2+Math.random());
+      AMB.gain.gain.linearRampToValueAtTime(AMB_LEVEL,t+6+Math.random()*3);
+      AMB.next=7+Math.random()*8;
     } else AMB.next=1e9;
   },250);
 }

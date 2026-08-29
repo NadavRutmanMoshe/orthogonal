@@ -1154,10 +1154,28 @@ there is no distance in a silhouette, so there is nowhere for a bird to be.
 - **Leaves fall and tumble** (`air.kind:"leaf"`). The tumble is a squash on
   one axis rather than a spin, because these are little discs and a disc
   turning on its own axis is still a disc.
-- **A meteor waits.** `wait` holds each one off screen for a few seconds
-  after it lands, so the sky is mostly empty and a streak is an event; a
-  continuous rain of them is a screensaver. They burn out before they reach
-  the ground.
+- **A meteor waits, and then it LANDS.** `wait` holds each one off screen for
+  a few seconds, so the sky is mostly empty and a streak is an event; a
+  continuous rain of them is a screensaver.
+  - **The trajectory is one vector, and that was the bug.** The first version
+    took an angle for the sprite's rotation and then moved it by a different
+    pair of numbers — always rightward, and downward by the *absolute* sine —
+    so a meteor pointed one way and travelled another. The angle is now
+    chosen once over a 90° fan of downward directions, the sprite is turned
+    to it, and the position walks along it.
+  - **The end of the flight is the horizon**, so the flight length is derived
+    from the angle (a shallow one crosses further than a steep one) and the
+    landing point is chosen *on screen* first, with the start worked
+    backwards from it. A streak that ends where nobody can see it is not an
+    event.
+- **The sun the glitter road belongs to.** The road was there with nothing at
+  the top of it, which is a reflection of something not in the picture. It
+  sits on the horizon at the road's own x — the road is drawn from .52 to .60
+  across, so the sun is centred at .56 and the two cannot drift apart.
+- **The foam is the only living part of the sea**, because the band is baked.
+  It runs up the beach on a root curve rather than a straight one, which is
+  what water climbing sand does, and it is timed off the same clock as the
+  crash.
 - **Boats sit on the waterline, and it is derived rather than nudged.** The
   band is `h*.30` tall centred at `-h*.19` and the sea starts 96 rows up a
   160-row texture, so the horizon is `-h*.34 + .6*h*.30`. Anywhere else and
@@ -1605,8 +1623,15 @@ level data changed to make it.
     `ocean` gets fish here by construction.
   - **It is drawn behind the cubes and kept out of the middle column.**
     Ambience you have to read around is not ambience.
-  - **The branches are a seeded walk**, so a section's tree is the same tree
-    every time it opens — the same reason the sky's stars are seeded.
+  - **The branches are a seeded walk that runs PARALLEL.** They used to reach
+    inward as they climbed — up to 58px a segment over nine segments — so the
+    two of them met in the middle and crossed the trail. The walk is vertical
+    now and the lateral movement is a wobble around a line near each edge:
+    they lean, they are not straight, and they never converge. Seeded, so a
+    section's tree is the same tree every time it opens — the same reason the
+    sky's stars are seeded.
+  - **The map's meteors use the world's 90° fan too**, and their trail is
+    drawn back along the direction of travel rather than diagonally.
   - **The fish are told apart by shape, not colour.** A clownfish is a fat
     teardrop with two pale bars, a dolphin is a long curve with a dorsal, a
     turtle is a wide oval with four paddles, an octopus is a dome with legs
@@ -2819,26 +2844,58 @@ know before touching it:
   oscillators with a bend in them, the sea is noise with a slow envelope, the
   wind is a narrow bandpass being swept by two LFOs at unrelated rates, and
   the volcano's rumble is brown noise under a low-pass.
-  - **A bird sings a PHRASE, not a chirp.** One motif and one base pitch are
-    chosen per phrase from `AMB_MOTIF`, so two phrases running are
-    recognisably the same bird and never identical — which is what "random
-    but with a pattern" actually is. Every note glides, because a flat tone
-    reads as a beep.
-  - **The eruption is fired by the flare**, on the wrap rather than on a
-    threshold (a threshold crossed by a long frame is missed or hit twice),
-    so the mountain is one event that is seen and heard rather than two that
-    happen near each other.
+  - **THREE BIRDS, NOT ONE, AND THEY ARE SPECIES.** One voice — a triangle
+    with a bend in it — was reported as not sounding like a bird, correctly:
+    a single pure tone with a glide on it is a *whistle*. The wood now has a
+    **myna** (a mimic, so a rattle of unrelated whistled and buzzy elements
+    at speed), a **toucan** (not a whistle at all — a dry low croak, a pulsed
+    sawtooth through a narrow bandpass) and **cicadas** (a broadband buzz
+    amplitude-modulated at about seventy a second, swelling over four
+    seconds and out again). Each still plays a phrase off `AMB_MOTIF`, which
+    is what "random but with a pattern" means. Every voice goes through the
+    game's reverb, because a call outdoors arrives with air around it.
+  - **Samples were asked for and synthesis is the answer.** There is no
+    audio file anywhere in this project and there is a reason: the published
+    build is one HTML file, its sandbox blocks fetching media, and a
+    recording somebody else made carries a licence with it. A synthesised
+    bird costs twenty lines and can be retuned by the ear that is
+    complaining rather than re-sourced.
+  - **A WAVE IS THREE EVENTS and the middle one is the point.** One gain ramp
+    through a sweeping filter is a *whoosh* — reported as not sounding like a
+    wave. It is now an approach (closed right down, two seconds of water
+    moving), a **crash** (25ms of broadband attack with a thump under it) and
+    a wash (a long hiss with the filter closing). **The renderer owns the
+    clock**, not the ambience: `seaT` counts down, the sound is started
+    `WAVE_RISE` ahead of the break, and the foam sweeps up the beach on the
+    frame the crash lands. One event, seen and heard.
+  - **The volcano's boom became a meteor's.** Nothing on that mountain
+    visibly erupts, so a boom every seventeen seconds was describing an event
+    the picture never showed. A meteor *does* visibly land, so `ambBoom()`
+    fires on the impact — and delays itself by the distance, because light
+    arrives before sound and that is the one cue that says the ridge is far
+    away.
   - **One graph per section and one slow timer for all of it.** Continuous
     parts are audio-rate and cost nothing per frame; the events that need
     deciding come off a single 250ms tick, which is what keeps teardown to
     one `clearInterval` and stops a stray bird arriving four sections later.
   - **The noise buffer is crossfaded into itself at the seam**, or a
     four-second loop clicks four times a minute.
+  - **`AMB_LEVEL` is the fader in front of all of it.** "All of them were a
+    bit higher than I expected" is a note about the layer rather than about
+    any one section, and every gain in `ambStart` is a *relative* mix, so it
+    is one number rather than eleven edits.
+  - **THE DESERT WIND WAS AN ALARM, AND THE Q IS WHY.** A bandpass at Q 7
+    swept 500Hz either side of 760 is a siren: narrow enough to be a pitch,
+    and moving enough to be a pitch that *changes*. It is the same idea an
+    octave lower, four times broader and wandering slowly now, with the low
+    body carrying most of it and the whistle a colour on top. The gust swells
+    to 1.28× rather than 1.7× — rising in pitch *and* in volume together was
+    the other half of the siren.
   - **It is quiet on purpose**: measured through the real chain, the whole
     bed plus the documented worst-case pile-up (win chord + strike + step)
-    plus an eruption peaks at **1.0003 with 6 saturated samples in 370,000**,
-    against the 1.0082 in 88,000 the limiter was already built to survive. If
-    you raise a bed gain, re-measure that stack.
+    plus a meteor impact peaks at **1.0004 with 15 saturated samples in
+    370,000**, against the 1.0082 in 88,000 the limiter was already built to
+    survive. If you raise a bed gain, re-measure that stack.
   - **`audio()` refuses everything while muted**, so ambience simply does not
     start; `ambSync()` is what puts it back on an unmute, and it is called
     from both the `m` key and the volume row.

@@ -425,6 +425,25 @@ function sceneryTex(kind){
     sea.addColorStop(0,"#123448");sea.addColorStop(.45,"#0e2b3e");
     sea.addColorStop(1,"#0a2233");
     x.fillStyle=sea;x.fillRect(0,H-96,W,96);
+    /* THE SUN THE ROAD BELONGS TO. The glitter path was there with nothing
+       at the top of it, which is a reflection of something that is not in
+       the picture - reported exactly that way. It sits ON the horizon, half
+       in the water, at the road's own x: the road is drawn from 0.52 to 0.60
+       across, so the sun is centred at 0.56 and the two cannot drift apart.
+       Drawn before the road, so the glitter runs over it. */
+    var oy=H-96, ox=W*.56;
+    var halo=x.createRadialGradient(ox,oy,4,ox,oy,60);
+    halo.addColorStop(0,"rgba(255,224,150,.70)");
+    halo.addColorStop(.35,"rgba(255,180,96,.28)");
+    halo.addColorStop(1,"rgba(255,150,70,0)");
+    x.fillStyle=halo;
+    x.beginPath();x.arc(ox,oy,60,0,Math.PI*2);x.fill();
+    var disc=x.createRadialGradient(ox,oy,2,ox,oy,23);
+    disc.addColorStop(0,"rgba(255,250,226,.98)");
+    disc.addColorStop(.7,"rgba(255,228,158,.92)");
+    disc.addColorStop(1,"rgba(255,196,110,.5)");
+    x.fillStyle=disc;
+    x.beginPath();x.arc(ox,oy,23,0,Math.PI*2);x.fill();
     // The glitter path: the sun's road on the water, brightest at the top.
     var road=x.createLinearGradient(0,H-96,0,H-18);
     road.addColorStop(0,"rgba(255,196,120,.55)");
@@ -736,6 +755,10 @@ var sceneQuad=null, demonGrp=null, plumeQuad=null, sparkGrp=null;
 /* One slot per section's moving layer. They are all torn down together in
    applyTheme, so a section that does not ask for one simply has none. */
 var birdGrp=null, meteorGrp=null, boatGrp=null, tumbleGrp=null, devilGrp=null;
+var boomGrp=null, foamQuad=null;
+/* The sea's clock. seaT counts down to the next break, seaFired says the
+   sound for it has already been started, and foamP is the sweep. */
+var seaT=4, seaFired=false, foamP=1;
 /* WIND, and it is one number the whole section reads. The treeline cannot
    move - it is baked - so what sells wind is everything ELSE moving on the
    same slow rhythm: the band leaning, the leaves crossing, the canopy
@@ -853,10 +876,23 @@ function makeMeteors(n){
     x.beginPath();x.arc(w*.90,h*.5,11,0,Math.PI*2);x.fill();
   });
   return spriteGroup(n,tex,-967,function(i){
-    return {t:1, wait:i*2.2+Math.random()*2.5, x0:Math.random(),
-            sp:.55+Math.random()*.5, sc:.7+Math.random()*.8,
-            ang:-.72-Math.random()*.34};
+    return {t:1, wait:i*2.2+Math.random()*2.5, sp:.55+Math.random()*.5,
+            sc:.7+Math.random()*.8, ang:0, ex:0};
   });
+}
+/* THE FLASH WHERE ONE LANDS. A meteor that fades out in mid-air is a meteor
+   that went somewhere else; one that hits the ground is an event with a
+   place and a moment, which is what the boom is then the sound of. */
+function makeBooms(n){
+  var tex=spriteTex(64,64,function(x,w,h){
+    var g=x.createRadialGradient(32,32,1,32,32,32);
+    g.addColorStop(0,"rgba(255,252,238,.95)");
+    g.addColorStop(.25,"rgba(255,206,124,.6)");
+    g.addColorStop(.6,"rgba(255,140,50,.18)");
+    g.addColorStop(1,"rgba(255,120,40,0)");
+    x.fillStyle=g;x.beginPath();x.arc(32,32,32,0,Math.PI*2);x.fill();
+  });
+  return spriteGroup(n,tex,-966,function(){return {t:0,x:0,y:0};});
 }
 /* III - SAILING BOATS. Two of them, small, slow, and always ON the horizon
    line - the sea's own scale is the thing they are there to give, and a boat
@@ -909,6 +945,29 @@ function makeTumble(n){
     return {x:-.2-i*.7, sp:.055+Math.random()*.05, r:Math.random()*6.3,
             sc:.6+Math.random()*.5, ph:Math.random()*6.3};
   });
+}
+/* THE FOAM. One soft band that runs up the beach on the break - the sea band
+   itself is baked and cannot move, so the only part of it that is alive is
+   the part drawn over it. Wide and very short, because at this distance a
+   breaking wave is a line and not a shape. */
+function makeFoam(){
+  var tex=spriteTex(128,32,function(x,w,h){
+    var g=x.createLinearGradient(0,0,0,h);
+    g.addColorStop(0,"rgba(236,250,255,0)");
+    g.addColorStop(.45,"rgba(236,250,255,.85)");
+    g.addColorStop(1,"rgba(210,238,248,0)");
+    x.fillStyle=g;
+    for(var i=0;i<w;i+=2){
+      var hh=h*(.45+Math.abs(Math.sin(i*.13))*.45);
+      x.fillRect(i,(h-hh)/2,2,hh);
+    }
+  });
+  var m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),
+    new THREE.MeshBasicMaterial({map:tex,transparent:true,opacity:0,
+      depthWrite:false,fog:false}));
+  m.renderOrder=-968;
+  m.userData.tex=tex;
+  return m;
 }
 /* And the devil: a column of lifted sand, wider at the top, leaning as it
    goes. Drawn as one soft cone with the swirl painted into it rather than as
@@ -1026,6 +1085,21 @@ function layoutAtmosphere(dtMs){
     }
   }
   if(meteorGrp){
+    /* THE TRAJECTORY IS ONE VECTOR, and that was the bug. The old version
+       took an angle for the sprite's rotation and then moved it by a
+       different pair of numbers - always rightward, and downward by the
+       absolute sine - so a meteor pointed one way and travelled another.
+       Now the angle is chosen once over a 90-degree fan of *downward*
+       directions, the sprite is turned to it, and the position walks along
+       it. Pointing where you are going is the whole of what makes it read.
+
+       AND IT LANDS. The end of the flight is the horizon, so the flight
+       length is derived from the angle rather than fixed - a shallow one
+       crosses further than a steep one, exactly as it should - and the
+       landing point is chosen ON SCREEN first, with the start worked
+       backwards from it, so a meteor is never a streak that ends somewhere
+       nobody can see. */
+    var horiz=-h*.20;
     var mk2=meteorGrp.children;
     for(var mi=0;mi<mk2.length;mi++){
       var mq=mk2[mi],mu=mq.userData;
@@ -1034,18 +1108,77 @@ function layoutAtmosphere(dtMs){
         // with one always in it is a screensaver.
         mu.wait-=dtMs/1000;mq.material.opacity=0;continue;
       }
+      if(!mu.ang){
+        // a 90-degree fan, all of it downward: -135 through -45 degrees
+        mu.ang=-Math.PI*.25-Math.random()*Math.PI*.5;
+        mu.ex=(Math.random()-.5)*w*.75;      // where it will land, on screen
+        mu.sy=h*.62;
+        mu.dist=(mu.sy-horiz)/-Math.sin(mu.ang);
+        mu.sx=mu.ex-Math.cos(mu.ang)*mu.dist;
+      }
       mu.t-=dtMs/1000*mu.sp;
-      if(mu.t<=0){mu.t=1;mu.wait=2.5+Math.random()*7;mu.x0=Math.random();
-                  mu.ang=-.72-Math.random()*.34;continue;}
-      var mp=1-mu.t;                       // 0 at the top, 1 at the end
+      if(mu.t<=0){
+        // It has arrived. Light the ground, then let the sound catch up.
+        if(boomGrp){
+          var bq=boomGrp.children[mi%boomGrp.children.length];
+          bq.userData.t=1;bq.userData.x=mu.ex;bq.userData.y=horiz;
+        }
+        if(typeof ambBoom==="function")
+          ambBoom(.35+Math.abs(mu.ex)/w*.5);   // sound arrives after the light
+        mu.t=1;mu.wait=3+Math.random()*8;mu.ang=0;
+        mq.material.opacity=0;continue;
+      }
+      var mp=1-mu.t;                       // 0 at the top, 1 at the ground
       var mlen=h*.34*mu.sc;
       mq.scale.set(mlen,mlen*.19,1);
       mq.rotation.z=mu.ang;
-      mq.position.set((mu.x0-.5)*w*1.1+Math.cos(mu.ang)*mp*w*.5,
-                      h*.46-Math.abs(Math.sin(mu.ang))*mp*h*.62,-242);
-      // In quickly, out before it reaches the ground: it burns up.
-      mq.material.opacity=Math.min(1,Math.min(1,mp/.12)*(1-mp)*(1-mp)*1.5)*atm;
+      mq.position.set(mu.sx+Math.cos(mu.ang)*mu.dist*mp,
+                      mu.sy+Math.sin(mu.ang)*mu.dist*mp,-242);
+      // In quickly, and brightest as it comes down: it is getting closer.
+      mq.material.opacity=Math.min(1,mp/.10)*(.55+mp*.45)*atm;
     }
+  }
+  if(boomGrp){
+    var bk2=boomGrp.children;
+    for(var bi2=0;bi2<bk2.length;bi2++){
+      var bq2=bk2[bi2],bu2=bq2.userData;
+      if(bu2.t<=0){bq2.material.opacity=0;continue;}
+      bu2.t=Math.max(0,bu2.t-dtMs/520);
+      var bp2=1-bu2.t;
+      bq2.scale.setScalar(h*(.06+bp2*.20));
+      bq2.position.set(bu2.x,bu2.y+h*.01,-241);
+      bq2.material.opacity=bu2.t*bu2.t*.9*atm;
+    }
+  }
+  if(foamQuad){
+    /* THE BREAK, AND IT IS ONE EVENT WITH THE SOUND. The renderer owns the
+       clock rather than the ambience, because only one of them can - and the
+       ordering matters: a wave has to be *heard* approaching for a couple of
+       seconds before anything on screen moves, so the sound is started
+       WAVE_RISE ahead and the foam runs on the moment its crash lands.
+
+       `seaT` counts down to the next break. `foamP` is the sweep itself,
+       0 at the break and 1 when the wash has drained. */
+    var rise=(typeof WAVE_RISE!=="undefined")?WAVE_RISE:2.1;
+    seaT-=dtMs/1000;
+    if(seaT<=rise&&!seaFired){
+      seaFired=true;
+      if(typeof ambWave==="function")ambWave();
+    }
+    if(seaT<=0){
+      foamP=0;seaFired=false;
+      seaT=rise+4.5+Math.random()*3.5;
+    }
+    if(foamP<1){
+      foamP=Math.min(1,foamP+dtMs/1600);
+      foamQuad.scale.set(w*1.25,h*.024*(1+foamP*.8),1);
+      /* Up the beach and back. The front runs in fast and drains slowly, so
+         the travel is a root curve rather than a straight one - which is
+         what water climbing sand actually does. */
+      foamQuad.position.set(0,-h*.274-h*.030*Math.pow(foamP,.55),-242);
+      foamQuad.material.opacity=Math.min(1,
+        Math.min(1,foamP/.10)*(1-foamP)*(1-foamP)*1.35)*atm;
+    } else foamQuad.material.opacity=0;
   }
   if(boatGrp){
     var ok2=boatGrp.children;
@@ -1253,14 +1386,14 @@ function applyTheme(th){
   if(sparkGrp){camera.remove(sparkGrp);sparkGrp.traverse(function(o){
     if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});
     sparkGrp=null;}
-  [birdGrp,meteorGrp,boatGrp,tumbleGrp,devilGrp].forEach(function(g){
+  [birdGrp,meteorGrp,boatGrp,tumbleGrp,devilGrp,boomGrp,foamQuad].forEach(function(g){
     if(!g)return;
     camera.remove(g);
     if(g.userData.tex)g.userData.tex.dispose();
     g.traverse(function(o){
       if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});
   });
-  birdGrp=meteorGrp=boatGrp=tumbleGrp=devilGrp=null;
+  birdGrp=meteorGrp=boatGrp=tumbleGrp=devilGrp=boomGrp=null;foamQuad=null;
   if(th.scene){
     sceneQuad=makeScenery(th.scene);camera.add(sceneQuad);
     if(th.scene==="hell"){
@@ -1268,9 +1401,14 @@ function applyTheme(th){
       plumeQuad=makePlume();camera.add(plumeQuad);
       sparkGrp=makeSparks(16);camera.add(sparkGrp);
       meteorGrp=makeMeteors(3);camera.add(meteorGrp);
+      boomGrp=makeBooms(3);camera.add(boomGrp);
     }
     if(th.scene==="trees"){birdGrp=makeBirds(7);camera.add(birdGrp);}
-    if(th.scene==="ocean"){boatGrp=makeBoats(2);camera.add(boatGrp);}
+    if(th.scene==="ocean"){
+      boatGrp=makeBoats(2);camera.add(boatGrp);
+      foamQuad=makeFoam();camera.add(foamQuad);
+      seaT=3.5;seaFired=false;foamP=1;
+    }
     if(th.scene==="desert"){
       tumbleGrp=makeTumble(2);camera.add(tumbleGrp);
       devilGrp=makeDevil();camera.add(devilGrp);
@@ -2894,11 +3032,6 @@ function animate(now){
     /* A slow swell and a slower fall - most of the cycle is nothing at all,
        which is what makes the beat land when it arrives. */
     var fp=flareT/flareEvery;
-    /* The mountain is heard on the frame the sky starts to warm, so the two
-       are one event. Fired on the wrap rather than on a threshold, because a
-       threshold crossed by a long frame can be missed or hit twice. */
-    if(fp<lastFlareP&&typeof ambErupt==="function")ambErupt();
-    lastFlareP=fp;
     if(fp<.05)skyWarm=fp/.05; else if(fp<.22)skyWarm=1-(fp-.05)/.17; else skyWarm=0;
     skyWarm=Math.max(0,skyWarm)*(1-flatT*.8);
   } else skyWarm=0;

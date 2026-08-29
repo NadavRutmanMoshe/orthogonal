@@ -700,8 +700,13 @@ function mapWxMake(kind,W,H){
   if(kind==="leaf")for(i=0;i<16;i++)a.push({
     x:R(), y:R(), sp:.16+R()*.26, sw:.4+R()*1.1, ph:R()*6.3,
     s:5+R()*6, col:R()<.62?"#6f9c4a":(R()<.5?"#87ab4e":"#b8913c")});
+  /* The same 90-degree downward fan the world's meteors use, and for the
+     same reason: the streak has to point where it is going. In canvas
+     coordinates y grows downward, so an angle between 45 and 135 degrees is
+     every direction that falls. */
   if(kind==="meteor")for(i=0;i<7;i++)a.push({
-    x:R(), y:R(), sp:.55+R()*.8, len:26+R()*40, ph:R()*6.3, w:1.6+R()*1.8});
+    x:R(), y:R(), sp:.55+R()*.8, len:26+R()*40, w:1.6+R()*1.8,
+    ang:Math.PI*.25+R()*Math.PI*.5});
   if(kind==="sea"){
     var fish=["clown","clown","dolphin","turtle","octopus","clown"];
     for(i=0;i<6;i++)a.push({
@@ -728,24 +733,29 @@ function mapLeaf(x,s,r,col){
   x.beginPath();x.moveTo(0,-s);x.lineTo(0,s);x.stroke();
   x.restore();
 }
-/* THE BRANCHES. They reach in from both edges and climb the whole height,
-   which is the shape the trail itself has - a section is played from the
-   foot of the screen upward, so the wood grows the same way. Drawn from a
-   seeded walk so a section's tree is the same tree every time it opens. */
+/* THE BRANCHES, AND THEY RUN PARALLEL. Each one climbs its own edge from the
+   foot of the panel to the top, which is the shape the trail itself has - a
+   section is played from the bottom up, so the wood grows the same way.
+
+   They used to reach *inward* as they climbed, a step of up to 58px a
+   segment over nine segments, so the two of them met in the middle and
+   crossed over the trail. Now the walk is vertical and the lateral movement
+   is a wobble around a line near the edge: they lean and they are not
+   straight, but they never converge. Seeded, so a section's tree is the same
+   tree every time it opens. */
 function mapBranch(x,W,H,side,seed){
-  var q=rnd(seed), px=side>0?W+8:-8, py=H+10;
+  var q=rnd(seed), edge=side>0?W-24:24, px=edge+side*22, py=H+10;
   x.strokeStyle="rgba(38,58,34,.55)";x.lineCap="round";
-  var segs=[];
   for(var i=0;i<9;i++){
-    var nx=px-side*(18+q()*40), ny=py-(H*.13+q()*H*.05);
-    segs.push([px,py,nx,ny]);
+    // toward the edge line, plus a wobble - never past a third of the width
+    var nx=edge+(q()-.5)*46, ny=py-(H*.13+q()*H*.05);
     x.lineWidth=Math.max(1.4,7-i*.62);
     x.beginPath();x.moveTo(px,py);
-    x.quadraticCurveTo(px-side*(6+q()*18),py-(H*.07),nx,ny);
+    x.quadraticCurveTo(px+(nx-px)*.4,py-(H*.08),nx,ny);
     x.stroke();
     // a twig off most joints, and a cluster of leaves on the end of it
     if(q()<.8){
-      var tx=nx-side*(12+q()*30), ty=ny-(6+q()*26);
+      var tx=nx-side*(14+q()*34), ty=ny-(6+q()*26);
       x.lineWidth=1.5;
       x.beginPath();x.moveTo(nx,ny);x.lineTo(tx,ty);x.stroke();
       for(var l=0;l<3;l++){
@@ -820,6 +830,9 @@ function mapFish(x,f,t){
   }
   x.restore();
 }
+/* Where a meteor re-enters. Biased across the top and a little off both
+   sides, so a steep one and a shallow one both cross the panel. */
+function R2(){return -.15+Math.random()*1.3;}
 function mapWeather(x,W,H,dt){
   var kind=mapWeatherKind();
   if(kind!==mapWxKind){mapWxKind=kind;mapWx=kind?mapWxMake(kind,W,H):null;}
@@ -847,16 +860,22 @@ function mapWeather(x,W,H,dt){
   } else if(kind==="meteor"){
     for(i=0;i<mapWx.length;i++){
       p=mapWx[i];
-      p.y+=p.sp*dt/2600;
-      p.x-=p.sp*dt/7000;
-      if(p.y>1.15){p.y=-.15;p.x=.2+Math.random()*1.1;}
+      var dx3=Math.cos(p.ang), dy3=Math.sin(p.ang);
+      p.x+=dx3*p.sp*dt/3400;
+      p.y+=dy3*p.sp*dt/2600;
+      if(p.y>1.15||p.x<-.2||p.x>1.2){
+        p.y=-.15;p.x=R2();
+        p.ang=Math.PI*.25+Math.random()*Math.PI*.5;
+      }
       var mx=p.x*W, my=p.y*H;
-      var g=x.createLinearGradient(mx+p.len*.7,my-p.len,mx,my);
+      // the trail runs back along the direction of travel, not diagonally
+      var tx3=mx-dx3*p.len, ty3=my-dy3*p.len;
+      var g=x.createLinearGradient(tx3,ty3,mx,my);
       g.addColorStop(0,"rgba(255,120,30,0)");
       g.addColorStop(.7,"rgba(255,158,60,.34)");
       g.addColorStop(1,"rgba(255,222,150,.8)");
       x.strokeStyle=g;x.lineWidth=p.w;x.lineCap="round";
-      x.beginPath();x.moveTo(mx+p.len*.7,my-p.len);x.lineTo(mx,my);x.stroke();
+      x.beginPath();x.moveTo(tx3,ty3);x.lineTo(mx,my);x.stroke();
       var hd=x.createRadialGradient(mx,my,0,mx,my,p.w*2.6);
       hd.addColorStop(0,"rgba(255,248,226,.9)");
       hd.addColorStop(1,"rgba(255,150,50,0)");
