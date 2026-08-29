@@ -93,6 +93,9 @@ function loadSettings(){
            tomorrow. Bounded rather than trusted, because a hand-edited save
            should not be able to switch help off with a nonsense value. */
         if(o.noSlowOffer===true)settings.noSlowOffer=true;
+        // Same trap: without this the tutorial's controls question is asked
+        // again on every reload, since nothing else records that it was.
+        if(o.ctlAsked===true)settings.ctlAsked=true;
         if(typeof o.slowOffers==="number"&&o.slowOffers>=0)
           settings.slowOffers=Math.min(99,o.slowOffers|0);
         if(typeof o.landHints==="number"&&o.landHints>=0)
@@ -110,9 +113,22 @@ var pendingSession=null;
 function saveSession(){
   if(!window.storage||app!=="play"||playSource!=="builtin"||dying)return;
   if(L&&L.tutorial)return;
+  /* A TRIAL'S RUN IS PART OF WHERE YOU STOPPED, and leaving it out was a
+     silent reset. The cores you have already reached and the lives you have
+     already spent are the whole state of a trial - the clock's own count is
+     not, because a rhythm restarts cleanly and being dropped back mid-beat
+     would be a hit you did not earn. Without these two, resuming a trial put
+     the player back on their square with the amber row full again and the
+     marker on a core they were standing on, so the cores appeared never to
+     go down. Reported from a playtest, on a trial, by somebody who had
+     closed the game between crossings.
+
+     Written on every level and read back only on a trial: a boss resumes at
+     phase 1 with a fresh pack, so it has to resume with fresh lives too. */
   var body={i:lvIndex,n:LEVELS[lvIndex]?LEVELS[lvIndex].name:"",mv:moveCount,
     p:[player.x,player.y,player.z],flat:flat,fu:flatPos.u,fy:flatPos.y,
     view:view,cr:gCrates.map(function(c){return c.slice();}),
+    co:trialCore,lv:lives,
     hist:moveHistory.slice(-60)};
   window.storage.set(SESS_KEY,JSON.stringify(body)).catch(function(){});
 }
@@ -146,6 +162,17 @@ function resumeSession(){
   if(b.cr&&b.cr.length===gCrates.length)gCrates=b.cr.map(function(c){return c.slice();});
   moveCount=b.mv||0;
   moveHistory=b.hist||[];
+  /* Bounded rather than trusted, exactly as loadSettings() bounds its
+     counters: a hand-edited save should not be able to put the player on a
+     core that does not exist or hand them lives the level does not have.
+     enterPlay() has just run trialReset(), so these overwrite a clean 0 and
+     a full three, and buildGrid()/syncHud() below draw the restored run. */
+  if(TR&&TR.cores){
+    if(typeof b.co==="number"&&b.co>0)
+      trialCore=Math.min(TR.cores.length-1,b.co|0);
+    if(typeof b.lv==="number"&&b.lv>0)
+      lives=Math.min(BOSS_LIVES,b.lv|0);
+  }
   buildDynamic();buildGrid();syncHud();
   playerMesh.position.set(player.x,player.y,player.z);
   return true;

@@ -94,6 +94,12 @@ function respawn(){
   view=0;viewAngle=0;viewAngleTarget=0;
   buildGrid();syncHud();
   playerMesh.position.set(player.x,player.y,player.z);
+  /* Written here rather than left to the next move, because a death is
+     exactly the moment somebody puts the game down. saveSession() refuses to
+     write while `dying` is set, and this runs after die() has cleared it, so
+     what is stored is the board the player will come back to: back at the
+     start, with the life already spent and the cores they had kept. */
+  saveSession();
 }
 
 /* ============================================================
@@ -1061,6 +1067,16 @@ function trialHurt(){
     }
   }
   syncHud();
+  /* The sweep just moved you, and it can move you onto a core: being pulled
+     out of the plane lands you on a real square in the volume, which is the
+     one thing rule 6 asks for. Every other way of arriving there goes
+     through checkWin() - this was the one that did not, and it would have
+     left the player standing on the core they had just reached with the
+     amber row unchanged. */
+  checkWin();
+  // The lives just changed, so the stored session has to say so - otherwise
+  // reloading after a hit hands the life back.
+  saveSession();
 }
 // Would folding right now put you inside the charging slice? True only for a
 // sweep down the axis you are looking along, where the plane is every depth
@@ -1226,6 +1242,27 @@ function levelHasWater(){
   for(var i=0;i<b.length;i++)if(b[i][3]===1)return true;
   return false;
 }
+/* THE WORLD MOVING, FELT AS WELL AS SEEN.
+
+   Changing dimension is the one verb this game has, and on screen it is a
+   smooth interpolation - honest about what is happening and completely
+   weightless. A jolt of the camera on the frame it commits gives the move an
+   impact, and the phone buzzing under the thumb gives it one on a device
+   where a tap has no travel at all. The fold is the heavier of the two: a
+   whole world slamming into a plane against a world standing back up.
+
+   It is `shakeT`, the same decaying value a hit uses (*.86 a frame, so it is
+   gone in about a fifth of a second), so there is nothing new in the render
+   loop. Skipped under prefers-reduced-motion - unlike the death and hit
+   shakes, this one fires on an ordinary move several times a level, which is
+   exactly the repetition that setting exists to stop. */
+var reduceMotion=(window.matchMedia&&
+  window.matchMedia("(prefers-reduced-motion: reduce)"));
+function foldJolt(into){
+  if(!(reduceMotion&&reduceMotion.matches))
+    shakeT=Math.max(shakeT,into?.42:.28);
+  if(typeof haptic==="function")haptic(into?18:12);
+}
 function doFlatten(){
   if(typeof peekUnlatch==="function")peekUnlatch();
   if(bossHolding())return;
@@ -1253,7 +1290,7 @@ function doFlatten(){
   /* Captured BEFORE the fold resolves, while the player is still standing on
      something in the volume - afterwards there is only a silhouette. */
   if(typeof markWaterTrace==="function")markWaterTrace();
-  flat=true;flatTarget=1;SFX.fold();
+  flat=true;flatTarget=1;SFX.fold();foldJolt(true);
   /* The water spilling out of the plane. Only on a level that has any, so
      it is a fact about this world rather than a flourish on every fold -
      and layered over fold() rather than replacing it, because the fold is
@@ -1284,7 +1321,7 @@ function doUnflatten(){
   var b=R.pick(land);
   pushHistory();moveCount++;
   player.x=b.x;player.z=b.z;player.y=flatPos.y;
-  flat=false;flatTarget=0;SFX.unfold();
+  flat=false;flatTarget=0;SFX.unfold();foldJolt(false);
   /* RULE 5, SHOWN. Only when the column actually held a choice - see
      showLanding() - so it is silent on the levels where nothing was decided
      and speaks on the ones that turn on it. The sentence goes with it the
@@ -1421,6 +1458,11 @@ function win(){
        between tutorial levels the guidance simply continues, and saying it
        three times would make it furniture. */
     var lastTut=!(LEVELS[lvIndex+1]&&LEVELS[lvIndex+1].tutorial);
+    /* Armed rather than shown: a panel is z-index 12 and the win card is 20,
+       so a card put up now would open behind the one the player is reading.
+       loadLevel() fires it on the way into whatever they pick next, which is
+       also what makes it survive LEVELS as well as NEXT LEVEL. */
+    if(lastTut&&playSource==="builtin"&&!settings.ctlAsked)ctlOfferPending=true;
     $("wonTitle").textContent="Got it";
     $("wonSub").textContent=L.name.replace(/^00 \u2014 /,"")+"  \u00b7  "+
       moveCount+" moves  \u00b7  not scored"+
@@ -1551,13 +1593,76 @@ function resetLevel(){
    skip. A player who was already on SLOW therefore sees the skip on their
    first offer, which is right - there is nothing else left to try.
 
-   The slow offer can be declined, so the second one carries DON'T SHOW ME
-   AGAIN. That is a global preference rather than a per-level one: somebody
-   who does not want the game suggesting things does not want it per level. */
+   Every offer can be declined for good: each card carries DON'T SHOW ME
+   AGAIN, and it silences both kinds. That is a global preference rather than
+   a per-level one: somebody who does not want the game suggesting things
+   does not want it per level. */
 function paceSlower(){
   for(var i=0;i<PACES.length;i++)
     if(PACES[i].v<paceScale())return PACES[i];      // PACES runs fast to slow
   return null;
+}
+/* The opt-out, on every card this function can put up.
+
+   It was on the slow offer only, and only from the second one - the reasoning
+   being that a suggestion you have not seen yet is not one you can be tired
+   of. In practice the two cards are one thing to the player ("the game keeps
+   interrupting me"), and the one they see most is the skip card, which had
+   no way out at all. Every offer carries it now, and it silences all of
+   them: `noSlowOffer` is read at the top of struggleOffer(). Global rather
+   than per level, because somebody who does not want the game suggesting
+   things does not want it on the next boss either. */
+function bindNever(){
+  bind("sgNever",function(){
+    settings.noSlowOffer=true;saveSettings();hidePanel();
+    flash("no more suggestions");
+  });
+}
+/* THE CONTROLS QUESTION, ASKED ONCE, AT THE END OF THE TUTORIAL.
+
+   The default tutorial teaches the gestures and takes the bar off while it
+   does - and then handed the buttons straight back the moment it finished,
+   which taught a control set and then covered a fifth of the screen with a
+   different one. The bar off is the default the game wants; what it cannot
+   do is take the buttons away silently, because a player who wants them has
+   no way of knowing they are a setting.
+
+   So the tutorial ends by *doing* it and offering the way back. That is the
+   same shape as struggleOffer(): the thing has already happened, the board
+   is behind the card, and the card is a door rather than a wall. Asked once
+   ever - `settings.ctlAsked` - because a preference asked twice is nagging,
+   and it is in the loadSettings() whitelist or it would be asked on every
+   reload.
+
+   It names the keyboard as well, deliberately. On a fine pointer the lesson
+   just given was the button lesson (see defaultTutor()), so somebody on a
+   desktop has to be told what is left when the bar goes - and the honest
+   answer there is the arrow keys, which have always worked. */
+var ctlOfferPending=false;
+function controlsOffer(){
+  ctlOfferPending=false;
+  if(settings.ctlAsked)return;
+  if(!L||levelOver()||panelOpen()||screenUp())return;
+  settings.ctlAsked=true;
+  // Done before the card goes up, not by the buttons on it: the card is
+  // showing the player what has already changed, and KEEP SWIPING has to be
+  // a dismissal rather than an action.
+  settings.ui="none";
+  saveSettings();applyUI();syncHud();
+  offerShell("Controls",
+    "The buttons are off. You have the whole screen, and the three moves are "+
+    "the ones the tutorial just showed you \u2014 <b>swipe</b> to walk, "+
+    "<b>double-tap</b> to go "+VB().n2+" / "+VB().n3+", <b>two-finger swipe</b> "+
+    "to turn.",
+    "<button class='qt' id='ctlNo'>KEEP SWIPING</button>"+
+    "<button class='ad' id='ctlYes'>SHOW THE BUTTONS</button>",
+    "The gestures work either way, and so do the arrow keys. You can change "+
+    "this any time under <b>Menu \u203a Controls</b>.");
+  bind("ctlNo",function(){hidePanel();});
+  bind("ctlYes",function(){
+    settings.ui="full";saveSettings();applyUI();syncHud();hidePanel();
+    flash("buttons on");
+  });
 }
 function offerShell(title,lead,acts,note){
   showPanel("<h3>"+title+"</h3><div class='mn'>"+lead+"</div>"+
@@ -1570,13 +1675,23 @@ function struggleOffer(){
      ordinary level a TRIAL if this is ever called from somewhere new. */
   if(!B&&!TR)return;
   if(typeof skips!=="undefined"&&skips[levelKey])return;
+  /* THE PLAYER SAID STOP, AND STOP MEANS EVERY OFFER.
+
+     `noSlowOffer` used to be read one line lower, as the argument to
+     paceSlower() only - so pressing DON'T SHOW ME AGAIN silenced the *slow*
+     offer and then fell straight through to the skip offer underneath it,
+     and from then on every third loss put up a card asking to skip the
+     level. Reported from a playtest as the button not working, which is
+     exactly what it looked like: the card kept coming. It is one preference
+     - "stop suggesting things" - so it is asked once, here, before the
+     function has decided which suggestion it was going to make. */
+  if(settings.noSlowOffer)return;
   var kind=B?"BOSS":"TRIAL";
   var beat=(fails[levelKey]||STRUGGLE_OFFER)+" times";
-  var slower=settings.noSlowOffer?null:paceSlower();
+  var slower=paceSlower();
 
   if(slower){
     settings.slowOffers=(settings.slowOffers||0)+1;
-    var again=settings.slowOffers>=2;
     saveSettings();
     offerShell(esc(L.name),
       "This one has beaten you "+beat+". A "+kind.toLowerCase()+" is the only "+
@@ -1585,15 +1700,12 @@ function struggleOffer(){
       "<button class='ad' id='sgSlow'>SLOW THE CLOCK \u00b7 "+slower.label+
         " ("+slower.pct+"%)</button>"+
       "<button class='qt' id='sgNo'>KEEP TRYING</button>"+
-      (again?"<button class='qt' id='sgNever'>DON'T SHOW ME AGAIN</button>":""),
+      "<button class='qt' id='sgNever'>DON'T SHOW ME AGAIN</button>",
       "It slows every part of the fight together, so it keeps its shape. "+
       "<b>No stars are lost.</b> You can change it any time under "+
       "<b>Menu \u203a Real time \u203a Pace</b>.");
     bind("sgNo",function(){hidePanel();});
-    if(again)bind("sgNever",function(){
-      settings.noSlowOffer=true;saveSettings();hidePanel();
-      flash("no more suggestions");
-    });
+    bindNever();
     bind("sgSlow",function(){
       settings.pace=slower.v;saveSettings();hidePanel();
       flash("clocks at "+slower.pct+"%");
@@ -1609,10 +1721,12 @@ function struggleOffer(){
     "This one has beaten you "+beat+", and the clock is already as slow as it "+
     "goes. You can go past it and come back whenever you like.",
     "<button class='ad' id='sgAd'>SKIP THIS "+kind+" \u00b7 WATCH 3 ADS</button>"+
-    "<button class='qt' id='sgNo'>KEEP TRYING</button>",
+    "<button class='qt' id='sgNo'>KEEP TRYING</button>"+
+    "<button class='qt' id='sgNever'>DON'T SHOW ME AGAIN</button>",
     "A skip awards <b>no stars</b> and leaves the level on the map, still "+
     "playable. Ads buy progress, never score.");
   bind("sgNo",function(){hidePanel();});
+  bindNever();
   /* Not gated on an ad here, for the same reason grantSkip() is not: there
      is no provider yet, and a button that silently did nothing would be
      worse than one that plainly works. When the SDK is wired, its completion
@@ -1661,4 +1775,8 @@ function loadLevel(level,idx){
   syncMeshes();buildGrid();syncHud();
   center.copy(centerT);viewSize=viewSizeT;onResize();
   playerMesh.position.set(player.x,player.y,player.z);
+  // The board first, the card a beat later - the same order the struggle
+  // offer uses, and for the same reason: it is a door standing in front of
+  // something, so the something has to be there.
+  if(ctlOfferPending)setTimeout(controlsOffer,520);
 }

@@ -415,6 +415,25 @@ find out, which costs a move on a clock. So:
   shorter, so it speaks first and the blink carries the rest of the beat.
   Drawing both gives you a bubble around a player flickering in and out of
   existence, which reads as a rendering fault.
+- **THE RUN IS PART OF THE SESSION, and leaving it out read as the cores
+  never going down.** `saveSession()` stores the cores you have reached and
+  the lives you have spent (`co`/`lv`), and `resumeSession()` reads them back
+  **only on a trial** — a boss resumes at phase 1 with a fresh pack, so it
+  has to resume with fresh lives too. Without them, CONTINUE put the player
+  back on their square with the amber row full again and the marker on a core
+  they were standing on, so the row could not go down until they stepped off
+  and came back. Reported from a playtest by somebody who had closed the game
+  between crossings — which is why the owner never saw it in one sitting. The
+  clock's own count is deliberately *not* stored: a rhythm restarts cleanly,
+  and being dropped back mid-beat is a hit nobody earned.
+- **`respawn()` writes the session, and that is the half that made it a
+  falling bug.** `saveSession()` refuses to write while `dying` is set, so a
+  death recorded nothing and the stored board was the one from *before* the
+  fall — full lives, old square. It runs after `die()` has cleared `dying`,
+  so what is stored is the board the player comes back to. `trialHurt()`
+  writes for the same reason, and also calls `checkWin()`: being pulled out
+  of the plane by a sweep lands you on a real square in the volume, and it
+  was the one way of arriving on a core that did not go through it.
 - **A sweep hit costs a life and nothing else.** You keep your square, the clock
   keeps its count, and you get one beat of grace, spent visibly as a blink.
   Resetting the clock on a hit is what made the arena appear to switch off;
@@ -1468,10 +1487,16 @@ level data changed to make it.
   "skip this" was the wrong first move** — it hands over the only two levels
   with a real-time component the moment they get hard, and tells somebody who
   is nearly there to give up.
-- **The slow offer can be declined, so the second one carries DON'T SHOW ME
-  AGAIN** (`settings.noSlowOffer`, cleared by the settings reset). It is
-  global rather than per level: somebody who does not want the game
-  suggesting things does not want it on the next boss either.
+- **EVERY offer carries DON'T SHOW ME AGAIN, and it silences all of them**
+  (`settings.noSlowOffer`, cleared by the settings reset). It is global
+  rather than per level: somebody who does not want the game suggesting
+  things does not want it on the next boss either. It used to be on the slow
+  card only and only from the second one, and `noSlowOffer` was read as the
+  argument to `paceSlower()` — so pressing it silenced the slow offer and
+  then **fell straight through to the skip offer underneath**, which had no
+  opt-out of its own. Reported from a playtest, in those words: the button
+  did not work and the game kept asking. The flag is asked at the top of
+  `struggleOffer()` now, before it has decided which suggestion to make.
 - **The offer goes up after the reset, not instead of it.** The board is back
   and KEEP TRYING is right there, so it is a door rather than a wall. The
   skip reaches `grantSkip()` and nothing else, so it inherits the rule — ads
@@ -2122,6 +2147,27 @@ hand** demonstrating whichever one the current step wants. `BUTTONS` is the
 old lesson, bar forced on, unchanged. The menu row is under Controls; it
 changes nothing outside the tutorial, because every control works in both.
 
+**THE TUTORIAL ENDS BY TAKING THE BUTTONS OFF AND OFFERING THEM BACK.**
+Winning the last tutorial level sets `ui` to `none` and puts up one card —
+`controlsOffer()` in `js/12-play.js`, `settings.ctlAsked` in the
+`loadSettings()` whitelist so it is asked once ever. The lesson taught the
+gestures and then handed the buttons straight back, which is teaching one
+control set and covering a fifth of the screen with a different one. What it
+must not do is take them away *silently*: a player who wants the bar has no
+way of knowing it is a setting. So the tutorial does it and shows the way
+back, which is `struggleOffer()`'s shape — the thing has already happened,
+the board is behind the card, and the card is a door rather than a wall.
+
+- **Armed in `win()`, fired from `loadLevel()`.** A panel is z-index 12 and
+  the win card is 20, so a card raised at the moment of winning opens
+  *behind* the one being read. `ctlOfferPending` carries it into whatever the
+  player opens next, which is also what makes it survive LEVELS as well as
+  NEXT LEVEL.
+- **It names the keyboard too.** On a fine pointer the lesson just given was
+  the *button* lesson (`defaultTutor()`), so a desktop player has to be told
+  what is left when the bar goes — and there the honest answer is the arrow
+  keys, which have always worked.
+
 The old rule was that a tutorial forces the bar back over the layout setting,
 since hiding the controls during the lesson about the controls is a joke at
 the player's expense. That is still true and it is *why* this inverts: the
@@ -2214,7 +2260,7 @@ and they are also the ones that cost no screen.
 
 ## Controls
 
-Three layouts, in the menu: `ON-SCREEN` (d-pad, default), `COMPACT` (no d-pad),
+Three layouts, in the menu: `ON-SCREEN` (d-pad), `COMPACT` (no d-pad),
 `HIDDEN` (nothing). Gestures work in **every** mode and are additive, never
 exclusive — every gesture also has a key and, unless hidden, a button:
 
@@ -2241,6 +2287,18 @@ exclusive — every gesture also has a key and, unless hidden, a button:
   that**; if the turn ever feels mushy again, check the signs before touching
   `TURN_DEG`. `docs/HISTORY.md` has the worked example.
 - two-finger tap — turn right, unchanged: it is a drag that never travelled
+- **Changing dimension jolts the camera and buzzes the phone** (`foldJolt()`
+  in `js/12-play.js`, `haptic()` in `js/11-sound.js`). It is `shakeT`, the
+  same decaying value a hit already uses, so the render loop did not change;
+  the fold is the heavier of the two (.42 against .28), a world slamming flat
+  against one standing back up. **Skipped under `prefers-reduced-motion`,
+  unlike the death and hit shakes** — this one fires on an ordinary move
+  several times a level, which is the repetition that setting exists to stop.
+  The buzz is deliberately **not** tied to mute: mute is about the room you
+  are in, and vibrate is the operating system's switch to own. It is guarded
+  three ways because all three happen — no `navigator.vibrate` on desktop or
+  iOS Safari, a throw in some WebViews, and a silent no-op without a prior
+  gesture. Failing silently is correct: it is garnish on a move already made.
 - arrows / WASD, space, Q / E, Z undo, R restart, H hint, M mute, Shift peek
 - Esc — close the open panel, or open the menu from a clear screen. It closes
   before it opens, because a key that always opened the menu would be the one
@@ -2770,8 +2828,11 @@ tested and failed, plus where this sits in the PCG literature, are in
 
 0. **Playtest the gesture tutorial**, and if it lands, build the keyboard
    half: a `keys` table in `TUT_SAY`, a key-cap demonstration beside the
-   hand, `defaultTutor()` returning it on a fine pointer, and then the bar
-   off by default everywhere rather than only during the lesson.
+   hand, and `defaultTutor()` returning it on a fine pointer. **The bar being
+   off by default is done**, by the tutorial's own ending question — see
+   `controlsOffer()` — rather than by changing the default layout, so a
+   player who wants the buttons is offered them at the one moment they know
+   what they would be choosing between.
 1. **Playtest the three phased bosses.** They are real-time, which is the one
    thing no tool here can judge, and the ramp has still barely been felt. The
    questions: can a human read which axis to fold along while a line is lit,

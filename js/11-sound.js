@@ -57,13 +57,17 @@ function defaultTutor(){
    three stars. "on" forces that look everywhere, so the celebration can be
    looked at without earning it four times over. It changes nothing but the
    drawing: no stars move, nothing unlocks. */
+/* ctlAsked is whether the player has been asked, once, at the end of the
+   tutorial, whether they want the on-screen buttons - see controlsOffer().
+   It is a "has this happened" flag rather than a preference: the preference
+   it produces is `ui`, and the answer must not be asked for twice. */
 /* slowOffers counts how many times the game has suggested slowing a clock,
    and noSlowOffer is the player saying stop. Both are global rather than
    per level: somebody who does not want to be offered help does not want it
    again on the next boss either. */
 var settings={volume:defaultVolume(),brightness:1,ui:"full",volTouched:false,
               pace:1,mastery:"auto",tutor:defaultTutor(),
-              slowOffers:0,noSlowOffer:false,landHints:0};
+              slowOffers:0,noSlowOffer:false,landHints:0,ctlAsked:false};
 /* How many times the landing rule is spelled out in words. The rings keep
    drawing forever - they are free and they answer the question faster than a
    sentence does - but a line of text on every fold would be nagging. */
@@ -342,6 +346,23 @@ function noiseRise(c,at,dur,vol){
   g.gain.exponentialRampToValueAtTime(.0001,at+dur+.16);
   src.connect(bp);bp.connect(g);g.connect(out(c));
   src.start(at);src.stop(at+dur+.18);
+}
+/* HAPTICS - the same event, felt.
+
+   The fold is the game's one verb and on a phone it is a tap on glass with
+   no travel in it; a few milliseconds of motor under the finger is what a
+   button press has that a touch does not. Deliberately tiny, and deliberately
+   NOT tied to the mute setting: mute is about the room you are in, and a
+   phone in a pocket in a meeting is on silent *and* on vibrate or neither -
+   that is the operating system's switch to own, not ours.
+
+   Guarded three ways because every one of them happens in the wild:
+   `navigator.vibrate` does not exist on desktop or on iOS Safari at all, it
+   throws in some embedded WebViews, and it is a no-op without a prior user
+   gesture. A silent failure is the correct outcome in all three - this is
+   garnish on a move that has already been made. */
+function haptic(ms){
+  try{ if(navigator&&navigator.vibrate)navigator.vibrate(ms); }catch(e){}
 }
 var SFX={
   step:(function(){var n=0;return function(){
