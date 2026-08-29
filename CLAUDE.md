@@ -672,6 +672,13 @@ walk into a wall.
   you land in one square, which is the kill. The 180 is the owner's call and
   the right one: the film belongs to the other side, so the other side is
   what the camera is behind. Turned to by the shortest way round.
+- **THE 180 IS PRESENTATION, NOT A RULE, and it is worth knowing which.** The
+  fold collapses the depth axis, so a hunter sharing your silhouette column
+  dies whether it is in front of you or behind you — the kill is symmetrical
+  and always was, and nothing about which way the camera faces changes what
+  happens. It is kept because it reads better: the film belongs to the other
+  side, so the other side is what the camera sits behind. Do not derive a
+  mechanic from it.
 - **The replay's `view` is the camera's, and the silhouette is recomputed to
   match.** The renderer derives every position from `viewAngle`, so the
   picture was already right — but `flatPos.u` is a coordinate in whichever
