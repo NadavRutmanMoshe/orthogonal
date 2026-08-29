@@ -1559,6 +1559,13 @@ things you do not own with what they cost, and a way into the wardrobe.
   panels.** That is the whole arrangement: the map and the wardrobe open over
   it exactly as they open over a level, and closing one puts you back here
   rather than dropping you into a level you never chose.
+- **`CONTINUE` wears the colour of the section it opens** (`--sec` on
+  `.hcont`, written by `homeSync()` from `SECTIONS[].col`). The first thing
+  on the screen and the place it leads should read as one thing rather than
+  as a green button and, one tap later, a red section. The lip and the ground
+  are `color-mix`ed from that one value, the way the map's nodes are, so a
+  pale section and a dark one are both legible without three hand-picked
+  values each. It falls back to the goal green, which is what it always was.
 - **`CONTINUE` has two answers and the specific one wins.** A saved session
   puts you back mid-level on the move you stopped on (`resumeSession()`);
   without one it is `mapHere()`, the first level you have not dealt with,
@@ -2174,6 +2181,29 @@ the board is behind the card, and the card is a door rather than a wall.
   what is left when the bar goes — and there the honest answer is the arrow
   keys, which have always worked.
 
+**AND ONE LEVEL LATER, THE BULB.** `hintOffer()` explains the hint, once
+(`settings.hintAsked`, whitelisted beside `ctlAsked`). The tutorial stops
+talking at exactly the point the player meets the game, and the single most
+useful control in it is a bulb in the corner nobody has been told about —
+which is a retention hole rather than a missing nicety, since hints are the
+reason somebody stuck does not close the game.
+
+- **It is the level *after* the controls card, not the same one.** Two
+  full-bleed cards in a row on the first real level is a wall between the
+  tutorial and the game. `settings.ctlAsked` sequences them: it is false
+  while the controls card is still pending, so `hintOfferDue()` cannot fire
+  until that one has been answered.
+- **The press it asks for is free.** A hint costs a star band, and a card
+  that tells the player to spend one to find out what a button does is the
+  small dishonesty a player remembers. It arms `freeHint` and `showHint()`
+  skips the accounting exactly once. The flag expires by being used rather
+  than at the end of the level — it is one hint, ever, and taking it two
+  levels later is not cheating.
+- **SHOW ME pulses the bulb rather than taking the hint.** The thing they
+  have to remember is where the button is, and pressing it themselves is
+  what fixes that. It goes through `cue()`, so a layout with no bulb still
+  gets the hand or the words.
+
 The old rule was that a tutorial forces the bar back over the layout setting,
 since hiding the controls during the lesson about the controls is a joke at
 the player's expense. That is still true and it is *why* this inverts: the
@@ -2214,11 +2244,16 @@ and they are also the ones that cost no screen.
   falls there. The pair's two tips are 52 viewBox units apart, which is the
   26px between the two dots, so the second dot lands on the second finger by
   construction and stays on it through the whole slide.
-- **The two-finger spacing came down from 34px to 26px to make the hand
-  possible.** Stacked rather than side by side is the part that matters and
-  is unchanged; the gap is not, and two fingertips a third of a palm apart is
-  a drawing of nothing. Three numbers move together — the two `.gfinger`
-  margins, the track's `::after` offset, and the symbol's tips.
+- **THE TWO FINGERS POINT UP AND SIT SIDE BY SIDE, and drawing a hand is what
+  allowed that.** They used to point sideways, because the two contacts were
+  stacked vertically — which was right while each contact was a bare dot, on
+  the grounds that two dots abreast sliding along their own direction of
+  travel read as one dot with a trail. A drawn hand answers that on its own:
+  nobody looks at a fist with two fingers out and sees one finger. So the
+  contacts went side by side, 22px apart, the hand got to be the right way
+  up, and the second track went with it — side by side, both fingers travel
+  along the same line. Three numbers move together: the two `.gfinger`
+  margins and the symbol's two tips.
 - **The hand lifts with the taps**, on the same 1.9s clock as the dot and the
   rings: a hand that stayed planted while the dot blinked is the "one messy
   throb" the double-tap drawing was already fixed for once. Its tilt is a
@@ -2253,12 +2288,10 @@ and they are also the ones that cost no screen.
   at which the dot lands again — move one and you must move the other,
   including in the reduced-motion block. 1.9s is also the swipe's loop, so
   all three demonstrations beat together.
-- **The two fingers are stacked, not side by side.** Side by side is the grip
-  most people use, but it is the worse drawing: two dots abreast sliding
-  along their own direction of travel read as one dot with a trail, which is
-  what a single-finger swipe already looks like. One above the other, both
-  moving, is unmistakably two. The gesture reads the horizontal midpoint, so
-  either grip works and the demo is honest either way.
+- **The two fingers sit side by side and point up**, which is how a hand
+  actually lands on glass. Stacked was the older drawing and the reason is
+  in the hand note above. The gesture itself reads the horizontal midpoint,
+  so either grip works and the demo is honest either way.
 - **`ghostRestart()` exists because a class change does not restart a CSS
   animation.** An animation restarts when its `animation-name` changes or
   when the element goes from `display:none` to displayed — so the parts of
@@ -2328,6 +2361,23 @@ exclusive — every gesture also has a key and, unless hidden, a button:
   that**; if the turn ever feels mushy again, check the signs before touching
   `TURN_DEG`. `docs/HISTORY.md` has the worked example.
 - two-finger tap — turn right, unchanged: it is a drag that never travelled
+- **THE FOLD IS A TIMED TWEEN, NOT A LERP** (`FOLD_MS_IN` 680, `FOLD_MS_OUT`
+  880, `FOLD_MS_CLOCK` 420, in `js/05-state.js`). It used to be
+  `flatT += (want-flatT)*rate`, which is an exponential ease-*out*: most of
+  the travel happens in the first few frames and the rest is half a second of
+  creeping the last two percent. So the verb the whole game is built on was
+  over before the eye had followed it. A linear phase through an ease-in-out
+  cubic puts the motion where it can be watched — it leans in, travels, and
+  settles. **Peek is deliberately kept out of the tween** and multiplied on
+  afterwards: it is a live analogue value the player is holding, not a move
+  being played, so it stays a lerp, and that separation is what lets the fold
+  have a real duration without peek inheriting one. **An external write to
+  `flatT` still wins**, detected by comparing against what the loop last
+  wrote, so `resetLevel()`, `respawn()` and `loadLevel()` still snap — a
+  death that animated a slow unfold on its way back to the start would be the
+  reset arriving in slow motion. `dtMs` is clamped, for the same reason the
+  fight clocks clamp theirs. The crush delay in `doFlatten` moved 420 → 620
+  to stay behind the picture.
 - **Changing dimension jolts the camera and buzzes the phone** (`foldJolt()`
   in `js/12-play.js`, `haptic()` in `js/11-sound.js`). **It is two motions,
   and they say different things.** `shakeT` is impact — the same decaying
@@ -2378,7 +2428,8 @@ cannot see and no wording fixes that. Three things answer it together:
 2. **The player is drawn on the block they WOULD land on** while peeking, not
    the one they folded from. `peekLanding()` makes the same two calls
    `doUnflatten` makes, so the preview and the move cannot disagree.
-3. **Standing up is slower than folding** (`.085` against `.14`), so the
+3. **Standing up is slower than folding** (`FOLD_MS_OUT` against
+   `FOLD_MS_IN`), so the
    return reads as a journey to the front of the stack rather than a cut.
    Not on a clock: there half a second is a real cost.
 
@@ -2782,9 +2833,13 @@ tested and failed, plus where this sits in the PCG literature, are in
   nothing there to check — but the machine has no opinion at all about the
   state you spend the crossing in.
 - **Boss and sweep pacing are both guesswork.** Trials: `period` 2500 → 2000,
-  `fire` 340 → 300. Bosses now ramp *within* a fight — `step` 780 → 620 and
-  `aim` 900 → 700 across `BOSS I`'s three phases, faster again by `BOSS IV` —
-  and the whole ramp is invented. The checks bracket each fight; they say
+  `fire` 340 → 300. Bosses ramp *within* a fight and *across* the campaign —
+  `BOSS I` runs 1100/1300 down to 870/1020 and `BOSS IV` 720/850 down to
+  570/660, so the opening fight is about 40% slower than it was and the last
+  one is where it always sat. **That ramp is what the `Pace` setting is meant
+  to stop being for**: a first boss slow enough to think in, rather than a
+  menu row asking a new player to diagnose their own difficulty. The whole
+  ramp is still invented. The checks bracket each fight; they say
   nothing about whether the numbers are *fun*, or whether a human can read a
   line, decide the axis, rotate and fold inside one beat.
 - **Nobody has played the phased fights.** Four bosses × three phases is a lot

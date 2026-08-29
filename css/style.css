@@ -1154,18 +1154,15 @@ body.tutlock .ghost.on{opacity:1}
    along their own direction of travel read as one dot with a trail behind
    it, which is the exact thing a single-finger swipe already looks like. One
    above the other, both moving, is unmistakably two. */
-/* 26px apart rather than 34: the spacing is what the two-finger HAND has to
-   span, and two fingertips a third of a palm apart is a drawing of nothing.
-   Stacked is the part that matters and is unchanged. */
-.ghost.g-two .gfinger.a{margin-top:-26px}
-.ghost.g-two .gfinger.b{display:block;margin-top:0}
-/* ...so the path is two lines as well, one under each finger. The second is
-   a pseudo-element rather than a second div: it is the same line at the same
-   width with the same gradient, and `background:inherit` is what keeps the
-   four direction rules above from needing a copy each. */
-.ghost.g-two .gtrack{margin-top:-13px}
-.ghost.g-two .gtrack::after{content:"";position:absolute;left:0;top:26px;
-  width:100%;height:100%;background:inherit;border-radius:inherit}
+/* SIDE BY SIDE, 22px apart, which is the spread of the hand drawn over them.
+   Stacked was right while each contact was a bare dot and nothing else on
+   screen said "two" - two dots abreast sliding along their own direction of
+   travel read as one dot with a trail. A fist with two fingers out says it
+   instead, so the contacts are free to sit where fingers really do, and the
+   hand gets to be the right way up. One track now rather than two: side by
+   side, both fingers travel along the same line. */
+.ghost.g-two .gfinger.a{margin-left:-24px}
+.ghost.g-two .gfinger.b{display:block;margin-left:-2px}
 /* THE HAND. Positioned so the index fingertip lands exactly on the contact
    dot's centre, which is what makes the dot read as "this is where the
    finger is touching" rather than as a second object beside it.
@@ -1174,8 +1171,8 @@ body.tutlock .ghost.on{opacity:1}
    once: `.gfinger` is 26px square and its centre - the contact point - is at
    (13,13). The one-finger tip is at (40,14) in a 120x160 viewBox, so at 60px
    wide it renders at (20,7) and the box goes at 13-20, 13-7. The pair's
-   upper tip is at (24,20) in 140x150, rendering at (12,10) with the lower
-   one 26px below it, which is exactly where finger b's dot sits.
+   pair's first tip is at (38,14) in 150x160, rendering at (19,7) with the
+   second one 22px to its right, which is exactly where finger b's dot sits.
 
    THE TILT IS A CUSTOM PROPERTY because the double tap animates `transform`
    and an animated transform replaces a static one outright - so the lift
@@ -1184,12 +1181,10 @@ body.tutlock .ghost.on{opacity:1}
 .ghand{position:absolute;display:none;overflow:visible;--tilt:-10deg}
 .ghand.single{width:60px;height:80px;left:-7px;top:6px;
   transform:rotate(var(--tilt));transform-origin:20px 7px}
-.ghand.pair{width:70px;height:75px;left:1px;top:3px}
+.ghand.pair{width:75px;height:80px;left:-6px;top:6px;
+  transform:rotate(var(--tilt));transform-origin:19px 7px}
 .ghost.g-swipe .ghand.single,.ghost.g-dbl .ghand.single{display:block}
 .ghost.g-two .ghand.pair{display:block}
-/* Mirrored for a rightward slide, about the fingertips' own x, so the palm
-   trails the direction of travel and the two tips do not move. */
-.ghost.g-two.d-right .ghand.pair{transform:scaleX(-1);transform-origin:12px 10px}
 /* The rim goes on first as a fat round stroke and the body covers the seams.
    `use` inherits fill and stroke into the symbol, which is the whole reason
    the shapes inside carry no paint of their own. */
@@ -1344,11 +1339,24 @@ body.tut.tutgest .coach,body.tut.tutgest.ui-none .coach{bottom:44px}
 /* The one thing this screen is for, so it gets the raised treatment the
    panels' primary button already has - and its own second line, because
    "CONTINUE" alone does not say what you are continuing. */
-.hcont{flex-direction:column;gap:2px;height:56px;
-  border-color:var(--goal);color:var(--goal);font-weight:600;
-  background:rgba(53,194,165,.10);box-shadow:0 4px 0 rgba(20,112,93,.55);
+/* CONTINUE WEARS THE COLOUR OF WHERE IT IS SENDING YOU. `--sec` is written
+   by homeSync() from the section the target level is in, so the button is
+   the same hue as that section's tab, trail and nodes on the map - which
+   makes the first thing on the screen and the place it leads read as one
+   thing rather than as a green button and, one tap later, a red section.
+   It falls back to the goal green, which is what it always was, so a level
+   with no section (the editor, the library) changes nothing.
+
+   The lip and the ground are mixed from that one value rather than authored
+   beside it - the same reasoning the map's nodes use, and what keeps a pale
+   section and a dark one both legible without hand-picking three values. */
+.hcont{flex-direction:column;gap:2px;height:56px;--sec:var(--goal);
+  border-color:var(--sec);color:var(--sec);font-weight:600;
+  background:color-mix(in srgb,var(--sec) 11%,transparent);
+  box-shadow:0 4px 0 color-mix(in srgb,var(--sec) 46%,#04070d);
   transition:transform .12s ease,box-shadow .12s ease}
-.hcont:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(20,112,93,.55)}
+.hcont:active{transform:translateY(3px);
+  box-shadow:0 1px 0 color-mix(in srgb,var(--sec) 46%,#04070d)}
 .hcont b{font-size:12px;letter-spacing:.16em;font-weight:600}
 .hcont i{font-style:normal;font-size:8.5px;letter-spacing:.08em;
   color:var(--fg-dim);text-transform:none}

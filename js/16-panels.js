@@ -328,7 +328,7 @@ function menuPanel(){
     settings.tutor=defaultTutor();
     // including "stop suggesting things": a reset is a reset
     settings.slowOffers=0;settings.noSlowOffer=false;settings.landHints=0;
-    settings.ctlAsked=false;
+    settings.ctlAsked=false;settings.hintAsked=false;
     muted=false;
     applyVolume();
     applyBrightness();applyUI();saveSettings();syncHud();
@@ -477,6 +477,11 @@ function homeSync(){
   var fresh=nothingBehind();
   b.querySelector("b").textContent=fresh?"START":"CONTINUE";
   b.querySelector("i").textContent=lv?lv.name.replace(/^\d+ \u2014 /,""):"";
+  /* The button takes the colour of the section it opens - see .hcont. The
+     section's UI colour rather than its sky: `col` is the value picked to
+     read as a tab on a dark panel, which is the same job a button has. */
+  var sec=SECTIONS[mapSecOf(t.i)];
+  b.style.setProperty("--sec",(sec&&sec.col)||"var(--goal)");
   $("homeStars").textContent=stars;
   homeStrip();
   homeBindStrip();

@@ -458,11 +458,11 @@ var LEVELS=[
       it back is one line of level data. */
    boss:{floorStep:300,creepEvery:7500,
      phases:[
-       {at:[[8,1,5]],step:780,aim:900,
+       {at:[[8,1,5]],step:1100,aim:1300,
         say:"one of them, and nothing in the way"},
-       {at:[[8,1,5]],step:700,aim:820,say:"the ground comes up",
+       {at:[[8,1,5]],step:980,aim:1150,say:"the ground comes up",
         add:[[2,1,1],[6,1,5],[6,1,1],[2,1,5],[4,1,3]]},
-       {at:[[8,1,5],[7,1,3]],step:620,aim:700,say:"same ground — two of them"}]},
+       {at:[[8,1,5],[7,1,3]],step:870,aim:1020,say:"same ground — two of them"}]},
    blocks:box(0,8,0,0,0,6,[]),
    start:[1,1,1]},
 {name:"13 — Sharp",
@@ -533,10 +533,10 @@ var LEVELS=[
       Phases three and four then change only the opponent - see BOSS I. */
    boss:{creepEvery:7500,
      phases:[
-       {at:[[8,1,5]],step:740,aim:880,say:"bare ground, for now"},
-       {at:[[8,1,5]],step:670,aim:790,say:"cover for it, and the floor bites",
+       {at:[[8,1,5]],step:900,aim:1060,say:"bare ground, for now"},
+       {at:[[8,1,5]],step:810,aim:950,say:"cover for it, and the floor bites",
         add:[[3,1,1],[6,1,4],[5,1,2,4],[2,1,4],[7,1,2,4]]},
-       {at:[[8,1,5],[7,1,6]],step:590,aim:660,say:"same ground — two of them"}]},
+       {at:[[8,1,5],[7,1,6]],step:720,aim:850,say:"same ground — two of them"}]},
    blocks:box(0,9,0,0,0,6,[]),
    start:[1,1,1]},
 {name:"20 — Clear Ground",
@@ -602,10 +602,10 @@ var LEVELS=[
       the same board. */
    boss:{creepEvery:7000,
      phases:[
-       {at:[[8,1,5]],step:720,aim:860,say:"clear glass, clear floor"},
-       {at:[[8,1,5]],step:650,aim:770,say:"stone you cannot fold through, glass you can",
+       {at:[[8,1,5]],step:800,aim:950,say:"clear glass, clear floor"},
+       {at:[[8,1,5]],step:720,aim:860,say:"stone you cannot fold through, glass you can",
         add:[[3,1,2],[7,1,4],[6,1,1],[5,1,1,1],[2,1,5,1],[8,1,3,1]]},
-       {at:[[8,1,5],[7,1,6]],step:570,aim:650,say:"same ground — two of them"}]},
+       {at:[[8,1,5],[7,1,6]],step:640,aim:760,say:"same ground — two of them"}]},
    blocks:box(0,9,0,0,0,6,[]),
    start:[1,1,1]},
 {name:"28 — Shove",
@@ -681,10 +681,10 @@ var LEVELS=[
       to where it started. */
    boss:{creepEvery:6500,
      phases:[
-       {at:[[9,1,6]],step:700,aim:820,say:"the widest floor in the game"},
-       {at:[[9,1,6]],step:630,aim:730,say:"everything at once — and two crates to shove",
+       {at:[[9,1,6]],step:720,aim:850,say:"the widest floor in the game"},
+       {at:[[9,1,6]],step:650,aim:760,say:"everything at once — and two crates to shove",
         add:[[3,1,2],[7,1,2],[5,1,5],[3,1,5,4],[8,1,3,1],[7,1,5,3],[5,1,2,3]]},
-       {at:[[9,1,6],[8,1,7]],step:550,aim:620,say:"same ground — two of them"}]},
+       {at:[[9,1,6],[8,1,7]],step:570,aim:660,say:"same ground — two of them"}]},
    blocks:box(0,10,0,0,0,7,[]),
    start:[1,1,1]},
 {name:"38 — Up and Over",

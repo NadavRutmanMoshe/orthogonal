@@ -2384,7 +2384,44 @@ function animate(now){
   var wantLean=flat?0:peekTarget, wantPlane=(flat&&!dying)?peekTarget:0;
   planePeek+=(wantPlane-planePeek)*.15;
   if(planePeek<.002)planePeek=0;
-  var ftWant=flatTarget*(1-planePeek*PEEK_RISE);
+  /* THE FOLD IS A TIMED TWEEN, NOT A LERP, AND THAT IS THE WHOLE DIFFERENCE.
+
+     It used to be `flatT += (want-flatT)*rate`, which is an exponential
+     ease-*out*: it does most of its travel in the first few frames and then
+     spends half a second creeping the last two percent. So the move was over
+     before the eye had followed it and the long tail was invisible - the
+     verb the entire game is built on read as a cut. A linear phase through
+     an ease-in-out curve puts the motion where it can be watched: it leans
+     in, travels, and settles.
+
+     Peek is kept OUT of the tween and multiplied on afterwards. It is a live
+     analogue value the player is holding, not a move being played, so it has
+     to stay a lerp - and the separation is what lets the fold have a real
+     duration without peek inheriting one.
+
+     An external write to flatT still wins. resetLevel(), respawn() and
+     loadLevel() all snap it to 0, and a death that animated a slow unfold on
+     its way back to the start would be the reset arriving in slow motion. It
+     is detected rather than declared - comparing against the value this loop
+     last wrote - so nothing outside this file has to know the tween exists. */
+  if(flatT!==foldLast){foldBase=flatT;foldFrom=flatT;foldP=1;foldWas=flatTarget;}
+  if(flatTarget!==foldWas){foldWas=flatTarget;foldFrom=foldBase;foldP=0;}
+  if(foldP<1){
+    /* Standing up is slower than folding, so the return reads as a journey
+       rather than a cut - it is the one moment that shows you travelling to
+       the front of the stack. Not on a clock: there half a second is a real
+       cost and the fight has to stay honest. */
+    var fdur=(B||TR)?FOLD_MS_CLOCK
+            :(flatTarget<foldFrom?FOLD_MS_OUT:FOLD_MS_IN);
+    // Clamped for the same reason the fight clocks clamp theirs: a
+    // backgrounded tab hands back one enormous frame, and the one move the
+    // whole game is about must not be skipped by returning to it.
+    foldP=Math.min(1,foldP+Math.min(dtMs,60)/fdur);
+    var fe=foldP<.5 ? 4*foldP*foldP*foldP
+                    : 1-Math.pow(-2*foldP+2,3)/2;      // ease in-out cubic
+    foldBase=foldFrom+(flatTarget-foldFrom)*fe;
+  } else foldBase=flatTarget;
+  var ftWant=foldBase*(1-planePeek*PEEK_RISE);
   /* THE REPLAY. Ticked here rather than in bossFrame, because bossFrame is
      stopped for exactly the things the replay plays over - and it runs on
      real time, because it is a piece of film rather than a beat of the fight.
@@ -2403,13 +2440,8 @@ function animate(now){
     // the fold unwinds after the film ends rather than snapping back
     repFade=Math.max(0,repFade-dtMs/420);
   }
-  /* Standing up is SLOWER than folding, so the return reads as a journey
-     rather than a cut - it is the one moment that shows you travelling to
-     the front of the stack. Not on a clock: there, half a second is a real
-     cost and the fight has to stay honest. */
-  var ftRate=(ftWant<flatT&&!B&&!TR)?.085:.14;
-  flatT+=(ftWant-flatT)*ftRate;
-  if(Math.abs(ftWant-flatT)<.002)flatT=ftWant;
+  flatT=ftWant;
+  foldLast=flatT;               // see the external-write test above
   viewAngle+=(viewAngleTarget-viewAngle)*.16;
   /* THE WEATHER. Driven off real frame time like the fight clocks, so it
      runs at the same rate on a 120Hz phone and a loaded one - and folded,
@@ -2507,7 +2539,7 @@ function animate(now){
      hard and settles rather than ringing - a world hitting the plane, not a
      spring. It runs on its own counter because it is longer than the jitter
      (about 400ms against 200) and because its sign is information. */
-  if(foldSlamT>0)foldSlamT=Math.max(0,foldSlamT-.045);
+  if(foldSlamT>0)foldSlamT=Math.max(0,foldSlamT-.028);
   /* The phase runs FORWARD from the moment of the fold (1-t) while the
      envelope decays with it (t squared), so the swing starts from rest,
      peaks about a fifth of the way in and rebounds once. Driving the phase

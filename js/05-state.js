@@ -20,6 +20,22 @@ var squash=0, shakeT=0, lastY=null, lastSolidDepth=0;
    a decaying magnitude with a random direction, and this one has a direction
    that matters - down into the plane, up out of it. See foldJolt(). */
 var foldSlamT=0, foldSlamDir=-1;
+/* HOW LONG THE WORLD TAKES TO FOLD. The verb the whole game is built on, so
+   it is given room to be watched: a linear phase through an ease-in-out
+   curve over these, rather than the exponential lerp it used to be. Standing
+   up is the slower of the two because it is the one moment that shows you
+   travelling to the front of the stack. On a clock both are cut short - the
+   fight cannot wait most of a second for the picture. */
+var FOLD_MS_IN=680, FOLD_MS_OUT=880, FOLD_MS_CLOCK=420;
+/* The tween's own state, owned by 10-render.js. `foldLast` is what the loop
+   last wrote to flatT, which is how an external write to it is noticed. */
+var foldBase=0, foldFrom=0, foldP=1, foldWas=0, foldLast=0;
+/* ONE HINT ON THE HOUSE, armed by the card that explains what the bulb is.
+   The card asks the player to press a button that normally costs them a
+   star, so the press it asks for must not - being taught what a control does
+   is not the same as needing help with the puzzle. Armed once, spent once,
+   and it survives the level it was armed on: it expires by being used. */
+var freeHint=false;
 // Looking around shouldn't cost a move. Peeking swings the camera off the
 // orthogonal axis without touching the game state, so you can read depth and
 // then carry on.

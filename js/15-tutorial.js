@@ -789,11 +789,16 @@ function showHint(){
   var map={"FLAT":"bFlat","POP":"bFlat","rot+":"bRotR","rot-":"bRotL",
            "\u2192":"bRight","\u2190":"bLeft","\u2191":"bUp","\u2193":"bDown"};
   var say=cue(map[m]||"bFlat");
-  hintsUsed++;
+  /* The one the game asked for is on the game. See hintOffer(): the card
+     that explains the bulb tells the player to press it, and charging a star
+     for doing as you are told is the trap that whole card exists to avoid. */
+  var free=freeHint;
+  if(free)freeHint=false; else hintsUsed++;
   SFX.hint();
   syncHud();
   var cap=hintCap();
-  var note=cap===0?"hints used \u00b7 no stars this level"
+  var note=free?"free \u00b7 this one is on us"
+          :cap===0?"hints used \u00b7 no stars this level"
                   :"hint "+hintsUsed+" \u00b7 max "+cap+" star"+(cap===1?"":"s");
   /* With the bar hidden there is no button to pulse, so the move itself is
      the message and the accounting is a footnote to it. Both used to be one

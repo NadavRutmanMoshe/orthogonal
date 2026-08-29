@@ -1318,8 +1318,12 @@ function doFlatten(){
   /* COMMITTED NOW, DRAWN IN 420ms. Declaring it is what stops a charge
      landing in that gap and taking a second life for a moment the player has
      already lost - see deathPending in 05-state.js. */
-  if(wall||crush){deathPending=true;slowMo();setTimeout(function(){die("crush");},420);}
-  else if(spiked){deathPending=true;slowMo();setTimeout(function(){die("spike");},420);}
+  /* 620ms rather than 420, because the fold itself now takes FOLD_MS_IN to
+     play out and a death landing mid-fold is the crush arriving before the
+     thing that causes it. deathPending freezes the shield from the moment the
+     move is committed, so lengthening this costs the player nothing. */
+  if(wall||crush){deathPending=true;slowMo();setTimeout(function(){die("crush");},620);}
+  else if(spiked){deathPending=true;slowMo();setTimeout(function(){die("spike");},620);}
 }
 function doUnflatten(){
   if(typeof peekUnlatch==="function")peekUnlatch();
@@ -1678,6 +1682,52 @@ function controlsOffer(){
     flash("buttons on");
   });
 }
+/* THE BULB, EXPLAINED ONE LEVEL AFTER THE BUTTONS.
+
+   The tutorial's last card says where the hand goes and then the game stops
+   talking - and the single most useful control in it is a bulb in the corner
+   that nobody has been told about. Hints are the reason a player who is
+   stuck does not close the game, so a hint nobody knows exists is a
+   retention hole rather than a missing nicety.
+
+   It is deliberately the level AFTER the controls card rather than the same
+   one: two full-bleed cards in a row on the first real level is a wall
+   between the tutorial and the game. `settings.ctlAsked` is what sequences
+   them - it is false while the controls card is still pending, so this can
+   only come up once that one has been answered.
+
+   AND THE PRESS IT ASKS FOR IS FREE. A hint costs a star band, and this card
+   tells the player to spend one in order to find out what the button does -
+   so it arms `freeHint` and showHint() skips the accounting exactly once.
+   Charging for a control you demanded they try is the kind of small
+   dishonesty a player remembers. */
+function hintOfferDue(){
+  return !settings.hintAsked&&settings.ctlAsked&&!ctlOfferPending&&
+         playSource==="builtin"&&!!L&&!L.tutorial&&!L.boss&&!L.trial;
+}
+function hintOffer(){
+  if(!hintOfferDue())return;
+  if(levelOver()||panelOpen()||screenUp())return;
+  settings.hintAsked=true;saveSettings();
+  freeHint=true;
+  offerShell("The bulb",
+    "Stuck on a level? The bulb in the corner shows you the <b>next move</b> "+
+    "\u2014 it is always there, it is unlimited, and nothing in this game is "+
+    "ever a dead end you cannot be shown the way out of.",
+    "<button class='ad' id='hnTry'>SHOW ME</button>"+
+    "<button class='qt' id='hnNo'>GOT IT</button>",
+    "Hints do lower the stars you can score on a level \u2014 but not this one. "+
+    "<b>The next hint you take is free</b>, because we asked you to try it.");
+  bind("hnNo",function(){hidePanel();});
+  bind("hnTry",function(){
+    hidePanel();
+    // The pulse rather than the hint itself: the point is to show them where
+    // the button is and let *them* press it, which is the thing they have to
+    // remember. cue() falls through to the hand or to words if the layout
+    // ever drops the bulb, so this says it whatever is on screen.
+    setTimeout(function(){cue("bHint");},260);
+  });
+}
 function offerShell(title,lead,acts,note){
   showPanel("<h3>"+title+"</h3><div class='mn'>"+lead+"</div>"+
             "<div class='ma'>"+acts+"</div><div class='mn'>"+note+"</div>");
@@ -1793,4 +1843,5 @@ function loadLevel(level,idx){
   // offer uses, and for the same reason: it is a door standing in front of
   // something, so the something has to be there.
   if(ctlOfferPending)setTimeout(controlsOffer,520);
+  else if(hintOfferDue())setTimeout(hintOffer,520);
 }

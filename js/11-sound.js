@@ -58,7 +58,8 @@ function defaultTutor(){
    looked at without earning it four times over. It changes nothing but the
    drawing: no stars move, nothing unlocks. */
 /* ctlAsked is whether the player has been asked, once, at the end of the
-   tutorial, whether they want the on-screen buttons - see controlsOffer().
+   tutorial, whether they want the on-screen buttons - see controlsOffer(),
+   and hintAsked the same for the bulb one level later - see hintOffer().
    It is a "has this happened" flag rather than a preference: the preference
    it produces is `ui`, and the answer must not be asked for twice. */
 /* slowOffers counts how many times the game has suggested slowing a clock,
@@ -67,7 +68,8 @@ function defaultTutor(){
    again on the next boss either. */
 var settings={volume:defaultVolume(),brightness:1,ui:"full",volTouched:false,
               pace:1,mastery:"auto",tutor:defaultTutor(),
-              slowOffers:0,noSlowOffer:false,landHints:0,ctlAsked:false};
+              slowOffers:0,noSlowOffer:false,landHints:0,ctlAsked:false,
+              hintAsked:false};
 /* How many times the landing rule is spelled out in words. The rings keep
    drawing forever - they are free and they answer the question faster than a
    sentence does - but a line of text on every fold would be nagging. */

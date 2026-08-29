@@ -96,6 +96,7 @@ function loadSettings(){
         // Same trap: without this the tutorial's controls question is asked
         // again on every reload, since nothing else records that it was.
         if(o.ctlAsked===true)settings.ctlAsked=true;
+        if(o.hintAsked===true)settings.hintAsked=true;
         if(typeof o.slowOffers==="number"&&o.slowOffers>=0)
           settings.slowOffers=Math.min(99,o.slowOffers|0);
         if(typeof o.landHints==="number"&&o.landHints>=0)
