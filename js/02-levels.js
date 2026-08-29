@@ -346,6 +346,21 @@ var LEVELS=[
    a wrong route finds.
 
    None of these uses a special block: fundamentals is stone only. */
+{name:"02c — The Same Column",
+   hint:"Both blocks are in the same column. Only one of them is the goal.",
+   /* THE TEST, AND IT IS THE OWNER'S LEVEL, pasted out of the editor. It is
+      the smallest possible check that the reveal landed: walk to the end of
+      the platform, fold, and stand back up, and the naive route puts you on
+      the block you were already standing on - because that one is at the
+      front. The goal is the other block in the same column, two further back,
+      and the only way onto it is to turn round first so that the far one
+      becomes the near one.
+
+      It is placed immediately after `00 — First Landing` for that reason.
+      Before the reveal it would be a trap; after it, it is the one question
+      the reveal was answering, asked once, with nothing else in the way. */
+   blocks:[[0,0,0],[1,0,0],[2,0,0],[3,0,0],[3,0,-2]],
+   start:[0,1,0],goal:[3,1,-2],rotate:true},
 {name:"03 — The Near One",
    /* Rule 5, on its own. The goal's column holds two blocks and you come
       back on the one nearest the camera, which is not the goal — so you have
@@ -845,7 +860,7 @@ var SECTIONS=[
           scene:"trees", ink:0x16241a,
           stars:{n:46, col:0xdfe9ff, seed:19},
           air:{col:0xd8e8b0, n:14, rise:.05, drift:.09, size:.075}}},
-  {at:20, name:"II · SPIKES", sub:"a hazard you cannot see until you fold", col:"#e0455f",
+  {at:21, name:"II · SPIKES", sub:"a hazard you cannot see until you fold", col:"#e0455f",
    story:"Some of what is down there did not survive being flattened.",
    /* HELL, and it is DARK hell rather than bright. This section teaches
       fire, and a glowing orange world swallows a fire block whole - that was
@@ -856,7 +871,7 @@ var SECTIONS=[
    theme:{sky:[0x1a0a10,0x3a0f0a], block:0xc8c8c8, surface:"basalt",
           scene:"hell", flare:17000, ink:0x24100e,
           air:{col:0xff9a4a, n:24, rise:.20, drift:.07, size:.07}}},
-  {at:29, name:"III · GLASS", sub:"solid in the volume, absent from the plane", col:"#7fb2ff",
+  {at:30, name:"III · GLASS", sub:"solid in the volume, absent from the plane", col:"#7fb2ff",
    story:"Water casts nothing, so the plane holds no record of it.",
    /* EMBER, for the same inverted reason: this section teaches water, so a
       warm world is what makes cyan sing. Embers rise, and the void warms
@@ -871,14 +886,14 @@ var SECTIONS=[
      boss also carries its four-arc ring, which is what actually tells them
      apart. This is the closest any section gets to a reserved colour, and
      the pair should be pulled further apart when the boss is revisited. */
-  {at:39, name:"IV · CRATES", sub:"change the plane by moving the volume", col:"#c07ae0",
+  {at:40, name:"IV · CRATES", sub:"change the plane by moving the volume", col:"#c07ae0",
    story:"You can edit what they see. That is the one thing they cannot do.",
    /* DUST. Drifting sideways rather than rising or falling, because this is
       the section about pushing things along a row. */
    theme:{sky:[0x1e2734,0x4f4630], block:0x8d7f5e, scene:"ruins",
           ink:0x1c1710,
           air:{col:0xe0cd9a, n:18, rise:.02, drift:.20, size:.085}}},
-  {at:51, name:"V · EXTRA", sub:"unlocked by the Census — the long ones", col:"#3fc4d4", locked:true,
+  {at:52, name:"V · EXTRA", sub:"unlocked by the Census — the long ones", col:"#3fc4d4", locked:true,
    story:"The parts of the world that were never counted.",
    /* NOCTURNE. Almost nothing moves out here, which is the point - it is
       the shelf past the last warden, where the counting stopped. */

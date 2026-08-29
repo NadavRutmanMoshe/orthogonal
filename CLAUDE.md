@@ -163,10 +163,23 @@ of that is the whole point:
   moment for it: they had no model of the fold yet, so there was nothing to
   correct. Now it arrives as a reward for beating a clock, opens with two
   cards, and has five levels of quiet assumption behind it.
+- **`02c — The Same Column` is the exam, and it is the owner's own level.**
+  Four blocks in a row and a fifth two behind the end of it, both in one
+  silhouette column. Walk to the end, fold, stand up, and the naive route
+  puts you back on the block you were already on — because that one is at the
+  front. The goal is the other one, and the only way onto it is to turn round
+  first. `solve()` says it is exactly `rot+ FLAT POP rot+ FLAT POP` and
+  impossible without rotating, and `R.pick()` confirms the naive fold lands on
+  `[3,0]` rather than the goal at `[3,-2]`.
 - **`03 — The Near One` follows it rather than preceding it.** It puts a
   decoy in the goal's column, so it *punishes* the naive model — which is a
   trap before the reveal and a test after it. Its own optimal path still pops
   on a single candidate; the decoy is what a wrong route finds.
+- **`02c` scores 26 and plays easy, which is the tier model's blind spot in
+  the other direction.** `statsFor()` counts two folds and two turns and calls
+  it `hard`; the player has just been handed the answer, one card ago. The
+  same gap that makes `03 — The Near One` score low and play hard. Do not
+  reorder this run on the curve alone.
 - **The numbers are deliberately not sequential** (`01, 02a, 02b, 02, 04, …
   03, 05`). Numbering is global, so making it sequential means renaming every
   level in the game and a `LEVEL_RENAMES` entry each — and the owner intends
@@ -184,6 +197,15 @@ owner applies: say in one sentence what each level teaches, and if two
 sentences match, one of them goes. Difficulty is a curve you can
 measure — `node tools/curve.js` prints it, and a step of more than about +10
 in the opening section is a bug in the campaign, not a hard level.
+
+**`SECTIONS[].at` are array indices, and `verify.js` now asserts they still
+line up.** Inserting a level pushes every marker after it, and the failure is
+quiet rather than loud: the levels still play, they are just filed under the
+wrong section — wrong sky, wrong stone, wrong horizon, wrong tab on the map.
+It was found by noticing a volcano behind `BOSS I`. The invariant that catches
+it is the campaign's own shape: every section but the prologue and the shelf
+ends on its boss, and the bosses come in order. Deliberately broken and seen
+to fail the run.
 
 **`node tools/verify.js` now asserts both `LEVEL_RENAMES` invariants**, which
 is what makes composing it checkable rather than careful: every value must
@@ -661,6 +683,18 @@ walk into a wall.
 - **No shield bubble in the film.** It is a recording of a moment when there
   was no shield, and a bubble round a recorded pose says the player was
   protected in a second they very much were not.
+- **The film always plays in the volume, whatever was recorded.** A death
+  taken while flat used to replay flat — the world was already collapsed, so
+  there was no depth to look down and no fold left to close, and the one
+  thing the film exists to show had happened before it started. Standing the
+  recording up costs nothing, because `player.x/z` are untouched by folding,
+  so a flat pose still knows which square it was over. And a flat death still
+  has a direction even though `huntLine()` reports none: flattened, a hunter
+  has a line on you the moment it shares your silhouette column, which means
+  differing **only in depth** — so the direction is the current view's own
+  depth axis, signed from the hunter toward you. Without that the flat deaths
+  got no swing and played from whatever angle the player happened to be
+  facing, which is the one angle that cannot show what happened.
 - **It records state, not inputs, and that is a decision rather than a
   shortcut.** The two families are re-simulation from recorded inputs plus a
   seed, and a ring of state snapshots. The first is tiny and needs exact

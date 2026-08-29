@@ -345,6 +345,21 @@ function replayStart(mode,who,line){
 
      Turned to by the shortest way round, so the swing never goes the long way
      for a right angle. */
+  /* A DEATH TAKEN WHILE FLAT STILL HAS A DIRECTION, and huntLine does not
+     report one. Flattened, a hunter has a line on you the moment it shares
+     your silhouette column, so huntLine answers {dx:0,dz:0} - true, and no
+     use to a camera. But sharing a silhouette column means differing ONLY in
+     depth, so the direction is the current view's own depth axis, signed from
+     the hunter toward you. Without this the flat deaths got no swing at all
+     and the film played from wherever the player happened to be facing, which
+     is the one angle that cannot show what happened. `player.x/z` survive
+     folding, so both positions are there to measure. */
+  if(mode==="death"&&who&&line&&!line.dx&&!line.dz){
+    var dv=AX[view].d;
+    var hdep=who.x*dv[0]+who.z*dv[2], pdep=player.x*dv[0]+player.z*dv[2];
+    var sg=(pdep>=hdep)?1:-1;
+    line={dx:dv[0]*sg,dz:dv[2]*sg};
+  }
   var swing=0, want=view;
   if(mode==="death"&&line&&(line.dx||line.dz)){
     for(var v=0;v<4;v++)
@@ -372,7 +387,17 @@ function replayStart(mode,who,line){
    on the playback for free. */
 function replayPose(f){
   player.x=f.x;player.y=f.y;player.z=f.z;
-  flat=!!f.f;flatTarget=f.f?1:0;
+  /* THE FILM ALWAYS PLAYS IN THE VOLUME, whatever was recorded.
+
+     A death taken while flat used to replay flat: the world was already
+     collapsed, so there was no depth to look down and no fold left to close -
+     the one thing the film exists to show had happened before it started.
+     Standing the recording up fixes it and costs nothing, because `player.x`
+     and `player.z` are untouched by folding, so a flat pose still knows which
+     square it was over. You watch the hunter walk into your depth column, and
+     then the fold closes onto you, which is the same film the standing deaths
+     get and the same sentence about the same rule. */
+  flat=false;flatTarget=0;
   /* THE VIEW IS THE CAMERA'S, NOT THE RECORDED ONE, and the silhouette is
      recomputed to match it. The renderer derives every position from
      `viewAngle`, so the picture was already right - but `flatPos.u` is a
@@ -383,7 +408,6 @@ function replayPose(f){
      `player.x/z` are untouched by folding, so the square is always there to
      re-project from. */
   view=rep?rep.view:f.v;
-  if(f.f)flatPos={u:R.uOf(view,f.x,f.z),y:f.fy};
   hunters.length=0;
   for(var i=0;i<f.h.length;i++){
     var a=f.h[i];

@@ -36,6 +36,41 @@ const {LEVELS,solve,makeRules,resolveStep,AX,bossSafety,bossArena,trialSafety,
  * Regenerating this table from scratch once broke the oldest saves. See
  * docs/HISTORY.md.
  */
+/* SECTIONS[].at ARE ARRAY INDICES, so inserting a level silently pushes every
+ * marker after it out of place - and the failure is quiet rather than loud:
+ * the levels still play, they are just filed under the wrong section, which
+ * means the wrong sky, the wrong stone, the wrong horizon and the wrong tab
+ * on the map. It was found by noticing a volcano behind BOSS I.
+ *
+ * The invariant that catches it is the campaign's own shape: every section
+ * except the prologue and the locked shelf ends on its boss, and the bosses
+ * come in order. Asserting that is what makes inserting a level checkable
+ * rather than careful.
+ */
+function checkSections(){
+  const fails=[];
+  const SEC=ctx.SECTIONS;
+  SEC.forEach((s,i)=>{
+    if(!(s.at>=0&&s.at<LEVELS.length))
+      fails.push(`section "${s.name}" starts at ${s.at}, out of range`);
+    if(i&&s.at<=SEC[i-1].at)
+      fails.push(`section "${s.name}" starts at or before "${SEC[i-1].name}"`);
+  });
+  const numeral=["I","II","III","IV"];
+  SEC.forEach((s,i)=>{
+    if(i===0||i>=SEC.length-1)return;            // prologue, and the shelf
+    const end=(SEC[i+1]?SEC[i+1].at:LEVELS.length)-1;
+    const last=LEVELS[end]?LEVELS[end].name:"(nothing)";
+    const want="BOSS "+numeral[i-1]+" ";
+    if(last.indexOf(want)!==0)
+      fails.push(`section "${s.name}" ends on "${last}", expected ${want.trim()}`);
+  });
+  if(fails.length){
+    console.log("\nSECTION MARKERS");
+    fails.forEach(f=>console.log("  "+f));
+  }
+  return fails.length;
+}
 function checkRenames(){
   const live=new Set(LEVELS.map(l=>l.name)), fails=[];
   const keys=Object.keys(LEVEL_RENAMES);
@@ -126,6 +161,7 @@ LEVELS.forEach((lv,i)=>{
 // Static checks cannot see a degenerate strategy, so the fights get played.
 if(only===undefined){
   bad+=checkRenames();
+  bad+=checkSections();
   console.log("");
   bad+=require("./bosssim.js").run();
 }
