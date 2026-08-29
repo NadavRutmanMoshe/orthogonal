@@ -686,15 +686,33 @@ walk into a wall.
 - **The film always plays in the volume, whatever was recorded.** A death
   taken while flat used to replay flat — the world was already collapsed, so
   there was no depth to look down and no fold left to close, and the one
-  thing the film exists to show had happened before it started. Standing the
-  recording up costs nothing, because `player.x/z` are untouched by folding,
-  so a flat pose still knows which square it was over. And a flat death still
-  has a direction even though `huntLine()` reports none: flattened, a hunter
-  has a line on you the moment it shares your silhouette column, which means
-  differing **only in depth** — so the direction is the current view's own
-  depth axis, signed from the hunter toward you. Without that the flat deaths
-  got no swing and played from whatever angle the player happened to be
-  facing, which is the one angle that cannot show what happened.
+  thing the film exists to show had happened before it started.
+- **Standing a flat pose up means RE-DERIVING the square, not reading it.**
+  `player.x/z` is the square you folded *from* and it does not move while you
+  are flat: walking in the plane changes `flatPos.u` and nothing else. So a
+  player who folded and took three steps replayed standing back where they
+  had left, never arriving anywhere near the thing that killed them — in the
+  film whose entire subject is that the two of you ended up in one place.
+  What a plane pose means in the volume is the square you would have come
+  back to, so it is `R.landings()`/`R.pick()` on the recorded column, the
+  same pair `GO 3D` itself calls. That square is in the silhouette column the
+  hunter shares, which is what the kill *is*, so they line up by
+  construction — and a plane step then reads as a sideways step in the
+  volume, which is what it was.
+- **The last frame has to be the kill itself.** Sampling at 20Hz means the
+  newest frame can be 50ms stale, and 50ms is exactly the window in which a
+  charge crosses the arena and lands — so the film ended a moment *before*
+  the two of them met. Worse, the pack goes back to its spawns and the player
+  is sent home before the replay starts, so by then the kill pose is gone
+  entirely. `replayMark()` takes it on the first line of `bossHurt`, before
+  anything moves.
+- **A flat death still has a direction even though `huntLine()` reports
+  none.** Flattened, a hunter has a line on you the moment it shares your
+  silhouette column, which means differing **only in depth** — so the
+  direction is the current view's own depth axis, signed from the hunter
+  toward you. Without that the flat deaths got no swing and played from
+  whatever angle the player happened to be facing, which is the one angle
+  that cannot show what happened.
 - **It records state, not inputs, and that is a decision rather than a
   shortcut.** The two families are re-simulation from recorded inputs plus a
   seed, and a ring of state snapshots. The first is tiny and needs exact

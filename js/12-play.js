@@ -292,11 +292,7 @@ function replayClear(){repBuf=[];repT=0;repAcc=0;}
 /* Sampled off the render loop's real frame time, and only while the fight is
    genuinely in front of the player - the same question bossFrame asks - so a
    paused board does not fill the ring with copies of one moment. */
-function replayTick(dtReal){
-  if(!B||app!=="play"||rep)return;
-  if(dying||levelDone||bossPause>0||panelOpen()||screenUp())return;
-  repAcc+=dtReal;
-  if(repAcc<1000/REP_HZ)return;
+function replaySnap(){
   repT+=repAcc;repAcc=0;
   var hs=[];
   for(var i=0;i<hunters.length;i++){
@@ -308,6 +304,26 @@ function replayTick(dtReal){
                f:flat?1:0,u:flat&&flatPos?flatPos.u:0,
                fy:flat&&flatPos?flatPos.y:0,v:view,h:hs});
   while(repBuf.length>1&&repT-repBuf[0].t>REP_KEEP)repBuf.shift();
+}
+function replayTick(dtReal){
+  if(!B||app!=="play"||rep)return;
+  if(dying||levelDone||bossPause>0||panelOpen()||screenUp())return;
+  repAcc+=dtReal;
+  if(repAcc<1000/REP_HZ)return;
+  replaySnap();
+}
+/* THE LAST FRAME HAS TO BE THE KILL ITSELF, not whatever the ring happened
+   to hold. Sampling at 20Hz means the newest frame can be up to 50ms stale,
+   and 50ms is exactly the window in which a charge crosses the arena and
+   lands - so the film ended a moment BEFORE the two of them met, which is
+   the one moment it exists to show. Worse, the pack is thrown back to its
+   spawns and the player is sent home before the replay is started, so by
+   then the kill pose is gone entirely.
+
+   So it is taken here, on the first line of bossHurt, before anything moves. */
+function replayMark(){
+  if(!B||app!=="play"||rep)return;
+  replaySnap();
 }
 /* `who` is the hunter to follow on a death, and `line` the one that fired.
    On a kill both are absent and the camera stays on the player. */
@@ -391,12 +407,31 @@ function replayPose(f){
 
      A death taken while flat used to replay flat: the world was already
      collapsed, so there was no depth to look down and no fold left to close -
-     the one thing the film exists to show had happened before it started.
-     Standing the recording up fixes it and costs nothing, because `player.x`
-     and `player.z` are untouched by folding, so a flat pose still knows which
-     square it was over. You watch the hunter walk into your depth column, and
-     then the fold closes onto you, which is the same film the standing deaths
-     get and the same sentence about the same rule. */
+     the one thing the film exists to show had happened before it started. So
+     a flat pose is stood back up, and then the fold at the end closes onto
+     the player exactly as it does for a standing death.
+
+     STANDING ONE UP MEANS RE-DERIVING THE SQUARE, and this is the part the
+     first version got wrong. `player.x/z` is the square you folded FROM and
+     it does not move while you are flat - walking in the plane changes
+     `flatPos.u` and nothing else. So a player who folded and then took three
+     steps replayed standing back at the square they had left, never arriving
+     anywhere near the thing that killed them, in the film whose whole subject
+     is that the two of you ended up in one place.
+
+     What the plane pose actually means in the volume is the square you would
+     have come back to: R.landings()/R.pick() on the recorded column, the same
+     pair GO 3D itself calls. That square is in the silhouette column the
+     hunter shares - which is what the kill IS - so the two of them line up,
+     and the fold at the end drops them into one square. A plane step then
+     reads as a sideways step in the volume, which is what it was. */
+  if(f.f){
+    var land=R.landings(f.v,f.u,f.fy,liveCrates());
+    if(land.length){
+      var b=R.pick(land);
+      player.x=b.x;player.z=b.z;player.y=f.fy;
+    }
+  }
   flat=false;flatTarget=0;
   /* THE VIEW IS THE CAMERA'S, NOT THE RECORDED ONE, and the silhouette is
      recomputed to match it. The renderer derives every position from
@@ -776,7 +811,8 @@ function bossCrushable(){
   return false;
 }
 function bossHurt(why,who,line){
-  if(shielded())return;        // asserted here as well as at the call site
+  if(shielded())return;
+  replayMark();               // the kill pose, before the board moves off it        // asserted here as well as at the call site
   lives--;
   SFX.die();shakeT=1;slowMo();
   bossGraceMs=B.grace;
