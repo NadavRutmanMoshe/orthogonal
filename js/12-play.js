@@ -377,7 +377,16 @@ function replayStart(mode,who,line,at){
      and the film played from wherever the player happened to be facing, which
      is the one angle that cannot show what happened. `player.x/z` survive
      folding, so both positions are there to measure. */
-  if(mode==="death"&&who&&line&&!line.dx&&!line.dz){
+  /* MOST DEATHS ARRIVE WITH NO LINE AT ALL, which is what kept this broken.
+     Three of bossHurt's four callers pass none - "it closed on you", "it
+     reached you", "you walked into it" - and only the charge passes one. A
+     flat kill is always one of the three: waiting in the plane means the
+     hunter walks into your silhouette column and hunterTouching() fires. The
+     guard here used to require a line object with zeroes in it, which is what
+     huntLine returns while flat but NOT what those callers send, so the
+     derivation below never ran and the camera never turned. "Press GO 2D on
+     BOSS I and wait" reproduced it every time. */
+  if(mode==="death"&&who&&(!line||(!line.dx&&!line.dz))){
     /* MEASURED FROM THE SQUARE THE FILM DRAWS YOU AT, not from `player.x/z`.
        While flat those are the square you folded FROM, which is wherever you
        happened to start and can sit on either side of the hunter - so the
@@ -401,8 +410,17 @@ function replayStart(mode,who,line,at){
     }
     var hdep=who.x*dv[0]+who.z*dv[2];
     var pdep=pxz.x*dv[0]+pxz.z*dv[2];
-    var sg=(pdep>=hdep)?1:-1;
-    line={dx:dv[0]*sg,dz:dv[2]*sg};
+    if(at.flat||hdep!==pdep){
+      var sg=(pdep>=hdep)?1:-1;
+      line={dx:dv[0]*sg,dz:dv[2]*sg};
+    } else if(who.x!==at.x||who.z!==at.z){
+      /* Standing, and it simply walked into you from somewhere off the depth
+         axis - so the direction is the displacement it closed, along whichever
+         axis it covered more of. */
+      var ax=at.x-who.x, az=at.z-who.z;
+      line=(Math.abs(ax)>=Math.abs(az))?{dx:(ax>0?1:-1),dz:0}
+                                       :{dx:0,dz:(az>0?1:-1)};
+    }
   }
   /* AND A KILL IS THE SAME RULE WITH THE OTHER SUBJECT. The film always puts
      whoever it is about NEAREST THE CAMERA: on a death that is the hunter, so

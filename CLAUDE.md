@@ -728,6 +728,18 @@ walk into a wall.
   is sent home before the replay starts, so by then the kill pose is gone
   entirely. `replayMark()` takes it on the first line of `bossHurt`, before
   anything moves.
+- **MOST DEATHS ARRIVE WITH NO LINE AT ALL, and that is what kept the camera
+  broken through three fixes.** Three of `bossHurt`'s four callers pass none
+  — *it closed on you*, *it reached you*, *you walked into it* — and only the
+  charge passes one. **A flat kill is always one of the three**: waiting in
+  the plane means a hunter walks into your silhouette column and
+  `hunterTouching()` fires. The derivation below was guarded on a line object
+  *with zeroes in it*, which is what `huntLine()` returns while flat but not
+  what those callers send, so it never ran. "Press `GO 2D` on `BOSS I` and
+  wait" reproduced it every time, and each of the earlier fixes was correct
+  about a path that repro never took. **When a bug survives a fix, re-derive
+  which code path the reported steps actually go down before improving the
+  one you were looking at.**
 - **A flat death still has a direction even though `huntLine()` reports
   none.** Flattened, a hunter has a line on you the moment it shares your
   silhouette column, which means differing **only in depth** — so the
