@@ -45,11 +45,20 @@ function capForHints(n){
   if(n<=4)return 1;
   return 0;
 }
+/* THE BANDS ARE WIDE ON PURPOSE. 3 stars is still the solver's own move
+   count, so it means optimal and nothing else - that is the part that must
+   not move. What changed is what a *near* miss costs: at 120% and 140% a
+   single wrong turn on a short level took a whole star, and on a ten-move
+   puzzle 140% is fourteen moves, so two mistakes was zero. Half again for
+   two stars and double for one gives an ordinary player room to solve the
+   thing their own way and still be paid for it, and leaves 0 stars meaning
+   what it should - you got there, but not by anything like the short road. */
+var STAR_2X=1.5, STAR_1X=2.0;
 function starsFor(moves,par){
   if(!par||moves<=0)return 0;
   if(moves<=par)return 3;
-  if(moves<=Math.floor(par*1.2))return 2;
-  if(moves<=Math.floor(par*1.4))return 1;
+  if(moves<=Math.floor(par*STAR_2X))return 2;
+  if(moves<=Math.floor(par*STAR_1X))return 1;
   return 0;
 }
 /* What `progress[name]` holds, and which direction is better.

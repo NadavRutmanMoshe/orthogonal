@@ -2497,9 +2497,26 @@ function animate(now){
   var tdvx=Math.sin(ta),tdvz=Math.cos(ta),rx=Math.cos(ta),rz=-Math.sin(ta);
   var tilt=(1-flatT)*CAM_TILT;
   if(dying)shakeT=Math.min(1,shakeT+.12); else shakeT*=.86;
-  var sh=shakeT*.35;
+  /* Both of these are camera offsets in WORLD units, so a level drawn at
+     twice the scale would feel half the kick - `viewSize` is the frustum's
+     half-extent, so dividing by it keeps the motion the same fraction of the
+     screen on a small arena and a large one. */
+  var vsc=viewSize/10;
+  var sh=shakeT*.35*vsc;
+  /* THE FOLD'S SLAM. One oscillation, eased out quadratically, so it lands
+     hard and settles rather than ringing - a world hitting the plane, not a
+     spring. It runs on its own counter because it is longer than the jitter
+     (about 400ms against 200) and because its sign is information. */
+  if(foldSlamT>0)foldSlamT=Math.max(0,foldSlamT-.045);
+  /* The phase runs FORWARD from the moment of the fold (1-t) while the
+     envelope decays with it (t squared), so the swing starts from rest,
+     peaks about a fifth of the way in and rebounds once. Driving the phase
+     off `t` directly instead puts the camera at its extreme on the first
+     frame, which is a jump-cut rather than a slam. */
+  var slam=Math.sin((1-foldSlamT)*Math.PI*1.6)*foldSlamT*foldSlamT*
+           2.2*vsc*foldSlamDir;
   camera.position.set(center.x+dvx*40+(Math.random()-.5)*sh,
-                      center.y+(tilt+peek*.22)*34+(Math.random()-.5)*sh,
+                      center.y+(tilt+peek*.22)*34+(Math.random()-.5)*sh+slam,
                       center.z+dvz*40+(Math.random()-.5)*sh);
   camera.up.set(0,1,0);camera.lookAt(center);
 

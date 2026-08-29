@@ -1259,9 +1259,21 @@ function levelHasWater(){
 var reduceMotion=(window.matchMedia&&
   window.matchMedia("(prefers-reduced-motion: reduce)"));
 function foldJolt(into){
-  if(!(reduceMotion&&reduceMotion.matches))
-    shakeT=Math.max(shakeT,into?.42:.28);
-  if(typeof haptic==="function")haptic(into?18:12);
+  if(!(reduceMotion&&reduceMotion.matches)){
+    /* Two motions, not one, because they say different things. The jitter is
+       impact - the same decaying `shakeT` a hit uses - and the slam is
+       WEIGHT: one heavy oscillation of the camera along screen-up, down as
+       the world goes flat and up as it stands back up, so the picture moves
+       the way the world just did. Jitter alone at this amplitude reads as a
+       rendering fault; the slam is what makes it read as a thing happening. */
+    shakeT=Math.max(shakeT,into?.9:.6);
+    foldSlamT=1;foldSlamDir=into?-1:1;
+  }
+  /* Two pulses rather than one, in the shape of the sound: the fold is a
+     slam that settles, the return is a small knock that opens out. A single
+     flat buzz is the phone acknowledging a button; this is the move having
+     a body. */
+  if(typeof haptic==="function")haptic(into?[34,42,16]:[14,40,30]);
 }
 function doFlatten(){
   if(typeof peekUnlatch==="function")peekUnlatch();
@@ -1425,9 +1437,11 @@ function win(){
     var effective=moveCount;
     var capped=hintCap();
     if(levelPar!==null&&capped<3){
+      // The bands live in starsFor(); read from there rather than repeated,
+      // or a change to the thresholds silently launders hints into stars.
       if(capped===2)effective=Math.max(effective,levelPar+1);
-      else if(capped===1)effective=Math.max(effective,Math.floor(levelPar*1.2)+1);
-      else effective=Math.max(effective,Math.floor(levelPar*1.4)+1);
+      else if(capped===1)effective=Math.max(effective,Math.floor(levelPar*STAR_2X)+1);
+      else effective=Math.max(effective,Math.floor(levelPar*STAR_1X)+1);
     }
     // Stars gained is the *improvement*, not the stars just scored: replaying
     // a 3-star level pays nothing, and going 2 -> 3 pays exactly the one new

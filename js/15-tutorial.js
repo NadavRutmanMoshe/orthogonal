@@ -145,7 +145,10 @@ var GHOST_SPAN={right:[56,0],left:[-56,0],up:[0,-42],down:[0,42]};
    second start rather than a no-op the style system folds away. One flush
    for all of them, so they restart on the same frame. */
 function ghostRestart(el){
-  var parts=el.querySelectorAll(".gfinger,.gdot,.gtap"),i;
+  // The hand is in this list because it has a loop of its own on the double
+  // tap, and a hand lifting off a beat the dot is not on is the drift this
+  // function exists to stop.
+  var parts=el.querySelectorAll(".gfinger,.gdot,.gtap,.ghand"),i;
   for(i=0;i<parts.length;i++)parts[i].style.animation="none";
   void el.offsetWidth;
   for(i=0;i<parts.length;i++)parts[i].style.animation="";

@@ -16,6 +16,10 @@ var player={x:0,y:0,z:0},flatPos={u:0,y:0};
 var tool="add", undoStack=[];
 var dying=null, dyingT=0;
 var squash=0, shakeT=0, lastY=null, lastSolidDepth=0;
+/* The fold's own motion, beside the shake rather than inside it: `shakeT` is
+   a decaying magnitude with a random direction, and this one has a direction
+   that matters - down into the plane, up out of it. See foldJolt(). */
+var foldSlamT=0, foldSlamDir=-1;
 // Looking around shouldn't cost a move. Peeking swings the camera off the
 // orthogonal axis without touching the game state, so you can read depth and
 // then carry on.

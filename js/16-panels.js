@@ -780,15 +780,30 @@ function mapLocked(i){
   if(s&&s.locked&&!sectionsUnlocked())return true;
   return i>mapReach();
 }
-/* What an ad may open, and nothing else. A skip lands on a *landmark* - the
-   boss that closes a section you are already inside, or the opening level of
-   the next section - so it buys you past a wall rather than past the levels
-   themselves. Skipping straight to a boss used to drag the rolling window
-   with it and quietly hand over everything in between, which is the opposite
-   of the point: those levels are still there to play. */
+/* ANY LOCKED LEVEL CAN BE OPENED, ONE AT A TIME.
+
+   It used to be landmarks only - the boss closing the section you were
+   already in, or the opening level of the next one - on the reasoning that a
+   skip should carry you past a wall rather than past the puzzles. The wall
+   turned out not to be where that assumed. A player stuck on an ordinary
+   level three from the end of a section could not buy their way past *that*
+   one; the only thing on sale was the boss behind it, which is harder.
+
+   What keeps the old reasoning intact is that a skip still opens exactly one
+   door. `mapReach()` counts solved levels and ignores skips, so opening a
+   level hands over nothing behind it: to get past two you buy two. And a
+   skip is not in `progress`, so it is worth zero stars by construction -
+   ADS BUY PROGRESS, NEVER SCORE is unchanged and cannot be got round by
+   buying the whole campaign.
+
+   The one thing still not for sale is the *shelf*: V - EXTRA opens when
+   every boss is down, and that is a reward rather than a gate in the
+   progression. mapLocked() answers that separately. */
 function mapSkippable(i){
-  return mapLocked(i)&&mapKind(LEVELS[i])==="boss"&&
-         mapSecOf(i)===mapSecOf(mapHere());
+  if(!mapLocked(i))return false;
+  var s=SECTIONS[mapSecOf(i)];
+  if(s&&s.locked&&!sectionsUnlocked())return false;
+  return true;
 }
 // A whole section can be opened at its first level, but never V · EXTRA:
 // that shelf is what beating every boss is *for*, and selling it would make
@@ -1199,19 +1214,16 @@ function mapSheet(i){
   var acts,note;
   if(st==="locked"&&mapSkippable(i)){
     var ads=mapAds(k);
-    acts="<button class='ad' id='mAd'>OPEN THE BOSS · WATCH "+ads+" AD"+
+    var what=k==="boss"?"THE BOSS":k==="trial"?"THE TRIAL":"THIS LEVEL";
+    acts="<button class='ad' id='mAd'>OPEN "+what+" · WATCH "+ads+" AD"+
          (ads>1?"S":"")+"</button><button class='qt' id='mNo'>NOT NOW</button>";
-    note="This opens the boss and <b>nothing else</b> — the levels before it "+
-         "stay where they are, still to play. It awards <b>no stars</b>. Ads "+
-         "buy progress, never score.";
+    note="This opens <b>this one</b> and nothing else — everything in front of "+
+         "it stays where it is, still to play, and you can open those the same "+
+         "way. It awards <b>no stars</b>. Ads buy progress, never score.";
   }else if(st==="locked"){
     acts="<button class='qt' id='mNo'>CLOSE</button>";
-    note=(k==="boss")
-      ? "Get into this section first — the boss opens once you are working "+
-        "through the levels that lead to it."
-      : "Clear the levels in front of it. Only the <b>boss</b> that closes a "+
-        "section, or the start of the next section, can be opened with an ad — "+
-        "so a skip carries you past a wall, never past the puzzles.";
+    note="This shelf opens when every boss is down. It is the one thing an ad "+
+         "cannot buy — beating them is what it is for.";
   }else{
     acts="<button class='go' id='mPlay'>"+(st==="solved"?"PLAY AGAIN":"PLAY")+
          "</button><button class='qt' id='mNo'>CLOSE</button>";
@@ -1252,14 +1264,15 @@ function mapHelp(){
     row("solved","7","<b>Solved.</b> Stars sit underneath — three is the solver's own move count, so 3★ is optimal.")+
     row("here","8","<b>Where you are.</b> The one that breathes.")+
     row("open","9","<b>Open.</b> You can always reach a couple of levels ahead, so one hard puzzle never stops you.")+
-    row("locked","●","<b>Locked.</b> Clear what is in front of it — or skip ahead with an ad.")+
+    row("locked","●","<b>Locked.</b> Clear what is in front of it — or open that one on its own with an ad.")+
     row("skipped","●","<b>Skipped.</b> The door opened, the level did not. Its stars are still there to take.")+
     row("mtrial",mapShape("trial")+"<span>I</span>",
         "<b>Trial</b> \u2014 a square on its point, with the plane about to sweep through it. Three cores, on a clock.")+
     row("mboss",mapShape("boss")+"<span>I</span>",
         "<b>Boss</b> \u2014 a cube seen corner-on. The four arcs are its four phases. Closes the section.")+
     "</div><div class='mn'>Ads buy <b>progress, never score</b>. A skip awards no "+
-    "stars and the level stays on the map, playable, whenever you want it.</div>"+
+    "stars and the level stays on the map, playable, whenever you want it — and "+
+    "it opens that level alone, so nothing behind it is handed over.</div>"+
     "<div class='ma'><button class='qt' id='mNo'>CLOSE</button></div>";
   $("mSheet").classList.add("on");
   bind("mNo",mapSheetClose);

@@ -51,13 +51,59 @@
 </div>
 
 <div class="coach" id="coach"></div>
-<!-- The gesture tutorial's ghost hand. One dot per finger, a track showing
-     where it travels and two rings for the double tap; which of those is
-     visible is a class on the wrapper, and how far the dot travels is a pair
-     of custom properties. See tutGhost() in js/15-tutorial.js. -->
+<!-- THE HAND ITSELF, defined once and used twice per drawing.
+
+     It was a glowing dot per finger and nothing else, and it was reported
+     exactly as people not understanding that the double tap was a *finger*.
+     A dot is a contact point, which is the abstraction you can read once you
+     already know what the picture is of; a hand is the thing being drawn.
+
+     Each hand is stamped twice from the same symbol - once as a fat round
+     stroke in near-black, once filled in bone on top of it - which is how a
+     silhouette assembled from four overlapping rectangles gets an outline
+     with no seams showing where they meet. Bone with a dark rim reads on the
+     void and on the plane's paper alike, which nothing single-coloured does.
+     The green stays on the contact dot and the track, so the hand is the
+     drawing and the green is still the instruction. -->
+<svg class="ghdefs" width="0" height="0" aria-hidden="true">
+  <!-- One finger, pointing up, tip at (40,14): the index out of a closed
+       fist. Rectangles rather than a single traced path, because the shapes
+       are what the parts are and a fist is easier to nudge as four boxes
+       than as one forty-point outline. -->
+  <symbol id="ghOne" viewBox="0 0 120 160">
+    <rect x="27" y="14" width="26" height="78" rx="13"/>
+    <rect x="52" y="64" width="25" height="40" rx="12.5"/>
+    <rect x="74" y="72" width="23" height="36" rx="11.5"/>
+    <rect x="24" y="86" width="76" height="64" rx="26"/>
+    <path d="M30 100 C14 106 8 120 15 132 C20 140 30 140 35 132 L46 114 Z"/>
+  </symbol>
+  <!-- Two fingers, pointing left, tips at (24,20) and (24,72). They are 52
+       units apart, which at the half scale this is drawn at is exactly the
+       26px between the two contact dots - so the pair lands on the hand and
+       stays on it for the whole slide. Stacked rather than side by side for
+       the reason in the CSS: two dots abreast read as one dot with a trail. -->
+  <symbol id="ghTwo" viewBox="0 0 140 150">
+    <rect x="24" y="7" width="80" height="26" rx="13"/>
+    <rect x="24" y="59" width="80" height="26" rx="13"/>
+    <rect x="90" y="8" width="48" height="112" rx="24"/>
+    <rect x="96" y="96" width="42" height="28" rx="14"/>
+  </symbol>
+</svg>
+<!-- The gesture tutorial's ghost hand. A hand and a contact dot per finger,
+     a track showing where it travels and two rings for the double tap; which
+     of those is visible is a class on the wrapper, and how far it travels is
+     a pair of custom properties. See tutGhost() in js/15-tutorial.js. -->
 <div class="ghost" id="ghost" aria-hidden="true">
   <div class="gtrack"></div>
-  <div class="gfinger a"><i class="gdot"></i><i class="gtap"></i><i class="gtap two"></i></div>
+  <div class="gfinger a">
+    <svg class="ghand single" viewBox="0 0 120 160">
+      <use href="#ghOne" class="ghrim"/><use href="#ghOne" class="ghbody"/>
+    </svg>
+    <svg class="ghand pair" viewBox="0 0 140 150">
+      <use href="#ghTwo" class="ghrim"/><use href="#ghTwo" class="ghbody"/>
+    </svg>
+    <i class="gdot"></i><i class="gtap"></i><i class="gtap two"></i>
+  </div>
   <div class="gfinger b"><i class="gdot"></i></div>
 </div>
 <div class="phasenote" id="phaseNote"></div>

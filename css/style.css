@@ -1154,15 +1154,63 @@ body.tutlock .ghost.on{opacity:1}
    along their own direction of travel read as one dot with a trail behind
    it, which is the exact thing a single-finger swipe already looks like. One
    above the other, both moving, is unmistakably two. */
-.ghost.g-two .gfinger.a{margin-top:-30px}
-.ghost.g-two .gfinger.b{display:block;margin-top:4px}
+/* 26px apart rather than 34: the spacing is what the two-finger HAND has to
+   span, and two fingertips a third of a palm apart is a drawing of nothing.
+   Stacked is the part that matters and is unchanged. */
+.ghost.g-two .gfinger.a{margin-top:-26px}
+.ghost.g-two .gfinger.b{display:block;margin-top:0}
 /* ...so the path is two lines as well, one under each finger. The second is
    a pseudo-element rather than a second div: it is the same line at the same
    width with the same gradient, and `background:inherit` is what keeps the
    four direction rules above from needing a copy each. */
-.ghost.g-two .gtrack{margin-top:-17px}
-.ghost.g-two .gtrack::after{content:"";position:absolute;left:0;top:34px;
+.ghost.g-two .gtrack{margin-top:-13px}
+.ghost.g-two .gtrack::after{content:"";position:absolute;left:0;top:26px;
   width:100%;height:100%;background:inherit;border-radius:inherit}
+/* THE HAND. Positioned so the index fingertip lands exactly on the contact
+   dot's centre, which is what makes the dot read as "this is where the
+   finger is touching" rather than as a second object beside it.
+
+   Both sizes are drawn at half scale, so the arithmetic is worth stating
+   once: `.gfinger` is 26px square and its centre - the contact point - is at
+   (13,13). The one-finger tip is at (40,14) in a 120x160 viewBox, so at 60px
+   wide it renders at (20,7) and the box goes at 13-20, 13-7. The pair's
+   upper tip is at (24,20) in 140x150, rendering at (12,10) with the lower
+   one 26px below it, which is exactly where finger b's dot sits.
+
+   THE TILT IS A CUSTOM PROPERTY because the double tap animates `transform`
+   and an animated transform replaces a static one outright - so the lift
+   keyframes have to carry the rotation with them or the hand snaps upright
+   every time it taps. */
+.ghand{position:absolute;display:none;overflow:visible;--tilt:-10deg}
+.ghand.single{width:60px;height:80px;left:-7px;top:6px;
+  transform:rotate(var(--tilt));transform-origin:20px 7px}
+.ghand.pair{width:70px;height:75px;left:1px;top:3px}
+.ghost.g-swipe .ghand.single,.ghost.g-dbl .ghand.single{display:block}
+.ghost.g-two .ghand.pair{display:block}
+/* Mirrored for a rightward slide, about the fingertips' own x, so the palm
+   trails the direction of travel and the two tips do not move. */
+.ghost.g-two.d-right .ghand.pair{transform:scaleX(-1);transform-origin:12px 10px}
+/* The rim goes on first as a fat round stroke and the body covers the seams.
+   `use` inherits fill and stroke into the symbol, which is the whole reason
+   the shapes inside carry no paint of their own. */
+.ghrim{fill:rgba(6,9,18,.9);stroke:rgba(6,9,18,.9);stroke-width:9;
+  stroke-linejoin:round}
+.ghbody{fill:#eef2fb}
+/* THE HAND LIFTS WITH THE TAPS, on the same 1.9s clock as the dot and the
+   rings - a hand that stayed planted while the dot blinked was the old
+   "one messy throb" in a new costume. It is away between 13.7% and 20%,
+   which is the same gap gdbl uses, and then lifts clear for the pause. */
+@keyframes ghtap{
+  0%   {transform:translateY(0) rotate(var(--tilt))}
+  10%  {transform:translateY(0) rotate(var(--tilt))}
+  16.8%{transform:translateY(-11px) rotate(var(--tilt))}
+  20%  {transform:translateY(0) rotate(var(--tilt))}
+  30%  {transform:translateY(0) rotate(var(--tilt))}
+  36.8%{transform:translateY(-11px) rotate(var(--tilt))}
+  60%  {transform:translateY(-15px) rotate(var(--tilt))}
+  100% {transform:translateY(-15px) rotate(var(--tilt))}
+}
+.ghost.g-dbl .ghand.single{animation:ghtap 1.9s ease-out infinite}
 .gdot{position:absolute;inset:0;border-radius:50%;
   background:rgba(53,194,165,.30);border:1.5px solid var(--goal);
   box-shadow:0 0 14px rgba(53,194,165,.45)}
@@ -1249,6 +1297,7 @@ body.tut.tutgest .coach,body.tut.tutgest.ui-none .coach{bottom:44px}
      the second contact. */
   .ghost.g-swipe .gfinger,.ghost.g-two .gfinger{animation-duration:3.4s}
   .ghost.g-dbl .gdot,.ghost.g-dbl .gtap{animation-duration:3.4s}
+  .ghost.g-dbl .ghand.single{animation-duration:3.4s}
   .ghost.g-dbl .gtap.two{animation-delay:.68s}
 }
 

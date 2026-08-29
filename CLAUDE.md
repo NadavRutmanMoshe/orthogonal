@@ -1462,12 +1462,18 @@ level data changed to make it.
   skip in there would be a purchase leaking into the currency. Kept apart, a
   skipped level is worth zero stars *by construction* rather than by
   remembering to subtract it. Verified: skipping does not move `starsEarned()`.
-- **A skip lands on a landmark, never on a puzzle.** Only the boss that closes
-  the section you are already in (`mapSkippable`), or the opening level of the
-  next section (`mapSectionSkippable`), can be opened with an ad — so a skip
-  carries you past a wall rather than past the levels, which are still there to
-  play. `V · EXTRA` cannot be bought open at all: that shelf is what beating
-  every boss is *for*.
+- **ANY LOCKED LEVEL CAN BE OPENED, ONE AT A TIME** (`mapSkippable`), plus a
+  whole section at its first level (`mapSectionSkippable`). It used to be
+  landmarks only — the boss closing the section you were already in — on the
+  reasoning that a skip should carry you past a wall rather than past the
+  levels. The wall is not where that assumed: somebody stuck three levels
+  from the end of a section could not buy past *that* level, only past the
+  boss behind it, which is harder. What keeps the old reasoning intact is
+  that **a skip still opens exactly one door** — `mapReach()` counts solved
+  levels and ignores skips, so nothing behind the one you bought comes with
+  it, and getting past two costs two ads. `V · EXTRA` still cannot be bought
+  open: that shelf is what beating every boss is *for*, and it is a reward
+  rather than a rung on the progression.
 - **`mapReach()` counts solved levels only, never skips.** Counting a skip
   would drag the rolling window forward with it and quietly hand over
   everything in between — the exact levels the skip exists to leave for later.
@@ -2188,6 +2194,41 @@ and they are also the ones that cost no screen.
   `tutSync` right beside `tutCueTo()`, out of the same value. The same table
   is the hint system's second fallback — it sits beside `CUE_WORDS`, and a
   cue that cannot land on a button either shows the control or names it.
+- **IT IS A HAND NOW, NOT A DOT, AND THAT WAS THE WHOLE COMPLAINT.** For
+  several builds each contact was a glowing green disc and nothing else, and
+  it was reported exactly as people not understanding that the double tap was
+  a *finger*. A dot is a contact point — the abstraction you can read once
+  you already know what the picture is of; a hand is the thing being drawn.
+  Two silhouettes in `index.html`, `#ghOne` (an index finger out of a closed
+  fist, pointing up) and `#ghTwo` (two fingers pointing sideways), each
+  stamped **twice from one `<symbol>`** — a fat round stroke in near-black
+  behind, the bone fill on top — which is how a shape assembled from four
+  overlapping rectangles gets an outline with no seams where they meet.
+  Bone-with-a-dark-rim reads on the void and on the plane's paper alike,
+  which nothing single-coloured does. **The green stays on the contact dot
+  and the track**, so the hand is the drawing and the green is still the
+  instruction.
+- **The fingertip lands on the contact dot, and the arithmetic is why the two
+  sizes differ.** `.gfinger` is 26px square, so its centre — the contact — is
+  at (13,13); each hand is drawn at exactly half scale and offset so its tip
+  falls there. The pair's two tips are 52 viewBox units apart, which is the
+  26px between the two dots, so the second dot lands on the second finger by
+  construction and stays on it through the whole slide.
+- **The two-finger spacing came down from 34px to 26px to make the hand
+  possible.** Stacked rather than side by side is the part that matters and
+  is unchanged; the gap is not, and two fingertips a third of a palm apart is
+  a drawing of nothing. Three numbers move together — the two `.gfinger`
+  margins, the track's `::after` offset, and the symbol's tips.
+- **The hand lifts with the taps**, on the same 1.9s clock as the dot and the
+  rings: a hand that stayed planted while the dot blinked is the "one messy
+  throb" the double-tap drawing was already fixed for once. Its tilt is a
+  custom property because an animated `transform` replaces a static one, so
+  the lift keyframes have to carry the rotation or the hand snaps upright
+  every time it taps. It is in `ghostRestart()`'s list for the same reason
+  everything else is.
+- **The hint system gets all of this for free**, because there is one hand
+  with two owners — see below. A hint borrows the same element, so it now
+  shows a hand rather than a dot wherever it showed anything.
 - **The hand sits in the middle of the screen, over the world.** That is
   where the gesture actually happens — a swipe or a double tap lands on the
   world, not on a strip at the bottom — and it is where the player is already
@@ -2288,10 +2329,18 @@ exclusive — every gesture also has a key and, unless hidden, a button:
   `TURN_DEG`. `docs/HISTORY.md` has the worked example.
 - two-finger tap — turn right, unchanged: it is a drag that never travelled
 - **Changing dimension jolts the camera and buzzes the phone** (`foldJolt()`
-  in `js/12-play.js`, `haptic()` in `js/11-sound.js`). It is `shakeT`, the
-  same decaying value a hit already uses, so the render loop did not change;
-  the fold is the heavier of the two (.42 against .28), a world slamming flat
-  against one standing back up. **Skipped under `prefers-reduced-motion`,
+  in `js/12-play.js`, `haptic()` in `js/11-sound.js`). **It is two motions,
+  and they say different things.** `shakeT` is impact — the same decaying
+  jitter a hit uses (.9 folding, .6 standing up). `foldSlamT` is *weight*:
+  one eased swing of the camera along screen-up, **down** into the plane and
+  **up** out of it, so the picture moves the way the world just did. Its
+  phase runs forward from the moment of the fold while its envelope decays,
+  which is what makes it start from rest — driving the phase off the decaying
+  value directly puts the camera at its extreme on the first frame, and that
+  is a jump cut rather than a slam. Both are scaled by `viewSize`, so a large
+  arena and a small one kick by the same fraction of the screen. The buzz is
+  two pulses in the shape of the sound: a slam that settles going in, a knock
+  that opens out coming back. **Skipped under `prefers-reduced-motion`,
   unlike the death and hit shakes** — this one fires on an ordinary move
   several times a level, which is the repetition that setting exists to stop.
   The buzz is deliberately **not** tied to mute: mute is about the room you
@@ -2572,8 +2621,14 @@ know before touching it:
   away from the camera. `bFlat` is the exception that has to be computed:
   "2D shift" going in and "3D shift" coming out, because which way you are
   about to go is the whole content of the instruction.
-- **Stars.** 3★ = the solver's own move count, 2★ ≤ 120%, 1★ ≤ 140%. Par is
-  optimal, so 3★ genuinely means optimal. Levels on a clock ignore all of this
+- **Stars.** 3★ = the solver's own move count, 2★ ≤ 150%, 1★ ≤ 200%
+  (`STAR_2X` / `STAR_1X` in `js/07-difficulty.js`, read by `win()`'s
+  hint-laundering arithmetic as well, so the bands live in one place). Par is
+  optimal, so 3★ genuinely means optimal — that half has never moved. The
+  bands widened from 120/140 because a near miss was costing a whole star: on
+  a ten-move level 140% is fourteen moves, so two wrong turns was zero, and
+  0★ should mean *not by anything like the short road* rather than *you took
+  the scenic route once*. Levels on a clock ignore all of this
   and score on lives.
 - **Worlds only change the world** (background, stone, ink). Piece colours and
   their shape markers never change, so no world can make a mechanic unreadable.
