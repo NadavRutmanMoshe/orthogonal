@@ -74,8 +74,8 @@ var LEVELS=[
      {say:"{do:3d} to stand up.<br>Three blocks share that column, and you come back on the one at <b>the front</b> — nearest you. The green square is one step behind it.",
       cue:"bFlat",done:function(c){return c.unflat>=1;}}
    ]},
-{name:"01 — Not Every Square",
-   hint:"Something already stands where you would land. It turns red first.",
+{name:"01 — Beware of Walls",
+   hint:"Walls can kill you if you go 2D into them.",
    /* THE FIRST LEVEL WHERE FOLDING CAN KILL YOU, and the first the red
       warning was ever built for. Two blocks at head height - [0,1,-1] and
       [2,1,-1] - put four of this floor's nine standable squares inside a
@@ -91,8 +91,8 @@ var LEVELS=[
      [2,0,-1],[2,0,0],[2,0,1],[4,0,1],[4,0,0],[4,0,-1],
      [3,0,-3],[3,0,-4],[3,0,-5],[2,1,-1],[0,1,-1]],
    start:[0,1,0],goal:[4,1,0],rotate:false},
-{name:"02 — Step Down First",
-   hint:"Six of the eight squares here are the wrong place to fold from.",
+{name:"02 — A Real Challenge",
+   hint:"If you get stuck you can take a hint.",
    /* The same lesson hardened, which is what a section does after teaching
       one gently. Six of eight squares are lethal now and the stack at x=2
       is two high, so the only safe square is one you have to STEP DOWN onto:
@@ -102,8 +102,8 @@ var LEVELS=[
      [4,0,1],[4,0,0],[4,0,-1],[3,0,-3],[3,0,-4],[3,0,-5],
      [1,0,1],[2,0,-1],[2,1,-1],[2,2,-1],[0,1,-1],[1,1,1]],
    start:[0,1,0],goal:[4,1,0],rotate:false},
-{name:"03 — Come Back Early",
-   hint:"The plane is a shortcut, not a delivery. Stand up partway.",
+{name:"03 — The Illusion",
+   hint:"Use the eye to see where you are going to land out of the 2D world.",
    /* THE PLANE IS NOT A TELEPORT, and this is where that is said. Every
       level so far has folded, crossed the whole gap and stood up on the far
       side; here the far bank runs the full depth of the board and the goal
@@ -114,8 +114,8 @@ var LEVELS=[
      [3,0,-3],[3,0,-4],[3,0,-5],[1,0,1],[2,0,-1],
      [4,0,-5],[4,0,-4],[4,0,-3],[4,0,1],[4,0,0],[4,0,-1]],
    start:[0,1,0],goal:[4,1,-4],rotate:false},
-{name:"04 — The Way Back",
-   hint:"What you want is behind you and above you.",
+{name:"04 — The Block",
+   hint:"Sometimes you need to think outside the block.",
    /* THE FIRST LEVEL THAT GOES BACKWARDS. Everything before it crosses left
       to right, so the hand learns one direction; here the goal sits on a
       shelf at y=2 that is reached by folding and then walking the OTHER way
@@ -136,8 +136,8 @@ var LEVELS=[
    Which is also why it could be moved here for free when the section grew.
    It used to sit after four levels; the four new gentle ones would have
    pushed it to ninth, so it came back to fifth, and no save noticed. */
-{name:"05 — One Safe Square",
-   hint:"Almost nowhere here is safe to fold from. Get above it first.",
+{name:"05 — Limited",
+   hint:"Combining things you learned.",
    /* THE PERIL LESSON AT ITS LIMIT, and it is the owner's level. Measured:
       8 of the 9 squares you can walk to are inside an occupied silhouette
       column, so `GO 2D` kills you on all but one of them - and the survivor
@@ -188,8 +188,8 @@ var LEVELS=[
       moves to the three cores with the turn taken away, so the clock is the
       only thing making it hard. */
    start:[0,1,0],goal:[7,1,4],rotate:false},
-{name:"06 — No Way From Here",
-   hint:"Fold. Stand up. Nothing moved. There is another axis.",
+{name:"06 — The Rotation",
+   hint:"A new mechanic \u2014 rotation. You came a long way, and the options are now endless. Not really endless, but you have more of them.",
    /* THE ROTATION REVEAL, and it is a proof rather than an instruction.
       `solve()` says this level is IMPOSSIBLE with rotation locked - checked
       both ways - so the player can fold and stand up as often as they like
@@ -242,8 +242,8 @@ var LEVELS=[
      {say:"So look down a different one. {do:turnr} — the world turns, and what lines up turns with it.",
       cue:"bRotR",free:true,done:function(c){return c.rot>=1;}}
    ]},
-{name:"07 — Turn One Way",
-   hint:"Three moves. The first one is not a step.",
+{name:"07 — No Bridge",
+   hint:"Understand how the rotation we learned, combined with the eye, can help you solve this.",
    /* Rotation as a VERB rather than as a rescue. Three moves - turn, fold,
       stand up - and impossible without the turn, so the whole level is one
       sentence: the axis you collapse is a choice, and choosing it is the
@@ -251,8 +251,8 @@ var LEVELS=[
    blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[2,0,0],[2,0,1],
      [1,0,1],[2,0,-1],[4,0,-1],[4,0,0],[4,0,1]],
    start:[0,1,0],goal:[4,1,0],rotate:true},
-{name:"08 — Turn the Other",
-   hint:"The same three moves, the other way round.",
+{name:"08 — No Bridge 2",
+   hint:"Understand how the rotation we learned, combined with the eye, can help you solve this.",
    /* The mirror of the level before it: the bank is at x=-2 rather than x=4,
       so the answer is `rot-` where the last one was `rot+`. Both are three
       moves and both are impossible without turning. Two levels that are the
@@ -262,8 +262,8 @@ var LEVELS=[
    blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[2,0,0],[2,0,1],
      [1,0,1],[2,0,-1],[-2,0,1],[-2,0,0],[-2,0,-1]],
    start:[0,1,0],goal:[-2,1,0],rotate:true},
-{name:"09 — Four Across",
-   hint:"Four squares of open ground. Three moves is the whole level.",
+{name:"09 — Simple Walk",
+   hint:"No catch here, just a simple walk.",
    /* THE FIRST HALF OF A PAIR ABOUT SCORING, and it is deliberately trivial.
       Nothing here is a puzzle: the floor is open, the goal is three steps
       away, and walking is exactly optimal - `solve()` says three, and no
@@ -274,8 +274,8 @@ var LEVELS=[
    blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[1,0,1],
      [2,0,-1],[2,0,0],[2,0,1],[3,0,1],[3,0,0],[3,0,-1]],
    start:[0,1,0],goal:[3,1,0],rotate:true,stars:true},
-{name:"10 — Five Across",
-   hint:"One square wider. Still three moves — but not by walking.",
+{name:"10 — Not a Simple Walk",
+   hint:"Try to solve this level with 3 stars.",
    /* AND THE TWIST: one column wider, so walking is four and par is three.
       `rot+ FLAT POP` crosses the whole board, because in the plane the near
       slab and the far edge are the same square - which means THE FOLD IS A
@@ -290,8 +290,8 @@ var LEVELS=[
      [2,0,-1],[2,0,0],[2,0,1],[3,0,1],[3,0,0],[3,0,-1],
      [4,0,1],[4,0,0],[4,0,-1]],
    start:[0,1,0],goal:[4,1,0],rotate:true,stars:true},
-{name:"11 — Two Windows",
-   hint:"Two folds, and a turn between them. Everything so far, at once.",
+{name:"11 — The Silence Before the Storm",
+   hint:"Combine what you learned to solve this. I believe in you.",
    /* THE SAME PUZZLE IN THE OWNER'S IDIOM. This level's route was already
       the one the section wants to end on - fold, cross, stand up, TURN, fold
       again - but it was drawn on single-block stepping stones, which is the
@@ -305,9 +305,9 @@ var LEVELS=[
      [2,1,-5],[2,1,-4],[2,1,-3],[3,2,-6],[3,2,-5],[3,2,-4],
      [4,3,-6],[4,3,-5],[1,3,-5]],
    start:[0,1,0],goal:[1,4,-5],rotate:true},
-{name:"BOSS I — The Sighting",
+{name:"BOSS I — Catch Me If You Can!",
    won:"Something in the plane has seen you. It will not be the only one.",
-   hint:"A game of catch: whoever shifts the other into their own square first wins. The arena does not stay this empty.",
+   hint:"A game of catch: whoever shifts the other into their own square first wins.",
    /* The first fight anyone meets, and the shape every later one repeats.
       Four phases, and each one changes the question rather than the speed:
       one slow hunter on a bare floor, so the line can be learned with nothing
@@ -469,7 +469,7 @@ var LEVELS=[
    blocks:[[0,0,0],[-1,0,0,1],[-2,0,3],[-2,0,6],[-2,0,7],[-1,1,7,1],[3,2,8],[5,2,9],[2,3,10],[2,3,11],[-1,3,11]],
    start:[0,1,0],goal:[-1,4,11],rotate:true},
 {name:"27 — Two Dangers",
-   hint:"Glass under your feet and something sharp down the axis.",
+   hint:"Glass under your feet and fire down the axis.",
    blocks:[[0,0,0],[3,1,0,1],[3,1,1],[3,1,-1],[4,1,-1,4],[5,3,-4,1]],
    start:[0,1,0],goal:[3,2,-1],rotate:true},
 {name:"BOSS III — The Search",
@@ -968,15 +968,30 @@ var SECTIONS=[
    so never rewrite this table, only extend it. Applied by migrateNames()
    in 06-persistence.js. */
 var LEVEL_RENAMES={
+  /* Section I was retitled in the owner's own words - shorter, plainer,
+     and speaking to the player rather than about the mechanic. Every one
+     of these has been live on the published link, so they migrate. */
+  "01 — Not Every Square":"01 — Beware of Walls",
+  "02 — Step Down First":"02 — A Real Challenge",
+  "03 — Come Back Early":"03 — The Illusion",
+  "04 — The Way Back":"04 — The Block",
+  "05 — One Safe Square":"05 — Limited",
+  "06 — No Way From Here":"06 — The Rotation",
+  "07 — Turn One Way":"07 — No Bridge",
+  "08 — Turn the Other":"08 — No Bridge 2",
+  "09 — Four Across":"09 — Simple Walk",
+  "10 — Five Across":"10 — Not a Simple Walk",
+  "11 — Two Windows":"11 — The Silence Before the Storm",
+  "BOSS I — The Sighting":"BOSS I — Catch Me If You Can!",
   /* A rest level went in before the trial and a scoring pair before the
      boss, so the run after each of them shifted by one. These four have
      been live on the published link, so they migrate rather than simply
      change: composed as always, values re-pointed in the same pass. */
-  "05 — No Way From Here":"06 — No Way From Here",
-  "06 — Turn One Way":"07 — Turn One Way",
-  "07 — Turn the Other":"08 — Turn the Other",
+  "05 — No Way From Here":"06 — The Rotation",
+  "06 — Turn One Way":"07 — No Bridge",
+  "07 — Turn the Other":"08 — No Bridge 2",
   "08 — The Same Column":"78 — The Same Column",
-  "09 — Two Windows":"11 — Two Windows",
+  "09 — Two Windows":"11 — The Silence Before the Storm",
   "11 — Far Side":"76 — Far Side",
   "12 — Three Folds":"77 — Three Folds",
   /* THE OPENING WAS RE-CUT AROUND THE OWNER'S OWN LEVELS, and the run
@@ -993,7 +1008,7 @@ var LEVEL_RENAMES={
   "04 — Halfway Across":"69 — Halfway Across",
   "02c — The Same Column":"78 — The Same Column",
   "03 — The Near One":"70 — The Near One",
-  "05 — Two Windows":"11 — Two Windows",
+  "05 — Two Windows":"11 — The Silence Before the Storm",
   "06 — The Long Way Round":"71 — The Long Way Round",
   "07 — About Face":"72 — About Face",
   "08 — The Last Step":"73 — The Last Step",
@@ -1004,15 +1019,15 @@ var LEVEL_RENAMES={
     name in the same edit that makes "The Hunt" itself a key, which is what
     keeps the no-value-is-also-a-key invariant true. Bosses II-IV had never
     been renamed, so they arrive as one new entry each. */
- "BOSS I — The Sentinel": "BOSS I — The Sighting",
- "BOSS I — The Pack": "BOSS I — The Sighting",
- "BOSS I — The Twin": "BOSS I — The Sighting",
- "BOSS I — The Hunt": "BOSS I — The Sighting",
+ "BOSS I — The Sentinel": "BOSS I — Catch Me If You Can!",
+ "BOSS I — The Pack": "BOSS I — Catch Me If You Can!",
+ "BOSS I — The Twin": "BOSS I — Catch Me If You Can!",
+ "BOSS I — The Hunt": "BOSS I — Catch Me If You Can!",
  "BOSS II — Sharp Ground": "BOSS II — The Record",
  "BOSS III — Through Glass": "BOSS III — The Search",
  "BOSS IV — The Orthogon": "BOSS IV — The Census",
  "02 — Turn to see": "68 — Turn to see",
- "03 — Two Windows": "11 — Two Windows",
+ "03 — Two Windows": "11 — The Silence Before the Storm",
  "04 — The Long Way Round": "71 — The Long Way Round",
  "05 — About Face": "72 — About Face",
  "06 — The Last Step": "73 — The Last Step",
@@ -1115,7 +1130,7 @@ var LEVEL_RENAMES={
  "58 — Absent Floor": "60 — Absent Floor",
  "59 — Twice Up": "61 — Twice Up",
  "60 — The Far Shore": "62 — The Far Shore",
- "04 — Two Windows": "11 — Two Windows",
+ "04 — Two Windows": "11 — The Silence Before the Storm",
  "05 — The Long Way Round": "71 — The Long Way Round",
  "06 — About Face": "72 — About Face",
  "09 — The Last Step": "73 — The Last Step",
@@ -1161,7 +1176,7 @@ var LEVEL_RENAMES={
  "62 — Three Folds Deep": "63 — Three Folds Deep",
  "63 — Everything at Once": "64 — Everything at Once",
  "01 — Turn to see": "68 — Turn to see",
- "02 — Two Windows": "11 — Two Windows",
+ "02 — Two Windows": "11 — The Silence Before the Storm",
  "03 — The Long Way Round": "71 — The Long Way Round",
  "04 — About Face": "72 — About Face",
  "05 — The Last Step": "73 — The Last Step",
@@ -1223,7 +1238,7 @@ var LEVEL_RENAMES={
  "61 — Everything at Once": "64 — Everything at Once",
  "04 — Turn to see": "68 — Turn to see",
  "05 — Halfway Across": "69 — Halfway Across",
- "06 — Two Windows": "11 — Two Windows",
+ "06 — Two Windows": "11 — The Silence Before the Storm",
  "07 — The Long Way Round": "71 — The Long Way Round",
  "08 — About Face": "72 — About Face",
  "10 — Six Across": "74 — Six Across",

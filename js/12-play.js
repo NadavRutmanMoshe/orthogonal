@@ -29,7 +29,7 @@ function die(kind){
   deathPending=false;
   var spend=(B||TR)&&kind!=="boss"&&kind!=="trial";
   flash(kind==="fall"?"you fell":
-        kind==="spike"?"something sharp was in that column":
+        kind==="spike"?"you burned":
         kind==="boss"||kind==="trial"?"out of lives":
         "the world closed on you");
   SFX.die();
@@ -88,7 +88,7 @@ function respawn(){
   player={x:L.start[0],y:L.start[1],z:L.start[2]};
   flat=false;flatTarget=0;flatT=0;
   // And the rotation you started the level with. You got here by falling,
-  // being crushed or standing on something sharp, so you are being put back
+  // being crushed or walking into fire, so you are being put back
   // at the beginning - facing the way the level opens is part of that, and
   // resuming a restart mid-turn is disorienting in exactly the wrong moment.
   view=0;viewAngle=0;viewAngleTarget=0;

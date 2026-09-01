@@ -180,7 +180,7 @@ function syncHud(){
       tool==="anchor" ? "An anchor claims you when you unfold, overriding the nearest-camera rule." :
       tool==="crate"  ? "Crates can be shoved in the volume, which changes what the plane looks like. A crate resting on an anchor is stuck for good." :
       tool==="key"    ? "Keys are collected in the plane, on the square they fold into." :
-      tool==="spike"  ? "Spikes cast like stone but kill you underfoot \u2014 so they poison the whole silhouette column." :
+      tool==="spike"  ? "Fire casts like stone but burns you underfoot \u2014 so it poisons the whole silhouette column." :
       "Tap the ground to start. Tap a block face to build off it.";
     $("lvHint").className="hint";
   }
@@ -210,7 +210,7 @@ function syncHud(){
   $("bFlat").classList.toggle("strike",!!strike&&!pf);
   $("bFlat").title=pf?(pf.kind==="crush"
     ?"something already fills that square in the plane"
-    :"a spike folds into the square under you")
+    :"fire folds into the square under you")
     :(strike?"one of them is in your column: fold now":"");
   $("bUp").disabled=flat;$("bDown").disabled=flat;
   var noRot=flat||(app==="play"&&L&&L.rotate===false);

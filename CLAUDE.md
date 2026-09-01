@@ -157,16 +157,16 @@ two sentences are the same:
 |---|---|
 | `00 — First Steps` | walking, stepping up, stepping down. No fold route exists through the geometry at all, so the lesson cannot be short-circuited even before `lockFlat` refuses the verb. |
 | `00 — First Fold` | fold, cross, stand up — **and the landing rule for free**: the far bank is three deep in one silhouette column, so you come back on the front block and the goal is one step behind it. |
-| `01 — Not Every Square` | some squares are lethal to fold from. 4 of 9, including the start square. |
-| `02 — Step Down First` | the same, hardened: 6 of 8, and the only safe square is one you step *down* onto. |
-| `03 — Come Back Early` | the plane is a shortcut, not a delivery — pop partway and walk the rest. |
-| `04 — The Way Back` | the plane has no preferred direction; the goal is behind you and above you. |
-| `05 — One Safe Square` | the peril lesson at its limit: 8 of 9 squares are lethal to fold from, and the survivor is one you have to *climb* to. |
-| `06 — No Way From Here` | **impossible without rotating**, proved by `solve()` both ways — and taught, so the player proves it too. |
-| `07 / 08 — Turn One Way / the Other` | the same three moves conjugated: `rot+` and `rot-`. |
-| `09 — Four Across` | walking *is* par. The control half of the scoring pair. |
-| `10 — Five Across` | one column wider, so walking is one move over and the fold is the shortcut. The star is the only thing that says you missed it. |
-| `11 — Two Windows` | everything at once, into the boss. |
+| `01 — Beware of Walls` | some squares are lethal to fold from. 4 of 9, including the start square. |
+| `02 — A Real Challenge` | the same, hardened: 6 of 8, and the only safe square is one you step *down* onto. |
+| `03 — The Illusion` | the plane is a shortcut, not a delivery — pop partway and walk the rest. |
+| `04 — The Block` | the plane has no preferred direction; the goal is behind you and above you. |
+| `05 — Limited` | the peril lesson at its limit: 8 of 9 squares are lethal to fold from, and the survivor is one you have to *climb* to. |
+| `06 — The Rotation` | **impossible without rotating**, proved by `solve()` both ways — and taught, so the player proves it too. |
+| `07 / 08 — No Bridge / No Bridge 2` | the same three moves conjugated: `rot+` and `rot-`. |
+| `09 — Simple Walk` | walking *is* par. The control half of the scoring pair. |
+| `10 — Not a Simple Walk` | one column wider, so walking is one move over and the fold is the shortcut. The star is the only thing that says you missed it. |
+| `11 — The Silence Before the Storm` | everything at once, into the boss. |
 
 - **ROTATION DOES NOT EXIST UNTIL `05`.** Every level before it carries
   `rotate:false`, including `TRIAL I` — checked leg by leg with the solver
@@ -203,6 +203,12 @@ two sentences are the same:
   goal: handing the player a verb and then narrating the puzzle they now own
   takes back the thing that was just given them. That flag is the one seam
   between "get a first-time player to the goal" and "hand them the game".
+- **THE TITLES AND HINTS ARE THE OWNER'S, AND THEY ARE SHORT ON PURPOSE.**
+  The first pass named levels after the mechanic and explained it in a
+  sentence about the *game*; these speak to the player and stop
+  (`Beware of walls`, `no catch here, just a simple walk`). Every one of them
+  had already been live on the published link, so all twelve went through
+  `LEVEL_RENAMES` rather than simply changing.
 - **The peril pair was verified, not assumed.** `01` and `02` add blocks at
   head height that change no route at all — the optimal is the same as the
   level before — and turn four then six of the standable squares into places
@@ -2722,6 +2728,14 @@ know before touching it:
 - **`resolveStep()` is shared by the game and the solver**, so they can never
   disagree. Keep it that way. Its optional `occHere` argument checks headroom in
   *both* columns; without it you can slide diagonally past a ceiling.
+- **FIRE BURNS YOU, IT DOES NOT DROP YOU.** A `spike` death used to share
+  the falling animation and say "something sharp was in that column" - both
+  correct for the piece when it was a spike and wrong since it became fire.
+  It says "you burned" now, and the cube sinks, shudders, shrinks and is
+  taken by flames built from the same `flameGeo` the fire blocks use, so it
+  is the same fire rather than a second drawing of one. `burnGrp` is built on
+  the first burn and hidden the rest of the time. The code still says
+  `spike` throughout, for the same reason it says `fold`.
 - **Folding into a wall is telegraphed, not blocked.** `foldPeril()` in
   `js/12-play.js` answers "would flattening from here kill me, and which blocks
   are to blame" — the guilty ones are tinted and outlined red in the world and
