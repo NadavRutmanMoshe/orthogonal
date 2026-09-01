@@ -539,6 +539,16 @@ function tutGuide(){
             (TUT_MOVE_SAY[mv]||step.say),cue:btn,lock:step.lock,
             card:null,show:extra.show,hold:false};
   }
+  /* AND SOME LESSONS STOP RATHER THAN HANDING OVER TO THE SOLVER.
+
+     Falling through to the solver's own next move is right for a level whose
+     job is to get a first-time player to the goal - it is the third case the
+     coach was built for. It is wrong for a level whose job is to hand the
+     player a verb and then get out of the way: once `05` has shown that the
+     turn exists, the rest of it is the first puzzle they own, and a coach
+     still naming every move takes that away. `tutFree:true` says the steps
+     are the whole lesson. */
+  if(L.tutFree)return null;
   if(!btn)return null;                       // finished, or nothing to suggest
   return {idx:-1,say:TUT_MOVE_SAY[mv],cue:btn,lock:undefined,
           card:null,show:null,hold:false};

@@ -136,6 +136,23 @@ var LEVELS=[
    Which is also why it could be moved here for free when the section grew.
    It used to sit after four levels; the four new gentle ones would have
    pushed it to ninth, so it came back to fifth, and no save noticed. */
+{name:"05 — One Safe Square",
+   hint:"Almost nowhere here is safe to fold from. Get above it first.",
+   /* THE PERIL LESSON AT ITS LIMIT, and it is the owner's level. Measured:
+      8 of the 9 squares you can walk to are inside an occupied silhouette
+      column, so `GO 2D` kills you on all but one of them - and the survivor
+      is not on the floor. The tall stack at x=1 fills that column at every
+      height the floor offers, so the only way out is to CLIMB the step at
+      [0,1,-1] first and fold from on top of it.
+
+      `02 — Step Down First` said the safe square can be below you; this one
+      says it can be above. Same verb, opposite direction, and between them
+      the player stops reading the floor as flat. Solvable in six with the
+      turn locked out, which is what it ships with. */
+   blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[1,0,1],
+     [2,0,-1],[2,0,0],[2,0,1],[2,0,-6],[2,1,-6],[1,0,-6],[1,1,-6],
+     [1,2,-6],[1,2,-3],[0,1,-1]],
+   start:[0,1,0],goal:[1,3,-6],rotate:false},
 {name:"TRIAL I — The Metronome",
    hint:"Three lives, three places to visit.",
    /* THE SLICES RUN DOWN THE DEPTH AXIS, and that is the difficulty of a
@@ -171,7 +188,7 @@ var LEVELS=[
       moves to the three cores with the turn taken away, so the clock is the
       only thing making it hard. */
    start:[0,1,0],goal:[7,1,4],rotate:false},
-{name:"05 — No Way From Here",
+{name:"06 — No Way From Here",
    hint:"Fold. Stand up. Nothing moved. There is another axis.",
    /* THE ROTATION REVEAL, and it is a proof rather than an instruction.
       `solve()` says this level is IMPOSSIBLE with rotation locked - checked
@@ -185,7 +202,7 @@ var LEVELS=[
    blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[2,0,0],[2,0,1],
      [1,0,1],[2,0,-1],[4,0,-2],[5,0,-2],[6,0,-2],
      [8,0,-3],[9,0,-3],[10,0,-3]],
-   start:[0,1,0],goal:[9,1,-3],rotate:true,tutorial:true,
+   start:[0,1,0],goal:[9,1,-3],rotate:true,tutorial:true,tutFree:true,
    /* IT IS TAUGHT, AND THE LESSON IS A PROOF THE PLAYER PERFORMS.
 
       A card saying "this one needs the other axis" is a claim. Folding,
@@ -225,7 +242,7 @@ var LEVELS=[
      {say:"So look down a different one. {do:turnr} — the world turns, and what lines up turns with it.",
       cue:"bRotR",free:true,done:function(c){return c.rot>=1;}}
    ]},
-{name:"06 — Turn One Way",
+{name:"07 — Turn One Way",
    hint:"Three moves. The first one is not a step.",
    /* Rotation as a VERB rather than as a rescue. Three moves - turn, fold,
       stand up - and impossible without the turn, so the whole level is one
@@ -234,7 +251,7 @@ var LEVELS=[
    blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[2,0,0],[2,0,1],
      [1,0,1],[2,0,-1],[4,0,-1],[4,0,0],[4,0,1]],
    start:[0,1,0],goal:[4,1,0],rotate:true},
-{name:"07 — Turn the Other",
+{name:"08 — Turn the Other",
    hint:"The same three moves, the other way round.",
    /* The mirror of the level before it: the bank is at x=-2 rather than x=4,
       so the answer is `rot-` where the last one was `rot+`. Both are three
@@ -245,45 +262,48 @@ var LEVELS=[
    blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[2,0,0],[2,0,1],
      [1,0,1],[2,0,-1],[-2,0,1],[-2,0,0],[-2,0,-1]],
    start:[0,1,0],goal:[-2,1,0],rotate:true},
-/* THE OPENING RUN, AND WHY IT IS ALL NAIVE. 01, 02a, 02b, 02 and 04 run
-   14, 12, 19, 21, 28 out of a tutorial that ends at 11 - every step inside
-   the +10 the curve allows.
+{name:"09 — Four Across",
+   hint:"Four squares of open ground. Three moves is the whole level.",
+   /* THE FIRST HALF OF A PAIR ABOUT SCORING, and it is deliberately trivial.
+      Nothing here is a puzzle: the floor is open, the goal is three steps
+      away, and walking is exactly optimal - `solve()` says three, and no
+      fold shortens it. That is the control. What it establishes is that the
+      player CAN hit par, so that when the next level looks identical and
+      walking is suddenly one move too many, the difference is theirs to
+      find rather than something the game did to them. */
+   blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[1,0,1],
+     [2,0,-1],[2,0,0],[2,0,1],[3,0,1],[3,0,0],[3,0,-1]],
+   start:[0,1,0],goal:[3,1,0],rotate:true,stars:true},
+{name:"10 — Five Across",
+   hint:"One square wider. Still three moves — but not by walking.",
+   /* AND THE TWIST: one column wider, so walking is four and par is three.
+      `rot+ FLAT POP` crosses the whole board, because in the plane the near
+      slab and the far edge are the same square - which means THE FOLD IS A
+      SHORTCUT ON OPEN GROUND, not only a way over a gap. Eight levels have
+      taught it as a bridge; this is where it becomes a saving.
 
-   What they have in common matters more than the scores. **Every column any
-   of them ever pops in holds exactly one block**, so R.landings() is never
-   asked to choose and GO 3D always puts the player back somewhere obvious.
-   That is deliberate: the landing rule is revealed AFTER TRIAL I, and a
-   revelation needs five levels of quietly assuming there is nothing to
-   reveal. It is checked rather than assumed - walk each optimal path and
-   count the candidates at every POP, and the first level where the number is
-   ever 2 is `05 — Two Windows`, which is the first level after the reveal.
+      Walking scores 4 against a par of 3, which is two stars. That is the
+      point of the pair and the reason the card goes up here: the level is
+      beatable without noticing anything, and the star is the only thing that
+      says you missed it. */
+   blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[1,0,1],
+     [2,0,-1],[2,0,0],[2,0,1],[3,0,1],[3,0,0],[3,0,-1],
+     [4,0,1],[4,0,0],[4,0,-1]],
+   start:[0,1,0],goal:[4,1,0],rotate:true,stars:true},
+{name:"11 — Two Windows",
+   hint:"Two folds, and a turn between them. Everything so far, at once.",
+   /* THE SAME PUZZLE IN THE OWNER'S IDIOM. This level's route was already
+      the one the section wants to end on - fold, cross, stand up, TURN, fold
+      again - but it was drawn on single-block stepping stones, which is the
+      generated style the rest of the opening replaced.
 
-   `03 — The Near One` used to sit in this run and does not any more: it puts
-   a decoy in the goal's column, so it PUNISHES the naive model at a point
-   where the game has not yet corrected it. It now sits immediately after the
-   reveal, where being caught by the decoy is the lesson landing rather than a
-   trap. Its optimal path still pops on a single candidate; the decoy is what
-   a wrong route finds.
-
-   None of these uses a special block: fundamentals is stone only. */
-{name:"08 — The Same Column",
-   hint:"Both blocks are in the same column. Only one of them is the goal.",
-   /* THE TEST, AND IT IS THE OWNER'S LEVEL, pasted out of the editor. It is
-      the smallest possible check that the reveal landed: walk to the end of
-      the platform, fold, and stand back up, and the naive route puts you on
-      the block you were already standing on - because that one is at the
-      front. The goal is the other block in the same column, two further back,
-      and the only way onto it is to turn round first so that the far one
-      becomes the near one.
-
-      It is placed immediately after `00 — First Landing` for that reason.
-      Before the reveal it would be a trap; after it, it is the one question
-      the reveal was answering, asked once, with nothing else in the way. */
-   blocks:[[0,0,0],[1,0,0],[2,0,0],[3,0,0],[3,0,-2]],
-   start:[0,1,0],goal:[3,1,-2],rotate:true},
-{name:"09 — Two Windows",
-   hint:"Cross in the plane, land, turn, and do it again from the other side.",
-   blocks:[[0,0,0],[1,0,0],[2,1,-4],[3,2,-5],[4,3,-6],[4,3,-5],[1,3,-5]],
+      Every platform is three deep now, the way the owner's are, and the
+      solution is unchanged: `solve()` says the same nine moves in the same
+      order, checked against the original. The two far blocks stay thin on
+      purpose - they are the windows, and a window three deep is a doorway. */
+   blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[1,0,1],[2,0,-1],[2,0,0],[2,0,1],
+     [2,1,-5],[2,1,-4],[2,1,-3],[3,2,-6],[3,2,-5],[3,2,-4],
+     [4,3,-6],[4,3,-5],[1,3,-5]],
    start:[0,1,0],goal:[1,4,-5],rotate:true},
 {name:"BOSS I — The Sighting",
    won:"Something in the plane has seen you. It will not be the only one.",
@@ -546,6 +566,42 @@ var LEVELS=[
        {at:[[9,1,6],[8,1,7]],step:570,aim:660,say:"same ground — two of them"}]},
    blocks:box(0,10,0,0,0,7,[]),
    start:[1,1,1]},
+/* THE OPENING RUN, AND WHY IT IS ALL NAIVE. 01, 02a, 02b, 02 and 04 run
+   14, 12, 19, 21, 28 out of a tutorial that ends at 11 - every step inside
+   the +10 the curve allows.
+
+   What they have in common matters more than the scores. **Every column any
+   of them ever pops in holds exactly one block**, so R.landings() is never
+   asked to choose and GO 3D always puts the player back somewhere obvious.
+   That is deliberate: the landing rule is revealed AFTER TRIAL I, and a
+   revelation needs five levels of quietly assuming there is nothing to
+   reveal. It is checked rather than assumed - walk each optimal path and
+   count the candidates at every POP, and the first level where the number is
+   ever 2 is `05 — Two Windows`, which is the first level after the reveal.
+
+   `03 — The Near One` used to sit in this run and does not any more: it puts
+   a decoy in the goal's column, so it PUNISHES the naive model at a point
+   where the game has not yet corrected it. It now sits immediately after the
+   reveal, where being caught by the decoy is the lesson landing rather than a
+   trap. Its optimal path still pops on a single candidate; the decoy is what
+   a wrong route finds.
+
+   None of these uses a special block: fundamentals is stone only. */
+{name:"78 — The Same Column",
+   hint:"Both blocks are in the same column. Only one of them is the goal.",
+   /* THE TEST, AND IT IS THE OWNER'S LEVEL, pasted out of the editor. It is
+      the smallest possible check that the reveal landed: walk to the end of
+      the platform, fold, and stand back up, and the naive route puts you on
+      the block you were already standing on - because that one is at the
+      front. The goal is the other block in the same column, two further back,
+      and the only way onto it is to turn round first so that the far one
+      becomes the near one.
+
+      It is placed immediately after `00 — First Landing` for that reason.
+      Before the reveal it would be a trap; after it, it is the one question
+      the reveal was answering, asked once, with nothing else in the way. */
+   blocks:[[0,0,0],[1,0,0],[2,0,0],[3,0,0],[3,0,-2]],
+   start:[0,1,0],goal:[3,1,-2],rotate:true},
 {name:"65 — Scattered Steps",
    /* Six blocks at six unrelated depths. Flat, they are a staircase — which
       is the tutorial's lesson again, but with the answer no longer written
@@ -779,6 +835,7 @@ var LEVELS=[
    start:[0,1,0],goal:[-4,4,-8],rotate:true}
 
 
+
 ];
 
 /* Section markers hold array indices, so inserting a level means shifting
@@ -849,7 +906,7 @@ var SECTIONS=[
           stars:{n:46, col:0xdfe9ff, seed:19},
           air:{col:0xcfe08e, n:18, rise:-.10, drift:.16, size:.085,
                kind:"leaf"}}},
-  {at:13, name:"II · SPIKES", sub:"a hazard you cannot see until you fold", col:"#e0455f",
+  {at:15, name:"II · SPIKES", sub:"a hazard you cannot see until you fold", col:"#e0455f",
    story:"Some of what is down there did not survive being flattened.",
    /* HELL, and it is DARK hell rather than bright. This section teaches
       fire, and a glowing orange world swallows a fire block whole - that was
@@ -860,7 +917,7 @@ var SECTIONS=[
    theme:{sky:[0x1a0a10,0x3a0f0a], block:0xc8c8c8, surface:"basalt",
           scene:"hell", flare:17000, ink:0x24100e, amb:"fire",
           air:{col:0xff9a4a, n:24, rise:.20, drift:.07, size:.07}}},
-  {at:22, name:"III · GLASS", sub:"solid in the volume, absent from the plane", col:"#7fb2ff",
+  {at:24, name:"III · GLASS", sub:"solid in the volume, absent from the plane", col:"#7fb2ff",
    story:"Water casts nothing, so the plane holds no record of it.",
    /* THE SEA, AT SUNSET, and the sunset is not decoration. This section
       teaches water, and a blue world swallows a cyan water block whole -
@@ -886,7 +943,7 @@ var SECTIONS=[
      amber either - that one is a saturated #e0a03c, and this is a washed
      tan two steps away from it. The node shapes are what tell those apart
      anyway; the colour only has to not confuse them. */
-  {at:32, name:"IV · CRATES", sub:"change the plane by moving the volume", col:"#d9bd83",
+  {at:34, name:"IV · CRATES", sub:"change the plane by moving the volume", col:"#d9bd83",
    story:"You can edit what they see. That is the one thing they cannot do.",
    /* THE DESERT AT NOON. Grains blowing sideways rather than rising, which
       is both what sand does and what this section is about - pushing things
@@ -895,7 +952,7 @@ var SECTIONS=[
    theme:{sky:[0x3d3a52,0x7a5c33], block:0x9a8a68, scene:"desert",
           ink:0x2a2114, amb:"wind",
           air:{col:0xf0dcae, n:26, rise:.02, drift:.34, size:.055}}},
-  {at:44, name:"V · EXTRA", sub:"unlocked by the Census — the long ones", col:"#3fc4d4", locked:true,
+  {at:46, name:"V · EXTRA", sub:"unlocked by the Census — the long ones", col:"#3fc4d4", locked:true,
    story:"The parts of the world that were never counted.",
    /* NOCTURNE. Almost nothing moves out here, which is the point - it is
       the shelf past the last warden, where the counting stopped. */
@@ -911,6 +968,15 @@ var SECTIONS=[
    so never rewrite this table, only extend it. Applied by migrateNames()
    in 06-persistence.js. */
 var LEVEL_RENAMES={
+  /* A rest level went in before the trial and a scoring pair before the
+     boss, so the run after each of them shifted by one. These four have
+     been live on the published link, so they migrate rather than simply
+     change: composed as always, values re-pointed in the same pass. */
+  "05 — No Way From Here":"06 — No Way From Here",
+  "06 — Turn One Way":"07 — Turn One Way",
+  "07 — Turn the Other":"08 — Turn the Other",
+  "08 — The Same Column":"78 — The Same Column",
+  "09 — Two Windows":"11 — Two Windows",
   "11 — Far Side":"76 — Far Side",
   "12 — Three Folds":"77 — Three Folds",
   /* THE OPENING WAS RE-CUT AROUND THE OWNER'S OWN LEVELS, and the run
@@ -925,9 +991,9 @@ var LEVEL_RENAMES={
   "02b — Turn, Then Cross":"67 — Turn, Then Cross",
   "02 — Turn to see":"68 — Turn to see",
   "04 — Halfway Across":"69 — Halfway Across",
-  "02c — The Same Column":"08 — The Same Column",
+  "02c — The Same Column":"78 — The Same Column",
   "03 — The Near One":"70 — The Near One",
-  "05 — Two Windows":"09 — Two Windows",
+  "05 — Two Windows":"11 — Two Windows",
   "06 — The Long Way Round":"71 — The Long Way Round",
   "07 — About Face":"72 — About Face",
   "08 — The Last Step":"73 — The Last Step",
@@ -946,7 +1012,7 @@ var LEVEL_RENAMES={
  "BOSS III — Through Glass": "BOSS III — The Search",
  "BOSS IV — The Orthogon": "BOSS IV — The Census",
  "02 — Turn to see": "68 — Turn to see",
- "03 — Two Windows": "09 — Two Windows",
+ "03 — Two Windows": "11 — Two Windows",
  "04 — The Long Way Round": "71 — The Long Way Round",
  "05 — About Face": "72 — About Face",
  "06 — The Last Step": "73 — The Last Step",
@@ -1049,7 +1115,7 @@ var LEVEL_RENAMES={
  "58 — Absent Floor": "60 — Absent Floor",
  "59 — Twice Up": "61 — Twice Up",
  "60 — The Far Shore": "62 — The Far Shore",
- "04 — Two Windows": "09 — Two Windows",
+ "04 — Two Windows": "11 — Two Windows",
  "05 — The Long Way Round": "71 — The Long Way Round",
  "06 — About Face": "72 — About Face",
  "09 — The Last Step": "73 — The Last Step",
@@ -1095,7 +1161,7 @@ var LEVEL_RENAMES={
  "62 — Three Folds Deep": "63 — Three Folds Deep",
  "63 — Everything at Once": "64 — Everything at Once",
  "01 — Turn to see": "68 — Turn to see",
- "02 — Two Windows": "09 — Two Windows",
+ "02 — Two Windows": "11 — Two Windows",
  "03 — The Long Way Round": "71 — The Long Way Round",
  "04 — About Face": "72 — About Face",
  "05 — The Last Step": "73 — The Last Step",
@@ -1157,7 +1223,7 @@ var LEVEL_RENAMES={
  "61 — Everything at Once": "64 — Everything at Once",
  "04 — Turn to see": "68 — Turn to see",
  "05 — Halfway Across": "69 — Halfway Across",
- "06 — Two Windows": "09 — Two Windows",
+ "06 — Two Windows": "11 — Two Windows",
  "07 — The Long Way Round": "71 — The Long Way Round",
  "08 — About Face": "72 — About Face",
  "10 — Six Across": "74 — Six Across",

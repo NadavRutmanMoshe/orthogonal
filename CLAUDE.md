@@ -149,8 +149,8 @@ each. A landmark must not be able to break a save.
 
 **SECTION I IS THE OWNER'S OWN, AND IT IS THE ANSWER TO "ARE THESE AI MADE?"**
 The opening was re-cut around eleven hand-authored levels. It runs
-`00 — First Steps, 00 — First Fold` (the tutorial), then `01, 02, 03, 04,
-TRIAL I, 05, 06, 07, 08, 09` and the boss. Each one is a sentence, and no
+`00 — First Steps, 00 — First Fold` (the tutorial), then `01 … 05,
+TRIAL I, 06, 07, 08, 09, 10, 11` and the boss. Each one is a sentence, and no
 two sentences are the same:
 
 | | |
@@ -161,10 +161,12 @@ two sentences are the same:
 | `02 — Step Down First` | the same, hardened: 6 of 8, and the only safe square is one you step *down* onto. |
 | `03 — Come Back Early` | the plane is a shortcut, not a delivery — pop partway and walk the rest. |
 | `04 — The Way Back` | the plane has no preferred direction; the goal is behind you and above you. |
-| `05 — No Way From Here` | **impossible without rotating**, proved by `solve()` both ways — and taught, so the player proves it too. |
-| `06 / 07 — Turn One Way / the Other` | the same three moves conjugated: `rot+` and `rot-`. |
-| `08 — The Same Column` | the owner's older level, and the exam for the landing rule. |
-| `09 — Two Windows` | everything at once, into the boss. |
+| `05 — One Safe Square` | the peril lesson at its limit: 8 of 9 squares are lethal to fold from, and the survivor is one you have to *climb* to. |
+| `06 — No Way From Here` | **impossible without rotating**, proved by `solve()` both ways — and taught, so the player proves it too. |
+| `07 / 08 — Turn One Way / the Other` | the same three moves conjugated: `rot+` and `rot-`. |
+| `09 — Four Across` | walking *is* par. The control half of the scoring pair. |
+| `10 — Five Across` | one column wider, so walking is one move over and the fold is the shortcut. The star is the only thing that says you missed it. |
+| `11 — Two Windows` | everything at once, into the boss. |
 
 - **ROTATION DOES NOT EXIST UNTIL `05`.** Every level before it carries
   `rotate:false`, including `TRIAL I` — checked leg by leg with the solver
@@ -177,7 +179,13 @@ two sentences are the same:
   back the moment you stand up. A level with no turn is a different sentence,
   and eight levels of dead controls in the bar would spend the reveal in
   advance. `body.norot`, set in `syncHud`.
-- **`05` IS THE THIRD TUTORIAL, AND ITS LESSON IS A PROOF THE PLAYER
+- **THE SCORING PAIR IS A SETUP AND A PUNCHLINE.** `09` is trivial on
+  purpose — the floor is open and walking is exactly optimal — and it is the
+  level `starsOffer()` explains three stars on. The player is told to aim for
+  them, gets them free, and then meets `10`, which looks identical, is one
+  column wider, and where walking scores 4 against a par of 3. Testers ignore
+  the star system because nothing ever points at it; this is the pointing.
+- **`06` IS THE THIRD TUTORIAL, AND ITS LESSON IS A PROOF THE PLAYER
   PERFORMS.** A card saying "this one needs the other axis" is a claim;
   folding, standing up and finding the world exactly where you left it is a
   demonstration. So the first two steps ask for the fold and the pop that do
@@ -190,7 +198,11 @@ two sentences are the same:
   solver, which is what `tutGuide()` does on any level once the steps run
   out. It is `tutorial:true` because those two wasted moves are moves the
   solver does not count, and a player who does as they are told must not be
-  marked down for it.
+  marked down for it. **And it carries `tutFree:true`, so the coach stops
+  dead once the turn has been shown** rather than naming every move to the
+  goal: handing the player a verb and then narrating the puzzle they now own
+  takes back the thing that was just given them. That flag is the one seam
+  between "get a first-time player to the goal" and "hand them the game".
 - **The peril pair was verified, not assumed.** `01` and `02` add blocks at
   head height that change no route at all — the optimal is the same as the
   level before — and turn four then six of the standable squares into places

@@ -1760,6 +1760,39 @@ function hintOffer(){
     setTimeout(function(){cue("bHint");},260);
   });
 }
+/* THE STARS, EXPLAINED ON THE ONE LEVEL BUILT TO SHOW THEM.
+
+   Testers ignore the star system, and the reason is that nothing ever points
+   at it: a level is beaten or it is not, the three glyphs in the corner move
+   silently, and a player who walks every level and never folds a shortcut is
+   never told they missed anything. So it is said once, in words, on the
+   first level carrying `stars:true` - which is `09 — Four Across`, where par
+   is exactly what walking costs. The player is told to aim for three, gets
+   them for free, and then meets `10 — Five Across`, which looks identical
+   and where walking is one move too many. The card is the setup; the second
+   level is the punchline.
+
+   Deliberately NOT a reward or a gate - it explains a rule that is already
+   running. `settings.starAsked` is in the loadSettings() whitelist beside
+   the other two, or it would be asked on every reload. */
+function starsOfferDue(){
+  return !settings.starAsked&&!ctlOfferPending&&playSource==="builtin"&&
+         !!L&&!!L.stars&&!L.tutorial;
+}
+function starsOffer(){
+  if(!starsOfferDue())return;
+  if(levelOver()||panelOpen()||screenUp())return;
+  settings.starAsked=true;saveSettings();
+  offerShell("Three stars",
+    "Every level has a <b>shortest possible route</b>, and three stars means "+
+    "you found it \u2014 not that you finished. The count beside the level's "+
+    "name is your moves against that best.",
+    "<button class='ad' id='stOk'>TRY FOR THREE</button>",
+    "Half again as many moves is two stars, twice as many is one. Hints lower "+
+    "the most you can score, which is the only thing they cost. <b>This one is "+
+    "three moves.</b>");
+  bind("stOk",function(){hidePanel();});
+}
 function offerShell(title,lead,acts,note){
   showPanel("<h3>"+title+"</h3><div class='mn'>"+lead+"</div>"+
             "<div class='ma'>"+acts+"</div><div class='mn'>"+note+"</div>");
@@ -1876,4 +1909,5 @@ function loadLevel(level,idx){
   // something, so the something has to be there.
   if(ctlOfferPending)setTimeout(controlsOffer,520);
   else if(hintOfferDue())setTimeout(hintOffer,520);
+  else if(starsOfferDue())setTimeout(starsOffer,520);
 }

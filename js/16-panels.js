@@ -329,7 +329,7 @@ function menuPanel(){
     settings.tutor=defaultTutor();
     // including "stop suggesting things": a reset is a reset
     settings.slowOffers=0;settings.noSlowOffer=false;settings.landHints=0;
-    settings.ctlAsked=false;settings.hintAsked=false;
+    settings.ctlAsked=false;settings.hintAsked=false;settings.starAsked=false;
     muted=false;
     applyVolume();
     applyBrightness();applyUI();saveSettings();syncHud();
