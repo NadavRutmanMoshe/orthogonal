@@ -2837,6 +2837,23 @@ know before touching it:
   `shards()` only; `starsEarned()` and `wardrobe.spent` still do their real
   work, so buying exercises the true purchase path. **Set it back to `false`
   before shipping.**
+- **THE AMBIENT LAYER IS CURRENTLY MUTED** — `AMB_MUTED` in `js/11-sound.js`
+  is `true`. Playtested and disliked: the birds, the sea, the wind and the
+  desert together were more presence than the game wanted, and a bed you have
+  to put up with is worse than no bed. **Everything below is kept rather than
+  deleted**, because what is wrong with it is a judgement about the mix and
+  the voices rather than about the machinery — the beds, the phrases, the
+  wave's three phases and the meteor's boom are all still written and all
+  still measured. Setting the flag to `false` is the whole of turning them
+  back on. It is asked at `ambTo()` and `ambSync()` rather than inside
+  `ambStart`, so a muted section builds **nothing**: no noise buffer, no
+  oscillators, no 250ms timer. Every part of a section you can *see* is
+  untouched — the birds still fly, the meteors still land and flash, the foam
+  still runs up the beach.
+  - **An ambient voice belongs to its bed or it does not play.** `ambVoice()`
+    and `ambCicada()` used to fall back to the master bus when `AMB.gain` was
+    missing, which would have let a bird sing straight through the mute.
+    Measured at zero now, with the loudest events called by hand.
 - **EVERY SECTION HAS AMBIENCE, and it is synthesised like everything else.**
   `ambTo(kind)` is called from `applyTheme`, so the sound of a section arrives
   with its sky and cannot be left behind by a level change; there are no audio
@@ -2871,7 +2888,10 @@ know before touching it:
     arcs opening from its beak side, and the bird itself flapping harder and
     riding up on each note. The flap is what makes the cue belong to that
     bird rather than float beside it. Phrases come every 2–6 seconds now
-    rather than every 4–11.
+    rather than every 4–11. **It is off with the sound** under `AMB_MUTED`,
+    and that is the right coupling: the cue exists to say *this bird is
+    making that noise*, and drawing sound coming out of a silent bird is
+    worse than not drawing it.
   - **Samples were asked for and synthesis is the answer.** There is no
     audio file anywhere in this project and there is a reason: the published
     build is one HTML file, its sandbox blocks fetching media, and a

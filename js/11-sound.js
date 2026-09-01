@@ -287,10 +287,16 @@ function ambStop(){
    call outdoors arrives with air around it and a dry one sits inside your
    head instead of across the field. */
 function ambVoice(c,at,dur,vol,build){
+  /* No bed, no voice. `AMB.gain` used to fall back to the master bus, which
+     meant a call could route around a section that was not running at all -
+     harmless while the only caller was the ambience's own timer, and exactly
+     the hole that would let a bird sing through AMB_MUTED. An ambient voice
+     belongs to its bed or it does not play. */
+  if(!AMB.gain)return null;
   var g=c.createGain();
   g.gain.value=0;                    // see the note in ambWave
   g.gain.setValueAtTime(.0001,at);
-  g.connect(AMB.gain||out(c));
+  g.connect(AMB.gain);
   // A little of every call into the room, which is most of what sells it.
   try{var w=c.createGain();w.gain.value=.5;g.connect(w);w.connect(reverb(c));}
   catch(e){}
@@ -381,13 +387,14 @@ function ambToucan(c){
    is one LFO on one gain - swelling over four or five seconds and going out
    again. Sometimes, not always: a chorus that never stops is a fault. */
 function ambCicada(c){
+  if(!AMB.gain)return;               // see ambVoice
   var t=c.currentTime+.05, dur=4+Math.random()*4.5;
   var g=c.createGain(), bp=c.createBiquadFilter();
   g.gain.value=0;                    // see the note in ambWave
   bp.type="bandpass";bp.frequency.value=3600+Math.random()*1800;bp.Q.value=3.2;
   var s=ambSrc(c,bp,t);
   var am=c.createGain();am.gain.value=0;
-  bp.connect(am);am.connect(g);g.connect(AMB.gain||out(c));
+  bp.connect(am);am.connect(g);g.connect(AMB.gain);
   var lfo=c.createOscillator(), lg=c.createGain();
   lfo.type="sawtooth";lfo.frequency.value=62+Math.random()*22;
   lg.gain.value=.5;
@@ -637,9 +644,33 @@ function ambStart(kind){
 }
 /* The one entry point. Called from applyTheme, so the sound of a section
    arrives with its sky and cannot be left behind by a level change. */
+/* THE WHOLE AMBIENT LAYER IS OFF, ON ONE FLAG.
+
+   Playtested and disliked - the birds, the sea, the wind and the desert all
+   together were more presence than the game wanted, and a bed you have to
+   put up with is worse than no bed. Everything here is kept rather than
+   deleted, because what is wrong with it is a judgement about the mix and
+   the voices rather than about the machinery: the beds, the phrases, the
+   wave's three phases and the meteor's boom are all still written and all
+   still measured. Setting this to false is the whole of turning them back
+   on.
+
+   It is checked at the two entry points rather than inside ambStart, so a
+   muted section builds NOTHING - no noise buffer, no oscillators, no
+   250ms timer - instead of building a graph and turning it down. The world
+   keeps everything you can see: the birds still fly, the meteors still land
+   and flash, the foam still runs up the beach.
+
+   One consequence worth knowing: `birdSing()` is called from
+   `ambBirdPhrase`, so the ripple that marks which bird is calling is off
+   with the sound. That is the right coupling - the cue exists to say "this
+   bird is making that noise", and drawing sound coming out of a silent bird
+   is worse than not drawing it. */
+var AMB_MUTED=true;
 function ambTo(kind){
   kind=kind||null;
-  AMB.want=kind;
+  AMB.want=kind;                     // remembered, so unmuting resumes it
+  if(AMB_MUTED){if(AMB.kind)ambStop();return;}
   if(AMB.kind===kind)return;
   ambStop();
   if(kind)ambStart(kind);
@@ -647,7 +678,7 @@ function ambTo(kind){
 // Put it back after an unmute: audio() refuses to build anything while muted,
 // so the section that was playing simply did not start.
 function ambSync(){
-  if(muted){if(AMB.kind)ambStop();return;}
+  if(AMB_MUTED||muted){if(AMB.kind)ambStop();return;}
   if(AMB.want&&AMB.kind!==AMB.want)ambStart(AMB.want);
 }
 
