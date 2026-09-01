@@ -131,7 +131,7 @@ five levels in, each section is interrupted by a **trial**:
 
 | | | |
 |---|---|---|
-| I · FUNDAMENTALS | 14 + trial + boss | turn, depth — and the landing rule, revealed mid-section |
+| I · FUNDAMENTALS | 8 + trial + boss | the owner's own opening: the fold, then peril, then the turn |
 | II · SPIKES | 7 + trial + boss | spikes before glass — a hazard reads faster than an absence |
 | III · GLASS | 8 + trial + boss | ends on glass + spikes |
 | IV · CRATES | 10 + trial + boss | ends on crate + glass + spikes |
@@ -147,47 +147,57 @@ because gating a bonus on 100% turns a reward into a chore.
 section would renumber every level after it and cost a `LEVEL_RENAMES` entry
 each. A landmark must not be able to break a save.
 
-**Section I is long on purpose, and it is now a section with a reveal in the
-middle of it.** It runs
-`01, 02a, 02b, 02, 04, TRIAL I, 00 — First Landing, 03, 05 …` and the shape
-of that is the whole point:
+**SECTION I IS THE OWNER'S OWN, AND IT IS THE ANSWER TO "ARE THESE AI MADE?"**
+The opening was re-cut around eleven hand-authored levels. It runs
+`00 — First Steps, 00 — First Fold` (the tutorial), then `01, 02, 03, 04,
+TRIAL I, 05, 06, 07, 08, 09` and the boss. Each one is a sentence, and no
+two sentences are the same:
 
-- **Everything before the trial is naive.** Every column those five levels
-  ever pop in holds exactly one block, so `R.landings()` is never asked to
-  choose and coming back always puts you somewhere obvious. Checked, not
-  assumed: walk each optimal path and count the candidates at every POP, and
-  the first level where the number is ever 2 is `05 — Two Windows` — the
-  first level *after* the reveal.
-- **The reveal is `00 — First Landing`, moved out of the tutorial.** It used
-  to be the fourth thing a player ever did, which is the worst possible
-  moment for it: they had no model of the fold yet, so there was nothing to
-  correct. Now it arrives as a reward for beating a clock, opens with two
-  cards, and has five levels of quiet assumption behind it.
-- **`02c — The Same Column` is the exam, and it is the owner's own level.**
-  Four blocks in a row and a fifth two behind the end of it, both in one
-  silhouette column. Walk to the end, fold, stand up, and the naive route
-  puts you back on the block you were already on — because that one is at the
-  front. The goal is the other one, and the only way onto it is to turn round
-  first. `solve()` says it is exactly `rot+ FLAT POP rot+ FLAT POP` and
-  impossible without rotating, and `R.pick()` confirms the naive fold lands on
-  `[3,0]` rather than the goal at `[3,-2]`.
-- **`03 — The Near One` follows it rather than preceding it.** It puts a
-  decoy in the goal's column, so it *punishes* the naive model — which is a
-  trap before the reveal and a test after it. Its own optimal path still pops
-  on a single candidate; the decoy is what a wrong route finds.
-- **`02c` scores 26 and plays easy, which is the tier model's blind spot in
-  the other direction.** `statsFor()` counts two folds and two turns and calls
-  it `hard`; the player has just been handed the answer, one card ago. The
-  same gap that makes `03 — The Near One` score low and play hard. Do not
-  reorder this run on the curve alone.
-- **The numbers are deliberately not sequential** (`01, 02a, 02b, 02, 04, …
-  03, 05`). Numbering is global, so making it sequential means renaming every
-  level in the game and a `LEVEL_RENAMES` entry each — and the owner intends
-  to re-cut this run again. The order is the array's; the number is only a
-  name.
+| | |
+|---|---|
+| `00 — First Steps` | walking, stepping up, stepping down. No fold route exists through the geometry at all, so the lesson cannot be short-circuited even before `lockFlat` refuses the verb. |
+| `00 — First Fold` | fold, cross, stand up — **and the landing rule for free**: the far bank is three deep in one silhouette column, so you come back on the front block and the goal is one step behind it. |
+| `01 — Not Every Square` | some squares are lethal to fold from. 4 of 9, including the start square. |
+| `02 — Step Down First` | the same, hardened: 6 of 8, and the only safe square is one you step *down* onto. |
+| `03 — Come Back Early` | the plane is a shortcut, not a delivery — pop partway and walk the rest. |
+| `04 — The Way Back` | the plane has no preferred direction; the goal is behind you and above you. |
+| `05 — No Way From Here` | **impossible without rotating**, proved by `solve()` both ways. The reveal. |
+| `06 / 07 — Turn One Way / the Other` | the same three moves conjugated: `rot+` and `rot-`. |
+| `08 — The Same Column` | the owner's older level, and the exam for the landing rule. |
+| `09 — Two Windows` | everything at once, into the boss. |
 
-The measured curve out of a tutorial that ends at 11 is **14, 12, 19, 21,
-28**, every step inside the +10 the opening allows.
+- **ROTATION DOES NOT EXIST UNTIL `05`.** Every level before it carries
+  `rotate:false`, including `TRIAL I` — checked leg by leg with the solver
+  rather than assumed, at 11, 9 and 8 moves. Without that lock four of the
+  early levels collapse to the same three moves (`rot+ FLAT POP`), which is
+  the shortcut that skips the lesson: measured, and the reason the owner's
+  `rotate:true` was flipped on all of them.
+- **AND THE TURN BUTTONS ARE NOT DRAWN UNTIL `05` EITHER.** Disabled was the
+  old behaviour and it is still right for the *flat* case, where they come
+  back the moment you stand up. A level with no turn is a different sentence,
+  and eight levels of dead controls in the bar would spend the reveal in
+  advance. `body.norot`, set in `syncHud`.
+- **The peril pair was verified, not assumed.** `01` and `02` add blocks at
+  head height that change no route at all — the optimal is the same as the
+  level before — and turn four then six of the standable squares into places
+  where `GO 2D` kills you. That is what makes them different levels rather
+  than decoration, and it is the first time `foldPeril()`'s red block has a
+  level built for it.
+- **The old opening is on the shelf, not deleted.** Thirteen levels moved to
+  `V · EXTRA` and were renumbered `65..77` — two levels called `01` is a map
+  with two nodes reading 01. That also fixes something the shelf needed: it
+  read `brutal` end to end, and now opens on gentle ones.
+- **`00 — First Landing` was dropped**, on the owner's call. Its lesson is
+  not gone: `00 — First Fold` now lands you on the front block with the goal
+  one step behind it, so the rule is watched rather than read, and
+  `08 — The Same Column` is still the exam. **All of its machinery is live
+  and unused** — `card:{h,p}`, `show:"landing"`, `hold:true`, `L.tint` — the
+  same way the twin boss and `cunning` are; restoring it is one level-data
+  paste. Its notes are kept below for that reason.
+
+The measured curve is **8, 14, 14, 16, 14, 16, 22 (trial), 19, 11, 11, 26,
+31**. The two elevens are the deliberately tiny rotation pair; measured from
+`05` the ramp into the boss is 19 → 26 → 31.
 
 **Two levels teaching the same thing is a bug, and the curve will not catch
 it.** `03 — The Other Axis` and `04 — Turn to see` scored 19 and 21 and
@@ -1925,7 +1935,7 @@ it has to be able to end it.
 
 ## The tutorial
 
-**Three levels, one new verb each: walking, collapsing, turning.** The fourth
+**Two levels: walking, and the fold.** Turning is no longer taught here at all — it is revealed inside Section I by `05 — No Way From Here`, a level that is provably impossible without it. The third
 — `00 — First Landing`, the landing rule — **is no longer here**: it now sits
 after `TRIAL I`, because a rule about where the fold puts you cannot be
 corrected in somebody who has not yet formed a guess about it. See Levels
@@ -2079,8 +2089,9 @@ lesson used to say "collapse the world", then "Collapse", then "flatten", then
 names for one verb, none of them the one on screen, in the three levels whose
 whole job is naming things.
 
-**`00 — First Landing` is rule 5 made compulsory, and it is the owner's
-design.** `First Fold` *mentions* the landing rule while teaching the fold —
+**`00 — First Landing` IS RETIRED — kept here because its machinery is
+live and one paste restores it.** It was rule 5 made compulsory, and it is the
+owner's design.** `First Fold` *mentions* the landing rule while teaching the fold —
 the near block there is also the goal, so a player who understood none of it
 still won. This level is the same rule with nothing else in it: **two blocks
 in one silhouette column, five apart in depth, and a 180° turn between them.**

@@ -251,6 +251,9 @@
   /* Control layout. The bar is a preference, not a fixture: on a phone you
      may want it under your thumbs, on a desktop you'd rather see the world. */
   body.ui-compact .dpad{display:none}
+/* A level with no turn shows no turn buttons - see syncHud. The bar's right
+   cluster is a flex row, so the two simply leave and GO 2D closes up. */
+  body.norot #bRotL,body.norot #bRotR{display:none}
   body.ui-compact #playBar{justify-content:flex-end}
   body.ui-none #playBar{display:none}
   /* A tutorial teaches the buttons, so it overrides the layout preference
