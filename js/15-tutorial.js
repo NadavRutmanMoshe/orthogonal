@@ -329,6 +329,14 @@ var TUT_AGAIN_MS=2600;   // after the player has used the right control once
    owed an explanation, and that is exactly what the dim says. */
 function tutBlocks(id){
   if(app!=="play")return false;
+  /* NOT IN GESTURE MODE. The dim and the gate are one mechanism - the dim is
+     what explains the gate - and neither is needed once the lesson is a hand
+     in the middle of the screen: it is unmissable where a green button on a
+     strip at the bottom was not. Blocking without the dim would be worse
+     than either, because a swipe that silently does nothing is the exact
+     thing the dim exists to explain. So both go together, and the button
+     lesson keeps both. */
+  if(tutGestureLesson())return false;
   if(tutLock!==null)return tutLock!==id;
   var g=tutGuide();
   if(!g||!g.hold||!g.cue||id===g.cue)return false;
@@ -743,6 +751,7 @@ function tutCueTo(id){
    incapable of. Derived, it re-heals instead. */
 function tutEngage(){
   if(tutLock!==null)return;
+  if(tutGestureLesson())return;      // see tutBlocks: the hand is the guide
   var g=tutGuide(); if(!g)return;
   if(g.lock===false||!g.cue)return;
   tutCueTo(g.cue);

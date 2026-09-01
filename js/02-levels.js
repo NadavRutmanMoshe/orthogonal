@@ -185,7 +185,46 @@ var LEVELS=[
    blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[2,0,0],[2,0,1],
      [1,0,1],[2,0,-1],[4,0,-2],[5,0,-2],[6,0,-2],
      [8,0,-3],[9,0,-3],[10,0,-3]],
-   start:[0,1,0],goal:[9,1,-3],rotate:true},
+   start:[0,1,0],goal:[9,1,-3],rotate:true,tutorial:true,
+   /* IT IS TAUGHT, AND THE LESSON IS A PROOF THE PLAYER PERFORMS.
+
+      A card saying "this one needs the other axis" is a claim. Folding,
+      standing up and finding the world exactly where you left it is a
+      demonstration - so the first two steps ask for the fold and the pop
+      that DO NOT WORK, and only then does the turn arrive. The player has
+      spent eight levels learning that folding crosses gaps; this is the
+      level where that stops being true, and being wrong on purpose once is
+      what makes the turn land as an answer rather than as a new button.
+
+      `free:true` on both, and it is the same hatch `00 — First Landing`
+      used: tutGuide() replaces any step whose cue disagrees with the
+      solver's next move, and the solver would never spend a fold here - it
+      opens `up, rot+`. Without the flag these two steps are overridden on
+      every frame and can never be shown.
+
+      AND THAT IS WHY IT IS `tutorial:true`. The wasted fold and pop are two
+      moves the solver does not count, so a player who does as they are told
+      would be handed a worse star rating for it. A teaching level should not
+      also mark you - the same reason the other two are unscored. */
+   tut:[
+     {say:"Something is over there. {do:2d} and see how far it gets you.",
+      cue:"bFlat",free:true,done:function(c){return c.flat>=1;}},
+     {say:"Nothing to cross to. The bridge you need does not exist along this axis.<br>{do:3d} to stand back up.",
+      cue:"bFlat",free:true,done:function(c){return c.unflat>=1;}},
+     /* THE REVEAL IS FREE TOO, and it has to be. Standing up out of the
+        wasted fold puts the player on the block at the FRONT of their
+        column, which is one square off the line the solver's own route
+        starts from - so from here it wants a step before the turn, and
+        without the flag it would overwrite the one sentence this level
+        exists to say with "press up".
+
+        And the lesson stops here rather than walking them home. Three steps
+        is the whole argument - it does not work, it still does not work,
+        turn - and tutGuide() hands the rest to the solver, which is what it
+        does on any level once the steps run out. */
+     {say:"So look down a different one. {do:turnr} — the world turns, and what lines up turns with it.",
+      cue:"bRotR",free:true,done:function(c){return c.rot>=1;}}
+   ]},
 {name:"06 — Turn One Way",
    hint:"Three moves. The first one is not a step.",
    /* Rotation as a VERB rather than as a rescue. Three moves - turn, fold,

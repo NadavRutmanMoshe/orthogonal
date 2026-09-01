@@ -161,7 +161,7 @@ two sentences are the same:
 | `02 — Step Down First` | the same, hardened: 6 of 8, and the only safe square is one you step *down* onto. |
 | `03 — Come Back Early` | the plane is a shortcut, not a delivery — pop partway and walk the rest. |
 | `04 — The Way Back` | the plane has no preferred direction; the goal is behind you and above you. |
-| `05 — No Way From Here` | **impossible without rotating**, proved by `solve()` both ways. The reveal. |
+| `05 — No Way From Here` | **impossible without rotating**, proved by `solve()` both ways — and taught, so the player proves it too. |
 | `06 / 07 — Turn One Way / the Other` | the same three moves conjugated: `rot+` and `rot-`. |
 | `08 — The Same Column` | the owner's older level, and the exam for the landing rule. |
 | `09 — Two Windows` | everything at once, into the boss. |
@@ -177,6 +177,20 @@ two sentences are the same:
   back the moment you stand up. A level with no turn is a different sentence,
   and eight levels of dead controls in the bar would spend the reveal in
   advance. `body.norot`, set in `syncHud`.
+- **`05` IS THE THIRD TUTORIAL, AND ITS LESSON IS A PROOF THE PLAYER
+  PERFORMS.** A card saying "this one needs the other axis" is a claim;
+  folding, standing up and finding the world exactly where you left it is a
+  demonstration. So the first two steps ask for the fold and the pop that do
+  **not** work, and only then does the turn arrive. All three carry
+  `free:true` — `tutGuide()` replaces any step whose cue disagrees with the
+  solver, and the solver would never spend a fold here — and the third needs
+  it for a second reason: standing up out of the wasted fold puts the player
+  on the block at the *front* of their column, one square off the line the
+  solver's route starts from. The lesson then stops and hands the rest to the
+  solver, which is what `tutGuide()` does on any level once the steps run
+  out. It is `tutorial:true` because those two wasted moves are moves the
+  solver does not count, and a player who does as they are told must not be
+  marked down for it.
 - **The peril pair was verified, not assumed.** `01` and `02` add blocks at
   head height that change no route at all — the optimal is the same as the
   level before — and turn four then six of the standable squares into places
@@ -2012,6 +2026,14 @@ buttons a sentence means. It is recomputed from the current step, so it
 inherits the property above and cannot disagree with the line on screen. A step
 opts out with `lock:false`.
 
+- **THERE IS NO DIM IN GESTURE MODE, and the gate goes with it.** The dim and
+  the gate are one mechanism — the dim is what *explains* the gate — and
+  neither is needed once the lesson is a hand in the middle of the screen: it
+  is unmissable where a green button on a strip at the bottom was not.
+  Blocking without the dim would be worse than either, because a swipe that
+  silently does nothing is the exact thing the dim exists to explain. Both
+  are refused at the top of `tutBlocks()` and `tutEngage()`. The button
+  lesson keeps both, unchanged.
 - **It arms on hesitation, not on arrival, and that is the difference between
   a hint and a mood.** The first version engaged the instant a step began —
   and since every step names a control, the guide was on for the whole
