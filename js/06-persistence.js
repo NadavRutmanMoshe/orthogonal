@@ -78,11 +78,11 @@ function loadSettings(){
         }
         if(typeof o.brightness==="number")settings.brightness=o.brightness;
         if(o.ui&&["full","compact","none"].indexOf(o.ui)>=0)settings.ui=o.ui;
-        /* Read against the table rather than a range check: pace multiplies
-           every real-time interval in the game, so a hand-edited save saying
-           0.01 would stop the clocks rather than slow them. */
-        for(var p=0;p<PACES.length;p++)
-          if(o.pace===PACES[p].v)settings.pace=o.pace;
+        /* `pace` is deliberately NOT read any more. The row that set it is
+           gone, so a save carrying 0.5 would pin every clock in the game at
+           half speed with nothing left to change it - which is the trap this
+           whitelist exists to make visible. A key whose feature is removed
+           comes out of the list with it. */
         if(o.mastery==="on"||o.mastery==="auto")settings.mastery=o.mastery;
         if(o.tutor==="gesture"||o.tutor==="buttons")settings.tutor=o.tutor;
         /* THE COUNTERS HAVE TO BE ON THIS LIST OR THEY DO NOT EXIST. This
@@ -98,8 +98,6 @@ function loadSettings(){
         if(o.ctlAsked===true)settings.ctlAsked=true;
         if(o.hintAsked===true)settings.hintAsked=true;
         if(o.starAsked===true)settings.starAsked=true;
-        if(typeof o.slowOffers==="number"&&o.slowOffers>=0)
-          settings.slowOffers=Math.min(99,o.slowOffers|0);
         if(typeof o.landHints==="number"&&o.landHints>=0)
           settings.landHints=Math.min(99,o.landHints|0);
         // o.verbs may exist in settings saved before the wording was settled.
@@ -226,10 +224,16 @@ function progSave(){
    to be asked - the map already allows a skip on a landmark, and this is the
    same door opened at the moment it is actually wanted.
 
+   FIVE, NOT THREE. It was three while the first card was cheap advice you
+   could act on and carry on playing - slow the clock down. That row is gone,
+   so the only card left is the one whose button says "give up on this one",
+   and offering that on the third loss is too eager: three losses is a player
+   still learning the beat, five is a player who is stuck.
+
    Counted only on a REAL loss - lives run out - not on a life spent, and
    cleared when the level is finally beaten, so the offer follows the current
    run of failures rather than a lifetime total. */
-var FAIL_KEY="orthogonal:fails", fails={}, STRUGGLE_OFFER=3;
+var FAIL_KEY="orthogonal:fails", fails={}, STRUGGLE_OFFER=5;
 function failLoad(){
   if(!window.storage)return Promise.resolve();
   return window.storage.get(FAIL_KEY).then(function(r){
@@ -257,6 +261,99 @@ function noteFail(name){
 function clearFails(name){
   if(!name||fails[name]===undefined)return;
   delete fails[name];failSave();
+}
+/* ============================================================
+   THE HINT BANK — three of them, one back every half hour
+
+   Hints used to be unlimited and paid for in stars: nought cost three stars,
+   one or two cost you down to two, and five or more meant none at all. That
+   was a real cost and it was the wrong one. A hint is what somebody reaches
+   for when they are stuck, which is the moment the game most wants them to
+   carry on playing - and taking their score for it turned "I do not want to
+   be stuck" into "I do not want to be marked down", so the bulb went unused
+   by the person it exists for and the star economy quietly became a tax on
+   being new. Stars are now what you get for solving the level, and nothing
+   else touches them.
+
+   What replaces it is a pool. Three hints, one back every half hour, and an
+   ad refills. That charges *time* rather than score: it still says a hint is
+   worth something, it cannot make a level unwinnable, and the thing it sells
+   is the one thing a rewarded video can honestly sell. It is also the second
+   hook an ad SDK reaches, beside grantSkip() - and it keeps the rule the map
+   keeps, because a hint has never been worth a star and now cannot be.
+
+   Two numbers rather than one: the pool refills to HINT_FREE on its own, and
+   an ad can push it up to HINT_MAX. Without the second ceiling an ad taken at
+   two hints in hand would hand back one, which is the sort of arithmetic that
+   makes somebody feel cheated by a thing they chose to watch.
+
+   `t` is the moment the current half hour started, and it advances by whole
+   HINT_REGEN_MS at a time rather than being reset to now - so closing the
+   game twenty-nine minutes in does not throw those minutes away. It is a
+   wall-clock read, so a player who moves their device clock forward gets
+   free hints; that is not worth defending against, and it is why the pool is
+   the currency rather than anything that touches score. */
+var HINT_KEY="orthogonal:hints";
+var HINT_FREE=3, HINT_MAX=9, HINT_REGEN_MS=30*60*1000, HINT_AD=3;
+var hintBank={n:HINT_FREE,t:0};
+function hintLoad(){
+  if(!window.storage)return Promise.resolve();
+  return window.storage.get(HINT_KEY).then(function(r){
+    if(r&&r.value){
+      try{
+        var o=JSON.parse(r.value)||{};
+        if(typeof o.n==="number"&&o.n>=0)hintBank.n=Math.min(HINT_MAX,o.n|0);
+        if(typeof o.t==="number"&&o.t>0)hintBank.t=o.t;
+      }catch(e){}
+    }
+    hintRegen();
+  }).catch(function(){});
+}
+function hintSave(){
+  if(!window.storage)return Promise.resolve();
+  return window.storage.set(HINT_KEY,JSON.stringify(hintBank)).catch(function(){});
+}
+/* Asked wherever the count is read or spent, so the pool is always current
+   without a timer running: nothing here needs to happen ON the half hour,
+   only to be true the next time anybody looks. */
+function hintRegen(){
+  var now=Date.now();
+  if(hintBank.n>=HINT_FREE){hintBank.t=now;return;}   // full: the clock waits
+  if(!hintBank.t){hintBank.t=now;hintSave();return;}
+  var due=Math.floor((now-hintBank.t)/HINT_REGEN_MS);
+  if(due<=0)return;
+  var was=hintBank.n;
+  hintBank.n=Math.min(HINT_FREE,hintBank.n+due);
+  // Advance by what was actually paid out, not to now, or the minutes since
+  // the last whole one are lost every time the game is opened.
+  hintBank.t+=due*HINT_REGEN_MS;
+  if(hintBank.n>=HINT_FREE)hintBank.t=now;
+  if(hintBank.n!==was)hintSave();
+}
+function hintsLeft(){hintRegen();return hintBank.n;}
+// Milliseconds until the next one arrives, or 0 when the pool is full.
+function hintNextMs(){
+  hintRegen();
+  if(hintBank.n>=HINT_FREE)return 0;
+  return Math.max(0,hintBank.t+HINT_REGEN_MS-Date.now());
+}
+function spendHint(){
+  if(hintsLeft()<=0)return false;
+  // The half hour starts when the pool first drops below full, not when it
+  // empties - so the first hint you spend is already earning the next one.
+  if(hintBank.n===HINT_FREE)hintBank.t=Date.now();
+  hintBank.n--;hintSave();
+  return true;
+}
+/* The second call site a rewarded video needs, beside grantSkip(). Not gated
+   on an ad here for the same reason that one is not: there is no provider in
+   this build, and a button that plainly works beats one that silently does
+   nothing. */
+function grantHints(n){
+  hintRegen();
+  hintBank.n=Math.min(HINT_MAX,hintBank.n+(n||HINT_AD));
+  hintSave();
+  return hintBank.n;
 }
 function skipLoad(){
   if(!window.storage)return Promise.resolve();

@@ -238,15 +238,6 @@ function menuPanel(){
           "double-tap and the two-finger swipe with a ghost hand; BUTTONS is "+
           "the older lesson, with the bar forced on. It changes nothing "+
           "outside the tutorial \u2014 every control works in both.</div></div>"+
-      "<div class='pcard'><h4>Real time</h4>"+
-        "<div class='crow'><label>Pace</label><span class='seg'>"+
-          PACES.map(function(p){
-            return seg("mPace",p.pct,p.label,Math.round(paceScale()*100));
-          }).join("")+"</span></div>"+
-        "<div class='note'>A boss and a trial are the only things in the game "+
-          "that do not wait for you. This slows both — every part of them "+
-          "together, so a fight keeps its shape — and it costs you no stars."+
-          "</div></div>"+
       "<div class='pcard'><h4>Mastery</h4>"+
         "<div class='crow'><label>Show as</label><span class='seg'>"+
           seg("mMast","auto","EARNED",settings.mastery)+
@@ -306,24 +297,15 @@ function menuPanel(){
       flash(m==="on"?"mastery preview on — open the map":"mastery: as earned");
     });
   });
-  PACES.forEach(function(p){
-    bind("mPace_"+p.pct,function(){
-      settings.pace=p.v;saveSettings();menuPanel();
-      // Takes effect on the next frame - there is no state to rebuild, which
-      // is the other reason pace is a multiplier on dt and not a set of dials
-      // baked into the fight when the level loads.
-      flash(p.v===1?"pace: normal":"clocks at "+p.pct+"%");
-    });
-  });
   bind("mTut",function(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
   });
   bind("mReset",function(){
     settings.volume=defaultVolume();settings.volTouched=false;
-    settings.brightness=1;settings.ui="full";settings.pace=1;
+    settings.brightness=1;settings.ui="full";
     settings.tutor=defaultTutor();
     // including "stop suggesting things": a reset is a reset
-    settings.slowOffers=0;settings.noSlowOffer=false;settings.landHints=0;
+    settings.noSlowOffer=false;settings.landHints=0;
     settings.ctlAsked=false;settings.hintAsked=false;settings.starAsked=false;
     muted=false;
     applyVolume();

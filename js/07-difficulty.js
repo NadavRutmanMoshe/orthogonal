@@ -35,16 +35,13 @@ function statsFor(level){
           flattens:flattens,rots:rots,needsRot:needsRot,score:score,
           blocks:level.blocks.length};
 }
-// 3 stars is the solver's own answer; anything longer costs you.
-// Hints are free and unlimited so nobody gets stuck, but each one costs you
-// rating - and rating is the currency. A player who wants skins solves it
-// properly; a player who is stuck still gets to move on.
-function capForHints(n){
-  if(n<=0)return 3;
-  if(n<=2)return 2;
-  if(n<=4)return 1;
-  return 0;
-}
+/* capForHints() is gone. A hint used to cost you a star band - nought kept
+   three, one or two dropped you to two, five or more meant none - and that
+   was the wrong currency: it charged for being stuck at the exact moment the
+   game wants somebody to carry on playing. Hints are paid for out of their
+   own pool now (see the hint bank in 06-persistence.js), which charges time
+   instead, and the only thing that decides a level's stars is the route the
+   player walked. */
 /* THE BANDS ARE WIDE ON PURPOSE. 3 stars is still the solver's own move
    count, so it means optimal and nothing else - that is the part that must
    not move. What changed is what a *near* miss costs: at 120% and 140% a

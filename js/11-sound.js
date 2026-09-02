@@ -62,27 +62,40 @@ function defaultTutor(){
    and hintAsked the same for the bulb one level later - see hintOffer().
    It is a "has this happened" flag rather than a preference: the preference
    it produces is `ui`, and the answer must not be asked for twice. */
-/* slowOffers counts how many times the game has suggested slowing a clock,
-   and noSlowOffer is the player saying stop. Both are global rather than
-   per level: somebody who does not want to be offered help does not want it
-   again on the next boss either. */
+/* noSlowOffer is the player saying stop to the help the game offers after a
+   run of losses. It is global rather than per level: somebody who does not
+   want to be offered help does not want it again on the next boss either. It
+   keeps its name now that the offer it was born for - slowing the clock - has
+   gone, because it is persisted and renaming it would silently un-silence
+   everyone who has already pressed the button. */
 var settings={volume:defaultVolume(),brightness:1,ui:"full",volTouched:false,
+              /* pace is retired and pinned at 1; see paceScale() below. */
               pace:1,mastery:"auto",tutor:defaultTutor(),
-              slowOffers:0,noSlowOffer:false,landHints:0,ctlAsked:false,
+              noSlowOffer:false,landHints:0,ctlAsked:false,
               hintAsked:false,starAsked:false};
 /* How many times the landing rule is spelled out in words. The rings keep
    drawing forever - they are free and they answer the question faster than a
    sentence does - but a line of text on every fold would be nagging. */
 var LAND_HINT_TIMES=3;
 
-/* PACE — how fast the two real-time things run.
+/* PACE — how fast the two real-time things run. RETIRED AS A SETTING, and
+   the multiplier is kept.
 
-   Bosses and trials are the one part of the game that does not wait for you,
-   and "real time is the one thing this game is not" has been a known hole
-   for as long as they have existed. This is the accessibility answer: 1 is
-   the designed speed, .75 and .5 are the same fight played slower.
+   `Menu > Real time > Pace` let a player slow every clock in the game to 75%
+   or 50%. It went on the owner's call, and the reason is the one that was
+   always written under it: a menu row asking a new player to diagnose their
+   own difficulty is standing in for a fight that is not tuned properly, and
+   the fights are tuned per fight now - the first boss is slow enough to
+   think in and the ramp does the rest. What is left for somebody genuinely
+   stuck is the skip, which struggleOffer() puts up on the fifth loss.
 
-   It is deliberately *one number applied to dt*, not a set of eased dials.
+   paceScale() stays, still multiplied onto `dt` in both fight loops, because
+   that one multiplication is the seam it would come back through. `pace` is
+   deliberately no longer read by loadSettings(), so a save written while
+   somebody was on SLOW cannot pin every clock in the game at half speed with
+   no row left to change it.
+
+   It was deliberately *one number applied to dt*, not a set of eased dials.
    Every interval in a fight is derived from the clock - the step, the aim
    window, the creep, the rage multiplier, the trial's period and its fire
    window, the beat of grace after a hit - so scaling the clock scales all of
@@ -90,19 +103,9 @@ var LAND_HINT_TIMES=3;
    `step` by hand would not: it would change how many steps a hunter gets per
    telegraph, which is the fight's whole shape.
 
-   It is free, and it does not touch stars. Hints are metered because a hint
-   hands you the answer to the puzzle; a slower clock hands you nothing you
-   did not already have to work out, it just gives you longer to say it. If
-   that judgement ever needs reversing, the place to do it is
-   starsForRecord() in 07-difficulty.js - cap a clock level's stars the way
-   capForHints() caps an ordinary one. */
-/* Carried as a percentage as well as a multiplier, and the percentage is
-   what the button ids are built from. `mPace_0.5` is a legal element id and
-   getElementById finds it happily, but it is not a legal CSS selector, so
-   the first querySelector anyone reaches for would throw on it. */
-var PACES=[{v:1,pct:100,label:"NORMAL"},
-           {v:.75,pct:75,label:"EASED"},
-           {v:.5,pct:50,label:"SLOW"}];
+   It was free and did not touch stars, and if it ever comes back it should
+   stay that way: a slower clock hands you nothing you did not already have
+   to work out, it only gives you longer to say it. */
 function paceScale(){
   var p=settings.pace;
   return (typeof p==="number"&&p>0&&p<=1)?p:1;

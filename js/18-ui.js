@@ -169,7 +169,16 @@ function syncHud(){
   ["bHint","bLook","bMenu","bWard","bRestart"].forEach(function(id){
     var el=$(id); if(el)el.style.display=inPlay?"flex":"none";
   });
-  $("starTotal").classList.toggle("on",inPlay);
+  /* NOT DURING A FIGHT. On a boss or a trial the score is the row of lives at
+     the top of the screen - the move label already refuses to show stars here
+     for exactly that reason - and the total cannot change until the level is
+     over, so it is a third scoreboard saying nothing. It is also the thing
+     that was covering the cores row on a small phone: the pill grows
+     leftwards as the number gets longer, and at three digits it reached the
+     middle of the screen. It comes back the moment the level is won, because
+     that is when it is news and when the win card's stars have to fly to it. */
+  $("starTotal").classList.toggle("on",inPlay&&(!(B||TR)||levelDone));
+  syncHintN();
   syncStarTotal();
   syncBossBar();
 
@@ -237,7 +246,6 @@ function syncHud(){
     var ml=levelPar!==null ? "<b>"+moveCount+"</b> / "+levelPar
                            : "<b>"+moveCount+"</b>";
     var st=(levelPar===null||moveCount===0)?3:starsFor(moveCount,levelPar);
-    st=Math.min(st,hintCap());
     $("moveLabel").innerHTML=ml+"<div class='stars'>"+starGlyphs(st)+"</div>";
   } else $("moveLabel").innerHTML="";
   tutSync();
@@ -282,6 +290,20 @@ function syncBossBar(){
       co+="<i class='"+(k<TR.cores.length-trialCore?"":"gone")+"'></i>";
   $("bossLives").innerHTML=lv;
   $("bossCores").innerHTML=co;
+}
+/* The pool, on the bulb. Asked from syncHud rather than kept in sync by a
+   timer: hintsLeft() re-checks the half hour every time it is read, so the
+   count is right whenever anything redraws - which is every move - and there
+   is no interval running behind a fight for the sake of a badge. */
+function syncHintN(){
+  var b=$("bHint"), n=$("hintN");
+  if(!b||!n||typeof hintsLeft!=="function")return;
+  var left=hintsLeft();
+  n.textContent=left;
+  b.classList.add("has");
+  b.classList.toggle("out",left<=0);
+  b.title=left>0?left+" hint"+(left===1?"":"s")+" left"
+                :"out of hints \u2014 next in "+hintWaitSay();
 }
 function syncStarTotal(){
   var n=$("starTotalN");

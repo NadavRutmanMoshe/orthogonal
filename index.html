@@ -19,9 +19,11 @@
   <button class="rnd" id="bWard" aria-label="Wardrobe"><svg viewBox="0 0 24 24">
     <path d="M12 5.5a1.7 1.7 0 1 1 1.7 1.7c-.9 0-1.7.6-1.7 1.6v.9"/>
     <path d="M12 9.7 4 15.4c-.9.6-.5 2 .6 2h14.8c1.1 0 1.5-1.4.6-2L12 9.7z"/></svg></button>
+  <!-- The count rides the bulb, because a pool nobody can see is a pool
+       nobody will spend. Written by syncHud(). -->
   <button class="rnd" id="bHint" aria-label="Hint"><svg viewBox="0 0 24 24">
     <path d="M9 18h6M10 21h4"/>
-    <path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1.1 2h5c.1-.8.5-1.5 1.1-2A6 6 0 0 0 12 3z"/></svg></button>
+    <path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1.1 2h5c.1-.8.5-1.5 1.1-2A6 6 0 0 0 12 3z"/></svg><b class="hn" id="hintN"></b></button>
 </div>
 <div class="corner tr">
   <button class="rnd" id="bRestart" aria-label="Restart level"><svg viewBox="0 0 24 24">
@@ -38,8 +40,12 @@
 </div>
 
 <div class="boss" id="bossBar">
-  <div class="blives" id="bossLives"></div>
-  <div class="bcores" id="bossCores"></div>
+  <!-- One stack inside the lane: .boss is now the full-width lane between the
+       two corner clusters and .bstack is the thing centred in it. -->
+  <div class="bstack">
+    <div class="blives" id="bossLives"></div>
+    <div class="bcores" id="bossCores"></div>
+  </div>
 </div>
 
 <div class="hud">

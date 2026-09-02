@@ -786,6 +786,14 @@ function tutUnlock(){ tutRelease(); tutCueTo(null); tutGhost(null); }
 
 function showHint(){
   if(app!=="play"||dying||levelOver())return;
+  /* AN EMPTY POOL IS A DOOR, NOT A DEAD BUTTON. Asked before the solver runs
+     and before the tutorial branch below, because a bulb that answers nothing
+     is the one thing this whole arrangement must not produce - the card says
+     what happened, when the next one arrives on its own, and offers the ad
+     that refills it now. A tutorial hint is free (there is a coach line to
+     re-point at, not an answer to hand over) and so is the one the game
+     asked for; both go through the same escape hatch below. */
+  if(!(L&&L.tut)&&!freeHint&&hintsLeft()<=0){hintRefillOffer();return;}
   if(L&&L.tut){
     var ti=tutStep();
     if(ti>=0){
@@ -809,16 +817,19 @@ function showHint(){
            "\u2192":"bRight","\u2190":"bLeft","\u2191":"bUp","\u2193":"bDown"};
   var say=cue(map[m]||"bFlat");
   /* The one the game asked for is on the game. See hintOffer(): the card
-     that explains the bulb tells the player to press it, and charging a star
-     for doing as you are told is the trap that whole card exists to avoid. */
+     that explains the bulb tells the player to press it, and charging them
+     for doing as they are told is the trap that whole card exists to avoid. */
   var free=freeHint;
-  if(free)freeHint=false; else hintsUsed++;
+  if(free)freeHint=false; else {hintsUsed++;spendHint();}
   SFX.hint();
   syncHud();
-  var cap=hintCap();
+  var left=hintsLeft();
+  /* What it cost, in the currency it actually costs now. Stars are not in
+     this sentence any more and must not come back into it: the pool is the
+     whole price of a hint. */
   var note=free?"free \u00b7 this one is on us"
-          :cap===0?"hints used \u00b7 no stars this level"
-                  :"hint "+hintsUsed+" \u00b7 max "+cap+" star"+(cap===1?"":"s");
+          :left===0?"last one \u00b7 another in "+hintWaitSay()
+                   :left+" hint"+(left===1?"":"s")+" left";
   /* With the bar hidden there is no button to pulse, so the move itself is
      the message and the accounting is a footnote to it. Both used to be one
      run-on line in the toast, which wrapped into "go right - hint 4," /

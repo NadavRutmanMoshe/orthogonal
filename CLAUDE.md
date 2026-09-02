@@ -1015,6 +1015,25 @@ walk into a wall.
   map — but the map is separating one landmark from another in a list, and
   the HUD is separating you from the thing in front of you, which is a
   different job. The map keeps violet.
+- **THE BAR IS CENTRED IN THE GAP BETWEEN THE CORNERS, NOT ON THE VIEWPORT**,
+  and that is a bug fix rather than a preference. `left:50%` plus a translate
+  is only safe while the screen is wide enough that the middle happens to be
+  free, and it is not on a small phone: measured at 327 CSS px — a 900px
+  screen at DPR 2.75, which is what the owner plays on — the bar landed at
+  139..189 while the star total, which grows *leftwards* as the number gets
+  longer, reached back to 172 and covered the last core. So a trial with one
+  core already taken drew a row that still read as three. Reported with a
+  screenshot. `.boss` is the full-width lane now, padded by the two corner
+  clusters, with `.bstack` centred inside it.
+- **The star total is hidden while a clock is running.** It cannot change
+  during a fight — the move label already refuses to show stars here for
+  exactly that reason — so it was a third scoreboard saying nothing, and it
+  was the thing covering the cores. `levelDone` brings it back, because that
+  is the moment it is news and the moment the win card's stars have to fly to
+  it, which is why `win()` calls `syncHud()` on its first line.
+- **A spent core shrinks as well as dimming.** Three bars of one length with
+  a dim one among them is a row of three at a glance; the lives row above has
+  always said it twice, with colour *and* scale, and this row said it once.
 - Scored on lives, three stars for three intact. `progress[name]` holds lives
   for a boss or a trial and a move count for everything else — opposite
   senses in one slot — so reads go through `starsForRecord()`, writes through
@@ -1633,22 +1652,21 @@ level data changed to make it.
 - **`mapReach()` counts solved levels only, never skips.** Counting a skip
   would drag the rolling window forward with it and quietly hand over
   everything in between — the exact levels the skip exists to leave for later.
-- **THE GAME OFFERS HELP EVERY THIRD LOSS ON A CLOCK LEVEL, and it
-  escalates.** `fails` counts full losses per level — lives run out, not a
-  life spent — persisted beside `skips`, moved by `LEVEL_RENAMES` like
-  everything else, and cleared the moment the level is beaten, so it tracks
-  the *current* run of failures rather than a lifetime total. Every
-  `STRUGGLE_OFFER` (3) losses, `struggleOffer()` puts up **the next thing a
-  person would actually try**:
-  - **the clock can still be slowed** → offer that, and name the exact
-    setting (`Menu › Real time › Pace`). It costs no stars.
-  - **already at the slowest** → offer the skip.
-
-  So a player who is already on SLOW sees the skip on their *first* offer,
-  which is right: there is nothing else left to try. **Going straight to
-  "skip this" was the wrong first move** — it hands over the only two levels
-  with a real-time component the moment they get hard, and tells somebody who
-  is nearly there to give up.
+- **THE GAME OFFERS THE SKIP EVERY FIFTH LOSS ON A CLOCK LEVEL.** `fails`
+  counts full losses per level — lives run out, not a life spent — persisted
+  beside `skips`, moved by `LEVEL_RENAMES` like everything else, and cleared
+  the moment the level is beaten, so it tracks the *current* run of failures
+  rather than a lifetime total. Every `STRUGGLE_OFFER` (5) losses,
+  `struggleOffer()` puts up the way past.
+- **It used to escalate, and the first rung went with the Pace setting.**
+  The old order was the order a person would actually try: slow the clock
+  first, offer the skip only once slowing had run out. That reasoning was
+  right and it belonged to a menu row that no longer exists — the fights are
+  tuned per fight now — so one offer is left. **Three became five with it**:
+  three is the right cadence for cheap advice you can act on and carry on
+  playing, and too eager for a card whose only button is "give up on this
+  one". Three losses is a player still learning the beat; five is a player
+  who is stuck.
 - **EVERY offer carries DON'T SHOW ME AGAIN, and it silences all of them**
   (`settings.noSlowOffer`, cleared by the settings reset). It is global
   rather than per level: somebody who does not want the game suggesting
@@ -1658,14 +1676,17 @@ level data changed to make it.
   then **fell straight through to the skip offer underneath**, which had no
   opt-out of its own. Reported from a playtest, in those words: the button
   did not work and the game kept asking. The flag is asked at the top of
-  `struggleOffer()` now, before it has decided which suggestion to make.
+  `struggleOffer()` now, before it has decided anything. **It keeps its name
+  though there is nothing slow left to refuse** — it is persisted, and
+  renaming it would silently un-silence everyone who has already pressed it.
 - **The offer goes up after the reset, not instead of it.** The board is back
   and KEEP TRYING is right there, so it is a door rather than a wall. The
   skip reaches `grantSkip()` and nothing else, so it inherits the rule — ads
   buy progress, never score.
-- **`grantSkip(name)` is the single call site a rewarded video needs.** It is
-  not gated on an ad here, because there is no provider yet and a button that
-  silently did nothing would be worse than one that plainly works. Wiring the
+- **`grantSkip(name)` is the single call site a rewarded video needs** for a
+  level; `grantHints(n)` is the one for the hint pool. Neither is gated on an
+  ad here, because there is no provider yet and a button that silently did
+  nothing would be worse than one that plainly works. Wiring the
   SDK means calling it from the completion callback and changing nothing else.
 - **The tutorials get a `PROLOGUE` section** so the map has somewhere to put
   them. Its `at:0` shifts no other marker — these are array indices and every
@@ -2837,11 +2858,34 @@ know before touching it:
   camera and `fitViewSize()` — at .95 `legible.js` falls from 30 flagged
   levels to 11. It is a large change to how the game looks, so it is the
   owner's decision and is deliberately left at .62.
-- **Hints are free and unlimited** so nobody gets stuck, but each one lowers the
-  star cap: 0 hints → 3★, 1–2 → 2★, 3–4 → 1★, 5+ → 0★. This replaced a
-  metered/timer design deliberately — an energy timer teaches people to close
-  the app, which is the opposite of what a free game needs. `win()` writes an
-  *effective* move count so hints cannot be laundered into currency.
+- **HINTS COST A POOL, NOT STARS.** Three of them, one back every half hour,
+  and a rewarded video refills. The bank is in `js/06-persistence.js`
+  (`hintBank`, `hintsLeft()`, `spendHint()`, `grantHints()`), the count rides
+  the bulb as a badge, and pressing an empty bulb opens `hintRefillOffer()`
+  rather than doing nothing — an empty button is a dead end and this whole
+  arrangement exists to say there are none.
+- **The star cap it replaced was the wrong currency, and that reverses an
+  older call.** A hint used to lower what you could score — 0 → 3★, 1–2 →
+  2★, 3–4 → 1★, 5+ → 0★, with `win()` writing an *effective* move count so
+  hints could not be laundered. It worked and it charged the wrong person:
+  the bulb is what somebody reaches for when they are stuck, which is exactly
+  the moment the game wants them to carry on, and marking them down for it
+  turned "I don't want to be stuck" into "I don't want to be marked down".
+  Nothing but the route now decides a level's stars. **This is not the return
+  of the energy timer** — that idea was rejected for teaching people to close
+  the app, and it is still rejected: the pool gates a *hint*, never a level,
+  so nothing is ever unplayable and no clock ever has to be waited out to
+  make progress.
+- **Two ceilings, `HINT_FREE` (3) and `HINT_MAX` (9).** The pool refills to
+  the first on its own and an ad can push it to the second, because an ad
+  taken with two in hand that handed back one is the arithmetic that makes
+  somebody feel cheated by a thing they chose to watch. `hintBank.t` advances
+  by whole `HINT_REGEN_MS` rather than being reset to now, so closing the
+  game twenty-nine minutes in does not throw those minutes away, and the half
+  hour starts when the pool first drops below full rather than when it
+  empties. It is a wall-clock read and a player who moves their device clock
+  gets free hints; that is not worth defending against, and it is *why* the
+  pool is the currency rather than anything touching score.
 - **A cue has three deliveries, and `cue()` picks the most it can say.**
   Pulse the button; if the layout dropped it, **show** the gesture with the
   ghost hand; and only if the control has no gesture either, **name** the move
@@ -3189,16 +3233,21 @@ tested and failed, plus where this sits in the PCG literature, are in
   view axis is unsurvivable, which is the mechanic and not a bug, so there is
   nothing there to check — but the machine has no opinion at all about the
   state you spend the crossing in.
-- **Boss and sweep pacing are both guesswork.** Trials: `period` 2500 → 2000,
-  `fire` 340 → 300. Bosses ramp *within* a fight and *across* the campaign —
-  `BOSS I` runs 1100/1300 down to 870/1020 and `BOSS IV` 720/850 down to
-  570/660, so the opening fight is about 40% slower than it was and the last
-  one is where it always sat. **That ramp is what the `Pace` setting is meant
-  to stop being for**: a first boss slow enough to think in, rather than a
-  menu row asking a new player to diagnose their own difficulty. The whole
-  ramp is still invented. The checks bracket each fight; they say
-  nothing about whether the numbers are *fun*, or whether a human can read a
-  line, decide the axis, rotate and fold inside one beat.
+- **Boss and sweep pacing are both guesswork, and they are now the only
+  answer to "it is too fast".** Trials run `period` 2500, **1850**, 2100,
+  2000. `TRIAL II` is deliberately out of order and the reason is its own
+  geometry: every crossing there is a fold taken from a particular side, so
+  the player spends a leg turning and folding rather than walking, and
+  standing still under a slow beat is a level waiting for you. Bosses ramp
+  *within* a fight and *across* the campaign — `BOSS I` runs 1100/1300 down
+  to 870/1020 and `BOSS IV` 720/850 down to 570/660, so the opening fight is
+  about 40% slower than it was and the last one is where it always sat.
+  **This ramp is what the `Pace` setting used to stand in for**, and with
+  that row gone it has to carry the whole load: a first boss slow enough to
+  think in, rather than a menu asking a new player to diagnose their own
+  difficulty. Every number in it is invented. The checks bracket each fight;
+  they say nothing about whether the numbers are *fun*, or whether a human
+  can read a line, decide the axis, rotate and fold inside one beat.
 - **Nobody has played the phased fights.** Four bosses × three phases is a lot
   of authored pacing that has only ever been machine-checked. The specific
   open questions: does phase 1 read as a tutorial or as filler; is the
@@ -3221,19 +3270,21 @@ tested and failed, plus where this sits in the PCG literature, are in
   telegraphed for `aim` milliseconds and breaking the line cancels it, so it
   is fair — but there is no partial answer, no grazing hit, and a player who
   misreads the axis simply takes it.
-- **Real time is the one thing the game is not**, and `Pace` in the menu is the
-  concession. `NORMAL` / `EASED` / `SLOW` = 1 / .75 / .5, and it is **one
-  multiplication on `dt`** at the top of `bossFrame` and `trialFrame` rather
-  than a set of slowed dials. That matters most now that a fight is phased:
-  `step` and `aim` belong to the *phase*, and `creep`, `rage`, `period`,
-  `fire` and the beat of grace are all measured against the same clock, so
-  scaling the clock keeps every ratio between them. Slowing `step` alone would
-  change how many steps a hunter gets per telegraph — the fight's whole shape,
-  and the one thing phases exist to control. It is free and does not touch
-  stars, on the grounds that a hint hands you the answer and a slower clock
-  only gives you longer to say it. To reverse that judgement, cap a clock
-  level in `starsForRecord()` the way `capForHints()` caps an ordinary one.
-  What is still guesswork is whether .75 and .5 are the right two rungs.
+- **Real time is the one thing the game is not, and the `Pace` setting that
+  conceded it is gone.** `NORMAL` / `EASED` / `SLOW` = 1 / .75 / .5 let a
+  player slow every clock in the game. It went on the owner's call, for the
+  reason that was always written under it: a menu row asking a new player to
+  diagnose their own difficulty stands in for a fight that is not tuned, and
+  the fights are tuned per fight now. What is left for somebody stuck is the
+  skip, on the fifth loss. **`paceScale()` stays** — still one multiplication
+  on `dt` at the top of `bossFrame` and `trialFrame` — because that
+  multiplication is the seam it would come back through, and it is why every
+  window in a fight keeps its ratio when it does: `step` and `aim` belong to
+  the *phase*, and `creep`, `rage`, `period`, `fire` and the beat of grace
+  are all measured against the same clock. **`pace` is deliberately no longer
+  read by `loadSettings()`**, so a save written while somebody was on SLOW
+  cannot pin every clock in the game at half speed with no row left to change
+  it — the whitelist trap, running the other way.
 - **The composer cannot generate crates or keys.** It synthesises geometry move
   by move from a solution; a push changes the world, so the geometry cannot be
   derived that way without re-deriving everything downstream. Crate and key
@@ -3357,8 +3408,9 @@ tested and failed, plus where this sits in the PCG literature, are in
    finished: **a card is what you reach for when the picture cannot be made to
    say it — not before.**
 9. **Ad integration.** Nothing is wired. When wrapped with Capacitor the
-   rewarded-video callback should call `grantShards(n)`, `grantAdView(id)` or
-   `grantSkip(name)` — three hooks, one per thing an ad can buy. Rewarded-only
+   rewarded-video callback should call `grantShards(n)`, `grantAdView(id)`,
+   `grantSkip(name)` or `grantHints(n)` — four hooks, one per thing an ad can
+   buy. Rewarded-only
    by design: skip a level, or buy shards. No interstitials — they pay poorly
    on a slow puzzle game and are the main cause of uninstalls.
    **The rule that keeps this out of pay-to-win: ads buy progress, never

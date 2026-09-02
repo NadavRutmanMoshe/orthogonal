@@ -58,6 +58,22 @@
   .corner.tr{right:14px}
   button.rnd{width:40px;height:40px;border-radius:50%;padding:0;
     background:var(--panel);backdrop-filter:blur(5px)}
+  /* HOW MANY HINTS ARE IN THE POOL, on the bulb itself. A badge rather than a
+     row in the HUD: it is an answer to "can I press this", so it belongs on
+     the thing being pressed. Empty reads as empty - the badge goes grey and
+     the bulb dims - because the press still does something there (it opens
+     the refill card) and a button that looks live and is not is worse than
+     one that plainly says it is out. */
+  #bHint{position:relative}
+  #bHint .hn{position:absolute;right:-2px;bottom:-2px;min-width:15px;height:15px;
+    padding:0 3px;border-radius:8px;display:none;align-items:center;
+    justify-content:center;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9px;font-weight:700;line-height:1;
+    background:var(--goal);color:var(--void);
+    border:1.5px solid var(--void)}
+  #bHint.has .hn{display:flex}
+  #bHint.out{opacity:.62}
+  #bHint.out .hn{background:var(--fg-dim);color:var(--void)}
   button.rnd svg{width:19px;height:19px;fill:none;stroke:currentColor;
     stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
   button.rnd.on{border-color:var(--player);color:var(--player)}
@@ -511,13 +527,32 @@
   #intro.gone{display:none}
   #intro .tiny,#won .tiny{border-color:var(--rule);color:var(--fg-dim)}
 
-  /* Lives and cores, only on a boss. Centred at the top because it is the
-     one thing you check between every move, and a corner would put it where
-     the thumb sits on a phone. */
-  .boss{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:11;
-    display:none;flex-direction:column;align-items:center;gap:3px;
+  /* Lives and cores, only on a boss. At the top because it is the one thing
+     you check between every move, and a corner would put it where the thumb
+     sits on a phone.
+
+     CENTRED IN THE GAP BETWEEN THE CORNERS, NOT ON THE VIEWPORT, and that is
+     a bug fix rather than a preference. It used to be `left:50%` with a
+     translate, which is only safe while the viewport is wide enough that the
+     gap happens to contain the middle - and it is not on a small phone.
+     Measured at 327 CSS px (a 900px screen at DPR 2.75, which is what the
+     owner plays on): the bar landed at 139..189 and the star total, which
+     grows LEFTWARDS as the number gets longer, reached back to 172 and
+     covered the last core - so the row read as three when one had already
+     been taken. Reported exactly that way, with a screenshot.
+
+     The lane is the whole width minus the two clusters: three round buttons
+     and 14px of margin on the left, two and the same on the right, since the
+     star total is hidden on a clock level (below). `justify-content:center`
+     inside that padding puts the bar in the middle of the space that is
+     actually free, at every width, and a narrower screen simply squeezes the
+     lane rather than sliding the bar under a button. */
+  .boss{position:fixed;top:16px;left:0;right:0;z-index:11;
+    display:none;align-items:center;justify-content:center;
+    padding-left:152px;padding-right:105px;
     pointer-events:none;font-family:'IBM Plex Mono',ui-monospace,monospace}
   .boss.on{display:flex}
+  .bstack{display:flex;flex-direction:column;align-items:center;gap:3px}
   .blives,.bcores{display:flex;gap:4px;align-items:center}
   .blives i{display:block;font-style:normal;font-size:13px;line-height:1;
     color:var(--player);transition:color .25s ease,transform .25s ease}
@@ -528,9 +563,14 @@
      which is a different job - there it separates one landmark from another
      in a list, here it separates you from the thing in front of you. */
   .bcores i{width:14px;height:3px;border-radius:2px;background:#ff4d5e;
-    display:block;transition:background .25s ease}
+    display:block;transition:background .25s ease,width .25s ease,
+      opacity .25s ease}
   .boss.tr .bcores i{background:#ff8a3c}
-  .bcores i.gone{background:var(--rule)}
+  /* A SPENT ONE SHRINKS AS WELL AS DIMMING. Three bars of one length with a
+     dim one among them is a row of three at a glance, which is how a taken
+     core read as a core still to take - the lives row above has always said
+     it twice (colour and scale) and this row said it once. */
+  .bcores i.gone{background:var(--rule);width:6px;opacity:.7}
   .boss.hurt .blives{animation:bshake .3s ease}
   @keyframes bshake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 

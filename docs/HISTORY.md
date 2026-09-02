@@ -819,6 +819,68 @@ The lesson is the one this file keeps re-learning in different costumes: **a
 gate the player cannot see the far side of has to say what is holding it.**
 The rule was never wrong. It was silent, and silent read as broken.
 
+## Hints: three currencies, and the one that was wrong
+
+Hints have been metered three ways. The first was the obvious one and was
+rejected before it shipped: **an energy timer** — a fixed stock of attempts
+that refills on a clock. It was turned down for a reason that has not changed,
+which is that a timer standing between a player and *the level* teaches them
+to close the app, and a free puzzle game cannot afford to teach that.
+
+What shipped instead was **a star cap**: nought hints kept three stars, one or
+two dropped you to two, three or four to one, five or more to none, with
+`win()` writing an inflated "effective" move count so a hint could not be
+laundered into currency. Mechanically it was clean and the laundering hole was
+genuinely closed. It was still the wrong currency, and the owner called it:
+the bulb is what somebody reaches for at the exact moment they are stuck,
+which is the moment the game most wants them to carry on — and marking them
+down for it turns "I don't want to be stuck" into "I don't want to be marked
+down". The bulb then goes unused by the only person it exists for, and the
+star economy quietly becomes a tax on being new.
+
+The third is **a pool**: three hints, one back every half hour, an ad refills
+to a higher ceiling. It looks like the energy timer that was rejected and it
+is not the same object, and the difference is the whole point — **the pool
+gates a hint, never a level.** Nothing is ever unplayable, no clock ever has
+to be waited out to make progress, and the thing being sold is help rather
+than access. It also charges in a currency the game can afford to take: time
+is not score, so `starsEarned()` is now decided by the route walked and
+nothing else.
+
+Two details that were got right on the first pass because they are the ones
+that make a pool feel mean when they are got wrong. The regeneration clock
+advances by whole half hours rather than resetting to now, so closing the game
+twenty-nine minutes in does not throw those minutes away; and it starts when
+the pool first drops below full rather than when it empties, so the first hint
+you spend is already earning the next. And there are two ceilings, three for
+the free refill and nine for an ad, because an ad taken with two in hand that
+handed back one is the arithmetic that makes somebody feel cheated by a thing
+they chose to watch.
+
+## The Pace setting, and what a difficulty menu is standing in for
+
+`Menu > Real time > Pace` let a player run every clock in the game at 100%,
+75% or 50%. It was one multiplication on `dt`, which is the right way to build
+it — every window in a fight is derived from the clock, so scaling the clock
+keeps every ratio — and it was free, on the grounds that a slower clock hands
+you nothing you did not already have to work out.
+
+It went anyway, on the owner's call, and the reason was written under it the
+whole time: **a menu row asking a player to diagnose their own difficulty is
+standing in for a fight that is not tuned.** The row existed because the first
+boss was too fast; the answer to that is a first boss that is slow enough to
+think in, which is what the per-fight ramp is now for. Keeping both meant the
+ramp never had to be right.
+
+Two things were kept rather than deleted. `paceScale()` still multiplies `dt`
+in both fight loops, because that one multiplication is the seam the whole
+setting would come back through. And `pace` was removed from
+`loadSettings()`'s whitelist — deliberately, because a save written while
+somebody was on SLOW would otherwise pin every clock in the game at half speed
+with no row left to change it. That is the whitelist trap running the other
+way: usually a key that is written and not read is silently forgotten; here a
+key that is read and no longer writable is silently permanent.
+
 ## Smaller things, settled
 
 - **The verb's name.** `GO 2D / GO 3D` was auditioned against `FOLD /

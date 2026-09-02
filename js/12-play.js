@@ -1427,7 +1427,39 @@ function press(dir){
   else if(dir==="up")move3(-d[0],-d[2],dir);
   else if(dir==="down")move3(d[0],d[2],dir);
 }
-function hintCap(){return capForHints(hintsUsed);}
+/* HOW LONG UNTIL THE NEXT FREE HINT, said the way a person would say it.
+   Rounded up, because "in 1 min" that is really 40 seconds is a promise the
+   clock keeps and "in 0 min" is not a sentence. */
+function hintWaitSay(){
+  var ms=hintNextMs();
+  if(ms<=0)return "now";
+  var m=Math.ceil(ms/60000);
+  return m<60?m+" min":Math.ceil(m/60)+" hr";
+}
+/* THE POOL IS EMPTY, AND THIS IS THE WAY ON. Same shape as every other offer
+   in the game - the thing has already happened, the board is behind the card,
+   and the card is a door rather than a wall. It reaches grantHints() and
+   nothing else, which is the whole of what an ad SDK has to call here. */
+function hintRefillOffer(){
+  if(panelOpen()||screenUp())return;
+  SFX.bump();
+  offerShell("Out of hints",
+    "The bulb shows you the next move, and you have used all "+HINT_FREE+
+    ". <b>One comes back every half hour</b> \u2014 the next is "+
+    hintWaitSay()+" away.",
+    "<button class='ad' id='hrAd'>REFILL \u00b7 WATCH AN AD (+"+HINT_AD+
+      ")</button>"+
+    "<button class='qt' id='hrNo'>WAIT IT OUT</button>",
+    "Hints cost you <b>no stars</b> \u2014 they never will again. The level is "+
+    "still there, and nothing in this game is ever a dead end.");
+  bind("hrNo",function(){hidePanel();});
+  bind("hrAd",function(){
+    var n=grantHints(HINT_AD);
+    hidePanel();syncHud();
+    flash(n+" hint"+(n===1?"":"s")+" \u00b7 tap the bulb");
+    setTimeout(function(){cue("bHint");},260);
+  });
+}
 function keysLeft(){
   var n=0;
   for(var i=0;i<R.keys.length;i++) if(!(gKeys&(1<<i))) n++;
@@ -1464,21 +1496,22 @@ function checkWin(){
 var starsBefore=0,starsAfter=0,starsGained=0;
 function win(){
   levelDone=true;
+  /* The star total is hidden while a clock is running and `levelDone` is what
+     brings it back, so the chrome has to be re-asked now rather than at the
+     next move - there are no more moves. It also has to be up before the
+     flight is scheduled, since flyStars() measures where it is. */
+  syncHud();
   SFX.win();
   clearSession();
   starsBefore=starsAfter=starsGained=0;
   if(levelKey&&playSource==="builtin"){
-    // store the move count that reflects the stars actually earned, so hints
-    // can't be laundered into currency
+    /* HINTS NO LONGER TOUCH THIS. There used to be an "effective" move count
+       here, inflated to whatever band the hints you had taken capped you at,
+       so a hint could not be laundered into currency. Hints are paid for out
+       of their own pool now - see the hint bank in 06-persistence.js - so
+       what is stored is simply what you did, and the level is scored on the
+       route you actually walked. */
     var effective=moveCount;
-    var capped=hintCap();
-    if(levelPar!==null&&capped<3){
-      // The bands live in starsFor(); read from there rather than repeated,
-      // or a change to the thresholds silently launders hints into stars.
-      if(capped===2)effective=Math.max(effective,levelPar+1);
-      else if(capped===1)effective=Math.max(effective,Math.floor(levelPar*STAR_2X)+1);
-      else effective=Math.max(effective,Math.floor(levelPar*STAR_1X)+1);
-    }
     // Stars gained is the *improvement*, not the stars just scored: replaying
     // a 3-star level pays nothing, and going 2 -> 3 pays exactly the one new
     // star. starsEarned() already sums best-per-level, so this keeps the
@@ -1541,13 +1574,15 @@ function win(){
     if(L.won)$("wonSub").innerHTML=esc($("wonSub").textContent)+
       "<em class='wonstory'>"+esc(L.won)+"</em>";
   } else {
-    var stw=Math.min(levelPar!==null?starsFor(moveCount,levelPar):3,hintCap());
+    var stw=levelPar!==null?starsFor(moveCount,levelPar):3;
     $("wonTitle").innerHTML=(last?"Campaign complete":(stw===3?"Perfect":"Solved"))+
       "<div class='bigstars'>"+starGlyphsEls(stw)+"</div>";
     var sub=L.name+"  \u00b7  "+moveCount+" moves"+
       (levelPar!==null?(stw===3?" (optimal)":", best possible is "+levelPar):"");
+    // Reported, never charged for: how many you took is worth knowing and is
+    // no longer worth anything.
     if(hintsUsed)sub+="  \u00b7  "+hintsUsed+" hint"+(hintsUsed===1?"":"s")+
-      " (capped at "+hintCap()+")";
+      " taken";
     $("wonSub").textContent=sub;
     $("bNext").textContent=last?"PLAY AGAIN":"NEXT LEVEL";
     $("bRetry").style.display=stw>=3?"none":"flex";
@@ -1652,38 +1687,24 @@ function resetLevel(){
   buildGrid();syncHud();
   playerMesh.position.set(player.x,player.y,player.z);
 }
-/* HELP THAT ESCALATES, offered every third loss on a clock level.
+/* HELP, OFFERED ON EVERY FIFTH LOSS ON A CLOCK LEVEL, AND IT IS THE SKIP.
 
-   Straight to "skip this" was wrong: it hands over the only two levels in
-   the game with a real-time component the moment they get hard, and a player
-   who is nearly there is told to give up. The order is now the order a
-   person would actually try - MAKE IT SLOWER FIRST, and only offer the way
-   past once slowing has run out.
+   There used to be two rungs: slow the clock down first, and only offer the
+   way past once slowing had run out. The Pace setting has gone - a fight is
+   tuned per fight now, and asking a player to diagnose their own difficulty
+   in a menu was the thing that setting was always standing in for - so the
+   first rung went with it and there is one offer left.
 
-   So on every third loss: if the clock can still be slowed, offer that and
-   point at the exact setting; if it is already at its slowest, offer the
-   skip. A player who was already on SLOW therefore sees the skip on their
-   first offer, which is right - there is nothing else left to try.
+   Every third loss went with it too. Three is right when the first card is
+   cheap advice you can act on and keep playing; it is too eager for a card
+   whose only button is "give up on this one". Five losses is a player who is
+   genuinely stuck rather than one who is still learning the beat.
 
-   Every offer can be declined for good: each card carries DON'T SHOW ME
-   AGAIN, and it silences both kinds. That is a global preference rather than
-   a per-level one: somebody who does not want the game suggesting things
-   does not want it per level. */
-function paceSlower(){
-  for(var i=0;i<PACES.length;i++)
-    if(PACES[i].v<paceScale())return PACES[i];      // PACES runs fast to slow
-  return null;
-}
-/* The opt-out, on every card this function can put up.
-
-   It was on the slow offer only, and only from the second one - the reasoning
-   being that a suggestion you have not seen yet is not one you can be tired
-   of. In practice the two cards are one thing to the player ("the game keeps
-   interrupting me"), and the one they see most is the skip card, which had
-   no way out at all. Every offer carries it now, and it silences all of
-   them: `noSlowOffer` is read at the top of struggleOffer(). Global rather
-   than per level, because somebody who does not want the game suggesting
-   things does not want it on the next boss either. */
+   The opt-out stays and is still global: each card carries DON'T SHOW ME
+   AGAIN, read at the top of struggleOffer() before it has decided anything.
+   `settings.noSlowOffer` keeps its name even though there is nothing slow
+   left to refuse - it is a persisted key, and renaming it would silently
+   un-silence every player who has already pressed it. */
 function bindNever(){
   bind("sgNever",function(){
     settings.noSlowOffer=true;saveSettings();hidePanel();
@@ -1750,11 +1771,12 @@ function controlsOffer(){
    them - it is false while the controls card is still pending, so this can
    only come up once that one has been answered.
 
-   AND THE PRESS IT ASKS FOR IS FREE. A hint costs a star band, and this card
-   tells the player to spend one in order to find out what the button does -
-   so it arms `freeHint` and showHint() skips the accounting exactly once.
-   Charging for a control you demanded they try is the kind of small
-   dishonesty a player remembers. */
+   AND THE PRESS IT ASKS FOR IS FREE. A hint costs one out of a pool of
+   three, and this card tells the player to spend one in order to find out
+   what the button does - so it arms `freeHint` and showHint() skips the
+   accounting exactly once. Charging for a control you demanded they try is
+   the kind of small dishonesty a player remembers. It used to be a star band
+   rather than a hint; the flag is unchanged and so is the reason for it. */
 function hintOfferDue(){
   return !settings.hintAsked&&settings.ctlAsked&&!ctlOfferPending&&
          playSource==="builtin"&&!!L&&!L.tutorial&&!L.boss&&!L.trial;
@@ -1765,13 +1787,15 @@ function hintOffer(){
   settings.hintAsked=true;saveSettings();
   freeHint=true;
   offerShell("The bulb",
-    "Stuck on a level? The bulb in the corner shows you the <b>next move</b> "+
-    "\u2014 it is always there, it is unlimited, and nothing in this game is "+
-    "ever a dead end you cannot be shown the way out of.",
+    "Stuck on a level? The bulb in the corner shows you the <b>next move</b>, "+
+    "and nothing in this game is ever a dead end you cannot be shown the way "+
+    "out of.",
     "<button class='ad' id='hnTry'>SHOW ME</button>"+
     "<button class='qt' id='hnNo'>GOT IT</button>",
-    "Hints do lower the stars you can score on a level \u2014 but not this one. "+
-    "<b>The next hint you take is free</b>, because we asked you to try it.");
+    "You have <b>"+HINT_FREE+" hints</b>, and one comes back every half hour "+
+    "\u2014 the number on the bulb is how many are in there. They cost you "+
+    "<b>no stars</b>. And this next one is on us, because we asked you to "+
+    "try it.");
   bind("hnNo",function(){hidePanel();});
   bind("hnTry",function(){
     hidePanel();
@@ -1810,9 +1834,9 @@ function starsOffer(){
     "you found it \u2014 not that you finished. The count beside the level's "+
     "name is your moves against that best.",
     "<button class='ad' id='stOk'>TRY FOR THREE</button>",
-    "Half again as many moves is two stars, twice as many is one. Hints lower "+
-    "the most you can score, which is the only thing they cost. <b>This one is "+
-    "three moves.</b>");
+    "Half again as many moves is two stars, twice as many is one. Nothing "+
+    "else moves them \u2014 a hint costs you no stars. <b>This one is three "+
+    "moves.</b>");
   bind("stOk",function(){hidePanel();});
 }
 function offerShell(title,lead,acts,note){
@@ -1839,38 +1863,14 @@ function struggleOffer(){
   if(settings.noSlowOffer)return;
   var kind=B?"BOSS":"TRIAL";
   var beat=(fails[levelKey]||STRUGGLE_OFFER)+" times";
-  var slower=paceSlower();
 
-  if(slower){
-    settings.slowOffers=(settings.slowOffers||0)+1;
-    saveSettings();
-    offerShell(esc(L.name),
-      "This one has beaten you "+beat+". A "+kind.toLowerCase()+" is the only "+
-      "kind of level that does not wait for you \u2014 you can slow its clock "+
-      "down, and it costs you nothing.",
-      "<button class='ad' id='sgSlow'>SLOW THE CLOCK \u00b7 "+slower.label+
-        " ("+slower.pct+"%)</button>"+
-      "<button class='qt' id='sgNo'>KEEP TRYING</button>"+
-      "<button class='qt' id='sgNever'>DON'T SHOW ME AGAIN</button>",
-      "It slows every part of the fight together, so it keeps its shape. "+
-      "<b>No stars are lost.</b> You can change it any time under "+
-      "<b>Menu \u203a Real time \u203a Pace</b>.");
-    bind("sgNo",function(){hidePanel();});
-    bindNever();
-    bind("sgSlow",function(){
-      settings.pace=slower.v;saveSettings();hidePanel();
-      flash("clocks at "+slower.pct+"%");
-    });
-    return;
-  }
-
-  /* Nothing left to slow, so this is the way past. It reaches grantSkip()
-     and nothing else, which is what keeps the rule the map keeps: ADS BUY
-     PROGRESS, NEVER SCORE. A skip is not in `progress`, so it awards no
-     stars by construction and the level stays on the map, still playable. */
+  /* The one offer. It reaches grantSkip() and nothing else, which is what
+     keeps the rule the map keeps: ADS BUY PROGRESS, NEVER SCORE. A skip is
+     not in `progress`, so it awards no stars by construction and the level
+     stays on the map, still playable. */
   offerShell(esc(L.name),
-    "This one has beaten you "+beat+", and the clock is already as slow as it "+
-    "goes. You can go past it and come back whenever you like.",
+    "This one has beaten you "+beat+". You can go past it and come back "+
+    "whenever you like.",
     "<button class='ad' id='sgAd'>SKIP THIS "+kind+" \u00b7 WATCH 3 ADS</button>"+
     "<button class='qt' id='sgNo'>KEEP TRYING</button>"+
     "<button class='qt' id='sgNever'>DON'T SHOW ME AGAIN</button>",

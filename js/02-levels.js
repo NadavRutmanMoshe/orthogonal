@@ -401,7 +401,15 @@ var LEVELS=[
    start:[0,1,0],goal:[-4,2,2],rotate:true},
 {name:"TRIAL II — Sharp Rhythm",
    hint:"Three lives, three places to visit. Nothing bridges these islands \u2014 every crossing is a fold from a different side.",
-   trial:{period:2200,fire:320,
+   /* FASTER THAN THE TRIAL BEFORE IT AND FASTER THAN THE TWO AFTER, which
+      inverts the campaign's ramp on purpose. Every crossing here is a fold
+      taken from a particular side, so the player spends most of a leg
+      standing still - turning and folding - rather than walking. Standing
+      still is downtime, and downtime under a slow beat is a level waiting
+      for you. The beat is what has to close that gap, so it runs at 1850
+      where TRIAL I is 2500 and III and IV are 2100 and 2000. A feel number:
+      nothing here can judge it, so it wants playing. */
+   trial:{period:1850,fire:300,
           /* Two depth slices and one across, so both fold axes are on the
              clock: while a z beat is live, folding in views 0 and 2 kills you
              wherever you stand, and the x beat says the same about 1 and 3.
