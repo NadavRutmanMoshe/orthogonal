@@ -460,6 +460,14 @@
     box-shadow:0 0 18px color-mix(in srgb,var(--sec) 45%,transparent);
     animation:wmast .6s cubic-bezier(.2,1.5,.4,1) .5s both}
   @keyframes wmast{0%{opacity:0;transform:scale(.8)}100%{opacity:1;transform:scale(1)}}
+  /* WHY THE NEXT THING IS SHUT. Only ever seen on BOSS IV with a boss still
+     standing, and it is the amber the game already uses for "a landmark on a
+     clock is waiting for you" rather than the violet of the story line above
+     it - this is bookkeeping, not the Census speaking. */
+  .wonlock{display:block;font-style:normal;margin:9px auto 0;
+    font-size:9px;letter-spacing:.16em;text-transform:uppercase;
+    color:#e0a03c;
+    animation:wstory .7s ease 1.1s both}
   /* A boss's Census line. It arrives after the score has been read - the
      numbers are what the player came for - and it is the hunters' violet,
      because it is the thing on the other side of the fight speaking. */
@@ -627,8 +635,8 @@
      Three node silhouettes, and they differ by shape before they differ by
      colour. Boss and trial used to be told apart by #ff8a3c against #e0a03c,
      which are the same hue two steps apart - at 60px, on a dark ground, that
-     is not a distinction. So the boss is violet and wears a four-arc ring (its
-     four phases), the trial keeps the amber the game already uses for a core
+     is not a distinction. So the boss is violet and wears a three-arc ring (its
+     three phases), the trial keeps the amber the game already uses for a core
      on a clock and wears the slice that is about to sweep through it, and an
      ordinary level is a bare disc. Told apart with the colour removed.
      ============================================================ */
@@ -643,6 +651,19 @@
       radial-gradient(92% 44% at 50% 106%, rgba(214,51,108,.09), transparent 60%),
       var(--panel)}
   .panel.map.on{display:flex}
+  /* THE SHELF'S LOCK, NAMED. A section card that says only "locked" is the
+     bug this fixes: a boss skipped past still counts as standing, and there
+     was nowhere in the game that said which one. */
+  .mlock{display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+    margin-top:9px;padding:8px 10px;border-radius:9px;
+    border:1px solid color-mix(in srgb,#e0a03c 34%,transparent);
+    background:color-mix(in srgb,#e0a03c 9%,transparent);
+    font-size:10px;letter-spacing:.04em;color:var(--fg-dim)}
+  .mlock b{color:#e0a03c;letter-spacing:.1em}
+  .mlockgo{margin-left:auto;font:inherit;letter-spacing:.14em;
+    text-transform:uppercase;padding:5px 11px;border-radius:99px;
+    border:1px solid color-mix(in srgb,#e0a03c 52%,transparent);
+    background:transparent;color:#e0a03c;cursor:pointer}
   body.mapopen .startotal{display:none}
   /* And behind a tutorial's explanation card. The total sits at z-index 30 so
      it can be seen going up over a win card, which is the moment it is news;

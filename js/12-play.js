@@ -1579,6 +1579,28 @@ function win(){
       setTimeout(function(){if(SFX.mastery)SFX.mastery();},520);
     }
   }
+  /* AND IF THE NEXT LEVEL IS BEHIND A LOCK, SAY SO HERE.
+
+     There is exactly one place in the campaign this happens: BOSS IV is the
+     level immediately before V · EXTRA, and that shelf is gated on every
+     boss being beaten rather than on the rolling window. Beat this fight
+     with one still standing - skipped, most likely, since the game offers
+     that after three losses - and the shelf does not open. That has to be
+     said on the card the player is reading, naming the fight, or the next
+     thing they see is a map that has silently stopped moving.
+
+     The button goes to the map rather than into the level; see bNext. */
+  if(!fromEditor&&playSource==="builtin"&&!last&&
+     typeof mapLocked==="function"&&mapLocked(lvIndex+1)){
+    $("bNext").textContent="WHAT'S LEFT";
+    var lockSay=bossesLeftSay();
+    if(lockSay){
+      var sub3=$("wonSub");
+      sub3.innerHTML=(sub3.children.length?sub3.innerHTML:esc(sub3.textContent))+
+        "<em class='wonlock'>"+esc(SECTIONS[mapSecOf(lvIndex+1)].name)+
+        " needs "+esc(lockSay)+"</em>";
+    }
+  }
   /* The picker only lists the campaign, so offering it after a library level
      or an editor test would land you somewhere you did not come from. */
   if(fromEditor||playSource!=="builtin"){

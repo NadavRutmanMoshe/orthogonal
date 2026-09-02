@@ -142,6 +142,18 @@ marker after it. A section with `locked:true` stays shut until
 `sectionsUnlocked()` — which checks the **bosses only**, not every level,
 because gating a bonus on 100% turns a reward into a chore.
 
+**AND A BOSS YOU SKIPPED IS NOT A BOSS YOU BEAT.** That is deliberate — a
+skip is not in `progress`, so ads cannot buy the reward for winning — but it
+is a state the game *hands out itself*: `struggleOffer()` offers the skip
+after three losses on a landmark, so a player can take the help they were
+offered, go on to finish the campaign, and arrive at a shelf that says only
+"every boss is down" while their save quietly disagrees. Reported exactly
+that way. The gate has not moved; what changed is that it can now be read.
+`bossesLeft()` is the primitive and `sectionsUnlocked()` is derived from it,
+so the section card, the locked sheet, the win card on `BOSS IV` and
+`mapHere()` all name the fight that is still standing — and the first three
+of those put the player in front of it in one tap.
+
 **Bosses and trials carry no number**, only a numeral: `BOSS I …`, `TRIAL II
 …`. Progress is keyed by name, so a numbered landmark in the middle of a
 section would renumber every level after it and cost a `LEVEL_RENAMES` entry
@@ -328,12 +340,29 @@ Two consequences worth knowing before changing a beat list:
   `at` around only changes who is threatened in the volume — so pick `at`
   values that sit on rows the player actually stands in. A slice that threatens
   nobody is decoration.
-- **Spikes and the sweep axis are coupled.** `TRIAL II` keeps one `x` slice
-  because its spikes were placed to take the squares an `x` sweep leaves you,
-  which means they also take the `z` escapes: all three depth slices over its
-  near island corner somebody, and `trialSafety()` rejects every one. That is
-  not a bug in either piece — it is what happens when a hazard is authored
-  against a specific sweep.
+- **Fire and the sweep axis are coupled, and the coupling is what
+  `trialSafety()` catches.** `TRIAL II` keeps one `x` slice among two `z`
+  ones so both fold axes spend part of the cycle lethal — every crossing
+  there is a fold, so that is the whole tension. The trap is authoring the
+  fire *against* a slice: a fire pair placed on both ends of the landing lane
+  leaves the square between them with no step out of the beat that owns it,
+  and `trialSafety()` rejects it. Measured twice while rebuilding this level.
+  Fire that poisons **one** end of a lane forbids a crossing without cornering
+  anybody; fire on both ends corners the middle.
+
+- **`TRIAL II` IS THREE ISLANDS AND NOTHING JOINS THEM BUT A FOLD.** It used
+  to be two islands and a pair of bridge blocks out at `z=9`, which closed the
+  gap in the *x* silhouette — so all three legs walked across in the opening
+  view and the turn buttons were never touched. Measured: every leg solvable
+  with rotation locked out, on the level that sits in the middle of a section
+  and is supposed to be its hardest question. Now each pair of islands is
+  offset in **one** axis only, so it already shares a silhouette column along
+  the other: `A`(x0..3,z0..2) and `B`(x6..9,z0..2) share their z's, `B` and
+  `C`(x6..9,z6..8) share their x's, and `A` and `C` share neither, so the
+  middle island cannot be skipped. Rule 5 then decides which way each fold
+  carries you, so the four crossings are the four views — out on 1, home on 3,
+  on on 0, back on 2 — and the solver says every leg is impossible with
+  rotation locked out. Legs 13+10+9 with the fire, 11+9+5 without it.
 
 **THE HAZARD IS BLOCKS FALLING OUT OF THE SKY, and that is the whole
 redesign.** For a long time the attack was a translucent red pane and nothing
@@ -2124,7 +2153,16 @@ opts out with `lock:false`.
   your first unsolved one, each made the button mean something other than what
   it says, chosen by state the player cannot see. A player who wants to be
   somewhere else has the map, which is explicit about where it is sending
-  them.
+  them. **The one exception is a next level that is behind a lock**, and
+  there is exactly one of those in the campaign: `BOSS IV` is the level
+  immediately before `V · EXTRA`, and that shelf is gated on the bosses
+  rather than on the rolling window. The button used to walk straight through
+  that gate — you were handed the first level of a section the map was still
+  refusing to open, and the one after it stayed shut, which is precisely what
+  "progression stopped there" looked like from the outside. It opens the map
+  on that section instead, where the lock now names the fight holding it. The
+  label changes with it (`WHAT'S LEFT`), because a button reading NEXT LEVEL
+  that goes to the map is the dishonesty this rule exists to forbid.
 - **The highlight is `.tutlive`, not `.cue`.** A cue is a 3.2-second pulse and
   the lock lasts as long as the step, so keying the highlight off the pulse
   dims the whole bar the moment it expires — including the button being asked
@@ -2746,6 +2784,17 @@ know before touching it:
   is the same fire rather than a second drawing of one. `burnGrp` is built on
   the first burn and hidden the rest of the time. The code still says
   `spike` throughout, for the same reason it says `fold`.
+- **AND IT ENDS BLACK.** The flames go out on a charred cube, not on the one
+  that walked in — `playerChar()` drives the body's own colour to soot rather
+  than swapping a material, so it chars a pup as completely as a cube (one
+  material is shared by every part `buildPlayerMesh()` makes) and the rim
+  `outlineFor()` re-picks every frame is what keeps the silhouette readable
+  once the body has gone nearly to the void. The char is **late and fast** —
+  nothing for the first third of the burn, then all of it — because a colour
+  that starts sliding on the first frame reads as the light changing rather
+  than as something being destroyed. It is put back by the same function on
+  the first frame that is not a burn, so nothing else has to know it
+  happened.
 - **Folding into a wall is telegraphed, not blocked.** `foldPeril()` in
   `js/12-play.js` answers "would flattening from here kill me, and which blocks
   are to blame" — the guilty ones are tinted and outlined red in the world and
@@ -2863,6 +2912,16 @@ know before touching it:
   and score on lives.
 - **Worlds only change the world** (background, stone, ink). Piece colours and
   their shape markers never change, so no world can make a mechanic unreadable.
+- **THE WARDROBE HAS TWO TABS, NOT FOUR.** The worlds came off it when the
+  sections took ownership of how the world looks: a section picks the sky,
+  the stone and the paper now, so a world tab was selling a look the next
+  level immediately overwrote. Only the tabs went — `WORLDS3D`/`WORLDS2D`,
+  the equipped ids, `wardEquip()` and `migrateWorlds()` are all untouched,
+  the equipped world is still what `applyPalette()` writes underneath a
+  section, and a save that bought one keeps it. `wardrobePanel()` and
+  `wardTabTo()` clamp their argument, because `homePick()` hands a tab name
+  in and a stale `world3` would land the grid on a catalogue with no tab to
+  leave it by.
 - **A world is two purchases, not one.** `WORLDS3D` sets void + block, `WORLDS2D`
   sets paper + ink; you spend the whole game switching between the two pictures,
   and buying one used to silently buy a look for the other you had never seen.

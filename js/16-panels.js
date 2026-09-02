@@ -36,7 +36,17 @@ function wardSelected(t){
   return wardSel[t];
 }
 function wardrobePanel(tab){
-  wardTab=tab||"shape";
+  /* TWO TABS, NOT FOUR. The worlds came off the wardrobe when the sections
+     took ownership of how the world looks: a section picks the sky, the
+     stone and the paper now, so a world tab was selling a look the campaign
+     immediately overwrote. The catalogues, the equipped ids and
+     migrateWorlds() are all left alone - the equipped world is still what
+     applyPalette() writes underneath a section, and a save that bought one
+     keeps it. Only the two tabs are gone.
+
+     Guarded rather than trusted: homePick() hands a tab name in, and a stale
+     "world3" would land the grid on a catalogue with no tab to leave it by. */
+  wardTab=(tab==="color")?"color":"shape";
   buyArmed=null;
   showPanel(
     "<div class='phead'><div class='pt'><b>Wardrobe</b>"+
@@ -46,8 +56,6 @@ function wardrobePanel(tab){
     "<div class='tabs'>"+
       "<button class='tab' id='wS'>SHAPE</button>"+
       "<button class='tab' id='wC'>COLOUR</button>"+
-      "<button class='tab' id='wV'>3D</button>"+
-      "<button class='tab' id='wP'>2D</button>"+
     "</div>"+
     "<div class='wbody'>"+
       "<div class='wlist'><div class='grid' id='wGrid'></div></div>"+
@@ -60,8 +68,6 @@ function wardrobePanel(tab){
     "<div class='prow'><button id='wBack'>BACK</button></div>","wardrobe");
   bind("wS",function(){wardTabTo("shape");});
   bind("wC",function(){wardTabTo("color");});
-  bind("wV",function(){wardTabTo("world3");});
-  bind("wP",function(){wardTabTo("world2");});
   bind("wBack",hidePanel);
   bind("wX",hidePanel);
   wardRefresh();
@@ -77,41 +83,30 @@ function wardrobePanel(tab){
   });
 }
 function wardTabTo(t){
-  wardTab=t;buyArmed=null;
+  wardTab=(t==="color")?"color":"shape";buyArmed=null;
   wardRefresh();wardPreview();
 }
 function wardPreview(){
   var sel=wardSelected(wardTab);
   previewShow(
-    wardTab==="shape" ?sel:wardrobe.shape,
-    wardTab==="color" ?sel:wardrobe.color,
-    wardTab==="world3"?sel:wardrobe.world3,
-    wardTab==="world2"?sel:wardrobe.world2,
-    wardTab==="world2");
+    wardTab==="shape"?sel:wardrobe.shape,
+    wardTab==="color"?sel:wardrobe.color,
+    wardrobe.world3,wardrobe.world2,false);
 }
 function wardRefresh(){
   var t=wardTab, list=wardList(t), cur=wardEquipped(t), sel=wardSelected(t);
-  $("wHead").textContent=t==="shape"?"THE SHAPE YOU PLAY AS":
-    t==="color"?"ITS COLOUR":t==="world3"?"THE VOLUME":"THE PLANE";
+  $("wHead").textContent=t==="shape"?"THE SHAPE YOU PLAY AS":"ITS COLOUR";
   $("wBal").innerHTML=shards()+" \u2605";
   $("wBal").title="to spend";
   $("wS").classList.toggle("on",t==="shape");
   $("wC").classList.toggle("on",t==="color");
-  $("wV").classList.toggle("on",t==="world3");
-  $("wP").classList.toggle("on",t==="world2");
   var html="";
   for(var i=0;i<list.length;i++){
     var it=list[i], have=owns(it.id), on=cur===it.id;
     // each swatch shows the two colours that item actually sets
     var swatch = t==="color"
       ? "background:#"+it.hex.toString(16).padStart(6,"0")
-      : t==="world3"
-        ? "background:linear-gradient(135deg,#"+it.void.toString(16).padStart(6,"0")+
-          " 0 50%,#"+it.block.toString(16).padStart(6,"0")+" 50% 100%)"
-      : t==="world2"
-        ? "background:linear-gradient(135deg,#"+it.paper.toString(16).padStart(6,"0")+
-          " 0 50%,#"+it.ink.toString(16).padStart(6,"0")+" 50% 100%)"
-        : "background:var(--rule)";
+      : "background:var(--rule)";
     html+="<div class='item"+(on?" on":"")+(sel===it.id?" sel":"")+
       "' data-id='"+it.id+"'>"+
       "<i style='"+swatch+"'>"+(t==="shape"?shapeGlyph(it.id):"")+"</i>"+
@@ -582,11 +577,37 @@ function homeGo(){
    is deliberately the bosses only, not every level: the Extra shelf is a
    reward for beating the game, and gating it on 100% would turn a bonus into
    a chore nobody collects. */
-function sectionsUnlocked(){
+/* WHICH BOSSES ARE STILL STANDING, in campaign order.
+
+   The gate itself has not moved: the shelf opens when every boss is *beaten*,
+   and a skip is deliberately not in `progress`, so buying your way past a
+   fight does not buy the reward for winning it. What was wrong is that the
+   gate could not be read. The game offers a skip itself after three losses -
+   struggleOffer() - so a player can take one, go on to finish the campaign,
+   and arrive at a shelf that says only "every boss is down" while their save
+   quietly disagrees, with nothing anywhere naming the fight that is still
+   standing. That is how it was reported: section IV finished, EXTRA still
+   shut, and no way to find out why.
+
+   So the list is the primitive and the gate is derived from it. Everything
+   that draws the lock reads the same list, which means the map can name the
+   fight and put the player in front of it. */
+function bossesLeft(){
+  var out=[];
   for(var i=0;i<LEVELS.length;i++)
-    if(LEVELS[i].boss&&progress[LEVELS[i].name]===undefined)return false;
-  return true;
+    if(LEVELS[i].boss&&progress[LEVELS[i].name]===undefined)out.push(i);
+  return out;
 }
+// "BOSS II" - the numeral is what a player looks for on the map, and the
+// subtitle after the dash is the Census's, not a label.
+function bossShort(l){return l.name.split(" \u2014 ")[0];}
+function bossesLeftSay(){
+  var n=bossesLeft().map(function(i){return bossShort(LEVELS[i]);});
+  if(!n.length)return "";
+  if(n.length===1)return n[0];
+  return n.slice(0,-1).join(", ")+" and "+n[n.length-1];
+}
+function sectionsUnlocked(){return bossesLeft().length===0;}
 function sectionSpans(){
   var out=[];
   for(var i=0;i<SECTIONS.length;i++){
@@ -1050,9 +1071,26 @@ function mapReach(){
   for(var i=0;i<LEVELS.length;i++) if(mapSolved(i)) last=i;
   return last+1+MAP_WINDOW;
 }
-// Where the pink node goes: the first level you have not dealt with.
+/* Where the pink node goes: the first level you have not dealt with - and
+   never one you cannot open.
+
+   The exception is the shelf, and it is the other half of the same bug. Deal
+   with everything up to BOSS IV while one boss is still standing and the
+   first untouched level is the first level of V · EXTRA, which is locked -
+   so the map's marker, mapFocus() and the home screen's CONTINUE all pointed
+   into a section the game refuses to open. CONTINUE went straight through
+   that lock, which is how somebody ends up playing a shelf the map still
+   says is shut.
+
+   Where they actually are is the fight that is holding it. */
 function mapHere(){
-  for(var i=0;i<LEVELS.length;i++) if(!mapTouched(i)) return i;
+  for(var i=0;i<LEVELS.length;i++) if(!mapTouched(i)){
+    if(mapLocked(i)){
+      var lf=bossesLeft();
+      if(lf.length)return lf[0];
+    }
+    return i;
+  }
   return LEVELS.length-1;
 }
 function mapLocked(i){
@@ -1117,7 +1155,7 @@ function mapCaption(l){
 
    A BOSS is a hexagon, which is what a cube looks like seen corner-on - the
    silhouette of the game's own piece, and the only shape on the map that is
-   also a thing in the world. Around it, four arcs: its four phases.
+   also a thing in the world. Around it, three arcs: its three phases.
 
    A TRIAL is a diamond, the square standing on its point, with the sweeping
    plane drawn straight through it. That is the trial in one picture: a flat
@@ -1275,7 +1313,24 @@ function mapDraw(spans){
     "<span>"+sp.got+"/"+sp.max+" ★</span></div>"+
     (mapSectionSkippable(n)
       ? "<button class='skipsec' id='mSecAd'>START THIS SECTION · WATCH 3 ADS</button>"
+      : "")+
+    /* THE LOCK HAS TO SAY WHAT IS HOLDING IT. This is the shelf, and the one
+       thing a player cannot work out from anywhere else in the game is which
+       fight their save still counts as unbeaten - a skipped boss reads as
+       dealt with everywhere except here. Named on the card rather than only
+       in the sheet, because the card is what is on screen the moment the tab
+       is opened. */
+    (sp.locked&&bossesLeft().length
+      ? "<div class='mlock'>Still standing: <b>"+esc(bossesLeftSay())+
+        "</b><button class='mlockgo' id='mBossGo'>GO THERE</button></div>"
       : "");
+  var bg=$("mBossGo");
+  if(bg)tap(bg,function(){
+    var b=bossesLeft()[0];
+    mapSection=mapSecOf(b);
+    mapTabs(sectionSpans());mapDraw(sectionSpans());
+    mapSheet(b);
+  });
   var sa=$("mSecAd");
   /* Opens the section's *first* level and nothing else, so the section is
      played from its beginning rather than handed over. */
@@ -1481,7 +1536,7 @@ function mapSheetClose(){$("mSheet").classList.remove("on");}
 
 function mapSheet(i){
   var l=LEVELS[i], k=mapKind(l), st=mapState(i);
-  var kind=k==="boss"?"BOSS · FOUR PHASES":
+  var kind=k==="boss"?"BOSS · THREE PHASES":
            k==="trial"?"TRIAL · THREE CORES, ON A CLOCK":
            k==="tut"?"TUTORIAL · UNSCORED":"LEVEL";
   var meta=st==="solved"
@@ -1490,7 +1545,12 @@ function mapSheet(i){
     : st==="skipped"?"<span class='a'>skipped</span> · no stars yet, still playable"
     : st==="here"?"you are here"
     : st==="open"?"open — not played yet"
-    : "locked — clear what is in front of it, or skip ahead";
+    /* Two different locks, and they were saying the same sentence. Ahead of
+       the window you can clear what is in front of it or buy the door; on
+       the shelf neither is true, and telling somebody to skip ahead onto the
+       one thing an ad cannot open is how a lock becomes a dead end. */
+    : mapSkippable(i)?"locked — clear what is in front of it, or skip ahead"
+    : "locked — the shelf is still sealed";
 
   var acts,note;
   if(st==="locked"&&mapSkippable(i)){
@@ -1502,14 +1562,24 @@ function mapSheet(i){
          "it stays where it is, still to play, and you can open those the same "+
          "way. It awards <b>no stars</b>. Ads buy progress, never score.";
   }else if(st==="locked"){
-    acts="<button class='qt' id='mNo'>CLOSE</button>";
-    note="This shelf opens when every boss is down. It is the one thing an ad "+
-         "cannot buy — beating them is what it is for.";
+    /* The shelf, and the only lock in the game an ad cannot open. Which
+       makes it the one lock that has to name its own condition: a boss you
+       SKIPPED is not a boss you beat, and nothing else in the game ever says
+       so. Skipping is offered by the game itself after three losses, so this
+       is a state a player reaches by taking the help they were handed. */
+    var lf=bossesLeft();
+    acts=(lf.length&&!mapLocked(lf[0])
+        ? "<button class='go' id='mBossTo'>GO TO "+esc(bossShort(LEVELS[lf[0]]))+"</button>"
+        : "")+"<button class='qt' id='mNo'>CLOSE</button>";
+    note="This shelf opens when every boss is <b>beaten</b>. It is the one "+
+         "thing an ad cannot buy — beating them is what it is for."+
+         (lf.length?" Still standing: <b>"+esc(bossesLeftSay())+"</b>. A boss "+
+          "you skipped past still counts as standing.":"");
   }else{
     acts="<button class='go' id='mPlay'>"+(st==="solved"?"PLAY AGAIN":"PLAY")+
          "</button><button class='qt' id='mNo'>CLOSE</button>";
     note=st==="skipped"?"You have not beaten this one yet. Its stars are still on the table."
-      :k==="boss"?"No goal here. Four phases, and clearing the board begins the next."
+      :k==="boss"?"No goal here. Three phases, and clearing the board begins the next."
       :k==="trial"?"Three cores, a sweeping plane, three lives. Scored on lives."
       :(st==="solved"&&starsForRecord(l,progress[l.name])<3)
         ?"Three stars is the solver's own move count, so <b>3★ means optimal</b>.":"";
@@ -1519,6 +1589,13 @@ function mapSheet(i){
     "<div class='ma'>"+acts+"</div>"+(note?"<div class='mn'>"+note+"</div>":"");
   $("mSheet").classList.add("on");
   bind("mNo",mapSheetClose);
+  var bto=$("mBossTo");
+  if(bto)tap(bto,function(){
+    var b=bossesLeft()[0];
+    mapSection=mapSecOf(b);
+    mapTabs(sectionSpans());mapDraw(sectionSpans());
+    mapSheet(b);
+  });
   var play=$("mPlay");
   if(play)tap(play,function(){
     mapSheetClose();hidePanel();playSource="builtin";enterPlay(LEVELS[i],i,false);
@@ -1550,7 +1627,7 @@ function mapHelp(){
     row("mtrial",mapShape("trial")+"<span>I</span>",
         "<b>Trial</b> \u2014 a square on its point, with the plane about to sweep through it. Three cores, on a clock.")+
     row("mboss",mapShape("boss")+"<span>I</span>",
-        "<b>Boss</b> \u2014 a cube seen corner-on. The four arcs are its four phases. Closes the section.")+
+        "<b>Boss</b> \u2014 a cube seen corner-on. The three arcs are its three phases. Closes the section.")+
     "</div><div class='mn'>Ads buy <b>progress, never score</b>. A skip awards no "+
     "stars and the level stays on the map, playable, whenever you want it — and "+
     "it opens that level alone, so nothing behind it is handed over.</div>"+

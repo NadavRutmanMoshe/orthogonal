@@ -755,6 +755,32 @@ var sceneQuad=null, demonGrp=null, plumeQuad=null, sparkGrp=null;
 /* One slot per section's moving layer. They are all torn down together in
    applyTheme, so a section that does not ask for one simply has none. */
 var birdGrp=null, meteorGrp=null, boatGrp=null, tumbleGrp=null, devilGrp=null;
+/* CHARRED. The burn ends with the cube black, because that is what the fire
+   leaves behind - the flames go out and something burnt is still standing
+   there for the rest of the beat. It is the body's own colour driven to soot
+   rather than a second material: buildPlayerMesh() hands one material to
+   every part it makes, so one write chars a pup as completely as a cube, and
+   the adaptive rim outlineFor() re-picks every frame is what keeps the
+   silhouette readable once the body has gone nearly to the void.
+
+   The char is late and fast (nothing until a third of the way in, then all of
+   it), so the cube is plainly itself while the flames are climbing and plainly
+   ruined once they are out - a colour that starts sliding on the first frame
+   just reads as the light changing.
+
+   Restored by the same function on the first frame that is not a burn, so
+   nothing else has to know it happened: die() puts the player back at the
+   start with the level, and the mesh it puts back is the mesh that burned. */
+var PLAYER_CHAR=0x120d0b, playerCharT=-1, charCol=new THREE.Color();
+function playerChar(t){
+  if(!playerMesh||t===playerCharT)return;
+  playerCharT=t;
+  var base=findBy(SKIN_COLORS,wardrobe.color).hex;
+  playerMesh.traverse(function(c){
+    if(!c.isMesh||!c.material||!c.material.color)return;
+    c.material.color.setHex(base).lerp(charCol.setHex(PLAYER_CHAR),t);
+  });
+}
 var burnGrp=null;                 // the flames that take you - see the death
 var boomGrp=null, foamQuad=null;
 /* The sea's clock. seaT counts down to the next break, seaFired says the
@@ -3371,6 +3397,7 @@ function animate(now){
      of one. `burnGrp` is built the first time anything burns and hidden the
      rest of the time. */
   if(burnGrp)burnGrp.visible=false;
+  if(dying!=="spike")playerChar(0);
   if(dying){
     dyingT+=1;
     if(dying==="spike"){
@@ -3413,6 +3440,9 @@ function animate(now){
         // up quickly, and gone before the cube is
         bq3.material.opacity=Math.min(1,burn/.18)*(1-burn)*(1-burn)*2.2;
       }
+      // and what the fire leaves: the flames go out on a black cube, not on
+      // the one that walked in.
+      playerChar(Math.min(1,Math.max(0,(burn-.32)/.46)));
     } else if(dying==="fall"){
       playerMesh.position.x+=(tmp.x-playerMesh.position.x)*.2;
       playerMesh.position.z+=(tmp.z-playerMesh.position.z)*.2;

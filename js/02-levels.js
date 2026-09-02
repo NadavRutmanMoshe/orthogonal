@@ -400,28 +400,51 @@ var LEVELS=[
    blocks:[[0,0,0],[3,3,-2,4],[-2,0,0],[-2,0,1],[-4,1,2],[-2,1,2],[-5,0,1,4]],
    start:[0,1,0],goal:[-4,2,2],rotate:true},
 {name:"TRIAL II — Sharp Rhythm",
-   hint:"Three lives, three places to visit. Spikes take the squares you would have dodged into.",
+   hint:"Three lives, three places to visit. Nothing bridges these islands \u2014 every crossing is a fold from a different side.",
    trial:{period:2200,fire:320,
-          /* Two depth slices and one across, and the mix is forced rather
-             than chosen: this level's spikes were placed to take the squares
-             an *x*-sweep leaves you, which means they also take the z-escapes.
-             All three depth slices over the near island corner somebody -
-             checked - so the near half keeps an x-slice and the far half
-             takes depth. One z beat is enough to make folding dangerous,
-             because that danger is a property of the axis, not of where the
-             slice sits. */
-          beats:[{axis:"z",at:4},{axis:"x",at:1},{axis:"z",at:6}],
-          cores:[[9,1,4],[0,1,2],[7,1,6]]},
-   blocks:(function(){var b=[];box(0,4,0,0,0,2,b);box(7,9,0,0,4,6,b);
-     b.push([5,0,9]);b.push([6,0,9]);
-     /* Three floor squares bite, and they are the ones the sweeps would
-        otherwise have left you. Replaced rather than removed, so the floor
-        stays whole: a hole you fall through is a different lesson. */
-     var sharp={"1,0,1":1,"3,0,0":1,"3,0,2":1};
+          /* Two depth slices and one across, so both fold axes are on the
+             clock: while a z beat is live, folding in views 0 and 2 kills you
+             wherever you stand, and the x beat says the same about 1 and 3.
+             That matters more here than it did before, because every crossing
+             in this arena IS a fold - see the geometry below. Each `at` sits
+             on a row somebody actually stands in; a slice that threatens
+             nobody is decoration. */
+          beats:[{axis:"z",at:1},{axis:"x",at:8},{axis:"z",at:7}],
+          cores:[[6,1,6],[0,1,2],[9,1,0]]},
+   /* THREE ISLANDS, AND NOTHING JOINS ANY TWO OF THEM EXCEPT A FOLD DOWN THE
+      RIGHT AXIS. That is the whole redesign: this level used to hand you two
+      bridge blocks out at z=9, which closed the gap in the *x* silhouette, so
+      all three legs walked across in the opening view and the turn buttons
+      were never touched - measured with the solver, every leg solvable with
+      rotation locked out.
+
+      Now each pair of islands is offset in one axis only, which means they
+      already share a silhouette column along the other one:
+
+        A (x0..3, z0..2)  and  B (x6..9, z0..2)  share their z's
+        B                 and  C (x6..9, z6..8)  share their x's
+
+      So A to B is a fold along x - and rule 5 decides which of the two you
+      come back on, so it is view 1 going out (the camera at +x lands you on
+      the greatest x) and view 3 coming back. B to C is the same sentence one
+      axis round: view 0 out, view 2 home. A and C share neither, so there is
+      no fold that joins them and the middle island is not optional. All four
+      views, each of them the only answer to the crossing it belongs to, and
+      the solver says every leg is impossible with rotation locked out.
+
+      THE FIRE IS ON THE LANDING LANE, which is what makes it a fire level
+      rather than a level with fire on it. B's far edge burns at z=1, so the
+      crossing from A cannot be taken on the middle lane - the one square the
+      sweep at z=1 threatens on both islands at once - and the corner at
+      (6,0,0) takes the short way round the wall. Verified load-bearing: the
+      legs run 13+10+9 with it and 11+9+5 without. */
+   blocks:(function(){var b=[];box(0,3,0,0,0,2,b);box(6,9,0,0,0,2,b);
+     box(6,9,0,0,6,8,b);
+     var burns={"6,0,0":1,"8,0,1":1,"9,0,1":1};
      for(var i=0;i<b.length;i++)
-       if(sharp[b[i].join(",")])b[i]=[b[i][0],b[i][1],b[i][2],4];
+       if(burns[b[i].join(",")])b[i]=[b[i][0],b[i][1],b[i][2],4];
      return b;})(),
-   start:[0,1,0],goal:[9,1,4],rotate:true},
+   start:[0,1,0],goal:[6,1,6],rotate:true},
 {name:"17 — Two Threats",
    hint:"Two spikes, four views, one that works.",
    blocks:[[0,0,0],[0,0,-3],[2,0,-3],[-1,3,6,4],[1,0,-5,4]],

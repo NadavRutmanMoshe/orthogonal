@@ -106,6 +106,27 @@ bind("bNext",function(){
      it says, and which one you got depended on invisible state. A player who
      wants to be somewhere else has the map, which is explicit about where it
      is sending them; a button labelled NEXT LEVEL has one honest meaning. */
+  /* ONE EXCEPTION, AND IT IS NOT A CLEVER ONE: the next level can be behind
+     a lock. Everywhere else in the campaign it cannot - you have just solved
+     the level in front of it, so the rolling window is already two past
+     here - but V · EXTRA is gated on the bosses rather than on the window,
+     and BOSS IV is the level immediately before it. Beat that fight with a
+     boss still standing and this button walked straight through the shelf's
+     lock into a section the map was still refusing to open: the level you
+     were handed was playable, and the one after it was not, which is exactly
+     what "progression stopped there" looked like from the outside.
+
+     So it opens the map on that section instead, where the lock now says
+     which fight is holding it. The button's meaning is intact - it is still
+     going to the next level, and saying why it cannot. */
+  if(typeof mapLocked==="function"&&mapLocked(n)){
+    mapSection=mapSecOf(n);
+    $("won").classList.remove("on");
+    levelPicker();
+    var say=typeof bossesLeftSay==="function"?bossesLeftSay():"";
+    flash(say?SECTIONS[mapSection].name+" needs "+say:"not open yet");
+    return;
+  }
   playSource="builtin";
   enterPlay(LEVELS[n],n,false);
 });

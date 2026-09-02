@@ -779,6 +779,46 @@ rotation had opposite signs in this camera, and adding them looked like extra
 sensitivity while actually being subtraction. A single worked example on paper
 would have caught it before any of it shipped.
 
+## The shelf that would not open, and the back door into it
+
+Reported from a playtest by the owner's mother: she finished section IV, the
+Extra shelf stayed locked, and when she got into it anyway the levels she
+solved there opened nothing — "progression stopped". Three separate faults,
+and only the first one is the interesting one.
+
+**The gate was right and unreadable.** `sectionsUnlocked()` asks whether every
+boss is in `progress`, and a *skipped* boss is deliberately not in `progress`
+— that is the rule that stops an ad buying the reward for beating the game.
+But `struggleOffer()` offers the skip itself after three losses on a
+landmark, so the game hands out the state that seals the shelf and then never
+mentions it again: the tab drew a padlock and the sheet said "this shelf
+opens when every boss is down", which is true, unfalsifiable from the
+player's chair, and describes a save they cannot inspect. The fix is not to
+loosen the gate — it is to make it name itself. `bossesLeft()` is the
+primitive now and the gate is derived from it, so the section card, the
+locked sheet and the win card on `BOSS IV` all say *which* fight is standing,
+and each of them offers a tap that goes there.
+
+**Two back doors walked straight through it.** `NEXT LEVEL` goes to
+`lvIndex+1` unconditionally, and `BOSS IV` is the level immediately before the
+shelf — so beating that fight handed you the first level of a section the map
+was refusing to open. `mapHere()` had the same hole from the other end: the
+first level you have not dealt with is that same shelf level, so the home
+screen's `CONTINUE` pointed into it too. Both now stop at the lock, and
+`mapHere()` answers with the fight instead, because that is where the player
+actually is.
+
+**And inside a locked section the rolling window does not apply at all** —
+`mapLocked()` short-circuits on `s.locked` before it ever looks at
+`mapReach()`. That is correct for a shelf nobody should be in, and it is
+exactly why the back doors were bad: once through one, every level you solved
+unlocked only itself. Closing the doors is the whole fix; the short-circuit
+stays.
+
+The lesson is the one this file keeps re-learning in different costumes: **a
+gate the player cannot see the far side of has to say what is holding it.**
+The rule was never wrong. It was silent, and silent read as broken.
+
 ## Smaller things, settled
 
 - **The verb's name.** `GO 2D / GO 3D` was auditioned against `FOLD /
