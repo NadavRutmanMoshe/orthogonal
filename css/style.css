@@ -1213,7 +1213,7 @@ body.tutlock .ghost.on{opacity:1}
 .gfinger{position:absolute;left:50%;top:50%;width:26px;height:26px;
   margin:-13px 0 0 -13px}
 .gfinger.b{display:none}
-/* TWO FINGERS ARE STACKED, 22px APART, AND THE HAND TURNS TO MATCH.
+/* TWO FINGERS ARE STACKED, 32px APART, AND THE HAND TURNS TO MATCH.
 
    Side by side is the grip a hand really uses and it is the worse drawing,
    which is the whole finding here: two contacts abreast, sliding along their
@@ -1225,8 +1225,8 @@ body.tutlock .ghost.on{opacity:1}
 
    The hand is then rotated a quarter turn (below) so its fingertips land on
    the two dots, which also points it the way it is about to go. */
-.ghost.g-two .gfinger.a{margin-top:-24px}
-.ghost.g-two .gfinger.b{display:block;margin-top:-2px}
+.ghost.g-two .gfinger.a{margin-top:-29px}
+.ghost.g-two .gfinger.b{display:block;margin-top:3px}
 /* THE HAND. Positioned so the index fingertip lands exactly on the contact
    dot's centre, which is what makes the dot read as "this is where the
    finger is touching" rather than as a second object beside it.
@@ -1245,14 +1245,14 @@ body.tutlock .ghost.on{opacity:1}
 .ghand{position:absolute;display:none;overflow:visible;--tilt:-10deg}
 .ghand.single{width:60px;height:80px;left:-7px;top:6px;
   transform:rotate(var(--tilt));transform-origin:20px 7px}
-.ghand.pair{width:75px;height:80px;left:-6px;top:6px;
+.ghand.pair{width:85px;height:80px;left:-6px;top:6px;
   transform:rotate(var(--tilt));transform-origin:19px 7px}
 .ghost.g-swipe .ghand.single,.ghost.g-dbl .ghand.single{display:block}
 .ghost.g-two .ghand.pair{display:block}
 /* THE QUARTER TURN, AND WHICH WAY IT FACES.
 
-   The pair is drawn pointing up with its tips 22px apart horizontally, and
-   the contacts are stacked 22px apart vertically - so a rotation of exactly
+   The pair is drawn pointing up with its tips 32px apart horizontally, and
+   the contacts are stacked 32px apart vertically - so a rotation of exactly
    90 degrees about the FIRST tip puts the second one on the second dot by
    construction. No tilt on this one: at a 22px radius, ten degrees of
    character costs nearly four pixels of registration, and a fingertip that
@@ -1263,10 +1263,10 @@ body.tutlock .ghost.on{opacity:1}
    with its fingers and trails its fist - dragging a hand backwards across
    the screen is a picture of somebody being pulled, not of somebody
    swiping. Turning it the other way flips which tip is on top, so the left
-   version also drops 22px to put its first tip on the LOWER dot; the second
+   version also drops 32px to put its first tip on the LOWER dot; the second
    then lands on the upper one. */
 .ghost.g-two.d-right .ghand.pair{transform:rotate(90deg)}
-.ghost.g-two.d-left  .ghand.pair{transform:translateY(22px) rotate(-90deg)}
+.ghost.g-two.d-left  .ghand.pair{transform:translateY(32px) rotate(-90deg)}
 /* The rim goes on first as a fat round stroke and the body covers the seams.
    `use` inherits fill and stroke into the symbol, which is the whole reason
    the shapes inside carry no paint of their own. */

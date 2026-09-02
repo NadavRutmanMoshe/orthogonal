@@ -84,9 +84,17 @@
     <path d="M30 100 C14 106 8 120 15 132 C20 140 30 140 35 132 L46 114 Z"/>
   </symbol>
   <!-- Two fingers, tips at (38,14) and (82,14): index and middle out of the
-       same fist. Drawn pointing up and TURNED A QUARTER TURN BY THE CSS, so
-       the two tips end up stacked one above the other with the fist trailing
-       behind them, pointing the way the hand is about to travel.
+       same fist, tips 64 units apart - which at the half scale this is drawn
+       at is the 32px between the two contacts. Drawn pointing up and TURNED
+       A QUARTER TURN BY THE CSS, so the two tips end up stacked one above
+       the other with the fist trailing behind them, pointing the way the
+       hand is about to travel.
+
+       The two fingers are held well apart on purpose: at 22px the contacts
+       overlapped and the pair read as one thick finger. Four numbers move
+       together if this changes - the two tips here, the two `.gfinger`
+       margins, the pair's rendered width, and the translate on the
+       left-hand version.
 
        Both arrangements have now been played. Side by side with the hand
        upright is how a hand really sits on glass, and it reads as one wide
@@ -96,12 +104,12 @@
        two-ness survives the motion. That was the original call, made back
        when each contact was a bare dot; it survives the hand being drawn,
        and the hand simply turns to match. -->
-  <symbol id="ghTwo" viewBox="0 0 150 160">
+  <symbol id="ghTwo" viewBox="0 0 170 160">
     <rect x="25" y="14" width="26" height="80" rx="13"/>
-    <rect x="69" y="14" width="26" height="80" rx="13"/>
-    <rect x="95" y="64" width="24" height="40" rx="12"/>
-    <rect x="116" y="72" width="22" height="36" rx="11"/>
-    <rect x="22" y="84" width="110" height="64" rx="26"/>
+    <rect x="89" y="14" width="26" height="80" rx="13"/>
+    <rect x="115" y="64" width="24" height="40" rx="12"/>
+    <rect x="136" y="72" width="22" height="36" rx="11"/>
+    <rect x="22" y="84" width="130" height="64" rx="26"/>
     <path d="M28 98 C13 105 8 120 15 132 C20 140 30 140 35 132 L46 114 Z"/>
   </symbol>
 </svg>

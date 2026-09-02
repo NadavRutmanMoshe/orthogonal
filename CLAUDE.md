@@ -2491,7 +2491,7 @@ and they are also the ones that cost no screen.
   falls there. The pair's two tips are 52 viewBox units apart, which is the
   26px between the two dots, so the second dot lands on the second finger by
   construction and stays on it through the whole slide.
-- **THE TWO CONTACTS ARE STACKED, 22px APART, AND THE HAND TURNS A QUARTER
+- **THE TWO CONTACTS ARE STACKED, 32px APART, AND THE HAND TURNS A QUARTER
   TURN TO MATCH.** Both arrangements have now been drawn and played. Side by
   side is the grip a hand really uses, and it is the worse picture: two
   contacts abreast, sliding along their own line of travel, read as one
@@ -2501,17 +2501,19 @@ and they are also the ones that cost no screen.
   call, made when each contact was a bare dot; it survives the hand being
   drawn, and the hand simply rotates to sit on it.
 - **The rotation is exactly ±90°, about the first fingertip, and it faces the
-  way the hand travels.** The pair is drawn pointing up with its tips 22px
+  way the hand travels.** The pair is drawn pointing up with its tips 32px
   apart horizontally, so a quarter turn about the first tip puts the second
   one on the second dot by construction — and turning it toward the
   direction of travel means the hand always leads with its fingers and
   trails its fist, rather than being dragged backwards across the screen.
   Turning it the other way flips which tip is on top, so the left-hand
-  version also drops 22px to put its first tip on the *lower* dot. **No tilt
-  on this one**: at a 22px radius, ten degrees of character costs nearly
-  four pixels of registration, and a fingertip that does not sit on its own
-  contact is the one thing this drawing cannot afford. Three numbers move
-  together: the two `.gfinger` margins and the symbol's two tips.
+  version also drops 32px to put its first tip on the *lower* dot. **No tilt
+  on this one**: at that radius, ten degrees of character costs several
+  pixels of registration, and a fingertip that does not sit on its own
+  contact is the one thing this drawing cannot afford. **The gap was 22px
+  and the contacts overlapped**, so the pair read as one thick finger. Four
+  numbers move together: the symbol's two tips, the two `.gfinger` margins,
+  the pair's rendered width, and the translate on the left-hand version.
 - **The hand lifts with the taps**, on the same 1.9s clock as the dot and the
   rings: a hand that stayed planted while the dot blinked is the "one messy
   throb" the double-tap drawing was already fixed for once. Its tilt is a
