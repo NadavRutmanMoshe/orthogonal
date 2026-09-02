@@ -1213,20 +1213,20 @@ body.tutlock .ghost.on{opacity:1}
 .gfinger{position:absolute;left:50%;top:50%;width:26px;height:26px;
   margin:-13px 0 0 -13px}
 .gfinger.b{display:none}
-/* TWO FINGERS ARE STACKED, NOT SIDE BY SIDE. Side by side is the grip most
-   people actually use, but it is the worse drawing: two dots abreast sliding
-   along their own direction of travel read as one dot with a trail behind
-   it, which is the exact thing a single-finger swipe already looks like. One
-   above the other, both moving, is unmistakably two. */
-/* SIDE BY SIDE, 22px apart, which is the spread of the hand drawn over them.
-   Stacked was right while each contact was a bare dot and nothing else on
-   screen said "two" - two dots abreast sliding along their own direction of
-   travel read as one dot with a trail. A fist with two fingers out says it
-   instead, so the contacts are free to sit where fingers really do, and the
-   hand gets to be the right way up. One track now rather than two: side by
-   side, both fingers travel along the same line. */
-.ghost.g-two .gfinger.a{margin-left:-24px}
-.ghost.g-two .gfinger.b{display:block;margin-left:-2px}
+/* TWO FINGERS ARE STACKED, 22px APART, AND THE HAND TURNS TO MATCH.
+
+   Side by side is the grip a hand really uses and it is the worse drawing,
+   which is the whole finding here: two contacts abreast, sliding along their
+   own line of travel, read as one contact with a trail - the exact picture a
+   single-finger swipe already makes. Stacked, the pair sits ACROSS its
+   direction of movement, so the two-ness is the one thing the motion cannot
+   blur. Both versions have been drawn and played; this is the one that says
+   "two fingers" without being told.
+
+   The hand is then rotated a quarter turn (below) so its fingertips land on
+   the two dots, which also points it the way it is about to go. */
+.ghost.g-two .gfinger.a{margin-top:-24px}
+.ghost.g-two .gfinger.b{display:block;margin-top:-2px}
 /* THE HAND. Positioned so the index fingertip lands exactly on the contact
    dot's centre, which is what makes the dot read as "this is where the
    finger is touching" rather than as a second object beside it.
@@ -1249,6 +1249,24 @@ body.tutlock .ghost.on{opacity:1}
   transform:rotate(var(--tilt));transform-origin:19px 7px}
 .ghost.g-swipe .ghand.single,.ghost.g-dbl .ghand.single{display:block}
 .ghost.g-two .ghand.pair{display:block}
+/* THE QUARTER TURN, AND WHICH WAY IT FACES.
+
+   The pair is drawn pointing up with its tips 22px apart horizontally, and
+   the contacts are stacked 22px apart vertically - so a rotation of exactly
+   90 degrees about the FIRST tip puts the second one on the second dot by
+   construction. No tilt on this one: at a 22px radius, ten degrees of
+   character costs nearly four pixels of registration, and a fingertip that
+   does not sit on its own contact is the one thing this drawing cannot
+   afford.
+
+   Which way it turns is the direction of travel, so the hand always leads
+   with its fingers and trails its fist - dragging a hand backwards across
+   the screen is a picture of somebody being pulled, not of somebody
+   swiping. Turning it the other way flips which tip is on top, so the left
+   version also drops 22px to put its first tip on the LOWER dot; the second
+   then lands on the upper one. */
+.ghost.g-two.d-right .ghand.pair{transform:rotate(90deg)}
+.ghost.g-two.d-left  .ghand.pair{transform:translateY(22px) rotate(-90deg)}
 /* The rim goes on first as a fat round stroke and the body covers the seams.
    `use` inherits fill and stroke into the symbol, which is the whole reason
    the shapes inside carry no paint of their own. */

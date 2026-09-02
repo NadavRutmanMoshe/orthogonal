@@ -99,6 +99,14 @@ If you add a top-level `var`, check it is not a Window property name.
 Block format is `[x,y,z,k]` where k is 0 stone, 1 water, 2 anchor, 3 crate,
 4 fire. Levels may carry `keys: [[x,y,z]]`.
 
+**AND THE PLAYER-FACING NAMING IS NOW CONSISTENT.** The rename below reached
+the pieces and the stories but had never reached the section headers, the
+legend or most of the hints, so the game called one thing glass and water in
+two places a tap apart. Everything a player reads says **water** and
+**fire** now — sections `II · FIRE` and `III · WATER`, the legend, every
+hint. The code still says `glass` and `spike` throughout, for the reason
+below.
+
 **Kinds 1 and 4 were renamed, not changed.** Glass became **water** and a
 spike became **fire**: identical rules, identical solver, not one level
 re-verified. The code still says `glass` and `spike` throughout, the same way
@@ -132,8 +140,8 @@ five levels in, each section is interrupted by a **trial**:
 | | | |
 |---|---|---|
 | I · FUNDAMENTALS | 12 + trial + boss | the owner's own opening: the fold, then peril, then the turn |
-| II · SPIKES | 7 + trial + boss | spikes before glass — a hazard reads faster than an absence |
-| III · GLASS | 8 + trial + boss | ends on glass + spikes |
+| II · FIRE | 7 + trial + boss | fire before water — a hazard reads faster than an absence |
+| III · WATER | 8 + trial + boss | ends on water + fire |
 | IV · CRATES | 10 + trial + boss | ends on crate + glass + spikes |
 | V · EXTRA | 27, locked | opens when every boss is down; anchors and amber live here |
 
@@ -216,7 +224,25 @@ two sentences are the same:
   goal: handing the player a verb and then narrating the puzzle they now own
   takes back the thing that was just given them. That flag is the one seam
   between "get a first-time player to the goal" and "hand them the game".
-- **THE TITLES AND HINTS ARE THE OWNER'S, AND THEY ARE SHORT ON PURPOSE.**
+- **AND THE WHOLE CAMPAIGN IS WRITTEN IN THAT VOICE NOW.** Section I was the
+model and everything outside it has been rewritten to match: second person,
+plain words, one sentence, and **the player's vocabulary rather than the
+code's**. A player has three words for this game — 2D, 3D, and the name of
+the thing in front of them — so a hint says *go 2D*, *turn*, *the eye*,
+*fire*, *water*, *amber*, *crate*, and never *the volume*, *the plane*, *the
+silhouette*, *the axis*, *the projection* or *a column*. Mean hint length
+went from 63 characters to 49 and nothing outside Section I now runs past
+70 except the four bosses, which share one fixed sentence. **Eight titles
+were renamed with it** — `Invisible Architecture`, `Long Division`,
+`Confluence`, `The Whole Language`, `Sharp`, `Poisoned Column`, `Long
+Glass`, `Absent Floor` — each one costing a `LEVEL_RENAMES` entry, composed
+the usual way. **Two sections were renamed too**: `II · SPIKES` and
+`III · GLASS` became `II · FIRE` and `III · WATER`, because the pieces have
+been drawn as fire and water for a long time and only the section headers
+and the legend were still using the old names. Section names are not
+persisted, so those two cost nothing.
+
+**THE TITLES AND HINTS ARE THE OWNER'S, AND THEY ARE SHORT ON PURPOSE.**
   The first pass named levels after the mechanic and explained it in a
   sentence about the *game*; these speak to the player and stop
   (`Beware of walls`, `no catch here, just a simple walk`). Every one of them
@@ -2465,16 +2491,27 @@ and they are also the ones that cost no screen.
   falls there. The pair's two tips are 52 viewBox units apart, which is the
   26px between the two dots, so the second dot lands on the second finger by
   construction and stays on it through the whole slide.
-- **THE TWO FINGERS POINT UP AND SIT SIDE BY SIDE, and drawing a hand is what
-  allowed that.** They used to point sideways, because the two contacts were
-  stacked vertically — which was right while each contact was a bare dot, on
-  the grounds that two dots abreast sliding along their own direction of
-  travel read as one dot with a trail. A drawn hand answers that on its own:
-  nobody looks at a fist with two fingers out and sees one finger. So the
-  contacts went side by side, 22px apart, the hand got to be the right way
-  up, and the second track went with it — side by side, both fingers travel
-  along the same line. Three numbers move together: the two `.gfinger`
-  margins and the symbol's two tips.
+- **THE TWO CONTACTS ARE STACKED, 22px APART, AND THE HAND TURNS A QUARTER
+  TURN TO MATCH.** Both arrangements have now been drawn and played. Side by
+  side is the grip a hand really uses, and it is the worse picture: two
+  contacts abreast, sliding along their own line of travel, read as one
+  contact with a trail — which is exactly what a single-finger swipe already
+  looks like. Stacked, the pair sits *across* its direction of movement, so
+  the two-ness is the one thing the motion cannot blur. That was the original
+  call, made when each contact was a bare dot; it survives the hand being
+  drawn, and the hand simply rotates to sit on it.
+- **The rotation is exactly ±90°, about the first fingertip, and it faces the
+  way the hand travels.** The pair is drawn pointing up with its tips 22px
+  apart horizontally, so a quarter turn about the first tip puts the second
+  one on the second dot by construction — and turning it toward the
+  direction of travel means the hand always leads with its fingers and
+  trails its fist, rather than being dragged backwards across the screen.
+  Turning it the other way flips which tip is on top, so the left-hand
+  version also drops 22px to put its first tip on the *lower* dot. **No tilt
+  on this one**: at a 22px radius, ten degrees of character costs nearly
+  four pixels of registration, and a fingertip that does not sit on its own
+  contact is the one thing this drawing cannot afford. Three numbers move
+  together: the two `.gfinger` margins and the symbol's two tips.
 - **The hand lifts with the taps**, on the same 1.9s clock as the dot and the
   rings: a hand that stayed planted while the dot blinked is the "one messy
   throb" the double-tap drawing was already fixed for once. Its tilt is a
@@ -2509,10 +2546,9 @@ and they are also the ones that cost no screen.
   at which the dot lands again — move one and you must move the other,
   including in the reduced-motion block. 1.9s is also the swipe's loop, so
   all three demonstrations beat together.
-- **The two fingers sit side by side and point up**, which is how a hand
-  actually lands on glass. Stacked was the older drawing and the reason is
-  in the hand note above. The gesture itself reads the horizontal midpoint,
-  so either grip works and the demo is honest either way.
+- **The gesture itself reads the horizontal midpoint**, so whichever way the
+  demonstration draws the pair, the control it is teaching behaves the same
+  and the demo is honest either way.
 - **`ghostRestart()` exists because a class change does not restart a CSS
   animation.** An animation restarts when its `animation-name` changes or
   when the element goes from `display:none` to displayed — so the parts of
@@ -2864,6 +2900,12 @@ know before touching it:
   the bulb as a badge, and pressing an empty bulb opens `hintRefillOffer()`
   rather than doing nothing — an empty button is a dead end and this whole
   arrangement exists to say there are none.
+- **That card is two lines and two buttons, and it was four.** The first
+  draft explained the pool, the half hour, the ad and the star rule at the
+  one moment the player wants to be back in the level, which is exactly when
+  nobody reads. What is left is what happened and when it is fixed — *Out of
+  hints / Next refill of 1 hint in 18 min* — and the rest is discoverable
+  from the badge. `offerShell()` draws no note box when the note is empty.
 - **The star cap it replaced was the wrong currency, and that reverses an
   older call.** A hint used to lower what you could score — 0 → 3★, 1–2 →
   2★, 3–4 → 1★, 5+ → 0★, with `win()` writing an *effective* move count so
@@ -3234,11 +3276,14 @@ tested and failed, plus where this sits in the PCG literature, are in
   nothing there to check — but the machine has no opinion at all about the
   state you spend the crossing in.
 - **Boss and sweep pacing are both guesswork, and they are now the only
-  answer to "it is too fast".** Trials run `period` 2500, **1850**, 2100,
-  2000. `TRIAL II` is deliberately out of order and the reason is its own
-  geometry: every crossing there is a fold taken from a particular side, so
-  the player spends a leg turning and folding rather than walking, and
-  standing still under a slow beat is a level waiting for you. Bosses ramp
+  answer to "it is too fast".** Trials run `period` 2500, **2050**, 2100,
+  2000. `TRIAL II` sits just inside the two after it rather than well past
+  them, and the reason is its own geometry: every crossing there is a fold
+  taken from a particular side, so the player spends a leg turning and
+  folding rather than walking, and standing still under a slow beat is a
+  level waiting for you. It was played at 1850 and wound back — these are
+  players four levels into their second section, and a beat that punishes a
+  turn you are still learning to plan is a wall rather than tension. Bosses ramp
   *within* a fight and *across* the campaign — `BOSS I` runs 1100/1300 down
   to 870/1020 and `BOSS IV` 720/850 down to 570/660, so the opening fight is
   about 40% slower than it was and the last one is where it always sat.
@@ -3366,7 +3411,7 @@ tested and failed, plus where this sits in the PCG literature, are in
    but not crate or key ones, and its 59% hit rate means hand-checking a
    batch.
 3. **A crate trial**, per the limitation above.
-3a. **Move `IV · CRATES` in front of `III · GLASS`** — the owner's call, taken
+3a. **Move `IV · CRATES` in front of `III · WATER`** — the owner's call, taken
    and deferred deliberately because it is not a reorder: crate levels teach
    against geometry that assumes what came before, several later levels mix
    the two, and every affected level needs re-verifying and a

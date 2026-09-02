@@ -1443,15 +1443,16 @@ function hintWaitSay(){
 function hintRefillOffer(){
   if(panelOpen()||screenUp())return;
   SFX.bump();
+  /* Two lines and two buttons, and nothing else. The first draft explained
+     the pool, the half hour, the ad and the star rule - four sentences at
+     the one moment the player wants to get back to the level, which is
+     exactly when nobody reads. What they need is what happened and when it
+     is fixed; the rest is discoverable from the badge on the bulb. */
   offerShell("Out of hints",
-    "The bulb shows you the next move, and you have used all "+HINT_FREE+
-    ". <b>One comes back every half hour</b> \u2014 the next is "+
-    hintWaitSay()+" away.",
+    "Next refill of 1 hint in <b>"+hintWaitSay()+"</b>.",
     "<button class='ad' id='hrAd'>REFILL \u00b7 WATCH AN AD (+"+HINT_AD+
       ")</button>"+
-    "<button class='qt' id='hrNo'>WAIT IT OUT</button>",
-    "Hints cost you <b>no stars</b> \u2014 they never will again. The level is "+
-    "still there, and nothing in this game is ever a dead end.");
+    "<button class='qt' id='hrNo'>WAIT IT OUT</button>","");
   bind("hrNo",function(){hidePanel();});
   bind("hrAd",function(){
     var n=grantHints(HINT_AD);
@@ -1840,8 +1841,11 @@ function starsOffer(){
   bind("stOk",function(){hidePanel();});
 }
 function offerShell(title,lead,acts,note){
+  // An empty note draws no box: a card with two lines in it should be two
+  // lines tall, not two lines and a gap where a paragraph used to be.
   showPanel("<h3>"+title+"</h3><div class='mn'>"+lead+"</div>"+
-            "<div class='ma'>"+acts+"</div><div class='mn'>"+note+"</div>");
+            "<div class='ma'>"+acts+"</div>"+
+            (note?"<div class='mn'>"+note+"</div>":""));
 }
 function struggleOffer(){
   if(!L||levelOver()||panelOpen()||screenUp())return;

@@ -185,11 +185,11 @@ function syncHud(){
   if(app==="edit"){
     $("lvName").textContent="EDITOR";
     $("lvHint").textContent=
-      tool==="glass"  ? "Glass is solid to stand on but vanishes when the world flattens." :
-      tool==="anchor" ? "An anchor claims you when you unfold, overriding the nearest-camera rule." :
-      tool==="crate"  ? "Crates can be shoved in the volume, which changes what the plane looks like. A crate resting on an anchor is stuck for good." :
-      tool==="key"    ? "Keys are collected in the plane, on the square they fold into." :
-      tool==="spike"  ? "Fire casts like stone but burns you underfoot \u2014 so it poisons the whole silhouette column." :
+      tool==="glass"  ? "Water: stand on it, but it leaves nothing in 2D." :
+      tool==="anchor" ? "Amber catches you when you come back to 3D." :
+      tool==="crate"  ? "Walk into a crate and it slides. On amber it sticks for good." :
+      tool==="key"    ? "Keys are collected in 2D, on the square they fold into." :
+      tool==="spike"  ? "Fire is solid, and it burns the whole line it folds into." :
       "Tap the ground to start. Tap a block face to build off it.";
     $("lvHint").className="hint";
   }

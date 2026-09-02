@@ -225,28 +225,21 @@ function menuPanel(){
           seg("mUi","full","ON-SCREEN",settings.ui)+
           seg("mUi","compact","COMPACT",settings.ui)+
           seg("mUi","none","HIDDEN",settings.ui)+"</span></div>"+
-        "<div class='note'>COMPACT drops the d-pad; HIDDEN clears the screen. "+
-          "Either way: <code>swipe</code> or arrows/WASD to move, "+
-          "<code>double-tap</code> the world or <code>space</code> to change "+
-          "dimension, <code>two-finger swipe</code> left or right or "+
-          "<code>Q</code>/<code>E</code> to turn.</div>"+
+        "<div class='note'>Every control works whichever you pick: "+
+          "<code>swipe</code> to move, <code>double-tap</code> to change "+
+          "dimension, <code>two-finger swipe</code> to turn.</div>"+
         "<div class='crow'><label>Tutorial</label><span class='seg'>"+
           seg("mTutor","gesture","GESTURES",settings.tutor)+
           seg("mTutor","buttons","BUTTONS",settings.tutor)+"</span></div>"+
-        "<div class='note'>Which controls the three teaching levels teach. "+
-          "GESTURES takes the bar off and demonstrates the swipe, the "+
-          "double-tap and the two-finger swipe with a ghost hand; BUTTONS is "+
-          "the older lesson, with the bar forced on. It changes nothing "+
-          "outside the tutorial \u2014 every control works in both.</div></div>"+
+        "<div class='note'>Which controls the teaching levels teach. "+
+          "Nothing outside them changes.</div></div>"+
       "<div class='pcard'><h4>Mastery</h4>"+
         "<div class='crow'><label>Show as</label><span class='seg'>"+
           seg("mMast","auto","EARNED",settings.mastery)+
           seg("mMast","on","PREVIEW",settings.mastery)+"</span></div>"+
-        "<div class='note'>A section on the map paints itself in its own "+
-        "colour once every level in it is on three stars. EARNED is the real "+
-        "thing; PREVIEW shows it on every section so you can look at it "+
-        "without collecting it. Nothing else changes either way — no stars "+
-        "move and nothing unlocks.</div></div>"+
+        "<div class='note'>A section paints itself once every level in it is "+
+        "on three stars. PREVIEW just shows you the look \u2014 nothing "+
+        "unlocks either way.</div></div>"+
       "<div class='pcard'><h4>More</h4><div class='psub'>"+
         "<button id='mLegend'>WHAT THE PIECES DO</button>"+
         "<button id='mTut'>REPLAY TUTORIAL</button>"+
@@ -1618,36 +1611,38 @@ function mapHelp(){
   bind("mNo",mapSheetClose);
 }
 
+/* THE PIECES, IN ONE LINE EACH.
+
+   This used to run to a paragraph a piece - "casts into the plane", "ground
+   in the volume, a hole in the plane", "poisons the whole column it folds
+   into" - which is the code's own vocabulary handed to somebody who has
+   never read it. A player has three words for this game: 2D, 3D, and the
+   name of the thing in front of them. So each piece gets one sentence in
+   those words, and the two that were still called by their old names are
+   called what they are drawn as: water and fire. */
 function legendPanel(){
   showPanel("<h3>THE PIECES</h3>"+
     "<div class='leg'><i style='background:#5a6d94'></i><span><b>Stone</b> \u2014 "+
-      "solid, and it casts into the plane when you fold.</span></div>"+
-    "<div class='leg'><i style='background:#7fc4d8;opacity:.65'></i><span><b>Glass</b> \u00b7 ring \u2014 "+
-      "solid to stand on, but casts nothing. Ground in the volume, a hole in the plane.</span></div>"+
-    "<div class='leg'><i style='background:#d9a441'></i><span><b>Anchor</b> \u00b7 gem \u2014 "+
-      "claims you when you unfold, instead of the block at the front. "+
-      "Turning reaches either <i>end</i> of a column of candidates; only an "+
-      "anchor reaches one in the <i>middle</i>. It also holds a <b>crate</b> "+
-      "fast: once a crate rests on amber it can never be shoved again, so "+
-      "where you park one is a decision you cannot take back.</span></div>"+
-    "<div class='leg'><i style='background:#9b7fd4'></i><span><b>Crate</b> \u00b7 cross \u2014 "+
-      "walk into it and it slides. It casts like stone, so moving it in the volume "+
-      "changes the shape of the plane. The only thing here you can change.</span></div>"+
-    "<div class='leg'><i style='background:#8a3040'></i><span><b>Spikes</b> \u00b7 four points \u2014 "+
-      "solid, and they cast like stone, but standing on one kills you. A spike "+
-      "buried deep in the world poisons the whole column it folds into: ground "+
-      "that is safe in the volume can be lethal in the plane.</span></div>"+
-    "<div class='leg'><i style='background:#f2d16b'></i><span><b>Key</b> \u2014 "+
-      "collected in the <i>plane</i>, on the square it folds into. Which axis "+
-      "you fold along decides which keys you can reach.</span></div>"+
+      "solid, and it is still there in 2D.</span></div>"+
+    "<div class='leg'><i style='background:#7fc4d8;opacity:.65'></i><span><b>Water</b> \u2014 "+
+      "you can stand on it, but it leaves nothing in 2D.</span></div>"+
+    "<div class='leg'><i style='background:#8a3040'></i><span><b>Fire</b> \u2014 "+
+      "solid, and it burns you if you stand on it. In 2D it burns the whole "+
+      "line it lands in.</span></div>"+
+    "<div class='leg'><i style='background:#9b7fd4'></i><span><b>Crate</b> \u2014 "+
+      "walk into it and it slides. Moving it changes the 2D world \u2014 the "+
+      "only thing here you can change.</span></div>"+
+    "<div class='leg'><i style='background:#d9a441'></i><span><b>Amber</b> \u2014 "+
+      "catches you when you come back to 3D, instead of the block at the "+
+      "front. A crate parked on it can never be shoved again.</span></div>"+
     "<div class='leg'><i style='background:#d6336c'></i><span><b>You</b> \u2014 "+
-      "the plate underneath shows what you're standing on.</span></div>"+
+      "the plate underneath shows what you are standing on.</span></div>"+
     "<div class='leg'><i style='background:#35c2a5'></i><span><b>Goal</b> \u2014 "+
-      "you must arrive in the volume, not the plane.</span></div>"+
+      "you have to reach it in 3D. Standing on it in 2D is not enough."+
+      "</span></div>"+
     "<div class='leg'><i style='background:transparent;border:1px solid var(--rule)'></i>"+
-      "<span><b>The eye button</b> \u2014 hold it (or Shift) to lean the camera "+
-      "and read depth. It costs no move. Blocks sharing your depth stay bright; "+
-      "everything further back fades.</span></div>"+
+      "<span><b>The eye</b> \u2014 hold it to lean the camera and see how far "+
+      "away things really are. It costs no move.</span></div>"+
     "<div class='prow'><button id='lgBack'>BACK</button></div>");
   bind("lgBack",menuPanel);
 }
