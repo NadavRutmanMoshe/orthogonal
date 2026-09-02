@@ -131,7 +131,7 @@ five levels in, each section is interrupted by a **trial**:
 
 | | | |
 |---|---|---|
-| I · FUNDAMENTALS | 8 + trial + boss | the owner's own opening: the fold, then peril, then the turn |
+| I · FUNDAMENTALS | 12 + trial + boss | the owner's own opening: the fold, then peril, then the turn |
 | II · SPIKES | 7 + trial + boss | spikes before glass — a hazard reads faster than an absence |
 | III · GLASS | 8 + trial + boss | ends on glass + spikes |
 | IV · CRATES | 10 + trial + boss | ends on crate + glass + spikes |
@@ -149,24 +149,25 @@ each. A landmark must not be able to break a save.
 
 **SECTION I IS THE OWNER'S OWN, AND IT IS THE ANSWER TO "ARE THESE AI MADE?"**
 The opening was re-cut around eleven hand-authored levels. It runs
-`00 — First Steps, 00 — First Fold` (the tutorial), then `01 … 05,
-TRIAL I, 06, 07, 08, 09, 10, 11` and the boss. Each one is a sentence, and no
+`00 — First Steps, 00 — First Fold` (the tutorial), then `01 … 06,
+TRIAL I, 07, 08, 09, 10, 11, 12` and the boss. Each one is a sentence, and no
 two sentences are the same:
 
 | | |
 |---|---|
 | `00 — First Steps` | walking, stepping up, stepping down. No fold route exists through the geometry at all, so the lesson cannot be short-circuited even before `lockFlat` refuses the verb. |
 | `00 — First Fold` | fold, cross, stand up — **and the landing rule for free**: the far bank is three deep in one silhouette column, so you come back on the front block and the goal is one step behind it. |
-| `01 — Beware of Walls` | some squares are lethal to fold from. 4 of 9, including the start square. |
-| `02 — A Real Challenge` | the same, hardened: 6 of 8, and the only safe square is one you step *down* onto. |
-| `03 — The Illusion` | the plane is a shortcut, not a delivery — pop partway and walk the rest. |
-| `04 — The Block` | the plane has no preferred direction; the goal is behind you and above you. |
-| `05 — Limited` | the peril lesson at its limit: 8 of 9 squares are lethal to fold from, and the survivor is one you have to *climb* to. |
-| `06 — The Rotation` | **impossible without rotating**, proved by `solve()` both ways — and taught, so the player proves it too. |
-| `07 / 08 — No Bridge / No Bridge 2` | the same three moves conjugated: `rot+` and `rot-`. |
-| `09 — Simple Walk` | walking *is* par. The control half of the scoring pair. |
-| `10 — Not a Simple Walk` | one column wider, so walking is one move over and the fold is the shortcut. The star is the only thing that says you missed it. |
-| `11 — The Silence Before the Storm` | everything at once, into the boss. |
+| `01 — On Your Own` | the tutorial's own shape one step longer, and the only level in the opening where nothing can kill you. The rest the section did not have. |
+| `02 — Beware of Walls` | some squares are lethal to fold from. 4 of 9, including the start square. |
+| `03 — A Real Challenge` | the same, hardened: 6 of 8, and the only safe square is one you step *down* onto. |
+| `04 — The Illusion` | the plane is a shortcut, not a delivery — pop partway and walk the rest. |
+| `05 — The Block` | the plane has no preferred direction; the goal is behind you and above you. |
+| `06 — Limited` | the peril lesson at its limit: 8 of 9 squares are lethal to fold from, and the survivor is one you have to *climb* to. |
+| `07 — The Rotation` | **impossible without rotating**, proved by `solve()` both ways — and taught, so the player proves it too. |
+| `08 / 09 — No Bridge / No Bridge 2` | the same three moves conjugated: `rot+` and `rot-`. |
+| `10 — Simple Walk` | walking *is* par. The control half of the scoring pair. |
+| `11 — Not a Simple Walk` | one column wider, so walking is one move over and the fold is the shortcut. The star is the only thing that says you missed it. |
+| `12 — The Silence Before the Storm` | everything at once, into the boss. |
 
 - **ROTATION DOES NOT EXIST UNTIL `05`.** Every level before it carries
   `rotate:false`, including `TRIAL I` — checked leg by leg with the solver
@@ -179,13 +180,13 @@ two sentences are the same:
   back the moment you stand up. A level with no turn is a different sentence,
   and eight levels of dead controls in the bar would spend the reveal in
   advance. `body.norot`, set in `syncHud`.
-- **THE SCORING PAIR IS A SETUP AND A PUNCHLINE.** `09` is trivial on
+- **THE SCORING PAIR IS A SETUP AND A PUNCHLINE.** `10` is trivial on
   purpose — the floor is open and walking is exactly optimal — and it is the
   level `starsOffer()` explains three stars on. The player is told to aim for
-  them, gets them free, and then meets `10`, which looks identical, is one
+  them, gets them free, and then meets `11`, which looks identical, is one
   column wider, and where walking scores 4 against a par of 3. Testers ignore
   the star system because nothing ever points at it; this is the pointing.
-- **`06` IS THE THIRD TUTORIAL, AND ITS LESSON IS A PROOF THE PLAYER
+- **`07` IS THE THIRD TUTORIAL, AND ITS LESSON IS A PROOF THE PLAYER
   PERFORMS.** A card saying "this one needs the other axis" is a claim;
   folding, standing up and finding the world exactly where you left it is a
   demonstration. So the first two steps ask for the fold and the pop that do
@@ -209,12 +210,21 @@ two sentences are the same:
   (`Beware of walls`, `no catch here, just a simple walk`). Every one of them
   had already been live on the published link, so all twelve went through
   `LEVEL_RENAMES` rather than simply changing.
-- **The peril pair was verified, not assumed.** `01` and `02` add blocks at
+- **The peril pair was verified, not assumed.** `02` and `03` add blocks at
   head height that change no route at all — the optimal is the same as the
   level before — and turn four then six of the standable squares into places
   where `GO 2D` kills you. That is what makes them different levels rather
   than decoration, and it is the first time `foldPeril()`'s red block has a
   level built for it.
+- **SECTION II OPENS ON THE OWNER'S FIRE LEVELS TOO.** `13 — Fire Wall` is
+  fire as a *wall* — the middle column burns, only three squares are walkable
+  at all, and the stone pillar behind it is the way over, so the fire never
+  enters the route. `14 — Not This Way` is the other half: two blocks of it
+  poison every silhouette this view offers, and the level is **impossible
+  without rotating**. `15 — The Floor Is Lava` is the owner's title and the
+  measurement earns it — of nine standable squares, two crush you and six
+  burn you, which leaves one. The three they replaced went to the shelf as
+  `79..81`.
 - **The old opening is on the shelf, not deleted.** Thirteen levels moved to
   `V · EXTRA` and were renumbered `65..77` — two levels called `01` is a map
   with two nodes reading 01. That also fixes something the shelf needed: it

@@ -74,7 +74,24 @@ var LEVELS=[
      {say:"{do:3d} to stand up.<br>Three blocks share that column, and you come back on the one at <b>the front</b> — nearest you. The green square is one step behind it.",
       cue:"bFlat",done:function(c){return c.unflat>=1;}}
    ]},
-{name:"01 — Beware of Walls",
+{name:"01 — On Your Own",
+   hint:"The tutorial is over. Same fold, a little further.",
+   /* THE FIRST LEVEL WITH NO COACH, and it is deliberately the tutorial's own
+      shape one step longer: walk out, fold, cross, stand up, step up. Nothing
+      new is asked - `solve()` says eight moves, no rotation, and NOT ONE of
+      its nine standable squares is a place where folding kills you, which is
+      what makes it the rest the opening did not have.
+
+      It earns its place by being the level the peril pair is measured
+      against: `02` adds two blocks at head height and nothing else, so a
+      player who has just crossed this floor safely meets the same floor with
+      a reason to look up. */
+   blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[1,0,1],
+     [2,0,-1],[2,0,0],[2,0,1],[3,0,-3],[3,0,-4],[3,0,-5],
+     [4,0,-1],[4,0,0],[4,0,1],[5,0,-1],[5,0,0],[5,0,1],
+     [4,1,-1],[4,1,0],[4,1,1]],
+   start:[0,1,0],goal:[5,1,0],rotate:false},
+{name:"02 — Beware of Walls",
    hint:"Walls can kill you if you go 2D into them.",
    /* THE FIRST LEVEL WHERE FOLDING CAN KILL YOU, and the first the red
       warning was ever built for. Two blocks at head height - [0,1,-1] and
@@ -91,7 +108,7 @@ var LEVELS=[
      [2,0,-1],[2,0,0],[2,0,1],[4,0,1],[4,0,0],[4,0,-1],
      [3,0,-3],[3,0,-4],[3,0,-5],[2,1,-1],[0,1,-1]],
    start:[0,1,0],goal:[4,1,0],rotate:false},
-{name:"02 — A Real Challenge",
+{name:"03 — A Real Challenge",
    hint:"If you get stuck you can take a hint.",
    /* The same lesson hardened, which is what a section does after teaching
       one gently. Six of eight squares are lethal now and the stack at x=2
@@ -102,7 +119,7 @@ var LEVELS=[
      [4,0,1],[4,0,0],[4,0,-1],[3,0,-3],[3,0,-4],[3,0,-5],
      [1,0,1],[2,0,-1],[2,1,-1],[2,2,-1],[0,1,-1],[1,1,1]],
    start:[0,1,0],goal:[4,1,0],rotate:false},
-{name:"03 — The Illusion",
+{name:"04 — The Illusion",
    hint:"Use the eye to see where you are going to land out of the 2D world.",
    /* THE PLANE IS NOT A TELEPORT, and this is where that is said. Every
       level so far has folded, crossed the whole gap and stood up on the far
@@ -114,7 +131,7 @@ var LEVELS=[
      [3,0,-3],[3,0,-4],[3,0,-5],[1,0,1],[2,0,-1],
      [4,0,-5],[4,0,-4],[4,0,-3],[4,0,1],[4,0,0],[4,0,-1]],
    start:[0,1,0],goal:[4,1,-4],rotate:false},
-{name:"04 — The Block",
+{name:"05 — The Block",
    hint:"Sometimes you need to think outside the block.",
    /* THE FIRST LEVEL THAT GOES BACKWARDS. Everything before it crosses left
       to right, so the hand learns one direction; here the goal sits on a
@@ -136,7 +153,7 @@ var LEVELS=[
    Which is also why it could be moved here for free when the section grew.
    It used to sit after four levels; the four new gentle ones would have
    pushed it to ninth, so it came back to fifth, and no save noticed. */
-{name:"05 — Limited",
+{name:"06 — Limited",
    hint:"Combining things you learned.",
    /* THE PERIL LESSON AT ITS LIMIT, and it is the owner's level. Measured:
       8 of the 9 squares you can walk to are inside an occupied silhouette
@@ -188,7 +205,7 @@ var LEVELS=[
       moves to the three cores with the turn taken away, so the clock is the
       only thing making it hard. */
    start:[0,1,0],goal:[7,1,4],rotate:false},
-{name:"06 — The Rotation",
+{name:"07 — The Rotation",
    hint:"A new mechanic \u2014 rotation. You came a long way, and the options are now endless (not really endless, but you have more options).",
    /* THE ROTATION REVEAL, and it is a proof rather than an instruction.
       `solve()` says this level is IMPOSSIBLE with rotation locked - checked
@@ -242,7 +259,7 @@ var LEVELS=[
      {say:"So look down a different one. {do:turnr} — the world turns, and what lines up turns with it.",
       cue:"bRotR",free:true,done:function(c){return c.rot>=1;}}
    ]},
-{name:"07 — No Bridge",
+{name:"08 — No Bridge",
    hint:"Understand how the rotation we learned, combined with the eye, can help you solve this.",
    /* Rotation as a VERB rather than as a rescue. Three moves - turn, fold,
       stand up - and impossible without the turn, so the whole level is one
@@ -251,7 +268,7 @@ var LEVELS=[
    blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[2,0,0],[2,0,1],
      [1,0,1],[2,0,-1],[4,0,-1],[4,0,0],[4,0,1]],
    start:[0,1,0],goal:[4,1,0],rotate:true},
-{name:"08 — No Bridge 2",
+{name:"09 — No Bridge 2",
    hint:"Understand how the rotation we learned, combined with the eye, can help you solve this.",
    /* The mirror of the level before it: the bank is at x=-2 rather than x=4,
       so the answer is `rot-` where the last one was `rot+`. Both are three
@@ -262,7 +279,7 @@ var LEVELS=[
    blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[2,0,0],[2,0,1],
      [1,0,1],[2,0,-1],[-2,0,1],[-2,0,0],[-2,0,-1]],
    start:[0,1,0],goal:[-2,1,0],rotate:true},
-{name:"09 — Simple Walk",
+{name:"10 — Simple Walk",
    hint:"No catch here, just a simple walk.",
    /* THE FIRST HALF OF A PAIR ABOUT SCORING, and it is deliberately trivial.
       Nothing here is a puzzle: the floor is open, the goal is three steps
@@ -274,7 +291,7 @@ var LEVELS=[
    blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[1,0,1],
      [2,0,-1],[2,0,0],[2,0,1],[3,0,1],[3,0,0],[3,0,-1]],
    start:[0,1,0],goal:[3,1,0],rotate:true,stars:true},
-{name:"10 — Not a Simple Walk",
+{name:"11 — Not a Simple Walk",
    hint:"Try to solve this level with 3 stars.",
    /* AND THE TWIST: one column wider, so walking is four and par is three.
       `rot+ FLAT POP` crosses the whole board, because in the plane the near
@@ -290,7 +307,7 @@ var LEVELS=[
      [2,0,-1],[2,0,0],[2,0,1],[3,0,1],[3,0,0],[3,0,-1],
      [4,0,1],[4,0,0],[4,0,-1]],
    start:[0,1,0],goal:[4,1,0],rotate:true,stars:true},
-{name:"11 — The Silence Before the Storm",
+{name:"12 — The Silence Before the Storm",
    hint:"Combine what you learned to solve this. I believe in you.",
    /* THE SAME PUZZLE IN THE OWNER'S IDIOM. This level's route was already
       the one the section wants to end on - fold, cross, stand up, TURN, fold
@@ -344,27 +361,40 @@ var LEVELS=[
        {at:[[8,1,5],[7,1,3]],step:870,aim:1020,say:"same ground — two of them"}]},
    blocks:box(0,8,0,0,0,6,[]),
    start:[1,1,1]},
-{name:"13 — Sharp",
-   hint:"Fire kills you underfoot. In the volume you simply walk around it.",
-   /* [0,0,1] IS THERE SO THE PLAYER CAN BURN. The fire sat in a row the
-      player could not reach on foot, so the only way to meet it was to fold
-      into its column - which is the section's second lesson, not its first.
-      One block puts the start pad next to the fire row: step forward, step
-      left, and the piece introduces itself the way a hazard should.
-
-      It changes nothing else. The solution is the same six moves it always
-      was (FLAT ← ← ← ← POP), so the fold shortcut is intact and the block
-      is a door rather than a path. */
-   blocks:[[0,0,0],[0,0,1],[-4,0,1],[-3,0,1],[-2,0,1],[-1,0,1,4],[-1,1,-1]],
-   start:[0,1,0],goal:[-4,1,1],rotate:true},
-{name:"14 — Cast a Shadow",
-   hint:"It was nowhere near you. Then you folded.",
-   blocks:[[0,0,0],[0,2,1],[1,1,0],[1,1,1,4]],
-   start:[0,1,0],goal:[0,3,1],rotate:true},
-{name:"15 — Poisoned Column",
-   hint:"One spike ruins the whole line it lands in. Fold from elsewhere.",
-   blocks:[[0,0,0],[-4,1,1],[-3,0,1],[-2,0,1],[-1,0,1,4]],
-   start:[0,1,0],goal:[-2,1,1],rotate:true},
+{name:"13 — Fire Wall",
+   hint:"Fire is solid. You will not walk through it.",
+   /* FIRE AS A WALL, WHICH IS THE HALF OF IT A PLAYER MEETS FIRST. The whole
+      middle column burns, so there are only three squares on this board you
+      can walk to at all - and the stone pillar standing behind the fire is
+      the way over: fold, and it is simply next to you. The fire never enters
+      the route, which is the point of opening with it. */
+   blocks:[[0,0,-1],[0,0,0],[0,0,1],[2,0,1],[2,0,0],[2,0,-1],
+     [1,0,-1,4],[1,0,0,4],[1,0,1,4],[1,0,-2],[1,1,-2]],
+   start:[0,1,0],goal:[2,1,0],rotate:false},
+{name:"14 — Not This Way",
+   hint:"The fire is in your line. Turn, and pick another one.",
+   /* AND THE OTHER HALF: fire that is nowhere near you until you fold. Two
+      blocks of it, one behind and one far down the axis, and between them
+      they poison every silhouette this view offers - `solve()` says the level
+      is IMPOSSIBLE without rotating, checked both ways. The answer to "the
+      fire is in my column" is a different column. */
+   blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[1,0,1],
+     [2,0,1],[2,0,0],[2,0,-1],[-1,0,0,4],[3,0,-3,4],
+     [4,0,-1],[4,0,0],[4,0,1]],
+   start:[0,1,0],goal:[4,1,0],rotate:true},
+{name:"15 — The Floor Is Lava",
+   hint:"Almost nowhere here is safe to fold from.",
+   /* THE OWNER'S TITLE AND THE OWNER'S LEVEL, and the measurement earns it:
+      of the nine squares you can stand on, two crush you when you fold and
+      six burn you, which leaves one. It is the fire section's answer to
+      `06 — Limited` - the same "find the one square" pressure, made of the
+      piece this section teaches rather than of walls. Impossible without
+      rotating. */
+   blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[1,0,1],
+     [2,0,1],[2,0,0],[2,0,-1],[4,0,-1],[4,0,0],[4,0,1],
+     [-1,0,-1,4],[-1,0,0,4],[-1,0,1,4],
+     [0,0,-2,4],[1,0,-2,4],[2,0,-2,4],[1,1,0],[4,1,0]],
+   start:[0,1,0],goal:[4,1,-1],rotate:true},
 {name:"16 — Check Behind",
    hint:"Look along the axis before you commit to it.",
    blocks:[[0,0,0],[3,3,-2,4],[-2,0,0],[-2,0,1],[-4,1,2],[-2,1,2],[-5,0,1,4]],
@@ -602,6 +632,27 @@ var LEVELS=[
       the reveal was answering, asked once, with nothing else in the way. */
    blocks:[[0,0,0],[1,0,0],[2,0,0],[3,0,0],[3,0,-2]],
    start:[0,1,0],goal:[3,1,-2],rotate:true},
+{name:"79 — Sharp",
+   hint:"Fire kills you underfoot. In the volume you simply walk around it.",
+   /* [0,0,1] IS THERE SO THE PLAYER CAN BURN. The fire sat in a row the
+      player could not reach on foot, so the only way to meet it was to fold
+      into its column - which is the section's second lesson, not its first.
+      One block puts the start pad next to the fire row: step forward, step
+      left, and the piece introduces itself the way a hazard should.
+
+      It changes nothing else. The solution is the same six moves it always
+      was (FLAT ← ← ← ← POP), so the fold shortcut is intact and the block
+      is a door rather than a path. */
+   blocks:[[0,0,0],[0,0,1],[-4,0,1],[-3,0,1],[-2,0,1],[-1,0,1,4],[-1,1,-1]],
+   start:[0,1,0],goal:[-4,1,1],rotate:true},
+{name:"80 — Cast a Shadow",
+   hint:"It was nowhere near you. Then you folded.",
+   blocks:[[0,0,0],[0,2,1],[1,1,0],[1,1,1,4]],
+   start:[0,1,0],goal:[0,3,1],rotate:true},
+{name:"81 — Poisoned Column",
+   hint:"One spike ruins the whole line it lands in. Fold from elsewhere.",
+   blocks:[[0,0,0],[-4,1,1],[-3,0,1],[-2,0,1],[-1,0,1,4]],
+   start:[0,1,0],goal:[-2,1,1],rotate:true},
 {name:"65 — Scattered Steps",
    /* Six blocks at six unrelated depths. Flat, they are a staircase — which
       is the tutorial's lesson again, but with the answer no longer written
@@ -836,6 +887,7 @@ var LEVELS=[
 
 
 
+
 ];
 
 /* Section markers hold array indices, so inserting a level means shifting
@@ -906,7 +958,7 @@ var SECTIONS=[
           stars:{n:46, col:0xdfe9ff, seed:19},
           air:{col:0xcfe08e, n:18, rise:-.10, drift:.16, size:.085,
                kind:"leaf"}}},
-  {at:15, name:"II · SPIKES", sub:"a hazard you cannot see until you fold", col:"#e0455f",
+  {at:16, name:"II · SPIKES", sub:"a hazard you cannot see until you fold", col:"#e0455f",
    story:"Some of what is down there did not survive being flattened.",
    /* HELL, and it is DARK hell rather than bright. This section teaches
       fire, and a glowing orange world swallows a fire block whole - that was
@@ -917,7 +969,7 @@ var SECTIONS=[
    theme:{sky:[0x1a0a10,0x3a0f0a], block:0xc8c8c8, surface:"basalt",
           scene:"hell", flare:17000, ink:0x24100e, amb:"fire",
           air:{col:0xff9a4a, n:24, rise:.20, drift:.07, size:.07}}},
-  {at:24, name:"III · GLASS", sub:"solid in the volume, absent from the plane", col:"#7fb2ff",
+  {at:25, name:"III · GLASS", sub:"solid in the volume, absent from the plane", col:"#7fb2ff",
    story:"Water casts nothing, so the plane holds no record of it.",
    /* THE SEA, AT SUNSET, and the sunset is not decoration. This section
       teaches water, and a blue world swallows a cyan water block whole -
@@ -943,7 +995,7 @@ var SECTIONS=[
      amber either - that one is a saturated #e0a03c, and this is a washed
      tan two steps away from it. The node shapes are what tell those apart
      anyway; the colour only has to not confuse them. */
-  {at:34, name:"IV · CRATES", sub:"change the plane by moving the volume", col:"#d9bd83",
+  {at:35, name:"IV · CRATES", sub:"change the plane by moving the volume", col:"#d9bd83",
    story:"You can edit what they see. That is the one thing they cannot do.",
    /* THE DESERT AT NOON. Grains blowing sideways rather than rising, which
       is both what sand does and what this section is about - pushing things
@@ -952,7 +1004,7 @@ var SECTIONS=[
    theme:{sky:[0x3d3a52,0x7a5c33], block:0x9a8a68, scene:"desert",
           ink:0x2a2114, amb:"wind",
           air:{col:0xf0dcae, n:26, rise:.02, drift:.34, size:.055}}},
-  {at:46, name:"V · EXTRA", sub:"unlocked by the Census — the long ones", col:"#3fc4d4", locked:true,
+  {at:47, name:"V · EXTRA", sub:"unlocked by the Census — the long ones", col:"#3fc4d4", locked:true,
    story:"The parts of the world that were never counted.",
    /* NOCTURNE. Almost nothing moves out here, which is the point - it is
       the shelf past the last warden, where the counting stopped. */
@@ -968,30 +1020,49 @@ var SECTIONS=[
    so never rewrite this table, only extend it. Applied by migrateNames()
    in 06-persistence.js. */
 var LEVEL_RENAMES={
+  /* A new opening level pushed Section I along by one, and three of the
+     owner's fire levels took the front of Section II. Every name here has
+     been live on the published link. Applied as ONE pass rather than in
+     sequence: 01 -> 02 followed by 02 -> 03 composes into 01 -> 03, which
+     is the chain the invariant below exists to forbid. */
+  "01 — Beware of Walls":"02 — Beware of Walls",
+  "02 — A Real Challenge":"03 — A Real Challenge",
+  "03 — The Illusion":"04 — The Illusion",
+  "04 — The Block":"05 — The Block",
+  "05 — Limited":"06 — Limited",
+  "06 — The Rotation":"07 — The Rotation",
+  "07 — No Bridge":"08 — No Bridge",
+  "08 — No Bridge 2":"09 — No Bridge 2",
+  "09 — Simple Walk":"10 — Simple Walk",
+  "10 — Not a Simple Walk":"11 — Not a Simple Walk",
+  "11 — The Silence Before the Storm":"12 — The Silence Before the Storm",
+  "13 — Sharp":"79 — Sharp",
+  "14 — Cast a Shadow":"80 — Cast a Shadow",
+  "15 — Poisoned Column":"81 — Poisoned Column",
   /* Section I was retitled in the owner's own words - shorter, plainer,
      and speaking to the player rather than about the mechanic. Every one
      of these has been live on the published link, so they migrate. */
-  "01 — Not Every Square":"01 — Beware of Walls",
-  "02 — Step Down First":"02 — A Real Challenge",
-  "03 — Come Back Early":"03 — The Illusion",
-  "04 — The Way Back":"04 — The Block",
-  "05 — One Safe Square":"05 — Limited",
-  "06 — No Way From Here":"06 — The Rotation",
-  "07 — Turn One Way":"07 — No Bridge",
-  "08 — Turn the Other":"08 — No Bridge 2",
-  "09 — Four Across":"09 — Simple Walk",
-  "10 — Five Across":"10 — Not a Simple Walk",
-  "11 — Two Windows":"11 — The Silence Before the Storm",
+  "01 — Not Every Square":"02 — Beware of Walls",
+  "02 — Step Down First":"03 — A Real Challenge",
+  "03 — Come Back Early":"04 — The Illusion",
+  "04 — The Way Back":"05 — The Block",
+  "05 — One Safe Square":"06 — Limited",
+  "06 — No Way From Here":"07 — The Rotation",
+  "07 — Turn One Way":"08 — No Bridge",
+  "08 — Turn the Other":"09 — No Bridge 2",
+  "09 — Four Across":"10 — Simple Walk",
+  "10 — Five Across":"11 — Not a Simple Walk",
+  "11 — Two Windows":"12 — The Silence Before the Storm",
   "BOSS I — The Sighting":"BOSS I — Catch Me If You Can!",
   /* A rest level went in before the trial and a scoring pair before the
      boss, so the run after each of them shifted by one. These four have
      been live on the published link, so they migrate rather than simply
      change: composed as always, values re-pointed in the same pass. */
-  "05 — No Way From Here":"06 — The Rotation",
-  "06 — Turn One Way":"07 — No Bridge",
-  "07 — Turn the Other":"08 — No Bridge 2",
+  "05 — No Way From Here":"07 — The Rotation",
+  "06 — Turn One Way":"08 — No Bridge",
+  "07 — Turn the Other":"09 — No Bridge 2",
   "08 — The Same Column":"78 — The Same Column",
-  "09 — Two Windows":"11 — The Silence Before the Storm",
+  "09 — Two Windows":"12 — The Silence Before the Storm",
   "11 — Far Side":"76 — Far Side",
   "12 — Three Folds":"77 — Three Folds",
   /* THE OPENING WAS RE-CUT AROUND THE OWNER'S OWN LEVELS, and the run
@@ -1008,7 +1079,7 @@ var LEVEL_RENAMES={
   "04 — Halfway Across":"69 — Halfway Across",
   "02c — The Same Column":"78 — The Same Column",
   "03 — The Near One":"70 — The Near One",
-  "05 — Two Windows":"11 — The Silence Before the Storm",
+  "05 — Two Windows":"12 — The Silence Before the Storm",
   "06 — The Long Way Round":"71 — The Long Way Round",
   "07 — About Face":"72 — About Face",
   "08 — The Last Step":"73 — The Last Step",
@@ -1027,7 +1098,7 @@ var LEVEL_RENAMES={
  "BOSS III — Through Glass": "BOSS III — The Search",
  "BOSS IV — The Orthogon": "BOSS IV — The Census",
  "02 — Turn to see": "68 — Turn to see",
- "03 — Two Windows": "11 — The Silence Before the Storm",
+ "03 — Two Windows": "12 — The Silence Before the Storm",
  "04 — The Long Way Round": "71 — The Long Way Round",
  "05 — About Face": "72 — About Face",
  "06 — The Last Step": "73 — The Last Step",
@@ -1035,9 +1106,9 @@ var LEVEL_RENAMES={
  "08 — Fold After Climbing": "75 — Fold After Climbing",
  "09 — Far Side": "76 — Far Side",
  "10 — Three Folds": "77 — Three Folds",
- "18 — Sharp": "13 — Sharp",
- "19 — Cast a Shadow": "14 — Cast a Shadow",
- "20 — Poisoned Column": "15 — Poisoned Column",
+ "18 — Sharp": "79 — Sharp",
+ "19 — Cast a Shadow": "80 — Cast a Shadow",
+ "20 — Poisoned Column": "81 — Poisoned Column",
  "22 — Check Behind": "16 — Check Behind",
  "23 — Two Threats": "17 — Two Threats",
  "24 — Narrow Safety": "18 — Narrow Safety",
@@ -1080,9 +1151,9 @@ var LEVEL_RENAMES={
  "56 — The Far Shore": "62 — The Far Shore",
  "61 — Three Folds Deep": "63 — Three Folds Deep",
  "62 — Everything at Once": "64 — Everything at Once",
- "11 — Sharp": "13 — Sharp",
- "12 — Cast a Shadow": "14 — Cast a Shadow",
- "13 — Poisoned Column": "15 — Poisoned Column",
+ "11 — Sharp": "79 — Sharp",
+ "12 — Cast a Shadow": "80 — Cast a Shadow",
+ "13 — Poisoned Column": "81 — Poisoned Column",
  "14 — Check Behind": "16 — Check Behind",
  "15 — Two Threats": "17 — Two Threats",
  "16 — Narrow Safety": "18 — Narrow Safety",
@@ -1130,7 +1201,7 @@ var LEVEL_RENAMES={
  "58 — Absent Floor": "60 — Absent Floor",
  "59 — Twice Up": "61 — Twice Up",
  "60 — The Far Shore": "62 — The Far Shore",
- "04 — Two Windows": "11 — The Silence Before the Storm",
+ "04 — Two Windows": "12 — The Silence Before the Storm",
  "05 — The Long Way Round": "71 — The Long Way Round",
  "06 — About Face": "72 — About Face",
  "09 — The Last Step": "73 — The Last Step",
@@ -1143,9 +1214,9 @@ var LEVEL_RENAMES={
  "16 — Invisible Architecture": "24 — Invisible Architecture",
  "58 — Down and Around": "25 — Down and Around",
  "59 — Long Division": "26 — Long Division",
- "17 — Sharp": "13 — Sharp",
- "18 — Cast a Shadow": "14 — Cast a Shadow",
- "19 — Poisoned Column": "15 — Poisoned Column",
+ "17 — Sharp": "79 — Sharp",
+ "18 — Cast a Shadow": "80 — Cast a Shadow",
+ "19 — Poisoned Column": "81 — Poisoned Column",
  "38 — Two Dangers": "27 — Two Dangers",
  "20 — Check Behind": "16 — Check Behind",
  "21 — Two Threats": "17 — Two Threats",
@@ -1176,7 +1247,7 @@ var LEVEL_RENAMES={
  "62 — Three Folds Deep": "63 — Three Folds Deep",
  "63 — Everything at Once": "64 — Everything at Once",
  "01 — Turn to see": "68 — Turn to see",
- "02 — Two Windows": "11 — The Silence Before the Storm",
+ "02 — Two Windows": "12 — The Silence Before the Storm",
  "03 — The Long Way Round": "71 — The Long Way Round",
  "04 — About Face": "72 — About Face",
  "05 — The Last Step": "73 — The Last Step",
@@ -1184,9 +1255,9 @@ var LEVEL_RENAMES={
  "07 — Fold After Climbing": "75 — Fold After Climbing",
  "08 — Far Side": "76 — Far Side",
  "09 — Three Folds": "77 — Three Folds",
- "10 — Sharp": "13 — Sharp",
- "11 — Cast a Shadow": "14 — Cast a Shadow",
- "12 — Poisoned Column": "15 — Poisoned Column",
+ "10 — Sharp": "79 — Sharp",
+ "11 — Cast a Shadow": "80 — Cast a Shadow",
+ "12 — Poisoned Column": "81 — Poisoned Column",
  "13 — Check Behind": "16 — Check Behind",
  "14 — Two Threats": "17 — Two Threats",
  "15 — Narrow Safety": "18 — Narrow Safety",
@@ -1238,16 +1309,16 @@ var LEVEL_RENAMES={
  "61 — Everything at Once": "64 — Everything at Once",
  "04 — Turn to see": "68 — Turn to see",
  "05 — Halfway Across": "69 — Halfway Across",
- "06 — Two Windows": "11 — The Silence Before the Storm",
+ "06 — Two Windows": "12 — The Silence Before the Storm",
  "07 — The Long Way Round": "71 — The Long Way Round",
  "08 — About Face": "72 — About Face",
  "10 — Six Across": "74 — Six Across",
  "11 — Fold After Climbing": "75 — Fold After Climbing",
  "12 — Far Side": "76 — Far Side",
  "13 — Three Folds": "77 — Three Folds",
- "14 — Sharp": "13 — Sharp",
- "15 — Cast a Shadow": "14 — Cast a Shadow",
- "16 — Poisoned Column": "15 — Poisoned Column",
+ "14 — Sharp": "79 — Sharp",
+ "15 — Cast a Shadow": "80 — Cast a Shadow",
+ "16 — Poisoned Column": "81 — Poisoned Column",
  "17 — Check Behind": "16 — Check Behind",
  "18 — Two Threats": "17 — Two Threats",
  "19 — Narrow Safety": "18 — Narrow Safety",
