@@ -140,6 +140,37 @@ function paperIsLight(){
   if(typeof colPaper==="undefined"||!colPaper)return true;
   return (colPaper.r*.2126+colPaper.g*.7152+colPaper.b*.0722)>.55;
 }
+/* THE LIVE STARS, AND THE ONE THAT FALLS OFF.
+
+   Most people solve a level and never notice they scored two - the row used
+   to be three small green characters that quietly became two, which is a
+   thing you can only see by having looked a moment earlier. So the star that
+   is lost is *seen to leave*: the hollow one is always there underneath and
+   the gold one on top of it drops off the row and fades, with a small sound
+   under it. After the animation the slot is simply hollow, which is the same
+   picture the drop left behind.
+
+   `starsLive` is what the row said last time, so the fall fires exactly on
+   the move that costs the star rather than on every redraw after it; the
+   timeout clears the mark and re-draws so a later redraw does not replay it. */
+var starsLive=3, starFell=-1, starFellT=null;
+function liveStarRow(st){
+  if(st>starsLive){starsLive=st;starFell=-1;}      // a reset, or a fresh level
+  else if(st<starsLive){
+    starFell=st;starsLive=st;
+    if(SFX.starLost)SFX.starLost();
+    clearTimeout(starFellT);
+    starFellT=setTimeout(function(){starFell=-1;syncHud();},700);
+  }
+  var s="";
+  for(var i=0;i<3;i++){
+    s+="<u class='sl'><i class='ho'>\u2606</i>";
+    if(i<st)s+="<i class='fi'>\u2605</i>";
+    else if(i===starFell)s+="<i class='fi fall'>\u2605</i>";
+    s+="</u>";
+  }
+  return "<div class='stars'>"+s+"</div>";
+}
 function syncHud(){
   /* THE CHROME FOLLOWS THE GROUND, NOT THE STATE. body.flat swaps the HUD to
      dark-on-light, which was right when the plane was a sheet of paper and
@@ -169,15 +200,14 @@ function syncHud(){
   ["bHint","bLook","bMenu","bWard","bRestart"].forEach(function(id){
     var el=$(id); if(el)el.style.display=inPlay?"flex":"none";
   });
-  /* NOT DURING A FIGHT. On a boss or a trial the score is the row of lives at
-     the top of the screen - the move label already refuses to show stars here
-     for exactly that reason - and the total cannot change until the level is
-     over, so it is a third scoreboard saying nothing. It is also the thing
-     that was covering the cores row on a small phone: the pill grows
-     leftwards as the number gets longer, and at three digits it reached the
-     middle of the screen. It comes back the moment the level is won, because
-     that is when it is news and when the win card's stars have to fly to it. */
-  $("starTotal").classList.toggle("on",inPlay&&(!(B||TR)||levelDone));
+  /* THE BANK IS NOT SHOWN INSIDE A LEVEL. How many stars you have collected
+     across the whole game cannot change while you are playing one, and it is
+     not what you are thinking about - the row under the move count is. It
+     was also the thing covering the cores row on a small phone: the pill
+     grows leftwards as the number gets longer. It appears the moment the
+     level is won, because that is when it is news and when the win card's
+     stars have to have somewhere to fly to. */
+  $("starTotal").classList.toggle("on",inPlay&&levelDone);
   syncHintN();
   syncStarTotal();
   syncBossBar();
@@ -236,21 +266,21 @@ function syncHud(){
     app==="play"&&!!L&&L.rotate===false);
   if(app==="play"&&L&&L.tutorial){
     // No par, no stars: this level is teaching, not marking.
-    $("moveLabel").innerHTML="<b>"+moveCount+"</b> moves";
+    $("moveLabel").innerHTML="<b>"+moveCount+"</b>";
   } else if(app==="play"&&(B||TR)){
     // On a clock: the score is the row of lives at the top of the screen, so
-    // showing three stars beside a move count here would be a second, wrong
-    // answer to the same question.
-    $("moveLabel").innerHTML="<b>"+moveCount+"</b> moves";
+    // a row of stars beside the move count would be a second, wrong answer
+    // to the same question.
+    $("moveLabel").innerHTML="<b>"+moveCount+"</b>";
   } else if(app==="play"){
-    /* JUST THE MOVES. It used to read "7 / 5" with a live row of stars under
-       it - your count against par, falling from three to two to one as you
-       went. Two things were wrong with it: par is the solver's answer, so
-       putting it on screen hands over how long the level is, and a score
-       that ticks DOWN while you are still thinking is a scold. The stars are
-       the win card's job now, where they arrive as a reward rather than sit
-       there as a countdown. */
-    $("moveLabel").innerHTML="<b>"+moveCount+"</b> moves";
+    /* THE NUMBER AND THE STARS YOU ARE STILL ON. Not "7 / 5": par is the
+       solver's answer and printing it hands over how long the level is. What
+       the row says instead is what you have left to lose, which is the same
+       information from the player's side - and it is drawn rather than
+       counted, so it can be glanced at mid-move. */
+    $("moveLabel").innerHTML="<b>"+moveCount+"</b>"+
+      liveStarRow((levelPar===null||moveCount===0)?3
+                  :starsFor(moveCount,levelPar));
   } else $("moveLabel").innerHTML="";
   tutSync();
 }

@@ -1139,6 +1139,22 @@ loses its cap**, which is the honest drawing of one that will not answer.
   filled primary, a filled blue ad button, and a quiet outline. One outlined
   rectangle per option made every option look identical, which is the
   opposite of what a card with a recommended action wants.
+- **THE ICONS ARE DRAWN, NOT OUTLINED.** Every glyph in the corners and on
+  the bar used to be a 1.7px hairline path, which at 19px on a dark ground is
+  a *diagram* of a thing rather than the thing — reported, after the skin
+  landed, as buttons that look better but icons that do not feel alive. They
+  are solid shapes now with a second tone in them: a body in the button's own
+  hue, `.lite` where the object catches light, `.dim` where it turns away,
+  `.ln` for the stroked half (an arc, a hook), and a knocked-out hole for the
+  eye's pupil. The d-pad's `&#9650;` and the turn buttons' `&#8630;` were text
+  glyphs a font draws about eight pixels across in the middle of a 58px cap —
+  **which is why the turn buttons were reported as missing** — and are solid
+  SVG arrowheads and circular arrows now.
+- **`.ln`, not `.st`, and that is the third time.** `.st` was already the gold
+  star in a shop price, so an icon path carrying it came out stroked in
+  `--star`. Check any new class name against what is already in
+  `css/style.css` — see `.mboss`/`.boss` on the map and `.home`/`.athome` on
+  the home screen.
 - **Every ad button carries the video mark** (`adIcon()` in `js/18-ui.js`) —
   a play sign in a screen, which is the drawing everybody already reads as
   "this plays a video". One helper rather than five copies, because there are
@@ -3048,12 +3064,26 @@ know before touching it:
   with its own sound (`SFX.drop`, a triad climbing so three of them is a
   chord), and an empty one falls too but grey and silent. The CSS delays and
   the sound timers are written against each other and have to move together.
-- **The HUD shows the move count and nothing else.** It used to read `7 / 5`
-  with a live row of stars under it, falling from three to two as you played.
-  Par is the solver's answer, so putting it on screen hands over how long the
-  level is; and a score that ticks *down* while somebody is still thinking is
-  a scold. The stars are the win card's job, where they are a reward rather
-  than a countdown.
+- **The HUD is the move count and the stars you are still on.** It used to
+  read `7 / 5` — your count against par — and par is the solver's answer, so
+  printing it hands over how long the level is. The number is alone now, and
+  large, with the live row under it: what you have left to lose is the same
+  information from the player's side, and it is drawn rather than counted so
+  it can be read mid-move.
+- **A LOST STAR IS SEEN TO LEAVE.** Two glyphs per slot, one on top of the
+  other: the hollow star is the socket and the gold one sits in it, so losing
+  one is the gold star *falling out* of a socket that stays — it tumbles off
+  the row, fades, and two soft descending notes go with it (`SFX.starLost`).
+  The old row simply became two characters instead of three, which is a
+  change you can only notice by having looked a moment earlier, and most
+  people never did. `starsLive` in `js/18-ui.js` is what the row said last
+  time, so the fall fires on the move that costs the star rather than on
+  every redraw after it.
+- **The star BANK is not shown inside a level.** How many you have collected
+  across the whole game cannot change while you are playing one and is not
+  what anybody is thinking about; the row under the move count is. It appears
+  on `levelDone`, because that is when it is news and when the win card's
+  stars need somewhere to fly to.
 - **Stars.** 3★ = the solver's own move count, 2★ ≤ 150%, 1★ ≤ 200%
   (`STAR_2X` / `STAR_1X` in `js/07-difficulty.js`). Par is
   optimal, so 3★ genuinely means optimal — that half has never moved. The

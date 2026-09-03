@@ -13,24 +13,45 @@
 </head>
 <body>
 
+<!-- THE ICONS ARE DRAWN, NOT OUTLINED. Every one of these used to be a
+     1.7px hairline path, which at 19px on a dark ground is a diagram of the
+     thing rather than the thing - reported as not feeling alive. They are
+     solid shapes now with a second tone in them: a body in the button's own
+     hue, a lighter accent where the object would catch light, and a hole
+     where it would be dark. `.ln` is the stroked half, `.lite` the
+     highlight, `.dim` the receding half. -->
 <div class="corner tl">
   <button class="rnd" id="bMenu" aria-label="Menu"><svg viewBox="0 0 24 24">
-    <path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <rect x="3.4" y="5.2" width="17.2" height="3" rx="1.5"/>
+    <rect class="dim" x="3.4" y="10.5" width="17.2" height="3" rx="1.5"/>
+    <rect x="3.4" y="15.8" width="17.2" height="3" rx="1.5"/></svg></button>
   <button class="rnd" id="bWard" aria-label="Wardrobe"><svg viewBox="0 0 24 24">
-    <path d="M12 5.5a1.7 1.7 0 1 1 1.7 1.7c-.9 0-1.7.6-1.7 1.6v.9"/>
-    <path d="M12 9.7 4 15.4c-.9.6-.5 2 .6 2h14.8c1.1 0 1.5-1.4.6-2L12 9.7z"/></svg></button>
+    <path class="ln" d="M12 10.2V9c0-1 .7-1.6 1.5-2a1.9 1.9 0 1 0-2.7-1.7"
+      stroke-width="2.1"/>
+    <path d="M12.7 10.1h-1.4l-7.6 5.3c-1.6 1.1-.8 3.6 1.1 3.6h14.4c1.9 0 2.7-2.5
+      1.1-3.6l-7.6-5.3Z"/>
+    <path class="lite" d="M12 12.1 6.2 16.2c-.5.4-.3 1 .3 1h11c.6 0 .8-.6.3-1L12
+      12.1Z"/></svg></button>
   <!-- The count rides the bulb, because a pool nobody can see is a pool
        nobody will spend. Written by syncHud(). -->
   <button class="rnd" id="bHint" aria-label="Hint"><svg viewBox="0 0 24 24">
-    <path d="M9 18h6M10 21h4"/>
-    <path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1.1 2h5c.1-.8.5-1.5 1.1-2A6 6 0 0 0 12 3z"/></svg><b class="hn" id="hintN"></b></button>
+    <path d="M12 2.4a6.6 6.6 0 0 0-4 11.8c.5.4.9 1 1 1.7h6c.1-.7.5-1.3
+      1-1.7A6.6 6.6 0 0 0 12 2.4Z"/>
+    <rect x="8.9" y="17.1" width="6.2" height="2.2" rx="1.1"/>
+    <rect class="dim" x="10.1" y="20.2" width="3.8" height="2" rx="1"/>
+    <path class="ln lite" d="M9.6 7.9a3.6 3.6 0 0 1 2.6-1.7" stroke-width="1.7"/>
+    </svg><b class="hn" id="hintN"></b></button>
 </div>
 <div class="corner tr">
   <button class="rnd" id="bRestart" aria-label="Restart level"><svg viewBox="0 0 24 24">
-    <path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/></svg></button>
+    <path class="ln" d="M19.6 12a7.6 7.6 0 1 1-2.3-5.4" stroke-width="2.8"/>
+    <path d="M20.6 3.5v6.1a.6.6 0 0 1-.7.6l-5.7-.6c-.6-.1-.8-.8-.3-1.2l5.7-5.4
+      c.4-.4 1-.1 1 .5Z"/></svg></button>
   <button class="rnd" id="bLook" aria-label="Look around"><svg viewBox="0 0 24 24">
-    <path d="M2 12s3.8-6 10-6 10 6 10 6-3.8 6-10 6-10-6-10-6z"/>
-    <circle cx="12" cy="12" r="2.6"/></svg></button>
+    <path fill-rule="evenodd" d="M12 5.1C5.9 5.1 2.1 10.5 2.1 12s3.8 6.9 9.9
+      6.9 9.9-5.4 9.9-6.9-3.8-6.9-9.9-6.9Zm0 3.3a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0
+      0 0 0-7.2Z"/>
+    <circle class="lite" cx="13.6" cy="10.5" r="1.15"/></svg></button>
 </div>
 <!-- Deliberately outside .corner: stars land here from the win screen, which
      is a full-bleed overlay above it, so this needs its own stacking context
@@ -146,14 +167,29 @@
 <div class="bar on" id="playBarWrap">
   <div id="playBar" class="on">
     <div class="dpad">
-      <span></span><button id="bUp">&#9650;</button><span></span>
-      <button id="bLeft">&#9664;</button><span></span><button id="bRight">&#9654;</button>
-      <span></span><button id="bDown">&#9660;</button><span></span>
+      <span></span><button id="bUp"><svg class="ar" viewBox="0 0 24 24">
+        <path d="M12 6.4 19.2 17H4.8Z"/></svg></button><span></span>
+      <button id="bLeft"><svg class="ar" viewBox="0 0 24 24">
+        <path d="M6.4 12 17 4.8v14.4Z"/></svg></button><span></span>
+      <button id="bRight"><svg class="ar" viewBox="0 0 24 24">
+        <path d="M17.6 12 7 19.2V4.8Z"/></svg></button>
+      <span></span><button id="bDown"><svg class="ar" viewBox="0 0 24 24">
+        <path d="M12 17.6 4.8 7h14.4Z"/></svg></button><span></span>
     </div>
     <div class="rcol">
       <div class="rot">
-        <button id="bRotL">&#8630;</button>
-        <button id="bRotR">&#8631;</button>
+        <!-- A TURN IS DRAWN AS A TURN. These were &#8630; and &#8631; - two
+             text glyphs a font renders as hairlines about eight pixels
+             across, sitting in the middle of a 58px cap, which is why they
+             read as empty boxes and got reported as missing buttons. -->
+        <button id="bRotL"><svg class="ar tn" viewBox="0 0 24 24">
+          <path class="ln" d="M4.6 12.6a7.6 7.6 0 1 1 2.7 5.5" stroke-width="2.9"/>
+          <path d="M3.4 4.4v6.1c0 .4.3.7.7.6l5.8-.6c.6-.1.8-.8.3-1.2L4.5 3.9
+            c-.5-.4-1.1-.1-1.1.5Z"/></svg></button>
+        <button id="bRotR"><svg class="ar tn" viewBox="0 0 24 24">
+          <path class="ln" d="M19.4 12.6a7.6 7.6 0 1 0-2.7 5.5" stroke-width="2.9"/>
+          <path d="M20.6 4.4v6.1c0 .4-.3.7-.7.6l-5.8-.6c-.6-.1-.8-.8-.3-1.2l5.7-5.4
+            c.5-.4 1.1-.1 1.1.5Z"/></svg></button>
       </div>
       <button class="flatbtn" id="bFlat">FLATTEN</button>
     </div>

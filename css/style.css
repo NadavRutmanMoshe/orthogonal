@@ -138,14 +138,50 @@
   #bHint.has .hn{display:flex}
   #bHint.out{opacity:.62}
   #bHint.out .hn{background:var(--fg-dim);color:var(--void)}
-  button.rnd svg{width:19px;height:19px;fill:none;stroke:currentColor;
-    stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  /* Solid by default, and the three helper classes are what give an icon a
+     second tone: `.ln` is the stroked half of a shape (an arc, a hook),
+     `.lite` is the light catching it, `.dim` the part turning away. */
+  button.rnd svg{width:23px;height:23px;fill:currentColor;stroke:none}
+  /* `.ln`, not `.st`: `.st` is already the gold star in a shop price, and an
+     icon path carrying it came out stroked in `--star`. Check any new class
+     name against the ones already in this file - this is the third time
+     (see .mboss/.boss and .home/.athome). */
+  button svg .ln{fill:none;stroke:currentColor;stroke-linecap:round;
+    stroke-linejoin:round}
+  button svg .lite{fill:#fff;opacity:.62;stroke:#fff}
+  button svg .dim{opacity:.48}
+  /* The bar's own icons: solid arrowheads with rounded corners, which is the
+     stroke doing the rounding rather than a dozen curve segments. */
+  .bar button svg.ar{width:22px;height:22px;fill:currentColor;
+    stroke:currentColor;stroke-width:2.6;stroke-linejoin:round}
+  .bar button svg.tn{width:24px;height:24px}
+  .bar button svg.tn .ln{stroke-width:2.9}
   /* Its panel is open: the button takes the player's own colour rather than
      its own, so "this is the thing you are inside" reads the same on all of
      them. One property, and the fill, the rim and the lip follow. */
   button.rnd.on{--c:var(--player)}
-  .stars{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;
-    letter-spacing:2px;color:var(--star);margin-top:2px}
+  /* THE LIVE ROW. Two glyphs per slot, one on top of the other: the hollow
+     star is the socket and the gold one sits in it, so losing a star is the
+     gold one falling out of a socket that stays. Bigger than the old row -
+     it is the only score on screen now - and right-aligned under the number.
+     See liveStarRow() in js/18-ui.js. */
+  .stars{display:flex;gap:5px;justify-content:flex-end;margin-top:4px}
+  .stars .sl{position:relative;display:block;width:19px;height:19px;
+    text-decoration:none}
+  .stars i{position:absolute;inset:0;font-style:normal;font-size:18px;
+    line-height:19px;text-align:center}
+  .stars .ho{color:var(--rule)}
+  .stars .fi{color:var(--star);text-shadow:0 0 9px var(--star-glow)}
+  .stars .fi.fall{animation:stfall .66s cubic-bezier(.35,0,.75,1) forwards}
+  @keyframes stfall{
+    0%  {transform:translateY(0) rotate(0);opacity:1}
+    18% {transform:translateY(-5px) rotate(-9deg);opacity:1}
+    100%{transform:translateY(34px) rotate(46deg);opacity:0}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .stars .fi.fall{animation:stfade .4s linear forwards}
+    @keyframes stfade{to{opacity:0}}
+  }
   /* Peek is latched: held down, so it is drawn held down. */
   button.held{--c:var(--goal);transform:translateY(3px);
     box-shadow:0 0 0 var(--lip)}
@@ -153,7 +189,11 @@
   .moves{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
     letter-spacing:.12em;color:var(--fg-dim);margin-top:3px;
     transition:color .5s ease}
-  .moves b{color:var(--fg);font-weight:500}
+  /* The count is on its own now - no par beside it and no word after it -
+     so it is sized to be read at a glance rather than to sit quietly next to
+     something else. */
+  .moves b{color:var(--fg);font-weight:600;font-size:17px;line-height:1.1;
+    font-variant-numeric:tabular-nums;display:block;text-align:right}
   .par{color:var(--goal)}
   /* The verb the whole game is built on, so it is the biggest, fullest thing
      on the bar and it wears the player's own colour. */

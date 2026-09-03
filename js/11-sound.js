@@ -963,6 +963,13 @@ var SFX={
      the ping is what makes it read as something with weight hitting the
      card rather than as a chime. Climbs a triad, so three of them is a
      chord arriving one note at a time. */
+  /* A star coming off the row. Quiet and downward - it fires while the player
+     is mid-level and mid-thought, so it has to be noticeable without being a
+     punishment: two soft notes falling, no thump under them. */
+  starLost:function(){
+    blip(494,.16,"sine",.028,330);
+    setTimeout(function(){blip(392,.2,"triangle",.022,262);},70);
+  },
   drop:function(i){
     var f=[659.25,830.6,1046.5][Math.min(i,2)];
     blip(f,.26,"sine",.06,f*1.35);
