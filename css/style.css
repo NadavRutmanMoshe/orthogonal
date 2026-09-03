@@ -73,10 +73,18 @@
       transform .1s ease,box-shadow .1s ease;
     user-select:none;padding:0;pointer-events:auto;flex-shrink:0}
   button:active{transform:translateY(3px);box-shadow:0 0 0 var(--lip)}
-  /* Flat and unlit: a button with no cap is a button with nothing under it,
-     which is the honest drawing of one that will not answer. */
-  button:disabled{opacity:.3;cursor:default;box-shadow:none;
-    transform:none;background:transparent}
+  /* Flat and unlit - a button with no cap has nothing under it, which is the
+     honest drawing of one that will not answer right now.
+
+     IT KEEPS ITS BODY THOUGH. The first version also dropped the background
+     to transparent at .3 opacity, which on a dark ground is not "greyed out",
+     it is *gone* - and the two controls that spend the most time disabled are
+     the turn buttons, which are off in the plane. A player who folds, sees an
+     empty corner and concludes the game has taken rotation away is reading
+     the drawing correctly; the drawing was wrong. Present, flat and obviously
+     inert is the state being described. */
+  button:disabled{opacity:.5;cursor:default;box-shadow:none;transform:none;
+    background:var(--panel);border-color:var(--rule)}
   button:focus-visible{outline:2px solid var(--player);outline-offset:2px}
 
   .bar{position:fixed;bottom:18px;left:0;right:0;padding:0 16px;z-index:10;

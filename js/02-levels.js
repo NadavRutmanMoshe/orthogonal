@@ -361,6 +361,13 @@ var LEVELS=[
        {at:[[8,1,5],[7,1,3]],step:870,aim:1020,say:"same ground — two of them"}]},
    blocks:box(0,8,0,0,0,6,[]),
    start:[1,1,1]},
+/* ROTATION IS NOT TAKEN BACK ONCE IT HAS BEEN GIVEN. This level used to
+   carry rotate:false, six levels after 07 taught the turn - so the buttons
+   vanished at the top of a new section and came back on the level after,
+   which is indistinguishable from a bug and was reported as one. The lock
+   bought nothing here either: measured, the level is 5 moves with rotation
+   and 5 without. The pre-reveal run (the tutorials through TRIAL I) is
+   contiguous and keeps its lock; nothing after 07 has one. */
 {name:"13 — Fire Wall",
    hint:"Fire is solid. You will not walk through it.",
    /* FIRE AS A WALL, WHICH IS THE HALF OF IT A PLAYER MEETS FIRST. The whole
@@ -370,7 +377,7 @@ var LEVELS=[
       the route, which is the point of opening with it. */
    blocks:[[0,0,-1],[0,0,0],[0,0,1],[2,0,1],[2,0,0],[2,0,-1],
      [1,0,-1,4],[1,0,0,4],[1,0,1,4],[1,0,-2],[1,1,-2]],
-   start:[0,1,0],goal:[2,1,0],rotate:false},
+   start:[0,1,0],goal:[2,1,0],rotate:true},
 {name:"14 — Not This Way",
    hint:"This way burns. Turn around and look again.",
    /* AND THE OTHER HALF: fire that is nowhere near you until you fold. Two

@@ -189,17 +189,31 @@ two sentences are the same:
 | `11 — Not a Simple Walk` | one column wider, so walking is one move over and the fold is the shortcut. The star is the only thing that says you missed it. |
 | `12 — The Silence Before the Storm` | everything at once, into the boss. |
 
-- **ROTATION DOES NOT EXIST UNTIL `05`.** Every level before it carries
-  `rotate:false`, including `TRIAL I` — checked leg by leg with the solver
-  rather than assumed, at 11, 9 and 8 moves. Without that lock four of the
-  early levels collapse to the same three moves (`rot+ FLAT POP`), which is
-  the shortcut that skips the lesson: measured, and the reason the owner's
-  `rotate:true` was flipped on all of them.
-- **AND THE TURN BUTTONS ARE NOT DRAWN UNTIL `05` EITHER.** Disabled was the
+- **ROTATION DOES NOT EXIST UNTIL `07`, AND IT IS NEVER TAKEN BACK.** The
+  locked run is contiguous and ends at the level that teaches the turn: the
+  two tutorials, `01`…`06` and `TRIAL I` carry `rotate:false`, and nothing
+  after `07 — The Rotation` does. **`13 — Fire Wall` used to**, six levels
+  and a boss later, at the top of a new section — so the buttons vanished
+  from a bar that had had them all through Section I and came back on the
+  next level. That is indistinguishable from a bug and was reported as one:
+  *"I got into a later level which is not disabled which was still
+  disabled."* A verb that has been given is not taken away again.
+- **The lock is a lesson, not a load-bearing constraint, and that is worth
+  knowing before defending it.** It used to be true that four early levels
+  collapsed to `rot+ FLAT POP` without it; the opening was re-cut around the
+  owner's own levels since, and re-measured today **every one of the ten
+  locked levels has the same optimal route with rotation as without** —
+  including `13`, which is 5 moves either way. So what the lock buys now is
+  purely the reveal at `07`, and that is the only thing to weigh if it is
+  ever questioned again.
+- **AND THE TURN BUTTONS ARE NOT DRAWN ON A LOCKED LEVEL.** Disabled was the
   old behaviour and it is still right for the *flat* case, where they come
   back the moment you stand up. A level with no turn is a different sentence,
-  and eight levels of dead controls in the bar would spend the reveal in
-  advance. `body.norot`, set in `syncHud`.
+  and a run of dead controls in the bar would spend the reveal in advance.
+  `body.norot`, set in `syncHud`. **A disabled button still has to look like
+  a button** — see the note on `button:disabled` in `css/style.css`: dropping
+  its background to transparent made the flat case read as the controls
+  having been removed, which is the other half of the same report.
 - **THE SCORING PAIR IS A SETUP AND A PUNCHLINE.** `10` is trivial on
   purpose — the floor is open and walking is exactly optimal — and it is the
   level `starsOffer()` explains three stars on. The player is told to aim for
