@@ -2878,13 +2878,24 @@ function landLive(){
     })};
   return true;
 }
-/* THE EYE LIGHTS WHEN LOOKING WOULD TELL YOU SOMETHING - flat, and more than
-   one block in your silhouette column. That is the only situation where the
-   landing rule decides something the player cannot see, so the button
-   advertises itself exactly then and is quiet the rest of the time, which is
-   what stops it becoming wallpaper. Judged every frame rather than in
-   syncHud for the same reason the boss's fold cue is: the answer changes
-   when the player moves in the plane, not when a button is pressed.
+/* THE EYE LIGHTS WHEN LOOKING WOULD TELL YOU SOMETHING, AND THAT IS NARROWER
+   THAN "more than one block in your column".
+
+   More than one candidate was the first rule and it lit far too often: most
+   columns in most levels hold two blocks, and the choice between them
+   usually decides nothing the player cares about - so the button was on for
+   most of the time anybody spent flat, which is exactly how a cue becomes
+   wallpaper. Reported as being shown when it was not necessary.
+
+   It now asks the question the player is actually about to get wrong: the
+   goal is in the square you are standing on in the plane - so it looks like
+   you have arrived - and the block you would come back on is not it. That is
+   the one moment the landing rule costs you the level rather than a step,
+   and it is the moment the eye answers.
+
+   Judged every frame rather than in syncHud for the same reason the boss's
+   fold cue is: the answer changes when the player moves in the plane, not
+   when a button is pressed.
 
    It also counts the peek for the tutorial - an EFFECTIVE peek, one where
    the world actually rose, rather than a button press that went nowhere. */
@@ -2893,9 +2904,16 @@ function lookCue(){
   var el=document.getElementById("bLook");
   if(!el)return;
   var want=false;
-  if(app==="play"&&flat&&!dying&&!levelOver()&&R&&flatPos){
+  if(app==="play"&&flat&&!dying&&!levelOver()&&R&&flatPos&&planePeek<.05){
     var land=R.landings(view,flatPos.u,flatPos.y,liveCrates());
-    want=land.length>1&&planePeek<.05;
+    if(land.length>1&&typeof liveGoal==="function"){
+      var g=liveGoal(), r=AX[view].r;
+      // The goal folds into this square: on screen you are standing on it.
+      if(g&&g[1]===flatPos.y&&g[0]*r[0]+g[2]*r[2]===flatPos.u){
+        var win=R.pick(land);
+        want=!(win.x===g[0]&&win.z===g[2]);   // ...and you would miss it
+      }
+    }
   }
   if(want!==lookLit){lookLit=want;el.classList.toggle("look",want);}
   if(flat&&planePeek>.5&&!peekCounted){

@@ -957,6 +957,18 @@ var SFX={
       },d);
     });
   },
+  /* A STAR LANDING ON THE WIN CARD. Heavier than star() - which is the same
+     star arriving at the counter a second later - because this one is the
+     score being handed over and that one is bookkeeping: a soft thump under
+     the ping is what makes it read as something with weight hitting the
+     card rather than as a chime. Climbs a triad, so three of them is a
+     chord arriving one note at a time. */
+  drop:function(i){
+    var f=[659.25,830.6,1046.5][Math.min(i,2)];
+    blip(f,.26,"sine",.06,f*1.35);
+    blip(f/2,.3,"triangle",.03);
+    blip(96,.16,"sine",.045,72);
+  },
   star:function(i){
     var f=[784,988,1245][Math.min(i,2)];
     blip(f,.2,"sine",.055,f*1.5);

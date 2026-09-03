@@ -111,7 +111,7 @@ function wardRefresh(){
       "' data-id='"+it.id+"'>"+
       "<i style='"+swatch+"'>"+(t==="shape"?shapeGlyph(it.id):"")+"</i>"+
       "<b>"+it.name+"</b>"+
-      "<span>"+(on?"equipped":have?"owned":it.cost+" \u2605")+"</span></div>";
+      "<span>"+(on?"equipped":have?"owned":it.cost+" <u class='st'>\u2605</u>")+"</span></div>";
   }
   $("wGrid").innerHTML=html;
   $("wGrid").querySelectorAll(".item").forEach(function(el){
@@ -130,17 +130,17 @@ function wardMeta(){
   var t=wardTab, id=wardSelected(t), it=findBy(wardList(t),id);
   var have=owns(id), on=wardEquipped(t)===id, bal=shards();
   var s="<div class='wname'>"+it.name+"</div>"+
-        "<div class='wcost'>"+(on?"equipped":have?"owned":it.cost+" \u2605")+"</div>"+
+        "<div class='wcost'>"+(on?"equipped":have?"owned":it.cost+" <u class='st'>\u2605</u>")+"</div>"+
         "<div class='wact'>";
   if(on)              s+="<button disabled>EQUIPPED</button>";
   else if(have)       s+="<button id='wEquip' class='wgo'>EQUIP</button>";
-  else if(bal<it.cost)s+="<button disabled>NEED "+(it.cost-bal)+" MORE \u2605</button>";
+  else if(bal<it.cost)s+="<button disabled>NEED "+(it.cost-bal)+" MORE <u class='st'>\u2605</u></button>";
   else if(buyArmed===id)
-                      s+="<button id='wBuy' class='wsure'>SURE? \u00b7 "+it.cost+" \u2605</button>";
-  else                s+="<button id='wBuy' class='wgo'>BUY \u00b7 "+it.cost+" \u2605</button>";
+                      s+="<button id='wBuy' class='wsure'>SURE? \u00b7 "+it.cost+" <u class='st'>\u2605</u></button>";
+  else                s+="<button id='wBuy' class='wgo'>BUY \u00b7 "+it.cost+" <u class='st'>\u2605</u></button>";
   if(!have){
     var need=adsFor(it.cost), got=adsWatched(id);
-    s+="<button id='wAd' disabled>WATCH "+need+" AD"+(need===1?"":"S")+
+    s+="<button id='wAd' class='ad' disabled>"+adIcon()+"WATCH "+need+" AD"+(need===1?"":"S")+
        (got?" ("+got+"/"+need+")":"")+"</button>";
   }
   s+="</div>";
@@ -1287,7 +1287,7 @@ function mapDraw(spans){
     "<div class='mf'><span>"+cleared+"/"+tot+" cleared</span>"+
     "<span>"+sp.got+"/"+sp.max+" ★</span></div>"+
     (mapSectionSkippable(n)
-      ? "<button class='skipsec' id='mSecAd'>START THIS SECTION · WATCH 3 ADS</button>"
+      ? "<button class='skipsec' id='mSecAd'>"+adIcon()+"START THIS SECTION · WATCH 3 ADS</button>"
       : "")+
     /* THE LOCK HAS TO SAY WHAT IS HOLDING IT. This is the shelf, and the one
        thing a player cannot work out from anywhere else in the game is which
@@ -1531,7 +1531,7 @@ function mapSheet(i){
   if(st==="locked"&&mapSkippable(i)){
     var ads=mapAds(k);
     var what=k==="boss"?"THE BOSS":k==="trial"?"THE TRIAL":"THIS LEVEL";
-    acts="<button class='ad' id='mAd'>OPEN "+what+" · WATCH "+ads+" AD"+
+    acts="<button class='ad' id='mAd'>"+adIcon()+"OPEN "+what+" · WATCH "+ads+" AD"+
          (ads>1?"S":"")+"</button><button class='qt' id='mNo'>NOT NOW</button>";
     note="This opens <b>this one</b> and nothing else — everything in front of "+
          "it stays where it is, still to play, and you can open those the same "+

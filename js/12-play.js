@@ -1450,7 +1450,7 @@ function hintRefillOffer(){
      is fixed; the rest is discoverable from the badge on the bulb. */
   offerShell("Out of hints",
     "Next refill of 1 hint in <b>"+hintWaitSay()+"</b>.",
-    "<button class='ad' id='hrAd'>REFILL \u00b7 WATCH AN AD (+"+HINT_AD+
+    "<button class='ad' id='hrAd'>"+adIcon()+"REFILL \u00b7 WATCH AN AD (+"+HINT_AD+
       ")</button>"+
     "<button class='qt' id='hrNo'>WAIT IT OUT</button>","");
   bind("hrNo",function(){hidePanel();});
@@ -1495,7 +1495,11 @@ function checkWin(){
   win();
 }
 var starsBefore=0,starsAfter=0,starsGained=0;
+// How many filled stars the win card is about to draw. Read after the branch
+// that drew them, so the sound and the glyphs cannot disagree.
+var wonStars=0;
 function win(){
+  wonStars=0;
   levelDone=true;
   /* The star total is hidden while a clock is running and `levelDone` is what
      brings it back, so the chrome has to be re-asked now rather than at the
@@ -1555,7 +1559,7 @@ function win(){
     $("bRetry").style.display="none";
   } else if(B||TR){
     // Scored on lives, so hints cost nothing here and moves are not the point.
-    var stb=Math.max(0,Math.min(3,lives));
+    var stb=Math.max(0,Math.min(3,lives));wonStars=stb;
     $("wonTitle").innerHTML=(stb===3?"Untouched":TR?"Through":"Down")+
       "<div class='bigstars'>"+starGlyphsEls(stb)+"</div>";
     $("wonSub").textContent=L.name+"  \u00b7  "+
@@ -1575,7 +1579,7 @@ function win(){
     if(L.won)$("wonSub").innerHTML=esc($("wonSub").textContent)+
       "<em class='wonstory'>"+esc(L.won)+"</em>";
   } else {
-    var stw=levelPar!==null?starsFor(moveCount,levelPar):3;
+    var stw=levelPar!==null?starsFor(moveCount,levelPar):3;wonStars=stw;
     $("wonTitle").innerHTML=(last?"Campaign complete":(stw===3?"Perfect":"Solved"))+
       "<div class='bigstars'>"+starGlyphsEls(stw)+"</div>";
     var sub=L.name+"  \u00b7  "+moveCount+" moves"+
@@ -1643,6 +1647,17 @@ function win(){
     $("bRetry").style.display="none";$("bLevels").style.display="none";
   } else $("bLevels").style.display="flex";
   setTimeout(function(){$("won").classList.add("on");},380);
+  /* THE STARS FALL, AND EACH ONE IS HEARD LANDING. The CSS drops them off
+     `.won.on` at .06/.20/.34 with a .38s fall, so these three land on the
+     same beats; only the ones actually earned make a sound, which is what
+     makes one star and three stars different events rather than the same
+     animation with different characters in it. Both halves have to move
+     together if either does. */
+  if(wonStars>0)for(var si=0;si<wonStars&&si<3;si++)(function(k){
+    setTimeout(function(){
+      if($("won").classList.contains("on")&&SFX.drop)SFX.drop(k);
+    },380+60+k*140+250);
+  })(si);
   // The stars that are new are the rightmost ones: you had starsBefore, you
   // now have starsAfter, so glyphs [starsBefore, starsAfter) are the ones
   // that just arrived and the only ones that fly. Nothing gained, nothing
@@ -1658,7 +1673,7 @@ function win(){
       var fly=[];
       for(var i=starsBefore;i<starsAfter&&i<all.length;i++)fly.push(all[i]);
       flyStars(fly,base,starsGained);
-    },900);
+    },1250);
   }
 }
 function rotateView(dir){
@@ -1875,7 +1890,7 @@ function struggleOffer(){
   offerShell(esc(L.name),
     "This one has beaten you "+beat+". You can go past it and come back "+
     "whenever you like.",
-    "<button class='ad' id='sgAd'>SKIP THIS "+kind+" \u00b7 WATCH 3 ADS</button>"+
+    "<button class='ad' id='sgAd'>"+adIcon()+"SKIP THIS "+kind+" \u00b7 WATCH 3 ADS</button>"+
     "<button class='qt' id='sgNo'>KEEP TRYING</button>"+
     "<button class='qt' id='sgNever'>DON'T SHOW ME AGAIN</button>",
     "A skip awards <b>no stars</b> and leaves the level on the map, still "+

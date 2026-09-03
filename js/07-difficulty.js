@@ -87,7 +87,8 @@ function starGlyphs(n){
 function starGlyphsEls(n){
   var s="";
   for(var i=0;i<3;i++)
-    s+="<i class='sg' data-i='"+i+"'>"+(i<n?"\u2605":"\u2606")+"</i>";
+    s+="<i class='sg"+(i<n?"":" off")+"' data-i='"+i+"'>"+
+       (i<n?"\u2605":"\u2606")+"</i>";
   return s;
 }
 function tierOf(score){

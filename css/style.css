@@ -1,10 +1,18 @@
 :root{
     --void:#0f1424; --paper:#e6e1d3; --ink:#1a1c2b;
     --player:#d6336c; --goal:#35c2a5;
+    /* A STAR IS GOLD, NOT GREEN. Green is the goal's colour and it appears
+       on the goal, the button that is being asked for and the cue words -
+       it means "do this", which is the one thing a score is not. Gold is
+       what a star is everywhere else in the world, and it is the only hue in
+       the palette nothing else has claimed. One token, so the win card, the
+       counter, the map, the shop and the flight can never drift apart. */
+    --star:#f5c542; --star-glow:rgba(245,197,66,.55);
     --fg:#c3cde4; --fg-dim:#6d7c9c; --rule:rgba(195,205,228,.22);
     --panel:rgba(15,20,36,.82);
   }
   body.flat{ --fg:#1a1c2b; --fg-dim:#7d7666; --rule:rgba(26,28,43,.24);
+    --star:#c07d09; --star-glow:rgba(192,125,9,.4);
     --panel:rgba(230,225,211,.86); }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%;overflow:hidden;background:var(--void);
@@ -30,14 +38,45 @@
     transition:color .5s ease;white-space:nowrap}
   .axis b{display:block;color:var(--fg);font-weight:500;transition:color .5s ease}
 
+  /* ============================================================
+     BUTTONS — one skin, and it is meant to look pressable
+
+     Everything here used to be a 1px outline on nothing with a 2px radius:
+     honest, quiet, and reported as feeling stale and not inviting. Nothing
+     on screen said which things could be pressed, because a hairline
+     rectangle is what this game draws for a *block edge* as well.
+
+     The skin is three things and it is the one `.hcont` already used, lifted
+     to every button in the game so there is one language:
+
+       - a FILL, a soft top-lit gradient over the panel colour, so a button
+         is an object rather than a hole;
+       - a LIP, `0 3px 0` of a darker shade of the button's own hue, which is
+         the whole of what makes a flat rectangle read as a key cap;
+       - a PRESS, which moves the cap down onto the lip.
+
+     `--c` is the button's hue and `--lip` its shadow, so a family sets one
+     property and the fill, the rim, the glyph and the lip all follow. The
+     two animated cues (cuePulse, tutlive) list `0 3px 0 var(--lip)` in their
+     own keyframes, because a box-shadow animation replaces the base one
+     outright and the cap would otherwise flatten while it pulses. */
   button{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;
-    letter-spacing:.08em;color:var(--fg);background:transparent;
-    border:1px solid var(--rule);border-radius:2px;cursor:pointer;
+    letter-spacing:.08em;color:var(--fg);
+    --c:#8c9dc4; --lip:rgba(4,7,14,.66);
+    background:
+      linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,0) 62%),
+      var(--panel);
+    border:1px solid var(--rule);border-radius:9px;cursor:pointer;
     display:flex;align-items:center;justify-content:center;
-    transition:color .35s ease,border-color .35s ease,background .12s ease;
+    box-shadow:0 3px 0 var(--lip);
+    transition:color .35s ease,border-color .35s ease,background .12s ease,
+      transform .1s ease,box-shadow .1s ease;
     user-select:none;padding:0;pointer-events:auto;flex-shrink:0}
-  button:active{background:var(--rule)}
-  button:disabled{opacity:.24;cursor:default}
+  button:active{transform:translateY(3px);box-shadow:0 0 0 var(--lip)}
+  /* Flat and unlit: a button with no cap is a button with nothing under it,
+     which is the honest drawing of one that will not answer. */
+  button:disabled{opacity:.3;cursor:default;box-shadow:none;
+    transform:none;background:transparent}
   button:focus-visible{outline:2px solid var(--player);outline-offset:2px}
 
   .bar{position:fixed;bottom:18px;left:0;right:0;padding:0 16px;z-index:10;
@@ -47,17 +86,42 @@
   /* play bar */
   #playBar{display:none;justify-content:space-between;align-items:flex-end;gap:10px}
   #playBar.on{display:flex}
-  .dpad{display:grid;grid-template-columns:repeat(3,42px);
-    grid-template-rows:repeat(3,42px);gap:4px}
-  .dpad button{font-size:13px}
+  .dpad{display:grid;grid-template-columns:repeat(3,44px);
+    grid-template-rows:repeat(3,44px);gap:5px}
+  .dpad button{font-size:17px;--c:#b4c6ea;color:var(--c);border-radius:11px;
+    border-color:color-mix(in srgb,var(--c) 30%,transparent);
+    --lip:color-mix(in srgb,var(--c) 26%,#04070d)}
   .rcol{display:flex;flex-direction:column;gap:5px;align-items:stretch}
-  .rot{display:flex;gap:4px}
-  .rot button{width:56px;height:36px;font-size:14px}
+  .rot{display:flex;gap:5px}
+  .rot button{width:58px;height:38px;font-size:15px;--c:#c3a8ff;
+    color:var(--c);border-color:color-mix(in srgb,var(--c) 30%,transparent);
+    --lip:color-mix(in srgb,var(--c) 26%,#04070d)}
   .corner{position:fixed;top:14px;z-index:12;display:flex;gap:7px}
   .corner.tl{left:14px}
   .corner.tr{right:14px}
-  button.rnd{width:40px;height:40px;border-radius:50%;padding:0;
-    background:var(--panel);backdrop-filter:blur(5px)}
+  /* A HUE EACH, so the five round buttons are told apart by colour before a
+     glyph is read - which is what you want on a row of circles a thumb is
+     reaching for without looking. They are the colours those things already
+     mean elsewhere in the game: the bulb is the gold of a star, the eye is
+     the goal's teal, the wardrobe the violet of the map's landmarks, and
+     restart the blue every "second chance" in the panels wears. */
+  #bMenu{--c:#93a6d4}
+  #bWard{--c:#a274ff}
+  #bHint{--c:var(--star)}
+  #bRestart{--c:#6fa8ff}
+  #bLook{--c:#3fd6c4}
+  button.rnd{width:42px;height:42px;border-radius:50%;padding:0;
+    color:var(--c);
+    border:1.5px solid color-mix(in srgb,var(--c) 46%,transparent);
+    --lip:color-mix(in srgb,var(--c) 34%,#04070d);
+    background:
+      radial-gradient(120% 108% at 50% -8%,
+        color-mix(in srgb,var(--c) 30%,transparent), transparent 72%),
+      var(--panel);
+    box-shadow:0 3px 0 var(--lip),
+      0 0 16px color-mix(in srgb,var(--c) 16%,transparent);
+    backdrop-filter:blur(5px)}
+  button.rnd:active{box-shadow:0 0 0 var(--lip)}
   /* HOW MANY HINTS ARE IN THE POOL, on the bulb itself. A badge rather than a
      row in the HUD: it is an answer to "can I press this", so it belongs on
      the thing being pressed. Empty reads as empty - the badge goes grey and
@@ -69,25 +133,38 @@
     padding:0 3px;border-radius:8px;display:none;align-items:center;
     justify-content:center;font-family:'IBM Plex Mono',ui-monospace,monospace;
     font-size:9px;font-weight:700;line-height:1;
-    background:var(--goal);color:var(--void);
+    background:var(--c);color:var(--void);
     border:1.5px solid var(--void)}
   #bHint.has .hn{display:flex}
   #bHint.out{opacity:.62}
   #bHint.out .hn{background:var(--fg-dim);color:var(--void)}
   button.rnd svg{width:19px;height:19px;fill:none;stroke:currentColor;
     stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-  button.rnd.on{border-color:var(--player);color:var(--player)}
+  /* Its panel is open: the button takes the player's own colour rather than
+     its own, so "this is the thing you are inside" reads the same on all of
+     them. One property, and the fill, the rim and the lip follow. */
+  button.rnd.on{--c:var(--player)}
   .stars{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;
-    letter-spacing:2px;color:var(--goal);margin-top:2px}
-  button.held{background:var(--rule);border-color:var(--goal);color:var(--goal)}
+    letter-spacing:2px;color:var(--star);margin-top:2px}
+  /* Peek is latched: held down, so it is drawn held down. */
+  button.held{--c:var(--goal);transform:translateY(3px);
+    box-shadow:0 0 0 var(--lip)}
   .tinyrow .tiny{flex:1}
   .moves{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
     letter-spacing:.12em;color:var(--fg-dim);margin-top:3px;
     transition:color .5s ease}
   .moves b{color:var(--fg);font-weight:500}
   .par{color:var(--goal)}
-  .flatbtn{height:50px;padding:0 14px;font-weight:600;letter-spacing:.14em;
-    border-color:var(--player);color:var(--player)}
+  /* The verb the whole game is built on, so it is the biggest, fullest thing
+     on the bar and it wears the player's own colour. */
+  .flatbtn{height:54px;padding:0 18px;font-weight:700;letter-spacing:.15em;
+    font-size:12px;--c:var(--player);color:var(--c);
+    border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent);
+    --lip:color-mix(in srgb,var(--c) 42%,#04070d);
+    background:
+      linear-gradient(180deg,color-mix(in srgb,var(--c) 22%,transparent),
+        color-mix(in srgb,var(--c) 7%,transparent)),
+      var(--panel)}
   /* Folding from here would kill you. Marked, not disabled - it is still a
      legal move and some players will want to see what happens. */
   .flatbtn.peril{border-color:#ff4d5e;color:#ff4d5e;
@@ -103,9 +180,13 @@
      above it: those two are about to cost you a life, this one is an offer.
      Same goal colour as the strike cue, because both mean "there is
      something you can do here". */
-  button.rnd.look{border-color:var(--goal);color:var(--goal);
-    animation:lookpulse 1.9s ease-in-out infinite}
-  @keyframes lookpulse{50%{background:rgba(53,194,165,.14)}}
+  button.rnd.look{animation:lookpulse 1.9s ease-in-out infinite}
+  @keyframes lookpulse{
+    0%,100%{box-shadow:0 3px 0 var(--lip),0 0 0 0 var(--star-glow),
+      0 0 16px color-mix(in srgb,var(--c) 16%,transparent)}
+    50%{box-shadow:0 3px 0 var(--lip),0 0 0 7px rgba(63,214,196,0),
+      0 0 26px color-mix(in srgb,var(--c) 70%,transparent)}
+  }
   .tiny{height:28px;font-size:9.5px;letter-spacing:.1em;color:var(--fg-dim);padding:0 8px}
   .tinyrow{display:flex;gap:4px;justify-content:flex-end}
 
@@ -220,6 +301,11 @@
     text-align:center;margin:4px 0 6px}
   .wname{font-size:11.5px;color:var(--fg);font-weight:500;line-height:1.3}
   .wcost{font-size:9px;color:var(--fg-dim);margin-top:1px}
+  /* A price is a star price, so the star in it is gold wherever it is
+     written - the number stays quiet, the currency is what carries. */
+  /* A `u` rather than an `i`, because `.item i` is already the tile's own
+     swatch box - an <i> in here becomes a 32px square. */
+  .st{text-decoration:none;color:var(--star)}
   .wact{display:flex;flex-direction:column;gap:4px;margin-top:6px}
   .wact button{height:30px;width:100%;font-size:9.5px}
   .wact .wgo{border-color:var(--goal);color:var(--goal)}
@@ -235,6 +321,8 @@
     font-style:normal;font-size:16px;line-height:30px;color:var(--fg)}
   .item b{display:block;font-size:9.5px;font-weight:500;color:var(--fg)}
   .item span{display:block;font-size:8.5px;color:var(--fg-dim);margin-top:2px}
+  .wact .ad{gap:8px}
+  .wact .ad .adicon{width:16px;height:16px}
   .note{font-size:9px;color:var(--fg-dim);line-height:1.6;margin-top:6px}
   .note code{color:var(--fg)}
   /* How far through a section you are, in stars rather than levels solved:
@@ -302,8 +390,10 @@
     background:rgba(214,51,108,.13)}
 
   @keyframes cuePulse{
-    0%,100%{box-shadow:0 0 0 0 rgba(53,194,165,0);border-color:var(--goal)}
-    50%{box-shadow:0 0 0 5px rgba(53,194,165,.22);border-color:var(--goal)}
+    0%,100%{box-shadow:0 3px 0 var(--lip),0 0 0 0 rgba(53,194,165,0);
+      border-color:var(--goal)}
+    50%{box-shadow:0 3px 0 var(--lip),0 0 0 5px rgba(53,194,165,.22);
+      border-color:var(--goal)}
   }
   button.cue{animation:cuePulse 1s ease-in-out infinite;
     border-color:var(--goal) !important;color:var(--goal) !important}
@@ -461,8 +551,40 @@
     background:rgba(15,20,36,.86)}
   body.flat .won{background:rgba(230,225,211,.88)}
   .won.on{display:flex}
-  .bigstars{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:26px;
-    letter-spacing:7px;color:var(--goal);margin-top:10px;text-align:center}
+  /* THE SCORE, AND IT ARRIVES RATHER THAN BEING THERE.
+
+     It used to be a green line of three characters sitting on the card the
+     instant it opened, which is a label. Most people solve a level and never
+     look at it. So it is gold, it is nearly twice the size, and each star
+     FALLS onto the card with its own sound - the one moment in the game that
+     says the score was worth having. The empty ones fall too, silently, so
+     the row lands as one row rather than as a thing with gaps in it. */
+  .bigstars{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:42px;
+    letter-spacing:10px;color:var(--star);margin-top:14px;text-align:center;
+    text-shadow:0 0 22px var(--star-glow);line-height:1.1}
+  .bigstars .sg{opacity:0}
+  /* An empty star is drawn, not lit: same shape so the row keeps its width,
+     no fill and no glow so the score is countable at a glance rather than
+     read character by character. */
+  .bigstars .sg.off{color:var(--fg-dim);text-shadow:none}
+  /* The overshoot is in the easing, not in the keyframes: a back-out curve
+     lands the star and lets it settle in one declaration, and the squash at
+     the end is what gives it weight. Delays are relative to `.won.on`
+     matching, which is the moment the card appears - so the three sounds
+     scheduled in win() line up with them by construction. */
+  .won.on .bigstars .sg{animation:sgdrop .38s cubic-bezier(.22,1.5,.5,1) both}
+  .won.on .bigstars .sg:nth-child(1){animation-delay:.06s}
+  .won.on .bigstars .sg:nth-child(2){animation-delay:.20s}
+  .won.on .bigstars .sg:nth-child(3){animation-delay:.34s}
+  @keyframes sgdrop{
+    0%  {opacity:0;transform:translateY(-90px) scale(1.5)}
+    55% {opacity:1}
+    100%{opacity:1;transform:translateY(0) scale(1)}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .won.on .bigstars .sg{animation:sgfade .3s ease both}
+    @keyframes sgfade{from{opacity:0}to{opacity:1}}
+  }
   .won h2{font-family:'Space Grotesk',system-ui,sans-serif;font-size:24px;
     margin:0;color:var(--fg);font-weight:700;letter-spacing:-.02em}
   .won p{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;
@@ -519,8 +641,15 @@
   .tutcard p b{color:var(--goal);font-weight:500}
   .tutcard button{min-width:120px}
   .wonrow{display:flex;gap:8px;align-items:center}
-  .won button{height:42px;padding:0 22px;border-color:var(--goal);color:var(--goal)}
-  #bRetry{border-color:var(--rule);color:var(--fg-dim);gap:7px}
+  .won button{height:46px;padding:0 24px;font-weight:600;
+    --c:var(--goal);color:var(--c);
+    border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent);
+    --lip:color-mix(in srgb,var(--c) 44%,#04070d);
+    background:
+      linear-gradient(180deg,color-mix(in srgb,var(--c) 24%,transparent),
+        color-mix(in srgb,var(--c) 8%,transparent)),var(--panel)}
+  #bRetry{--c:#8c9dc4;color:var(--fg-dim);gap:7px;
+    border-color:var(--rule);background:var(--panel)}
   #bRetry svg{width:15px;height:15px;fill:none;stroke:currentColor;
     stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   #intro{display:flex}
@@ -578,25 +707,32 @@
      z-index 30 puts it over the win overlay (20) on purpose - the count has
      to be visible at the moment it goes up, or the flight has nothing to
      arrive at. Sits to the left of the two round buttons in that corner. */
-  .startotal{position:fixed;top:14px;right:101px;z-index:30;height:40px;
-    display:none;align-items:center;gap:5px;padding:0 12px;
-    border:1px solid var(--rule);border-radius:20px;
-    background:var(--panel);backdrop-filter:blur(6px);
+  .startotal{position:fixed;top:14px;right:104px;z-index:30;height:42px;
+    display:none;align-items:center;gap:5px;padding:0 13px;
+    border:1.5px solid color-mix(in srgb,var(--star) 34%,transparent);
+    border-radius:21px;
+    background:
+      radial-gradient(120% 108% at 50% -8%,
+        color-mix(in srgb,var(--star) 20%,transparent), transparent 72%),
+      var(--panel);
+    box-shadow:0 3px 0 color-mix(in srgb,var(--star) 26%,#04070d);
+    backdrop-filter:blur(6px);
     font-family:'IBM Plex Mono',ui-monospace,monospace;
     color:var(--fg);transition:color .35s ease,transform .18s ease,
       border-color .35s ease}
   .startotal.on{display:flex}
   .startotal b{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
-  .startotal i{font-style:normal;font-size:12px;color:var(--goal)}
-  .startotal.pop{transform:scale(1.16);border-color:var(--goal)}
+  .startotal i{font-style:normal;font-size:13px;color:var(--star);
+    text-shadow:0 0 10px var(--star-glow)}
+  .startotal.pop{transform:scale(1.16);border-color:var(--star)}
 
   /* A star in flight. The wrapper carries the horizontal leg and the inner
      glyph the vertical one, on different easings - that mismatch is what
      bends the path into an arc instead of a straight diagonal slide. */
   .flystar{position:fixed;z-index:40;pointer-events:none;
     transition:transform .62s cubic-bezier(.32,.5,.5,1)}
-  .flystar i{display:block;font-style:normal;font-size:24px;line-height:1;
-    color:var(--goal);text-shadow:0 0 14px rgba(53,194,165,.6);
+  .flystar i{display:block;font-style:normal;font-size:26px;line-height:1;
+    color:var(--star);text-shadow:0 0 16px var(--star-glow);
     transition:transform .62s cubic-bezier(.6,.02,.72,.5),opacity .62s ease}
   .sg{display:inline-block;transition:transform .22s ease,opacity .22s ease}
   .sg.launch{transform:translateY(-6px) scale(1.3)}
@@ -725,7 +861,7 @@
     font-size:15px;font-weight:700;letter-spacing:-.02em;color:var(--fg)}
   .mhead .mt span{display:block;font-size:9px;letter-spacing:.13em;color:var(--fg-dim)}
   .mtot{display:flex;align-items:center;gap:4px;padding:4px 10px;flex-shrink:0;
-    border:1px solid var(--rule);border-radius:20px;color:var(--goal);font-size:12px}
+    border:1px solid var(--rule);border-radius:20px;color:var(--star);font-size:12px}
   .mq{width:30px;height:30px;border-radius:50%;flex-shrink:0;font-size:13px;
     color:var(--fg-dim);border:1px solid var(--rule);background:transparent}
   .mq.on{color:var(--player);border-color:var(--player)}
@@ -770,9 +906,17 @@
     margin:10px 0 4px;overflow:hidden}
   .mcard .mbar u{display:block;height:100%;background:var(--sec);text-decoration:none}
   .mcard .mf{display:flex;justify-content:space-between;font-size:9.5px;color:var(--fg-dim)}
-  .mcard .skipsec{margin-top:11px;width:100%;height:36px;border-radius:3px;
-    background:rgba(111,168,255,.08);border-color:#6fa8ff;color:#6fa8ff;
-    font-size:9.5px;letter-spacing:.11em}
+  /* Same blue and the same video mark as every other ad button, because it
+     buys the same thing. */
+  .mcard .skipsec{margin-top:11px;width:100%;height:40px;gap:8px;
+    --c:#6fa8ff;color:var(--c);
+    border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent);
+    --lip:color-mix(in srgb,var(--c) 44%,#04070d);
+    background:
+      linear-gradient(180deg,color-mix(in srgb,var(--c) 24%,transparent),
+        color-mix(in srgb,var(--c) 8%,transparent)),var(--panel);
+    font-size:9.5px;letter-spacing:.11em;font-weight:600}
+  .mcard .skipsec .adicon{width:17px;height:17px}
 
   #mtrail{position:relative;margin-top:8px}
   #mtrail svg{position:absolute;inset:0;pointer-events:none;z-index:0}
@@ -997,8 +1141,8 @@ L96 14 L0 14 Z' fill='%23fff'/></svg>");
   }
 
   .mstars{position:absolute;z-index:1;display:flex;gap:2px;pointer-events:none;
-    font-size:12px;line-height:1;color:var(--goal)}
-  .mstars u{text-decoration:none;text-shadow:0 0 8px rgba(53,194,165,.5)}
+    font-size:12px;line-height:1;color:var(--star)}
+  .mstars u{text-decoration:none;text-shadow:0 0 8px var(--star-glow)}
   .mstars u.off{color:rgba(195,205,228,.18);text-shadow:none}
   .mcap{position:absolute;z-index:1;font-size:9.5px;color:var(--fg-dim);
     pointer-events:none;white-space:nowrap}
@@ -1020,11 +1164,34 @@ L96 14 L0 14 Z' fill='%23fff'/></svg>");
   /* Shared with the panel, because the struggle offer is the same offer the
      map makes and should not be a second visual language for it. */
   .msheet .ma,.panel .ma{display:flex;flex-direction:column;gap:6px;margin-top:12px}
-  .msheet .ma button,.panel .ma button{height:42px;font-size:10.5px;letter-spacing:.13em}
-  .msheet .ma .go{border-color:var(--goal);color:var(--goal);font-weight:600;
-    background:rgba(53,194,165,.09)}
-  .msheet .ma .ad,.panel .ma .ad{border-color:#6fa8ff;color:#6fa8ff;background:rgba(111,168,255,.08)}
-  .msheet .ma .qt,.panel .ma .qt{height:32px;font-size:9.5px;color:var(--fg-dim);border-color:var(--rule)}
+  /* THREE WEIGHTS, AND THEY LOOK LIKE THREE WEIGHTS. A card with one
+     outlined rectangle per option makes every option look the same, which is
+     the opposite of what a card with a recommended action wants. The primary
+     is filled and capped, the ad button is filled in its own blue and
+     carries the video mark, and the quiet one stays an outline - so the
+     shape of the decision is readable before a word of it is. */
+  .msheet .ma button,.panel .ma button{height:46px;font-size:10.5px;
+    letter-spacing:.13em;font-weight:600}
+  .msheet .ma .go,.panel .ma .go{--c:var(--goal);color:var(--c);
+    border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent);
+    --lip:color-mix(in srgb,var(--c) 44%,#04070d);
+    background:
+      linear-gradient(180deg,color-mix(in srgb,var(--c) 24%,transparent),
+        color-mix(in srgb,var(--c) 8%,transparent)),var(--panel)}
+  .msheet .ma .ad,.panel .ma .ad{--c:#6fa8ff;color:var(--c);
+    border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent);
+    --lip:color-mix(in srgb,var(--c) 44%,#04070d);
+    background:
+      linear-gradient(180deg,color-mix(in srgb,var(--c) 24%,transparent),
+        color-mix(in srgb,var(--c) 8%,transparent)),var(--panel);
+    gap:9px}
+  /* THE VIDEO MARK. An ad button has to say it is an ad before it is
+     pressed - a play sign in a screen is the one drawing everybody already
+     reads that way, and it means the words never have to carry it alone. */
+  .adicon{width:19px;height:19px;flex-shrink:0;fill:currentColor;stroke:none}
+  .msheet .ma .qt,.panel .ma .qt{height:36px;font-size:9.5px;
+    color:var(--fg-dim);border-color:var(--rule);font-weight:400;
+    --lip:rgba(4,7,14,.5)}
   .msheet .mn,.panel .mn{font-size:9.5px;color:var(--fg-dim);line-height:1.65;margin-top:9px}
   .msheet .mn b{color:var(--fg);font-weight:500}
 
@@ -1107,10 +1274,10 @@ body.tutlock #playBar button.tutlive{opacity:1;pointer-events:auto;
   background:rgba(53,194,165,.14);
   animation:tutlive 1.25s ease-in-out infinite}
 @keyframes tutlive{
-  0%,100%{box-shadow:0 0 0 0 rgba(53,194,165,.55),0 0 18px rgba(53,194,165,.35);
-    transform:scale(1)}
-  50%{box-shadow:0 0 0 9px rgba(53,194,165,0),0 0 26px rgba(53,194,165,.55);
-    transform:scale(1.07)}
+  0%,100%{box-shadow:0 3px 0 var(--lip),0 0 0 0 rgba(53,194,165,.55),
+    0 0 18px rgba(53,194,165,.35);transform:scale(1)}
+  50%{box-shadow:0 3px 0 var(--lip),0 0 0 9px rgba(53,194,165,0),
+    0 0 26px rgba(53,194,165,.55);transform:scale(1.07)}
 }
 /* The coach is the one thing that has to stay legible over the dim. */
 body.tutlock .coach{z-index:11}
@@ -1413,8 +1580,8 @@ body.tut.tutgest .coach,body.tut.tutgest.ui-none .coach{bottom:44px}
 .hstand canvas{width:100%;height:100%;display:block}
 .hstars{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9px;
   letter-spacing:.14em;text-transform:uppercase;color:var(--fg-dim)}
-.hstars b{color:var(--goal);font-weight:600;font-size:12px}
-.hstars i{font-style:normal;color:var(--goal);margin:0 4px 0 1px}
+.hstars b{color:var(--star);font-weight:600;font-size:12px}
+.hstars i{font-style:normal;color:var(--star);margin:0 4px 0 1px}
 
 .hbtns{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:12px}
 .home button{width:100%;height:44px;font-size:10.5px;letter-spacing:.14em}
@@ -1475,8 +1642,8 @@ body.tut.tutgest .coach,body.tut.tutgest.ui-none .coach{bottom:44px}
   border:1px solid var(--rule);display:flex;align-items:center;
   justify-content:center;font-size:15px;line-height:1;color:var(--fg);
   transition:border-color .2s ease,opacity .2s ease}
-.htile>b{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:7.5px;
-  font-weight:500;letter-spacing:.02em;color:var(--goal)}
+.htile>b{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:8px;
+  font-weight:600;letter-spacing:.02em;color:var(--star)}
 /* EQUIPPED IS A DETACHED RING, WITH A GAP. `--player` is not a constant: it
    is rewritten from the equipped skin colour every time applySkin() runs, so
    a ring drawn tight around a colour swatch is the swatch's own colour drawn

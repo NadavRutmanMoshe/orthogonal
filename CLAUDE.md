@@ -1102,6 +1102,49 @@ worth running to tune a number the owner is about to feel out anyway.
 
 ---
 
+## The buttons
+
+**They are meant to look pressable, and for a long time they did not.**
+Everything in the game was a 1px outline on nothing with a 2px radius —
+honest, quiet, and reported as stale and uninviting. The reason it failed is
+specific rather than a matter of taste: **a hairline rectangle is what this
+game draws for a block edge**, so the chrome and the world were speaking the
+same language and nothing on screen said which things answered a thumb.
+
+One skin now, and it is the one `.hcont` on the home screen already used:
+
+- a **fill** — a soft top-lit gradient over the panel colour, so a button is
+  an object rather than a hole;
+- a **lip** — `0 3px 0` of a darker shade of the button's own hue, which is
+  the whole of what turns a flat rectangle into a key cap;
+- a **press** — the cap moves down onto its lip.
+
+`--c` is a button's hue and `--lip` its shadow, so a family sets one property
+and the fill, the rim, the glyph and the lip all follow. **A disabled button
+loses its cap**, which is the honest drawing of one that will not answer.
+
+- **The five round buttons wear a hue each**, so a row of circles is told
+  apart by colour before a glyph is read — which is what a thumb reaching for
+  the corner actually uses. They take the colours those things already mean
+  elsewhere: the bulb is the gold of a star, the eye the goal's teal, the
+  wardrobe the violet of the map's landmarks, restart the blue every second
+  chance in the panels wears. `button.rnd.on` swaps `--c` to the player's
+  colour, so "you are inside this one" reads the same on all of them.
+- **The two animated cues list the lip in their own keyframes.** A
+  `box-shadow` animation replaces the base shadow outright, so `cuePulse` and
+  `tutlive` would flatten the cap while they pulsed. Both carry
+  `0 3px 0 var(--lip)` in every frame. Anything else that animates a shadow
+  has to do the same.
+- **A card's buttons are three weights and they look like three weights**: a
+  filled primary, a filled blue ad button, and a quiet outline. One outlined
+  rectangle per option made every option look identical, which is the
+  opposite of what a card with a recommended action wants.
+- **Every ad button carries the video mark** (`adIcon()` in `js/18-ui.js`) —
+  a play sign in a screen, which is the drawing everybody already reads as
+  "this plays a video". One helper rather than five copies, because there are
+  five ad buttons and they must not drift. It is `fill:currentColor`, so it
+  takes the button's hue for nothing.
+
 ## The look — the block, the sky and the air
 
 **The complaint was that it had good mechanics and did not feel like a game**,
@@ -2712,9 +2755,16 @@ playtester reached for it in the plane *before it did anything* — the
 affordance was already legible and the game silently ignored a correct
 instinct. So:
 
-- **The eye lights when looking would tell you something** — flat, with more
-  than one block in your column, which is the only situation where the
-  landing rule decides something invisible. Judged every frame in `lookCue()`
+- **The eye lights when looking would tell you something, and that is
+  narrower than "more than one block in your column".** That was the first
+  rule and it lit far too often — most columns in most levels hold two
+  blocks and the choice between them usually decides nothing, so the button
+  was on for most of the time anybody spent flat, which is how a cue becomes
+  wallpaper. Reported as showing when it was not necessary. It now asks the
+  question the player is about to get wrong: **the goal folds into the square
+  you are standing on — so it looks like you have arrived — and the block you
+  would come back on is not it.** That is the one moment the landing rule
+  costs the level rather than a step. Judged every frame in `lookCue()`
   rather than in `syncHud`, for the same reason the boss's fold cue is: the
   answer changes when the player moves in the plane, not when a button is
   pressed. Quieter and slower than `peril` and `strike`, because those two
@@ -2989,9 +3039,23 @@ know before touching it:
   away from the camera. `bFlat` is the exception that has to be computed:
   "2D shift" going in and "3D shift" coming out, because which way you are
   about to go is the whole content of the instruction.
+- **STARS ARE GOLD, AND THEY ARRIVE.** `--star` is the one token every star
+  in the game reads — the win card, the corner total, the map's nodes, the
+  shop's prices, the flight between them — and it is deliberately *not* the
+  goal's green: green appears on the goal, on the button being asked for and
+  on a spoken cue, where it means "do this", which is the one thing a score
+  is not. On the win card the row is 42px, each star **falls** onto the card
+  with its own sound (`SFX.drop`, a triad climbing so three of them is a
+  chord), and an empty one falls too but grey and silent. The CSS delays and
+  the sound timers are written against each other and have to move together.
+- **The HUD shows the move count and nothing else.** It used to read `7 / 5`
+  with a live row of stars under it, falling from three to two as you played.
+  Par is the solver's answer, so putting it on screen hands over how long the
+  level is; and a score that ticks *down* while somebody is still thinking is
+  a scold. The stars are the win card's job, where they are a reward rather
+  than a countdown.
 - **Stars.** 3★ = the solver's own move count, 2★ ≤ 150%, 1★ ≤ 200%
-  (`STAR_2X` / `STAR_1X` in `js/07-difficulty.js`, read by `win()`'s
-  hint-laundering arithmetic as well, so the bands live in one place). Par is
+  (`STAR_2X` / `STAR_1X` in `js/07-difficulty.js`). Par is
   optimal, so 3★ genuinely means optimal — that half has never moved. The
   bands widened from 120/140 because a near miss was costing a whole star: on
   a ten-move level 140% is fourteen moves, so two wrong turns was zero, and

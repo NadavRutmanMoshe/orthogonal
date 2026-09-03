@@ -243,10 +243,14 @@ function syncHud(){
     // answer to the same question.
     $("moveLabel").innerHTML="<b>"+moveCount+"</b> moves";
   } else if(app==="play"){
-    var ml=levelPar!==null ? "<b>"+moveCount+"</b> / "+levelPar
-                           : "<b>"+moveCount+"</b>";
-    var st=(levelPar===null||moveCount===0)?3:starsFor(moveCount,levelPar);
-    $("moveLabel").innerHTML=ml+"<div class='stars'>"+starGlyphs(st)+"</div>";
+    /* JUST THE MOVES. It used to read "7 / 5" with a live row of stars under
+       it - your count against par, falling from three to two to one as you
+       went. Two things were wrong with it: par is the solver's answer, so
+       putting it on screen hands over how long the level is, and a score
+       that ticks DOWN while you are still thinking is a scold. The stars are
+       the win card's job now, where they arrive as a reward rather than sit
+       there as a countdown. */
+    $("moveLabel").innerHTML="<b>"+moveCount+"</b> moves";
   } else $("moveLabel").innerHTML="";
   tutSync();
 }
@@ -361,6 +365,25 @@ function flyStars(srcEls,base,gained){
   });
 }
 
+/* THE VIDEO MARK, for every button that costs an ad.
+
+   A screen with a play sign in it is the one drawing everybody already reads
+   as "this plays a video", so the button says what it is before the words
+   are read - and the words are then free to say what you GET rather than
+   spending themselves on the price. One helper rather than five copies of
+   the same path, because there are five ad buttons in the game and they must
+   not drift. `fill:currentColor` in the CSS is what makes it take the
+   button's own hue. */
+function adIcon(){
+  return "<svg class='adicon' viewBox='0 0 24 24' aria-hidden='true'>"+
+    "<path d='M3 6.2c0-1.2 1-2.2 2.2-2.2h13.6C20 4 21 5 21 6.2v9.6c0 "+
+      "1.2-1 2.2-2.2 2.2H5.2C4 18 3 17 3 15.8V6.2Zm2.4.6v8.4c0 .4.3.6.6."+
+      "6h12c.3 0 .6-.2.6-.6V6.8c0-.4-.3-.6-.6-.6H6c-.3 0-.6.2-.6.6Z'/>"+
+    "<path d='M10.4 8.6v4.8c0 .5.5.8.9.5l3.6-2.4c.4-.2.4-.8 0-1l-3.6-2.4c-"+
+      ".4-.3-.9 0-.9.5Z'/>"+
+    "<path d='M8 20.4h8c.5 0 .9.4.9.9s-.4.9-.9.9H8c-.5 0-.9-.4-.9-.9s.4-.9."+
+      "9-.9Z'/></svg>";
+}
 function tap(el,fn){
   if(!el)return;
   el.addEventListener("pointerdown",function(e){
