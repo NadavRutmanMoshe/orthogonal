@@ -143,33 +143,49 @@ function paperIsLight(){
 /* THE LIVE STARS, AND THE ONE THAT FALLS OFF.
 
    Most people solve a level and never notice they scored two - the row used
-   to be three small green characters that quietly became two, which is a
-   thing you can only see by having looked a moment earlier. So the star that
-   is lost is *seen to leave*: the hollow one is always there underneath and
-   the gold one on top of it drops off the row and fades, with a small sound
-   under it. After the animation the slot is simply hollow, which is the same
-   picture the drop left behind.
+   to be three small characters that quietly became two, which is a thing you
+   can only see by having looked a moment earlier. So the star that is lost is
+   *seen to leave*: the hollow one is always there underneath and the gold one
+   on top of it drops off the row and fades. After the animation the slot is
+   simply hollow, which is the picture the fall left behind.
 
-   `starsLive` is what the row said last time, so the fall fires exactly on
-   the move that costs the star rather than on every redraw after it; the
-   timeout clears the mark and re-draws so a later redraw does not replay it. */
-var starsLive=3, starFell=-1, starFellT=null;
-function liveStarRow(st){
-  if(st>starsLive){starsLive=st;starFell=-1;}      // a reset, or a fresh level
-  else if(st<starsLive){
-    starFell=st;starsLive=st;
-    if(SFX.starLost)SFX.starLost();
-    clearTimeout(starFellT);
-    starFellT=setTimeout(function(){starFell=-1;syncHud();},700);
+   THE ROW IS BUILT ONCE AND THEN ONLY TOUCHED WHEN THE COUNT CHANGES, and
+   that is the whole of the fix for the animation breaking under a spammed
+   arrow key. It used to be part of moveLabel's innerHTML, which syncHud
+   rewrites on EVERY redraw - so each move re-created the falling star from
+   scratch and restarted its animation from the top, and holding a direction
+   down left it flickering in place instead of falling off. Now a redraw with
+   the same count is a no-op: no DOM is written, so there is nothing to
+   restart. `void offsetWidth` is what deliberately restarts it in the one
+   case that wants it - a second star lost while the first is still falling.
+
+   It also has to go back up. Undo lowers the move count, so a star can be
+   regained; the fallen glyph loses its class and returns to its socket. */
+var starsLive=3;
+function syncStars(st){
+  var el=$("starRow"); if(!el)return;
+  if(st===null){el.hidden=true;starsLive=3;return;}
+  el.hidden=false;
+  if(!el.childElementCount){
+    var h="";
+    for(var i=0;i<3;i++)
+      h+="<u class='sl'><i class='ho'>\u2606</i><i class='fi'>\u2605</i></u>";
+    el.innerHTML=h;starsLive=3;
   }
-  var s="";
-  for(var i=0;i<3;i++){
-    s+="<u class='sl'><i class='ho'>\u2606</i>";
-    if(i<st)s+="<i class='fi'>\u2605</i>";
-    else if(i===starFell)s+="<i class='fi fall'>\u2605</i>";
-    s+="</u>";
+  if(st===starsLive)return;                  // nothing has changed: leave it be
+  var lost=st<starsLive;
+  for(var j=0;j<3;j++){
+    var fi=el.children[j].firstElementChild.nextElementSibling;
+    fi.classList.remove("fall");
+    if(j<st)fi.style.display="";
+    else if(lost&&j<starsLive){              // these are the ones just lost
+      fi.style.display="";
+      void fi.offsetWidth;                   // restart, deliberately
+      fi.classList.add("fall");
+    } else fi.style.display="none";
   }
-  return "<div class='stars'>"+s+"</div>";
+  if(lost&&SFX.starLost)SFX.starLost();
+  starsLive=st;
 }
 function syncHud(){
   /* THE CHROME FOLLOWS THE GROUND, NOT THE STATE. body.flat swaps the HUD to
@@ -266,22 +282,22 @@ function syncHud(){
     app==="play"&&!!L&&L.rotate===false);
   if(app==="play"&&L&&L.tutorial){
     // No par, no stars: this level is teaching, not marking.
-    $("moveLabel").innerHTML="<b>"+moveCount+"</b>";
+    $("moveLabel").innerHTML="<b>"+moveCount+"</b>";syncStars(null);
   } else if(app==="play"&&(B||TR)){
     // On a clock: the score is the row of lives at the top of the screen, so
     // a row of stars beside the move count would be a second, wrong answer
     // to the same question.
-    $("moveLabel").innerHTML="<b>"+moveCount+"</b>";
+    $("moveLabel").innerHTML="<b>"+moveCount+"</b>";syncStars(null);
   } else if(app==="play"){
     /* THE NUMBER AND THE STARS YOU ARE STILL ON. Not "7 / 5": par is the
        solver's answer and printing it hands over how long the level is. What
        the row says instead is what you have left to lose, which is the same
        information from the player's side - and it is drawn rather than
        counted, so it can be glanced at mid-move. */
-    $("moveLabel").innerHTML="<b>"+moveCount+"</b>"+
-      liveStarRow((levelPar===null||moveCount===0)?3
-                  :starsFor(moveCount,levelPar));
-  } else $("moveLabel").innerHTML="";
+    $("moveLabel").innerHTML="<b>"+moveCount+"</b>";
+    syncStars((levelPar===null||moveCount===0)?3
+              :starsFor(moveCount,levelPar));
+  } else {$("moveLabel").innerHTML="";syncStars(null);}
   tutSync();
 }
 

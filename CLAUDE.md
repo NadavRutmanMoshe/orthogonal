@@ -2920,6 +2920,17 @@ know before touching it:
   than as something being destroyed. It is put back by the same function on
   the first frame that is not a burn, so nothing else has to know it
   happened.
+- **A WARNING MUST NOT LOOK LIKE AN INVITATION.** `foldPeril` used to mark
+  `GO 2D` with a red rim and a breathing red fill, which was right while every
+  button in the game was a hairline outline — and became wrong the moment they
+  all turned into lit caps: a red one that breathes reads as *press me*.
+  Reported in those words, and it is the worst misreading available, since the
+  thing it warns about costs a life. The danger state is now the one thing on
+  screen that is not a lit cap: dark, diagonal hazard stripes nothing else in
+  the game uses, a red rim, and a warning triangle before the label. Nothing
+  glows and nothing swells; only the triangle blinks, which says *look* without
+  saying *press*. `.strike` — the one moment folding is an attack — keeps the
+  lit, breathing treatment, and the two are now opposites by construction.
 - **Folding into a wall is telegraphed, not blocked.** `foldPeril()` in
   `js/12-play.js` answers "would flattening from here kill me, and which blocks
   are to blame" — the guilty ones are tinted and outlined red in the world and
@@ -3076,9 +3087,18 @@ know before touching it:
   the row, fades, and two soft descending notes go with it (`SFX.starLost`).
   The old row simply became two characters instead of three, which is a
   change you can only notice by having looked a moment earlier, and most
-  people never did. `starsLive` in `js/18-ui.js` is what the row said last
-  time, so the fall fires on the move that costs the star rather than on
-  every redraw after it.
+  people never did.
+- **THE ROW IS ITS OWN ELEMENT, BUILT ONCE, AND ONLY TOUCHED WHEN THE COUNT
+  CHANGES.** It was part of `moveLabel`'s innerHTML, which `syncHud` rewrites
+  on *every* redraw — so each move re-created the falling star and restarted
+  its animation from the top, and holding an arrow down left it flickering in
+  place instead of falling off. Reported from a playtest as spamming left and
+  right breaking it. `syncStars()` returns immediately when the count has not
+  moved, so a redraw writes no DOM and there is nothing to restart;
+  `void offsetWidth` is what deliberately restarts it in the one case that
+  wants it, a second star lost while the first is still in the air. **Any
+  animation that lives inside something `syncHud` rewrites has this bug** —
+  that is the general form.
 - **The star BANK is not shown inside a level.** How many you have collected
   across the whole game cannot change while you are playing one and is not
   what anybody is thinking about; the row under the move count is. It appears

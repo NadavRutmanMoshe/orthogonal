@@ -166,6 +166,7 @@
      it is the only score on screen now - and right-aligned under the number.
      See liveStarRow() in js/18-ui.js. */
   .stars{display:flex;gap:5px;justify-content:flex-end;margin-top:4px}
+  .stars[hidden]{display:none}
   .stars .sl{position:relative;display:block;width:19px;height:19px;
     text-decoration:none}
   .stars i{position:absolute;inset:0;font-style:normal;font-size:18px;
@@ -205,13 +206,40 @@
       linear-gradient(180deg,color-mix(in srgb,var(--c) 22%,transparent),
         color-mix(in srgb,var(--c) 7%,transparent)),
       var(--panel)}
-  /* Folding from here would kill you. Marked, not disabled - it is still a
-     legal move and some players will want to see what happens. */
-  .flatbtn.peril{border-color:#ff4d5e;color:#ff4d5e;
-    animation:perilpulse 1.15s ease-in-out infinite}
-  @keyframes perilpulse{50%{background:rgba(255,77,94,.16)}}
+  /* FOLDING FROM HERE WOULD KILL YOU, AND IT HAS TO LOOK LIKE A HAZARD.
+
+     Marked, not disabled - it is still a legal move and some players will
+     want to see what happens. But once every button in the game became a lit
+     cap, a red one that breathed read as *press me*: reported exactly that
+     way, and it is the worst possible misreading, because the thing it is
+     warning about costs a life.
+
+     So the danger state is the one thing on screen that is NOT a lit cap. It
+     goes dark, it gains diagonal hazard stripes - a pattern nothing else in
+     the game uses and everybody already reads as "do not" - and it carries a
+     warning triangle before the label. Nothing glows and nothing swells; the
+     only movement is the triangle blinking, which says "look at me" without
+     saying "press me". Compare `.strike` below, which is an invitation and
+     is drawn like one. */
+  .flatbtn.peril{border-color:#ff4d5e;color:#ff9aa2;--lip:#4a0d14;
+    animation:none;
+    background:
+      repeating-linear-gradient(-45deg,
+        rgba(255,77,94,.22) 0 7px, rgba(255,77,94,0) 7px 15px),
+      linear-gradient(180deg, rgba(96,16,26,.62), rgba(44,6,12,.82))}
+  .flatbtn.peril::before{content:"\26A0";font-size:15px;line-height:1;
+    margin-right:9px;color:#ff4d5e;
+    animation:perilblink 1.15s ease-in-out infinite}
+  @keyframes perilblink{50%{opacity:.32}}
+  body.flat .flatbtn.peril{color:#8c1420;
+    background:
+      repeating-linear-gradient(-45deg,
+        rgba(200,30,50,.26) 0 7px, rgba(200,30,50,0) 7px 15px),
+      linear-gradient(180deg, rgba(255,190,195,.75), rgba(240,150,158,.8))}
   /* Folding right now would crush the boss. The one moment the fold is an
-     attack rather than a risk, so it gets the goal colour. */
+     attack rather than a risk, so it gets the goal colour AND the lit,
+     breathing treatment - it is the one state on this button that genuinely
+     means press me, and peril above is deliberately drawn as its opposite. */
   .flatbtn.strike{border-color:var(--goal);color:var(--goal);
     animation:strikepulse .9s ease-in-out infinite}
   @keyframes strikepulse{50%{background:rgba(53,194,165,.2)}}

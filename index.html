@@ -74,7 +74,11 @@
     <div class="title" id="lvName">—</div>
     <div class="hint" id="lvHint"></div>
   </div>
-  <div class="axis"><div class="moves" id="moveLabel"></div></div>
+  <!-- The stars are their own element and NOT part of moveLabel: syncHud
+       rewrites the count on every redraw, and a row rebuilt under a running
+       animation restarts it. See syncStars() in js/18-ui.js. -->
+  <div class="axis"><div class="moves" id="moveLabel"></div>
+    <div class="stars" id="starRow" hidden></div></div>
 </div>
 
 <div class="coach" id="coach"></div>
