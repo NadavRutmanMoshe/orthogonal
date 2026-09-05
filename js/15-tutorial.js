@@ -133,7 +133,10 @@ var GEST_SAY={
    the hand can appear at all: a hint on a HIDDEN layout uses it whatever
    this says, because there the alternative is a pulse on nothing. */
 function tutGestures(){
-  return settings.tutor==="gesture";
+  // Derived, not chosen: the lesson teaches whatever controls this player
+  // actually has. HIDDEN means the gestures are all there is, so that is the
+  // lesson; a bar on screen means the buttons are.
+  return settings.ui==="none";
 }
 function tutGestureLesson(){
   return app==="play" && !!L && !!L.tut && tutGestures();

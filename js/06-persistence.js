@@ -83,8 +83,11 @@ function loadSettings(){
            half speed with nothing left to change it - which is the trap this
            whitelist exists to make visible. A key whose feature is removed
            comes out of the list with it. */
-        if(o.mastery==="on"||o.mastery==="auto")settings.mastery=o.mastery;
-        if(o.tutor==="gesture"||o.tutor==="buttons")settings.tutor=o.tutor;
+        /* `mastery` and `tutor` are deliberately NOT read any more: their
+           rows are gone from the menu, so a save carrying mastery:"on" would
+           pin the preview look on with nothing left to switch it off - the
+           same trap `pace` is in. A key whose feature is removed comes out
+           of the whitelist with it. */
         /* THE COUNTERS HAVE TO BE ON THIS LIST OR THEY DO NOT EXIST. This
            function is a whitelist, deliberately - see the volume note above -
            so a key that is written by saveSettings() and not read here is
@@ -93,9 +96,6 @@ function loadSettings(){
            tomorrow. Bounded rather than trusted, because a hand-edited save
            should not be able to switch help off with a nonsense value. */
         if(o.noSlowOffer===true)settings.noSlowOffer=true;
-        // Same trap: without this the tutorial's controls question is asked
-        // again on every reload, since nothing else records that it was.
-        if(o.ctlAsked===true)settings.ctlAsked=true;
         if(o.hintAsked===true)settings.hintAsked=true;
         if(o.starAsked===true)settings.starAsked=true;
         if(typeof o.landHints==="number"&&o.landHints>=0)

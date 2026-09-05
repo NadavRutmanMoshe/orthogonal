@@ -460,6 +460,9 @@
   .crow{display:flex;align-items:center;gap:7px;padding:8px 0;
     border-bottom:1px solid var(--rule)}
   .crow label{width:74px;flex-shrink:0;color:var(--fg-dim)}
+  /* A row whose card heading already names it: the three options take the
+     whole width rather than leaving a label-shaped hole. */
+  .crow.bare{border-bottom:0;padding-bottom:2px}
   .crow .seg{flex:1;display:flex;gap:4px}
   .crow .seg button{flex:1;height:27px;font-size:10.5px;letter-spacing:.05em}
   .crow .seg button.on{border-color:var(--player);color:var(--player);

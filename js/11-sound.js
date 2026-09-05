@@ -31,47 +31,36 @@ function defaultVolume(){
   var coarse=window.matchMedia&&window.matchMedia("(pointer: coarse)").matches;
   return coarse?1:.35;
 }
-/* WHICH CONTROLS THE TUTORIAL TEACHES, and it defaults by device for the same
-   reason the volume does.
+/* THE TUTORIAL TEACHES WHATEVER THE CONTROLS ARE SET TO.
 
-   The tutorial used to force the button bar back on screen whatever the
-   layout preference said, on the grounds that hiding the controls during the
-   lesson about the controls is a joke at the player's expense. That is still
-   true - but it assumed the lesson is about the buttons, and a button marked
-   with an arrow needs no lesson. The controls that genuinely cannot be
-   discovered are the gestures, and they are also the ones that cost no screen.
+   There used to be a second setting for it - GESTURES or BUTTONS - which is
+   a question nobody can answer before they have played: it asks a first-time
+   player to choose between two lessons for a game they have not seen. The
+   layout already says which controls this player has, so the lesson follows
+   it, and the menu is one row shorter. `tutGestures()` in 15-tutorial.js is
+   the whole of the derivation.
 
-   So "gesture" teaches the swipe, the double tap and the two-finger swipe,
-   with the bar off and a ghost hand demonstrating each one; "buttons" is the
-   old lesson, unchanged. A coarse pointer is the signal, exactly as it is for
-   the volume: it means a finger, and a finger is the only thing any of these
-   gestures can be performed with. On a mouse the gesture lesson would be
-   eloquently wrong - "swipe right" to somebody holding a mouse - so a fine
-   pointer keeps the buttons until the keyboard half of this is built. */
-function defaultTutor(){
-  var coarse=window.matchMedia&&window.matchMedia("(pointer: coarse)").matches;
-  return coarse?"gesture":"buttons";
-}
-/* `mastery` is a *preview* switch, not a gameplay one. "auto" is the real
-   thing - a section wears its finished colours when every level in it is on
-   three stars. "on" forces that look everywhere, so the celebration can be
-   looked at without earning it four times over. It changes nothing but the
-   drawing: no stars move, nothing unlocks. */
-/* ctlAsked is whether the player has been asked, once, at the end of the
-   tutorial, whether they want the on-screen buttons - see controlsOffer(),
-   and hintAsked the same for the bulb one level later - see hintOffer().
-   It is a "has this happened" flag rather than a preference: the preference
-   it produces is `ui`, and the answer must not be asked for twice. */
+   THE DEFAULT IS HIDDEN, on the owner's call. The bar off is the shape the
+   game wants - the gestures cost no screen and the world is what you should
+   be looking at - and the tutorial now teaches them because that is what the
+   setting says. Note the consequence on a desktop: a fine pointer gets the
+   gesture lesson too, and a swiping hand is an odd thing to show somebody
+   holding a mouse. The keyboard half of the lesson is still unbuilt; when it
+   exists this is where it is chosen. */
+/* hintAsked is whether the bulb has been explained, once - see hintOffer().
+   A "has this happened" flag rather than a preference. `ctlAsked` sat here
+   too, for a card at the end of the tutorial that offered the buttons back;
+   the buttons are a setting and the card is gone. */
 /* noSlowOffer is the player saying stop to the help the game offers after a
    run of losses. It is global rather than per level: somebody who does not
    want to be offered help does not want it again on the next boss either. It
    keeps its name now that the offer it was born for - slowing the clock - has
    gone, because it is persisted and renaming it would silently un-silence
    everyone who has already pressed the button. */
-var settings={volume:defaultVolume(),brightness:1,ui:"full",volTouched:false,
+var settings={volume:defaultVolume(),brightness:1,ui:"none",volTouched:false,
               /* pace is retired and pinned at 1; see paceScale() below. */
-              pace:1,mastery:"auto",tutor:defaultTutor(),
-              noSlowOffer:false,landHints:0,ctlAsked:false,
+              pace:1,
+              noSlowOffer:false,landHints:0,
               hintAsked:false,starAsked:false};
 /* How many times the landing rule is spelled out in words. The rings keep
    drawing forever - they are free and they answer the question faster than a

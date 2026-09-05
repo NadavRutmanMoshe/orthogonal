@@ -1707,13 +1707,12 @@ level data changed to make it.
   nothing else, and a skip is deliberately not in `progress`. `PROLOGUE` can
   never be mastered because `sectionSpans()` skips tutorials, so its `max` is
   0 — a section that awards no stars has none to collect.
-- **The menu's `PREVIEW` switch forces the finished look on and draws the
-  nodes solved**, because a preview that leaves every node dashed and locked
-  is not a preview of the finished look. It is a drawing and nothing else:
-  `mapSheet()` asks `mapState()` again on a tap, so a locked level still
-  refuses to open. The win card's mastery banner deliberately does **not** go
-  through `sectionMastered()` — it is derived from `starsGained` — so a
-  preview can never fake the one moment that is actually news.
+- **The `PREVIEW` switch that forced the finished look on is gone from the
+  menu**, and `masteryPreview()` returns false. The machinery it drove is
+  untouched, so restoring the row restores the preview. The win card's
+  mastery banner deliberately never went through `sectionMastered()` — it is
+  derived from `starsGained` — so a preview could never fake the one moment
+  that is actually news.
 - **The landmarks are SVG, not `clip-path`.** A clipped box loses its border
   and its shadow, and the rim and the lip are what make a node look pressable;
   `mapShape()` emits the polygon, its lip and its ring as one `<svg>`.
@@ -2471,48 +2470,47 @@ Note the direction while you are in there: **+z points toward the camera**
 is in *front*. The old line called it "far behind everything", which is
 backwards, and a lesson that contradicts the screen is worse than none.
 
-### Which controls it teaches — `settings.tutor`
+### Which controls it teaches — the layout, and nothing else
 
-**The default tutorial has no buttons.** `GESTURES` takes the bar off and
-teaches the three things a finger can do on the world — swipe to move,
-double-tap to change dimension, two-finger swipe to turn — with a **ghost
-hand** demonstrating whichever one the current step wants. `BUTTONS` is the
-old lesson, bar forced on, unchanged. The menu row is under Controls; it
-changes nothing outside the tutorial, because every control works in both.
+**The lesson follows `settings.ui`.** HIDDEN means the gestures are all this
+player has, so the tutorial takes the bar off and teaches the three things a
+finger can do on the world — swipe to move, double-tap to change dimension,
+two-finger swipe to turn — with a **ghost hand** demonstrating whichever one
+the current step wants. FULL or COMPACT means there are buttons, so it is the
+button lesson. `tutGestures()` is the whole derivation.
 
-**THE TUTORIAL ENDS BY TAKING THE BUTTONS OFF AND OFFERING THEM BACK.**
-Winning the last tutorial level sets `ui` to `none` and puts up one card —
-`controlsOffer()` in `js/12-play.js`, `settings.ctlAsked` in the
-`loadSettings()` whitelist so it is asked once ever. The lesson taught the
-gestures and then handed the buttons straight back, which is teaching one
-control set and covering a fifth of the screen with a different one. What it
-must not do is take them away *silently*: a player who wants the bar has no
-way of knowing it is a setting. So the tutorial does it and shows the way
-back, which is `struggleOffer()`'s shape — the thing has already happened,
-the board is behind the card, and the card is a door rather than a wall.
+**THERE USED TO BE A SECOND SETTING FOR IT, AND IT WAS THE WRONG QUESTION.**
+A `Tutorial: GESTURES / BUTTONS` row asks a first-time player to choose
+between two lessons for a game they have not seen, and the answer was already
+sitting one row above it. It went, along with `defaultTutor()`; **HIDDEN is
+now the default layout**, so the default lesson is the gestures because that
+is what the default controls are.
 
-- **Armed in `win()`, fired from `loadLevel()`.** A panel is z-index 12 and
-  the win card is 20, so a card raised at the moment of winning opens
-  *behind* the one being read. `ctlOfferPending` carries it into whatever the
-  player opens next, which is also what makes it survive LEVELS as well as
-  NEXT LEVEL.
-- **It names the keyboard too.** On a fine pointer the lesson just given was
-  the *button* lesson (`defaultTutor()`), so a desktop player has to be told
-  what is left when the bar goes — and there the honest answer is the arrow
-  keys, which have always worked.
+- **The consequence on a desktop is real and is accepted.** A fine pointer
+  now gets the gesture lesson, and a swiping hand is an odd thing to show
+  somebody holding a mouse — which is exactly what `defaultTutor()` used to
+  exist to avoid. The keyboard half of the lesson is still unbuilt; when it
+  is, this is where it gets chosen.
+- **`mastery` went the same way**, and for the same reason a removed key
+  always does: its row is gone, so `loadSettings()` no longer reads it and
+  `masteryPreview()` returns false. A save carrying `mastery:"on"` would
+  otherwise pin the preview look on with nothing left to switch it off.
 
-**AND ONE LEVEL LATER, THE BULB.** `hintOffer()` explains the hint, once
-(`settings.hintAsked`, whitelisted beside `ctlAsked`). The tutorial stops
+**THE CARD THAT OFFERED THE BUTTONS BACK IS GONE.** The tutorial used to end
+by setting `ui` to `none` itself and putting up `controlsOffer()` — on the
+reasoning that the game must not take the buttons away silently. It does not
+take them away at all now: HIDDEN is simply the default and the menu row is
+where it lives. A card explaining a setting that never changed under the
+player is a wall between the tutorial and the game, and it was the first of
+two in a row. `settings.ctlAsked` went with it, out of the whitelist too.
+
+**AND ON THE FIRST REAL LEVEL, THE BULB.** `hintOffer()` explains the hint,
+once (`settings.hintAsked`, in the `loadSettings()` whitelist). The tutorial stops
 talking at exactly the point the player meets the game, and the single most
 useful control in it is a bulb in the corner nobody has been told about —
 which is a retention hole rather than a missing nicety, since hints are the
 reason somebody stuck does not close the game.
 
-- **It is the level *after* the controls card, not the same one.** Two
-  full-bleed cards in a row on the first real level is a wall between the
-  tutorial and the game. `settings.ctlAsked` sequences them: it is false
-  while the controls card is still pending, so `hintOfferDue()` cannot fire
-  until that one has been answered.
 - **The press it asks for is free.** A hint costs a star band, and a card
   that tells the player to spend one to find out what a button does is the
   small dishonesty a player remembers. It arms `freeHint` and `showHint()`
@@ -2529,14 +2527,13 @@ since hiding the controls during the lesson about the controls is a joke at
 the player's expense. That is still true and it is *why* this inverts: the
 lesson is not about the buttons. A button marked with an arrow needs no
 lesson. The controls that genuinely cannot be discovered are the gestures,
-and they are also the ones that cost no screen.
+and they are also the ones that cost no screen — which is why they are the
+default now, and why the lesson simply reads the layout.
 
-- **The default is by pointer, not by preference.** `defaultTutor()` returns
-  `gesture` on a coarse pointer and `buttons` otherwise, the same signal the
-  volume default uses. On a mouse the gesture lesson would be eloquently
-  wrong — "swipe right" to somebody holding a mouse — so a desktop keeps the
-  buttons until the keyboard half of this is built. Changing the row sets an
-  explicit choice that outranks the default from then on.
+- **The lesson is derived, never chosen.** `tutGestures()` is
+  `settings.ui==="none"` and that is the whole of it, so the lesson and the
+  controls can never disagree — which is what the removed `Tutorial` row
+  could do, and did.
 - **The demo is a second *rendering* of the cue id, not a second source of
   truth.** `tutGuide().cue` is already the one token for "what control is
   being asked for", and `CUE_GEST` is keyed by exactly those ids, so the two
@@ -3522,13 +3519,13 @@ tested and failed, plus where this sits in the PCG literature, are in
   the question one move earlier. It must not replace `GO 2D`; it would be its
   own control, and on the default layout that means a gesture as well.
 - **Two-finger tap only rotates right.** There is no left-rotate gesture.
-- **The gesture tutorial has no keyboard half yet**, which is why
-  `defaultTutor()` sends a fine pointer to the button lesson. The intended
-  end state is one lesson that teaches whatever the device actually has —
-  gestures on glass, keys on a desktop — and the game shipping with no
-  buttons by default in both. `TUT_SAY` already has the shape for it: a third
-  table of phrases and a third demonstration (a key cap rather than a hand),
-  keyed by the same cue ids.
+- **The gesture tutorial has no keyboard half yet, and the default now walks
+  straight into that.** HIDDEN is the default layout, the lesson follows the
+  layout, so a desktop first run is shown a swiping hand by somebody holding
+  a mouse. The intended end state is one lesson that teaches whatever the
+  device actually has — gestures on glass, keys on a desktop. `TUT_SAY`
+  already has the shape for it: a third table of phrases and a third
+  demonstration (a key cap rather than a hand), keyed by the same cue ids.
 - **The ghost hand has never been played, only screenshotted.** The open
   questions are all feel: is a hand looping for the whole step help or noise,
   is .62 against 1.0 enough of a step up when the guided lock arms, and does
@@ -3538,13 +3535,11 @@ tested and failed, plus where this sits in the PCG literature, are in
 
 ## Agreed next steps
 
-0. **Playtest the gesture tutorial**, and if it lands, build the keyboard
-   half: a `keys` table in `TUT_SAY`, a key-cap demonstration beside the
-   hand, and `defaultTutor()` returning it on a fine pointer. **The bar being
-   off by default is done**, by the tutorial's own ending question — see
-   `controlsOffer()` — rather than by changing the default layout, so a
-   player who wants the buttons is offered them at the one moment they know
-   what they would be choosing between.
+0. **Build the keyboard half of the lesson**: a `keys` table in `TUT_SAY`
+   and a key-cap demonstration beside the hand. **The bar is off by default
+   now** — `settings.ui` starts at `none` — and the lesson follows the
+   layout, so a desktop first run gets a swiping hand shown to somebody
+   holding a mouse. That is the gap this closes.
 1. **Playtest the three phased bosses.** They are real-time, which is the one
    thing no tool here can judge, and the ramp has still barely been felt. The
    questions: can a human read which axis to fold along while a line is lit,

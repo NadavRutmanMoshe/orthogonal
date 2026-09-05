@@ -1550,7 +1550,6 @@ function win(){
        so a card put up now would open behind the one the player is reading.
        loadLevel() fires it on the way into whatever they pick next, which is
        also what makes it survive LEVELS as well as NEXT LEVEL. */
-    if(lastTut&&playSource==="builtin"&&!settings.ctlAsked)ctlOfferPending=true;
     $("wonTitle").textContent="Got it";
     $("wonSub").textContent=L.name.replace(/^00 \u2014 /,"")+"  \u00b7  "+
       moveCount+" moves  \u00b7  not scored"+
@@ -1727,62 +1726,26 @@ function bindNever(){
     flash("no more suggestions");
   });
 }
-/* THE CONTROLS QUESTION, ASKED ONCE, AT THE END OF THE TUTORIAL.
+/* THE CONTROLS QUESTION IS GONE, AND SO IS THE CARD THAT ASKED IT.
 
-   The default tutorial teaches the gestures and takes the bar off while it
-   does - and then handed the buttons straight back the moment it finished,
-   which taught a control set and then covered a fifth of the screen with a
-   different one. The bar off is the default the game wants; what it cannot
-   do is take the buttons away silently, because a player who wants them has
-   no way of knowing they are a setting.
+   The tutorial used to end by taking the bar off and putting up a card
+   offering it back - the reasoning being that the game must not take the
+   buttons away silently. It does not take them away at all now: HIDDEN is
+   simply the default, the layout row in the menu is where it lives, and the
+   lesson teaches whatever that row says. A card explaining a setting the
+   player never had changed under them is a wall between the tutorial and the
+   game, and it was the first of two in a row.
 
-   So the tutorial ends by *doing* it and offering the way back. That is the
-   same shape as struggleOffer(): the thing has already happened, the board
-   is behind the card, and the card is a door rather than a wall. Asked once
-   ever - `settings.ctlAsked` - because a preference asked twice is nagging,
-   and it is in the loadSettings() whitelist or it would be asked on every
-   reload.
+   `settings.ctlAsked` went with it, out of the loadSettings() whitelist as
+   well - a key whose feature is removed comes out of the list with it. */
 
-   It names the keyboard as well, deliberately. On a fine pointer the lesson
-   just given was the button lesson (see defaultTutor()), so somebody on a
-   desktop has to be told what is left when the bar goes - and the honest
-   answer there is the arrow keys, which have always worked. */
-var ctlOfferPending=false;
-function controlsOffer(){
-  ctlOfferPending=false;
-  if(settings.ctlAsked)return;
-  if(!L||levelOver()||panelOpen()||screenUp())return;
-  settings.ctlAsked=true;
-  // Done before the card goes up, not by the buttons on it: the card is
-  // showing the player what has already changed, and KEEP SWIPING has to be
-  // a dismissal rather than an action.
-  settings.ui="none";
-  saveSettings();applyUI();syncHud();
-  offerShell("Controls",
-    "The buttons are off \u2014 you have the whole screen. <b>Swipe</b> to "+
-    "walk, <b>double-tap</b> to change dimension, <b>two fingers</b> to turn.",
-    "<button class='qt' id='ctlNo'>KEEP SWIPING</button>"+
-    "<button class='ad' id='ctlYes'>SHOW THE BUTTONS</button>",
-    "Change it any time under <b>Menu \u203a Controls</b>.");
-  bind("ctlNo",function(){hidePanel();});
-  bind("ctlYes",function(){
-    settings.ui="full";saveSettings();applyUI();syncHud();hidePanel();
-    flash("buttons on");
-  });
-}
-/* THE BULB, EXPLAINED ONE LEVEL AFTER THE BUTTONS.
+/* THE BULB, EXPLAINED ON THE FIRST LEVEL AFTER THE TUTORIAL.
 
    The tutorial's last card says where the hand goes and then the game stops
    talking - and the single most useful control in it is a bulb in the corner
    that nobody has been told about. Hints are the reason a player who is
    stuck does not close the game, so a hint nobody knows exists is a
    retention hole rather than a missing nicety.
-
-   It is deliberately the level AFTER the controls card rather than the same
-   one: two full-bleed cards in a row on the first real level is a wall
-   between the tutorial and the game. `settings.ctlAsked` is what sequences
-   them - it is false while the controls card is still pending, so this can
-   only come up once that one has been answered.
 
    AND THE PRESS IT ASKS FOR IS FREE. A hint costs one out of a pool of
    three, and this card tells the player to spend one in order to find out
@@ -1791,7 +1754,7 @@ function controlsOffer(){
    the kind of small dishonesty a player remembers. It used to be a star band
    rather than a hint; the flag is unchanged and so is the reason for it. */
 function hintOfferDue(){
-  return !settings.hintAsked&&settings.ctlAsked&&!ctlOfferPending&&
+  return !settings.hintAsked&&
          playSource==="builtin"&&!!L&&!L.tutorial&&!L.boss&&!L.trial;
 }
 function hintOffer(){
@@ -1831,7 +1794,7 @@ function hintOffer(){
    running. `settings.starAsked` is in the loadSettings() whitelist beside
    the other two, or it would be asked on every reload. */
 function starsOfferDue(){
-  return !settings.starAsked&&!ctlOfferPending&&playSource==="builtin"&&
+  return !settings.starAsked&&playSource==="builtin"&&
          !!L&&!!L.stars&&!L.tutorial;
 }
 function starsOffer(){
@@ -1938,7 +1901,6 @@ function loadLevel(level,idx){
   // The board first, the card a beat later - the same order the struggle
   // offer uses, and for the same reason: it is a door standing in front of
   // something, so the something has to be there.
-  if(ctlOfferPending)setTimeout(controlsOffer,520);
-  else if(hintOfferDue())setTimeout(hintOffer,520);
+  if(hintOfferDue())setTimeout(hintOffer,520);
   else if(starsOfferDue())setTimeout(starsOffer,520);
 }

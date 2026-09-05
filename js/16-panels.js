@@ -220,25 +220,17 @@ function menuPanel(){
         "<div class='srow'><label>Brightness</label>"+
           "<input type='range' id='mBri' min='60' max='140' value='"+bri+"'>"+
           "<span id='mBriV'>"+bri+"%</span></div></div>"+
+      /* ONE ROW, THREE OPTIONS, AND NO PARAGRAPH UNDER IT. The card is
+         called Controls and the three buttons are the whole of it - a
+         setting whose options are three words does not need a sentence
+         explaining them, and the note under this one was four lines of
+         gesture reference nobody had asked for. The Tutorial row went with
+         it: the lesson now teaches whatever this is set to. */
       "<div class='pcard'><h4>Controls</h4>"+
-        "<div class='crow'><label>Layout</label><span class='seg'>"+
+        "<div class='crow bare'><span class='seg'>"+
           seg("mUi","full","FULL",settings.ui)+
           seg("mUi","compact","COMPACT",settings.ui)+
-          seg("mUi","none","HIDDEN",settings.ui)+"</span></div>"+
-        "<div class='note'><code>Swipe</code> to move, "+
-          "<code>double-tap</code> to change dimension, "+
-          "<code>two fingers</code> to turn \u2014 in every layout.</div>"+
-        "<div class='crow'><label>Tutorial</label><span class='seg'>"+
-          seg("mTutor","gesture","GESTURES",settings.tutor)+
-          seg("mTutor","buttons","BUTTONS",settings.tutor)+"</span></div>"+
-        "<div class='note'>What the teaching levels teach. Nothing else "+
-          "changes.</div></div>"+
-      "<div class='pcard'><h4>Mastery</h4>"+
-        "<div class='crow'><label>Show as</label><span class='seg'>"+
-          seg("mMast","auto","EARNED",settings.mastery)+
-          seg("mMast","on","PREVIEW",settings.mastery)+"</span></div>"+
-        "<div class='note'>A section paints itself at three stars on every "+
-        "level. PREVIEW only shows the look.</div></div>"+
+          seg("mUi","none","HIDDEN",settings.ui)+"</span></div></div>"+
       "<div class='pcard'><h4>More</h4><div class='psub'>"+
         "<button id='mLegend'>WHAT THE PIECES DO</button>"+
         "<button id='mTut'>REPLAY TUTORIAL</button>"+
@@ -277,28 +269,16 @@ function menuPanel(){
       settings.ui=m;applyUI();saveSettings();syncHud();onResize();menuPanel();
     });
   });
-  ["gesture","buttons"].forEach(function(m){
-    bind("mTutor_"+m,function(){
-      settings.tutor=m;saveSettings();syncHud();menuPanel();
-      flash(m==="gesture"?"tutorial teaches gestures":"tutorial teaches buttons");
-    });
-  });
-  ["auto","on"].forEach(function(m){
-    bind("mMast_"+m,function(){
-      settings.mastery=m;saveSettings();menuPanel();
-      flash(m==="on"?"mastery preview on — open the map":"mastery: as earned");
-    });
-  });
   bind("mTut",function(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
   });
   bind("mReset",function(){
     settings.volume=defaultVolume();settings.volTouched=false;
     settings.brightness=1;settings.ui="full";
-    settings.tutor=defaultTutor();
+
     // including "stop suggesting things": a reset is a reset
     settings.noSlowOffer=false;settings.landHints=0;
-    settings.ctlAsked=false;settings.hintAsked=false;settings.starAsked=false;
+    settings.hintAsked=false;settings.starAsked=false;
     muted=false;
     applyVolume();
     applyBrightness();applyUI();saveSettings();syncHud();
@@ -614,7 +594,11 @@ function sectionSpans(){
 
    The preview switch forces the look on so it can be *seen* without being
    earned. It touches the drawing only. */
-function masteryPreview(){return settings.mastery==="on";}
+/* The preview switch is gone from the menu, so nothing can turn this on any
+   more. Kept as a function rather than deleted at every call site: it is the
+   seam the switch would come back through, and the three drawing paths that
+   ask it read better with a name than with `false`. */
+function masteryPreview(){return false;}
 function sectionMastered(sp){
   if(!sp||sp.max<=0||sp.locked)return false;
   return masteryPreview()||sp.got===sp.max;

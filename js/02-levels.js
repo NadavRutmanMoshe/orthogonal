@@ -25,7 +25,7 @@ var LEVELS=[
 
       The prose names that control in tokens rather than in glyphs, because
       there are two sets of controls it could mean: the tutorial teaches the
-      buttons or the gestures depending on settings.tutor, and {do:right} is
+      buttons or the gestures depending on the layout, and {do:right} is
       "Press <b>&#9654;</b>" or "<b>Swipe right</b>" accordingly. See TUT_SAY.
       A lesson that says "press the right arrow" over a swiping finger is the
       same bug {to2} exists to prevent, with a different subject. */
