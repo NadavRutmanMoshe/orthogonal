@@ -146,8 +146,8 @@ function wardMeta(){
   s+="</div>";
   // The hook name belongs in the code and in CLAUDE.md, not in a player's
   // narrow sidebar; all this has to say is why the button does nothing.
-  if(!have)s+="<div class='note'>Ads need an SDK, so the button is dead "+
-    "until the game is wrapped for a store.</div>";
+  if(!have)s+="<div class='note'>No ad provider yet \u2014 the button is "+
+    "dead until the game is wrapped for a store.</div>";
   $("wMeta").innerHTML=s;
   bind("wEquip",function(){wardEquip(t,id);SFX.key();wardRefresh();});
   bind("wBuy",function(){
@@ -222,24 +222,23 @@ function menuPanel(){
           "<span id='mBriV'>"+bri+"%</span></div></div>"+
       "<div class='pcard'><h4>Controls</h4>"+
         "<div class='crow'><label>Layout</label><span class='seg'>"+
-          seg("mUi","full","ON-SCREEN",settings.ui)+
+          seg("mUi","full","FULL",settings.ui)+
           seg("mUi","compact","COMPACT",settings.ui)+
           seg("mUi","none","HIDDEN",settings.ui)+"</span></div>"+
-        "<div class='note'>Every control works whichever you pick: "+
-          "<code>swipe</code> to move, <code>double-tap</code> to change "+
-          "dimension, <code>two-finger swipe</code> to turn.</div>"+
+        "<div class='note'><code>Swipe</code> to move, "+
+          "<code>double-tap</code> to change dimension, "+
+          "<code>two fingers</code> to turn \u2014 in every layout.</div>"+
         "<div class='crow'><label>Tutorial</label><span class='seg'>"+
           seg("mTutor","gesture","GESTURES",settings.tutor)+
           seg("mTutor","buttons","BUTTONS",settings.tutor)+"</span></div>"+
-        "<div class='note'>Which controls the teaching levels teach. "+
-          "Nothing outside them changes.</div></div>"+
+        "<div class='note'>What the teaching levels teach. Nothing else "+
+          "changes.</div></div>"+
       "<div class='pcard'><h4>Mastery</h4>"+
         "<div class='crow'><label>Show as</label><span class='seg'>"+
           seg("mMast","auto","EARNED",settings.mastery)+
           seg("mMast","on","PREVIEW",settings.mastery)+"</span></div>"+
-        "<div class='note'>A section paints itself once every level in it is "+
-        "on three stars. PREVIEW just shows you the look \u2014 nothing "+
-        "unlocks either way.</div></div>"+
+        "<div class='note'>A section paints itself at three stars on every "+
+        "level. PREVIEW only shows the look.</div></div>"+
       "<div class='pcard'><h4>More</h4><div class='psub'>"+
         "<button id='mLegend'>WHAT THE PIECES DO</button>"+
         "<button id='mTut'>REPLAY TUTORIAL</button>"+
@@ -1233,7 +1232,7 @@ function levelPicker(){
 
   var cleared=0;
   for(var c=0;c<LEVELS.length;c++) if(mapTouched(c)) cleared++;
-  $("mSub").textContent=cleared+" OF "+LEVELS.length+" CLEARED";
+  $("mSub").textContent=cleared+" / "+LEVELS.length+" CLEARED";
 
   mapTabs(spans);
   mapDraw(spans);
@@ -1533,9 +1532,7 @@ function mapSheet(i){
     var what=k==="boss"?"THE BOSS":k==="trial"?"THE TRIAL":"THIS LEVEL";
     acts="<button class='ad' id='mAd'>"+adIcon()+"OPEN "+what+" · WATCH "+ads+" AD"+
          (ads>1?"S":"")+"</button><button class='qt' id='mNo'>NOT NOW</button>";
-    note="This opens <b>this one</b> and nothing else — everything in front of "+
-         "it stays where it is, still to play, and you can open those the same "+
-         "way. It awards <b>no stars</b>. Ads buy progress, never score.";
+    note="Opens <b>this one</b> and nothing else, and awards <b>no stars</b>.";
   }else if(st==="locked"){
     /* The shelf, and the only lock in the game an ad cannot open. Which
        makes it the one lock that has to name its own condition: a boss you
@@ -1546,18 +1543,18 @@ function mapSheet(i){
     acts=(lf.length&&!mapLocked(lf[0])
         ? "<button class='go' id='mBossTo'>GO TO "+esc(bossShort(LEVELS[lf[0]]))+"</button>"
         : "")+"<button class='qt' id='mNo'>CLOSE</button>";
-    note="This shelf opens when every boss is <b>beaten</b>. It is the one "+
-         "thing an ad cannot buy — beating them is what it is for."+
+    note="This shelf opens when every boss is <b>beaten</b> \u2014 the one "+
+         "thing an ad cannot buy."+
          (lf.length?" Still standing: <b>"+esc(bossesLeftSay())+"</b>. A boss "+
-          "you skipped past still counts as standing.":"");
+          "you skipped still counts as standing.":"");
   }else{
     acts="<button class='go' id='mPlay'>"+(st==="solved"?"PLAY AGAIN":"PLAY")+
          "</button><button class='qt' id='mNo'>CLOSE</button>";
-    note=st==="skipped"?"You have not beaten this one yet. Its stars are still on the table."
-      :k==="boss"?"No goal here. Three phases, and clearing the board begins the next."
-      :k==="trial"?"Three cores, a sweeping plane, three lives. Scored on lives."
+    note=st==="skipped"?"Not beaten yet. Its stars are still on the table."
+      :k==="boss"?"No goal here. Three phases; clear the board to begin the next."
+      :k==="trial"?"Three cores on a clock. Scored on lives."
       :(st==="solved"&&starsForRecord(l,progress[l.name])<3)
-        ?"Three stars is the solver's own move count, so <b>3★ means optimal</b>.":"";
+        ?"<b>Three stars means optimal.</b>":"";
   }
   $("mSheet").innerHTML="<div class='mk"+(k==="boss"?" b":k==="trial"?" t":"")+"'>"+
     kind+"</div><h4>"+esc(l.name)+"</h4><div class='mm'>"+meta+"</div>"+
@@ -1594,18 +1591,17 @@ function mapHelp(){
   };
   $("mSheet").innerHTML="<div class='mk'>THE MAP</div><h4>What the map means</h4>"+
     "<div class='mlegend'>"+
-    row("solved","7","<b>Solved.</b> Stars sit underneath — three is the solver's own move count, so 3★ is optimal.")+
-    row("here","8","<b>Where you are.</b> The one that breathes.")+
-    row("open","9","<b>Open.</b> You can always reach a couple of levels ahead, so one hard puzzle never stops you.")+
-    row("locked","●","<b>Locked.</b> Clear what is in front of it — or open that one on its own with an ad.")+
-    row("skipped","●","<b>Skipped.</b> The door opened, the level did not. Its stars are still there to take.")+
+    row("solved","7","<b>Solved.</b> Its stars sit underneath. Three means optimal.")+
+    row("here","8","<b>Where you are.</b>")+
+    row("open","9","<b>Open.</b> You can always reach a couple ahead.")+
+    row("locked","●","<b>Locked.</b> Clear what is in front of it, or open it with an ad.")+
+    row("skipped","●","<b>Skipped.</b> Its stars are still there to take.")+
     row("mtrial",mapShape("trial")+"<span>I</span>",
-        "<b>Trial</b> \u2014 a square on its point, with the plane about to sweep through it. Three cores, on a clock.")+
+        "<b>Trial</b> \u2014 three cores, on a clock.")+
     row("mboss",mapShape("boss")+"<span>I</span>",
-        "<b>Boss</b> \u2014 a cube seen corner-on. The three arcs are its three phases. Closes the section.")+
-    "</div><div class='mn'>Ads buy <b>progress, never score</b>. A skip awards no "+
-    "stars and the level stays on the map, playable, whenever you want it — and "+
-    "it opens that level alone, so nothing behind it is handed over.</div>"+
+        "<b>Boss</b> \u2014 three phases. It closes the section.")+
+    "</div><div class='mn'>Ads buy <b>progress, never score</b>. A skip awards "+
+    "no stars, opens that level alone, and leaves it playable.</div>"+
     "<div class='ma'><button class='qt' id='mNo'>CLOSE</button></div>";
   $("mSheet").classList.add("on");
   bind("mNo",mapSheetClose);
@@ -1623,26 +1619,22 @@ function mapHelp(){
 function legendPanel(){
   showPanel("<h3>THE PIECES</h3>"+
     "<div class='leg'><i style='background:#5a6d94'></i><span><b>Stone</b> \u2014 "+
-      "solid, and it is still there in 2D.</span></div>"+
+      "solid, and still there in 2D.</span></div>"+
     "<div class='leg'><i style='background:#7fc4d8;opacity:.65'></i><span><b>Water</b> \u2014 "+
-      "you can stand on it, but it leaves nothing in 2D.</span></div>"+
+      "stand on it. It leaves nothing in 2D.</span></div>"+
     "<div class='leg'><i style='background:#8a3040'></i><span><b>Fire</b> \u2014 "+
-      "solid, and it burns you if you stand on it. In 2D it burns the whole "+
-      "line it lands in.</span></div>"+
+      "it burns you. In 2D it burns the whole line.</span></div>"+
     "<div class='leg'><i style='background:#9b7fd4'></i><span><b>Crate</b> \u2014 "+
-      "walk into it and it slides. Moving it changes the 2D world \u2014 the "+
-      "only thing here you can change.</span></div>"+
+      "walk into it and it slides. It reshapes 2D.</span></div>"+
     "<div class='leg'><i style='background:#d9a441'></i><span><b>Amber</b> \u2014 "+
-      "catches you when you come back to 3D, instead of the block at the "+
-      "front. A crate parked on it can never be shoved again.</span></div>"+
+      "catches you on the way back to 3D. It pins a crate.</span></div>"+
     "<div class='leg'><i style='background:#d6336c'></i><span><b>You</b> \u2014 "+
-      "the plate underneath shows what you are standing on.</span></div>"+
+      "the plate shows what you stand on.</span></div>"+
     "<div class='leg'><i style='background:#35c2a5'></i><span><b>Goal</b> \u2014 "+
-      "you have to reach it in 3D. Standing on it in 2D is not enough."+
-      "</span></div>"+
+      "reach it in 3D. Standing on it in 2D is not enough.</span></div>"+
     "<div class='leg'><i style='background:transparent;border:1px solid var(--rule)'></i>"+
-      "<span><b>The eye</b> \u2014 hold it to lean the camera and see how far "+
-      "away things really are. It costs no move.</span></div>"+
+      "<span><b>The eye</b> \u2014 hold it to see how far away things are. "+
+      "Costs no move.</span></div>"+
     "<div class='prow'><button id='lgBack'>BACK</button></div>");
   bind("lgBack",menuPanel);
 }

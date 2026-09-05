@@ -2597,6 +2597,17 @@ and they are also the ones that cost no screen.
 - **The hint system gets all of this for free**, because there is one hand
   with two owners — see below. A hint borrows the same element, so it now
   shows a hand rather than a dot wherever it showed anything.
+- **AND IT SAYS WHAT IT IS, IN TWO WORDS, ABOVE THE HAND.** A drawing of a
+  gesture can be read wrong: the double tap is a finger that lifts and comes
+  back, lifting is drawn as movement away from the glass, and it was reported
+  as looking like a swipe up. `GEST_SAY` in `js/15-tutorial.js` names each
+  one — *swipe right*, *double touch*, *rotate left* — and the label goes
+  where the eye already is, beside the hand, not in the coach line at the
+  foot of the screen. **Named by what the player gets, not by what the
+  fingers do**: `bRotR` is "rotate right" even though it is demonstrated as a
+  leftward two-finger slide. It is drawn *above* the contact point, because
+  the hand hangs down from its fingertip and anything under that point lands
+  in the middle of the fist.
 - **The hand sits in the middle of the screen, over the world.** That is
   where the gesture actually happens — a swipe or a double tap lands on the
   world, not on a strip at the bottom — and it is where the player is already
@@ -3347,6 +3358,14 @@ know before touching it:
   the case, and only a confirmed purchase equips. A consequence worth keeping:
   a palette does not touch the world until it is equipped — the case previews
   it instead.
+- **THE TYPE IS TWO POINTS BIGGER THAN IT WAS, EVERYWHERE.** Reported by
+  several people at once: the menu, the popups and the map were all small.
+  Every declaration under 12px went up by 2 (the build string is the one
+  exception — it is deliberately tiny), the map's own name and description
+  went further, and the copy was cut to match: **a bigger type size is only
+  half of readable, the other half is fewer words.** The piece legend, the
+  menu notes, the map's help sheet and all five offer cards were rewritten
+  shorter in the same pass. If you add a panel, start at 12px.
 - **Panels are phone-width and centred on every screen** (`.panel`, capped at
   560px). They were written against a phone and stretched edge to edge on
   anything wider: the wardrobe's display case is a square sized as a

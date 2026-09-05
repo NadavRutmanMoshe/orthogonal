@@ -109,6 +109,25 @@ var CUE_GEST={
   bFlat:{k:"dbl"},
   bRotR:{k:"two",d:"left"},     bRotL:{k:"two",d:"right"}
 };
+/* WHAT THE HAND IS DOING, IN TWO WORDS, DRAWN BESIDE IT.
+
+   The demonstration alone is not always readable: the double tap is a finger
+   that lifts and comes back, and lifting is drawn as movement away from the
+   glass - so it was reported as looking like a swipe up. A picture that can
+   be read two ways needs a name on it, and the name has to be where the eye
+   already is, which is the middle of the screen where the hand is, not the
+   coach line at the foot of it.
+
+   Named by what the player GETS, not by what the fingers do: `bRotR` is
+   "rotate right" even though it is demonstrated as a leftward two-finger
+   slide. The direction of the fingers is what the drawing is for; the name
+   is for the outcome. */
+var GEST_SAY={
+  bRight:"swipe right", bLeft:"swipe left",
+  bUp:"swipe up",       bDown:"swipe down",
+  bFlat:"double touch",
+  bRotR:"rotate right", bRotL:"rotate left"
+};
 /* Gesture mode is a setting and a device default. It governs the *lesson*
    only - which controls the three teaching levels teach - and not whether
    the hand can appear at all: a hint on a HIDDEN layout uses it whatever
@@ -186,6 +205,8 @@ function ghostTo(id,held){
     el.className="ghost";
     return false;
   }
+  var say=$("ghostSay");
+  if(say)say.textContent=GEST_SAY[id]||"";
   var cls="ghost on "+(held?"held":"once")+" g-"+g.k;
   if(g.k==="swipe"||g.k==="two"){
     var sp=GHOST_SPAN[g.d];

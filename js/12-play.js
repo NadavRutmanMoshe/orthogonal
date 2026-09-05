@@ -1759,14 +1759,11 @@ function controlsOffer(){
   settings.ui="none";
   saveSettings();applyUI();syncHud();
   offerShell("Controls",
-    "The buttons are off. You have the whole screen, and the three moves are "+
-    "the ones the tutorial just showed you \u2014 <b>swipe</b> to walk, "+
-    "<b>double-tap</b> to go "+VB().n2+" / "+VB().n3+", <b>two-finger swipe</b> "+
-    "to turn.",
+    "The buttons are off \u2014 you have the whole screen. <b>Swipe</b> to "+
+    "walk, <b>double-tap</b> to change dimension, <b>two fingers</b> to turn.",
     "<button class='qt' id='ctlNo'>KEEP SWIPING</button>"+
     "<button class='ad' id='ctlYes'>SHOW THE BUTTONS</button>",
-    "The gestures work either way, and so do the arrow keys. You can change "+
-    "this any time under <b>Menu \u203a Controls</b>.");
+    "Change it any time under <b>Menu \u203a Controls</b>.");
   bind("ctlNo",function(){hidePanel();});
   bind("ctlYes",function(){
     settings.ui="full";saveSettings();applyUI();syncHud();hidePanel();
@@ -1803,15 +1800,11 @@ function hintOffer(){
   settings.hintAsked=true;saveSettings();
   freeHint=true;
   offerShell("The bulb",
-    "Stuck on a level? The bulb in the corner shows you the <b>next move</b>, "+
-    "and nothing in this game is ever a dead end you cannot be shown the way "+
-    "out of.",
+    "Stuck? The bulb shows you the <b>next move</b>.",
     "<button class='ad' id='hnTry'>SHOW ME</button>"+
     "<button class='qt' id='hnNo'>GOT IT</button>",
-    "You have <b>"+HINT_FREE+" hints</b>, and one comes back every half hour "+
-    "\u2014 the number on the bulb is how many are in there. They cost you "+
-    "<b>no stars</b>. And this next one is on us, because we asked you to "+
-    "try it.");
+    "You have <b>"+HINT_FREE+"</b>, and one comes back every half hour. They "+
+    "cost no stars, and this one is free.");
   bind("hnNo",function(){hidePanel();});
   bind("hnTry",function(){
     hidePanel();
@@ -1846,13 +1839,11 @@ function starsOffer(){
   if(levelOver()||panelOpen()||screenUp())return;
   settings.starAsked=true;saveSettings();
   offerShell("Three stars",
-    "Every level has a <b>shortest possible route</b>, and three stars means "+
-    "you found it \u2014 not that you finished. The count beside the level's "+
-    "name is your moves against that best.",
+    "Three stars means you found the <b>shortest route</b> \u2014 not that "+
+    "you finished.",
     "<button class='ad' id='stOk'>TRY FOR THREE</button>",
-    "Half again as many moves is two stars, twice as many is one. Nothing "+
-    "else moves them \u2014 a hint costs you no stars. <b>This one is three "+
-    "moves.</b>");
+    "Half again as many moves is two stars, twice as many is one. <b>This one "+
+    "is three moves.</b>");
   bind("stOk",function(){hidePanel();});
 }
 function offerShell(title,lead,acts,note){
@@ -1888,13 +1879,12 @@ function struggleOffer(){
      not in `progress`, so it awards no stars by construction and the level
      stays on the map, still playable. */
   offerShell(esc(L.name),
-    "This one has beaten you "+beat+". You can go past it and come back "+
-    "whenever you like.",
+    "This one has beaten you "+beat+". You can come back to it whenever you "+
+    "like.",
     "<button class='ad' id='sgAd'>"+adIcon()+"SKIP THIS "+kind+" \u00b7 WATCH 3 ADS</button>"+
     "<button class='qt' id='sgNo'>KEEP TRYING</button>"+
     "<button class='qt' id='sgNever'>DON'T SHOW ME AGAIN</button>",
-    "A skip awards <b>no stars</b> and leaves the level on the map, still "+
-    "playable. Ads buy progress, never score.");
+    "A skip awards <b>no stars</b>. Ads buy progress, never score.");
   bind("sgNo",function(){hidePanel();});
   bindNever();
   /* Not gated on an ad here, for the same reason grantSkip() is not: there
