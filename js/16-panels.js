@@ -285,7 +285,7 @@ function menuPanel(){
     flash("settings reset");menuPanel();
   });
   bind("mHome",function(){hidePanel();homeShow();});
-  bind("mLevels",levelPicker);
+  bind("mLevels",sectionPicker);
   bind("mLegend",legendPanel);
   bind("mEditor",function(){hidePanel();enterEditor();});
   bind("mClose",hidePanel);
@@ -626,7 +626,7 @@ function sectionMastered(sp){
    the first gap would re-lock levels those players had already walked past.
    ============================================================ */
 var MAP_WINDOW=2;
-var mapSection=null;          // which tab is open; null means "where you are"
+var mapSection=null;          // the section the map is on; null means "where you are"
 
 /* ---- the map's ambient world -----------------------------------------
    Wireframe cubes drifting behind the trail, each one periodically
@@ -1177,24 +1177,225 @@ function mapNumeral(l,ord){
   return "·";
 }
 
-function levelPicker(){
+/* ============================================================
+   THE SECTION CHOOSER
+
+   LEVELS used to open the map straight onto whichever section you were in,
+   with a scrolling tab strip along the top to move between them. Two things
+   were wrong with that, and they are the same thing seen from either end.
+
+   From the player's end: the strip is a control you have to notice, and what
+   it controls - "which shelf of the campaign am I looking at" - is the one
+   choice big enough to deserve a screen of its own. Four sections is a
+   picture, not a list.
+
+   From the code's end: every tab press rebuilt the whole map in place -
+   trail, canvas, ambient loop and all - against a panel that was already
+   open, which is where the section that came up half-drawn came from. Now
+   there is no way to change section without leaving the map, so the map is
+   built once per visit and torn down once, and the way back is the way in.
+
+   The grid is 2x2 for the four numbered sections, which is the shape the
+   owner asked for. PROLOGUE and V - EXTRA are the two that are not part of
+   that four - one is before the campaign and one is after it - so they run
+   full width above and below it rather than being crammed into the square.
+   ============================================================ */
+/* One emblem per section, keyed off the section's own scenery so the tile
+   and the world cannot drift apart - the same trick mapWeatherKind() plays.
+   All of them are drawn in the section's colour by `fill:currentColor`. */
+function secEmblem(sec){
+  var sc=sec&&sec.theme&&sec.theme.scene;
+  var p=
+    sc==="trees" ? "M12 2.4c3 3.1 5.2 6 5.2 8.6a5.2 5.2 0 0 1-4.2 5.1V21h-2v-4.9"+
+                   "A5.2 5.2 0 0 1 6.8 11c0-2.6 2.2-5.5 5.2-8.6Z" :
+    sc==="hell"  ? "M12 1.8c.6 3.2 2.1 4.4 3.5 5.9 1.6 1.7 2.7 3.4 2.7 5.7a6.2 "+
+                   "6.2 0 1 1-12.4 0c0-1.5.5-2.7 1.4-3.8.2 1.2.9 2 1.9 2.2.5-"+
+                   "3.4 1.3-6.9 2.9-10Z" :
+    sc==="ocean" ? "M2.4 9.6c2 0 2-1.8 4.8-1.8s2.8 1.8 4.8 1.8 2-1.8 4.8-1.8 "+
+                   "2.8 1.8 4.8 1.8v2.6c-2 0-2-1.8-4.8-1.8s-2.8 1.8-4.8 1.8-2-"+
+                   "1.8-4.8-1.8-2.8 1.8-4.8 1.8Zm0 6.2c2 0 2-1.8 4.8-1.8s2.8 "+
+                   "1.8 4.8 1.8 2-1.8 4.8-1.8 2.8 1.8 4.8 1.8v2.6c-2 0-2-1.8-"+
+                   "4.8-1.8s-2.8 1.8-4.8 1.8-2-1.8-4.8-1.8-2.8 1.8-4.8 1.8Z" :
+    sc==="desert"? "M3.2 7.4 12 2.6l8.8 4.8v9.2L12 21.4l-8.8-4.8Zm2.2 1.9v6.6"+
+                   "L12 19.5l6.6-3.6V9.3L12 5.7ZM9.4 10.6h5.2v2.8H9.4Z" :
+    /* PROLOGUE and V - EXTRA have no scenery of their own. The first gets the
+       game's own piece, a cube seen corner-on, because that is all it teaches;
+       the shelf gets a star, because beating every boss is what it is for. */
+    sec&&sec.locked
+      ? "M12 2.2 14.9 8.6 21.8 9.4 16.7 14.1 18.1 21 12 17.5 5.9 21 7.3 14.1"+
+        " 2.2 9.4 9.1 8.6Z"
+      : "M12 2.2 21 7.4v9.2L12 21.8 3 16.6V7.4Zm0 2.5L5.4 8.5v7L12 19.3l6.6-"+
+        "3.8v-7Z";
+  return "<svg class='secem' viewBox='0 0 24 24' aria-hidden='true'>"+
+         "<path d='"+p+"'/></svg>";
+}
+/* THE CHAINS AND THE PADLOCK, drawn rather than typed.
+
+   A 🔒 glyph at this size is a smudge, and the game already paid for that
+   lesson on the corner buttons ("icons are solid SVG"). Two crossed chains
+   over the tile say shut in a way a badge in a corner does not, and they are
+   two strokes each: a fat dark one for the links and a thin one in the tile's
+   own ground punched through the middle, which is what makes a dashed line
+   read as a row of rings rather than a row of dashes. */
+function secChains(){
+  return "<svg class='secchain' viewBox='0 0 200 120' preserveAspectRatio='none'"+
+    " aria-hidden='true'>"+
+    "<path class='ck' d='M-8 16 L208 104'/><path class='ki' d='M-8 16 L208 104'/>"+
+    "<path class='ck' d='M-8 104 L208 16'/><path class='ki' d='M-8 104 L208 16'/>"+
+    "</svg>";
+}
+function secLock(){
+  return "<svg class='seclock' viewBox='0 0 24 24' aria-hidden='true'>"+
+    "<path d='M12 1.8a4.8 4.8 0 0 0-4.8 4.8v2.6h2.6V6.6a2.2 2.2 0 1 1 4.4 0v2.6"+
+      "h2.6V6.6A4.8 4.8 0 0 0 12 1.8Z'/>"+
+    "<path d='M5.4 9.9h13.2c.9 0 1.6.7 1.6 1.6v9.1c0 .9-.7 1.6-1.6 1.6H5.4c-.9 "+
+      "0-1.6-.7-1.6-1.6v-9.1c0-.9.7-1.6 1.6-1.6Zm6.6 3.4a1.9 1.9 0 0 0-1 3.5v2.1"+
+      "h2v-2.1a1.9 1.9 0 0 0-1-3.5Z'/></svg>";
+}
+
+function sectionPicker(){
+  // The chooser and the map share the ambient canvas, and only one of them is
+  // ever on screen - stop the old loop before its canvas is replaced.
+  mapBgStop();
+  var spans=sectionSpans();
+  var done=0, cleared=0, i;
+  for(i=0;i<LEVELS.length;i++){
+    if(mapTouched(i))cleared++;
+    if(LEVELS[i].tutorial)continue;
+    done+=starsForRecord(LEVELS[i],progress[LEVELS[i].name]);
+  }
+  var h="<canvas class='mbg' id='mBg' aria-hidden='true'></canvas>"+
+    "<div class='mhead'><div class='mt'><b>Orthogonal</b>"+
+    "<span>"+cleared+" / "+LEVELS.length+" CLEARED</span></div>"+
+    "<div class='mtot'>"+done+" ★</div>"+
+    "<button class='mq' id='skHelp' aria-label='What the map means'>?</button>"+
+    "<button class='mq mx' id='skClose' aria-label='Back to the level'>✕</button>"+
+    "</div><div class='mbody secbody'><div class='secgrid' id='secGrid'></div></div>"+
+    "<div class='prow' style='padding:0 13px 11px;margin:0'>"+
+    "<button id='skMenu'>MENU</button><button id='skDone'>CLOSE</button></div>";
+  showPanel(h,"secs");
+  bind("skClose",hidePanel);
+  bind("skDone",hidePanel);
+  bind("skMenu",menuPanel);
+  bind("skHelp",mapHelp);
+  secGridDraw();
+}
+
+function secGridDraw(){
+  var spans=sectionSpans(), g=$("secGrid");
+  if(!g)return;
+  var here=mapSecOf(mapHere()), t="", n;
+  for(n=0;n<SECTIONS.length;n++){
+    var sec=SECTIONS[n], sp=spans[n];
+    // Locked for either reason: the shelf that waits on every boss, or a
+    // section the campaign has simply not reached yet.
+    var shelf=!!sp.locked;
+    var lk=shelf||sec.at>mapReach();
+    var buy=mapSectionSkippable(n);
+    var pct=sp.max?Math.round(sp.got/sp.max*100):0;
+    var cl=0,tot=0;
+    for(var j=sp.from;j<=sp.to;j++){tot++;if(mapTouched(j))cl++;}
+    var mst=sectionMastered(sp);
+    var np=sec.name.split(" \u00b7 ");
+    var num=np.length>1?np[0]:"", ttl=np.length>1?np.slice(1).join(" \u00b7 "):sec.name;
+    // The four numbered sections are the square; the two that bracket them
+    // run the full width, above and below it.
+    var wide=(n===0||shelf);
+    t+="<button class='sectile"+(lk?" lk":"")+(mst?" mst":"")+
+       (n===here&&!lk?" here":"")+(wide?" wide":"")+
+       "' data-sec='"+n+"' style=\"--tabc:"+(sec.col||"#c3cde4")+"\">"+
+       /* The numeral rides with the emblem and the word gets the tile's full
+          width to itself. Kept on one line beside it, FUNDAMENTALS is wider
+          than a column on a 327px phone and broke mid-word. */
+       "<span class='sectop'>"+secEmblem(sec)+
+       (num?"<span class='secnum'>"+esc(num)+"</span>":"")+"</span>"+
+       "<span class='secname'>"+esc(ttl)+"</span>"+
+       "<span class='secsub'>"+esc(sec.sub)+"</span>"+
+       // No bar where there is nothing to fill it: PROLOGUE is all tutorials,
+       // so its max is 0 and an empty track read as a section never started.
+       (sp.max?"<span class='secpb'><span style='width:"+(lk?0:pct)+
+               "%'></span></span>":"")+
+       "<span class='secf'><span>"+cl+"/"+tot+" cleared</span>"+
+       (sp.max?"<span class='secst'>"+sp.got+"/"+sp.max+" ★</span>":"")+
+       "</span>"+
+       (mst?"<span class='secmast'>ALL STARS</span>":"")+
+       (lk?secChains()+"<span class='seccap'>"+secLock()+
+           "<span class='seccapt'>"+
+           (shelf?"BEAT EVERY BOSS":buy?"LOCKED":"KEEP PLAYING")+"</span>"+
+           (buy?"<span class='secad'>"+adIcon()+"OPEN · 3 ADS</span>":"")+
+           "</span>":"")+
+       "</button>";
+  }
+  g.innerHTML=t;
+  g.querySelectorAll("[data-sec]").forEach(function(el){
+    tap(el,function(){
+      var s=+el.getAttribute("data-sec"), sp=sectionSpans()[s];
+      /* THE SHELF IS THE ONE THING NOT FOR SALE, and pressing it has to say
+         so rather than doing nothing: a tile that swallows a press reads as
+         broken. Everything else opens its map - including a section still
+         locked, where the ad card at the top of the map is the thing that
+         opens it. Pressing the chip on the tile is the shortcut. */
+      if(sp.locked){
+        flash(bossesLeft().length
+          ? "still standing: "+bossesLeftSay()
+          : "opening …");
+        if(bossesLeft().length)return;
+      }
+      levelPicker(s);
+    });
+  });
+  /* The ad chip is inside the tile, so it has to take the press before the
+     tile does. tap() listens on pointerdown and stops propagation, and an
+     event reaches the child before the parent it bubbles to - so the chip
+     wins simply by being the inner element. */
+  g.querySelectorAll(".sectile.lk .secad").forEach(function(el){
+    var s=+el.parentNode.parentNode.getAttribute("data-sec");
+    tap(el,function(){
+      grantSkip(LEVELS[SECTIONS[s].at].name);
+      secGridDraw();
+      flash("section opened · no stars for a skip");
+    });
+  });
+}
+
+/* The map, on ONE section, chosen before you got here.
+
+   `n` is that section. There is no way to change it from inside any more -
+   the tab strip is gone, and the way to another section is out through
+   sectionPicker() and back in. That is the whole fix for the section that
+   came up half-drawn: the map is now built once per visit against a section
+   that cannot change under it. */
+function levelPicker(n){
   /* Opening the map while it is already open replaces the panel's innerHTML,
      and with it the canvas. Without this the old loop would still be running
      against the detached one - drawing nothing anybody can see, and refusing
      to start again because it thinks it is already going. */
   mapBgStop();
+  if(typeof n==="number")mapSection=n;
   if(mapSection===null)mapSection=mapSecOf(mapHere());
   var spans=sectionSpans();
-  var here=mapHere(), total=0, done=0;
-  for(var q=0;q<LEVELS.length;q++){
-    if(LEVELS[q].tutorial)continue;
-    total+=3;done+=starsForRecord(LEVELS[q],progress[LEVELS[q].name]);
-  }
+  var here=mapHere();
 
   var h="<canvas class='mbg' id='mBg' aria-hidden='true'></canvas>"+
-        "<div class='mhead'><div class='mt'><b>Orthogonal</b>"+
+        "<div class='mhead'>"+
+        /* THE WAY BACK TO THE CHOOSER, in the header beside the section's
+           name, because the name is the thing it undoes. The footer row has
+           one too, but the trail below it can be several screens long and a
+           control you have to scroll to is a control that is not there. */
+        "<button class='mq mb' id='mBackSec' aria-label='Choose another section'>"+
+        "\u2039</button>"+
+        /* The section's name WITHOUT its numeral. The card directly below
+           carries "I · FUNDAMENTALS" in full; up here, between a chevron, a
+           star pill and two round buttons, the numeral is what pushes the
+           word off the end of a 327px phone. */
+        "<div class='mt'><b>"+esc(SECTIONS[mapSection].name
+          .split(" \u00b7 ").slice(-1)[0])+"</b>"+
         "<span id='mSub'></span></div>"+
-        "<div class='mtot'>"+done+" ★</div>"+
+        /* THE CAMPAIGN TOTAL MOVED TO THE CHOOSER, which is now the screen
+           that is about the campaign; this one is about one section, and the
+           card below it carries that section's own star count. It was also
+           the 62px that pushed the section's name into an ellipsis on a
+           327px phone, beside a chevron, a ?, and a ✕. */
         "<button class='mq' id='mHelp' aria-label='What the map means'>?</button>"+
         /* The way back to the game, in the header where it is always on
            screen. The row at the foot of the panel is below a trail that can
@@ -1202,47 +1403,23 @@ function levelPicker(){
            was nothing in sight that looked like an exit and the map read as
            somewhere the game had left you. */
         "<button class='mq mx' id='mExit' aria-label='Back to the level'>✕</button></div>"+
-        "<div class='mtabs' id='mTabs'></div>"+
         "<div class='mbody' id='mBody'><div class='mcard' id='mCard'></div>"+
         "<div id='mtrail'><svg></svg></div></div>"+
         "<div class='prow' style='padding:0 13px 11px;margin:0'>"+
-        "<button id='pkBack'>BACK</button><button id='pkClose'>CLOSE</button></div>"+
+        "<button id='pkBack'>SECTIONS</button><button id='pkClose'>CLOSE</button></div>"+
         "<div class='msheet' id='mSheet'></div>";
   showPanel(h,"map");   // syncCorners() adds .map and hides the corner total
-  bind("pkBack",menuPanel);
+  bind("pkBack",sectionPicker);
+  bind("mBackSec",sectionPicker);
   bind("pkClose",hidePanel);
   bind("mExit",hidePanel);
   bind("mHelp",mapHelp);
 
-  var cleared=0;
-  for(var c=0;c<LEVELS.length;c++) if(mapTouched(c)) cleared++;
-  $("mSub").textContent=cleared+" / "+LEVELS.length+" CLEARED";
+  var sp0=spans[mapSection], cleared=0, tot0=0;
+  for(var c=sp0.from;c<=sp0.to;c++){tot0++;if(mapTouched(c))cleared++;}
+  $("mSub").textContent=cleared+" / "+tot0+" CLEARED";
 
-  mapTabs(spans);
   mapDraw(spans);
-}
-
-function mapTabs(spans){
-  var t="";
-  for(var n=0;n<SECTIONS.length;n++){
-    var sp=spans[n], pct=sp.max?Math.round(sp.got/sp.max*100):0;
-    var lk=sp.locked||SECTIONS[n].at>mapReach();
-    var mst=sectionMastered(sp);
-    t+="<button class='mtab"+(n===mapSection?" sel":"")+(lk?" lk":"")+
-       (mst?" mst":"")+
-       "' data-tab='"+n+"' style=\"--tabc:"+(SECTIONS[n].col||"#c3cde4")+
-       ";--pct:"+(lk?0:pct)+"%\"><i></i>"+(lk?"🔒 ":mst?"★ ":"")+
-       esc(SECTIONS[n].name.split(" ")[0])+"</button>";
-  }
-  $("mTabs").innerHTML=t;
-  $("mTabs").querySelectorAll("[data-tab]").forEach(function(el){
-    tap(el,function(){
-      mapSection=+el.getAttribute("data-tab");
-      mapTabs(sectionSpans());mapDraw(sectionSpans());
-    });
-  });
-  var sel=$("mTabs").querySelector(".mtab.sel");
-  if(sel&&sel.scrollIntoView)sel.scrollIntoView({inline:"center",block:"nearest"});
 }
 
 function mapDraw(spans){
@@ -1286,7 +1463,7 @@ function mapDraw(spans){
   if(bg)tap(bg,function(){
     var b=bossesLeft()[0];
     mapSection=mapSecOf(b);
-    mapTabs(sectionSpans());mapDraw(sectionSpans());
+    mapDraw(sectionSpans());
     mapSheet(b);
   });
   var sa=$("mSecAd");
@@ -1294,7 +1471,7 @@ function mapDraw(spans){
      played from its beginning rather than handed over. */
   if(sa)tap(sa,function(){
     grantSkip(LEVELS[sec.at].name);
-    mapTabs(sectionSpans());mapDraw(sectionSpans());
+    mapDraw(sectionSpans());
     flash("section opened · no stars for a skip");
   });
 
@@ -1415,7 +1592,18 @@ function mapFocus(){
   var tr=$("mtrail");
   var el=tr.querySelector(".mnode.here")||
          tr.querySelector(".mnode.solved,.mnode.skipped");
-  if(el&&el.scrollIntoView){el.scrollIntoView({block:"center"});return;}
+  /* SCROLL #mBody AND NOTHING ELSE. This was scrollIntoView({block:"center"}),
+     which walks *every* scrollable ancestor on the way up - and the panel is
+     one of them, so centring a node halfway down the trail also slid the
+     map's own header off the top of the screen. Visible in every map
+     screenshot the project has: the title row cut in half at the top edge.
+     It never mattered enough to chase while the way out was a footer button;
+     it matters now that the way back to the section chooser is up there. */
+  if(el&&el.getBoundingClientRect){
+    var er=el.getBoundingClientRect(), br=body.getBoundingClientRect();
+    body.scrollTop+=(er.top-br.top)-(body.clientHeight-er.height)/2;
+    return;
+  }
   body.scrollTop=body.scrollHeight;
 }
 
@@ -1575,7 +1763,7 @@ function mapSheet(i){
   if(bto)tap(bto,function(){
     var b=bossesLeft()[0];
     mapSection=mapSecOf(b);
-    mapTabs(sectionSpans());mapDraw(sectionSpans());
+    mapDraw(sectionSpans());
     mapSheet(b);
   });
   var play=$("mPlay");
@@ -1589,7 +1777,7 @@ function mapSheet(i){
   if(ad)tap(ad,function(){
     grantSkip(l.name);
     mapSection=mapSecOf(i);
-    mapTabs(sectionSpans());mapDraw(sectionSpans());
+    mapDraw(sectionSpans());
     mapSheet(i);
     flash("opened · no stars for a skip");
   });

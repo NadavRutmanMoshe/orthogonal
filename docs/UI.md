@@ -28,7 +28,7 @@ rather than guessing the file.
 | `70-cards.css` | the full-bleed cards: `.won` (win card, intro card), `.bigstars`, `.wonmast .wonlock .wonstory`, `.tutcard`, `#bRetry` |
 | `75-bossbar.css` | `.boss` lives/cores bar, `.startotal`, `.flystar`, `.sg` |
 | `80-panel-tall.css` | full-height panel furniture shared by menu, wardrobe and map: `.panel.tall .phead .pbody .pcard .prow2 .pgo .psub .pdanger .pbuild`, the range slider skin |
-| `85-map.css` | `--vio --amb` tokens, `.panel.map .mhead .mtabs .mtab .mcard .mbar #mtrail .mfill .mnode` (+ `.mboss .mtrial .solved .here .locked .skipped .mst`), `.mstars .mcap .msheet .mlegend`, the offer-card buttons `.ma .go .ad .qt .mn`, `.adicon`, the global reduced-motion rule |
+| `85-map.css` | `--vio --amb` tokens, the section chooser (`.secgrid .sectile .secem .secnum .secname .secsub .secpb .secf .seccap .secchain .seclock .secad`), `.panel.map .mhead .mcard .mbar #mtrail .mfill .mnode` (+ `.mboss .mtrial .solved .here .locked .skipped .mst`), `.mstars .mcap .msheet .mlegend`, the offer-card buttons `.ma .go .ad .qt .mn`, `.adicon`, the global reduced-motion rule |
 | `90-tutorial.css` | the guided lock (`body.tutlock`, `.tutlive`, `.tutsoft`), `.phasenote`, the ghost hand (`.ghost .gfinger .ghand .gtrack .gsay`) |
 | `95-home.css` | `.home` overlay, `.hcont` (CONTINUE, `--sec`), `.hrow` shop strip, `.htile`, `body.athome` |
 
@@ -93,7 +93,8 @@ buttons at the end of its builder.
 | Home screen | `#home` (static shell) | `homeShow`, `homeSync`, `homeStrip`/`homeTile`, `homeCase` | `95-home` | `home` |
 | Menu | `#panel` | `menuPanel()` (`16-panels.js`); rows via `seg()` | `80-panel-tall`, `40-panels` (`.srow`), `50-layout-cues` (`.crow .seg`) | `menu` |
 | Wardrobe | `#panel.ward` | `wardrobePanel(tab)`, `wardRefresh`, `wardMeta` | `40-panels`, `80-panel-tall` | `wardrobe`, `wardrobe:color` |
-| Map | `#panel.map` | `levelPicker()` → `mapTabs`, `mapDraw`, `mapLayout`, `mapShape`, `mapFill`, `mapWeather` | `85-map` | `map`, `map:1` |
+| Section chooser | `#panel.map.secs` | `sectionPicker()` → `secGridDraw`, `secEmblem`, `secChains`, `secLock` | `85-map` | `sections` |
+| Map | `#panel.map` | `levelPicker(n)` → `mapDraw`, `mapLayout`, `mapShape`, `mapFill`, `mapWeather`, `mapFocus` | `85-map` | `map`, `map:1` |
 | Level sheet on the map | `#mSheet` inside the map | `mapSheet(i)` | `85-map` (`.msheet`) | `sheet:5` |
 | Map help sheet | same | `mapHelp()` | `85-map` | `maphelp` |
 | Legend | `#panel` | `legendPanel()` | `40-panels` (`.leg`) | `legend` |
@@ -129,6 +130,18 @@ named). Undoing one of these needs the paragraph.
   on every redraw.
 - **Panels are phone-width, centred, max 560px.** Full-height ones use
   `.panel.tall` furniture; the way out is in the header, not the footer.
+- **LEVELS opens the chooser, not the map.** `sectionPicker()` is a 2x2 of
+  the four numbered sections with PROLOGUE and V · EXTRA full-width above and
+  below. There is no tab strip on the map any more: one section per visit,
+  and the way to another is out through the chooser (`‹` in the map header,
+  `SECTIONS` in its footer). That is what stopped a section rebuilding
+  in place under an already-open map. A locked tile drains, takes chains and
+  a padlock, and carries the ad chip when `mapSectionSkippable()`.
+- **`mapFocus()` scrolls `#mBody` and nothing else.** `scrollIntoView` walks
+  every scrollable ancestor, the panel included, which slid the map's own
+  header off the top of the screen.
+- **The campaign star total is on the chooser; the map header carries the
+  section's name** (numeral stripped) **and its cleared count.**
 - **Map nodes**: disc = level, hexagon = boss (violet), diamond in a ring
   = trial (amber), all SVG (`mapShape`), told apart with colour removed. The
   section fill is measured against the trail, raised over two frames, and
@@ -175,5 +188,6 @@ owner will see. A page error is printed after the file name with `!!`.
 ## Class-name collisions already paid for
 
 `.boss` (HUD) vs `.mboss` (map) · `.home` (overlay) vs `body.athome` · `.st`
-(gold price) vs `.ln` (stroked icon path) · `history` vs `window.history`.
+(gold price) vs `.ln` (stroked icon path) · `history` vs `window.history` ·
+`.secbar` (wardrobe, `40-panels`) vs `.secpb` (chooser tile's bar).
 Grep before naming.

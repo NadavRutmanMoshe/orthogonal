@@ -27,12 +27,12 @@ bind("bBegin",function(){
    clocks and the game keys are all held off while it is being read. */
 bind("bTutOk",tutCardOk);
 bind("hContinue",homeGo);
-bind("hLevels",function(){audio();levelPicker();});
+bind("hLevels",function(){audio();sectionPicker();});
 bind("hWard",function(){audio();wardrobePanel("shape");});
 bind("hMenu",function(){audio();menuPanel();});
 bind("bSkipTo",function(){
   $("intro").classList.add("gone");
-  audio();levelPicker();
+  audio();sectionPicker();
 });
 /* PEEK: HOLD IT, OR TAP TO LATCH IT.
 
@@ -83,7 +83,7 @@ bind("bRetry",function(){
 });
 bind("bLevels",function(){
   $("won").classList.remove("on");
-  levelPicker();
+  sectionPicker();
 });
 bind("bNext",function(){
   if(fromEditor){enterEditor();return;}
@@ -120,11 +120,10 @@ bind("bNext",function(){
      which fight is holding it. The button's meaning is intact - it is still
      going to the next level, and saying why it cannot. */
   if(typeof mapLocked==="function"&&mapLocked(n)){
-    mapSection=mapSecOf(n);
     $("won").classList.remove("on");
-    levelPicker();
+    levelPicker(mapSecOf(n));
     var say=typeof bossesLeftSay==="function"?bossesLeftSay():"";
-    flash(say?SECTIONS[mapSection].name+" needs "+say:"not open yet");
+    flash(say?SECTIONS[mapSecOf(n)].name+" needs "+say:"not open yet");
     return;
   }
   playSource="builtin";

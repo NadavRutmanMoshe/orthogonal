@@ -65,11 +65,14 @@ function showPanel(html,kind){
    over the map too, on top of the map's own total - so the one place that
    already knows which panel is open turns it off. */
 function syncMapChrome(){
-  $("panel").classList.toggle("map",panelKind==="map");
-  // Full-height panels: the map, and the menu now that it is grouped into
-  // cards and would otherwise scroll inside a 44vh window.
-  $("panel").classList.toggle("tall",panelKind==="map"||panelKind==="menu"||
-                                     panelKind==="wardrobe");
+  $("panel").classList.toggle("map",panelKind==="map"||panelKind==="secs");
+  // The chooser wears the map's chrome (header, ambient canvas, footer row)
+  // and adds one grid of its own, so it takes .map and is told apart by this.
+  $("panel").classList.toggle("secs",panelKind==="secs");
+  // Full-height panels: the map and its chooser, and the menu now that it is
+  // grouped into cards and would otherwise scroll inside a 44vh window.
+  $("panel").classList.toggle("tall",panelKind==="map"||panelKind==="secs"||
+                                     panelKind==="menu"||panelKind==="wardrobe");
   /* The running star total sits at z-index 30 so it can float over the win
      overlay, which also floats it over any open panel - and the menu, the
      wardrobe and the map all now carry a total of their own in their header.
@@ -79,7 +82,7 @@ function syncMapChrome(){
   // The ambient loop lives and dies with the panel, so it can never be left
   // running behind a level - least of all behind one on a clock.
   if(typeof mapBgStart==="function"){
-    if(panelKind==="map")mapBgStart(); else mapBgStop();
+    if(panelKind==="map"||panelKind==="secs")mapBgStart(); else mapBgStop();
   }
 }
 function hidePanel(){

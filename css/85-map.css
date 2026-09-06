@@ -51,35 +51,126 @@
      that escaped into body would be pinned over the whole viewport by it. */
   .mbg{position:absolute;inset:0;z-index:0;pointer-events:none;
     width:100%;height:100%;display:block}
-  .panel.map>.mhead,.panel.map>.mtabs,.panel.map>.mbody,.panel.map>.prow{
+  .panel.map>.mhead,.panel.map>.mbody,.panel.map>.prow{
     position:relative;z-index:1}
 
   .mhead{display:flex;align-items:center;gap:10px;padding:11px 13px 9px;
     border-bottom:1px solid var(--rule);flex-shrink:0}
   .mhead .mt{flex:1;min-width:0}
+  /* 13px, not 15: the header now carries the SECTION's name rather than the
+     game's, and "I · FUNDAMENTALS" at 15px wrapped to two lines beside the
+     back chevron. */
   .mhead .mt b{display:block;font-family:'Space Grotesk',system-ui,sans-serif;
-    font-size:15px;font-weight:700;letter-spacing:-.02em;color:var(--fg)}
-  .mhead .mt span{display:block;font-size:11px;letter-spacing:.13em;color:var(--fg-dim)}
+    font-size:13px;font-weight:700;letter-spacing:-.02em;color:var(--fg);
+    line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mhead .mt span{display:block;font-size:11px;letter-spacing:.13em;
+    color:var(--fg-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .mtot{display:flex;align-items:center;gap:4px;padding:4px 10px;flex-shrink:0;
     border:1px solid var(--rule);border-radius:20px;color:var(--star);font-size:12px}
   .mq{width:30px;height:30px;border-radius:50%;flex-shrink:0;font-size:13px;
     color:var(--fg-dim);border:1px solid var(--rule);background:transparent}
   .mq.on{color:var(--player);border-color:var(--player)}
   .mq.mx{color:var(--fg);font-size:15px}
+  /* The way back to the chooser. Bigger glyph than the ? beside it because a
+     chevron at 13px is a comma. */
+  .mq.mb{color:var(--fg);font-size:19px;line-height:1;padding-bottom:2px}
+  .mq.mb:active{border-color:var(--player);color:var(--player)}
   .mq.mx:active{border-color:var(--player);color:var(--player)}
 
-  .mtabs{display:flex;gap:6px;overflow-x:auto;padding:9px 13px;flex-shrink:0;
-    border-bottom:1px solid var(--rule);scrollbar-width:none}
-  .mtabs::-webkit-scrollbar{display:none}
-  .mtab{flex:none;display:flex;align-items:center;gap:6px;height:32px;padding:0 12px;
-    border:1px solid var(--rule);border-radius:17px;color:var(--fg-dim);
-    background:transparent;font-size:12px;letter-spacing:.09em;white-space:nowrap}
-  .mtab.sel{color:var(--tabc);border-color:var(--tabc)}
-  .mtab i{width:14px;height:14px;flex:none;border-radius:50%;font-style:normal;
-    background:conic-gradient(var(--tabc) var(--pct),var(--rule) 0);
-    -webkit-mask:radial-gradient(circle,transparent 4px,#000 4.5px);
-    mask:radial-gradient(circle,transparent 4px,#000 4.5px)}
-  .mtab.lk{opacity:.7}
+  /* THE SECTION CHOOSER, which replaced the tab strip that used to live here.
+     `.mtabs` / `.mtab` are gone with it; the reasoning is on sectionPicker()
+     in js/16-panels.js. Tiles, not tabs: the choice is big enough to be a
+     screen, and a screen is also the only place a locked section has room to
+     look locked.
+
+     Two columns, and the four numbered sections make the square the owner
+     asked for. `.wide` spans both, which is where PROLOGUE and the V - EXTRA
+     shelf go - one is before the campaign and one is after it, and neither
+     belongs in a 2x2 of the four. */
+  .secbody{padding-bottom:34px}
+  .secgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:13px 0 0}
+  .sectile{position:relative;overflow:hidden;display:flex;flex-direction:column;
+    align-items:stretch;gap:6px;min-height:132px;padding:11px 10px 10px;
+    border-radius:6px;text-align:left;
+    border:1px solid color-mix(in srgb,var(--tabc) 34%,var(--rule));
+    background:
+      radial-gradient(120% 90% at 50% -18%,
+        color-mix(in srgb,var(--tabc) 20%,transparent),transparent 70%),
+      var(--panel);
+    box-shadow:0 3px 0 color-mix(in srgb,var(--tabc) 26%,#04070d);
+    color:var(--fg);transition:transform .12s ease,box-shadow .12s ease}
+  .sectile.wide{grid-column:1/-1;min-height:0}
+  .sectile:active{transform:translateY(3px);box-shadow:0 0 0 transparent}
+  /* Where you are, said the way the map says it: the section's own colour on
+     the rim rather than a second badge to learn. */
+  .sectile.here{border-color:var(--tabc);
+    box-shadow:0 3px 0 color-mix(in srgb,var(--tabc) 46%,#04070d),
+               0 0 20px color-mix(in srgb,var(--tabc) 22%,transparent)}
+  .sectop{display:flex;align-items:center;gap:7px;min-width:0}
+  .secnum{font-family:'Space Grotesk',system-ui,sans-serif;font-size:10.5px;
+    font-weight:700;letter-spacing:.1em;color:var(--tabc);padding:1px 8px;
+    border-radius:99px;
+    border:1px solid color-mix(in srgb,var(--tabc) 46%,transparent)}
+  .secem{width:22px;height:22px;flex:none;fill:var(--tabc);
+    filter:drop-shadow(0 0 7px color-mix(in srgb,var(--tabc) 44%,transparent))}
+  /* Wraps rather than truncates: "I · FUNDAMENTALS" does not fit one column
+     at any size worth reading, and a section whose name is cut off is a
+     section you have to open to identify. */
+  .secname{display:block;font-family:'Space Grotesk',system-ui,sans-serif;
+    font-size:12px;font-weight:700;letter-spacing:-.03em;line-height:1.15;
+    min-width:0;margin-top:-1px;
+    /* FUNDAMENTALS is one word wider than a column on a 327px phone, and a
+       word that cannot break simply runs out of the tile. */
+    overflow-wrap:anywhere}
+  .secsub{flex:1;font-size:11px;line-height:1.45;color:var(--fg-dim);
+    letter-spacing:.01em}
+  .secpb{display:block;height:3px;border-radius:3px;background:var(--rule);
+    overflow:hidden}
+  .secpb>span{display:block;height:100%;background:var(--tabc);
+    border-radius:3px;transition:width .5s ease}
+  /* The row wraps, the two counts inside it do not: on the narrow phone
+     "14/14 CLEARED" and "37/39 ★" do not share a line, and nowrap on the row
+     itself clipped the star clean off the edge. */
+  .secf{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 8px;
+    font-size:9.5px;letter-spacing:.07em;color:var(--fg-dim);
+    text-transform:uppercase}
+  .secf>span{white-space:nowrap}
+  .secst{color:var(--star)}
+  .secmast{position:absolute;top:9px;right:-27px;width:96px;padding:2px 0;
+    transform:rotate(38deg);text-align:center;font-size:8.5px;letter-spacing:.1em;
+    background:var(--star);color:#1a1206;font-weight:700}
+  .sectile.mst{border-color:color-mix(in srgb,var(--star) 60%,var(--tabc))}
+
+  /* SHUT, and the tile has to look it before it is read. Three things at
+     once, because any one of them alone got argued with on the map's own
+     locked nodes: the colour drains out, the chains cross it, and the cap
+     names what is holding it. */
+  .sectile.lk{filter:saturate(.34) brightness(.62);
+    border-color:var(--rule);box-shadow:0 3px 0 #04070d}
+  /* Under the chains the body copy is texture, not text - and half-legible
+     text with a chain through it reads worse than none. The name stays up. */
+  .sectile.lk .secsub,.sectile.lk .secpb,.sectile.lk .secf{opacity:.4}
+  .sectile.lk.wide{min-height:104px}
+  .secchain{position:absolute;inset:0;width:100%;height:100%;
+    pointer-events:none;opacity:.85}
+  /* The fat stroke is the metal; the thin one punches the tile's own ground
+     back through the middle of each dash, which is what turns a dashed line
+     into a row of links. */
+  .secchain .ck{stroke:#8b93a6;stroke-width:11;stroke-linecap:round;fill:none;
+    stroke-dasharray:15 7}
+  .secchain .ki{stroke:#0b1120;stroke-width:5;stroke-linecap:round;fill:none;
+    stroke-dasharray:15 7}
+  .seccap{position:absolute;inset:auto 0 0 0;display:flex;
+    flex-direction:column;align-items:center;gap:4px;padding:8px 8px 9px;
+    background:linear-gradient(transparent,#050912 42%)}
+  .seclock{width:20px;height:20px;fill:#c6cddd;
+    filter:drop-shadow(0 1px 3px #000)}
+  .seccapt{font-size:9.5px;letter-spacing:.13em;color:#c6cddd}
+  .secad{display:inline-flex;align-items:center;gap:5px;
+    padding:4px 10px;border-radius:99px;font-size:10px;letter-spacing:.1em;
+    border:1px solid color-mix(in srgb,var(--star) 54%,transparent);
+    color:var(--star)}
+  .secad .adicon{width:13px;height:13px}
 
   .mbody{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 13px 130px}
   /* Positioned so the water can flood *behind* it rather than over it: at
