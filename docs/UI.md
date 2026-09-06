@@ -27,7 +27,7 @@ rather than guessing the file.
 | `65-replay.css` | `.replayui`, `.rbar`, `.rlabel`, `body.replaying` |
 | `70-cards.css` | the full-bleed cards: `.won` (win card, intro card), `.bigstars`, `.wonmast .wonlock .wonstory`, `.tutcard`, `#bRetry` |
 | `75-bossbar.css` | `.boss` lives/cores bar, `.startotal`, `.flystar`, `.sg` |
-| `80-panel-tall.css` | full-height panel furniture shared by menu, wardrobe and map: `.panel.tall .phead .pbody .pcard .prow2 .pgo .psub .pdanger .pbuild`, the range slider skin |
+| `80-panel-tall.css` | full-height panel furniture shared by menu, wardrobe, chooser and map: `.panel.tall .phead .pbody .pcard .prow2 .pgo .psub .pdanger .pfoot`, the range slider skin |
 | `85-map.css` | `--vio --amb` tokens, the section chooser (`.secgrid .sectile .secem .secnum .secname .secsub .secpb .secf .seccap .secchain .seclock .secad`), `.panel.map .mhead .mcard .mbar #mtrail .mfill .mnode` (+ `.mboss .mtrial .solved .here .locked .skipped .mst`), `.mstars .mcap .msheet .mlegend`, the offer-card buttons `.ma .go .ad .qt .mn`, `.adicon`, the global reduced-motion rule |
 | `90-tutorial.css` | the guided lock (`body.tutlock`, `.tutlive`, `.tutsoft`), `.phasenote`, the ghost hand (`.ghost .gfinger .ghand .gtrack .gsay`) |
 | `95-home.css` | `.home` overlay, `.hcont` (CONTINUE, `--sec`), `.hshop`, `.hward` / `.hward.hmine` (WARDROBE, MY LEVELS), `body.athome` |
@@ -92,7 +92,7 @@ buttons at the end of its builder.
 | Win card | `#won` | `win()` (`12-play.js`): title, `.bigstars`, `#wonSub`, mastery/lock/story lines, buttons | `70-cards` | `win:2` |
 | Home screen | `#home` (static shell) | `homeShow`, `homeSync`, `homeCase` | `95-home` | `home` |
 | Menu | `#panel` | `menuPanel()` (`16-panels.js`); rows via `seg()` | `80-panel-tall`, `40-panels` (`.srow`), `50-layout-cues` (`.crow .seg`) | `menu` |
-| Wardrobe | `#panel.ward` | `wardrobePanel(tab)`, `wardRefresh`, `wardMeta` | `40-panels`, `80-panel-tall` | `wardrobe`, `wardrobe:color` |
+| Wardrobe | `#panel.ward` | `wardrobePanel(tab)` (`shape` / `color` / `deal`), `wardRefresh`, `wardMeta` | `40-panels`, `80-panel-tall` | `wardrobe`, `wardrobe:color` |
 | Section chooser | `#panel.map.secs` | `sectionPicker()` → `secGridDraw`, `secEmblem`, `secChains`, `secLock` | `85-map` | `sections` |
 | Map | `#panel.map` | `levelPicker(n)` → `mapDraw`, `mapLayout`, `mapShape`, `mapFill`, `mapWeather`, `mapFocus` | `85-map` | `map`, `map:1` |
 | Level sheet on the map | `#mSheet` inside the map | `mapSheet(i)` | `85-map` (`.msheet`) | `sheet:5` |

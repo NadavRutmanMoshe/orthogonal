@@ -204,6 +204,9 @@ is the rule.
   stacked worst case.
 - `migrateWorlds()` and the `v_`/`p_` id prefixes keep old wardrobe saves
   valid. Do not remove while any old save might exist.
+- **`deal:true` in `SKIN_SHAPES` is the money shelf**: off the SHAPE grid,
+  onto the DEALS tab, priced in `usd`, no stars and no ads. The Rook is the
+  only one. It is still a shape everywhere else in the code.
 - **Four shapes carry `reward:true` and cannot be bought**: one per numbered
   section, granted by `grantShape()` for every star in it. Paid at the moment
   the last star lands (`win()`) and swept once on boot for older saves;

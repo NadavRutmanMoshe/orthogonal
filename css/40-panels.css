@@ -52,6 +52,15 @@
   .tabs{display:flex;gap:5px;margin:10px 0 10px;padding:0 13px}
   .tab{flex:1;height:32px;font-size:11.5px;letter-spacing:.1em;border-radius:17px;
     color:var(--fg-dim)}
+  /* THE SHELF THAT IS NOT PAID FOR IN STARS. Gold on the tag rather than on
+     the word, so the tab still reads as one of three and not as an advert -
+     but the thing that tells them apart is visible before the label is. */
+  .tab .tagicon{width:13px;height:13px;flex:none;margin-right:6px;
+    fill:currentColor}
+  .tab.tdeal .tagicon{fill:var(--star)}
+  .tab.tdeal.on{border-color:var(--star);
+    background:color-mix(in srgb,var(--star) 22%,var(--panel));
+    box-shadow:0 2px 0 color-mix(in srgb,var(--star) 40%,#04070d)}
   /* THE SELECTED TAB IS READ, NOT ADMIRED. It was the player's colour on a
      12% wash of a hard-coded rose, which is two problems: the literal is the
      rose `--player` happened to be the day it was typed, so every other skin
@@ -84,6 +93,15 @@
     color:var(--star);font-size:10.5px;letter-spacing:.06em;opacity:1}
   .item span.wlock{color:var(--star);font-size:9.5px;letter-spacing:.02em;
     white-space:nowrap}
+  /* A REAL PRICE LOOKS LIKE A REAL PRICE. Gold like a star price - it is
+     still the shop's currency slot - but set solid and a little heavier,
+     because the one thing a player must not misread is which of the two
+     kinds of money they are about to spend. */
+  .item span.wusd,.wcost.wusd{color:var(--star);font-weight:600;
+    letter-spacing:.04em}
+  .wact .wbuyusd{border-color:color-mix(in srgb,var(--star) 54%,transparent);
+    color:var(--star);gap:8px;opacity:1}
+  .wact .wbuyusd .tagicon{width:14px;height:14px;fill:currentColor;flex:none}
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
   /* THE CATALOGUE TILE IS A CAP, like everything else you press in this game
      (see "buttons are lit caps" in docs/UI.md). It was a flat outlined box

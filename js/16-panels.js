@@ -18,21 +18,36 @@
    would burn a WebGL context. See the note above previewStop().
    ---------------------------------------------------------------------- */
 var wardTab="shape";
-var wardSel={shape:null,color:null,world3:null,world2:null};
+var wardSel={shape:null,color:null,deal:null,world3:null,world2:null};
 var buyArmed=null;   // the id whose BUY has been tapped once, awaiting a second
 
+/* THE DEALS SHELF IS A VIEW OF THE SHAPE CATALOGUE, not a fourth catalogue.
+   Everything on it is a shape, so it equips as a shape, previews as a shape
+   and is stored in `wardrobe.shape` like any other - the tab only decides
+   which slice of SKIN_SHAPES the grid is showing. That is what keeps a bought
+   item from needing a second code path anywhere else in the game. */
+function isDeal(it){return !!(it&&it.deal);}
 function wardList(t){
-  return t==="shape" ?SKIN_SHAPES:
-         t==="color" ?SKIN_COLORS:
+  if(t==="deal") return SKIN_SHAPES.filter(isDeal);
+  if(t==="shape")return SKIN_SHAPES.filter(function(it){return !isDeal(it);});
+  return t==="color" ?SKIN_COLORS:
          t==="world3"?WORLDS3D:WORLDS2D;
 }
 function wardEquipped(t){
-  return t==="shape" ?wardrobe.shape:
+  return (t==="shape"||t==="deal")?wardrobe.shape:
          t==="color" ?wardrobe.color:
          t==="world3"?wardrobe.world3:wardrobe.world2;
 }
 function wardSelected(t){
   if(!wardSel[t])wardSel[t]=wardEquipped(t);
+  /* AND IT HAS TO BE ON THIS SHELF. The deals tab is a slice of the shape
+     catalogue, so its equipped id is whatever shape you are wearing - which
+     is almost never one of the deals. Left alone, the panel opened showing
+     the first deal's name over the equipped cube's state and called it
+     "equipped". Falls back to the first thing on the shelf instead. */
+  var list=wardList(t), i;
+  for(i=0;i<list.length;i++) if(list[i].id===wardSel[t]) return wardSel[t];
+  wardSel[t]=list.length?list[0].id:wardSel[t];
   return wardSel[t];
 }
 function wardrobePanel(tab){
@@ -46,7 +61,7 @@ function wardrobePanel(tab){
 
      Guarded rather than trusted: callers hand a tab name in, and a stale
      "world3" would land the grid on a catalogue with no tab to leave it by. */
-  wardTab=(tab==="color")?"color":"shape";
+  wardTab=(tab==="color"||tab==="deal")?tab:"shape";
   buyArmed=null;
   showPanel(
     "<div class='phead'><div class='pt'><b>Wardrobe</b>"+
@@ -56,6 +71,10 @@ function wardrobePanel(tab){
     "<div class='tabs'>"+
       "<button class='tab' id='wS'>SHAPE</button>"+
       "<button class='tab' id='wC'>COLOUR</button>"+
+      /* The tag says what the shelf is before the word is read, which is the
+         same reason the ad buttons carry a screen: a price is the one thing
+         on this panel that is not paid for in stars. */
+      "<button class='tab tdeal' id='wD'>"+tagIcon()+"DEALS</button>"+
     "</div>"+
     "<div class='wbody'>"+
       "<div class='wlist'><div class='grid' id='wGrid'></div></div>"+
@@ -74,6 +93,7 @@ function wardrobePanel(tab){
       "<button id='wBack'>CLOSE</button></div>","wardrobe");
   bind("wS",function(){wardTabTo("shape");});
   bind("wC",function(){wardTabTo("color");});
+  bind("wD",function(){wardTabTo("deal");});
   bind("wBack",hidePanel);
   bind("wHome",function(){hidePanel();homeShow();});
   bind("wX",hidePanel);
@@ -85,28 +105,40 @@ function wardrobePanel(tab){
   requestAnimationFrame(function(){
     var cv=$("wCase3d");
     if(!cv||panelKind!=="wardrobe"||!panelOpen())return;
+    /* ALREADY RUNNING ON THIS CANVAS: leave it alone. Open the wardrobe
+       twice inside one frame - a double tap on the corner button will do it -
+       and both openings queue this callback against the same new canvas. The
+       second previewStart() calls previewStop(), which ends the context with
+       loseContext() on that very canvas, and a canvas whose context was lost
+       that way returns null from getContext() forever after; three.js then
+       dies reading `precision` off the null. Same trap homeCase() sidesteps
+       by replacing its element - this one just declines to rebuild. */
+    if(typeof pv!=="undefined"&&pv&&pv.canvas===cv){wardPreview();return;}
     previewStart(cv);
     wardPreview();
   });
 }
 function wardTabTo(t){
-  wardTab=(t==="color")?"color":"shape";buyArmed=null;
+  wardTab=(t==="color"||t==="deal")?t:"shape";buyArmed=null;
   wardRefresh();wardPreview();
 }
 function wardPreview(){
   var sel=wardSelected(wardTab);
+  // A deal is a shape, so it stands in the case as one.
   previewShow(
-    wardTab==="shape"?sel:wardrobe.shape,
+    (wardTab==="shape"||wardTab==="deal")?sel:wardrobe.shape,
     wardTab==="color"?sel:wardrobe.color,
     wardrobe.world3,wardrobe.world2,false);
 }
 function wardRefresh(){
   var t=wardTab, list=wardList(t), cur=wardEquipped(t), sel=wardSelected(t);
-  $("wHead").textContent=t==="shape"?"THE SHAPE YOU PLAY AS":"ITS COLOUR";
+  $("wHead").textContent=t==="deal"?"NOT FOR STARS":
+                         t==="shape"?"THE SHAPE YOU PLAY AS":"ITS COLOUR";
   $("wBal").innerHTML=shards()+" \u2605";
   $("wBal").title="to spend";
   $("wS").classList.toggle("on",t==="shape");
   $("wC").classList.toggle("on",t==="color");
+  $("wD").classList.toggle("on",t==="deal");
   var html="";
   for(var i=0;i<list.length;i++){
     var it=list[i], have=owns(it.id), on=cur===it.id;
@@ -116,11 +148,13 @@ function wardRefresh(){
       : "background:var(--rule)";
     html+="<div class='item"+(on?" on":"")+(sel===it.id?" sel":"")+
       "' data-id='"+it.id+"'>"+
-      "<i style='"+swatch+"'>"+(t==="shape"?shapeGlyph(it.id):"")+"</i>"+
+      "<i style='"+swatch+"'>"+(t==="color"?"":shapeGlyph(it.id))+"</i>"+
       "<b>"+it.name+"</b>"+
-      "<span"+(!have&&it.reward?" class='wlock'":"")+">"+
+      "<span"+(!have?(it.reward?" class='wlock'":isDeal(it)?" class='wusd'":""):"")+">"+
         (on?"equipped":have?"owned"
-          :it.reward?rewardShort(it):it.cost+" <u class='st'>\u2605</u>")+
+          :it.reward?rewardShort(it)
+          :isDeal(it)?"$"+esc(it.usd)
+          :it.cost+" <u class='st'>\u2605</u>")+
       "</span></div>";
   }
   $("wGrid").innerHTML=html;
@@ -140,8 +174,11 @@ function wardMeta(){
   var t=wardTab, id=wardSelected(t), it=findBy(wardList(t),id);
   var have=owns(id), on=wardEquipped(t)===id, bal=shards();
   var s="<div class='wname'>"+it.name+"</div>"+
-        "<div class='wcost'>"+(on?"equipped":have?"owned"
-          :it.reward?esc(rewardSay(it)):it.cost+" <u class='st'>\u2605</u>")+"</div>"+
+        "<div class='wcost"+(!have&&isDeal(it)?" wusd":"")+"'>"+
+          (on?"equipped":have?"owned"
+          :it.reward?esc(rewardSay(it))
+          :isDeal(it)?"$"+esc(it.usd)
+          :it.cost+" <u class='st'>\u2605</u>")+"</div>"+
         "<div class='wact'>";
   if(on)              s+="<button disabled>EQUIPPED</button>";
   else if(have)       s+="<button id='wEquip' class='wgo'>EQUIP</button>";
@@ -151,11 +188,16 @@ function wardMeta(){
   else if(it.reward)  s+="<button disabled class='wearn'>EVERY "+
                          "<u class='st'>\u2605</u> IN "+
                          esc(secNumeral(it.sec))+"</button>";
+  /* NO STARS, NO ADS, NO SECOND TAP TO CONFIRM - there is nothing to confirm
+     until there is a store to charge. Dead for the same reason the ad
+     buttons are dead and said the same way, in the note below. */
+  else if(isDeal(it)) s+="<button disabled class='wbuyusd'>"+tagIcon()+
+                         "BUY \u00b7 $"+esc(it.usd)+"</button>";
   else if(bal<it.cost)s+="<button disabled>NEED "+(it.cost-bal)+" MORE <u class='st'>\u2605</u></button>";
   else if(buyArmed===id)
                       s+="<button id='wBuy' class='wsure'>SURE? \u00b7 "+it.cost+" <u class='st'>\u2605</u></button>";
   else                s+="<button id='wBuy' class='wgo'>BUY \u00b7 "+it.cost+" <u class='st'>\u2605</u></button>";
-  if(!have&&!it.reward){
+  if(!have&&!it.reward&&!isDeal(it)){
     var need=adsFor(it.cost), got=adsWatched(id);
     s+="<button id='wAd' class='ad' disabled>"+adIcon()+"WATCH "+need+" AD"+(need===1?"":"S")+
        (got?" ("+got+"/"+need+")":"")+"</button>";
@@ -163,7 +205,10 @@ function wardMeta(){
   s+="</div>";
   // The hook name belongs in the code and in CLAUDE.md, not in a player's
   // narrow sidebar; all this has to say is why the button does nothing.
-  if(!have&&!it.reward)s+="<div class='note'>No ad provider yet \u2014 the button is "+
+  if(!have&&isDeal(it))
+    s+="<div class='note'>No store yet \u2014 nothing can be charged until "+
+       "the game is wrapped for one. The button is dead on purpose.</div>";
+  else if(!have&&!it.reward)s+="<div class='note'>No ad provider yet \u2014 the button is "+
     "dead until the game is wrapped for a store.</div>";
   $("wMeta").innerHTML=s;
   bind("wEquip",function(){wardEquip(t,id);SFX.key();wardRefresh();});
@@ -239,6 +284,14 @@ function rewardShort(it){
   var sec=SECTIONS[it.sec];
   if(!sec)return "all \u2605";
   return secNumeral(it.sec)+" \u00b7 all <u class='st'>\u2605</u>";
+}
+/* A price tag, for the one shelf that is not paid for in stars. Drawn like
+   every other icon in the game rather than typed as a glyph. */
+function tagIcon(){
+  return "<svg class='tagicon' viewBox='0 0 24 24' fill-rule='evenodd' "+
+    "aria-hidden='true'><path d='M2.6 11.5 11.4 2.7c.4-.4.9-.6 1.4-.6h6.5c1.1 "+
+    "0 2 .9 2 2v6.5c0 .5-.2 1-.6 1.4l-8.8 8.8c-.8.8-2 .8-2.8 0l-6.5-6.5c-.8-."+
+    "8-.8-2 0-2.8Zm14.3-5.4a1.9 1.9 0 1 0 0 3.8 1.9 1.9 0 0 0 0-3.8Z'/></svg>";
 }
 function shapeSvg(d){
   return "<svg viewBox='0 0 24 24' aria-hidden='true'><path d='"+d+"'/></svg>";

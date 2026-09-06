@@ -54,9 +54,16 @@ var SKIN_SHAPES=[
   {id:"barrel",  name:"Barrel",   cost:18},
   {id:"donut",   name:"Donut",    cost:22},
   {id:"star",    name:"Shard",    cost:24},
-  // A CHARACTER RATHER THAN A SOLID, like the Pup - and the one piece in
-  // chess that only ever moves along the axes, which is the whole game.
-  {id:"rook",    name:"Rook",     cost:26},
+  /* A CHARACTER RATHER THAN A SOLID, like the Pup - and the one piece in
+     chess that only ever moves along the axes, which is the whole game.
+
+     IT IS THE FIRST THING IN THE GAME SOLD FOR MONEY. `deal:true` takes it
+     out of the SHAPE grid and puts it on the DEALS tab; `usd` is the price
+     and `cost:0` means there is no star price to fall back on. It cannot be
+     watched open either - adsFor() is never consulted for a deal - which is
+     the point of the tab: everything else in the catalogue is earned or
+     watched, and this shelf is the one that is not. */
+  {id:"rook",    name:"Rook",     cost:0, deal:true, usd:"2.99"},
   {id:"pup",     name:"Pup",      cost:30},
   /* THE FOUR THAT CANNOT BE BOUGHT.
 
