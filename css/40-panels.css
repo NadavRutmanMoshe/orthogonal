@@ -52,8 +52,20 @@
   .tabs{display:flex;gap:5px;margin:10px 0 10px;padding:0 13px}
   .tab{flex:1;height:32px;font-size:11.5px;letter-spacing:.1em;border-radius:17px;
     color:var(--fg-dim)}
-  .tab.on{border-color:var(--player);color:var(--player);
-    background:rgba(214,51,108,.12)}
+  /* THE SELECTED TAB IS READ, NOT ADMIRED. It was the player's colour on a
+     12% wash of a hard-coded rose, which is two problems: the literal is the
+     rose `--player` happened to be the day it was typed, so every other skin
+     tinted the pill one colour and lettered it another; and colour-on-its-
+     own-colour at 12% has almost no contrast to begin with. Over a bright
+     section it stopped being legible altogether - reported as "when I press
+     colour I can't read it".
+
+     So the word stays at full `--fg` weight and the hue does the marking:
+     a solid ground mixed into the panel, the rim in `--player`, and a lip
+     under it like every other pressed thing in the game. */
+  .tab.on{border-color:var(--player);color:var(--fg);font-weight:600;
+    background:color-mix(in srgb,var(--player) 26%,var(--panel));
+    box-shadow:0 2px 0 color-mix(in srgb,var(--player) 40%,#04070d)}
   .panel.ward .wbody{padding-left:13px;padding-right:13px}
   .panel.ward{padding-left:0;padding-right:0}
   /* Beats .panel.ward.on's own cap. At 56vh the tile list was clipped through

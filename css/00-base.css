@@ -13,11 +13,17 @@
        counter, the map, the shop and the flight can never drift apart. */
     --star:#f5c542; --star-glow:rgba(245,197,66,.55);
     --fg:#c3cde4; --fg-dim:#6d7c9c; --rule:rgba(195,205,228,.22);
-    --panel:rgba(15,20,36,.82);
+    /* .93, NOT .82. A panel is a sheet you read; at .82 over a bright
+       section - the desert at noon, hell - the world came through it and the
+       text on top went muddy. Reported on the wardrobe's COLOUR tab, which
+       is the worst case because that pill is a translucent tint over a
+       translucent sheet. Still translucent, because the blur behind it is
+       what says the world is still there; just no longer see-through. */
+    --panel:rgba(15,20,36,.93);
   }
   body.flat{ --fg:#1a1c2b; --fg-dim:#7d7666; --rule:rgba(26,28,43,.24);
     --star:#c07d09; --star-glow:rgba(192,125,9,.4);
-    --panel:rgba(230,225,211,.86); }
+    --panel:rgba(230,225,211,.94); }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%;overflow:hidden;background:var(--void);
     touch-action:none;transition:background .5s ease}
