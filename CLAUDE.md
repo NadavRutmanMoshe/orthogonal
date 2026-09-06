@@ -256,7 +256,7 @@ built to be cheap:
    wide case, `--tag before` / `--tag after` keeps a pair. `--eval "js"`
    reaches any state the named screens do not.
 4. **Check nothing else moved**: the same screen at `--small`, and the
-   flat theme if the change is on the HUD (`flat:3`).
+   flat theme if the change is on the HUD (`flat:2`).
 5. `node --check` on any JS you touched; `node tools/verify.js` only if a
    level or a rule changed.
 

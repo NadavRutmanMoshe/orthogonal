@@ -75,10 +75,10 @@ buttons at the end of its builder.
 | Screen | Markup | Filled / built by | CSS | Shot |
 |---|---|---|---|---|
 | Corner buttons (menu, wardrobe, bulb, restart, eye) | `index.html` `.corner.tl` / `.corner.tr` | `syncHud`, `syncHintN` | `10-buttons` | any level |
-| HUD text: level name, hint, move count, live stars | `.hud`: `#lvName #lvHint #moveLabel #starRow` | `syncHud`, `syncStars` | `00-base`, `20-hud` | `level:3` |
+| HUD text: level name, hint, move count, live stars | `.hud`: `#lvName #lvHint #moveLabel #starRow` | `syncHud`, `syncStars` | `00-base`, `20-hud` | `level:2` |
 | Lives / cores bar on a clock | `#bossBar` | `syncBossBar` | `75-bossbar` | `boss`, `trial` |
-| Running star total | `#starTotal` | `syncStarTotal`, `starPop`, `flyStars` | `75-bossbar` | `win:3` |
-| Control bar: d-pad, turn, GO 2D | `#playBarWrap` | `syncHud` (classes), `applyUI` (layout) | `10-buttons`, `20-hud`, `50-layout-cues` | `level:3 --ui full` |
+| Running star total | `#starTotal` | `syncStarTotal`, `starPop`, `flyStars` | `75-bossbar` | `win:2` |
+| Control bar: d-pad, turn, GO 2D | `#playBarWrap` | `syncHud` (classes), `applyUI` (layout) | `10-buttons`, `20-hud`, `50-layout-cues` | `level:2 --ui full` |
 | Editor / composer bars | `#editBarWrap`, `#composeBarWrap` | `14-editor.js`, `17-composer.js` | `30-editor` | `editor` |
 | Coach line (hidden by default) | `#coach` | `tutSync` | `50-layout-cues` | `tutorial` |
 | Ghost hand + label | `#ghost`, `#ghostSay` | `tutGhost`, `ghostRestart`, `cue()` | `90-tutorial` | `tutorial` |
@@ -89,7 +89,7 @@ buttons at the end of its builder.
 | The sting | `#splash` | `20-splash.js` | `60-splash` | `splash` |
 | Intro card | `#intro` (static) | `nothingBehind()` decides it shows | `70-cards` | `intro` |
 | Tutorial / explanation card | `#tutcard` | `cardPut(h,p,owner)` | `70-cards` | `tutcard` |
-| Win card | `#won` | `win()` (`12-play.js`): title, `.bigstars`, `#wonSub`, mastery/lock/story lines, buttons | `70-cards` | `win:3` |
+| Win card | `#won` | `win()` (`12-play.js`): title, `.bigstars`, `#wonSub`, mastery/lock/story lines, buttons | `70-cards` | `win:2` |
 | Home screen | `#home` (static shell) | `homeShow`, `homeSync`, `homeStrip`/`homeTile`, `homeCase` | `95-home` | `home` |
 | Menu | `#panel` | `menuPanel()` (`16-panels.js`); rows via `seg()` | `80-panel-tall`, `40-panels` (`.srow`), `50-layout-cues` (`.crow .seg`) | `menu` |
 | Wardrobe | `#panel.ward` | `wardrobePanel(tab)`, `wardRefresh`, `wardMeta` | `40-panels`, `80-panel-tall` | `wardrobe`, `wardrobe:color` |
@@ -160,7 +160,7 @@ node tools/shot.js level:12 flat:12 win:12
 node tools/shot.js map --small            # 327×711 @2.75, the owner's phone
 node tools/shot.js menu --desktop
 node tools/shot.js map --tag before       # then edit, then --tag after
-node tools/shot.js level:3 --ui full      # with the d-pad
+node tools/shot.js level:2 --ui full      # with the d-pad
 node tools/shot.js level:5 --eval "press('R');press('R');doFlatten()"
 node tools/shot.js --all                  # ~25 screens, about a minute
 ```

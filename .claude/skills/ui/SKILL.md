@@ -24,7 +24,7 @@ design docs to move a button. None of that is needed. Do this instead:
    collision list.
 5. **Shoot again**: `node tools/shot.js <screen> --tag after`, Read it, and
    fix what is wrong *before* reporting. Then the same screen `--small`
-   (the owner's narrow phone), and `flat:3` if the change touches the HUD
+   (the owner's narrow phone), and `flat:2` if the change touches the HUD
    or anything the `body.flat` tokens flip.
 6. `node --check js/<file>` for any JS touched. `node tools/verify.js` only
    if a level or a rule changed, which a UI change should not.
