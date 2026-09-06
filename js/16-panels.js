@@ -337,7 +337,7 @@ function seg(pre,val,label,cur){
 function menuPanel(){
   var vol=Math.round(settings.volume*100), bri=Math.round(settings.brightness*100);
   showPanel(
-    "<div class='phead'><div class='pt'><b>Menu</b>"+
+    "<div class='phead'><div class='pt'><b>Settings</b>"+
       "<span>"+esc((L&&L.name)||"")+"</span></div>"+
       "<div class='mtot'>"+starsEarned()+" ★</div>"+
       "<button class='mq mx' id='mClose' aria-label='Back to the level'>✕</button></div>"+
