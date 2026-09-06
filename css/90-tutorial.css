@@ -1,0 +1,343 @@
+/* Orthogonal — css/90-tutorial.css
+   The guided lock, the phase card, the ghost hand.
+   Loaded in the order listed in index.html; see docs/UI.md for the map of
+   screens to files. */
+
+/* ============================================================
+   THE GUIDED LOCK — the tutorial insisting on one control
+
+   The world goes quiet and every play button but one goes faint, so the
+   sentence in the coach line has exactly one thing it can be referring to.
+
+   Keyed off .tutlive, not .cue: the cue is a 3.2s pulse and the lock lasts
+   as long as the step, so pinning the highlight to the pulse would dim the
+   whole bar the moment it expired - including the button being asked for.
+
+   The corner chrome is deliberately untouched. A tutorial you cannot get out
+   of is a trap, and the menu is the way out.
+   ============================================================ */
+/* The dim is the quieter half of this. It cannot carry the message on its
+   own - the game is already dark, so more dark reads as "the game is dark"
+   rather than as "look here" - so it is kept light and the *lit* button does
+   the work. It fades in rather than snapping, because it arrives while the
+   player is holding still and a hard cut would read as a fault. */
+body.tutlock::before{content:"";position:fixed;inset:0;z-index:5;
+  background:rgba(4,7,16,.42);pointer-events:none;
+  animation:tutdim .45s ease both}
+body.flat.tutlock::before{background:rgba(90,84,68,.30)}
+@keyframes tutdim{from{opacity:0}to{opacity:1}}
+/* A LIGHTER DIM WHERE THE LEVEL ASKS FOR ONE (`L.tutSoft`). The overlay says
+   "this is the only control I accept", and on `00 — First Landing` that is
+   true but secondary: the player has just been handed a rule and two blocks
+   to check it against, and the world is the thing they are supposed to be
+   looking at. At the full weight the lesson goes dark exactly while it is
+   being read. The greyed buttons still carry the gate; this only stops the
+   board going with them. */
+body.tutlock.tutsoft::before{background:rgba(4,7,16,.16)}
+body.flat.tutlock.tutsoft::before{background:rgba(90,84,68,.12)}
+body.tutlock.tutsoft #playBar button{opacity:.3}
+
+/* Green for as long as the step is asking for this control - which is not the
+   same span as the dim, and must not be tied to it. A step can want three
+   presses of one arrow; the light has to survive all three. */
+#playBar button.tutlive{border-color:var(--goal);color:var(--goal);
+  background:rgba(53,194,165,.10)}
+
+/* Faint, and inert: opacity alone would still let a mis-tap through, and the
+   verbs would swallow it silently with no way to see why. */
+body.tutlock #playBar button{opacity:.16;pointer-events:none;
+  transition:opacity .3s ease}
+
+/* Under the dim the same button has to win against a dark screen, so it gains
+   a ring that breathes and a step up in size on top of the colour it already
+   had - three cues on one control rather than one cue spread thin. */
+body.tutlock #playBar button.tutlive{opacity:1;pointer-events:auto;
+  position:relative;z-index:6;
+  background:rgba(53,194,165,.14);
+  animation:tutlive 1.25s ease-in-out infinite}
+@keyframes tutlive{
+  0%,100%{box-shadow:0 3px 0 var(--lip),0 0 0 0 rgba(53,194,165,.55),
+    0 0 18px rgba(53,194,165,.35);transform:scale(1)}
+  50%{box-shadow:0 3px 0 var(--lip),0 0 0 9px rgba(53,194,165,0),
+    0 0 26px rgba(53,194,165,.55);transform:scale(1.07)}
+}
+/* The coach is the one thing that has to stay legible over the dim. */
+body.tutlock .coach{z-index:11}
+
+/* ============================================================
+   THE PHASE CARD — the breath between one phase and the next
+
+   Clearing a phase used to raise the next one's pillars, drop a fresh hunter
+   in and teleport the player home 420ms later, all while the clock ran. The
+   board you were looking at was not the board you were now standing on, and
+   the first thing you learned about the change was usually being hit by it.
+
+   So the fight stops. The player is stood up, put back on their corner and
+   turned to the opening view first - the reset is the calm part - then the
+   geometry rises, and only then does anyone move. The card says what
+   changed; the dim says the game is not listening yet.
+   ============================================================ */
+.phasenote{position:fixed;left:16px;right:16px;top:38%;z-index:16;
+  pointer-events:none;text-align:center;opacity:0;
+  font-family:'Space Grotesk',system-ui,sans-serif;
+  transition:opacity .3s ease}
+.phasenote.on{opacity:1;animation:phaseIn .45s cubic-bezier(.2,.9,.3,1)}
+.phasenote b{display:block;font-size:13px;letter-spacing:.3em;font-weight:500;
+  color:var(--fg-dim);text-transform:uppercase}
+.phasenote i{display:block;font-style:normal;font-size:20px;font-weight:700;
+  letter-spacing:-.01em;color:var(--fg);margin-top:8px;line-height:1.25}
+@keyframes phaseIn{from{transform:translateY(14px) scale(.96)}to{transform:none}}
+body.bosshold::before{content:"";position:fixed;inset:0;z-index:6;
+  background:rgba(4,7,16,.5);pointer-events:none;animation:tutdim .4s ease both}
+body.flat.bosshold::before{background:rgba(90,84,68,.34)}
+
+/* ============================================================
+   THE GHOST HAND — the gesture tutorial's only affordance
+
+   With the bar off there is no button to turn green, so this takes the green
+   button's job: it says "this step wants this control", and it is on for
+   exactly as long as the step is. The guided lock is still the separate,
+   later statement - under it the world dims and the hand brightens, which is
+   the same two-cue arrangement the buttons had, moved onto a new surface.
+
+   IT SITS IN THE MIDDLE OF THE SCREEN, over the world rather than under it.
+   That is where the gesture actually happens - a swipe or a double tap lands
+   on the world itself, not on a strip at the bottom where the bar used to be
+   - and it is also where the player is already looking. It rode the bottom
+   edge first, which put the demonstration in the one place the lesson had
+   just finished saying was empty.
+
+   Everything about a demonstration is set from four custom properties and a
+   handful of classes, so tutGhost() only ever writes a class string and a
+   start/end offset. Nothing here animates layout: the finger moves on
+   `transform`, which composites, and this thing loops for as long as a
+   first-time player is stuck.
+   ============================================================ */
+/* Lower than the middle: the hand is the thing being watched and the world
+   above it is the thing being learned, so the demonstration sits under the
+   board rather than across it. */
+.ghost{position:fixed;left:50%;top:60%;z-index:11;
+  width:190px;height:118px;margin:-59px 0 0 -95px;
+  pointer-events:none;opacity:0;transition:opacity .35s ease}
+.ghost.on{opacity:.62}
+/* Under the lock the hand is the lit control, so it goes to full strength -
+   the same step up the cued button used to take. */
+body.tutlock .ghost.on{opacity:1}
+/* A borrowed hand is louder than a held one, and they are different
+   statements. The tutorial's sits at .62 for a whole step, alongside a coach
+   line saying the same thing, so it is ambient. A hint was *asked for*, costs
+   a star, and lasts a few seconds with nothing else on screen explaining it -
+   so it arrives at full strength. */
+.ghost.on.once{opacity:.92}
+
+/* THE TRACK IS WHERE THE GESTURE HAPPENS, and every demonstration has one -
+   a line for a swipe, a spot for a tap. It is drawn faintly and is always
+   there, so the demo reads as a shape even in the pause between loops, and
+   so the double tap has something for the finger to land back onto rather
+   than blinking in mid-air. The gradient on a swipe runs from nothing at the
+   start to the goal colour at the finish, which states the direction a
+   second time for anyone who glances at a still frame. */
+/* The gesture's name, ABOVE the hand. Below it would land in the middle of
+   the fist: the hand hangs *down* from its fingertip, which is the contact
+   point at the ghost's own centre, so everything under that point is drawing.
+   Above it there is only the tap's ripple and the 42px an upward swipe
+   travels, and 78px clears both. */
+.glabel{position:absolute;left:50%;top:-78px;transform:translateX(-50%);
+  white-space:nowrap;text-transform:uppercase;
+  font-family:'IBM Plex Mono',ui-monospace,monospace;
+  font-size:15px;font-weight:600;letter-spacing:.16em;color:var(--goal);
+  text-shadow:0 2px 10px rgba(0,0,0,.55)}
+.glabel:empty{display:none}
+.gtrack{position:absolute;left:50%;top:50%;border-radius:3px;
+  transform:translate(-50%,-50%);display:none}
+.ghost.g-swipe .gtrack,.ghost.g-two .gtrack,.ghost.g-dbl .gtrack{display:block}
+.ghost.gx .gtrack{width:112px;height:4px}
+.ghost.gy .gtrack{width:4px;height:84px}
+.ghost.d-right .gtrack{background:linear-gradient(90deg,
+  rgba(53,194,165,.05),rgba(53,194,165,.5))}
+.ghost.d-left .gtrack{background:linear-gradient(270deg,
+  rgba(53,194,165,.05),rgba(53,194,165,.5))}
+.ghost.d-up .gtrack{background:linear-gradient(0deg,
+  rgba(53,194,165,.05),rgba(53,194,165,.5))}
+.ghost.d-down .gtrack{background:linear-gradient(180deg,
+  rgba(53,194,165,.05),rgba(53,194,165,.5))}
+/* A tap has no path, so its track is the place: a soft disc the finger lands
+   back onto, which is what keeps the two taps legible as two visits to one
+   spot rather than as one blinking dot. It is a filled disc and not a ring,
+   because the dot and the ripple are already circles of about this size and
+   a third concentric outline is most of what made this demo read as messy.
+   Filled, it sits *under* the dot rather than beside it. */
+.ghost.g-dbl .gtrack{width:34px;height:34px;border-radius:50%;
+  background:rgba(53,194,165,.12);border:1px solid rgba(53,194,165,.20)}
+
+/* A finger is a wrapper that travels and a dot that does not. Keeping the
+   travel on the wrapper is what lets the two-finger demo offset its pair
+   with plain `margin` and still share one animation. */
+.gfinger{position:absolute;left:50%;top:50%;width:26px;height:26px;
+  margin:-13px 0 0 -13px}
+.gfinger.b{display:none}
+/* TWO FINGERS ARE STACKED, 32px APART, AND THE HAND TURNS TO MATCH.
+
+   Side by side is the grip a hand really uses and it is the worse drawing,
+   which is the whole finding here: two contacts abreast, sliding along their
+   own line of travel, read as one contact with a trail - the exact picture a
+   single-finger swipe already makes. Stacked, the pair sits ACROSS its
+   direction of movement, so the two-ness is the one thing the motion cannot
+   blur. Both versions have been drawn and played; this is the one that says
+   "two fingers" without being told.
+
+   The hand is then rotated a quarter turn (below) so its fingertips land on
+   the two dots, which also points it the way it is about to go. */
+.ghost.g-two .gfinger.a{margin-top:-29px}
+.ghost.g-two .gfinger.b{display:block;margin-top:3px}
+/* THE HAND. Positioned so the index fingertip lands exactly on the contact
+   dot's centre, which is what makes the dot read as "this is where the
+   finger is touching" rather than as a second object beside it.
+
+   Both sizes are drawn at half scale, so the arithmetic is worth stating
+   once: `.gfinger` is 26px square and its centre - the contact point - is at
+   (13,13). The one-finger tip is at (40,14) in a 120x160 viewBox, so at 60px
+   wide it renders at (20,7) and the box goes at 13-20, 13-7. The pair's
+   pair's first tip is at (38,14) in 150x160, rendering at (19,7) with the
+   second one 22px to its right, which is exactly where finger b's dot sits.
+
+   THE TILT IS A CUSTOM PROPERTY because the double tap animates `transform`
+   and an animated transform replaces a static one outright - so the lift
+   keyframes have to carry the rotation with them or the hand snaps upright
+   every time it taps. */
+.ghand{position:absolute;display:none;overflow:visible;--tilt:-10deg}
+.ghand.single{width:60px;height:80px;left:-7px;top:6px;
+  transform:rotate(var(--tilt));transform-origin:20px 7px}
+.ghand.pair{width:85px;height:80px;left:-6px;top:6px;
+  transform:rotate(var(--tilt));transform-origin:19px 7px}
+.ghost.g-swipe .ghand.single,.ghost.g-dbl .ghand.single{display:block}
+.ghost.g-two .ghand.pair{display:block}
+/* THE QUARTER TURN, AND WHICH WAY IT FACES.
+
+   The pair is drawn pointing up with its tips 32px apart horizontally, and
+   the contacts are stacked 32px apart vertically - so a rotation of exactly
+   90 degrees about the FIRST tip puts the second one on the second dot by
+   construction. No tilt on this one: at a 22px radius, ten degrees of
+   character costs nearly four pixels of registration, and a fingertip that
+   does not sit on its own contact is the one thing this drawing cannot
+   afford.
+
+   Which way it turns is the direction of travel, so the hand always leads
+   with its fingers and trails its fist - dragging a hand backwards across
+   the screen is a picture of somebody being pulled, not of somebody
+   swiping. Turning it the other way flips which tip is on top, so the left
+   version also drops 32px to put its first tip on the LOWER dot; the second
+   then lands on the upper one. */
+.ghost.g-two.d-right .ghand.pair{transform:rotate(90deg)}
+.ghost.g-two.d-left  .ghand.pair{transform:translateY(32px) rotate(-90deg)}
+/* The rim goes on first as a fat round stroke and the body covers the seams.
+   `use` inherits fill and stroke into the symbol, which is the whole reason
+   the shapes inside carry no paint of their own. */
+.ghrim{fill:rgba(6,9,18,.9);stroke:rgba(6,9,18,.9);stroke-width:9;
+  stroke-linejoin:round}
+.ghbody{fill:#eef2fb}
+/* THE HAND LIFTS WITH THE TAPS, on the same 1.9s clock as the dot and the
+   rings - a hand that stayed planted while the dot blinked was the old
+   "one messy throb" in a new costume. It is away between 13.7% and 20%,
+   which is the same gap gdbl uses, and then lifts clear for the pause. */
+@keyframes ghtap{
+  0%   {transform:translateY(0) rotate(var(--tilt))}
+  10%  {transform:translateY(0) rotate(var(--tilt))}
+  16.8%{transform:translateY(-11px) rotate(var(--tilt))}
+  20%  {transform:translateY(0) rotate(var(--tilt))}
+  30%  {transform:translateY(0) rotate(var(--tilt))}
+  36.8%{transform:translateY(-11px) rotate(var(--tilt))}
+  60%  {transform:translateY(-15px) rotate(var(--tilt))}
+  100% {transform:translateY(-15px) rotate(var(--tilt))}
+}
+.ghost.g-dbl .ghand.single{animation:ghtap 1.9s ease-out infinite}
+.gdot{position:absolute;inset:0;border-radius:50%;
+  background:rgba(53,194,165,.30);border:1.5px solid var(--goal);
+  box-shadow:0 0 14px rgba(53,194,165,.45)}
+.gtap{position:absolute;inset:0;border-radius:50%;
+  border:1.2px solid var(--goal);opacity:0;display:none}
+.ghost.g-dbl .gtap{display:block}
+
+/* The travel. Start and end are written by tutGhost as --hx/--hy and
+   --tx/--ty, so one set of keyframes serves all four directions and the
+   two-finger pair as well. The dot is invisible while it flies back to the
+   start, which is why the last stop repeats the end position. */
+@keyframes gswipe{
+  0%  {transform:translate(var(--hx),var(--hy));opacity:0}
+  12% {transform:translate(var(--hx),var(--hy));opacity:1}
+  56% {transform:translate(var(--tx),var(--ty));opacity:1}
+  74% {transform:translate(var(--tx),var(--ty));opacity:1}
+  86% {transform:translate(var(--tx),var(--ty));opacity:0}
+  100%{transform:translate(var(--hx),var(--hy));opacity:0}
+}
+.ghost.g-swipe .gfinger,.ghost.g-two .gfinger{
+  animation:gswipe 1.9s cubic-bezier(.4,0,.25,1) infinite}
+
+/* THE DOUBLE TAP IS TWO CONTACTS, AND THE LIFT BETWEEN THEM IS THE WHOLE
+   DRAWING. The first version kept the dot on screen throughout and dipped it
+   twice, which is exactly what a single slow pulse looks like: the count was
+   carried entirely by two rings overlapping on a dot that never left, and it
+   read as one messy throb rather than as two taps.
+
+   A finger that is not touching the glass is not on the glass. So the dot
+   goes to *nothing* between the taps, and the gap is 120ms - long enough to
+   be seen as absence rather than as flicker, and considerably longer than a
+   real double tap needs, because this is a demonstration and legibility beats
+   fidelity. The soft disc holds the position while the dot is away.
+
+   The ripples no longer overlap either. Each is 18% of the loop (342ms) and
+   the second contact is at 20% (380ms), so one has finished before the next
+   begins and each ripple plainly belongs to one tap.
+
+   Contacts and ripples are two halves of one clock: both animations run 1.9s
+   and the second ring's .38s delay is exactly the 20% at which the dot lands
+   again. Move one and you must move the other - including under reduced
+   motion below. 1.9s is also the swipe's loop, so all three demonstrations
+   beat together. */
+@keyframes gdbl{
+  0%   {transform:scale(.68);opacity:1}
+  2.1% {transform:scale(1);opacity:1}
+  10%  {transform:scale(1);opacity:1}
+  13.7%{transform:scale(.86);opacity:0}
+  19%  {transform:scale(.68);opacity:0}
+  20%  {transform:scale(.68);opacity:1}
+  22.1%{transform:scale(1);opacity:1}
+  30%  {transform:scale(1);opacity:1}
+  33.7%{transform:scale(.86);opacity:0}
+  100% {transform:scale(.86);opacity:0}
+}
+@keyframes gring{
+  0%  {transform:scale(.62);opacity:.85}
+  18% {transform:scale(2.4);opacity:0}
+  100%{transform:scale(2.4);opacity:0}
+}
+.ghost.g-dbl .gdot{animation:gdbl 1.9s ease-out infinite}
+.ghost.g-dbl .gtap{animation:gring 1.9s ease-out infinite}
+.ghost.g-dbl .gtap.two{animation-delay:.38s}
+
+/* THE BAR IS OFF DURING A GESTURE TUTORIAL, and this is the one rule that
+   turns it off. */
+/* Written with both classes and with `.on`, because it has to out-specify
+   `body.tut.ui-none #playBar.on` - the rule that forces the bar back over a
+   HIDDEN layout - and a bare `body.tutgest #playBar.on` loses to it by one
+   class. tutgest is only ever set alongside tut, so naming both costs
+   nothing and makes the two rules directly comparable. */
+body.tut.tutgest #playBar,body.tut.tutgest #playBar.on{display:none}
+/* The hand has moved to the middle of the screen, so the coach goes back to
+   the foot of it - low, where a line of instruction sits when there is no
+   bar under it, and well clear of the demonstration. */
+body.tut.tutgest .coach,body.tut.tutgest.ui-none .coach{bottom:44px}
+
+@media (prefers-reduced-motion:reduce){
+  /* A looping hand is the whole point, so it is not removed - but it is
+     slowed to something that reads as a demonstration rather than a flicker.
+     The blanket transition override at the top of this file does not reach
+     `animation`, so this has to say so itself. The double tap's two clocks
+     are scaled together, delay included, or the second ring would drift off
+     the second contact. */
+  .ghost.g-swipe .gfinger,.ghost.g-two .gfinger{animation-duration:3.4s}
+  .ghost.g-dbl .gdot,.ghost.g-dbl .gtap{animation-duration:3.4s}
+  .ghost.g-dbl .ghand.single{animation-duration:3.4s}
+  .ghost.g-dbl .gtap.two{animation-delay:.68s}
+}
+

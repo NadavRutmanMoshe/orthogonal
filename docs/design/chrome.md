@@ -1,0 +1,613 @@
+# The chrome — buttons, the brief, the map, the home screen, the story, the sting
+
+> Moved out of `CLAUDE.md`, verbatim. `CLAUDE.md` keeps the one-line
+> invariants; this file keeps the reasoning behind them. Read it before
+> *redesigning* the thing it describes, not before editing it.
+> `docs/HISTORY.md` has what was tried and dropped.
+
+## The buttons
+
+**They are meant to look pressable, and for a long time they did not.**
+Everything in the game was a 1px outline on nothing with a 2px radius —
+honest, quiet, and reported as stale and uninviting. The reason it failed is
+specific rather than a matter of taste: **a hairline rectangle is what this
+game draws for a block edge**, so the chrome and the world were speaking the
+same language and nothing on screen said which things answered a thumb.
+
+One skin now, and it is the one `.hcont` on the home screen already used:
+
+- a **fill** — a soft top-lit gradient over the panel colour, so a button is
+  an object rather than a hole;
+- a **lip** — `0 3px 0` of a darker shade of the button's own hue, which is
+  the whole of what turns a flat rectangle into a key cap;
+- a **press** — the cap moves down onto its lip.
+
+`--c` is a button's hue and `--lip` its shadow, so a family sets one property
+and the fill, the rim, the glyph and the lip all follow. **A disabled button
+loses its cap**, which is the honest drawing of one that will not answer.
+
+- **The five round buttons wear a hue each**, so a row of circles is told
+  apart by colour before a glyph is read — which is what a thumb reaching for
+  the corner actually uses. They take the colours those things already mean
+  elsewhere: the bulb is the gold of a star, the eye the goal's teal, the
+  wardrobe the violet of the map's landmarks, restart the blue every second
+  chance in the panels wears. `button.rnd.on` swaps `--c` to the player's
+  colour, so "you are inside this one" reads the same on all of them.
+- **The two animated cues list the lip in their own keyframes.** A
+  `box-shadow` animation replaces the base shadow outright, so `cuePulse` and
+  `tutlive` would flatten the cap while they pulsed. Both carry
+  `0 3px 0 var(--lip)` in every frame. Anything else that animates a shadow
+  has to do the same.
+- **A card's buttons are three weights and they look like three weights**: a
+  filled primary, a filled blue ad button, and a quiet outline. One outlined
+  rectangle per option made every option look identical, which is the
+  opposite of what a card with a recommended action wants.
+- **THE ICONS ARE DRAWN, NOT OUTLINED.** Every glyph in the corners and on
+  the bar used to be a 1.7px hairline path, which at 19px on a dark ground is
+  a *diagram* of a thing rather than the thing — reported, after the skin
+  landed, as buttons that look better but icons that do not feel alive. They
+  are solid shapes now with a second tone in them: a body in the button's own
+  hue, `.lite` where the object catches light, `.dim` where it turns away,
+  `.ln` for the stroked half (an arc, a hook), and a knocked-out hole for the
+  eye's pupil. The d-pad's `&#9650;` and the turn buttons' `&#8630;` were text
+  glyphs a font draws about eight pixels across in the middle of a 58px cap —
+  **which is why the turn buttons were reported as missing** — and are solid
+  SVG arrowheads and circular arrows now.
+- **`.ln`, not `.st`, and that is the third time.** `.st` was already the gold
+  star in a shop price, so an icon path carrying it came out stroked in
+  `--star`. Check any new class name against what is already in
+  `css/style.css` — see `.mboss`/`.boss` on the map and `.home`/`.athome` on
+  the home screen.
+- **Every ad button carries the video mark** (`adIcon()` in `js/18-ui.js`) —
+  a play sign in a screen, which is the drawing everybody already reads as
+  "this plays a video". One helper rather than five copies, because there are
+  five ad buttons and they must not drift. It is `fill:currentColor`, so it
+  takes the button's hue for nothing.
+
+## The brief — tried on a trial and a boss, and taken out again
+
+For a while a trial and a boss each opened with a full-bleed card explaining
+themselves, twice per kind and then never again. The machinery worked and the
+reasoning still holds: `cardPut()` answers `screenUp()`, and `screenUp()` is
+what both clocks ask before they run, so the fight was genuinely stopped
+while the card was being read.
+
+**It stopped being needed, and that is the interesting part.** The falling
+blocks, the folding telegraph and the replay each ended up saying on the
+board what a paragraph of the card had been saying in words — and once all
+three landed, the card was explaining a picture the player was already
+looking at. A card like that is read once and dismissed unread from then on,
+which is worse than not having one.
+
+What is left is one sentence per kind, in the level's own `hint`:
+
+| | |
+|---|---|
+| a trial | *Three lives, three places to visit.* |
+| a boss | *A game of catch: whoever shifts the other into their own square first wins.* |
+
+Each adds one short clause for what is particular to that arena — the
+spikes, the glass, the crate, the high ground — and nothing else. **"Shifts"
+is deliberate**: it is the word `cue()` already speaks for the fold ("2D
+shift"), so the hint names the verb the way the game does everywhere else.
+
+Restoring the card is a `cardPut(h, p, "brief")` from `loadLevel` plus a
+counter in settings, exactly as it was. `cardOwner` is the seam it needs — a
+card raised by anything other than a tutorial step must not advance a step
+nobody completed — and it is deliberately still there.
+
+---
+
+## The map
+
+**The level picker is a path, one section at a time.** A run of levels, a
+trial partway in, a boss closing it — tabs across the top, a winding trail
+below, drawn from `SECTIONS` and `LEVELS` exactly as the old list was. No
+level data changed to make it.
+
+- **A section's colour runs the whole way through it** — tab, header, bar,
+  the lit trail and the solved nodes — so a finished section is its own chain
+  rather than another stretch of the same green. The rim, ink and lip are
+  `color-mix`ed from that one hue, which is what keeps a pale section (glass
+  blue) and a dark one (spikes red) both legible without hand-picking three
+  values each. **No section may be violet or amber**: those two belong to the
+  boss and the trial in every section, and `V · EXTRA` had to move off violet
+  for exactly that reason.
+- **Boss and trial are different shapes, taken from the game's own world.**
+  They used to be `#ff8a3c` against `#e0a03c` — the same hue two steps apart,
+  which at 60px on a dark ground is not a distinction. A **boss is a hexagon**,
+  which is what a cube looks like seen corner-on: the silhouette of the game's
+  own piece, ringed by three arcs for its three phases, in violet. A **trial is a
+  diamond inside a clock** — the square on its point, an open ring around it
+  with three pips on it, in the amber that already means a core on a clock.
+  An ordinary level is a bare disc. Turn the colour off and all three still
+  read. The violet follows through to `.bcores` in the HUD.
+- **The trial's sweep used to be a bar drawn through the diamond, and it read
+  as a strikethrough.** It overshot the shape on both sides, which is not what
+  a plane passing through something looks like — it is what a cancelled thing
+  looks like. The ring says the same fact better (a trial is the level on a
+  clock) and says a second one nothing on the map ever said: the three pips
+  are the three cores. It is deliberately close to the boss's ring, both being
+  landmarks on a clock, and is told apart by three things at once — the shape
+  inside, the colour, and **motion**: the boss's arcs are still and count
+  phases, the trial's ring turns until you have beaten it. The trial node is
+  also 68px against a level's 58 and a boss's 78, because the ring reaches
+  past the shape and at 58 the pips landed on the trail.
+- **The section fills with its own colour to the height of the stars you
+  have taken**, and that is the progress bar the map actually wants — the
+  trail runs first-level-at-the-foot to boss-at-the-top, so a level rising
+  *is* progress climbing, and the waterline lands at roughly the point on the
+  path you have reached. Measured against the trail rather than the viewport,
+  because the panel scrolls: a fill pinned to the screen would put the
+  waterline somewhere different every time you dragged it. It is emitted only
+  when there is something to draw. The 220px tail under it covers `.mbody`'s
+  bottom padding, which is outside the trail and was left as a dark strip
+  beneath the water. And it is raised from 0 across **two** animation frames,
+  not one: a height that is already correct when the element first paints has
+  nothing to transition from, and the first frame is the one the browser is
+  still assembling.
+- **The waterline is a wave, not a rule.** It was a `border-top`, and a
+  straight bright line across the map read as a *divider* — something the
+  layout was doing — rather than as the surface of anything. It is one period
+  of a sine masked onto a 14px crest, tiling seamlessly because it starts and
+  ends at the same height and the same slope, and it is a **mask** rather than
+  a drawn shape so the crest can take the section's colour: a data URI cannot
+  read a custom property.
+- **At every star the crest becomes the flood.** The trail begins below the
+  section card, so a fill that stopped at the trail's top left the head of a
+  finished section dark — the same pseudo-element drops its mask and runs
+  300px upward instead, and `.mcard` is `position:relative;z-index:1` so the
+  water goes *behind* it rather than washing over its text.
+- **A section paints itself when every level in it is on three stars.** The
+  trail redraws as *one* continuous stroke and the colour climbs it from the
+  first level to the boss, each node throwing a ring as the paint arrives.
+  One stroke is forced: the paint is a `stroke-dashoffset` sweeping along a path, and the
+  usual per-gap subpaths would sweep every gap at once. It is traversed from
+  the end of `pts`, because the trail draws top-down while the campaign runs
+  bottom-up and the colour has to climb the way the player did. Nothing is
+  remembered to make it replay — `mapDraw` rebuilds the trail's innerHTML
+  every time, so the animations restart by construction.
+- **One animation per node, and it was measured rather than guessed.** The
+  nodes used to scale *and* throw a ring, and running both put 46% of frames
+  over 32ms against 26% for the same section un-mastered (Chromium at 6×
+  CPU throttle, medians identical, the difference all in the tail). Either
+  alone sits at that baseline; the ring alone on its own compositor layer
+  comes in under it. The first guesses were wrong and the profile said so:
+  `drop-shadow` filters on the animated stroke and on the nodes were removed
+  first and changed nothing measurable, and parking the ambient cubes for the
+  duration changed nothing either. **Both are still worth keeping** — a
+  filter is repainted on every scroll of a finished section, not just during
+  the celebration — but neither was the answer. Halos are `box-shadow` now,
+  which composites.
+- **Mastery cannot be bought, and that is what makes it worth drawing.**
+  `sp.got` is summed through `starsForRecord()`, which reads `progress` and
+  nothing else, and a skip is deliberately not in `progress`. `PROLOGUE` can
+  never be mastered because `sectionSpans()` skips tutorials, so its `max` is
+  0 — a section that awards no stars has none to collect.
+- **The `PREVIEW` switch that forced the finished look on is gone from the
+  menu**, and `masteryPreview()` returns false. The machinery it drove is
+  untouched, so restoring the row restores the preview. The win card's
+  mastery banner deliberately never went through `sectionMastered()` — it is
+  derived from `starsGained` — so a preview could never fake the one moment
+  that is actually news.
+- **The landmarks are SVG, not `clip-path`.** A clipped box loses its border
+  and its shadow, and the rim and the lip are what make a node look pressable;
+  `mapShape()` emits the polygon, its lip and its ring as one `<svg>`.
+- **The map's node classes are `mboss`/`mtrial`, not `boss`/`trial`.** The
+  HUD's lives bar is `.boss`, which sets `pointer-events:none` — a map node
+  carrying that class inherited it and was silently unclickable. Check any new
+  class name against the ones already in `css/style.css`; this is the CSS
+  version of the `history` / `window.history` collision in the layout notes.
+- **Progression is a rolling window, not a chain.** You may always reach
+  `MAP_WINDOW` (2) levels past the furthest you have got to. In a match-3 you
+  eventually beat a level by luck; in a deterministic puzzle stuck is stuck
+  forever, so one hard level must never be able to end somebody's game. The
+  window still closes behind you, so a skip is still worth something.
+- **Measured from the furthest level *touched*, not the first gap.** Nothing
+  was locked before this existed, so old saves have arbitrary holes; measuring
+  from the first gap would re-lock levels those players had already walked
+  past. `V · EXTRA` keeps its own older gate on top — every boss down.
+- **Skips live in `skips`, deliberately not in `progress`.** `progress[name]`
+  means "you beat this" and the whole star economy reads it that way, so a
+  skip in there would be a purchase leaking into the currency. Kept apart, a
+  skipped level is worth zero stars *by construction* rather than by
+  remembering to subtract it. Verified: skipping does not move `starsEarned()`.
+- **ANY LOCKED LEVEL CAN BE OPENED, ONE AT A TIME** (`mapSkippable`), plus a
+  whole section at its first level (`mapSectionSkippable`). It used to be
+  landmarks only — the boss closing the section you were already in — on the
+  reasoning that a skip should carry you past a wall rather than past the
+  levels. The wall is not where that assumed: somebody stuck three levels
+  from the end of a section could not buy past *that* level, only past the
+  boss behind it, which is harder. What keeps the old reasoning intact is
+  that **a skip still opens exactly one door** — `mapReach()` counts solved
+  levels and ignores skips, so nothing behind the one you bought comes with
+  it, and getting past two costs two ads. `V · EXTRA` still cannot be bought
+  open: that shelf is what beating every boss is *for*, and it is a reward
+  rather than a rung on the progression.
+- **`mapReach()` counts solved levels only, never skips.** Counting a skip
+  would drag the rolling window forward with it and quietly hand over
+  everything in between — the exact levels the skip exists to leave for later.
+- **THE GAME OFFERS THE SKIP EVERY FIFTH LOSS ON A CLOCK LEVEL.** `fails`
+  counts full losses per level — lives run out, not a life spent — persisted
+  beside `skips`, moved by `LEVEL_RENAMES` like everything else, and cleared
+  the moment the level is beaten, so it tracks the *current* run of failures
+  rather than a lifetime total. Every `STRUGGLE_OFFER` (5) losses,
+  `struggleOffer()` puts up the way past.
+- **It used to escalate, and the first rung went with the Pace setting.**
+  The old order was the order a person would actually try: slow the clock
+  first, offer the skip only once slowing had run out. That reasoning was
+  right and it belonged to a menu row that no longer exists — the fights are
+  tuned per fight now — so one offer is left. **Three became five with it**:
+  three is the right cadence for cheap advice you can act on and carry on
+  playing, and too eager for a card whose only button is "give up on this
+  one". Three losses is a player still learning the beat; five is a player
+  who is stuck.
+- **EVERY offer carries DON'T SHOW ME AGAIN, and it silences all of them**
+  (`settings.noSlowOffer`, cleared by the settings reset). It is global
+  rather than per level: somebody who does not want the game suggesting
+  things does not want it on the next boss either. It used to be on the slow
+  card only and only from the second one, and `noSlowOffer` was read as the
+  argument to `paceSlower()` — so pressing it silenced the slow offer and
+  then **fell straight through to the skip offer underneath**, which had no
+  opt-out of its own. Reported from a playtest, in those words: the button
+  did not work and the game kept asking. The flag is asked at the top of
+  `struggleOffer()` now, before it has decided anything. **It keeps its name
+  though there is nothing slow left to refuse** — it is persisted, and
+  renaming it would silently un-silence everyone who has already pressed it.
+- **The offer goes up after the reset, not instead of it.** The board is back
+  and KEEP TRYING is right there, so it is a door rather than a wall. The
+  skip reaches `grantSkip()` and nothing else, so it inherits the rule — ads
+  buy progress, never score.
+- **`grantSkip(name)` is the single call site a rewarded video needs** for a
+  level; `grantHints(n)` is the one for the hint pool. Neither is gated on an
+  ad here, because there is no provider yet and a button that silently did
+  nothing would be worse than one that plainly works. Wiring the
+  SDK means calling it from the completion callback and changing nothing else.
+- **The tutorials get a `PROLOGUE` section** so the map has somewhere to put
+  them. Its `at:0` shifts no other marker — these are array indices and every
+  later section keeps the index it had.
+- **The map opens on the furthest thing you have dealt with in the open
+  section**, not on the foot of the trail. `mapFocus()` used to jam the
+  scroll to the bottom whenever the `here` node was in another section —
+  and the trail climbs, so the bottom is level one and the boss was off
+  screen above. Reported as not being able to see the top of the levels.
+- **A caption wraps, and its width is the room its own node leaves it.**
+  `nowrap` survived at 9.5px and did not at 13: the two longest names in
+  Section I ran past the right edge and were clipped by `.mbody`. The cap is
+  computed in the same loop that places the caption, from the node's own
+  half-width, because a flat percentage still overflows for a node far out
+  to one side.
+- **The trail climbs.** The first level of a section sits at the bottom and
+  its boss at the top, laid out from the last index down rather than mirrored
+  afterwards — everything hung off a node (its stars, its label) is positioned
+  relative to that node and would otherwise need un-mirroring one by one. A
+  segment is lit by the *lower* of its two indices, because the trail draws
+  top-down while the campaign runs bottom-up. `mapFocus()` opens on where you
+  are, or at the foot of a section you have not started.
+- **The menu, the wardrobe and the map share their furniture** (`.panel.tall`,
+  `.phead`, `.pcard`, `.pgo`, pill `.tab`s). The map got its language first
+  and the menu read as a debug screen beside it — eleven identical outlined
+  rectangles with no hierarchy and whatever slider the browser drew. The
+  corner star total hides behind *any* open panel now, since three of them
+  carry a total of their own.
+- **The way out lives in the header, not the footer.** The row at the foot of
+  the panel sits below a trail several screens long, so after scrolling into a
+  section there was nothing in sight that looked like an exit and the map read
+  as somewhere the game had left you.
+- **The ambient cubes never touch an edge.** They are inset by a whole cube
+  and the wrap is hidden by a fade, because anything that drifts *through* a
+  boundary is necessarily half-drawn while it crosses, and a sliced cube reads
+  as a rendering fault. The half-extent is `1.732*s`, not the `0.866*s` the
+  face size suggests — `P()` spans `(px - pz*k)` over `[-2,2]`.
+- **EVERY SECTION HAS WEATHER BEHIND ITS TRAIL** (`mapWeather()`), on the
+  same 2D canvas the ambient cubes already use — no second context, and it
+  stops with the panel like everything else there. The map is where a section
+  is chosen, so it is the one screen where a section should be recognisable
+  before a word of it is read: branches climbing both edges with leaves
+  falling through them, meteors, an underwater column with fish and bubbles,
+  or a sun over dunes with grain blowing across.
+  - **The kind is keyed off the section's own `theme.scene`**, not a second
+    table, so the map and the world cannot drift apart: a section themed
+    `ocean` gets fish here by construction.
+  - **It is drawn behind the cubes and kept out of the middle column.**
+    Ambience you have to read around is not ambience.
+  - **The branches are a seeded walk that runs PARALLEL.** They used to reach
+    inward as they climbed — up to 58px a segment over nine segments — so the
+    two of them met in the middle and crossed the trail. The walk is vertical
+    now and the lateral movement is a wobble around a line near each edge:
+    they lean, they are not straight, and they never converge. Seeded, so a
+    section's tree is the same tree every time it opens — the same reason the
+    sky's stars are seeded.
+  - **The map's meteors use the world's 90° fan too**, and their trail is
+    drawn back along the direction of travel rather than diagonally.
+  - **The fish are told apart by shape, not colour.** A clownfish is a fat
+    teardrop with two pale bars, a dolphin is a long curve with a dorsal, a
+    turtle is a wide oval with four paddles, an octopus is a dome with legs
+    under it. At fifteen pixels colour is a second signal and never the
+    first.
+- **`syncCorners()` owns the map's chrome.** The running star total lives
+  outside `.corner` at z-index 30 so it can sit over the win overlay, which
+  also puts it over a near-full-height map and its own total. The one function
+  that already knows which panel is open turns it off.
+
+## The home screen
+
+**Where the game starts from, once there is anything to come back to.** A
+title, your character turning on its plinth, `CONTINUE`, `LEVELS`, three
+things you do not own with what they cost, and a way into the wardrobe.
+
+- **A first run never sees it.** There is nothing to continue and nothing
+  owned, so the intro card — which says in one sentence what the game is —
+  stays the first screen and `BEGIN` goes straight into the tutorial.
+  `nothingBehind()` asks `progress`, `skips` and the session, deliberately
+  not `starsEarned()`: somebody who walked into a level and quit has a
+  session and no stars, and is plainly not seeing the game for the first
+  time. The home screen is a **launch** screen; finishing the tutorial still
+  goes to `01`, because `NEXT LEVEL` is the next level, always.
+- **It is a screen, not a panel, and it sits at z-index 11 — *under* the
+  panels.** That is the whole arrangement: the map and the wardrobe open over
+  it exactly as they open over a level, and closing one puts you back here
+  rather than dropping you into a level you never chose.
+- **`CONTINUE` wears the colour of the section it opens** (`--sec` on
+  `.hcont`, written by `homeSync()` from `SECTIONS[].col`). The first thing
+  on the screen and the place it leads should read as one thing rather than
+  as a green button and, one tap later, a red section. The lip and the ground
+  are `color-mix`ed from that one value, the way the map's nodes are, so a
+  pale section and a dark one are both legible without three hand-picked
+  values each. It falls back to the goal green, which is what it always was.
+- **`CONTINUE` has two answers and the specific one wins.** A saved session
+  puts you back mid-level on the move you stopped on (`resumeSession()`);
+  without one it is `mapHere()`, the first level you have not dealt with,
+  which is where the map's own marker sits. It says `START` only when there
+  is genuinely nothing behind you — the word has to match what the button is
+  about to do.
+- **The plinth is built off the boot path, and that was measured.** A second
+  WebGL context is not free, and `homeShow()` runs the moment the saves land,
+  while the sting is still playing. On the **artifact** build at 4× CPU
+  throttle, boot-to-sting was 715ms without the home screen and 786ms with
+  it; deferring the stand until the sting is over closed the gap (643 vs 704,
+  nine interleaved runs each, distributions overlapping). Nothing is lost by
+  waiting — the buttons are the point and they are ready immediately, and
+  while the stand is missing its canvas is invisible anyway, because
+  `previewShow` paints its scene in the same void the page is painted in.
+  `homeCaseSoon()` polls rather than hooking `splashEnd`, because `homeShow`
+  is also reached from the menu long after the sting, and one path is easier
+  to keep right than two.
+- **Measuring this needs the artifact build, not `index.html`.** From source,
+  the Google Fonts `<link>` is render-blocking and dominates everything —
+  12.6s in a sandbox with no network. `build-single.js` strips the preconnects
+  and the font link, so the published game never pays it, and any boot timing
+  taken against the source file is measuring the font CDN.
+- **`nothingBehind()` is the one first-run answer**, in `16-panels.js` beside
+  the other progress helpers. Boot asks it to choose between the intro card
+  and the home screen; the home screen asks it to choose between `START` and
+  `CONTINUE`. It is deliberately not "no stars earned" — a level beaten with
+  enough hints scores zero, and that player was being offered START with a
+  level already behind them.
+- **The plinth is the wardrobe's display case, not a copy of it.** `homeCase()`
+  hands its canvas to `previewStart()` and calls `previewShow()` with what you
+  have equipped, so the character, the slab and the world behind it are built
+  by the code that already builds them. It keeps the case's own scale: the
+  framing there is tuned to fit the slab and its two neighbours, and scaling
+  the group up pushes the plinth off the canvas. Size comes from a bigger
+  canvas instead.
+- **The case is a singleton, so `hidePanel()` has to put it back.**
+  `showPanel()` calls `previewStop()`, which is right — the stand is behind an
+  opaque panel — but nothing restored it, so closing the map over the home
+  screen left an empty plinth.
+- **And it must be a *fresh canvas* every time.** `previewStop()` ends its
+  context with `WEBGL_lose_context.loseContext()` on purpose, and a canvas
+  whose context was lost that way is spent: `getContext` returns null forever
+  after and three.js dies reading `precision` off it. The wardrobe never meets
+  this because `showPanel` rewrites its markup, and its canvas, on every
+  opening; this screen keeps its markup, so `homeCase()` replaces the element
+  itself.
+- **The canvas has no visible edge**, because `previewShow` paints its scene
+  with the equipped world's void colour and `applyPalette` sets the CSS
+  `--void` from the same world. The character simply stands there.
+- **The body class is `athome`, not `home`.** `.home` is the overlay's own
+  class and a bare `.home` selector matches `<body class="home">` too — the
+  body inherited `position:fixed; display:none` and the entire document
+  measured 0×0, with `getComputedStyle` still reporting `flex` on the overlay
+  because a computed display survives an ancestor being hidden. Same
+  collision as `.mboss`/`.boss` on the map.
+- **`screenUp()` is the shared "a full-bleed screen is in front of the game"
+  test**, and it exists because an overlay swallows taps by being there while
+  a keyboard does not care what is on top. Without it the arrow keys walked
+  the player around a level nobody could see, behind the title screen — which
+  was already true behind the intro card. The two clocks ask it too, so a
+  boss cannot run behind a home screen opened from the menu. The win card is
+  deliberately **not** in it: a solved level is inert through `levelOver()`,
+  which re-shows the card rather than swallowing the input.
+- **The shop is on the screen and every tile is live.** Two scrolling rows,
+  SHAPE and COLOUR, the whole catalogue in cost order. It started as three
+  locked items with prices and *no behaviour* — a drawing, with the wardrobe
+  button as the way in — and that was wrong the first time anybody used it:
+  **a thing shaped like a tile invites a press, and a press that answers
+  nothing is worse than showing no tiles at all.**
+- **Which thing a tap does falls out of whether you own it.** Owned goes
+  straight onto the character — equipping costs nothing and is undone by
+  tapping another, so there is no confirmation to make. Locked opens the
+  wardrobe *on that item*, with its price and its BUY already under the case;
+  `wardSel[t]` is the wardrobe's own selection, so setting it before opening
+  lands the player exactly where the tile was advertising. Nothing on this
+  screen can spend a star, which is what keeps "selecting, buying and
+  equipping are three separate acts" true.
+- **Worlds are not in the strip.** Two rows is a strip; four is the wardrobe
+  with worse ergonomics, and the shape and the colour are what a player means
+  when they say they want to look different.
+- **Locked is a dashed edge, not a faded swatch.** Dimming looked right on
+  the shapes and was plainly wrong on the colours: at .42 over this ground,
+  White came out grey and Red came out maroon, so the row was misdescribing
+  the one thing it is selling.
+- **`--player` is not a constant** — `applySkin()` rewrites it from the
+  equipped colour — so the equipped tile's ring is drawn *detached*, with a
+  1px void gap, or it is the swatch's own colour drawn on the swatch and
+  invisible on the single tile it exists to mark. Its glow is `color-mix`ed
+  from the same variable for the same reason: it was a literal rose `rgba()`,
+  which is what `--player` happened to be the day it was written.
+- **The rows are tapped on `pointerup` with a travel test**, not through
+  `tap()`, which fires on `pointerdown` and calls `preventDefault` — that eats
+  the drag that scrolls them. They also hand back `touch-action`, which is
+  `none` on the body to keep iOS off the two-finger turn; the home screen is
+  the one place no game gesture applies.
+- **`hidePanel()` syncs the home screen as well as restarting its stand.**
+  You may have just bought and equipped something in the wardrobe, and the
+  strip, the plinth and the star count all have to know.
+
+---
+
+---
+
+## The story — the Census
+
+**The plane is not empty.** Everything this world has ever flattened is still
+in the silhouette, and folding is not passing *through* 2D — it is standing in
+it, briefly, with them. The hunters are its residents: they cannot leave and
+you keep going back and forth, which is what they are counting. The line you
+share with one is the only thing that exists in both places at once, which is
+why it kills either of you.
+
+**It exists to justify a rule the game already had.** The boss's kill rule is
+the fifth design and mechanically settled; what it lacked was a reason. Every
+sentence below is chosen to explain something already on screen — glass is
+cover *because* it casts nothing and so leaves no record, crates matter
+*because* editing what they see is the one thing they cannot do — rather than
+to decorate it. **A story beat that does not explain a mechanic does not go
+in.**
+
+**Eleven sentences, and never one that blocks play.** The game's voice is
+`Poisoned Column` and `Absent Floor` — spare, technical, and it does not
+narrate. So there are no cutscenes and no journal; the fiction lives in four
+places and each holds one line:
+
+| Where | What | Lives in |
+|---|---|---|
+| intro card | the premise, one line under a rule | `index.html`, `.introstory` |
+| section card on the map | one line per section | `SECTIONS[].story` → `mapDraw` |
+| boss win card | one line per fight | `LEVELS[].won` → `win()` |
+| boss names | the four stages of being counted | `LEVELS[].name` |
+
+- **`story` is a second field beside `sub`, not an extension of it.** `sub`
+  says what the section teaches and is what a player needs to choose one; the
+  story is why they want to. Kept apart, the fiction can be cut without taking
+  the description with it — which is the point of a slice this small.
+- **The bosses are named for the census, not the arena.** `The Sighting`,
+  `The Record`, `The Search`, `The Census` — you are seen, written down,
+  looked for, and finally counted. The old names said which arena it was
+  (`Sharp Ground`, `Through Glass`), which the section header already says.
+  They cost four `LEVEL_RENAMES` entries and renaming them again costs four
+  more; that is the cheapest thing here to change your mind about.
+- **The premise is bolted onto the intro card, not woven into it.** The two
+  lines above the rule are the only explanation of the verb a new player ever
+  gets and they are untouched. A third line under a divider is what lets the
+  story be removed in one edit.
+- **`won` is appended to the win card, never substituted.** "never hit · 31
+  moves" is what the player came for; the story is the footnote. It is
+  emitted as innerHTML on a path where the level name had only ever been set
+  as `textContent`, so it is `esc()`d — and the section-mastery banner below
+  it now reads `innerHTML` when there is already an element in there, or
+  clearing a section on a boss run would flatten the story line back into the
+  score.
+- **Violet is the story's colour**, on the intro card and the win card both,
+  because violet already means the hunters everywhere else in the game. The
+  section line on the map is deliberately *not* coloured: there it is an
+  aside under an instruction, and the section's own hue is already carrying
+  the section.
+
+**What is not done, and was never in this slice:** the plane's palette still
+reads as a second skin rather than a second place, nothing in the world says
+you are being counted while you are counted, and the wardrobe has no part in
+it. Those are the UI half, and they are worth doing only if the premise makes
+the fights feel different when played.
+
+## The sting
+
+**The logo is a fold.** `nadaz` starts as a cloud of cubes strewn through
+depth, illegible for exactly the reason the game exists: an orthographic view
+maps depth onto the screen, so blocks far apart in z pile on top of things
+they have nothing to do with. Collapse that axis and all of them land in the
+plane at once, and the cloud is a word. The sentence on the intro card behind
+it — *things far apart in depth land side by side* — is demonstrated before it
+is read.
+
+**It is raised before three.js parses, and that is what makes it a loading
+screen rather than a screen that appears once loading is done.** An inline
+script in `index.html` loads `20-splash.js` and calls `splashShow()` above the
+three.js tag; everything else follows behind it. It used to be raised from
+`21-boot.js`, which is the *last* script — so the card whose whole job is to
+cover a cold start only went up once the most expensive file in the page had
+finished evaluating. Measured on the artifact build at 4× CPU throttle,
+boot-to-sting went **628ms → 356ms**. The sting needs no three.js: the
+wordmark is one div per voxel and some CSS.
+
+- **Two consequences of arming that early, both handled.** `splashShow()` is
+  guarded on `splashState`, because `21-boot.js` used to call it and a second
+  call would arm an already-armed card. And a tap can now in principle land
+  before `11-sound.js` exists, so `splashGo()` falls through to a silent
+  `splashPlay(null)` — the same trade `audioReady` already makes when the
+  clock never starts. `applyBrightness()` in `splashEnd` is guarded likewise.
+- **Three.js still has to load before `09` and `10`.** Both build
+  `THREE.Color` instances at top level, which is the one place the "everything
+  before `21-boot.js` only declares" rule does not hold. That is why only the
+  splash moves above it, not the whole list.
+
+**It waits for a tap, and that is not friction — it is the only way it has
+sound.** Every browser refuses an AudioContext until a gesture, so a card that
+plays itself on load plays itself silent. Waiting makes the fold *be* the
+gesture, and it moves the audio unlock off `BEGIN` onto a full-bleed surface
+where a touch anywhere counts, which is the more robust place for it inside a
+WebView. A second tap skips: it runs on every load, so the reflex that starts
+it has to be able to end it.
+
+- **Nothing in the card may carry `opacity` or `filter`.** Either one sets
+  `transform-style: flat` on the element it is on, per spec, which collapses a
+  cube's four faces into a stack of overlapping squares — measured, the side
+  faces came out zero pixels wide. Depth is shaded by mixing the face colours
+  toward the void instead, which is what `applyDepth()` does in the renderer
+  anyway, so the card and the game now push things back the same way.
+- **The stage has no `perspective`, deliberately.** A `preserve-3d` subtree
+  without one *is* an orthographic projection — the same projection the game
+  uses — so a cube on the card is shaded and lands exactly like a block.
+- **`--cols` is set on the card, not on the stage.** The rule under the
+  wordmark is the stage's *sibling* and sizes itself from it; a custom
+  property inherits down, not across, so set on the stage it silently never
+  drew.
+- **The depths are seeded off the cell, not `Math.random()`.** A logo that
+  reshuffles itself every load is not a logo.
+- **`SPLASH_FOLD` (980ms) is one number in two files.** The CSS transitions
+  and `SFX.sting()` are both written against the moment the last cube lands;
+  moving it means moving both.
+- **The sting was measured through the real chain**, as the mix notes in
+  `js/11-sound.js` demand: peak 1.0004 with 2 saturated samples in 141,000,
+  against the documented worst-case pile-up's 1.0082 in 88,000. It is the
+  loudest thing in the game and it sits under what the limiter was already
+  built to survive. Retune a voice and re-measure — a limiter plus a soft
+  clipper will happily hide a set piece that distorts on every play.
+- **It listens on `pointerup` and `click`, never `pointerdown`.** This is the
+  bug that made the sting arrive late: `pointerdown` is not an
+  activation-triggering event for touch — only `pointerup`, `touchend`,
+  `click` and `keydown` are — so on a phone the tap that started the card
+  granted no user activation, the audio context could not start on it, and
+  the whole arrangement queued against a stopped clock and landed in a heap
+  on whatever was pressed next. Nothing calls `preventDefault` on the pointer
+  event either, because suppressing it suppresses the click, which is the
+  half that does the unlocking.
+- **`audioReady()` is the general form of that, and the fold waits for it.**
+  `resume()` is a promise; until it settles `currentTime` is frozen at 0, and
+  a set piece scheduled at absolute times against a frozen clock queues
+  rather than fails. So the tap asks for the clock, and the picture and the
+  sound start in the same tick — a few milliseconds normally, `AUDIO_WAIT`
+  (350ms) at the very worst. If the clock never starts the card plays silent
+  rather than late: silent beats a jumble arriving after the fact. A blip
+  does not need any of this, because it is one 50ms event at `currentTime`.
+- **The keydown listener is on the capture phase and stops propagation.** The
+  four verbs are all guarded on the intro card still being up, so nothing
+  would fire anyway — but `m` toggles mute, and muting the sting with the key
+  that starts it is a poor first impression.
+- **Under `prefers-reduced-motion` the word is simply there**, dim, and
+  resolves to full colour on the tap. The prompt changes to "tap to begin",
+  because "tap to fold" would be describing something that will not happen.
+- **The glyphs are five strings of seven characters each**, in
+  `SPLASH_GLYPHS`. There is no font; editing a letter is editing those.
+

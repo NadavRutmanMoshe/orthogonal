@@ -1,0 +1,69 @@
+/* Orthogonal — css/80-panel-tall.css
+   Panel furniture shared by menu, wardrobe and map: .panel.tall, .phead, .pcard, .pgo, .psub, range sliders.
+   Loaded in the order listed in index.html; see docs/UI.md for the map of
+   screens to files. */
+  /* ============================================================
+     PANEL FURNITURE — shared by the menu, the wardrobe and the map
+
+     The map went first and ended up with a language of its own: a pinned
+     header with a way out in it, grouped cards, and buttons that look like
+     something you press. Next to it the menu read as a debug screen - eleven
+     identical outlined rectangles with no hierarchy, so nothing looked more
+     important than anything else and the sliders were whatever the browser
+     drew. These are the map's parts, factored out so every panel wears them.
+     ============================================================ */
+  .panel.tall{top:8px;bottom:8px;max-height:none;overflow:hidden;
+    display:none;flex-direction:column;padding:0}
+  .panel.tall.on{display:flex}
+  .phead{display:flex;align-items:center;gap:10px;padding:12px 13px 10px;
+    border-bottom:1px solid var(--rule);flex-shrink:0}
+  .phead .pt{flex:1;min-width:0}
+  .phead .pt b{display:block;font-family:'Space Grotesk',system-ui,sans-serif;
+    font-size:16px;font-weight:700;letter-spacing:-.02em;color:var(--fg)}
+  .phead .pt span{display:block;font-size:11px;letter-spacing:.14em;color:var(--fg-dim)}
+  .pbody{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 13px 16px}
+
+  /* A group of settings, with a label that says what the group is for. */
+  .pcard{margin-top:12px;padding:11px 12px 12px;border:1px solid var(--rule);
+    border-radius:4px;background:rgba(255,255,255,.018)}
+  .pcard>h4{margin:0 0 8px;font-size:11px;letter-spacing:.16em;font-weight:500;
+    color:var(--fg-dim);text-transform:uppercase}
+  .pcard .note{margin-top:9px}
+
+  /* Two weights of button, so a panel has a shape. The primary one lifts. */
+  .prow2{display:flex;gap:7px;margin-top:12px}
+  .prow2 button{flex:1;height:46px;font-size:13px;letter-spacing:.12em}
+  .pgo{border-color:var(--goal);color:var(--goal);font-weight:600;
+    background:rgba(53,194,165,.10);box-shadow:0 4px 0 rgba(20,112,93,.55);
+    transition:transform .12s ease,box-shadow .12s ease}
+  .pgo:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(20,112,93,.55)}
+  .psub{display:flex;flex-direction:column;gap:6px;margin-top:2px}
+  .psub button{height:38px;font-size:12px;letter-spacing:.1em;color:var(--fg-dim);
+    justify-content:flex-start;padding:0 12px}
+  .psub button:active{color:var(--fg)}
+  .pdanger{color:#e0455f}
+  /* Small, dim and selectable: it is not for the player, it is for the
+     player telling somebody else which version they have. */
+  .pbuild{font-size:8.5px;letter-spacing:.08em;opacity:.6;
+    user-select:text;-webkit-user-select:text;word-break:break-all}
+
+  /* Sliders. `accent-color` gives the browser's own chunky control, which is
+     the one part of the UI the game did not draw itself. */
+  .srow input[type=range]{-webkit-appearance:none;appearance:none;
+    background:transparent;height:24px;accent-color:auto}
+  .srow input[type=range]::-webkit-slider-runnable-track{
+    height:3px;border-radius:3px;background:var(--rule)}
+  .srow input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;
+    width:15px;height:15px;border-radius:50%;background:var(--player);
+    margin-top:-6px;box-shadow:0 2px 0 rgba(0,0,0,.45)}
+  .srow input[type=range]::-moz-range-track{
+    height:3px;border-radius:3px;background:var(--rule)}
+  .srow input[type=range]::-moz-range-thumb{width:15px;height:15px;border:none;
+    border-radius:50%;background:var(--player);box-shadow:0 2px 0 rgba(0,0,0,.45)}
+  .srow input[type=range]:focus-visible{outline:2px solid var(--player);
+    outline-offset:3px;border-radius:3px}
+  .pcard .srow{border-bottom:none;padding:5px 0}
+  .pcard .srow+.srow{border-top:1px solid var(--rule-2,rgba(195,205,228,.10))}
+  .pcard .crow{border-bottom:none;padding:5px 0}
+
+  /* ============================================================

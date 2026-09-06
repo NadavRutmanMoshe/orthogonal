@@ -210,7 +210,7 @@ function syncHud(){
      `athome` rather than `home`, because `.home` is the overlay's own class
      and a bare `.home` selector would match the body carrying it too - which
      it did, handing the whole document `display:none`. See the note in
-     css/style.css. */
+     css/95-home.css. */
   document.body.classList.toggle("athome",homeUp());
   var inPlay=app==="play"&&!homeUp();
   ["bHint","bLook","bMenu","bWard","bRestart"].forEach(function(id){

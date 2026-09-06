@@ -985,3 +985,29 @@ key that is read and no longer writable is silently permanent.
   oscillators wired straight to the destination, the ceiling is set by the
   loudest possible moment and everything quieter has to live far beneath it.
   A limiter on the master bus is what made loudness a free parameter.
+
+## The memory file ate the budget it was meant to save
+
+`CLAUDE.md` grew to 244KB — about sixty thousand tokens, loaded into every
+session before a word of the request was read. It was doing two jobs: the
+one-line invariants a session needs to avoid breaking something, and the
+paragraph of reasoning behind each, which a session needs only when it is
+about to reverse that decision. The second job had swallowed the first, and
+a request to move a button was paying for the history of the boss fight.
+Reported by the owner as UI changes costing far more usage than they should.
+
+Three things changed, none of them to the game:
+
+- **The reasoning moved to `docs/design/*.md`, verbatim**, one file per
+  subject, and `CLAUDE.md` came down to 19KB of invariants plus a table
+  saying which doc to open for which change. Nothing was cut; it was
+  filed. The rule going forward is one line here, the paragraph there.
+- **`css/style.css` (103KB) became fourteen files, one per screen**, cut
+  at existing section boundaries and linked in the same order, so the
+  cascade is byte-for-byte what it was — checked by concatenating them
+  back and diffing. A change to the map now reads 25KB, not 103.
+- **`tools/shot.js` photographs any screen headless**, seeding a save and
+  calling the game's own functions. A UI change made blind was being made
+  twice — once to write it and once to fix what it looked like — and the
+  second pass was the one that cost. `docs/UI.md` maps every screen to its
+  file and its builder so the first pass reads one file.

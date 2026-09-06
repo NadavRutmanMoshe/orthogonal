@@ -1,0 +1,114 @@
+/* Orthogonal — css/70-cards.css
+   Full-bleed cards: the win card and its stars, the intro card, the tutorial card.
+   Loaded in the order listed in index.html; see docs/UI.md for the map of
+   screens to files. */
+
+  .won{position:fixed;inset:0;display:none;flex-direction:column;z-index:20;
+    align-items:center;justify-content:center;gap:16px;
+    background:rgba(15,20,36,.86)}
+  body.flat .won{background:rgba(230,225,211,.88)}
+  .won.on{display:flex}
+  /* THE SCORE, AND IT ARRIVES RATHER THAN BEING THERE.
+
+     It used to be a green line of three characters sitting on the card the
+     instant it opened, which is a label. Most people solve a level and never
+     look at it. So it is gold, it is nearly twice the size, and each star
+     FALLS onto the card with its own sound - the one moment in the game that
+     says the score was worth having. The empty ones fall too, silently, so
+     the row lands as one row rather than as a thing with gaps in it. */
+  .bigstars{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:42px;
+    letter-spacing:10px;color:var(--star);margin-top:14px;text-align:center;
+    text-shadow:0 0 22px var(--star-glow);line-height:1.1}
+  .bigstars .sg{opacity:0}
+  /* An empty star is drawn, not lit: same shape so the row keeps its width,
+     no fill and no glow so the score is countable at a glance rather than
+     read character by character. */
+  .bigstars .sg.off{color:var(--fg-dim);text-shadow:none}
+  /* The overshoot is in the easing, not in the keyframes: a back-out curve
+     lands the star and lets it settle in one declaration, and the squash at
+     the end is what gives it weight. Delays are relative to `.won.on`
+     matching, which is the moment the card appears - so the three sounds
+     scheduled in win() line up with them by construction. */
+  .won.on .bigstars .sg{animation:sgdrop .38s cubic-bezier(.22,1.5,.5,1) both}
+  .won.on .bigstars .sg:nth-child(1){animation-delay:.06s}
+  .won.on .bigstars .sg:nth-child(2){animation-delay:.20s}
+  .won.on .bigstars .sg:nth-child(3){animation-delay:.34s}
+  @keyframes sgdrop{
+    0%  {opacity:0;transform:translateY(-90px) scale(1.5)}
+    55% {opacity:1}
+    100%{opacity:1;transform:translateY(0) scale(1)}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .won.on .bigstars .sg{animation:sgfade .3s ease both}
+    @keyframes sgfade{from{opacity:0}to{opacity:1}}
+  }
+  .won h2{font-family:'Space Grotesk',system-ui,sans-serif;font-size:24px;
+    margin:0;color:var(--fg);font-weight:700;letter-spacing:-.02em}
+  .won p{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12.5px;
+    color:var(--fg-dim);margin:0;letter-spacing:.05em}
+  /* Said once, on the run that finishes a section. The map is where the
+     reward lives afterwards; this is the sentence. */
+  .wonmast{display:block;font-style:normal;margin-top:9px;
+    font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+    color:color-mix(in srgb,var(--sec) 26%,#000);background:var(--sec);
+    padding:5px 11px;border-radius:99px;
+    box-shadow:0 0 18px color-mix(in srgb,var(--sec) 45%,transparent);
+    animation:wmast .6s cubic-bezier(.2,1.5,.4,1) .5s both}
+  @keyframes wmast{0%{opacity:0;transform:scale(.8)}100%{opacity:1;transform:scale(1)}}
+  /* WHY THE NEXT THING IS SHUT. Only ever seen on BOSS IV with a boss still
+     standing, and it is the amber the game already uses for "a landmark on a
+     clock is waiting for you" rather than the violet of the story line above
+     it - this is bookkeeping, not the Census speaking. */
+  .wonlock{display:block;font-style:normal;margin:9px auto 0;
+    font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:#e0a03c;
+    animation:wstory .7s ease 1.1s both}
+  /* A boss's Census line. It arrives after the score has been read - the
+     numbers are what the player came for - and it is the hunters' violet,
+     because it is the thing on the other side of the fight speaking. */
+  .wonstory{display:block;font-style:normal;margin:10px auto 0;max-width:34ch;
+    text-align:center;
+    font-size:12px;line-height:1.6;letter-spacing:.02em;
+    color:color-mix(in srgb,#a274ff 62%,var(--fg-dim));
+    animation:wstory .7s ease .9s both}
+  @keyframes wstory{0%{opacity:0;transform:translateY(4px)}100%{opacity:1;transform:none}}
+  /* The premise, on the intro card, under a rule that says "this is a
+     different kind of sentence from the two above it". Same violet as a
+     boss's line - it is the same voice, met early. */
+  .won p.introstory{margin:2px 0 4px;max-width:min(80vw,40ch);
+    padding-top:11px;border-top:1px solid var(--rule);
+    font-size:11.5px;line-height:1.6;text-align:center;
+    color:color-mix(in srgb,#a274ff 55%,var(--fg-dim))}
+  /* THE TUTORIAL'S EXPLANATION CARD. Same full-bleed dim as a win card - it
+     is the same kind of object, a screen that has taken the game away for a
+     moment - with a paragraph that is meant to be *read* rather than glanced
+     at, so it is wider, taller-leaded and left-aligned inside a centred
+     column. Emphasis is the goal colour because that is already the colour of
+     the ring the card is describing and of the button it is about to ask for;
+     the card and the world then say the one thing in one hue. */
+  /* Scrolls rather than overflowing. A tutorial step's card is three lines
+     and a trial's brief is four paragraphs, and .won is a centred fixed
+     overlay with no scroll of its own - so on a short phone the longest card
+     would have run its OK button off the bottom edge with no way to reach it. */
+  .tutcard{gap:20px;overflow-y:auto;padding:24px 0;
+    justify-content:safe center}
+  .tutcard h2{max-width:min(84vw,24ch);text-align:center;line-height:1.3}
+  .tutcard p{max-width:min(84vw,42ch);font-size:13px;line-height:1.85;
+    text-align:left;color:var(--fg-dim)}
+  .tutcard p b{color:var(--goal);font-weight:500}
+  .tutcard button{min-width:120px}
+  .wonrow{display:flex;gap:8px;align-items:center}
+  .won button{height:46px;padding:0 24px;font-weight:600;
+    --c:var(--goal);color:var(--c);
+    border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent);
+    --lip:color-mix(in srgb,var(--c) 44%,#04070d);
+    background:
+      linear-gradient(180deg,color-mix(in srgb,var(--c) 24%,transparent),
+        color-mix(in srgb,var(--c) 8%,transparent)),var(--panel)}
+  #bRetry{--c:#8c9dc4;color:var(--fg-dim);gap:7px;
+    border-color:var(--rule);background:var(--panel)}
+  #bRetry svg{width:15px;height:15px;fill:none;stroke:currentColor;
+    stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  #intro{display:flex}
+  #intro.gone{display:none}
+  #intro .tiny,#won .tiny{border-color:var(--rule);color:var(--fg-dim)}

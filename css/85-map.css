@@ -1,0 +1,433 @@
+/* Orthogonal — css/85-map.css
+   The map: tabs, section card, trail, nodes, fill, sheet, help, legend, mastery.
+   Loaded in the order listed in index.html; see docs/UI.md for the map of
+   screens to files. */
+     THE MAP — the level picker as a path
+
+     A run of levels, a trial partway in, a boss at the end, drawn as a trail
+     you walk down. The list it replaced was honest and unreadable: seventy-two
+     rows of monospace where nothing said which of them mattered.
+
+     Three node silhouettes, and they differ by shape before they differ by
+     colour. Boss and trial used to be told apart by #ff8a3c against #e0a03c,
+     which are the same hue two steps apart - at 60px, on a dark ground, that
+     is not a distinction. So the boss is violet and wears a three-arc ring (its
+     three phases), the trial keeps the amber the game already uses for a core
+     on a clock and wears the slice that is about to sweep through it, and an
+     ordinary level is a bare disc. Told apart with the colour removed.
+     ============================================================ */
+  :root{ --vio:#a274ff; --vio-lip:#5b3aa8; --amb:#e0a03c; --amb-lip:#8a5f14; }
+
+  /* Near full-height, but still a panel: hidePanel, Esc and the WebGL
+     teardown rules all keep working exactly as they did. */
+  .panel.map{top:8px;bottom:8px;max-height:none;overflow:hidden;
+    display:none;flex-direction:column;padding:0;
+    background:
+      radial-gradient(118% 54% at 50% -6%, rgba(53,194,165,.10), transparent 62%),
+      radial-gradient(92% 44% at 50% 106%, rgba(214,51,108,.09), transparent 60%),
+      var(--panel)}
+  .panel.map.on{display:flex}
+  /* THE SHELF'S LOCK, NAMED. A section card that says only "locked" is the
+     bug this fixes: a boss skipped past still counts as standing, and there
+     was nowhere in the game that said which one. */
+  .mlock{display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+    margin-top:9px;padding:8px 10px;border-radius:9px;
+    border:1px solid color-mix(in srgb,#e0a03c 34%,transparent);
+    background:color-mix(in srgb,#e0a03c 9%,transparent);
+    font-size:12px;letter-spacing:.04em;color:var(--fg-dim)}
+  .mlock b{color:#e0a03c;letter-spacing:.1em}
+  .mlockgo{margin-left:auto;font:inherit;letter-spacing:.14em;
+    text-transform:uppercase;padding:5px 11px;border-radius:99px;
+    border:1px solid color-mix(in srgb,#e0a03c 52%,transparent);
+    background:transparent;color:#e0a03c;cursor:pointer}
+  body.mapopen .startotal{display:none}
+  /* And behind a tutorial's explanation card. The total sits at z-index 30 so
+     it can be seen going up over a win card, which is the moment it is news;
+     over a card that is explaining a rule it is a number with nothing to do
+     with what is being read. */
+  body.carded .startotal{display:none}
+  /* Ambient cubes, behind everything the panel draws. Deliberately a child of
+     the panel: `body>canvas` scopes the game's own renderer, and a canvas
+     that escaped into body would be pinned over the whole viewport by it. */
+  .mbg{position:absolute;inset:0;z-index:0;pointer-events:none;
+    width:100%;height:100%;display:block}
+  .panel.map>.mhead,.panel.map>.mtabs,.panel.map>.mbody,.panel.map>.prow{
+    position:relative;z-index:1}
+
+  .mhead{display:flex;align-items:center;gap:10px;padding:11px 13px 9px;
+    border-bottom:1px solid var(--rule);flex-shrink:0}
+  .mhead .mt{flex:1;min-width:0}
+  .mhead .mt b{display:block;font-family:'Space Grotesk',system-ui,sans-serif;
+    font-size:15px;font-weight:700;letter-spacing:-.02em;color:var(--fg)}
+  .mhead .mt span{display:block;font-size:11px;letter-spacing:.13em;color:var(--fg-dim)}
+  .mtot{display:flex;align-items:center;gap:4px;padding:4px 10px;flex-shrink:0;
+    border:1px solid var(--rule);border-radius:20px;color:var(--star);font-size:12px}
+  .mq{width:30px;height:30px;border-radius:50%;flex-shrink:0;font-size:13px;
+    color:var(--fg-dim);border:1px solid var(--rule);background:transparent}
+  .mq.on{color:var(--player);border-color:var(--player)}
+  .mq.mx{color:var(--fg);font-size:15px}
+  .mq.mx:active{border-color:var(--player);color:var(--player)}
+
+  .mtabs{display:flex;gap:6px;overflow-x:auto;padding:9px 13px;flex-shrink:0;
+    border-bottom:1px solid var(--rule);scrollbar-width:none}
+  .mtabs::-webkit-scrollbar{display:none}
+  .mtab{flex:none;display:flex;align-items:center;gap:6px;height:32px;padding:0 12px;
+    border:1px solid var(--rule);border-radius:17px;color:var(--fg-dim);
+    background:transparent;font-size:12px;letter-spacing:.09em;white-space:nowrap}
+  .mtab.sel{color:var(--tabc);border-color:var(--tabc)}
+  .mtab i{width:14px;height:14px;flex:none;border-radius:50%;font-style:normal;
+    background:conic-gradient(var(--tabc) var(--pct),var(--rule) 0);
+    -webkit-mask:radial-gradient(circle,transparent 4px,#000 4.5px);
+    mask:radial-gradient(circle,transparent 4px,#000 4.5px)}
+  .mtab.lk{opacity:.7}
+
+  .mbody{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 13px 130px}
+  /* Positioned so the water can flood *behind* it rather than over it: at
+     every star the fill runs past the top of the trail to cover the head of
+     the section, and a translucent wash over the card's own text was muddy. */
+  .mcard{position:relative;z-index:1;
+    margin:13px 0 4px;padding:13px 14px;border-radius:4px;
+    border:1px solid var(--rule);
+    background:linear-gradient(150deg,color-mix(in srgb,var(--sec) 15%,transparent),transparent 72%)}
+  .mcard b{display:block;font-family:'Space Grotesk',system-ui,sans-serif;
+    font-size:17px;font-weight:700;letter-spacing:-.02em;color:var(--sec)}
+  .mcard i{display:block;font-style:normal;font-size:13.5px;color:var(--fg-dim);
+    margin-top:4px;line-height:1.45}
+  /* THE CENSUS, ONE LINE PER SECTION. Deliberately quieter than `i` above
+     it, and not in the section colour: `sub` is instruction and the story is
+     an aside, so it reads at a glance as the optional half. It is an <s>
+     purely because .mcard already owns bare b / i / u selectors and this is
+     the next tag free of one - hence the text-decoration reset, the same
+     trick .mbar u already uses. */
+  .mcard .mstory{display:block;text-decoration:none;
+    font-size:11.5px;line-height:1.5;margin-top:7px;
+    padding-top:7px;border-top:1px solid var(--rule);
+    color:color-mix(in srgb,var(--fg-dim) 78%,transparent)}
+  .mcard .mbar{display:block;height:3px;background:var(--rule);border-radius:3px;
+    margin:10px 0 4px;overflow:hidden}
+  .mcard .mbar u{display:block;height:100%;background:var(--sec);text-decoration:none}
+  .mcard .mf{display:flex;justify-content:space-between;font-size:11.5px;color:var(--fg-dim)}
+  /* Same blue and the same video mark as every other ad button, because it
+     buys the same thing. */
+  .mcard .skipsec{margin-top:11px;width:100%;height:40px;gap:8px;
+    --c:#6fa8ff;color:var(--c);
+    border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent);
+    --lip:color-mix(in srgb,var(--c) 44%,#04070d);
+    background:
+      linear-gradient(180deg,color-mix(in srgb,var(--c) 24%,transparent),
+        color-mix(in srgb,var(--c) 8%,transparent)),var(--panel);
+    font-size:11.5px;letter-spacing:.11em;font-weight:600}
+  .mcard .skipsec .adicon{width:17px;height:17px}
+
+  #mtrail{position:relative;margin-top:8px}
+  #mtrail svg{position:absolute;inset:0;pointer-events:none;z-index:0}
+  /* How much of the section you own, drawn as a level rising from its foot.
+     Deliberately weak in the middle and stronger at both edges: the floor
+     grounds it, the waterline marks it, and the body between has the trail
+     and the captions to stay legible over. */
+  .mfill{position:absolute;left:-13px;right:-13px;bottom:0;height:0;z-index:0;
+    pointer-events:none;
+    background:linear-gradient(to top,
+      color-mix(in srgb,var(--sec) 30%,transparent) 0%,
+      color-mix(in srgb,var(--sec) 15%,transparent) 58%,
+      color-mix(in srgb,var(--sec) 26%,transparent) 100%);
+    /* One period of a sine, 96 wide, starting and ending at the same height
+       and the same slope so it tiles seamlessly. Used as a mask rather than
+       drawn, so the crest takes the section's colour like everything else -
+       a data URI cannot read a custom property. */
+    --wave:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' \
+viewBox='0 0 96 14' preserveAspectRatio='none'><path d='M0 8 Q 24 0 48 8 T 96 8 \
+L96 14 L0 14 Z' fill='%23fff'/></svg>");
+    transition:height 980ms cubic-bezier(.3,.7,.2,1) 120ms}
+  /* THE WATERLINE IS A WAVE, NOT A RULE. It was a border-top, and a straight
+     bright line across the map read as a divider - something the layout was
+     doing - rather than as the top of a body of water. */
+  .mfill::before{content:"";position:absolute;left:0;right:0;bottom:100%;
+    height:14px;background:color-mix(in srgb,var(--sec) 34%,transparent);
+    -webkit-mask-image:var(--wave);mask-image:var(--wave);
+    -webkit-mask-repeat:repeat-x;mask-repeat:repeat-x;
+    -webkit-mask-size:96px 14px;mask-size:96px 14px;
+    -webkit-mask-position:bottom;mask-position:bottom}
+  /* At every star there is no waterline left to draw, so the crest stops
+     being a crest and becomes the flood: it runs up past the top of the
+     trail to cover the head of the section, which the fill alone could not
+     reach - the trail starts below the section card and everything above
+     that was staying dark on a section that was supposed to be finished. */
+  #mtrail.mst .mfill::before{height:300px;
+    -webkit-mask-image:none;mask-image:none;
+    background:color-mix(in srgb,var(--sec) 26%,transparent)}
+  /* The trail stops 80px above the foot of the panel and the body carries
+     130px of padding under that, so a fill that ended with the trail left a
+     dark strip beneath the water. This is that strip, in the colour the
+     bottom of the gradient already is - it hangs below without moving the
+     waterline, which has to stay where the stars put it. */
+  .mfill::after{content:"";position:absolute;left:0;right:0;top:100%;
+    height:220px;background:color-mix(in srgb,var(--sec) 30%,transparent)}
+  /* Full is full: at every star the waterline has nothing left to mark, so it
+     goes and the colour simply is the section. */
+  #mtrail.mst .mfill{border-top-color:transparent}
+
+  /* A disc with a lip under it, so it reads as something to push. */
+  .mnode{position:absolute;z-index:1;width:58px;height:58px;border-radius:50%;
+    display:grid;place-items:center;padding:0;font-size:15px;font-weight:600;
+    background:#1b2340;color:#4a577a;border:2.5px solid var(--rule);
+    box-shadow:0 5px 0 rgba(0,0,0,.42);
+    transition:transform .12s ease,box-shadow .12s ease,border-color .25s,color .25s}
+  .mnode:active{transform:translateY(4px);box-shadow:0 1px 0 rgba(0,0,0,.42)}
+  /* Solved nodes wear the section's colour, so a finished section is its own
+     chain rather than another stretch of the same green. The rim, the ink and
+     the lip are all mixed from that one hue, which is what keeps a light
+     section (glass blue) and a dark one (spikes red) both legible without
+     hand-picking three values apiece. */
+  .mnode.solved{background:var(--sec);
+    border-color:color-mix(in srgb,var(--sec) 68%,#fff);
+    color:color-mix(in srgb,var(--sec) 26%,#000);
+    box-shadow:0 5px 0 color-mix(in srgb,var(--sec) 44%,#000)}
+  .mnode.solved:active{box-shadow:0 1px 0 color-mix(in srgb,var(--sec) 44%,#000)}
+  .mnode.open{border-color:var(--fg);color:var(--fg);background:rgba(20,26,46,.9)}
+  .mnode.here{background:var(--player);border-color:#f4699a;color:#2a0512;
+    box-shadow:0 5px 0 #8a1441;animation:mhalo 2.1s ease-out infinite}
+  .mnode.here:active{box-shadow:0 1px 0 #8a1441;animation:none}
+  @keyframes mhalo{
+    0%,100%{box-shadow:0 5px 0 #8a1441,0 0 0 0 rgba(214,51,108,.34)}
+    50%{box-shadow:0 5px 0 #8a1441,0 0 0 13px rgba(214,51,108,0)}
+  }
+  .mnode.locked{border-style:dashed;background:rgba(255,255,255,.02);
+    box-shadow:0 4px 0 rgba(0,0,0,.28)}
+  .mnode.skipped{border-color:#6fa8ff;border-style:dashed;color:#6fa8ff;
+    background:rgba(111,168,255,.09)}
+  .mnode.tut{width:42px;height:42px;font-size:12px}
+
+  /* The two landmarks are SVG, so the shape carries its own rim and lip.
+     A hexagon is a cube seen corner-on and a diamond is a square on its
+     point - told apart with the colour taken away, which two shades of amber
+     never were. */
+  .mnode.mboss,.mnode.mtrial{background:transparent;border:none;
+    box-shadow:none;overflow:visible}
+  .mnode.mboss{width:78px;height:78px;font-size:18px}
+  .mnode.mtrial{width:68px;height:68px;font-size:16px}
+  .msvg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+  .mnode>span{position:relative;z-index:1;line-height:1}
+  .mface{fill:rgba(255,255,255,.03);stroke:var(--rule);stroke-width:5;
+    stroke-linejoin:round}
+  .mlip{fill:rgba(0,0,0,.42);transform:translateY(6px);
+    transition:transform .12s ease}
+  .mnode:active .mlip{transform:translateY(1px)}
+  /* One arc per phase: three now, not four. r=58 gives a circumference of
+     about 364, so dash+gap has to divide into it three times. */
+  .mring{fill:none;stroke:var(--rule);stroke-width:5;stroke-linecap:round;
+    stroke-dasharray:94 27}
+
+  /* THE TRIAL'S RING IS A CLOCK, and its dash pattern has to be set in CSS
+     rather than as an attribute: .mring above already sets stroke-dasharray,
+     and a CSS declaration beats a presentation attribute however specific
+     the attribute looks. r=60 gives a circumference of ~377, so 337+40 is
+     one near-complete turn with a single break, and the offset of 357 puts
+     the middle of that break at the path's start - which the rotation below
+     then swings to the top, where the pip is. */
+  .mnode.mtrial .mring{stroke:var(--amb);stroke-width:4;
+    stroke-dasharray:337 40;stroke-dashoffset:357;
+    transform-box:view-box;transform-origin:50px 50px;transform:rotate(-90deg)}
+  /* It turns until you have beaten it. The boss's arcs never move, which is
+     the third thing telling the two landmarks apart. */
+  .mnode.mtrial:not(.solved) .mring{animation:mswp 9s linear infinite}
+  @keyframes mswp{from{transform:rotate(-90deg)}to{transform:rotate(270deg)}}
+  .mpip{fill:var(--amb)}
+
+  .mnode.mboss .mface{fill:rgba(162,116,255,.13);stroke:var(--vio)}
+  .mnode.mboss .mring{stroke:var(--vio)}
+  .mnode.mboss.solved .mface{fill:var(--vio);stroke:#c6a4ff}
+  .mnode.mboss.solved .mlip{fill:var(--vio-lip)}
+  .mnode.mtrial .mface{fill:rgba(224,160,60,.12);stroke:var(--amb)}
+  .mnode.mtrial.solved .mface{fill:var(--amb);stroke:#f0bd6c}
+  .mnode.mtrial.solved .mlip{fill:var(--amb-lip)}
+  .mnode.mtrial.solved .mring{stroke:#f0bd6c}
+  .mnode.mtrial.solved .mpip{fill:var(--amb-lip)}
+  /* Locked, both go quiet - the shape still says which it is. */
+  .mnode.mboss.locked .mface,.mnode.mtrial.locked .mface{
+    fill:rgba(255,255,255,.02);stroke:var(--rule);stroke-dasharray:5 5}
+  .mnode.mboss.locked .mring{stroke:var(--fg-dim);opacity:.4}
+  .mnode.mtrial.locked .mring{stroke:var(--fg-dim);opacity:.4}
+  .mnode.mtrial.locked .mpip{fill:var(--fg-dim);opacity:.45}
+  /* A landmark's numeral takes its own colour, not the section's. Without
+     this .mnode.solved's section-mixed ink applied and BOSS I read as a dark
+     green numeral sitting inside a violet hexagon. */
+  .mnode.mboss>span{color:var(--vio)}
+  .mnode.mtrial>span{color:var(--amb)}
+  .mnode.mboss.solved>span{color:#22103f}
+  .mnode.mtrial.solved>span{color:#2e1d02}
+  .mnode.mboss.locked>span,.mnode.mtrial.locked>span{color:#4a577a}
+  .mnode.mboss.locked,.mnode.mtrial.locked{color:#4a577a}
+
+  /* Standing on a landmark, it keeps its own colour and only borrows the
+     pulse. .mnode.here sets a pink body and a pink lip; trial and boss
+     override the body by coming later, but the lip is theirs to restore or
+     the node reads as an amber disc sitting on a pink one. */
+  .mnode.mtrial.here{box-shadow:0 5px 0 var(--amb-lip);animation:mhaloT 2.1s ease-out infinite}
+  @keyframes mhaloT{
+    0%,100%{box-shadow:0 5px 0 var(--amb-lip),0 0 0 0 rgba(224,160,60,.36)}
+    50%{box-shadow:0 5px 0 var(--amb-lip),0 0 0 13px rgba(224,160,60,0)}
+  }
+  .mnode.mboss.here{box-shadow:0 5px 0 var(--vio-lip);animation:mhaloB 2.1s ease-out infinite}
+  @keyframes mhaloB{
+    0%,100%{box-shadow:0 5px 0 var(--vio-lip),0 0 0 0 rgba(162,116,255,.38)}
+    50%{box-shadow:0 5px 0 var(--vio-lip),0 0 0 15px rgba(162,116,255,0)}
+  }
+  .mnode.mtrial.here:active{box-shadow:0 1px 0 var(--amb-lip);animation:none}
+  .mnode.mboss.here:active{box-shadow:0 1px 0 var(--vio-lip);animation:none}
+
+  /* ============================================================
+     A MASTERED SECTION — every level in it on three stars.
+     The trail is redrawn as one continuous stroke and the colour climbs it
+     from the first level to the boss, lighting each node as it arrives.
+     See sectionMastered() and mapLayout() in js/16-panels.js.
+     ============================================================ */
+  /* NO `filter` ON THE ANIMATED STROKE. A drop-shadow on a path whose
+     dashoffset is changing re-rasterizes the filter over the path's whole
+     bounding box every frame, and that box is the height of the section -
+     measured, it was most of the reason a finished section stuttered. */
+  .mpaint{animation:mpaint 1050ms cubic-bezier(.34,.66,.2,1) 140ms forwards}
+  @keyframes mpaint{to{stroke-dashoffset:0}}
+
+  /* Each node throws a ring as the stroke reaches it. `animation-delay` is
+     set inline on the node, per node, from its position along the section;
+     `inherit` is the only way a pseudo-element can be told when its own
+     node's turn came. It still works with no animation on the node itself -
+     animation-delay holds a value whether or not anything is using it.
+
+     ONE ANIMATION PER NODE, NOT TWO. The node used to scale as well, and
+     running both at once was measured as most of the cost of a finished
+     section: 46% of frames over 32ms against 26% for the same section
+     un-mastered. Either alone sits at that baseline; the ring alone, on its
+     own compositor layer, comes in under it at 20%. Fourteen small layers is
+     a cheap price for the one animation that carries the celebration - and
+     the ring is the half that reads, since a disc growing 22% and shrinking
+     back is nearly invisible next to a wave of light leaving it. */
+  .mnode.mst::after{content:"";position:absolute;inset:-5px;border-radius:50%;
+    border:2.5px solid var(--sec);opacity:0;pointer-events:none;
+    will-change:transform,opacity;
+    animation:mring 780ms ease-out both;animation-delay:inherit}
+  @keyframes mring{
+    0%{opacity:0;transform:scale(.7)}
+    20%{opacity:.95}
+    100%{opacity:0;transform:scale(2)}
+  }
+  /* And keeps a halo afterwards, so a finished section still reads as
+     finished on the next visit rather than only during the celebration.
+
+     `box-shadow` rather than a `drop-shadow` filter, and the difference is
+     not cosmetic: a filter on a node makes every frame of the pop above
+     re-rasterize it, and worse, it stays expensive long after the
+     celebration - it is repainted on every scroll of a finished section. A
+     box-shadow composites. The landmarks get a round halo behind their
+     hexagon and diamond, which is what the disc nodes have anyway. */
+  .mnode.solved.mst{box-shadow:0 5px 0 color-mix(in srgb,var(--sec) 44%,#000),
+    0 0 15px color-mix(in srgb,var(--sec) 45%,transparent)}
+  .mnode.mboss.mst,.mnode.mtrial.mst{
+    box-shadow:0 0 17px color-mix(in srgb,var(--sec) 42%,transparent)}
+
+  .mcard.mst{border-color:color-mix(in srgb,var(--sec) 46%,var(--rule));
+    background:linear-gradient(180deg,
+      color-mix(in srgb,var(--sec) 11%,transparent),transparent 62%)}
+  .mmast{font-style:normal;font-size:10.5px;letter-spacing:.16em;
+    margin-left:8px;padding:3px 7px;border-radius:99px;vertical-align:2px;
+    color:color-mix(in srgb,var(--sec) 26%,#000);background:var(--sec)}
+  .mtab.mst{border-color:color-mix(in srgb,var(--tabc) 62%,var(--rule))}
+
+  @media (prefers-reduced-motion: reduce){
+    .mfill{transition:none}
+    .mnode.mtrial:not(.solved) .mring{animation:none}
+    .mpaint{animation:none;stroke-dashoffset:0 !important}
+    .mnode.mst::after{animation:none}
+  }
+
+  .mstars{position:absolute;z-index:1;display:flex;gap:2px;pointer-events:none;
+    font-size:12px;line-height:1;color:var(--star)}
+  .mstars u{text-decoration:none;text-shadow:0 0 8px var(--star-glow)}
+  .mstars u.off{color:rgba(195,205,228,.18);text-shadow:none}
+  /* A CAPTION WRAPS RATHER THAN RUNNING OFF THE SCREEN. It was `nowrap`,
+     which was survivable at 9.5px and is not at 13: `The Silence Before the
+     Storm` and `Catch Me If You Can!` both ran past the right edge of a
+     327px screen and were clipped by .mbody's overflow. The width it may
+     take is the gap between its node and the edge, near enough - and it is
+     aligned toward its own node, so a two-line name reads as one block
+     beside the circle rather than drifting away from it. */
+  .mcap{position:absolute;z-index:1;font-size:13px;color:var(--fg-dim);
+    pointer-events:none;max-width:52%;line-height:1.3;
+    overflow-wrap:break-word}
+  .mcap.r{text-align:left}
+  .mcap.l{text-align:right}
+  .mcap.big{color:var(--fg);letter-spacing:.07em}
+  .mcap em{font-style:normal;color:#6fa8ff}
+
+  /* the level sheet, inside the panel */
+  .msheet{position:absolute;left:0;right:0;bottom:0;z-index:3;
+    background:var(--panel);border-top:1px solid var(--rule);
+    padding:15px 14px 16px;transform:translateY(112%);
+    transition:transform .26s cubic-bezier(.22,.72,.28,1);backdrop-filter:blur(9px)}
+  .msheet.on{transform:translateY(0)}
+  .msheet .mk{font-size:11px;letter-spacing:.17em;color:var(--fg-dim)}
+  .msheet .mk.b{color:var(--vio)} .msheet .mk.t{color:var(--amb)}
+  .msheet h4{font-family:'Space Grotesk',system-ui,sans-serif;font-size:17px;
+    font-weight:700;letter-spacing:-.015em;margin:4px 0 0;color:var(--fg)}
+  .msheet .mm{font-size:12.5px;color:var(--fg-dim);margin-top:5px}
+  .msheet .mm .g{color:var(--goal)} .msheet .mm .a{color:#6fa8ff}
+  /* Shared with the panel, because the struggle offer is the same offer the
+     map makes and should not be a second visual language for it. */
+  .msheet .ma,.panel .ma{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+  /* THREE WEIGHTS, AND THEY LOOK LIKE THREE WEIGHTS. A card with one
+     outlined rectangle per option makes every option look the same, which is
+     the opposite of what a card with a recommended action wants. The primary
+     is filled and capped, the ad button is filled in its own blue and
+     carries the video mark, and the quiet one stays an outline - so the
+     shape of the decision is readable before a word of it is. */
+  .msheet .ma button,.panel .ma button{height:46px;font-size:12.5px;
+    letter-spacing:.13em;font-weight:600}
+  .msheet .ma .go,.panel .ma .go{--c:var(--goal);color:var(--c);
+    border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent);
+    --lip:color-mix(in srgb,var(--c) 44%,#04070d);
+    background:
+      linear-gradient(180deg,color-mix(in srgb,var(--c) 24%,transparent),
+        color-mix(in srgb,var(--c) 8%,transparent)),var(--panel)}
+  .msheet .ma .ad,.panel .ma .ad{--c:#6fa8ff;color:var(--c);
+    border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent);
+    --lip:color-mix(in srgb,var(--c) 44%,#04070d);
+    background:
+      linear-gradient(180deg,color-mix(in srgb,var(--c) 24%,transparent),
+        color-mix(in srgb,var(--c) 8%,transparent)),var(--panel);
+    gap:9px}
+  /* THE VIDEO MARK. An ad button has to say it is an ad before it is
+     pressed - a play sign in a screen is the one drawing everybody already
+     reads that way, and it means the words never have to carry it alone. */
+  .adicon{width:19px;height:19px;flex-shrink:0;fill:currentColor;stroke:none}
+  .msheet .ma .qt,.panel .ma .qt{height:36px;font-size:11.5px;
+    color:var(--fg-dim);border-color:var(--rule);font-weight:400;
+    --lip:rgba(4,7,14,.5)}
+  .msheet .mn,.panel .mn{font-size:11.5px;color:var(--fg-dim);line-height:1.65;margin-top:9px}
+  .msheet .mn b{color:var(--fg);font-weight:500}
+
+  .mlegend{display:grid;grid-template-columns:auto 1fr;gap:9px 11px;align-items:center;
+    margin-top:11px}
+  .mlegend .mk2{width:30px;height:30px;border-radius:50%;border:2.5px solid var(--rule);
+    background:#1b2340;display:grid;place-items:center;font-size:13px;color:#4a577a;
+    position:relative}
+  .mlegend .mk2.solved{background:var(--goal);border-color:#5fe0c4;color:#08281f}
+  .mlegend .mk2.here{background:var(--player);border-color:#f4699a;color:#2a0512}
+  .mlegend .mk2.open{border-color:var(--fg);color:var(--fg)}
+  .mlegend .mk2.locked{border-style:dashed}
+  .mlegend .mk2.skipped{border-color:#6fa8ff;border-style:dashed;color:#6fa8ff}
+  /* The legend shows the real silhouettes, not circles wearing a hint. */
+  .mlegend .mk2.mtrial,.mlegend .mk2.mboss{border:none;background:transparent;
+    overflow:visible}
+  .mlegend .mk2.mtrial{color:var(--amb)}
+  .mlegend .mk2.mboss{color:var(--vio)}
+  .mlegend .mk2 .msvg{position:absolute;inset:0}
+  .mlegend .mk2 .mlip{display:none}
+  .mlegend .mk2 .mface{stroke-width:7}
+  .mlegend .mk2.mboss .mring{stroke-width:7;stroke-dasharray:94 27}
+  .mlegend .mk2>span{position:relative;z-index:1}
+  .mlegend .mk2.mbossOLD{border-color:var(--vio);color:var(--vio)}
+  .mlegend .md{font-size:12px;color:var(--fg-dim);line-height:1.5}
+  .mlegend .md b{color:var(--fg);font-weight:500}
+
+  @media (prefers-reduced-motion:reduce){*{transition-duration:.01ms !important}}

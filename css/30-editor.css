@@ -1,0 +1,24 @@
+/* Orthogonal — css/30-editor.css
+   The editor and composer bars.
+   Loaded in the order listed in index.html; see docs/UI.md for the map of
+   screens to files. */
+
+  /* edit bar */
+  #editBar{display:none;flex-direction:column;gap:6px}
+  #editBar.on{display:flex}
+  .rowTop{gap:6px}
+  .rowTop .tiny{height:26px}
+  .spacer{flex:1}
+  #composeBar{display:none;flex-direction:column;gap:6px}
+  #composeBar.on{display:flex}
+  .script{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;
+    letter-spacing:.1em;color:var(--player);margin-top:5px;line-height:1.6;
+    max-width:62vw;word-break:break-word}
+  .row{display:flex;gap:4px;align-items:stretch}
+  .chip{flex:1;height:38px;font-size:11px;letter-spacing:.04em;padding:0 2px}
+  .chip.sel{border-color:var(--player);color:var(--player);
+    background:rgba(214,51,108,.13)}
+  .row2 button{height:40px}
+  .row2 .ico{width:40px;font-size:14px}
+  .verify{flex:1;border-color:var(--goal);color:var(--goal);
+    font-weight:600;letter-spacing:.13em}

@@ -9,7 +9,22 @@
 <!-- Fonts are a progressive enhancement: the game falls back to
      system mono/sans if they fail to load (offline, or a strict WebView). -->
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<!-- The stylesheet is split by screen and loaded in this order; the cascade
+     depends on it. docs/UI.md maps each screen to its file. -->
+<link rel="stylesheet" href="css/00-base.css">
+<link rel="stylesheet" href="css/10-buttons.css">
+<link rel="stylesheet" href="css/20-hud.css">
+<link rel="stylesheet" href="css/30-editor.css">
+<link rel="stylesheet" href="css/40-panels.css">
+<link rel="stylesheet" href="css/50-layout-cues.css">
+<link rel="stylesheet" href="css/60-splash.css">
+<link rel="stylesheet" href="css/65-replay.css">
+<link rel="stylesheet" href="css/70-cards.css">
+<link rel="stylesheet" href="css/75-bossbar.css">
+<link rel="stylesheet" href="css/80-panel-tall.css">
+<link rel="stylesheet" href="css/85-map.css">
+<link rel="stylesheet" href="css/90-tutorial.css">
+<link rel="stylesheet" href="css/95-home.css">
 </head>
 <body>
 
