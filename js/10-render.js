@@ -1907,28 +1907,62 @@ function makeBlockGeo(){
    every rebuild.
    ============================================================ */
 var trailSet={}, trailMat=null, trailGeo=null, trailTex=null;
-var TRAIL_A=.30;                      // subtle: read at a glance, never lit
+var TRAIL_A=.62;
+
+/* THE MARK CARRIES ITS OWN CONTRAST, and that is the whole of this texture.
+
+   The first cut was one soft blob of `--player` at .30, and it failed on the
+   case that matters: a green skin standing on grass. A single translucent
+   colour can only be seen against a ground it differs from, and the player
+   picks the colour - so the ground it has to work against is every surface
+   in the game at once, in every hue the wardrobe sells.
+
+   So the mark is drawn like the player's own piece is: a bright body with a
+   DARK RIM around it. The trick is that both come out of one texture and one
+   material. `material.color` is the player's hue and the texture multiplies
+   it, so a texel of RGB 1 paints the hue at full strength and a texel of RGB
+   .10 paints a near-black ring of the same hue - whatever hue that is. On a
+   bright surface the dark ring is what you see; on a dark one the lit body
+   is. There is no ground it disappears into, and no colour it disappears in.
+
+   Written per pixel rather than as a gradient because the bands have to be
+   crisp: a feathered rim is a soft edge, and a soft edge is exactly what was
+   invisible. It is 4096 iterations, once, at boot. */
 function trailTexture(){
   var S=64,c=document.createElement("canvas");c.width=c.height=S;
-  var x=c.getContext("2d");
-  /* Feathered to nothing at .46 of the canvas - inside its own edges, the
-     same rule makePlume() is written to. A gradient that is still bright
-     where the pixels run out shows you its rectangle. */
-  var g=x.createRadialGradient(S/2,S/2,S*.06,S/2,S/2,S*.46);
-  g.addColorStop(0,"rgba(255,255,255,1)");
-  g.addColorStop(.52,"rgba(255,255,255,.62)");
-  g.addColorStop(1,"rgba(255,255,255,0)");
-  x.fillStyle=g;x.fillRect(0,0,S,S);
+  var x=c.getContext("2d"), img=x.createImageData(S,S), d=img.data;
+  var mid=(S-1)/2;
+  for(var py=0;py<S;py++)for(var px=0;px<S;px++){
+    var dx=px-mid, dy=py-mid, r=Math.sqrt(dx*dx+dy*dy)/mid;   // 0..1 of half
+    var lum,a;
+    if(r<.60){ lum=255; a=.78+.17*(1-r/.60); }        // the body, lit
+    else if(r<.74){ lum=255; a=1; }                   // its bright edge
+    else if(r<.90){ lum=26;  a=.60; }                 // the dark rim
+    else if(r<1){   lum=26;  a=.60*(1-(r-.90)/.10); } // one pixel of feather
+    else { lum=0; a=0; }
+    var o=(py*S+px)*4;
+    d[o]=d[o+1]=d[o+2]=lum; d[o+3]=Math.round(a*255);
+  }
+  x.putImageData(img,0,0);
   return new THREE.CanvasTexture(c);
+}
+/* Lifted a quarter of the way to white before it is used, so a dark skin -
+   Black is a charcoal, Brown is a mud - still reads as a mark rather than as
+   a smudge on the block. The rim is multiplied off the same value, so it
+   darkens with it and the pair stays a pair. */
+function trailTint(hex){
+  if(!trailMat)return;
+  trailMat.color.setHex(hex).lerp(new THREE.Color(0xffffff),.25);
 }
 function trailMaterial(){
   if(trailMat)return trailMat;
   if(!trailTex)trailTex=trailTexture();
   var col=(typeof SKIN_COLORS!=="undefined"&&typeof findBy==="function")
     ? findBy(SKIN_COLORS,wardrobe.color).hex : 0xd6336c;
-  trailMat=new THREE.MeshBasicMaterial({map:trailTex,color:col,
+  trailMat=new THREE.MeshBasicMaterial({map:trailTex,color:0xffffff,
     transparent:true,opacity:TRAIL_A,depthWrite:false,
     side:THREE.DoubleSide});
+  trailTint(col);
   return trailMat;
 }
 function trailAttach(k){

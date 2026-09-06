@@ -379,7 +379,7 @@ function applySkin(){
     shieldFill.material.color.setHex(col);
   // The step trail is whose steps they are, so it follows the piece. One
   // shared material, so this is one write however long the trail is.
-  if(typeof trailMat!=="undefined"&&trailMat)trailMat.color.setHex(col);
+  if(typeof trailTint==="function")trailTint(col);
   document.documentElement.style.setProperty("--player",
     "#"+col.toString(16).padStart(6,"0"));
 }

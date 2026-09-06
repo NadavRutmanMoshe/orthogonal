@@ -432,24 +432,40 @@ tutorial's green. A history has to be distinguishable from an instruction at a
 glance, so it wears the one hue that already means *you*: the same token the
 shadow under your feet and the shield bubble read.
 
-**It is a blot, not a tile.** A hard square on a block's top face reads as
+**It is a disc, not a tile.** A hard square on a block's top face reads as
 another kind of block, which is the one confusion a game about telling blocks
-apart cannot afford. The texture is a radial gradient that reaches zero at .46
-of its canvas — inside its own edges, the rule `makePlume()` is written to —
-so it sits *on* the surface instead of replacing it. `TRAIL_A` is .30.
+apart cannot afford.
+
+**And it carries its own contrast.** The first cut was one soft blob at .30
+and it failed on the case that matters: a green skin standing on grass. A
+single translucent colour can only be seen against a ground it differs from,
+and the player picks the colour — so the ground it has to work against is
+every surface in the game, in every hue the wardrobe sells. So the mark is
+drawn the way the player's own piece is: a lit body with a **dark rim**. Both
+come out of one texture and one material — `material.color` is the hue and the
+texture multiplies it, so a texel of RGB 1 paints the hue at full strength and
+a texel of RGB .10 paints a near-black ring *of that same hue*, whatever it is.
+On a bright surface the ring is what you see; on a dark one the body is. The
+bands are written per pixel rather than as a gradient because they have to be
+crisp: a feathered rim is a soft edge, and a soft edge is exactly what was
+invisible. The hue is lifted a quarter of the way to white first, so Black
+and Brown still read as marks rather than smudges. `TRAIL_A` is .62.
 
 **Three rules decide which squares get one**, and the middle one is the
 interesting one (`trailHere`, `trailColumn`, `trailFlatStep` in
 `js/12-play.js`):
 
 - In the volume: the block under your feet.
-- **On the fold: the whole depth column.** The floor you stand on in the plane
-  was made by every block at that screen position at once, not by the one you
-  happened to be standing on. Marking only the near one would say "I was here"
-  about a square whose entire point is that it is several places at the same
-  time. Marking the column says which *line through the world* you flattened,
-  and it is still legible after the unfold, when those blocks are far apart
-  again.
+- **On the fold: the run from your own block forward to the one nearest the
+  camera**, and *forward* is the whole rule. The floor you stand on in the
+  plane was made by several blocks at once, but only the ones between you and
+  the front are places the fold actually took you through — a block behind you
+  in depth shares the silhouette and was never crossed, and painting it says
+  you have been somewhere you have not. The run says which *line through the
+  world* you flattened, and it is still legible after the unfold, when those
+  blocks are far apart again. No maximum has to be computed: nothing sits in
+  front of the front block, so "every solid at or ahead of my depth" stops
+  there on its own.
 - Moving while flat: one block, the one `R.pick(R.landings(...))` returns —
   the same call `doUnflatten()` makes, so the mark and the landing can never
   disagree. Marking the column on every flat step would paint the whole world

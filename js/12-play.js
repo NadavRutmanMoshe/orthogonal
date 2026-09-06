@@ -1125,16 +1125,16 @@ function collectHere(){
 
    IN THE VOLUME the answer is trivial: the block under your feet.
 
-   ON THE FOLD it is the whole depth column, and that is the interesting one.
-   Folding merges everything at one screen position into a single silhouette
-   square, so the floor you are standing on in the plane was made by every
-   block in that column at once - not by the one you happened to be on. Marking
-   only the near one would say "I was here" about a square whose whole point is
-   that it is several places at the same time; marking the column says which
-   line through the world you flattened, and it is still legible after the
-   unfold, when the blocks are far apart again. This is the reading of the
-   owner's "all the blocks that are in the way of the closest one to the
-   camera".
+   ON THE FOLD it is the run from your own block FORWARD to the one nearest
+   the camera, and the word forward is the whole rule. Folding merges
+   everything at one screen position into a single silhouette square, so the
+   floor you stand on in the plane was made by several blocks at once - but
+   only the ones between you and the front are places the fold actually took
+   you through. A block BEHIND you in depth is in the same silhouette and was
+   never crossed; painting it says you have been somewhere you have not.
+
+   No maximum has to be computed: nothing sits in front of the front block, so
+   "every solid at or ahead of my depth" stops there on its own.
 
    MOVING WHILE FLAT marks one block, and it is the one the unfold would put
    you on - R.pick over R.landings, the same call doUnflatten() makes, so the
@@ -1147,10 +1147,15 @@ function trailHere(){
 function trailColumn(){
   if(typeof trailMark!=="function"||!L||!R)return;
   var u=R.uOf(view,player.x,player.z), y=player.y-1;
+  // AX[v].d points toward the camera, so a larger d is nearer the front and
+  // R.pick's "highest t wins" and this test are reading the same number.
+  var t0=R.dOf(view,player.x,player.z);
   for(var i=0;i<L.blocks.length;i++){
     var b=L.blocks[i];
     if(b[1]!==y||isCrate(b))continue;
-    if(R.uOf(view,b[0],b[2])===u)trailMark(b[0],b[1],b[2]);
+    if(R.uOf(view,b[0],b[2])!==u)continue;
+    if(R.dOf(view,b[0],b[2])<t0)continue;      // behind you: never crossed
+    trailMark(b[0],b[1],b[2]);
   }
 }
 function trailFlatStep(){
