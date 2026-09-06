@@ -260,3 +260,28 @@ the sweep that owns that height leaves the middle square nowhere to go.
 
 ---
 
+
+## The telegraph was raised
+
+Reported: "make the red indicator more visible so the player understands the
+spikes will come down there." It was too quiet, and the reason it was too
+quiet is worth keeping: the tiles' opacity is the *countdown*, so it was built
+to ramp from almost nothing to full across a beat, and the first half of that
+ramp is where "there is a slice at all" has to be legible.
+
+Red at .34 over a lit grass block is a discolouration; the eye files it as a
+property of the block. So the ramp keeps its shape and loses its floor — the
+tiles now open at .58 and climb to .92, the falling rank opens at .52, and the
+slab's outline in the volume comes up from .22 to .40. What is given up is
+some of the difference between the start of a beat and its middle, and that
+difference was never what the player reads: the rank *falling* already says
+how long is left.
+
+The tiles' borders stopped ramping altogether and **breathe** instead
+(`trialWarnPulse()`). The fill carries the countdown, so the outline is free
+to carry the other half of the sentence — that this is a live warning rather
+than a texture on the floor — and a pulse is what peripheral vision catches,
+which is where a player on a clock is looking when they are looking anywhere
+else. It is deliberately not `perilPulse`: that one is the fold's crush
+warning and is stamped inside the block loop, which does not run before
+`drawTrial()`.

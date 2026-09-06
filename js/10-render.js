@@ -2427,6 +2427,11 @@ function drawBoss(rx,rz,tdvx,tdvz){
    The charge has to read as a countdown rather than a warning light, so
    opacity ramps with how far through the beat it is - "how long have I got"
    is then legible at a glance instead of needing a number. */
+/* One pulse for every warning a trial draws, so the tiles, their borders and
+   anything added later breathe on the same beat rather than each on its own.
+   Deliberately not perilPulse: that one is the fold's crush warning and is
+   stamped inside the block loop, which does not run before this. */
+function trialWarnPulse(){return .5+.5*Math.sin(Date.now()*.0085);}
 function drawTrial(rx,rz){
   if(!trialSlab)return;
   if(!TR||app!=="play"||!TR.beats.length){
@@ -2508,9 +2513,12 @@ function drawTrial(rx,rz){
   var edgeOnly = flatT<=.5;
   // Flat, the row of falling blocks is the subject and the wash is the ground
   // it is read against, so the wash comes down enough to let them show.
-  var wash = edgeOnly ? .07 : .30;
+  var wash = edgeOnly ? .10 : .30;
   trialSlab.material.opacity=(live?(.62+trialFlash*.3):(.15+ph*ph*.3))*wash;
-  trialEdge.material.opacity=(live?1:(.5+ph*.4))*(edgeOnly?.22:1);
+  /* The frame is the one part of the slab that says WHERE, so in the volume
+     it comes up off .22: the fill stays out of the tiles' way, the outline
+     does not have to. */
+  trialEdge.material.opacity=(live?1:(.55+ph*.4))*(edgeOnly?.40:1);
   trialSlab.visible=trialEdge.visible=true;
   drawTrialMarks(sw,ph,live);
   drawFallRank(sw,ph,live,rx,rz);
@@ -2593,8 +2601,11 @@ function drawFallRank(sw,ph,live,rx,rz){
       m.visible=true;
       m.position.set(cells[i][0],y-.5+.44+drop,cells[i][1]);
       m.scale.set(live?1.1:1,live?.5:1,live?1.1:1);
-      m.material.opacity=live?.95:(.30+ph*.5);
-      if(m.userData.edge)m.userData.edge.material.opacity=live?1:(.35+ph*.55);
+      /* Same reasoning as the tiles: the rank is the other half of "it is
+         coming down there", and a block you cannot see until it is nearly on
+         you is not a telegraph. */
+      m.material.opacity=live?.95:(.52+ph*.4);
+      if(m.userData.edge)m.userData.edge.material.opacity=live?1:(.6+ph*.4);
     }
   }
   for(var k=n;k<planeFalls.length;k++)planeFalls[k].visible=false;
@@ -2645,7 +2656,7 @@ function drawTrialMarks(sw,ph,live){
       m.scale.setScalar(1);
       continue;
     }
-    if(m.userData.ring)m.userData.ring.material.color.setHex(0xff8a94);
+    if(m.userData.ring)m.userData.ring.material.color.setHex(0xffc2c8);
     var mine=(!flat&&player.x===c[0]&&player.y===c[1]&&player.z===c[2]);
     if(mine)here=m;
     /* The ramp is the countdown, same as the slab's - but these start
@@ -2653,10 +2664,24 @@ function drawTrialMarks(sw,ph,live){
        telegraph that is invisible for the first half of its beat is not a
        telegraph. The square you are actually standing on is louder again:
        "there is a slice" and "you are in it" are different sentences. */
-    m.material.opacity=(live?.92:.34+ph*ph*.5)*(mine?1:.8);
+    /* RAISED, on the owner's report that "the spikes will come down there"
+       was not being read in time. The ramp still is the countdown - it still
+       climbs across the beat and the square you are standing on is still
+       louder than the rest - it simply no longer starts near invisible. Red
+       at .34 over a lit grass block is a discolouration; at .58 it is a
+       marked square. What is lost is a little of the difference between the
+       start of a beat and its middle, and that difference was never the
+       thing being read: the fall itself says how long is left. */
+    m.material.opacity=(live?.95:.58+ph*ph*.34)*(mine?1:.88);
     m.scale.setScalar(mine?1.04+(live?.06:0):1);
+    /* And the border BREATHES rather than ramping. The fill carries the
+       countdown, so the outline is free to carry the other half of the
+       sentence - that this is a live warning and not a texture on the floor.
+       A pulse is what the eye catches in peripheral vision, which is where a
+       player on a clock is looking when they are looking anywhere else. */
     if(m.userData.ring)
-      m.userData.ring.material.opacity=(live?1:.5+ph*.5)*(mine?1:.75);
+      m.userData.ring.material.opacity=
+        (live?1:.72+.28*trialWarnPulse())*(mine?1:.85);
   }
   // Drawn last so it sits over its neighbours rather than z-fighting them.
   if(here)here.renderOrder=903;
