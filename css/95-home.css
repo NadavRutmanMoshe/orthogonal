@@ -65,11 +65,23 @@
 
 .hbtns{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:12px}
 .home button{width:100%;height:44px;font-size:12.5px;letter-spacing:.14em}
-/* Every button on this screen carries a picture now, so there is one rule
-   for what a picture on a button is: 19px, solid, in the button's own colour,
-   nine pixels clear of the word. `.hward` sets its own size and keeps it. */
-.home button svg{width:19px;height:19px;flex:none;fill:currentColor;
-  stroke:none;margin-right:9px}
+/* EVERY ICON ON THIS SCREEN SITS IN ONE COLUMN.
+
+   Each button used to centre its own icon-and-label pair, so the icons
+   landed wherever the label happened to leave them - five buttons, five
+   different x positions, which is what the owner saw. The fix is to stop
+   letting the label move the icon: the button is a positioning context, the
+   icon is pinned 18px from its left edge, and the label stays centred on the
+   button as if the icon were not there.
+
+   That is also why the labels keep their own centring rather than being
+   left-aligned after the icon: a column of centred words with a column of
+   icons beside it reads as a menu; a column of left-aligned rows reads as a
+   list, and this is the title screen. */
+.home button{position:relative}
+.home button svg{position:absolute;left:18px;top:50%;
+  transform:translateY(-50%);
+  width:19px;height:19px;flex:none;fill:currentColor;stroke:none}
 /* The one thing this screen is for, so it gets the raised treatment the
    panels' primary button already has - and its own second line, because
    "CONTINUE" alone does not say what you are continuing. */
@@ -86,7 +98,10 @@
    section and a dark one both legible without hand-picking three values. */
 /* A ROW NOW, not a column: the emblem sits left of the two lines, which are
    still stacked. The pair is centred as one object. */
-.hcont{flex-direction:row;gap:11px;height:56px;--sec:var(--goal);
+/* The emblem is in the same 18px column as every other icon, so CONTINUE's
+   two stacked lines stay centred on the button rather than being pushed off
+   by the picture beside them. */
+.hcont{flex-direction:row;gap:0;height:56px;--sec:var(--goal);
   border-color:var(--sec);color:var(--sec);font-weight:600;
   background:color-mix(in srgb,var(--sec) 11%,transparent);
   box-shadow:0 4px 0 color-mix(in srgb,var(--sec) 46%,#04070d);
@@ -95,8 +110,12 @@
   box-shadow:0 1px 0 color-mix(in srgb,var(--sec) 46%,#04070d)}
 .hct{display:flex;flex-direction:column;gap:2px;align-items:center;
   min-width:0}
-.hci{display:flex;align-items:center;flex:none}
-.hci .secem{width:23px;height:23px}
+.hci{position:absolute;left:17px;top:50%;transform:translateY(-50%);
+  display:flex;align-items:center}
+/* The emblem is an <svg>, so the absolute rule above would place it a second
+   time - inside .hci, which is itself absolute - and CONTINUE's icon landed
+   18px right of everybody else's. It is already where it needs to be. */
+.hci .secem{position:static;transform:none;width:22px;height:22px}
 .hcont b{font-size:12px;letter-spacing:.16em;font-weight:600}
 .hcont i{font-style:normal;font-size:10.5px;letter-spacing:.08em;
   color:var(--fg-dim);text-transform:none}
@@ -134,7 +153,7 @@
   transition:transform .12s ease,box-shadow .12s ease}
 .home button.hward:active{transform:translateY(3px);
   box-shadow:0 0 0 var(--lip)}
-.hward svg{width:21px;height:21px;flex:none;fill:currentColor;stroke:none}
+.hward svg{width:21px;height:21px}
 .hward span{letter-spacing:.16em;font-weight:600}
 /* MY LEVELS is the same cap in the editor's own blue - the hue the editor
    bar, the verify chip and every "second chance" button in the panels
@@ -142,10 +161,23 @@
    wardrobe. */
 .home button.hward.hmine{--c:#6fa8ff;height:42px}
 .hmine svg{width:19px;height:19px}
+/* LEVELS GETS A HUE OF ITS OWN. It was the only button in the column still
+   wearing the default grey, which on a screen where CONTINUE, WARDROBE and
+   MY LEVELS are all lit made it read as the disabled one.
+
+   Cyan, and it is the last unclaimed colour on this screen: violet is the
+   wardrobe's everywhere in the game, #6fa8ff is the editor's and the panels'
+   "second chance" blue, gold is a star and teal is `--goal`, which means "do
+   this" and must not be spent on a navigation button. */
+.home button.hward.hlevels{--c:#4ec8e0;height:44px}
+.hlevels svg{width:18px;height:18px}
 
 .home .tiny{width:auto;height:30px;padding:0 16px;margin-top:14px;
   font-size:11px;border-color:var(--rule);color:var(--fg-dim)}
-.home .tiny svg{width:15px;height:15px;margin-right:7px}
+/* SETTINGS is the one button that hugs its label rather than filling the
+   width, so it keeps its icon inline - there is no column for it to join. */
+.home .tiny svg{position:static;transform:none;width:15px;height:15px;
+  margin-right:7px}
 
 /* Play chrome has nothing to do while the home screen is up, and the star
    total is shown inside it instead - two counts of the same number, one of
