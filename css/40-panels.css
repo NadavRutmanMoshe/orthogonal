@@ -112,6 +112,9 @@
   .wlist{padding-bottom:2px}
   .item i{display:block;width:30px;height:30px;margin:0 auto 5px;border-radius:4px;
     font-style:normal;font-size:16px;line-height:30px;color:var(--fg)}
+  /* A shape whose glyph is a drawing rather than a character - see
+     shapeGlyph() in js/16-panels.js. */
+  .item i svg{width:20px;height:20px;vertical-align:-4px;fill:currentColor}
   .item b{display:block;font-size:11.5px;font-weight:500;color:var(--fg)}
   .item span{display:block;font-size:10.5px;color:var(--fg-dim);margin-top:2px}
   .wact .ad{gap:8px}

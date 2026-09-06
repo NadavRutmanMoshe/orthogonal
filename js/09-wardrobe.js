@@ -132,22 +132,47 @@ function buildPlayerMesh(shape,col,mat){
   mat=mat||new THREE.MeshBasicMaterial({color:col});
   var g;
   if(shape==="pup"){
-    // a few boxes is enough to read as a creature at this size
+    /* A DOG, NOT A DEER. The first version was a long body, a head held high
+       on nothing, two thin ears standing straight up and four long legs, and
+       it was reported as not reading as a puppy - which it did not: that is
+       the silhouette of a fawn. Everything below is one of the four things
+       that separate the two, and each is a box:
+
+       - THE MUZZLE STICKS OUT AND SITS LOW. It is the single most dog-shaped
+         line there is, and the old snout was a small cube tucked under a
+         head that was already the tallest thing in the model, so from the
+         camera's three-quarter view it was hidden behind the head entirely.
+       - THE EARS HANG. Upright sticks read rabbit or deer; ears beside the
+         head, at head height, hanging outward, read dog and nothing else.
+       - THE LEGS ARE SHORT and the body is deep. A dog is stocky; leggy is
+         what made the old one look hoofed.
+       - THE TAIL IS UP, thicker, and swept back over the haunch.
+
+       A haunch and a chest either side of the body take it off a plain
+       rectangle without costing another silhouette to read. */
     g=new THREE.Group();
-    var body=new THREE.Mesh(new THREE.BoxGeometry(.5,.32,.34),mat);
-    var head=new THREE.Mesh(new THREE.BoxGeometry(.28,.28,.28),mat);
-    head.position.set(.3,.16,0);
-    var snout=new THREE.Mesh(new THREE.BoxGeometry(.14,.1,.14),mat);
-    snout.position.set(.46,.09,0);
-    var earL=new THREE.Mesh(new THREE.BoxGeometry(.07,.14,.06),mat);
-    earL.position.set(.24,.34,.1);
-    var earR=earL.clone();earR.position.z=-.1;
-    var tail=new THREE.Mesh(new THREE.BoxGeometry(.18,.07,.07),mat);
-    tail.position.set(-.3,.14,0);tail.rotation.z=.5;
-    [body,head,snout,earL,earR,tail].forEach(function(m){g.add(m);});
-    [[-.16,.14],[-.16,-.14],[.16,.14],[.16,-.14]].forEach(function(o){
-      var leg=new THREE.Mesh(new THREE.BoxGeometry(.09,.2,.09),mat);
-      leg.position.set(o[0],-.24,o[1]);g.add(leg);
+    function bx(w,h,d,x,y,z){
+      var m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+      m.position.set(x,y,z);g.add(m);return m;
+    }
+    bx(.44,.27,.31,-.02,0,0);            // body
+    bx(.18,.30,.33,-.17,.01,0);          // haunch, the heavier end
+    bx(.16,.28,.32,.14,.01,0);           // chest
+    bx(.14,.16,.18,.23,.11,0);           // neck
+    // A PUPPY'S HEAD IS TOO BIG FOR IT. Scaled to a grown dog's proportions
+    // the whole thing read as a small horse again.
+    bx(.24,.22,.26,.32,.185,0);          // head
+    bx(.13,.12,.155,.455,.125,0);        // muzzle, out and low
+    bx(.05,.06,.085,.53,.15,0);          // nose on the end of it
+    /* Clear of the head in z and HANGING PAST THE JAW. At ±.135 they sat
+       inside the head's own half-depth and were invisible from every angle
+       the case turns through; stopping level with the jaw they read as a
+       corner of the head rather than as a flap. */
+    bx(.065,.18,.045,.26,.16,.15).rotation.x=.40;   // ears
+    bx(.065,.18,.045,.26,.16,-.15).rotation.x=-.40;
+    bx(.19,.07,.07,-.30,.15,0).rotation.z=.75;      // tail, up and back
+    [[-.14,.10],[-.14,-.10],[.14,.10],[.14,-.10]].forEach(function(o){
+      bx(.09,.18,.09,o[0],-.22,o[1]);
     });
   } else {
     g=new THREE.Mesh(playerGeometry(shape),mat);

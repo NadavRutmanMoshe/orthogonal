@@ -195,9 +195,25 @@ function grantShards(n){
   wardrobe.spent=Math.max(0,wardrobe.spent-n);
   saveWardrobe();
 }
+/* Geometric characters for the geometric shapes, and a drawing for the one
+   that is not. The pup was ◐ - a half-filled circle, which is a shape from a
+   different alphabet and says nothing about a dog. Anything a font provides
+   at 16px for "dog" is an emoji, which renders differently on every device
+   and at a size it does not control, so this is a path like every other icon
+   in the game (see "icons are solid SVG" in docs/UI.md). */
+function shapeSvg(d){
+  return "<svg viewBox='0 0 24 24' aria-hidden='true'><path d='"+d+"'/></svg>";
+}
+var SHAPE_SVG={
+  pup:"M4.6 9.1c0-1 .5-1.6 1.3-1.6.6 0 1 .3 1.4.9l.5.8h4.3c1.4 0 2.6.5 3.5 "+
+      "1.5l1.6 1.7h2.3c.7 0 1.3.6 1.3 1.3 0 .6-.4 1.1-1 1.2l-1.4.3-.6 1.4v2.6"+
+      "h-1.9v-2.2l-1.5.5-.3 1.7h-1.9l.3-2h-3.2l.3 2H7.7l-.4-2.4a4.9 4.9 0 0 1-"+
+      "2.3-4.1Zm1.9.7v1.7c0 .8.3 1.5.8 2v-3.7Z"
+};
 function shapeGlyph(id){
+  if(SHAPE_SVG[id])return shapeSvg(SHAPE_SVG[id]);
   return {cube:"\u25a0",sphere:"\u25cf",pyramid:"\u25b2",diamond:"\u25c6",
-          barrel:"\u25ac",donut:"\u25ce",star:"\u2726",pup:"\u25d0"}[id]||"\u25a0";
+          barrel:"\u25ac",donut:"\u25ce",star:"\u2726"}[id]||"\u25a0";
 }
 
 function seg(pre,val,label,cur){
