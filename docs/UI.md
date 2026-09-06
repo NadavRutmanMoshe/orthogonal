@@ -97,7 +97,7 @@ buttons at the end of its builder.
 | Map | `#panel.map` | `levelPicker(n)` → `mapDraw`, `mapLayout`, `mapShape`, `mapFill`, `mapWeather`, `mapFocus` | `85-map` | `map`, `map:1` |
 | Level sheet on the map | `#mSheet` inside the map | `mapSheet(i)` | `85-map` (`.msheet`) | `sheet:5` |
 | Map help sheet | same | `mapHelp()` | `85-map` | `maphelp` |
-| Legend | `#panel` | `legendPanel()` | `40-panels` (`.leg`) | `legend` |
+| Legend | `#panel` | `legendPanel()` — **no button opens it any more**; `WHAT THE PIECES DO` came off the menu so the settings sheet fits one screen. The builder is intact and one `bind` away | `40-panels` (`.leg`) | `legend` |
 | Library / project / import-export | `#panel` | `libraryPanel`, `projectPanel`, `ioPanel` | `40-panels` | `library` |
 | Offer cards (bulb, stars, refill, skip) | `#panel` | `offerShell(title,lead,acts,note)` via `hintOffer`, `starsOffer`, `hintRefillOffer`, `struggleOffer` | `85-map` (`.ma .go .ad .qt .mn`) | `hintoffer`, `starsoffer`, `refill`, `struggle` |
 | Ad buttons everywhere | | `adIcon()` (`18-ui.js`), one helper, five callers | `.adicon` in `85-map` | |

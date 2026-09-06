@@ -395,8 +395,13 @@ function menuPanel(){
           seg("mUi","full","FULL",settings.ui)+
           seg("mUi","compact","COMPACT",settings.ui)+
           seg("mUi","none","HIDDEN",settings.ui)+"</span></div></div>"+
+      /* WHAT THE PIECES DO IS OFF THE PANEL, on the owner's call. The pieces
+         are taught where they are first met - the tutorial cards and the
+         level briefs - and a reference list under More was a fourth row that
+         pushed this card past the fold on a phone. Losing it is what makes
+         the settings sheet fit on one screen with nothing to scroll to.
+         `legendPanel()` is untouched and still one bind away. */
       "<div class='pcard'><h4>More</h4><div class='psub'>"+
-        "<button id='mLegend'>WHAT THE PIECES DO</button>"+
         "<button id='mTut'>REPLAY TUTORIAL</button>"+
         /* LEVEL EDITOR MOVED TO THE HOME SCREEN as MY LEVELS. It is not a
            setting - it is a place you go, like LEVELS and the wardrobe are -
@@ -458,7 +463,6 @@ function menuPanel(){
   /* Straight onto the trail, not out through the chooser: the point of the
      button is that it knows which shelf you are on. */
   if(secN>=0)bind("mSec",function(){levelPicker(secN);});
-  bind("mLegend",legendPanel);
   bind("mClose",hidePanel);
   bind("mFClose",hidePanel);
 }
