@@ -1044,3 +1044,23 @@ scrollable ancestor. The panel is one of them, so centring a node halfway
 down a trail slid the map's own header off the top of the screen. Visible in
 every map screenshot the project has ever taken. It scrolls `#mBody` by
 measured offset now, and nothing else.
+
+## The Pup was rebuilt, and put back
+
+The voxel Pup was reported as not reading as a puppy, and it does not: a long
+body, a head held high on a thin neck, two upright ears and four long legs is
+the silhouette of a fawn. It was rebuilt to the four things that separate a
+dog from a deer - a muzzle out and low, ears hanging beside the head, short
+legs under a deep body, a raised tail - and the rebuild is correct about all
+four.
+
+The owner played both and kept the original: it is cuter, and cute is the
+whole job of a thing you buy for 30 stars to look at. **Read as** and **liked**
+are different tests and the second one wins here.
+
+What was actually wrong was the *icon*, which is a different object on a
+different screen: the wardrobe tile picked the Pup with `◐`, a half-filled
+circle from a geometric alphabet that says nothing about a dog. That is now a
+drawn path, like every other icon in the game, and it stayed when the model
+went back. Worth remembering the next time "the X doesn't read as an X" comes
+in: ask which X - the thing or the button that chooses it.

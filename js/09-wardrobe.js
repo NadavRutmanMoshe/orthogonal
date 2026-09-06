@@ -249,43 +249,26 @@ function buildPlayerMesh(shape,col,mat){
       bx(.15,.10,.15,o[0],.255,o[1]);    // merlons
     });
   } else if(shape==="pup"){
-    /* A DOG, NOT A DEER. The first version was a long body, a head held high
-       on nothing, two thin ears standing straight up and four long legs, and
-       it was reported as not reading as a puppy - which it did not: that is
-       the silhouette of a fawn. Everything below is one of the four things
-       that separate the two, and each is a box:
+    /* THE ORIGINAL PUP, PUT BACK. It was rebuilt stockier - bigger head, a
+       muzzle out front, ears hanging, a raised tail - on the reading that it
+       looked like a fawn rather than a dog. The owner played both and called
+       this one cuter, which is the only test that matters on a thing whose
+       whole job is to be liked; the note about what it reads as goes in
+       docs/HISTORY.md rather than into another rebuild.
 
-       - THE MUZZLE STICKS OUT AND SITS LOW. It is the single most dog-shaped
-         line there is, and the old snout was a small cube tucked under a
-         head that was already the tallest thing in the model, so from the
-         camera's three-quarter view it was hidden behind the head entirely.
-       - THE EARS HANG. Upright sticks read rabbit or deer; ears beside the
-         head, at head height, hanging outward, read dog and nothing else.
-       - THE LEGS ARE SHORT and the body is deep. A dog is stocky; leggy is
-         what made the old one look hoofed.
-       - THE TAIL IS UP, thicker, and swept back over the haunch.
-
-       A haunch and a chest either side of the body take it off a plain
-       rectangle without costing another silhouette to read. */
+       WHAT DID NEED FIXING WAS THE ICON, and that is a separate thing on a
+       separate screen: the wardrobe tile's glyph was a half-filled circle,
+       which is what the player actually picks the Pup by. See shapeGlyph()
+       in js/16-panels.js - that stays. */
     g=new THREE.Group();
-    bx(.44,.27,.31,-.02,0,0);            // body
-    bx(.18,.30,.33,-.17,.01,0);          // haunch, the heavier end
-    bx(.16,.28,.32,.14,.01,0);           // chest
-    bx(.14,.16,.18,.23,.11,0);           // neck
-    // A PUPPY'S HEAD IS TOO BIG FOR IT. Scaled to a grown dog's proportions
-    // the whole thing read as a small horse again.
-    bx(.24,.22,.26,.32,.185,0);          // head
-    bx(.13,.12,.155,.455,.125,0);        // muzzle, out and low
-    bx(.05,.06,.085,.53,.15,0);          // nose on the end of it
-    /* Clear of the head in z and HANGING PAST THE JAW. At ±.135 they sat
-       inside the head's own half-depth and were invisible from every angle
-       the case turns through; stopping level with the jaw they read as a
-       corner of the head rather than as a flap. */
-    bx(.065,.18,.045,.26,.16,.15).rotation.x=.40;   // ears
-    bx(.065,.18,.045,.26,.16,-.15).rotation.x=-.40;
-    bx(.19,.07,.07,-.30,.15,0).rotation.z=.75;      // tail, up and back
-    [[-.14,.10],[-.14,-.10],[.14,.10],[.14,-.10]].forEach(function(o){
-      bx(.09,.18,.09,o[0],-.22,o[1]);
+    bx(.5,.32,.34,0,0,0);                // body
+    bx(.28,.28,.28,.3,.16,0);            // head
+    bx(.14,.1,.14,.46,.09,0);            // snout
+    bx(.07,.14,.06,.24,.34,.1);          // ears, upright
+    bx(.07,.14,.06,.24,.34,-.1);
+    bx(.18,.07,.07,-.3,.14,0).rotation.z=.5;   // tail
+    [[-.16,.14],[-.16,-.14],[.16,.14],[.16,-.14]].forEach(function(o){
+      bx(.09,.2,.09,o[0],-.24,o[1]);     // legs
     });
   } else {
     g=new THREE.Mesh(playerGeometry(shape),mat);
