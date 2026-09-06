@@ -70,10 +70,12 @@ function wardrobePanel(tab){
         "<div id='wMeta'></div>"+
       "</div>"+
     "</div>"+
-    "<div class='prow'><button id='wBack'>BACK</button></div>","wardrobe");
+    "<div class='pfoot'><button id='wHome'>HOME</button>"+
+      "<button id='wBack'>CLOSE</button></div>","wardrobe");
   bind("wS",function(){wardTabTo("shape");});
   bind("wC",function(){wardTabTo("color");});
   bind("wBack",hidePanel);
+  bind("wHome",function(){hidePanel();homeShow();});
   bind("wX",hidePanel);
   wardRefresh();
   // The canvas has no measurable size until the panel has been laid out, so
@@ -270,8 +272,10 @@ function menuPanel(){
       "<div class='mtot'>"+starsEarned()+" ★</div>"+
       "<button class='mq mx' id='mClose' aria-label='Back to the level'>✕</button></div>"+
     "<div class='pbody'>"+
-      "<div class='prow2'><button class='pgo' id='mHome'>HOME</button>"+
-        "<button class='pgo' id='mLevels'>LEVELS</button></div>"+
+      /* HOME moved to the footer, where every panel's way up now lives, so
+         this row is the one place the menu SENDS you rather than a pair of
+         exits with a duplicate in it. */
+      "<div class='prow2'><button class='pgo' id='mLevels'>LEVELS</button></div>"+
       "<div class='pcard'><h4>Sound &amp; light</h4>"+
         "<div class='srow'><label>Volume</label>"+
           "<input type='range' id='mVol' min='0' max='100' value='"+vol+"'>"+
@@ -309,7 +313,9 @@ function menuPanel(){
       "<div class='note pbuild'>build "+
         esc(typeof BUILD==="string"?BUILD:"unbuilt \u00b7 running from source")+
       "</div></div>"+
-    "</div>","menu");
+    "</div>"+
+    "<div class='pfoot'><button id='mHome'>HOME</button>"+
+      "<button id='mFClose'>CLOSE</button></div>","menu");
   var v=$("mVol"), b=$("mBri");
   v.addEventListener("input",function(){
     settings.volume=v.value/100;
@@ -350,6 +356,7 @@ function menuPanel(){
   bind("mLevels",sectionPicker);
   bind("mLegend",legendPanel);
   bind("mClose",hidePanel);
+  bind("mFClose",hidePanel);
 }
 
 /* ============================================================
@@ -1255,33 +1262,46 @@ function secLock(){
    the front of the campaign. Only the tile is gone, and levelPicker() will
    not open on section 0 either. */
 function secPickable(n){return n>0;}
+/* The campaign's star total, counted over the sections that are actually on
+   the chooser. One function, so the chooser's header and the map's cannot
+   print two different numbers for the same thing. */
+function campaignStars(){
+  var t=0;
+  for(var i=0;i<LEVELS.length;i++){
+    if(!secPickable(mapSecOf(i))||LEVELS[i].tutorial)continue;
+    t+=starsForRecord(LEVELS[i],progress[LEVELS[i].name]);
+  }
+  return t;
+}
 function sectionPicker(){
   // The chooser and the map share the ambient canvas, and only one of them is
   // ever on screen - stop the old loop before its canvas is replaced.
   mapBgStop();
   var spans=sectionSpans();
-  var done=0, cleared=0, total=0, i;
+  var done=campaignStars(), cleared=0, total=0, i;
   for(i=0;i<LEVELS.length;i++){
     // The counts add up with the tiles on screen, so the tutorials are out of
     // both halves of the fraction rather than only out of the numerator.
     if(!secPickable(mapSecOf(i))||LEVELS[i].tutorial)continue;
     total++;
     if(mapTouched(i))cleared++;
-    done+=starsForRecord(LEVELS[i],progress[LEVELS[i].name]);
   }
   var h="<canvas class='mbg' id='mBg' aria-hidden='true'></canvas>"+
     "<div class='mhead'><div class='mt'><b>Orthogonal</b>"+
     "<span>"+cleared+" / "+total+" CLEARED</span></div>"+
-    "<div class='mtot'>"+done+" ★</div>"+
+    /* ? then the total then ✕, and that order is the same on every panel
+       that has all three: help, then the number, then the way out - which is
+       always the last thing on the row. */
     "<button class='mq' id='skHelp' aria-label='What the map means'>?</button>"+
+    "<div class='mtot'>"+done+" ★</div>"+
     "<button class='mq mx' id='skClose' aria-label='Back to the level'>✕</button>"+
     "</div><div class='mbody secbody'><div class='secgrid' id='secGrid'></div></div>"+
-    "<div class='prow' style='padding:0 13px 11px;margin:0'>"+
-    "<button id='skMenu'>MENU</button><button id='skDone'>CLOSE</button></div>";
+    "<div class='pfoot'><button id='skMenu'>HOME</button>"+
+    "<button id='skDone'>CLOSE</button></div>";
   showPanel(h,"secs");
   bind("skClose",hidePanel);
   bind("skDone",hidePanel);
-  bind("skMenu",menuPanel);
+  bind("skMenu",function(){hidePanel();homeShow();});
   bind("skHelp",mapHelp);
   secGridDraw();
 }
@@ -1389,25 +1409,21 @@ function levelPicker(n){
 
   var h="<canvas class='mbg' id='mBg' aria-hidden='true'></canvas>"+
         "<div class='mhead'>"+
-        /* THE WAY BACK TO THE CHOOSER, in the header beside the section's
-           name, because the name is the thing it undoes. The footer row has
-           one too, but the trail below it can be several screens long and a
-           control you have to scroll to is a control that is not there. */
-        "<button class='mq mb' id='mBackSec' aria-label='Choose another section'>"+
-        "\u2039</button>"+
         /* The section's name WITHOUT its numeral. The card directly below
-           carries "I · FUNDAMENTALS" in full; up here, between a chevron, a
-           star pill and two round buttons, the numeral is what pushes the
-           word off the end of a 327px phone. */
+           carries "I \u00b7 FUNDAMENTALS" in full; up here, beside a star
+           pill and two round buttons, the numeral is what pushes the word off
+           the end of a 327px phone.
+
+           THE BACK CHEVRON THAT USED TO SIT LEFT OF IT IS GONE, and that is
+           the consistency pass rather than a loss: the way up now lives in
+           the footer's LEFT button on every panel - SECTIONS here, HOME on
+           the other three - and it is also the 30px that let the campaign
+           total come back onto this header beside the ? and the \u2715. */
         "<div class='mt'><b>"+esc(SECTIONS[mapSection].name
           .split(" \u00b7 ").slice(-1)[0])+"</b>"+
         "<span id='mSub'></span></div>"+
-        /* THE CAMPAIGN TOTAL MOVED TO THE CHOOSER, which is now the screen
-           that is about the campaign; this one is about one section, and the
-           card below it carries that section's own star count. It was also
-           the 62px that pushed the section's name into an ellipsis on a
-           327px phone, beside a chevron, a ?, and a ✕. */
         "<button class='mq' id='mHelp' aria-label='What the map means'>?</button>"+
+        "<div class='mtot'>"+campaignStars()+" \u2605</div>"+
         /* The way back to the game, in the header where it is always on
            screen. The row at the foot of the panel is below a trail that can
            be several screens long, so after scrolling down a section there
@@ -1416,12 +1432,11 @@ function levelPicker(n){
         "<button class='mq mx' id='mExit' aria-label='Back to the level'>✕</button></div>"+
         "<div class='mbody' id='mBody'><div class='mcard' id='mCard'></div>"+
         "<div id='mtrail'><svg></svg></div></div>"+
-        "<div class='prow' style='padding:0 13px 11px;margin:0'>"+
+        "<div class='pfoot'>"+
         "<button id='pkBack'>SECTIONS</button><button id='pkClose'>CLOSE</button></div>"+
         "<div class='msheet' id='mSheet'></div>";
   showPanel(h,"map");   // syncCorners() adds .map and hides the corner total
   bind("pkBack",sectionPicker);
-  bind("mBackSec",sectionPicker);
   bind("pkClose",hidePanel);
   bind("mExit",hidePanel);
   bind("mHelp",mapHelp);

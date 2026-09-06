@@ -129,7 +129,14 @@ named). Undoing one of these needs the paragraph.
   changes; anything animated inside `syncHud()`-rewritten markup restarts
   on every redraw.
 - **Panels are phone-width, centred, max 560px.** Full-height ones use
-  `.panel.tall` furniture; the way out is in the header, not the footer.
+  `.panel.tall` furniture.
+- **The four full-height panels share one page shape** (menu, wardrobe,
+  chooser, map). **Header:** title + subtitle left; then, always in this
+  order and always right-aligned, `?` (only where help exists), the star
+  total (`.mtot`), `✕`. **Footer** (`.pfoot` in `80-panel-tall.css`): two
+  equal buttons — left goes UP one level (`HOME`, or `SECTIONS` on the map),
+  right is `CLOSE`. Nothing else goes in either row. `campaignStars()` is the
+  one source for the number the chooser and the map both print.
 - **LEVELS opens the chooser, not the map.** `sectionPicker()` is a 2x2 of
   the four numbered sections with the V · EXTRA shelf full-width under it.
   PROLOGUE is not on it (`secPickable()`): it is the tutorial, and the way

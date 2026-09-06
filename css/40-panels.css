@@ -54,7 +54,7 @@
     color:var(--fg-dim)}
   .tab.on{border-color:var(--player);color:var(--player);
     background:rgba(214,51,108,.12)}
-  .panel.ward .wbody,.panel.ward>.prow{padding-left:13px;padding-right:13px}
+  .panel.ward .wbody{padding-left:13px;padding-right:13px}
   .panel.ward{padding-left:0;padding-right:0}
   /* Beats .panel.ward.on's own cap. At 56vh the tile list was clipped through
      the middle of a row and the case's note ran under the BACK button. */
@@ -156,8 +156,7 @@
   /* The list scrolls under this row, so it needs a hard edge of its own -
      without one, a half-scrolled tile reads as though it is behind the
      button rather than clipped by the list. */
-  .panel.ward.on>.prow{border-top:1px solid var(--rule);padding-top:8px;
-    margin-top:0;flex-shrink:0}
+
   .wlist{padding-bottom:2px}
   .item i{display:block;width:30px;height:30px;margin:0 auto 5px;border-radius:5px;
     font-style:normal;font-size:16px;line-height:30px;color:var(--fg);

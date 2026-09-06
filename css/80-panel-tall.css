@@ -67,3 +67,22 @@
   .pcard .crow{border-bottom:none;padding:5px 0}
 
   /* ============================================================
+
+  /* THE FOOTER, AND IT IS THE SAME FOOTER ON EVERY FULL-HEIGHT PANEL.
+
+     Menu, wardrobe, the section chooser and the map all end in this row, and
+     the two buttons in it always mean the same two things in the same two
+     places: LEFT GOES UP ONE LEVEL, RIGHT CLOSES TO THE GAME. Up is HOME for
+     everything one hop from it and SECTIONS on the map, which is one hop
+     further in. Reported by the owner as the thing consistent paging buys -
+     you stop reading the buttons after the second screen, because your thumb
+     already knows where they are.
+
+     What it replaced: the menu had no footer at all and put HOME and LEVELS
+     at the top of its body; the wardrobe had one lone BACK; the chooser and
+     the map each carried a `.prow` with its padding written inline. Four
+     shapes for one job. */
+  .pfoot{display:flex;gap:6px;flex-shrink:0;
+    padding:9px 13px 11px;margin:0;
+    border-top:1px solid var(--rule)}
+  .pfoot button{flex:1;height:36px;font-size:12px;letter-spacing:.12em}

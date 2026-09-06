@@ -51,7 +51,7 @@
      that escaped into body would be pinned over the whole viewport by it. */
   .mbg{position:absolute;inset:0;z-index:0;pointer-events:none;
     width:100%;height:100%;display:block}
-  .panel.map>.mhead,.panel.map>.mbody,.panel.map>.prow{
+  .panel.map>.mhead,.panel.map>.mbody,.panel.map>.pfoot{
     position:relative;z-index:1}
 
   .mhead{display:flex;align-items:center;gap:10px;padding:11px 13px 9px;
@@ -71,10 +71,6 @@
     color:var(--fg-dim);border:1px solid var(--rule);background:transparent}
   .mq.on{color:var(--player);border-color:var(--player)}
   .mq.mx{color:var(--fg);font-size:15px}
-  /* The way back to the chooser. Bigger glyph than the ? beside it because a
-     chevron at 13px is a comma. */
-  .mq.mb{color:var(--fg);font-size:19px;line-height:1;padding-bottom:2px}
-  .mq.mb:active{border-color:var(--player);color:var(--player)}
   .mq.mx:active{border-color:var(--player);color:var(--player)}
 
   /* THE SECTION CHOOSER, which replaced the tab strip that used to live here.
