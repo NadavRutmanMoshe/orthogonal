@@ -36,7 +36,17 @@ function wardSelected(t){
   return wardSel[t];
 }
 function wardrobePanel(tab){
-  wardTab=tab||"shape";
+  /* TWO TABS, NOT FOUR. The worlds came off the wardrobe when the sections
+     took ownership of how the world looks: a section picks the sky, the
+     stone and the paper now, so a world tab was selling a look the campaign
+     immediately overwrote. The catalogues, the equipped ids and
+     migrateWorlds() are all left alone - the equipped world is still what
+     applyPalette() writes underneath a section, and a save that bought one
+     keeps it. Only the two tabs are gone.
+
+     Guarded rather than trusted: homePick() hands a tab name in, and a stale
+     "world3" would land the grid on a catalogue with no tab to leave it by. */
+  wardTab=(tab==="color")?"color":"shape";
   buyArmed=null;
   showPanel(
     "<div class='phead'><div class='pt'><b>Wardrobe</b>"+
@@ -46,8 +56,6 @@ function wardrobePanel(tab){
     "<div class='tabs'>"+
       "<button class='tab' id='wS'>SHAPE</button>"+
       "<button class='tab' id='wC'>COLOUR</button>"+
-      "<button class='tab' id='wV'>3D</button>"+
-      "<button class='tab' id='wP'>2D</button>"+
     "</div>"+
     "<div class='wbody'>"+
       "<div class='wlist'><div class='grid' id='wGrid'></div></div>"+
@@ -60,8 +68,6 @@ function wardrobePanel(tab){
     "<div class='prow'><button id='wBack'>BACK</button></div>","wardrobe");
   bind("wS",function(){wardTabTo("shape");});
   bind("wC",function(){wardTabTo("color");});
-  bind("wV",function(){wardTabTo("world3");});
-  bind("wP",function(){wardTabTo("world2");});
   bind("wBack",hidePanel);
   bind("wX",hidePanel);
   wardRefresh();
@@ -77,46 +83,35 @@ function wardrobePanel(tab){
   });
 }
 function wardTabTo(t){
-  wardTab=t;buyArmed=null;
+  wardTab=(t==="color")?"color":"shape";buyArmed=null;
   wardRefresh();wardPreview();
 }
 function wardPreview(){
   var sel=wardSelected(wardTab);
   previewShow(
-    wardTab==="shape" ?sel:wardrobe.shape,
-    wardTab==="color" ?sel:wardrobe.color,
-    wardTab==="world3"?sel:wardrobe.world3,
-    wardTab==="world2"?sel:wardrobe.world2,
-    wardTab==="world2");
+    wardTab==="shape"?sel:wardrobe.shape,
+    wardTab==="color"?sel:wardrobe.color,
+    wardrobe.world3,wardrobe.world2,false);
 }
 function wardRefresh(){
   var t=wardTab, list=wardList(t), cur=wardEquipped(t), sel=wardSelected(t);
-  $("wHead").textContent=t==="shape"?"THE SHAPE YOU PLAY AS":
-    t==="color"?"ITS COLOUR":t==="world3"?"THE VOLUME":"THE PLANE";
+  $("wHead").textContent=t==="shape"?"THE SHAPE YOU PLAY AS":"ITS COLOUR";
   $("wBal").innerHTML=shards()+" \u2605";
   $("wBal").title="to spend";
   $("wS").classList.toggle("on",t==="shape");
   $("wC").classList.toggle("on",t==="color");
-  $("wV").classList.toggle("on",t==="world3");
-  $("wP").classList.toggle("on",t==="world2");
   var html="";
   for(var i=0;i<list.length;i++){
     var it=list[i], have=owns(it.id), on=cur===it.id;
     // each swatch shows the two colours that item actually sets
     var swatch = t==="color"
       ? "background:#"+it.hex.toString(16).padStart(6,"0")
-      : t==="world3"
-        ? "background:linear-gradient(135deg,#"+it.void.toString(16).padStart(6,"0")+
-          " 0 50%,#"+it.block.toString(16).padStart(6,"0")+" 50% 100%)"
-      : t==="world2"
-        ? "background:linear-gradient(135deg,#"+it.paper.toString(16).padStart(6,"0")+
-          " 0 50%,#"+it.ink.toString(16).padStart(6,"0")+" 50% 100%)"
-        : "background:var(--rule)";
+      : "background:var(--rule)";
     html+="<div class='item"+(on?" on":"")+(sel===it.id?" sel":"")+
       "' data-id='"+it.id+"'>"+
       "<i style='"+swatch+"'>"+(t==="shape"?shapeGlyph(it.id):"")+"</i>"+
       "<b>"+it.name+"</b>"+
-      "<span>"+(on?"equipped":have?"owned":it.cost+" \u2605")+"</span></div>";
+      "<span>"+(on?"equipped":have?"owned":it.cost+" <u class='st'>\u2605</u>")+"</span></div>";
   }
   $("wGrid").innerHTML=html;
   $("wGrid").querySelectorAll(".item").forEach(function(el){
@@ -135,24 +130,24 @@ function wardMeta(){
   var t=wardTab, id=wardSelected(t), it=findBy(wardList(t),id);
   var have=owns(id), on=wardEquipped(t)===id, bal=shards();
   var s="<div class='wname'>"+it.name+"</div>"+
-        "<div class='wcost'>"+(on?"equipped":have?"owned":it.cost+" \u2605")+"</div>"+
+        "<div class='wcost'>"+(on?"equipped":have?"owned":it.cost+" <u class='st'>\u2605</u>")+"</div>"+
         "<div class='wact'>";
   if(on)              s+="<button disabled>EQUIPPED</button>";
   else if(have)       s+="<button id='wEquip' class='wgo'>EQUIP</button>";
-  else if(bal<it.cost)s+="<button disabled>NEED "+(it.cost-bal)+" MORE \u2605</button>";
+  else if(bal<it.cost)s+="<button disabled>NEED "+(it.cost-bal)+" MORE <u class='st'>\u2605</u></button>";
   else if(buyArmed===id)
-                      s+="<button id='wBuy' class='wsure'>SURE? \u00b7 "+it.cost+" \u2605</button>";
-  else                s+="<button id='wBuy' class='wgo'>BUY \u00b7 "+it.cost+" \u2605</button>";
+                      s+="<button id='wBuy' class='wsure'>SURE? \u00b7 "+it.cost+" <u class='st'>\u2605</u></button>";
+  else                s+="<button id='wBuy' class='wgo'>BUY \u00b7 "+it.cost+" <u class='st'>\u2605</u></button>";
   if(!have){
     var need=adsFor(it.cost), got=adsWatched(id);
-    s+="<button id='wAd' disabled>WATCH "+need+" AD"+(need===1?"":"S")+
+    s+="<button id='wAd' class='ad' disabled>"+adIcon()+"WATCH "+need+" AD"+(need===1?"":"S")+
        (got?" ("+got+"/"+need+")":"")+"</button>";
   }
   s+="</div>";
   // The hook name belongs in the code and in CLAUDE.md, not in a player's
   // narrow sidebar; all this has to say is why the button does nothing.
-  if(!have)s+="<div class='note'>Ads need an SDK, so the button is dead "+
-    "until the game is wrapped for a store.</div>";
+  if(!have)s+="<div class='note'>No ad provider yet \u2014 the button is "+
+    "dead until the game is wrapped for a store.</div>";
   $("wMeta").innerHTML=s;
   bind("wEquip",function(){wardEquip(t,id);SFX.key();wardRefresh();});
   bind("wBuy",function(){
@@ -225,42 +220,17 @@ function menuPanel(){
         "<div class='srow'><label>Brightness</label>"+
           "<input type='range' id='mBri' min='60' max='140' value='"+bri+"'>"+
           "<span id='mBriV'>"+bri+"%</span></div></div>"+
+      /* ONE ROW, THREE OPTIONS, AND NO PARAGRAPH UNDER IT. The card is
+         called Controls and the three buttons are the whole of it - a
+         setting whose options are three words does not need a sentence
+         explaining them, and the note under this one was four lines of
+         gesture reference nobody had asked for. The Tutorial row went with
+         it: the lesson now teaches whatever this is set to. */
       "<div class='pcard'><h4>Controls</h4>"+
-        "<div class='crow'><label>Layout</label><span class='seg'>"+
-          seg("mUi","full","ON-SCREEN",settings.ui)+
+        "<div class='crow bare'><span class='seg'>"+
+          seg("mUi","full","FULL",settings.ui)+
           seg("mUi","compact","COMPACT",settings.ui)+
-          seg("mUi","none","HIDDEN",settings.ui)+"</span></div>"+
-        "<div class='note'>COMPACT drops the d-pad; HIDDEN clears the screen. "+
-          "Either way: <code>swipe</code> or arrows/WASD to move, "+
-          "<code>double-tap</code> the world or <code>space</code> to change "+
-          "dimension, <code>two-finger swipe</code> left or right or "+
-          "<code>Q</code>/<code>E</code> to turn.</div>"+
-        "<div class='crow'><label>Tutorial</label><span class='seg'>"+
-          seg("mTutor","gesture","GESTURES",settings.tutor)+
-          seg("mTutor","buttons","BUTTONS",settings.tutor)+"</span></div>"+
-        "<div class='note'>Which controls the three teaching levels teach. "+
-          "GESTURES takes the bar off and demonstrates the swipe, the "+
-          "double-tap and the two-finger swipe with a ghost hand; BUTTONS is "+
-          "the older lesson, with the bar forced on. It changes nothing "+
-          "outside the tutorial \u2014 every control works in both.</div></div>"+
-      "<div class='pcard'><h4>Real time</h4>"+
-        "<div class='crow'><label>Pace</label><span class='seg'>"+
-          PACES.map(function(p){
-            return seg("mPace",p.pct,p.label,Math.round(paceScale()*100));
-          }).join("")+"</span></div>"+
-        "<div class='note'>A boss and a trial are the only things in the game "+
-          "that do not wait for you. This slows both — every part of them "+
-          "together, so a fight keeps its shape — and it costs you no stars."+
-          "</div></div>"+
-      "<div class='pcard'><h4>Mastery</h4>"+
-        "<div class='crow'><label>Show as</label><span class='seg'>"+
-          seg("mMast","auto","EARNED",settings.mastery)+
-          seg("mMast","on","PREVIEW",settings.mastery)+"</span></div>"+
-        "<div class='note'>A section on the map paints itself in its own "+
-        "colour once every level in it is on three stars. EARNED is the real "+
-        "thing; PREVIEW shows it on every section so you can look at it "+
-        "without collecting it. Nothing else changes either way — no stars "+
-        "move and nothing unlocks.</div></div>"+
+          seg("mUi","none","HIDDEN",settings.ui)+"</span></div></div>"+
       "<div class='pcard'><h4>More</h4><div class='psub'>"+
         "<button id='mLegend'>WHAT THE PIECES DO</button>"+
         "<button id='mTut'>REPLAY TUTORIAL</button>"+
@@ -299,37 +269,16 @@ function menuPanel(){
       settings.ui=m;applyUI();saveSettings();syncHud();onResize();menuPanel();
     });
   });
-  ["gesture","buttons"].forEach(function(m){
-    bind("mTutor_"+m,function(){
-      settings.tutor=m;saveSettings();syncHud();menuPanel();
-      flash(m==="gesture"?"tutorial teaches gestures":"tutorial teaches buttons");
-    });
-  });
-  ["auto","on"].forEach(function(m){
-    bind("mMast_"+m,function(){
-      settings.mastery=m;saveSettings();menuPanel();
-      flash(m==="on"?"mastery preview on — open the map":"mastery: as earned");
-    });
-  });
-  PACES.forEach(function(p){
-    bind("mPace_"+p.pct,function(){
-      settings.pace=p.v;saveSettings();menuPanel();
-      // Takes effect on the next frame - there is no state to rebuild, which
-      // is the other reason pace is a multiplier on dt and not a set of dials
-      // baked into the fight when the level loads.
-      flash(p.v===1?"pace: normal":"clocks at "+p.pct+"%");
-    });
-  });
   bind("mTut",function(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
   });
   bind("mReset",function(){
     settings.volume=defaultVolume();settings.volTouched=false;
-    settings.brightness=1;settings.ui="full";settings.pace=1;
-    settings.tutor=defaultTutor();
+    settings.brightness=1;settings.ui="full";
+
     // including "stop suggesting things": a reset is a reset
-    settings.slowOffers=0;settings.noSlowOffer=false;settings.landHints=0;
-    settings.ctlAsked=false;settings.hintAsked=false;
+    settings.noSlowOffer=false;settings.landHints=0;
+    settings.hintAsked=false;settings.starAsked=false;
     muted=false;
     applyVolume();
     applyBrightness();applyUI();saveSettings();syncHud();
@@ -582,11 +531,37 @@ function homeGo(){
    is deliberately the bosses only, not every level: the Extra shelf is a
    reward for beating the game, and gating it on 100% would turn a bonus into
    a chore nobody collects. */
-function sectionsUnlocked(){
+/* WHICH BOSSES ARE STILL STANDING, in campaign order.
+
+   The gate itself has not moved: the shelf opens when every boss is *beaten*,
+   and a skip is deliberately not in `progress`, so buying your way past a
+   fight does not buy the reward for winning it. What was wrong is that the
+   gate could not be read. The game offers a skip itself after three losses -
+   struggleOffer() - so a player can take one, go on to finish the campaign,
+   and arrive at a shelf that says only "every boss is down" while their save
+   quietly disagrees, with nothing anywhere naming the fight that is still
+   standing. That is how it was reported: section IV finished, EXTRA still
+   shut, and no way to find out why.
+
+   So the list is the primitive and the gate is derived from it. Everything
+   that draws the lock reads the same list, which means the map can name the
+   fight and put the player in front of it. */
+function bossesLeft(){
+  var out=[];
   for(var i=0;i<LEVELS.length;i++)
-    if(LEVELS[i].boss&&progress[LEVELS[i].name]===undefined)return false;
-  return true;
+    if(LEVELS[i].boss&&progress[LEVELS[i].name]===undefined)out.push(i);
+  return out;
 }
+// "BOSS II" - the numeral is what a player looks for on the map, and the
+// subtitle after the dash is the Census's, not a label.
+function bossShort(l){return l.name.split(" \u2014 ")[0];}
+function bossesLeftSay(){
+  var n=bossesLeft().map(function(i){return bossShort(LEVELS[i]);});
+  if(!n.length)return "";
+  if(n.length===1)return n[0];
+  return n.slice(0,-1).join(", ")+" and "+n[n.length-1];
+}
+function sectionsUnlocked(){return bossesLeft().length===0;}
 function sectionSpans(){
   var out=[];
   for(var i=0;i<SECTIONS.length;i++){
@@ -619,7 +594,11 @@ function sectionSpans(){
 
    The preview switch forces the look on so it can be *seen* without being
    earned. It touches the drawing only. */
-function masteryPreview(){return settings.mastery==="on";}
+/* The preview switch is gone from the menu, so nothing can turn this on any
+   more. Kept as a function rather than deleted at every call site: it is the
+   seam the switch would come back through, and the three drawing paths that
+   ask it read better with a name than with `false`. */
+function masteryPreview(){return false;}
 function sectionMastered(sp){
   if(!sp||sp.max<=0||sp.locked)return false;
   return masteryPreview()||sp.got===sp.max;
@@ -1050,9 +1029,26 @@ function mapReach(){
   for(var i=0;i<LEVELS.length;i++) if(mapSolved(i)) last=i;
   return last+1+MAP_WINDOW;
 }
-// Where the pink node goes: the first level you have not dealt with.
+/* Where the pink node goes: the first level you have not dealt with - and
+   never one you cannot open.
+
+   The exception is the shelf, and it is the other half of the same bug. Deal
+   with everything up to BOSS IV while one boss is still standing and the
+   first untouched level is the first level of V · EXTRA, which is locked -
+   so the map's marker, mapFocus() and the home screen's CONTINUE all pointed
+   into a section the game refuses to open. CONTINUE went straight through
+   that lock, which is how somebody ends up playing a shelf the map still
+   says is shut.
+
+   Where they actually are is the fight that is holding it. */
 function mapHere(){
-  for(var i=0;i<LEVELS.length;i++) if(!mapTouched(i)) return i;
+  for(var i=0;i<LEVELS.length;i++) if(!mapTouched(i)){
+    if(mapLocked(i)){
+      var lf=bossesLeft();
+      if(lf.length)return lf[0];
+    }
+    return i;
+  }
   return LEVELS.length-1;
 }
 function mapLocked(i){
@@ -1117,7 +1113,7 @@ function mapCaption(l){
 
    A BOSS is a hexagon, which is what a cube looks like seen corner-on - the
    silhouette of the game's own piece, and the only shape on the map that is
-   also a thing in the world. Around it, four arcs: its four phases.
+   also a thing in the world. Around it, three arcs: its three phases.
 
    A TRIAL is a diamond, the square standing on its point, with the sweeping
    plane drawn straight through it. That is the trial in one picture: a flat
@@ -1220,7 +1216,7 @@ function levelPicker(){
 
   var cleared=0;
   for(var c=0;c<LEVELS.length;c++) if(mapTouched(c)) cleared++;
-  $("mSub").textContent=cleared+" OF "+LEVELS.length+" CLEARED";
+  $("mSub").textContent=cleared+" / "+LEVELS.length+" CLEARED";
 
   mapTabs(spans);
   mapDraw(spans);
@@ -1274,8 +1270,25 @@ function mapDraw(spans){
     "<div class='mf'><span>"+cleared+"/"+tot+" cleared</span>"+
     "<span>"+sp.got+"/"+sp.max+" ★</span></div>"+
     (mapSectionSkippable(n)
-      ? "<button class='skipsec' id='mSecAd'>START THIS SECTION · WATCH 3 ADS</button>"
+      ? "<button class='skipsec' id='mSecAd'>"+adIcon()+"START THIS SECTION · WATCH 3 ADS</button>"
+      : "")+
+    /* THE LOCK HAS TO SAY WHAT IS HOLDING IT. This is the shelf, and the one
+       thing a player cannot work out from anywhere else in the game is which
+       fight their save still counts as unbeaten - a skipped boss reads as
+       dealt with everywhere except here. Named on the card rather than only
+       in the sheet, because the card is what is on screen the moment the tab
+       is opened. */
+    (sp.locked&&bossesLeft().length
+      ? "<div class='mlock'>Still standing: <b>"+esc(bossesLeftSay())+
+        "</b><button class='mlockgo' id='mBossGo'>GO THERE</button></div>"
       : "");
+  var bg=$("mBossGo");
+  if(bg)tap(bg,function(){
+    var b=bossesLeft()[0];
+    mapSection=mapSecOf(b);
+    mapTabs(sectionSpans());mapDraw(sectionSpans());
+    mapSheet(b);
+  });
   var sa=$("mSecAd");
   /* Opens the section's *first* level and nothing else, so the section is
      played from its beginning rather than handed over. */
@@ -1333,7 +1346,8 @@ function mapDraw(spans){
     var cap=(st==="locked"&&k==="lv")?"":esc(mapCaption(l));
     if(st==="skipped")cap=esc(mapCaption(l))+" <em>· skipped</em>";
     var right=off<0;
-    html+="<div class='mcap"+(k==="boss"||k==="trial"?" big":"")+"' data-off='"+
+    html+="<div class='mcap"+(right?" r":" l")+
+      (k==="boss"||k==="trial"?" big":"")+"' data-half='"+half+"' data-off='"+
       off.toFixed(4)+"' style='top:"+(y-8)+"px;transform:translateX("+
       (right?(half+13):(-half-13))+"px)"+(right?"":" translateX(-100%)")+"'>"+cap+"</div>";
     y+=STEP;
@@ -1386,10 +1400,22 @@ function mapDraw(spans){
    boss and the bottom is the first level - opening at scrollTop 0 would show
    every section by its ending. A section you have not started scrolls to its
    foot instead, which is where it begins. */
+/* WHERE THE MAP OPENS. On the level you are up to, if it is in this section.
+
+   If it is not - you are looking back at a section you have already been
+   through - it used to jam the scroll to the very bottom, which is the FOOT
+   of the trail, which is level one. The trail climbs, so that put the whole
+   point of the section (the boss at the top) off screen above you, and it
+   got reported as not being able to see the top of the levels. Opening on
+   the furthest thing you have dealt with here is the same answer the `here`
+   node gives, applied to a section you have finished: the trail is drawn
+   top-down, so the first solved node in the DOM is the highest one. */
 function mapFocus(){
   var body=$("mBody"); if(!body)return;
-  var here=$("mtrail").querySelector(".mnode.here");
-  if(here&&here.scrollIntoView){here.scrollIntoView({block:"center"});return;}
+  var tr=$("mtrail");
+  var el=tr.querySelector(".mnode.here")||
+         tr.querySelector(".mnode.solved,.mnode.skipped");
+  if(el&&el.scrollIntoView){el.scrollIntoView({block:"center"});return;}
   body.scrollTop=body.scrollHeight;
 }
 
@@ -1473,7 +1499,20 @@ function mapLayout(pts,H,mast){
       (SECTIONS[mapSection].col||"#35c2a5")+"' stroke-opacity='.42' "+
       "stroke-width='3.5' stroke-linecap='round'/>":"");
   trail.querySelectorAll("[data-off]").forEach(function(el){
-    el.style.left=(cx+parseFloat(el.getAttribute("data-off"))*(w*.5-44))+"px";
+    var left=cx+parseFloat(el.getAttribute("data-off"))*(w*.5-44);
+    el.style.left=left+"px";
+    /* A caption is capped by the space its own node leaves it, measured
+       rather than guessed at a percentage: a node far out to one side has
+       less room on that side, and a flat 52% still ran off the edge for the
+       longest name in Section I. `half` is the node's own half-width, which
+       is what the transform beside it already shifts by. */
+    var half=parseFloat(el.getAttribute("data-half"));
+    if(!isNaN(half)){
+      var room=el.classList.contains("r")
+        ? w-(left+half+13)-8
+        : (left-half-13)-8;
+      el.style.maxWidth=Math.max(64,room)+"px";
+    }
   });
 }
 
@@ -1481,7 +1520,7 @@ function mapSheetClose(){$("mSheet").classList.remove("on");}
 
 function mapSheet(i){
   var l=LEVELS[i], k=mapKind(l), st=mapState(i);
-  var kind=k==="boss"?"BOSS · FOUR PHASES":
+  var kind=k==="boss"?"BOSS · THREE PHASES":
            k==="trial"?"TRIAL · THREE CORES, ON A CLOCK":
            k==="tut"?"TUTORIAL · UNSCORED":"LEVEL";
   var meta=st==="solved"
@@ -1490,35 +1529,55 @@ function mapSheet(i){
     : st==="skipped"?"<span class='a'>skipped</span> · no stars yet, still playable"
     : st==="here"?"you are here"
     : st==="open"?"open — not played yet"
-    : "locked — clear what is in front of it, or skip ahead";
+    /* Two different locks, and they were saying the same sentence. Ahead of
+       the window you can clear what is in front of it or buy the door; on
+       the shelf neither is true, and telling somebody to skip ahead onto the
+       one thing an ad cannot open is how a lock becomes a dead end. */
+    : mapSkippable(i)?"locked — clear what is in front of it, or skip ahead"
+    : "locked — the shelf is still sealed";
 
   var acts,note;
   if(st==="locked"&&mapSkippable(i)){
     var ads=mapAds(k);
     var what=k==="boss"?"THE BOSS":k==="trial"?"THE TRIAL":"THIS LEVEL";
-    acts="<button class='ad' id='mAd'>OPEN "+what+" · WATCH "+ads+" AD"+
+    acts="<button class='ad' id='mAd'>"+adIcon()+"OPEN "+what+" · WATCH "+ads+" AD"+
          (ads>1?"S":"")+"</button><button class='qt' id='mNo'>NOT NOW</button>";
-    note="This opens <b>this one</b> and nothing else — everything in front of "+
-         "it stays where it is, still to play, and you can open those the same "+
-         "way. It awards <b>no stars</b>. Ads buy progress, never score.";
+    note="Opens <b>this one</b> and nothing else, and awards <b>no stars</b>.";
   }else if(st==="locked"){
-    acts="<button class='qt' id='mNo'>CLOSE</button>";
-    note="This shelf opens when every boss is down. It is the one thing an ad "+
-         "cannot buy — beating them is what it is for.";
+    /* The shelf, and the only lock in the game an ad cannot open. Which
+       makes it the one lock that has to name its own condition: a boss you
+       SKIPPED is not a boss you beat, and nothing else in the game ever says
+       so. Skipping is offered by the game itself after three losses, so this
+       is a state a player reaches by taking the help they were handed. */
+    var lf=bossesLeft();
+    acts=(lf.length&&!mapLocked(lf[0])
+        ? "<button class='go' id='mBossTo'>GO TO "+esc(bossShort(LEVELS[lf[0]]))+"</button>"
+        : "")+"<button class='qt' id='mNo'>CLOSE</button>";
+    note="This shelf opens when every boss is <b>beaten</b> \u2014 the one "+
+         "thing an ad cannot buy."+
+         (lf.length?" Still standing: <b>"+esc(bossesLeftSay())+"</b>. A boss "+
+          "you skipped still counts as standing.":"");
   }else{
     acts="<button class='go' id='mPlay'>"+(st==="solved"?"PLAY AGAIN":"PLAY")+
          "</button><button class='qt' id='mNo'>CLOSE</button>";
-    note=st==="skipped"?"You have not beaten this one yet. Its stars are still on the table."
-      :k==="boss"?"No goal here. Four phases, and clearing the board begins the next."
-      :k==="trial"?"Three cores, a sweeping plane, three lives. Scored on lives."
+    note=st==="skipped"?"Not beaten yet. Its stars are still on the table."
+      :k==="boss"?"No goal here. Three phases; clear the board to begin the next."
+      :k==="trial"?"Three cores on a clock. Scored on lives."
       :(st==="solved"&&starsForRecord(l,progress[l.name])<3)
-        ?"Three stars is the solver's own move count, so <b>3★ means optimal</b>.":"";
+        ?"<b>Three stars means optimal.</b>":"";
   }
   $("mSheet").innerHTML="<div class='mk"+(k==="boss"?" b":k==="trial"?" t":"")+"'>"+
     kind+"</div><h4>"+esc(l.name)+"</h4><div class='mm'>"+meta+"</div>"+
     "<div class='ma'>"+acts+"</div>"+(note?"<div class='mn'>"+note+"</div>":"");
   $("mSheet").classList.add("on");
   bind("mNo",mapSheetClose);
+  var bto=$("mBossTo");
+  if(bto)tap(bto,function(){
+    var b=bossesLeft()[0];
+    mapSection=mapSecOf(b);
+    mapTabs(sectionSpans());mapDraw(sectionSpans());
+    mapSheet(b);
+  });
   var play=$("mPlay");
   if(play)tap(play,function(){
     mapSheetClose();hidePanel();playSource="builtin";enterPlay(LEVELS[i],i,false);
@@ -1542,53 +1601,50 @@ function mapHelp(){
   };
   $("mSheet").innerHTML="<div class='mk'>THE MAP</div><h4>What the map means</h4>"+
     "<div class='mlegend'>"+
-    row("solved","7","<b>Solved.</b> Stars sit underneath — three is the solver's own move count, so 3★ is optimal.")+
-    row("here","8","<b>Where you are.</b> The one that breathes.")+
-    row("open","9","<b>Open.</b> You can always reach a couple of levels ahead, so one hard puzzle never stops you.")+
-    row("locked","●","<b>Locked.</b> Clear what is in front of it — or open that one on its own with an ad.")+
-    row("skipped","●","<b>Skipped.</b> The door opened, the level did not. Its stars are still there to take.")+
+    row("solved","7","<b>Solved.</b> Its stars sit underneath. Three means optimal.")+
+    row("here","8","<b>Where you are.</b>")+
+    row("open","9","<b>Open.</b> You can always reach a couple ahead.")+
+    row("locked","●","<b>Locked.</b> Clear what is in front of it, or open it with an ad.")+
+    row("skipped","●","<b>Skipped.</b> Its stars are still there to take.")+
     row("mtrial",mapShape("trial")+"<span>I</span>",
-        "<b>Trial</b> \u2014 a square on its point, with the plane about to sweep through it. Three cores, on a clock.")+
+        "<b>Trial</b> \u2014 three cores, on a clock.")+
     row("mboss",mapShape("boss")+"<span>I</span>",
-        "<b>Boss</b> \u2014 a cube seen corner-on. The four arcs are its four phases. Closes the section.")+
-    "</div><div class='mn'>Ads buy <b>progress, never score</b>. A skip awards no "+
-    "stars and the level stays on the map, playable, whenever you want it — and "+
-    "it opens that level alone, so nothing behind it is handed over.</div>"+
+        "<b>Boss</b> \u2014 three phases. It closes the section.")+
+    "</div><div class='mn'>Ads buy <b>progress, never score</b>. A skip awards "+
+    "no stars, opens that level alone, and leaves it playable.</div>"+
     "<div class='ma'><button class='qt' id='mNo'>CLOSE</button></div>";
   $("mSheet").classList.add("on");
   bind("mNo",mapSheetClose);
 }
 
+/* THE PIECES, IN ONE LINE EACH.
+
+   This used to run to a paragraph a piece - "casts into the plane", "ground
+   in the volume, a hole in the plane", "poisons the whole column it folds
+   into" - which is the code's own vocabulary handed to somebody who has
+   never read it. A player has three words for this game: 2D, 3D, and the
+   name of the thing in front of them. So each piece gets one sentence in
+   those words, and the two that were still called by their old names are
+   called what they are drawn as: water and fire. */
 function legendPanel(){
   showPanel("<h3>THE PIECES</h3>"+
     "<div class='leg'><i style='background:#5a6d94'></i><span><b>Stone</b> \u2014 "+
-      "solid, and it casts into the plane when you fold.</span></div>"+
-    "<div class='leg'><i style='background:#7fc4d8;opacity:.65'></i><span><b>Glass</b> \u00b7 ring \u2014 "+
-      "solid to stand on, but casts nothing. Ground in the volume, a hole in the plane.</span></div>"+
-    "<div class='leg'><i style='background:#d9a441'></i><span><b>Anchor</b> \u00b7 gem \u2014 "+
-      "claims you when you unfold, instead of the block at the front. "+
-      "Turning reaches either <i>end</i> of a column of candidates; only an "+
-      "anchor reaches one in the <i>middle</i>. It also holds a <b>crate</b> "+
-      "fast: once a crate rests on amber it can never be shoved again, so "+
-      "where you park one is a decision you cannot take back.</span></div>"+
-    "<div class='leg'><i style='background:#9b7fd4'></i><span><b>Crate</b> \u00b7 cross \u2014 "+
-      "walk into it and it slides. It casts like stone, so moving it in the volume "+
-      "changes the shape of the plane. The only thing here you can change.</span></div>"+
-    "<div class='leg'><i style='background:#8a3040'></i><span><b>Spikes</b> \u00b7 four points \u2014 "+
-      "solid, and they cast like stone, but standing on one kills you. A spike "+
-      "buried deep in the world poisons the whole column it folds into: ground "+
-      "that is safe in the volume can be lethal in the plane.</span></div>"+
-    "<div class='leg'><i style='background:#f2d16b'></i><span><b>Key</b> \u2014 "+
-      "collected in the <i>plane</i>, on the square it folds into. Which axis "+
-      "you fold along decides which keys you can reach.</span></div>"+
+      "solid, and still there in 2D.</span></div>"+
+    "<div class='leg'><i style='background:#7fc4d8;opacity:.65'></i><span><b>Water</b> \u2014 "+
+      "stand on it. It leaves nothing in 2D.</span></div>"+
+    "<div class='leg'><i style='background:#8a3040'></i><span><b>Fire</b> \u2014 "+
+      "it burns you. In 2D it burns the whole line.</span></div>"+
+    "<div class='leg'><i style='background:#9b7fd4'></i><span><b>Crate</b> \u2014 "+
+      "walk into it and it slides. It reshapes 2D.</span></div>"+
+    "<div class='leg'><i style='background:#d9a441'></i><span><b>Amber</b> \u2014 "+
+      "catches you on the way back to 3D. It pins a crate.</span></div>"+
     "<div class='leg'><i style='background:#d6336c'></i><span><b>You</b> \u2014 "+
-      "the plate underneath shows what you're standing on.</span></div>"+
+      "the plate shows what you stand on.</span></div>"+
     "<div class='leg'><i style='background:#35c2a5'></i><span><b>Goal</b> \u2014 "+
-      "you must arrive in the volume, not the plane.</span></div>"+
+      "reach it in 3D. Standing on it in 2D is not enough.</span></div>"+
     "<div class='leg'><i style='background:transparent;border:1px solid var(--rule)'></i>"+
-      "<span><b>The eye button</b> \u2014 hold it (or Shift) to lean the camera "+
-      "and read depth. It costs no move. Blocks sharing your depth stay bright; "+
-      "everything further back fades.</span></div>"+
+      "<span><b>The eye</b> \u2014 hold it to see how far away things are. "+
+      "Costs no move.</span></div>"+
     "<div class='prow'><button id='lgBack'>BACK</button></div>");
   bind("lgBack",menuPanel);
 }

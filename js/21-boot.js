@@ -27,14 +27,15 @@ enterPlay(LEVELS[0],0,false);
    and a shop to somebody who has never seen a cube is the wrong first
    impression, and there would be nothing to continue.
 
-   All five loads are awaited together rather than fired and forgotten. Three
+   All of them are awaited together rather than fired and forgotten. Three
    of them are answers this decision needs: progress and the session decide
    *which* screen, and the wardrobe decides what is standing on the plinth
    when it opens. They used to run unchained because nothing was waiting on
    them. `Promise.all` never rejects here - every one of these catches its own
    failure and resolves - so a denied storage lands on the first-run path,
    which is the correct reading of "there is nothing saved". */
-Promise.all([progLoad(),skipLoad(),failLoad(),loadSettings(),loadWardrobe(),loadSession()])
+Promise.all([progLoad(),skipLoad(),failLoad(),hintLoad(),loadSettings(),
+             loadWardrobe(),loadSession()])
   .then(function(){
     // nothingBehind() is in 16-panels.js, beside the other progress helpers,
     // because the home screen asks it too - to choose between START and

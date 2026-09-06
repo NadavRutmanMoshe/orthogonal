@@ -1,10 +1,18 @@
 :root{
     --void:#0f1424; --paper:#e6e1d3; --ink:#1a1c2b;
     --player:#d6336c; --goal:#35c2a5;
+    /* A STAR IS GOLD, NOT GREEN. Green is the goal's colour and it appears
+       on the goal, the button that is being asked for and the cue words -
+       it means "do this", which is the one thing a score is not. Gold is
+       what a star is everywhere else in the world, and it is the only hue in
+       the palette nothing else has claimed. One token, so the win card, the
+       counter, the map, the shop and the flight can never drift apart. */
+    --star:#f5c542; --star-glow:rgba(245,197,66,.55);
     --fg:#c3cde4; --fg-dim:#6d7c9c; --rule:rgba(195,205,228,.22);
     --panel:rgba(15,20,36,.82);
   }
   body.flat{ --fg:#1a1c2b; --fg-dim:#7d7666; --rule:rgba(26,28,43,.24);
+    --star:#c07d09; --star-glow:rgba(192,125,9,.4);
     --panel:rgba(230,225,211,.86); }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%;overflow:hidden;background:var(--void);
@@ -17,27 +25,70 @@
      them. Any future in-panel canvas depends on this staying scoped. */
   body>canvas{display:block;position:fixed;inset:0;z-index:0}
 
+  /* A tutorial drops the text down the screen: with the coach line gone this
+     is the only prose left, and it reads better clear of the corner buttons
+     than tucked under them. */
+  body.tut .hud{top:104px}
   .hud{position:fixed;top:60px;left:0;right:0;padding:0 16px;z-index:10;
     display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
     pointer-events:none;color:var(--fg);transition:color .5s ease}
   .title{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;
-    font-size:14px;letter-spacing:-.01em;line-height:1.15}
-  .hint{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
+    font-size:16.5px;letter-spacing:-.01em;line-height:1.15}
+  .hint{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;
     letter-spacing:.03em;color:var(--fg-dim);margin-top:4px;max-width:54vw;
     line-height:1.5;transition:color .5s ease}
-  .axis{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
+  .axis{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;
     letter-spacing:.13em;text-align:right;color:var(--fg-dim);line-height:1.7;
     transition:color .5s ease;white-space:nowrap}
   .axis b{display:block;color:var(--fg);font-weight:500;transition:color .5s ease}
 
-  button{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;
-    letter-spacing:.08em;color:var(--fg);background:transparent;
-    border:1px solid var(--rule);border-radius:2px;cursor:pointer;
+  /* ============================================================
+     BUTTONS — one skin, and it is meant to look pressable
+
+     Everything here used to be a 1px outline on nothing with a 2px radius:
+     honest, quiet, and reported as feeling stale and not inviting. Nothing
+     on screen said which things could be pressed, because a hairline
+     rectangle is what this game draws for a *block edge* as well.
+
+     The skin is three things and it is the one `.hcont` already used, lifted
+     to every button in the game so there is one language:
+
+       - a FILL, a soft top-lit gradient over the panel colour, so a button
+         is an object rather than a hole;
+       - a LIP, `0 3px 0` of a darker shade of the button's own hue, which is
+         the whole of what makes a flat rectangle read as a key cap;
+       - a PRESS, which moves the cap down onto the lip.
+
+     `--c` is the button's hue and `--lip` its shadow, so a family sets one
+     property and the fill, the rim, the glyph and the lip all follow. The
+     two animated cues (cuePulse, tutlive) list `0 3px 0 var(--lip)` in their
+     own keyframes, because a box-shadow animation replaces the base one
+     outright and the cap would otherwise flatten while it pulses. */
+  button{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;
+    letter-spacing:.08em;color:var(--fg);
+    --c:#8c9dc4; --lip:rgba(4,7,14,.66);
+    background:
+      linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,0) 62%),
+      var(--panel);
+    border:1px solid var(--rule);border-radius:9px;cursor:pointer;
     display:flex;align-items:center;justify-content:center;
-    transition:color .35s ease,border-color .35s ease,background .12s ease;
+    box-shadow:0 3px 0 var(--lip);
+    transition:color .35s ease,border-color .35s ease,background .12s ease,
+      transform .1s ease,box-shadow .1s ease;
     user-select:none;padding:0;pointer-events:auto;flex-shrink:0}
-  button:active{background:var(--rule)}
-  button:disabled{opacity:.24;cursor:default}
+  button:active{transform:translateY(3px);box-shadow:0 0 0 var(--lip)}
+  /* Flat and unlit - a button with no cap has nothing under it, which is the
+     honest drawing of one that will not answer right now.
+
+     IT KEEPS ITS BODY THOUGH. The first version also dropped the background
+     to transparent at .3 opacity, which on a dark ground is not "greyed out",
+     it is *gone* - and the two controls that spend the most time disabled are
+     the turn buttons, which are off in the plane. A player who folds, sees an
+     empty corner and concludes the game has taken rotation away is reading
+     the drawing correctly; the drawing was wrong. Present, flat and obviously
+     inert is the state being described. */
+  button:disabled{opacity:.5;cursor:default;box-shadow:none;transform:none;
+    background:var(--panel);border-color:var(--rule)}
   button:focus-visible{outline:2px solid var(--player);outline-offset:2px}
 
   .bar{position:fixed;bottom:18px;left:0;right:0;padding:0 16px;z-index:10;
@@ -47,38 +98,160 @@
   /* play bar */
   #playBar{display:none;justify-content:space-between;align-items:flex-end;gap:10px}
   #playBar.on{display:flex}
-  .dpad{display:grid;grid-template-columns:repeat(3,42px);
-    grid-template-rows:repeat(3,42px);gap:4px}
-  .dpad button{font-size:13px}
+  .dpad{display:grid;grid-template-columns:repeat(3,44px);
+    grid-template-rows:repeat(3,44px);gap:5px}
+  .dpad button{font-size:17px;--c:#b4c6ea;color:var(--c);border-radius:11px;
+    border-color:color-mix(in srgb,var(--c) 30%,transparent);
+    --lip:color-mix(in srgb,var(--c) 26%,#04070d)}
   .rcol{display:flex;flex-direction:column;gap:5px;align-items:stretch}
-  .rot{display:flex;gap:4px}
-  .rot button{width:56px;height:36px;font-size:14px}
+  .rot{display:flex;gap:5px}
+  .rot button{width:58px;height:38px;font-size:15px;--c:#c3a8ff;
+    color:var(--c);border-color:color-mix(in srgb,var(--c) 30%,transparent);
+    --lip:color-mix(in srgb,var(--c) 26%,#04070d)}
   .corner{position:fixed;top:14px;z-index:12;display:flex;gap:7px}
   .corner.tl{left:14px}
   .corner.tr{right:14px}
-  button.rnd{width:40px;height:40px;border-radius:50%;padding:0;
-    background:var(--panel);backdrop-filter:blur(5px)}
-  button.rnd svg{width:19px;height:19px;fill:none;stroke:currentColor;
-    stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-  button.rnd.on{border-color:var(--player);color:var(--player)}
-  .stars{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;
-    letter-spacing:2px;color:var(--goal);margin-top:2px}
-  button.held{background:var(--rule);border-color:var(--goal);color:var(--goal)}
+  /* A HUE EACH, so the five round buttons are told apart by colour before a
+     glyph is read - which is what you want on a row of circles a thumb is
+     reaching for without looking. They are the colours those things already
+     mean elsewhere in the game: the bulb is the gold of a star, the eye is
+     the goal's teal, the wardrobe the violet of the map's landmarks, and
+     restart the blue every "second chance" in the panels wears. */
+  #bMenu{--c:#93a6d4}
+  #bWard{--c:#a274ff}
+  #bHint{--c:var(--star)}
+  #bRestart{--c:#6fa8ff}
+  #bLook{--c:#3fd6c4}
+  button.rnd{width:42px;height:42px;border-radius:50%;padding:0;
+    color:var(--c);
+    border:1.5px solid color-mix(in srgb,var(--c) 46%,transparent);
+    --lip:color-mix(in srgb,var(--c) 34%,#04070d);
+    background:
+      radial-gradient(120% 108% at 50% -8%,
+        color-mix(in srgb,var(--c) 30%,transparent), transparent 72%),
+      var(--panel);
+    box-shadow:0 3px 0 var(--lip),
+      0 0 16px color-mix(in srgb,var(--c) 16%,transparent);
+    backdrop-filter:blur(5px)}
+  button.rnd:active{box-shadow:0 0 0 var(--lip)}
+  /* HOW MANY HINTS ARE IN THE POOL, on the bulb itself. A badge rather than a
+     row in the HUD: it is an answer to "can I press this", so it belongs on
+     the thing being pressed. Empty reads as empty - the badge goes grey and
+     the bulb dims - because the press still does something there (it opens
+     the refill card) and a button that looks live and is not is worse than
+     one that plainly says it is out. */
+  #bHint{position:relative}
+  #bHint .hn{position:absolute;right:-2px;bottom:-2px;min-width:15px;height:15px;
+    padding:0 3px;border-radius:8px;display:none;align-items:center;
+    justify-content:center;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9px;font-weight:700;line-height:1;
+    background:var(--c);color:var(--void);
+    border:1.5px solid var(--void)}
+  #bHint.has .hn{display:flex}
+  #bHint.out{opacity:.62}
+  #bHint.out .hn{background:var(--fg-dim);color:var(--void)}
+  /* Solid by default, and the three helper classes are what give an icon a
+     second tone: `.ln` is the stroked half of a shape (an arc, a hook),
+     `.lite` is the light catching it, `.dim` the part turning away. */
+  button.rnd svg{width:23px;height:23px;fill:currentColor;stroke:none}
+  /* `.ln`, not `.st`: `.st` is already the gold star in a shop price, and an
+     icon path carrying it came out stroked in `--star`. Check any new class
+     name against the ones already in this file - this is the third time
+     (see .mboss/.boss and .home/.athome). */
+  button svg .ln{fill:none;stroke:currentColor;stroke-linecap:round;
+    stroke-linejoin:round}
+  button svg .lite{fill:#fff;opacity:.62;stroke:#fff}
+  button svg .dim{opacity:.48}
+  /* The bar's own icons: solid arrowheads with rounded corners, which is the
+     stroke doing the rounding rather than a dozen curve segments. */
+  .bar button svg.ar{width:22px;height:22px;fill:currentColor;
+    stroke:currentColor;stroke-width:2.6;stroke-linejoin:round}
+  .bar button svg.tn{width:24px;height:24px}
+  .bar button svg.tn .ln{stroke-width:2.9}
+  /* Its panel is open: the button takes the player's own colour rather than
+     its own, so "this is the thing you are inside" reads the same on all of
+     them. One property, and the fill, the rim and the lip follow. */
+  button.rnd.on{--c:var(--player)}
+  /* THE LIVE ROW. Two glyphs per slot, one on top of the other: the hollow
+     star is the socket and the gold one sits in it, so losing a star is the
+     gold one falling out of a socket that stays. Bigger than the old row -
+     it is the only score on screen now - and right-aligned under the number.
+     See liveStarRow() in js/18-ui.js. */
+  .stars{display:flex;gap:5px;justify-content:flex-end;margin-top:4px}
+  .stars[hidden]{display:none}
+  .stars .sl{position:relative;display:block;width:19px;height:19px;
+    text-decoration:none}
+  .stars i{position:absolute;inset:0;font-style:normal;font-size:18px;
+    line-height:19px;text-align:center}
+  .stars .ho{color:var(--rule)}
+  .stars .fi{color:var(--star);text-shadow:0 0 9px var(--star-glow)}
+  .stars .fi.fall{animation:stfall .66s cubic-bezier(.35,0,.75,1) forwards}
+  @keyframes stfall{
+    0%  {transform:translateY(0) rotate(0);opacity:1}
+    18% {transform:translateY(-5px) rotate(-9deg);opacity:1}
+    100%{transform:translateY(34px) rotate(46deg);opacity:0}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .stars .fi.fall{animation:stfade .4s linear forwards}
+    @keyframes stfade{to{opacity:0}}
+  }
+  /* Peek is latched: held down, so it is drawn held down. */
+  button.held{--c:var(--goal);transform:translateY(3px);
+    box-shadow:0 0 0 var(--lip)}
   .tinyrow .tiny{flex:1}
-  .moves{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
+  .moves{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;
     letter-spacing:.12em;color:var(--fg-dim);margin-top:3px;
     transition:color .5s ease}
-  .moves b{color:var(--fg);font-weight:500}
+  /* The count is on its own now - no par beside it and no word after it -
+     so it is sized to be read at a glance rather than to sit quietly next to
+     something else. */
+  .moves b{color:var(--fg);font-weight:600;font-size:17px;line-height:1.1;
+    font-variant-numeric:tabular-nums;display:block;text-align:right}
   .par{color:var(--goal)}
-  .flatbtn{height:50px;padding:0 14px;font-weight:600;letter-spacing:.14em;
-    border-color:var(--player);color:var(--player)}
-  /* Folding from here would kill you. Marked, not disabled - it is still a
-     legal move and some players will want to see what happens. */
-  .flatbtn.peril{border-color:#ff4d5e;color:#ff4d5e;
-    animation:perilpulse 1.15s ease-in-out infinite}
-  @keyframes perilpulse{50%{background:rgba(255,77,94,.16)}}
+  /* The verb the whole game is built on, so it is the biggest, fullest thing
+     on the bar and it wears the player's own colour. */
+  .flatbtn{height:54px;padding:0 18px;font-weight:700;letter-spacing:.15em;
+    font-size:12px;--c:var(--player);color:var(--c);
+    border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent);
+    --lip:color-mix(in srgb,var(--c) 42%,#04070d);
+    background:
+      linear-gradient(180deg,color-mix(in srgb,var(--c) 22%,transparent),
+        color-mix(in srgb,var(--c) 7%,transparent)),
+      var(--panel)}
+  /* FOLDING FROM HERE WOULD KILL YOU, AND IT HAS TO LOOK LIKE A HAZARD.
+
+     Marked, not disabled - it is still a legal move and some players will
+     want to see what happens. But once every button in the game became a lit
+     cap, a red one that breathed read as *press me*: reported exactly that
+     way, and it is the worst possible misreading, because the thing it is
+     warning about costs a life.
+
+     So the danger state is the one thing on screen that is NOT a lit cap. It
+     goes dark, it gains diagonal hazard stripes - a pattern nothing else in
+     the game uses and everybody already reads as "do not" - and it carries a
+     warning triangle before the label. Nothing glows and nothing swells; the
+     only movement is the triangle blinking, which says "look at me" without
+     saying "press me". Compare `.strike` below, which is an invitation and
+     is drawn like one. */
+  .flatbtn.peril{border-color:#ff4d5e;color:#ff9aa2;--lip:#4a0d14;
+    animation:none;
+    background:
+      repeating-linear-gradient(-45deg,
+        rgba(255,77,94,.22) 0 7px, rgba(255,77,94,0) 7px 15px),
+      linear-gradient(180deg, rgba(96,16,26,.62), rgba(44,6,12,.82))}
+  .flatbtn.peril::before{content:"\26A0";font-size:15px;line-height:1;
+    margin-right:9px;color:#ff4d5e;
+    animation:perilblink 1.15s ease-in-out infinite}
+  @keyframes perilblink{50%{opacity:.32}}
+  body.flat .flatbtn.peril{color:#8c1420;
+    background:
+      repeating-linear-gradient(-45deg,
+        rgba(200,30,50,.26) 0 7px, rgba(200,30,50,0) 7px 15px),
+      linear-gradient(180deg, rgba(255,190,195,.75), rgba(240,150,158,.8))}
   /* Folding right now would crush the boss. The one moment the fold is an
-     attack rather than a risk, so it gets the goal colour. */
+     attack rather than a risk, so it gets the goal colour AND the lit,
+     breathing treatment - it is the one state on this button that genuinely
+     means press me, and peril above is deliberately drawn as its opposite. */
   .flatbtn.strike{border-color:var(--goal);color:var(--goal);
     animation:strikepulse .9s ease-in-out infinite}
   @keyframes strikepulse{50%{background:rgba(53,194,165,.2)}}
@@ -87,10 +260,14 @@
      above it: those two are about to cost you a life, this one is an offer.
      Same goal colour as the strike cue, because both mean "there is
      something you can do here". */
-  button.rnd.look{border-color:var(--goal);color:var(--goal);
-    animation:lookpulse 1.9s ease-in-out infinite}
-  @keyframes lookpulse{50%{background:rgba(53,194,165,.14)}}
-  .tiny{height:28px;font-size:9.5px;letter-spacing:.1em;color:var(--fg-dim);padding:0 8px}
+  button.rnd.look{animation:lookpulse 1.9s ease-in-out infinite}
+  @keyframes lookpulse{
+    0%,100%{box-shadow:0 3px 0 var(--lip),0 0 0 0 var(--star-glow),
+      0 0 16px color-mix(in srgb,var(--c) 16%,transparent)}
+    50%{box-shadow:0 3px 0 var(--lip),0 0 0 7px rgba(63,214,196,0),
+      0 0 26px color-mix(in srgb,var(--c) 70%,transparent)}
+  }
+  .tiny{height:28px;font-size:11.5px;letter-spacing:.1em;color:var(--fg-dim);padding:0 8px}
   .tinyrow{display:flex;gap:4px;justify-content:flex-end}
 
   /* edit bar */
@@ -101,11 +278,11 @@
   .spacer{flex:1}
   #composeBar{display:none;flex-direction:column;gap:6px}
   #composeBar.on{display:flex}
-  .script{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;
+  .script{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;
     letter-spacing:.1em;color:var(--player);margin-top:5px;line-height:1.6;
     max-width:62vw;word-break:break-word}
   .row{display:flex;gap:4px;align-items:stretch}
-  .chip{flex:1;height:38px;font-size:9px;letter-spacing:.04em;padding:0 2px}
+  .chip{flex:1;height:38px;font-size:11px;letter-spacing:.04em;padding:0 2px}
   .chip.sel{border-color:var(--player);color:var(--player);
     background:rgba(214,51,108,.13)}
   .row2 button{height:40px}
@@ -124,11 +301,11 @@
     width:calc(100% - 32px);max-width:560px;bottom:196px;z-index:12;
     background:var(--panel);border:1px solid var(--rule);border-radius:3px;
     padding:12px 13px;font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:10.5px;line-height:1.65;color:var(--fg);display:none;
+    font-size:12.5px;line-height:1.65;color:var(--fg);display:none;
     max-height:44vh;overflow:auto;pointer-events:auto;
     backdrop-filter:blur(6px);transition:color .35s ease}
   .panel.on{display:block}
-  .panel h3{margin:0 0 7px;font-size:10px;letter-spacing:.14em;
+  .panel h3{margin:0 0 7px;font-size:12px;letter-spacing:.14em;
     color:var(--fg-dim);font-weight:500}
   .panel .ok{color:var(--goal)}
   .panel .bad{color:var(--player)}
@@ -136,9 +313,9 @@
   .panel .mono{color:var(--fg-dim);word-break:break-all}
   .panel textarea{width:100%;height:110px;background:transparent;
     border:1px solid var(--rule);color:var(--fg);border-radius:2px;
-    font-family:inherit;font-size:10px;padding:7px;resize:none;margin-top:6px}
+    font-family:inherit;font-size:12px;padding:7px;resize:none;margin-top:6px}
   .panel .prow{display:flex;gap:5px;margin-top:8px}
-  .panel .prow button{height:32px;flex:1;font-size:10px}
+  .panel .prow button{height:32px;flex:1;font-size:12px}
   .srow{display:flex;align-items:center;gap:9px;padding:8px 0;
     border-bottom:1px solid var(--rule)}
   .srow label{width:74px;flex-shrink:0;color:var(--fg-dim)}
@@ -147,7 +324,7 @@
     background:transparent;margin:0;padding:0}
   .panel input[type=text],.panel input:not([type]){width:100%;height:34px;background:transparent;
     border:1px solid var(--rule);color:var(--fg);border-radius:2px;
-    font-family:inherit;font-size:11px;padding:0 8px;margin-top:8px;
+    font-family:inherit;font-size:13px;padding:0 8px;margin-top:8px;
     letter-spacing:.04em}
   .panel input::placeholder{color:var(--fg-dim)}
   .lrow{display:flex;align-items:center;gap:8px;padding:7px 0;
@@ -155,12 +332,12 @@
   .lrow.here .lname{color:var(--player)}
   .lname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;
     white-space:nowrap;color:var(--fg)}
-  .lrow .mono{font-size:9px;white-space:nowrap}
+  .lrow .mono{font-size:11px;white-space:nowrap}
   .lbtns{display:flex;gap:3px;flex-shrink:0}
   /* Pills, matching the map's section tabs, so the two panels agree about
      what a tab is. */
   .tabs{display:flex;gap:5px;margin:10px 0 10px;padding:0 13px}
-  .tab{flex:1;height:32px;font-size:9.5px;letter-spacing:.1em;border-radius:17px;
+  .tab{flex:1;height:32px;font-size:11.5px;letter-spacing:.1em;border-radius:17px;
     color:var(--fg-dim)}
   .tab.on{border-color:var(--player);color:var(--player);
     background:rgba(214,51,108,.12)}
@@ -200,12 +377,17 @@
     border:1px solid var(--rule);border-radius:3px;background:var(--void);
     touch-action:none;cursor:grab}
   .wcanvas:active{cursor:grabbing}
-  .wturn{font-size:8px;letter-spacing:.11em;color:var(--fg-dim);
+  .wturn{font-size:10px;letter-spacing:.11em;color:var(--fg-dim);
     text-align:center;margin:4px 0 6px}
-  .wname{font-size:11.5px;color:var(--fg);font-weight:500;line-height:1.3}
-  .wcost{font-size:9px;color:var(--fg-dim);margin-top:1px}
+  .wname{font-size:13.5px;color:var(--fg);font-weight:500;line-height:1.3}
+  .wcost{font-size:11px;color:var(--fg-dim);margin-top:1px}
+  /* A price is a star price, so the star in it is gold wherever it is
+     written - the number stays quiet, the currency is what carries. */
+  /* A `u` rather than an `i`, because `.item i` is already the tile's own
+     swatch box - an <i> in here becomes a 32px square. */
+  .st{text-decoration:none;color:var(--star)}
   .wact{display:flex;flex-direction:column;gap:4px;margin-top:6px}
-  .wact button{height:30px;width:100%;font-size:9.5px}
+  .wact button{height:30px;width:100%;font-size:11.5px}
   .wact .wgo{border-color:var(--goal);color:var(--goal)}
   .wact .wsure{border-color:var(--player);color:var(--player)}
   .wcase .note{margin-top:5px}
@@ -217,9 +399,11 @@
   .wlist{padding-bottom:2px}
   .item i{display:block;width:30px;height:30px;margin:0 auto 5px;border-radius:4px;
     font-style:normal;font-size:16px;line-height:30px;color:var(--fg)}
-  .item b{display:block;font-size:9.5px;font-weight:500;color:var(--fg)}
-  .item span{display:block;font-size:8.5px;color:var(--fg-dim);margin-top:2px}
-  .note{font-size:9px;color:var(--fg-dim);line-height:1.6;margin-top:6px}
+  .item b{display:block;font-size:11.5px;font-weight:500;color:var(--fg)}
+  .item span{display:block;font-size:10.5px;color:var(--fg-dim);margin-top:2px}
+  .wact .ad{gap:8px}
+  .wact .ad .adicon{width:16px;height:16px}
+  .note{font-size:11px;color:var(--fg-dim);line-height:1.6;margin-top:6px}
   .note code{color:var(--fg)}
   /* How far through a section you are, in stars rather than levels solved:
      clearing a section is the loop's unit of progress, so the bar has to
@@ -238,19 +422,22 @@
   .lrow.trialrow .lname{color:#e0a03c;letter-spacing:.05em}
   .chap.locked{color:var(--fg-dim)}
   .chap.locked .secbar{opacity:.5}
-  .chap{margin:12px 0 4px;font-size:9.5px;letter-spacing:.16em;color:var(--player)}
+  .chap{margin:12px 0 4px;font-size:11.5px;letter-spacing:.16em;color:var(--player)}
   .chap:first-child{margin-top:2px}
   .chap span{display:block;color:var(--fg-dim);letter-spacing:.03em;
-    font-size:9.5px;margin-top:2px;text-transform:none}
+    font-size:11.5px;margin-top:2px;text-transform:none}
   .leg{display:flex;gap:9px;align-items:flex-start;padding:7px 0;
     border-bottom:1px solid var(--rule)}
   .leg i{width:15px;height:15px;flex-shrink:0;border-radius:2px;margin-top:1px}
   .leg span{flex:1;line-height:1.55}
-  button.mini{height:24px;padding:0 7px;font-size:9px;letter-spacing:.06em}
+  button.mini{height:24px;padding:0 7px;font-size:11px;letter-spacing:.06em}
 
   /* Control layout. The bar is a preference, not a fixture: on a phone you
      may want it under your thumbs, on a desktop you'd rather see the world. */
   body.ui-compact .dpad{display:none}
+/* A level with no turn shows no turn buttons - see syncHud. The bar's right
+   cluster is a flex row, so the two simply leave and GO 2D closes up. */
+  body.norot #bRotL,body.norot #bRotR{display:none}
   body.ui-compact #playBar{justify-content:flex-end}
   body.ui-none #playBar{display:none}
   /* A tutorial teaches the buttons, so it overrides the layout preference
@@ -263,13 +450,21 @@
   /* The coach line. Tutorial levels talk to you here instead of in the
      small hint slot, because a first-time player is looking at the world,
      not at the corner of the screen. */
-  .coach{position:fixed;left:16px;right:16px;bottom:176px;z-index:11;
+  /* THE COACH LINE IS GONE, on the owner's call. The tutorial's words now
+     live in one place - the level's own hint at the top of the screen - and
+     what the current step is asking for is said by the hand and its two-word
+     label in the middle. A sentence at the foot of the screen is a third
+     place to look on the one screen that should be easy to read. The element
+     and every path that writes it are untouched, so putting the line back is
+     this one declaration. */
+  .coach{display:none;
+    position:fixed;left:16px;right:16px;bottom:176px;z-index:11;
     pointer-events:none;text-align:center;
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11.5px;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13.5px;
     line-height:1.65;letter-spacing:.02em;color:var(--fg);
     opacity:0;transition:opacity .3s ease,color .5s ease}
   .coach.on{opacity:1}
-  .coach i{display:block;font-style:normal;font-size:8.5px;letter-spacing:.18em;
+  .coach i{display:block;font-style:normal;font-size:10.5px;letter-spacing:.18em;
     color:var(--goal);margin-bottom:5px}
   .coach b{color:var(--player);font-weight:500}
   body.ui-none .coach{bottom:28px}
@@ -277,19 +472,24 @@
   .crow{display:flex;align-items:center;gap:7px;padding:8px 0;
     border-bottom:1px solid var(--rule)}
   .crow label{width:74px;flex-shrink:0;color:var(--fg-dim)}
+  /* A row whose card heading already names it: the three options take the
+     whole width rather than leaving a label-shaped hole. */
+  .crow.bare{border-bottom:0;padding-bottom:2px}
   .crow .seg{flex:1;display:flex;gap:4px}
-  .crow .seg button{flex:1;height:27px;font-size:8.5px;letter-spacing:.05em}
+  .crow .seg button{flex:1;height:27px;font-size:10.5px;letter-spacing:.05em}
   .crow .seg button.on{border-color:var(--player);color:var(--player);
     background:rgba(214,51,108,.13)}
 
   @keyframes cuePulse{
-    0%,100%{box-shadow:0 0 0 0 rgba(53,194,165,0);border-color:var(--goal)}
-    50%{box-shadow:0 0 0 5px rgba(53,194,165,.22);border-color:var(--goal)}
+    0%,100%{box-shadow:0 3px 0 var(--lip),0 0 0 0 rgba(53,194,165,0);
+      border-color:var(--goal)}
+    50%{box-shadow:0 3px 0 var(--lip),0 0 0 5px rgba(53,194,165,.22);
+      border-color:var(--goal)}
   }
   button.cue{animation:cuePulse 1s ease-in-out infinite;
     border-color:var(--goal) !important;color:var(--goal) !important}
   .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:auto;top:76px;
-    z-index:15;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;
+    z-index:15;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12.5px;
     letter-spacing:.05em;color:var(--player);opacity:0;transition:opacity .25s;
     pointer-events:none;text-align:center;padding:0 20px}
   .toast.on{opacity:1}
@@ -299,13 +499,13 @@
   .toast.cuesay{top:auto;bottom:176px;color:var(--goal);line-height:1.5}
   .toast.cuesay b{display:block;font-size:15px;font-weight:600;
     letter-spacing:.12em;text-transform:uppercase}
-  .toast.cuesay i{display:block;font-style:normal;font-size:9px;
+  .toast.cuesay i{display:block;font-style:normal;font-size:11px;
     letter-spacing:.08em;color:var(--fg-dim);margin-top:4px}
   /* The accounting on its own, when the ghost hand is saying the move. It
      keeps the slot - clear of the level's hint text, where the eye already
      is - but not the shout: there is no instruction here, only a footnote to
      one that is being drawn a few centimetres above it. */
-  .toast.cuesay.noteonly i{font-size:10px;color:var(--fg-dim);margin-top:0}
+  .toast.cuesay.noteonly i{font-size:12px;color:var(--fg-dim);margin-top:0}
   body.ui-none .toast.cuesay{bottom:28px}
 
   /* ============================================================
@@ -368,7 +568,7 @@
     transition:width 520ms cubic-bezier(.16,.72,.16,1) 60ms}
   .splash.hit .srule{width:calc(var(--cols) * var(--c))}
 
-  .sprompt{position:absolute;bottom:11vh;font-size:9.5px;letter-spacing:.34em;
+  .sprompt{position:absolute;bottom:11vh;font-size:11.5px;letter-spacing:.34em;
     text-transform:uppercase;color:var(--fg-dim);
     font-family:'IBM Plex Mono',ui-monospace,monospace;
     animation:spulse 2.1s ease-in-out infinite}
@@ -419,7 +619,7 @@
   .rlabel{position:absolute;left:0;right:0;bottom:calc(8.5vh + 16px);
     display:flex;align-items:center;justify-content:center;gap:8px;
     font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:10px;letter-spacing:.28em;text-transform:uppercase;
+    font-size:12px;letter-spacing:.28em;text-transform:uppercase;
     color:#e8eefc}
   .rlabel b{font-weight:600}
   /* The recording dot, which is the one part that moves - a still label over
@@ -428,7 +628,7 @@
     text-decoration:none;animation:rdot 1.1s ease-in-out infinite}
   @keyframes rdot{0%,100%{opacity:1}50%{opacity:.25}}
   .rlabel i{font-style:normal;letter-spacing:.12em;text-transform:none;
-    font-size:9.5px;color:#9fb0d0}
+    font-size:11.5px;color:#9fb0d0}
   @media (prefers-reduced-motion: reduce){
     .rbar{transition:none}
     .rlabel s{animation:none}
@@ -442,27 +642,67 @@
     background:rgba(15,20,36,.86)}
   body.flat .won{background:rgba(230,225,211,.88)}
   .won.on{display:flex}
-  .bigstars{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:26px;
-    letter-spacing:7px;color:var(--goal);margin-top:10px;text-align:center}
+  /* THE SCORE, AND IT ARRIVES RATHER THAN BEING THERE.
+
+     It used to be a green line of three characters sitting on the card the
+     instant it opened, which is a label. Most people solve a level and never
+     look at it. So it is gold, it is nearly twice the size, and each star
+     FALLS onto the card with its own sound - the one moment in the game that
+     says the score was worth having. The empty ones fall too, silently, so
+     the row lands as one row rather than as a thing with gaps in it. */
+  .bigstars{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:42px;
+    letter-spacing:10px;color:var(--star);margin-top:14px;text-align:center;
+    text-shadow:0 0 22px var(--star-glow);line-height:1.1}
+  .bigstars .sg{opacity:0}
+  /* An empty star is drawn, not lit: same shape so the row keeps its width,
+     no fill and no glow so the score is countable at a glance rather than
+     read character by character. */
+  .bigstars .sg.off{color:var(--fg-dim);text-shadow:none}
+  /* The overshoot is in the easing, not in the keyframes: a back-out curve
+     lands the star and lets it settle in one declaration, and the squash at
+     the end is what gives it weight. Delays are relative to `.won.on`
+     matching, which is the moment the card appears - so the three sounds
+     scheduled in win() line up with them by construction. */
+  .won.on .bigstars .sg{animation:sgdrop .38s cubic-bezier(.22,1.5,.5,1) both}
+  .won.on .bigstars .sg:nth-child(1){animation-delay:.06s}
+  .won.on .bigstars .sg:nth-child(2){animation-delay:.20s}
+  .won.on .bigstars .sg:nth-child(3){animation-delay:.34s}
+  @keyframes sgdrop{
+    0%  {opacity:0;transform:translateY(-90px) scale(1.5)}
+    55% {opacity:1}
+    100%{opacity:1;transform:translateY(0) scale(1)}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .won.on .bigstars .sg{animation:sgfade .3s ease both}
+    @keyframes sgfade{from{opacity:0}to{opacity:1}}
+  }
   .won h2{font-family:'Space Grotesk',system-ui,sans-serif;font-size:24px;
     margin:0;color:var(--fg);font-weight:700;letter-spacing:-.02em}
-  .won p{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;
+  .won p{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12.5px;
     color:var(--fg-dim);margin:0;letter-spacing:.05em}
   /* Said once, on the run that finishes a section. The map is where the
      reward lives afterwards; this is the sentence. */
   .wonmast{display:block;font-style:normal;margin-top:9px;
-    font-size:9px;letter-spacing:.2em;text-transform:uppercase;
+    font-size:11px;letter-spacing:.2em;text-transform:uppercase;
     color:color-mix(in srgb,var(--sec) 26%,#000);background:var(--sec);
     padding:5px 11px;border-radius:99px;
     box-shadow:0 0 18px color-mix(in srgb,var(--sec) 45%,transparent);
     animation:wmast .6s cubic-bezier(.2,1.5,.4,1) .5s both}
   @keyframes wmast{0%{opacity:0;transform:scale(.8)}100%{opacity:1;transform:scale(1)}}
+  /* WHY THE NEXT THING IS SHUT. Only ever seen on BOSS IV with a boss still
+     standing, and it is the amber the game already uses for "a landmark on a
+     clock is waiting for you" rather than the violet of the story line above
+     it - this is bookkeeping, not the Census speaking. */
+  .wonlock{display:block;font-style:normal;margin:9px auto 0;
+    font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:#e0a03c;
+    animation:wstory .7s ease 1.1s both}
   /* A boss's Census line. It arrives after the score has been read - the
      numbers are what the player came for - and it is the hunters' violet,
      because it is the thing on the other side of the fight speaking. */
   .wonstory{display:block;font-style:normal;margin:10px auto 0;max-width:34ch;
     text-align:center;
-    font-size:10px;line-height:1.6;letter-spacing:.02em;
+    font-size:12px;line-height:1.6;letter-spacing:.02em;
     color:color-mix(in srgb,#a274ff 62%,var(--fg-dim));
     animation:wstory .7s ease .9s both}
   @keyframes wstory{0%{opacity:0;transform:translateY(4px)}100%{opacity:1;transform:none}}
@@ -471,7 +711,7 @@
      boss's line - it is the same voice, met early. */
   .won p.introstory{margin:2px 0 4px;max-width:min(80vw,40ch);
     padding-top:11px;border-top:1px solid var(--rule);
-    font-size:9.5px;line-height:1.6;text-align:center;
+    font-size:11.5px;line-height:1.6;text-align:center;
     color:color-mix(in srgb,#a274ff 55%,var(--fg-dim))}
   /* THE TUTORIAL'S EXPLANATION CARD. Same full-bleed dim as a win card - it
      is the same kind of object, a screen that has taken the game away for a
@@ -487,26 +727,52 @@
   .tutcard{gap:20px;overflow-y:auto;padding:24px 0;
     justify-content:safe center}
   .tutcard h2{max-width:min(84vw,24ch);text-align:center;line-height:1.3}
-  .tutcard p{max-width:min(84vw,42ch);font-size:11px;line-height:1.85;
+  .tutcard p{max-width:min(84vw,42ch);font-size:13px;line-height:1.85;
     text-align:left;color:var(--fg-dim)}
   .tutcard p b{color:var(--goal);font-weight:500}
   .tutcard button{min-width:120px}
   .wonrow{display:flex;gap:8px;align-items:center}
-  .won button{height:42px;padding:0 22px;border-color:var(--goal);color:var(--goal)}
-  #bRetry{border-color:var(--rule);color:var(--fg-dim);gap:7px}
+  .won button{height:46px;padding:0 24px;font-weight:600;
+    --c:var(--goal);color:var(--c);
+    border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent);
+    --lip:color-mix(in srgb,var(--c) 44%,#04070d);
+    background:
+      linear-gradient(180deg,color-mix(in srgb,var(--c) 24%,transparent),
+        color-mix(in srgb,var(--c) 8%,transparent)),var(--panel)}
+  #bRetry{--c:#8c9dc4;color:var(--fg-dim);gap:7px;
+    border-color:var(--rule);background:var(--panel)}
   #bRetry svg{width:15px;height:15px;fill:none;stroke:currentColor;
     stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   #intro{display:flex}
   #intro.gone{display:none}
   #intro .tiny,#won .tiny{border-color:var(--rule);color:var(--fg-dim)}
 
-  /* Lives and cores, only on a boss. Centred at the top because it is the
-     one thing you check between every move, and a corner would put it where
-     the thumb sits on a phone. */
-  .boss{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:11;
-    display:none;flex-direction:column;align-items:center;gap:3px;
+  /* Lives and cores, only on a boss. At the top because it is the one thing
+     you check between every move, and a corner would put it where the thumb
+     sits on a phone.
+
+     CENTRED IN THE GAP BETWEEN THE CORNERS, NOT ON THE VIEWPORT, and that is
+     a bug fix rather than a preference. It used to be `left:50%` with a
+     translate, which is only safe while the viewport is wide enough that the
+     gap happens to contain the middle - and it is not on a small phone.
+     Measured at 327 CSS px (a 900px screen at DPR 2.75, which is what the
+     owner plays on): the bar landed at 139..189 and the star total, which
+     grows LEFTWARDS as the number gets longer, reached back to 172 and
+     covered the last core - so the row read as three when one had already
+     been taken. Reported exactly that way, with a screenshot.
+
+     The lane is the whole width minus the two clusters: three round buttons
+     and 14px of margin on the left, two and the same on the right, since the
+     star total is hidden on a clock level (below). `justify-content:center`
+     inside that padding puts the bar in the middle of the space that is
+     actually free, at every width, and a narrower screen simply squeezes the
+     lane rather than sliding the bar under a button. */
+  .boss{position:fixed;top:16px;left:0;right:0;z-index:11;
+    display:none;align-items:center;justify-content:center;
+    padding-left:152px;padding-right:105px;
     pointer-events:none;font-family:'IBM Plex Mono',ui-monospace,monospace}
   .boss.on{display:flex}
+  .bstack{display:flex;flex-direction:column;align-items:center;gap:3px}
   .blives,.bcores{display:flex;gap:4px;align-items:center}
   .blives i{display:block;font-style:normal;font-size:13px;line-height:1;
     color:var(--player);transition:color .25s ease,transform .25s ease}
@@ -517,9 +783,14 @@
      which is a different job - there it separates one landmark from another
      in a list, here it separates you from the thing in front of you. */
   .bcores i{width:14px;height:3px;border-radius:2px;background:#ff4d5e;
-    display:block;transition:background .25s ease}
+    display:block;transition:background .25s ease,width .25s ease,
+      opacity .25s ease}
   .boss.tr .bcores i{background:#ff8a3c}
-  .bcores i.gone{background:var(--rule)}
+  /* A SPENT ONE SHRINKS AS WELL AS DIMMING. Three bars of one length with a
+     dim one among them is a row of three at a glance, which is how a taken
+     core read as a core still to take - the lives row above has always said
+     it twice (colour and scale) and this row said it once. */
+  .bcores i.gone{background:var(--rule);width:6px;opacity:.7}
   .boss.hurt .blives{animation:bshake .3s ease}
   @keyframes bshake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 
@@ -527,25 +798,32 @@
      z-index 30 puts it over the win overlay (20) on purpose - the count has
      to be visible at the moment it goes up, or the flight has nothing to
      arrive at. Sits to the left of the two round buttons in that corner. */
-  .startotal{position:fixed;top:14px;right:101px;z-index:30;height:40px;
-    display:none;align-items:center;gap:5px;padding:0 12px;
-    border:1px solid var(--rule);border-radius:20px;
-    background:var(--panel);backdrop-filter:blur(6px);
+  .startotal{position:fixed;top:14px;right:104px;z-index:30;height:42px;
+    display:none;align-items:center;gap:5px;padding:0 13px;
+    border:1.5px solid color-mix(in srgb,var(--star) 34%,transparent);
+    border-radius:21px;
+    background:
+      radial-gradient(120% 108% at 50% -8%,
+        color-mix(in srgb,var(--star) 20%,transparent), transparent 72%),
+      var(--panel);
+    box-shadow:0 3px 0 color-mix(in srgb,var(--star) 26%,#04070d);
+    backdrop-filter:blur(6px);
     font-family:'IBM Plex Mono',ui-monospace,monospace;
     color:var(--fg);transition:color .35s ease,transform .18s ease,
       border-color .35s ease}
   .startotal.on{display:flex}
   .startotal b{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
-  .startotal i{font-style:normal;font-size:12px;color:var(--goal)}
-  .startotal.pop{transform:scale(1.16);border-color:var(--goal)}
+  .startotal i{font-style:normal;font-size:13px;color:var(--star);
+    text-shadow:0 0 10px var(--star-glow)}
+  .startotal.pop{transform:scale(1.16);border-color:var(--star)}
 
   /* A star in flight. The wrapper carries the horizontal leg and the inner
      glyph the vertical one, on different easings - that mismatch is what
      bends the path into an arc instead of a straight diagonal slide. */
   .flystar{position:fixed;z-index:40;pointer-events:none;
     transition:transform .62s cubic-bezier(.32,.5,.5,1)}
-  .flystar i{display:block;font-style:normal;font-size:24px;line-height:1;
-    color:var(--goal);text-shadow:0 0 14px rgba(53,194,165,.6);
+  .flystar i{display:block;font-style:normal;font-size:26px;line-height:1;
+    color:var(--star);text-shadow:0 0 16px var(--star-glow);
     transition:transform .62s cubic-bezier(.6,.02,.72,.5),opacity .62s ease}
   .sg{display:inline-block;transition:transform .22s ease,opacity .22s ease}
   .sg.launch{transform:translateY(-6px) scale(1.3)}
@@ -568,25 +846,25 @@
   .phead .pt{flex:1;min-width:0}
   .phead .pt b{display:block;font-family:'Space Grotesk',system-ui,sans-serif;
     font-size:16px;font-weight:700;letter-spacing:-.02em;color:var(--fg)}
-  .phead .pt span{display:block;font-size:9px;letter-spacing:.14em;color:var(--fg-dim)}
+  .phead .pt span{display:block;font-size:11px;letter-spacing:.14em;color:var(--fg-dim)}
   .pbody{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 13px 16px}
 
   /* A group of settings, with a label that says what the group is for. */
   .pcard{margin-top:12px;padding:11px 12px 12px;border:1px solid var(--rule);
     border-radius:4px;background:rgba(255,255,255,.018)}
-  .pcard>h4{margin:0 0 8px;font-size:9px;letter-spacing:.16em;font-weight:500;
+  .pcard>h4{margin:0 0 8px;font-size:11px;letter-spacing:.16em;font-weight:500;
     color:var(--fg-dim);text-transform:uppercase}
   .pcard .note{margin-top:9px}
 
   /* Two weights of button, so a panel has a shape. The primary one lifts. */
   .prow2{display:flex;gap:7px;margin-top:12px}
-  .prow2 button{flex:1;height:46px;font-size:11px;letter-spacing:.12em}
+  .prow2 button{flex:1;height:46px;font-size:13px;letter-spacing:.12em}
   .pgo{border-color:var(--goal);color:var(--goal);font-weight:600;
     background:rgba(53,194,165,.10);box-shadow:0 4px 0 rgba(20,112,93,.55);
     transition:transform .12s ease,box-shadow .12s ease}
   .pgo:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(20,112,93,.55)}
   .psub{display:flex;flex-direction:column;gap:6px;margin-top:2px}
-  .psub button{height:38px;font-size:10px;letter-spacing:.1em;color:var(--fg-dim);
+  .psub button{height:38px;font-size:12px;letter-spacing:.1em;color:var(--fg-dim);
     justify-content:flex-start;padding:0 12px}
   .psub button:active{color:var(--fg)}
   .pdanger{color:#e0455f}
@@ -624,8 +902,8 @@
      Three node silhouettes, and they differ by shape before they differ by
      colour. Boss and trial used to be told apart by #ff8a3c against #e0a03c,
      which are the same hue two steps apart - at 60px, on a dark ground, that
-     is not a distinction. So the boss is violet and wears a four-arc ring (its
-     four phases), the trial keeps the amber the game already uses for a core
+     is not a distinction. So the boss is violet and wears a three-arc ring (its
+     three phases), the trial keeps the amber the game already uses for a core
      on a clock and wears the slice that is about to sweep through it, and an
      ordinary level is a bare disc. Told apart with the colour removed.
      ============================================================ */
@@ -640,6 +918,19 @@
       radial-gradient(92% 44% at 50% 106%, rgba(214,51,108,.09), transparent 60%),
       var(--panel)}
   .panel.map.on{display:flex}
+  /* THE SHELF'S LOCK, NAMED. A section card that says only "locked" is the
+     bug this fixes: a boss skipped past still counts as standing, and there
+     was nowhere in the game that said which one. */
+  .mlock{display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+    margin-top:9px;padding:8px 10px;border-radius:9px;
+    border:1px solid color-mix(in srgb,#e0a03c 34%,transparent);
+    background:color-mix(in srgb,#e0a03c 9%,transparent);
+    font-size:12px;letter-spacing:.04em;color:var(--fg-dim)}
+  .mlock b{color:#e0a03c;letter-spacing:.1em}
+  .mlockgo{margin-left:auto;font:inherit;letter-spacing:.14em;
+    text-transform:uppercase;padding:5px 11px;border-radius:99px;
+    border:1px solid color-mix(in srgb,#e0a03c 52%,transparent);
+    background:transparent;color:#e0a03c;cursor:pointer}
   body.mapopen .startotal{display:none}
   /* And behind a tutorial's explanation card. The total sits at z-index 30 so
      it can be seen going up over a win card, which is the moment it is news;
@@ -659,9 +950,9 @@
   .mhead .mt{flex:1;min-width:0}
   .mhead .mt b{display:block;font-family:'Space Grotesk',system-ui,sans-serif;
     font-size:15px;font-weight:700;letter-spacing:-.02em;color:var(--fg)}
-  .mhead .mt span{display:block;font-size:9px;letter-spacing:.13em;color:var(--fg-dim)}
+  .mhead .mt span{display:block;font-size:11px;letter-spacing:.13em;color:var(--fg-dim)}
   .mtot{display:flex;align-items:center;gap:4px;padding:4px 10px;flex-shrink:0;
-    border:1px solid var(--rule);border-radius:20px;color:var(--goal);font-size:12px}
+    border:1px solid var(--rule);border-radius:20px;color:var(--star);font-size:12px}
   .mq{width:30px;height:30px;border-radius:50%;flex-shrink:0;font-size:13px;
     color:var(--fg-dim);border:1px solid var(--rule);background:transparent}
   .mq.on{color:var(--player);border-color:var(--player)}
@@ -673,7 +964,7 @@
   .mtabs::-webkit-scrollbar{display:none}
   .mtab{flex:none;display:flex;align-items:center;gap:6px;height:32px;padding:0 12px;
     border:1px solid var(--rule);border-radius:17px;color:var(--fg-dim);
-    background:transparent;font-size:10px;letter-spacing:.09em;white-space:nowrap}
+    background:transparent;font-size:12px;letter-spacing:.09em;white-space:nowrap}
   .mtab.sel{color:var(--tabc);border-color:var(--tabc)}
   .mtab i{width:14px;height:14px;flex:none;border-radius:50%;font-style:normal;
     background:conic-gradient(var(--tabc) var(--pct),var(--rule) 0);
@@ -691,7 +982,8 @@
     background:linear-gradient(150deg,color-mix(in srgb,var(--sec) 15%,transparent),transparent 72%)}
   .mcard b{display:block;font-family:'Space Grotesk',system-ui,sans-serif;
     font-size:17px;font-weight:700;letter-spacing:-.02em;color:var(--sec)}
-  .mcard i{display:block;font-style:normal;font-size:10px;color:var(--fg-dim);margin-top:2px}
+  .mcard i{display:block;font-style:normal;font-size:13.5px;color:var(--fg-dim);
+    margin-top:4px;line-height:1.45}
   /* THE CENSUS, ONE LINE PER SECTION. Deliberately quieter than `i` above
      it, and not in the section colour: `sub` is instruction and the story is
      an aside, so it reads at a glance as the optional half. It is an <s>
@@ -699,16 +991,24 @@
      the next tag free of one - hence the text-decoration reset, the same
      trick .mbar u already uses. */
   .mcard .mstory{display:block;text-decoration:none;
-    font-size:9.5px;line-height:1.5;margin-top:7px;
+    font-size:11.5px;line-height:1.5;margin-top:7px;
     padding-top:7px;border-top:1px solid var(--rule);
     color:color-mix(in srgb,var(--fg-dim) 78%,transparent)}
   .mcard .mbar{display:block;height:3px;background:var(--rule);border-radius:3px;
     margin:10px 0 4px;overflow:hidden}
   .mcard .mbar u{display:block;height:100%;background:var(--sec);text-decoration:none}
-  .mcard .mf{display:flex;justify-content:space-between;font-size:9.5px;color:var(--fg-dim)}
-  .mcard .skipsec{margin-top:11px;width:100%;height:36px;border-radius:3px;
-    background:rgba(111,168,255,.08);border-color:#6fa8ff;color:#6fa8ff;
-    font-size:9.5px;letter-spacing:.11em}
+  .mcard .mf{display:flex;justify-content:space-between;font-size:11.5px;color:var(--fg-dim)}
+  /* Same blue and the same video mark as every other ad button, because it
+     buys the same thing. */
+  .mcard .skipsec{margin-top:11px;width:100%;height:40px;gap:8px;
+    --c:#6fa8ff;color:var(--c);
+    border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent);
+    --lip:color-mix(in srgb,var(--c) 44%,#04070d);
+    background:
+      linear-gradient(180deg,color-mix(in srgb,var(--c) 24%,transparent),
+        color-mix(in srgb,var(--c) 8%,transparent)),var(--panel);
+    font-size:11.5px;letter-spacing:.11em;font-weight:600}
+  .mcard .skipsec .adicon{width:17px;height:17px}
 
   #mtrail{position:relative;margin-top:8px}
   #mtrail svg{position:absolute;inset:0;pointer-events:none;z-index:0}
@@ -920,7 +1220,7 @@ L96 14 L0 14 Z' fill='%23fff'/></svg>");
   .mcard.mst{border-color:color-mix(in srgb,var(--sec) 46%,var(--rule));
     background:linear-gradient(180deg,
       color-mix(in srgb,var(--sec) 11%,transparent),transparent 62%)}
-  .mmast{font-style:normal;font-size:8.5px;letter-spacing:.16em;
+  .mmast{font-style:normal;font-size:10.5px;letter-spacing:.16em;
     margin-left:8px;padding:3px 7px;border-radius:99px;vertical-align:2px;
     color:color-mix(in srgb,var(--sec) 26%,#000);background:var(--sec)}
   .mtab.mst{border-color:color-mix(in srgb,var(--tabc) 62%,var(--rule))}
@@ -933,11 +1233,21 @@ L96 14 L0 14 Z' fill='%23fff'/></svg>");
   }
 
   .mstars{position:absolute;z-index:1;display:flex;gap:2px;pointer-events:none;
-    font-size:12px;line-height:1;color:var(--goal)}
-  .mstars u{text-decoration:none;text-shadow:0 0 8px rgba(53,194,165,.5)}
+    font-size:12px;line-height:1;color:var(--star)}
+  .mstars u{text-decoration:none;text-shadow:0 0 8px var(--star-glow)}
   .mstars u.off{color:rgba(195,205,228,.18);text-shadow:none}
-  .mcap{position:absolute;z-index:1;font-size:9.5px;color:var(--fg-dim);
-    pointer-events:none;white-space:nowrap}
+  /* A CAPTION WRAPS RATHER THAN RUNNING OFF THE SCREEN. It was `nowrap`,
+     which was survivable at 9.5px and is not at 13: `The Silence Before the
+     Storm` and `Catch Me If You Can!` both ran past the right edge of a
+     327px screen and were clipped by .mbody's overflow. The width it may
+     take is the gap between its node and the edge, near enough - and it is
+     aligned toward its own node, so a two-line name reads as one block
+     beside the circle rather than drifting away from it. */
+  .mcap{position:absolute;z-index:1;font-size:13px;color:var(--fg-dim);
+    pointer-events:none;max-width:52%;line-height:1.3;
+    overflow-wrap:break-word}
+  .mcap.r{text-align:left}
+  .mcap.l{text-align:right}
   .mcap.big{color:var(--fg);letter-spacing:.07em}
   .mcap em{font-style:normal;color:#6fa8ff}
 
@@ -947,27 +1257,50 @@ L96 14 L0 14 Z' fill='%23fff'/></svg>");
     padding:15px 14px 16px;transform:translateY(112%);
     transition:transform .26s cubic-bezier(.22,.72,.28,1);backdrop-filter:blur(9px)}
   .msheet.on{transform:translateY(0)}
-  .msheet .mk{font-size:9px;letter-spacing:.17em;color:var(--fg-dim)}
+  .msheet .mk{font-size:11px;letter-spacing:.17em;color:var(--fg-dim)}
   .msheet .mk.b{color:var(--vio)} .msheet .mk.t{color:var(--amb)}
   .msheet h4{font-family:'Space Grotesk',system-ui,sans-serif;font-size:17px;
     font-weight:700;letter-spacing:-.015em;margin:4px 0 0;color:var(--fg)}
-  .msheet .mm{font-size:10.5px;color:var(--fg-dim);margin-top:5px}
+  .msheet .mm{font-size:12.5px;color:var(--fg-dim);margin-top:5px}
   .msheet .mm .g{color:var(--goal)} .msheet .mm .a{color:#6fa8ff}
   /* Shared with the panel, because the struggle offer is the same offer the
      map makes and should not be a second visual language for it. */
   .msheet .ma,.panel .ma{display:flex;flex-direction:column;gap:6px;margin-top:12px}
-  .msheet .ma button,.panel .ma button{height:42px;font-size:10.5px;letter-spacing:.13em}
-  .msheet .ma .go{border-color:var(--goal);color:var(--goal);font-weight:600;
-    background:rgba(53,194,165,.09)}
-  .msheet .ma .ad,.panel .ma .ad{border-color:#6fa8ff;color:#6fa8ff;background:rgba(111,168,255,.08)}
-  .msheet .ma .qt,.panel .ma .qt{height:32px;font-size:9.5px;color:var(--fg-dim);border-color:var(--rule)}
-  .msheet .mn,.panel .mn{font-size:9.5px;color:var(--fg-dim);line-height:1.65;margin-top:9px}
+  /* THREE WEIGHTS, AND THEY LOOK LIKE THREE WEIGHTS. A card with one
+     outlined rectangle per option makes every option look the same, which is
+     the opposite of what a card with a recommended action wants. The primary
+     is filled and capped, the ad button is filled in its own blue and
+     carries the video mark, and the quiet one stays an outline - so the
+     shape of the decision is readable before a word of it is. */
+  .msheet .ma button,.panel .ma button{height:46px;font-size:12.5px;
+    letter-spacing:.13em;font-weight:600}
+  .msheet .ma .go,.panel .ma .go{--c:var(--goal);color:var(--c);
+    border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent);
+    --lip:color-mix(in srgb,var(--c) 44%,#04070d);
+    background:
+      linear-gradient(180deg,color-mix(in srgb,var(--c) 24%,transparent),
+        color-mix(in srgb,var(--c) 8%,transparent)),var(--panel)}
+  .msheet .ma .ad,.panel .ma .ad{--c:#6fa8ff;color:var(--c);
+    border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent);
+    --lip:color-mix(in srgb,var(--c) 44%,#04070d);
+    background:
+      linear-gradient(180deg,color-mix(in srgb,var(--c) 24%,transparent),
+        color-mix(in srgb,var(--c) 8%,transparent)),var(--panel);
+    gap:9px}
+  /* THE VIDEO MARK. An ad button has to say it is an ad before it is
+     pressed - a play sign in a screen is the one drawing everybody already
+     reads that way, and it means the words never have to carry it alone. */
+  .adicon{width:19px;height:19px;flex-shrink:0;fill:currentColor;stroke:none}
+  .msheet .ma .qt,.panel .ma .qt{height:36px;font-size:11.5px;
+    color:var(--fg-dim);border-color:var(--rule);font-weight:400;
+    --lip:rgba(4,7,14,.5)}
+  .msheet .mn,.panel .mn{font-size:11.5px;color:var(--fg-dim);line-height:1.65;margin-top:9px}
   .msheet .mn b{color:var(--fg);font-weight:500}
 
   .mlegend{display:grid;grid-template-columns:auto 1fr;gap:9px 11px;align-items:center;
     margin-top:11px}
   .mlegend .mk2{width:30px;height:30px;border-radius:50%;border:2.5px solid var(--rule);
-    background:#1b2340;display:grid;place-items:center;font-size:11px;color:#4a577a;
+    background:#1b2340;display:grid;place-items:center;font-size:13px;color:#4a577a;
     position:relative}
   .mlegend .mk2.solved{background:var(--goal);border-color:#5fe0c4;color:#08281f}
   .mlegend .mk2.here{background:var(--player);border-color:#f4699a;color:#2a0512}
@@ -985,7 +1318,7 @@ L96 14 L0 14 Z' fill='%23fff'/></svg>");
   .mlegend .mk2.mboss .mring{stroke-width:7;stroke-dasharray:94 27}
   .mlegend .mk2>span{position:relative;z-index:1}
   .mlegend .mk2.mbossOLD{border-color:var(--vio);color:var(--vio)}
-  .mlegend .md{font-size:10px;color:var(--fg-dim);line-height:1.5}
+  .mlegend .md{font-size:12px;color:var(--fg-dim);line-height:1.5}
   .mlegend .md b{color:var(--fg);font-weight:500}
 
   @media (prefers-reduced-motion:reduce){*{transition-duration:.01ms !important}}
@@ -1043,10 +1376,10 @@ body.tutlock #playBar button.tutlive{opacity:1;pointer-events:auto;
   background:rgba(53,194,165,.14);
   animation:tutlive 1.25s ease-in-out infinite}
 @keyframes tutlive{
-  0%,100%{box-shadow:0 0 0 0 rgba(53,194,165,.55),0 0 18px rgba(53,194,165,.35);
-    transform:scale(1)}
-  50%{box-shadow:0 0 0 9px rgba(53,194,165,0),0 0 26px rgba(53,194,165,.55);
-    transform:scale(1.07)}
+  0%,100%{box-shadow:0 3px 0 var(--lip),0 0 0 0 rgba(53,194,165,.55),
+    0 0 18px rgba(53,194,165,.35);transform:scale(1)}
+  50%{box-shadow:0 3px 0 var(--lip),0 0 0 9px rgba(53,194,165,0),
+    0 0 26px rgba(53,194,165,.55);transform:scale(1.07)}
 }
 /* The coach is the one thing that has to stay legible over the dim. */
 body.tutlock .coach{z-index:11}
@@ -1069,7 +1402,7 @@ body.tutlock .coach{z-index:11}
   font-family:'Space Grotesk',system-ui,sans-serif;
   transition:opacity .3s ease}
 .phasenote.on{opacity:1;animation:phaseIn .45s cubic-bezier(.2,.9,.3,1)}
-.phasenote b{display:block;font-size:11px;letter-spacing:.3em;font-weight:500;
+.phasenote b{display:block;font-size:13px;letter-spacing:.3em;font-weight:500;
   color:var(--fg-dim);text-transform:uppercase}
 .phasenote i{display:block;font-style:normal;font-size:20px;font-weight:700;
   letter-spacing:-.01em;color:var(--fg);margin-top:8px;line-height:1.25}
@@ -1100,7 +1433,10 @@ body.flat.bosshold::before{background:rgba(90,84,68,.34)}
    `transform`, which composites, and this thing loops for as long as a
    first-time player is stuck.
    ============================================================ */
-.ghost{position:fixed;left:50%;top:50%;z-index:11;
+/* Lower than the middle: the hand is the thing being watched and the world
+   above it is the thing being learned, so the demonstration sits under the
+   board rather than across it. */
+.ghost{position:fixed;left:50%;top:60%;z-index:11;
   width:190px;height:118px;margin:-59px 0 0 -95px;
   pointer-events:none;opacity:0;transition:opacity .35s ease}
 .ghost.on{opacity:.62}
@@ -1121,6 +1457,17 @@ body.tutlock .ghost.on{opacity:1}
    than blinking in mid-air. The gradient on a swipe runs from nothing at the
    start to the goal colour at the finish, which states the direction a
    second time for anyone who glances at a still frame. */
+/* The gesture's name, ABOVE the hand. Below it would land in the middle of
+   the fist: the hand hangs *down* from its fingertip, which is the contact
+   point at the ghost's own centre, so everything under that point is drawing.
+   Above it there is only the tap's ripple and the 42px an upward swipe
+   travels, and 78px clears both. */
+.glabel{position:absolute;left:50%;top:-78px;transform:translateX(-50%);
+  white-space:nowrap;text-transform:uppercase;
+  font-family:'IBM Plex Mono',ui-monospace,monospace;
+  font-size:15px;font-weight:600;letter-spacing:.16em;color:var(--goal);
+  text-shadow:0 2px 10px rgba(0,0,0,.55)}
+.glabel:empty{display:none}
 .gtrack{position:absolute;left:50%;top:50%;border-radius:3px;
   transform:translate(-50%,-50%);display:none}
 .ghost.g-swipe .gtrack,.ghost.g-two .gtrack,.ghost.g-dbl .gtrack{display:block}
@@ -1149,20 +1496,20 @@ body.tutlock .ghost.on{opacity:1}
 .gfinger{position:absolute;left:50%;top:50%;width:26px;height:26px;
   margin:-13px 0 0 -13px}
 .gfinger.b{display:none}
-/* TWO FINGERS ARE STACKED, NOT SIDE BY SIDE. Side by side is the grip most
-   people actually use, but it is the worse drawing: two dots abreast sliding
-   along their own direction of travel read as one dot with a trail behind
-   it, which is the exact thing a single-finger swipe already looks like. One
-   above the other, both moving, is unmistakably two. */
-/* SIDE BY SIDE, 22px apart, which is the spread of the hand drawn over them.
-   Stacked was right while each contact was a bare dot and nothing else on
-   screen said "two" - two dots abreast sliding along their own direction of
-   travel read as one dot with a trail. A fist with two fingers out says it
-   instead, so the contacts are free to sit where fingers really do, and the
-   hand gets to be the right way up. One track now rather than two: side by
-   side, both fingers travel along the same line. */
-.ghost.g-two .gfinger.a{margin-left:-24px}
-.ghost.g-two .gfinger.b{display:block;margin-left:-2px}
+/* TWO FINGERS ARE STACKED, 32px APART, AND THE HAND TURNS TO MATCH.
+
+   Side by side is the grip a hand really uses and it is the worse drawing,
+   which is the whole finding here: two contacts abreast, sliding along their
+   own line of travel, read as one contact with a trail - the exact picture a
+   single-finger swipe already makes. Stacked, the pair sits ACROSS its
+   direction of movement, so the two-ness is the one thing the motion cannot
+   blur. Both versions have been drawn and played; this is the one that says
+   "two fingers" without being told.
+
+   The hand is then rotated a quarter turn (below) so its fingertips land on
+   the two dots, which also points it the way it is about to go. */
+.ghost.g-two .gfinger.a{margin-top:-29px}
+.ghost.g-two .gfinger.b{display:block;margin-top:3px}
 /* THE HAND. Positioned so the index fingertip lands exactly on the contact
    dot's centre, which is what makes the dot read as "this is where the
    finger is touching" rather than as a second object beside it.
@@ -1181,10 +1528,28 @@ body.tutlock .ghost.on{opacity:1}
 .ghand{position:absolute;display:none;overflow:visible;--tilt:-10deg}
 .ghand.single{width:60px;height:80px;left:-7px;top:6px;
   transform:rotate(var(--tilt));transform-origin:20px 7px}
-.ghand.pair{width:75px;height:80px;left:-6px;top:6px;
+.ghand.pair{width:85px;height:80px;left:-6px;top:6px;
   transform:rotate(var(--tilt));transform-origin:19px 7px}
 .ghost.g-swipe .ghand.single,.ghost.g-dbl .ghand.single{display:block}
 .ghost.g-two .ghand.pair{display:block}
+/* THE QUARTER TURN, AND WHICH WAY IT FACES.
+
+   The pair is drawn pointing up with its tips 32px apart horizontally, and
+   the contacts are stacked 32px apart vertically - so a rotation of exactly
+   90 degrees about the FIRST tip puts the second one on the second dot by
+   construction. No tilt on this one: at a 22px radius, ten degrees of
+   character costs nearly four pixels of registration, and a fingertip that
+   does not sit on its own contact is the one thing this drawing cannot
+   afford.
+
+   Which way it turns is the direction of travel, so the hand always leads
+   with its fingers and trails its fist - dragging a hand backwards across
+   the screen is a picture of somebody being pulled, not of somebody
+   swiping. Turning it the other way flips which tip is on top, so the left
+   version also drops 32px to put its first tip on the LOWER dot; the second
+   then lands on the upper one. */
+.ghost.g-two.d-right .ghand.pair{transform:rotate(90deg)}
+.ghost.g-two.d-left  .ghand.pair{transform:translateY(32px) rotate(-90deg)}
 /* The rim goes on first as a fat round stroke and the body covers the seams.
    `use` inherits fill and stroke into the symbol, which is the whole reason
    the shapes inside carry no paint of their own. */
@@ -1324,18 +1689,18 @@ body.tut.tutgest .coach,body.tut.tutgest.ui-none .coach{bottom:44px}
   align-items:center}
 .htitle{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;
   font-size:27px;letter-spacing:-.03em;color:var(--fg);line-height:1}
-.hsub{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:8px;
+.hsub{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
   letter-spacing:.28em;text-transform:uppercase;color:var(--fg-dim);
   margin-top:7px}
 .hstand{width:196px;height:196px;margin:0}
 .hstand canvas{width:100%;height:100%;display:block}
-.hstars{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9px;
+.hstars{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;
   letter-spacing:.14em;text-transform:uppercase;color:var(--fg-dim)}
-.hstars b{color:var(--goal);font-weight:600;font-size:12px}
-.hstars i{font-style:normal;color:var(--goal);margin:0 4px 0 1px}
+.hstars b{color:var(--star);font-weight:600;font-size:12px}
+.hstars i{font-style:normal;color:var(--star);margin:0 4px 0 1px}
 
 .hbtns{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:12px}
-.home button{width:100%;height:44px;font-size:10.5px;letter-spacing:.14em}
+.home button{width:100%;height:44px;font-size:12.5px;letter-spacing:.14em}
 /* The one thing this screen is for, so it gets the raised treatment the
    panels' primary button already has - and its own second line, because
    "CONTINUE" alone does not say what you are continuing. */
@@ -1358,7 +1723,7 @@ body.tut.tutgest .coach,body.tut.tutgest.ui-none .coach{bottom:44px}
 .hcont:active{transform:translateY(3px);
   box-shadow:0 1px 0 color-mix(in srgb,var(--sec) 46%,#04070d)}
 .hcont b{font-size:12px;letter-spacing:.16em;font-weight:600}
-.hcont i{font-style:normal;font-size:8.5px;letter-spacing:.08em;
+.hcont i{font-style:normal;font-size:10.5px;letter-spacing:.08em;
   color:var(--fg-dim);text-transform:none}
 .hcont i:empty{display:none}
 
@@ -1382,7 +1747,7 @@ body.tut.tutgest .coach,body.tut.tutgest.ui-none .coach{bottom:44px}
   display:flex;flex-direction:column;align-items:stretch;gap:8px}
 .hrow{display:flex;align-items:center;gap:9px;min-width:0}
 .hrow label{width:46px;flex-shrink:0;font-family:'IBM Plex Mono',ui-monospace,monospace;
-  font-size:7.5px;letter-spacing:.16em;color:var(--fg-dim)}
+  font-size:9.5px;letter-spacing:.16em;color:var(--fg-dim)}
 .htiles{flex:1;min-width:0;display:flex;gap:5px;align-items:flex-start;
   overflow-x:auto;overflow-y:hidden;touch-action:pan-x;
   scrollbar-width:none;padding:2px 0 1px}
@@ -1393,8 +1758,8 @@ body.tut.tutgest .coach,body.tut.tutgest.ui-none .coach{bottom:44px}
   border:1px solid var(--rule);display:flex;align-items:center;
   justify-content:center;font-size:15px;line-height:1;color:var(--fg);
   transition:border-color .2s ease,opacity .2s ease}
-.htile>b{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:7.5px;
-  font-weight:500;letter-spacing:.02em;color:var(--goal)}
+.htile>b{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
+  font-weight:600;letter-spacing:.02em;color:var(--star)}
 /* EQUIPPED IS A DETACHED RING, WITH A GAP. `--player` is not a constant: it
    is rewritten from the equipped skin colour every time applySkin() runs, so
    a ring drawn tight around a colour swatch is the swatch's own colour drawn
@@ -1419,7 +1784,7 @@ body.tut.tutgest .coach,body.tut.tutgest.ui-none .coach{bottom:44px}
 .htile:active>span{border-color:var(--fg-dim)}
 
 .home .tiny{width:auto;height:30px;padding:0 16px;margin-top:14px;
-  font-size:9px;border-color:var(--rule);color:var(--fg-dim)}
+  font-size:11px;border-color:var(--rule);color:var(--fg-dim)}
 
 /* Play chrome has nothing to do while the home screen is up, and the star
    total is shown inside it instead - two counts of the same number, one of

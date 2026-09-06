@@ -99,6 +99,14 @@ If you add a top-level `var`, check it is not a Window property name.
 Block format is `[x,y,z,k]` where k is 0 stone, 1 water, 2 anchor, 3 crate,
 4 fire. Levels may carry `keys: [[x,y,z]]`.
 
+**AND THE PLAYER-FACING NAMING IS NOW CONSISTENT.** The rename below reached
+the pieces and the stories but had never reached the section headers, the
+legend or most of the hints, so the game called one thing glass and water in
+two places a tap apart. Everything a player reads says **water** and
+**fire** now — sections `II · FIRE` and `III · WATER`, the legend, every
+hint. The code still says `glass` and `spike` throughout, for the reason
+below.
+
 **Kinds 1 and 4 were renamed, not changed.** Glass became **water** and a
 spike became **fire**: identical rules, identical solver, not one level
 re-verified. The code still says `glass` and `spike` throughout, the same way
@@ -131,9 +139,9 @@ five levels in, each section is interrupted by a **trial**:
 
 | | | |
 |---|---|---|
-| I · FUNDAMENTALS | 14 + trial + boss | turn, depth — and the landing rule, revealed mid-section |
-| II · SPIKES | 7 + trial + boss | spikes before glass — a hazard reads faster than an absence |
-| III · GLASS | 8 + trial + boss | ends on glass + spikes |
+| I · FUNDAMENTALS | 12 + trial + boss | the owner's own opening: the fold, then peril, then the turn |
+| II · FIRE | 7 + trial + boss | fire before water — a hazard reads faster than an absence |
+| III · WATER | 8 + trial + boss | ends on water + fire |
 | IV · CRATES | 10 + trial + boss | ends on crate + glass + spikes |
 | V · EXTRA | 27, locked | opens when every boss is down; anchors and amber live here |
 
@@ -142,52 +150,148 @@ marker after it. A section with `locked:true` stays shut until
 `sectionsUnlocked()` — which checks the **bosses only**, not every level,
 because gating a bonus on 100% turns a reward into a chore.
 
+**AND A BOSS YOU SKIPPED IS NOT A BOSS YOU BEAT.** That is deliberate — a
+skip is not in `progress`, so ads cannot buy the reward for winning — but it
+is a state the game *hands out itself*: `struggleOffer()` offers the skip
+after three losses on a landmark, so a player can take the help they were
+offered, go on to finish the campaign, and arrive at a shelf that says only
+"every boss is down" while their save quietly disagrees. Reported exactly
+that way. The gate has not moved; what changed is that it can now be read.
+`bossesLeft()` is the primitive and `sectionsUnlocked()` is derived from it,
+so the section card, the locked sheet, the win card on `BOSS IV` and
+`mapHere()` all name the fight that is still standing — and the first three
+of those put the player in front of it in one tap.
+
 **Bosses and trials carry no number**, only a numeral: `BOSS I …`, `TRIAL II
 …`. Progress is keyed by name, so a numbered landmark in the middle of a
 section would renumber every level after it and cost a `LEVEL_RENAMES` entry
 each. A landmark must not be able to break a save.
 
-**Section I is long on purpose, and it is now a section with a reveal in the
-middle of it.** It runs
-`01, 02a, 02b, 02, 04, TRIAL I, 00 — First Landing, 03, 05 …` and the shape
-of that is the whole point:
+**SECTION I IS THE OWNER'S OWN, AND IT IS THE ANSWER TO "ARE THESE AI MADE?"**
+The opening was re-cut around eleven hand-authored levels. It runs
+`00 — First Steps, 00 — First Fold` (the tutorial), then `01 … 06,
+TRIAL I, 07, 08, 09, 10, 11, 12` and the boss. Each one is a sentence, and no
+two sentences are the same:
 
-- **Everything before the trial is naive.** Every column those five levels
-  ever pop in holds exactly one block, so `R.landings()` is never asked to
-  choose and coming back always puts you somewhere obvious. Checked, not
-  assumed: walk each optimal path and count the candidates at every POP, and
-  the first level where the number is ever 2 is `05 — Two Windows` — the
-  first level *after* the reveal.
-- **The reveal is `00 — First Landing`, moved out of the tutorial.** It used
-  to be the fourth thing a player ever did, which is the worst possible
-  moment for it: they had no model of the fold yet, so there was nothing to
-  correct. Now it arrives as a reward for beating a clock, opens with two
-  cards, and has five levels of quiet assumption behind it.
-- **`02c — The Same Column` is the exam, and it is the owner's own level.**
-  Four blocks in a row and a fifth two behind the end of it, both in one
-  silhouette column. Walk to the end, fold, stand up, and the naive route
-  puts you back on the block you were already on — because that one is at the
-  front. The goal is the other one, and the only way onto it is to turn round
-  first. `solve()` says it is exactly `rot+ FLAT POP rot+ FLAT POP` and
-  impossible without rotating, and `R.pick()` confirms the naive fold lands on
-  `[3,0]` rather than the goal at `[3,-2]`.
-- **`03 — The Near One` follows it rather than preceding it.** It puts a
-  decoy in the goal's column, so it *punishes* the naive model — which is a
-  trap before the reveal and a test after it. Its own optimal path still pops
-  on a single candidate; the decoy is what a wrong route finds.
-- **`02c` scores 26 and plays easy, which is the tier model's blind spot in
-  the other direction.** `statsFor()` counts two folds and two turns and calls
-  it `hard`; the player has just been handed the answer, one card ago. The
-  same gap that makes `03 — The Near One` score low and play hard. Do not
-  reorder this run on the curve alone.
-- **The numbers are deliberately not sequential** (`01, 02a, 02b, 02, 04, …
-  03, 05`). Numbering is global, so making it sequential means renaming every
-  level in the game and a `LEVEL_RENAMES` entry each — and the owner intends
-  to re-cut this run again. The order is the array's; the number is only a
-  name.
+| | |
+|---|---|
+| `00 — First Steps` | walking, stepping up, stepping down. No fold route exists through the geometry at all, so the lesson cannot be short-circuited even before `lockFlat` refuses the verb. |
+| `00 — First Fold` | fold, cross, stand up — **and the landing rule for free**: the far bank is three deep in one silhouette column, so you come back on the front block and the goal is one step behind it. |
+| `01 — On Your Own` | the tutorial's own shape one step longer, and the only level in the opening where nothing can kill you. The rest the section did not have. |
+| `02 — Beware of Walls` | some squares are lethal to fold from. 4 of 9, including the start square. |
+| `03 — A Real Challenge` | the same, hardened: 6 of 8, and the only safe square is one you step *down* onto. |
+| `04 — The Illusion` | the plane is a shortcut, not a delivery — pop partway and walk the rest. |
+| `05 — The Block` | the plane has no preferred direction; the goal is behind you and above you. |
+| `06 — Limited` | the peril lesson at its limit: 8 of 9 squares are lethal to fold from, and the survivor is one you have to *climb* to. |
+| `07 — The Rotation` | **impossible without rotating**, proved by `solve()` both ways — and taught, so the player proves it too. |
+| `08 / 09 — No Bridge / No Bridge 2` | the same three moves conjugated: `rot+` and `rot-`. |
+| `10 — Simple Walk` | walking *is* par. The control half of the scoring pair. |
+| `11 — Not a Simple Walk` | one column wider, so walking is one move over and the fold is the shortcut. The star is the only thing that says you missed it. |
+| `12 — The Silence Before the Storm` | everything at once, into the boss. |
 
-The measured curve out of a tutorial that ends at 11 is **14, 12, 19, 21,
-28**, every step inside the +10 the opening allows.
+- **ROTATION DOES NOT EXIST UNTIL `07`, AND IT IS NEVER TAKEN BACK.** The
+  locked run is contiguous and ends at the level that teaches the turn: the
+  two tutorials, `01`…`06` and `TRIAL I` carry `rotate:false`, and nothing
+  after `07 — The Rotation` does. **`13 — Fire Wall` used to**, six levels
+  and a boss later, at the top of a new section — so the buttons vanished
+  from a bar that had had them all through Section I and came back on the
+  next level. That is indistinguishable from a bug and was reported as one:
+  *"I got into a later level which is not disabled which was still
+  disabled."* A verb that has been given is not taken away again.
+- **The lock is a lesson, not a load-bearing constraint, and that is worth
+  knowing before defending it.** It used to be true that four early levels
+  collapsed to `rot+ FLAT POP` without it; the opening was re-cut around the
+  owner's own levels since, and re-measured today **every one of the ten
+  locked levels has the same optimal route with rotation as without** —
+  including `13`, which is 5 moves either way. So what the lock buys now is
+  purely the reveal at `07`, and that is the only thing to weigh if it is
+  ever questioned again.
+- **AND THE TURN BUTTONS ARE NOT DRAWN ON A LOCKED LEVEL.** Disabled was the
+  old behaviour and it is still right for the *flat* case, where they come
+  back the moment you stand up. A level with no turn is a different sentence,
+  and a run of dead controls in the bar would spend the reveal in advance.
+  `body.norot`, set in `syncHud`. **A disabled button still has to look like
+  a button** — see the note on `button:disabled` in `css/style.css`: dropping
+  its background to transparent made the flat case read as the controls
+  having been removed, which is the other half of the same report.
+- **THE SCORING PAIR IS A SETUP AND A PUNCHLINE.** `10` is trivial on
+  purpose — the floor is open and walking is exactly optimal — and it is the
+  level `starsOffer()` explains three stars on. The player is told to aim for
+  them, gets them free, and then meets `11`, which looks identical, is one
+  column wider, and where walking scores 4 against a par of 3. Testers ignore
+  the star system because nothing ever points at it; this is the pointing.
+- **`07` IS THE THIRD TUTORIAL, AND ITS LESSON IS A PROOF THE PLAYER
+  PERFORMS.** A card saying "this one needs the other axis" is a claim;
+  folding, standing up and finding the world exactly where you left it is a
+  demonstration. So the first two steps ask for the fold and the pop that do
+  **not** work, and only then does the turn arrive. All three carry
+  `free:true` — `tutGuide()` replaces any step whose cue disagrees with the
+  solver, and the solver would never spend a fold here — and the third needs
+  it for a second reason: standing up out of the wasted fold puts the player
+  on the block at the *front* of their column, one square off the line the
+  solver's route starts from. The lesson then stops and hands the rest to the
+  solver, which is what `tutGuide()` does on any level once the steps run
+  out. It is `tutorial:true` because those two wasted moves are moves the
+  solver does not count, and a player who does as they are told must not be
+  marked down for it. **And it carries `tutFree:true`, so the coach stops
+  dead once the turn has been shown** rather than naming every move to the
+  goal: handing the player a verb and then narrating the puzzle they now own
+  takes back the thing that was just given them. That flag is the one seam
+  between "get a first-time player to the goal" and "hand them the game".
+- **AND THE WHOLE CAMPAIGN IS WRITTEN IN THAT VOICE NOW.** Section I was the
+model and everything outside it has been rewritten to match: second person,
+plain words, one sentence, and **the player's vocabulary rather than the
+code's**. A player has three words for this game — 2D, 3D, and the name of
+the thing in front of them — so a hint says *go 2D*, *turn*, *the eye*,
+*fire*, *water*, *amber*, *crate*, and never *the volume*, *the plane*, *the
+silhouette*, *the axis*, *the projection* or *a column*. Mean hint length
+went from 63 characters to 49 and nothing outside Section I now runs past
+70 except the four bosses, which share one fixed sentence. **Eight titles
+were renamed with it** — `Invisible Architecture`, `Long Division`,
+`Confluence`, `The Whole Language`, `Sharp`, `Poisoned Column`, `Long
+Glass`, `Absent Floor` — each one costing a `LEVEL_RENAMES` entry, composed
+the usual way. **Two sections were renamed too**: `II · SPIKES` and
+`III · GLASS` became `II · FIRE` and `III · WATER`, because the pieces have
+been drawn as fire and water for a long time and only the section headers
+and the legend were still using the old names. Section names are not
+persisted, so those two cost nothing.
+
+**THE TITLES AND HINTS ARE THE OWNER'S, AND THEY ARE SHORT ON PURPOSE.**
+  The first pass named levels after the mechanic and explained it in a
+  sentence about the *game*; these speak to the player and stop
+  (`Beware of walls`, `no catch here, just a simple walk`). Every one of them
+  had already been live on the published link, so all twelve went through
+  `LEVEL_RENAMES` rather than simply changing.
+- **The peril pair was verified, not assumed.** `02` and `03` add blocks at
+  head height that change no route at all — the optimal is the same as the
+  level before — and turn four then six of the standable squares into places
+  where `GO 2D` kills you. That is what makes them different levels rather
+  than decoration, and it is the first time `foldPeril()`'s red block has a
+  level built for it.
+- **SECTION II OPENS ON THE OWNER'S FIRE LEVELS TOO.** `13 — Fire Wall` is
+  fire as a *wall* — the middle column burns, only three squares are walkable
+  at all, and the stone pillar behind it is the way over, so the fire never
+  enters the route. `14 — Not This Way` is the other half: two blocks of it
+  poison every silhouette this view offers, and the level is **impossible
+  without rotating**. `15 — The Floor Is Lava` is the owner's title and the
+  measurement earns it — of nine standable squares, two crush you and six
+  burn you, which leaves one. The three they replaced went to the shelf as
+  `79..81`.
+- **The old opening is on the shelf, not deleted.** Thirteen levels moved to
+  `V · EXTRA` and were renumbered `65..77` — two levels called `01` is a map
+  with two nodes reading 01. That also fixes something the shelf needed: it
+  read `brutal` end to end, and now opens on gentle ones.
+- **`00 — First Landing` was dropped**, on the owner's call. Its lesson is
+  not gone: `00 — First Fold` now lands you on the front block with the goal
+  one step behind it, so the rule is watched rather than read, and
+  `08 — The Same Column` is still the exam. **All of its machinery is live
+  and unused** — `card:{h,p}`, `show:"landing"`, `hold:true`, `L.tint` — the
+  same way the twin boss and `cunning` are; restoring it is one level-data
+  paste. Its notes are kept below for that reason.
+
+The measured curve is **8, 14, 14, 16, 14, 16, 22 (trial), 19, 11, 11, 26,
+31**. The two elevens are the deliberately tiny rotation pair; measured from
+`05` the ramp into the boss is 19 → 26 → 31.
 
 **Two levels teaching the same thing is a bug, and the curve will not catch
 it.** `03 — The Other Axis` and `04 — Turn to see` scored 19 and 21 and
@@ -276,12 +380,29 @@ Two consequences worth knowing before changing a beat list:
   `at` around only changes who is threatened in the volume — so pick `at`
   values that sit on rows the player actually stands in. A slice that threatens
   nobody is decoration.
-- **Spikes and the sweep axis are coupled.** `TRIAL II` keeps one `x` slice
-  because its spikes were placed to take the squares an `x` sweep leaves you,
-  which means they also take the `z` escapes: all three depth slices over its
-  near island corner somebody, and `trialSafety()` rejects every one. That is
-  not a bug in either piece — it is what happens when a hazard is authored
-  against a specific sweep.
+- **Fire and the sweep axis are coupled, and the coupling is what
+  `trialSafety()` catches.** `TRIAL II` keeps one `x` slice among two `z`
+  ones so both fold axes spend part of the cycle lethal — every crossing
+  there is a fold, so that is the whole tension. The trap is authoring the
+  fire *against* a slice: a fire pair placed on both ends of the landing lane
+  leaves the square between them with no step out of the beat that owns it,
+  and `trialSafety()` rejects it. Measured twice while rebuilding this level.
+  Fire that poisons **one** end of a lane forbids a crossing without cornering
+  anybody; fire on both ends corners the middle.
+
+- **`TRIAL II` IS THREE ISLANDS AND NOTHING JOINS THEM BUT A FOLD.** It used
+  to be two islands and a pair of bridge blocks out at `z=9`, which closed the
+  gap in the *x* silhouette — so all three legs walked across in the opening
+  view and the turn buttons were never touched. Measured: every leg solvable
+  with rotation locked out, on the level that sits in the middle of a section
+  and is supposed to be its hardest question. Now each pair of islands is
+  offset in **one** axis only, so it already shares a silhouette column along
+  the other: `A`(x0..3,z0..2) and `B`(x6..9,z0..2) share their z's, `B` and
+  `C`(x6..9,z6..8) share their x's, and `A` and `C` share neither, so the
+  middle island cannot be skipped. Rule 5 then decides which way each fold
+  carries you, so the four crossings are the four views — out on 1, home on 3,
+  on on 0, back on 2 — and the solver says every leg is impossible with
+  rotation locked out. Legs 13+10+9 with the fire, 11+9+5 without it.
 
 **THE HAZARD IS BLOCKS FALLING OUT OF THE SKY, and that is the whole
 redesign.** For a long time the attack was a translucent red pane and nothing
@@ -934,6 +1055,25 @@ walk into a wall.
   map — but the map is separating one landmark from another in a list, and
   the HUD is separating you from the thing in front of you, which is a
   different job. The map keeps violet.
+- **THE BAR IS CENTRED IN THE GAP BETWEEN THE CORNERS, NOT ON THE VIEWPORT**,
+  and that is a bug fix rather than a preference. `left:50%` plus a translate
+  is only safe while the screen is wide enough that the middle happens to be
+  free, and it is not on a small phone: measured at 327 CSS px — a 900px
+  screen at DPR 2.75, which is what the owner plays on — the bar landed at
+  139..189 while the star total, which grows *leftwards* as the number gets
+  longer, reached back to 172 and covered the last core. So a trial with one
+  core already taken drew a row that still read as three. Reported with a
+  screenshot. `.boss` is the full-width lane now, padded by the two corner
+  clusters, with `.bstack` centred inside it.
+- **The star total is hidden while a clock is running.** It cannot change
+  during a fight — the move label already refuses to show stars here for
+  exactly that reason — so it was a third scoreboard saying nothing, and it
+  was the thing covering the cores. `levelDone` brings it back, because that
+  is the moment it is news and the moment the win card's stars have to fly to
+  it, which is why `win()` calls `syncHud()` on its first line.
+- **A spent core shrinks as well as dimming.** Three bars of one length with
+  a dim one among them is a row of three at a glance; the lives row above has
+  always said it twice, with colour *and* scale, and this row said it once.
 - Scored on lives, three stars for three intact. `progress[name]` holds lives
   for a boss or a trial and a move count for everything else — opposite
   senses in one slot — so reads go through `starsForRecord()`, writes through
@@ -975,6 +1115,65 @@ worth running to tune a number the owner is about to feel out anyway.
 ---
 
 ---
+
+## The buttons
+
+**They are meant to look pressable, and for a long time they did not.**
+Everything in the game was a 1px outline on nothing with a 2px radius —
+honest, quiet, and reported as stale and uninviting. The reason it failed is
+specific rather than a matter of taste: **a hairline rectangle is what this
+game draws for a block edge**, so the chrome and the world were speaking the
+same language and nothing on screen said which things answered a thumb.
+
+One skin now, and it is the one `.hcont` on the home screen already used:
+
+- a **fill** — a soft top-lit gradient over the panel colour, so a button is
+  an object rather than a hole;
+- a **lip** — `0 3px 0` of a darker shade of the button's own hue, which is
+  the whole of what turns a flat rectangle into a key cap;
+- a **press** — the cap moves down onto its lip.
+
+`--c` is a button's hue and `--lip` its shadow, so a family sets one property
+and the fill, the rim, the glyph and the lip all follow. **A disabled button
+loses its cap**, which is the honest drawing of one that will not answer.
+
+- **The five round buttons wear a hue each**, so a row of circles is told
+  apart by colour before a glyph is read — which is what a thumb reaching for
+  the corner actually uses. They take the colours those things already mean
+  elsewhere: the bulb is the gold of a star, the eye the goal's teal, the
+  wardrobe the violet of the map's landmarks, restart the blue every second
+  chance in the panels wears. `button.rnd.on` swaps `--c` to the player's
+  colour, so "you are inside this one" reads the same on all of them.
+- **The two animated cues list the lip in their own keyframes.** A
+  `box-shadow` animation replaces the base shadow outright, so `cuePulse` and
+  `tutlive` would flatten the cap while they pulsed. Both carry
+  `0 3px 0 var(--lip)` in every frame. Anything else that animates a shadow
+  has to do the same.
+- **A card's buttons are three weights and they look like three weights**: a
+  filled primary, a filled blue ad button, and a quiet outline. One outlined
+  rectangle per option made every option look identical, which is the
+  opposite of what a card with a recommended action wants.
+- **THE ICONS ARE DRAWN, NOT OUTLINED.** Every glyph in the corners and on
+  the bar used to be a 1.7px hairline path, which at 19px on a dark ground is
+  a *diagram* of a thing rather than the thing — reported, after the skin
+  landed, as buttons that look better but icons that do not feel alive. They
+  are solid shapes now with a second tone in them: a body in the button's own
+  hue, `.lite` where the object catches light, `.dim` where it turns away,
+  `.ln` for the stroked half (an arc, a hook), and a knocked-out hole for the
+  eye's pupil. The d-pad's `&#9650;` and the turn buttons' `&#8630;` were text
+  glyphs a font draws about eight pixels across in the middle of a 58px cap —
+  **which is why the turn buttons were reported as missing** — and are solid
+  SVG arrowheads and circular arrows now.
+- **`.ln`, not `.st`, and that is the third time.** `.st` was already the gold
+  star in a shop price, so an icon path carrying it came out stroked in
+  `--star`. Check any new class name against what is already in
+  `css/style.css` — see `.mboss`/`.boss` on the map and `.home`/`.athome` on
+  the home screen.
+- **Every ad button carries the video mark** (`adIcon()` in `js/18-ui.js`) —
+  a play sign in a screen, which is the drawing everybody already reads as
+  "this plays a video". One helper rather than five copies, because there are
+  five ad buttons and they must not drift. It is `fill:currentColor`, so it
+  takes the button's hue for nothing.
 
 ## The look — the block, the sky and the air
 
@@ -1508,13 +1707,12 @@ level data changed to make it.
   nothing else, and a skip is deliberately not in `progress`. `PROLOGUE` can
   never be mastered because `sectionSpans()` skips tutorials, so its `max` is
   0 — a section that awards no stars has none to collect.
-- **The menu's `PREVIEW` switch forces the finished look on and draws the
-  nodes solved**, because a preview that leaves every node dashed and locked
-  is not a preview of the finished look. It is a drawing and nothing else:
-  `mapSheet()` asks `mapState()` again on a tap, so a locked level still
-  refuses to open. The win card's mastery banner deliberately does **not** go
-  through `sectionMastered()` — it is derived from `starsGained` — so a
-  preview can never fake the one moment that is actually news.
+- **The `PREVIEW` switch that forced the finished look on is gone from the
+  menu**, and `masteryPreview()` returns false. The machinery it drove is
+  untouched, so restoring the row restores the preview. The win card's
+  mastery banner deliberately never went through `sectionMastered()` — it is
+  derived from `starsGained` — so a preview could never fake the one moment
+  that is actually news.
 - **The landmarks are SVG, not `clip-path`.** A clipped box loses its border
   and its shadow, and the rim and the lip are what make a node look pressable;
   `mapShape()` emits the polygon, its lip and its ring as one `<svg>`.
@@ -1552,22 +1750,21 @@ level data changed to make it.
 - **`mapReach()` counts solved levels only, never skips.** Counting a skip
   would drag the rolling window forward with it and quietly hand over
   everything in between — the exact levels the skip exists to leave for later.
-- **THE GAME OFFERS HELP EVERY THIRD LOSS ON A CLOCK LEVEL, and it
-  escalates.** `fails` counts full losses per level — lives run out, not a
-  life spent — persisted beside `skips`, moved by `LEVEL_RENAMES` like
-  everything else, and cleared the moment the level is beaten, so it tracks
-  the *current* run of failures rather than a lifetime total. Every
-  `STRUGGLE_OFFER` (3) losses, `struggleOffer()` puts up **the next thing a
-  person would actually try**:
-  - **the clock can still be slowed** → offer that, and name the exact
-    setting (`Menu › Real time › Pace`). It costs no stars.
-  - **already at the slowest** → offer the skip.
-
-  So a player who is already on SLOW sees the skip on their *first* offer,
-  which is right: there is nothing else left to try. **Going straight to
-  "skip this" was the wrong first move** — it hands over the only two levels
-  with a real-time component the moment they get hard, and tells somebody who
-  is nearly there to give up.
+- **THE GAME OFFERS THE SKIP EVERY FIFTH LOSS ON A CLOCK LEVEL.** `fails`
+  counts full losses per level — lives run out, not a life spent — persisted
+  beside `skips`, moved by `LEVEL_RENAMES` like everything else, and cleared
+  the moment the level is beaten, so it tracks the *current* run of failures
+  rather than a lifetime total. Every `STRUGGLE_OFFER` (5) losses,
+  `struggleOffer()` puts up the way past.
+- **It used to escalate, and the first rung went with the Pace setting.**
+  The old order was the order a person would actually try: slow the clock
+  first, offer the skip only once slowing had run out. That reasoning was
+  right and it belonged to a menu row that no longer exists — the fights are
+  tuned per fight now — so one offer is left. **Three became five with it**:
+  three is the right cadence for cheap advice you can act on and carry on
+  playing, and too eager for a card whose only button is "give up on this
+  one". Three losses is a player still learning the beat; five is a player
+  who is stuck.
 - **EVERY offer carries DON'T SHOW ME AGAIN, and it silences all of them**
   (`settings.noSlowOffer`, cleared by the settings reset). It is global
   rather than per level: somebody who does not want the game suggesting
@@ -1577,18 +1774,32 @@ level data changed to make it.
   then **fell straight through to the skip offer underneath**, which had no
   opt-out of its own. Reported from a playtest, in those words: the button
   did not work and the game kept asking. The flag is asked at the top of
-  `struggleOffer()` now, before it has decided which suggestion to make.
+  `struggleOffer()` now, before it has decided anything. **It keeps its name
+  though there is nothing slow left to refuse** — it is persisted, and
+  renaming it would silently un-silence everyone who has already pressed it.
 - **The offer goes up after the reset, not instead of it.** The board is back
   and KEEP TRYING is right there, so it is a door rather than a wall. The
   skip reaches `grantSkip()` and nothing else, so it inherits the rule — ads
   buy progress, never score.
-- **`grantSkip(name)` is the single call site a rewarded video needs.** It is
-  not gated on an ad here, because there is no provider yet and a button that
-  silently did nothing would be worse than one that plainly works. Wiring the
+- **`grantSkip(name)` is the single call site a rewarded video needs** for a
+  level; `grantHints(n)` is the one for the hint pool. Neither is gated on an
+  ad here, because there is no provider yet and a button that silently did
+  nothing would be worse than one that plainly works. Wiring the
   SDK means calling it from the completion callback and changing nothing else.
 - **The tutorials get a `PROLOGUE` section** so the map has somewhere to put
   them. Its `at:0` shifts no other marker — these are array indices and every
   later section keeps the index it had.
+- **The map opens on the furthest thing you have dealt with in the open
+  section**, not on the foot of the trail. `mapFocus()` used to jam the
+  scroll to the bottom whenever the `here` node was in another section —
+  and the trail climbs, so the bottom is level one and the boss was off
+  screen above. Reported as not being able to see the top of the levels.
+- **A caption wraps, and its width is the room its own node leaves it.**
+  `nowrap` survived at 9.5px and did not at 13: the two longest names in
+  Section I ran past the right edge and were clipped by `.mbody`. The cap is
+  computed in the same loop that places the caption, from the node's own
+  half-width, because a flat percentage still overflows for a node far out
+  to one side.
 - **The trail climbs.** The first level of a section sits at the bottom and
   its boss at the top, laid out from the last index down rather than mirrored
   afterwards — everything hung off a node (its stars, its label) is positioned
@@ -1925,7 +2136,7 @@ it has to be able to end it.
 
 ## The tutorial
 
-**Three levels, one new verb each: walking, collapsing, turning.** The fourth
+**Two levels: walking, and the fold.** Turning is no longer taught here at all — it is revealed inside Section I by `05 — No Way From Here`, a level that is provably impossible without it. The third
 — `00 — First Landing`, the landing rule — **is no longer here**: it now sits
 after `TRIAL I`, because a rule about where the fold puts you cannot be
 corrected in somebody who has not yet formed a guess about it. See Levels
@@ -2002,6 +2213,14 @@ buttons a sentence means. It is recomputed from the current step, so it
 inherits the property above and cannot disagree with the line on screen. A step
 opts out with `lock:false`.
 
+- **THERE IS NO DIM IN GESTURE MODE, and the gate goes with it.** The dim and
+  the gate are one mechanism — the dim is what *explains* the gate — and
+  neither is needed once the lesson is a hand in the middle of the screen: it
+  is unmissable where a green button on a strip at the bottom was not.
+  Blocking without the dim would be worse than either, because a swipe that
+  silently does nothing is the exact thing the dim exists to explain. Both
+  are refused at the top of `tutBlocks()` and `tutEngage()`. The button
+  lesson keeps both, unchanged.
 - **It arms on hesitation, not on arrival, and that is the difference between
   a hint and a mood.** The first version engaged the instant a step began —
   and since every step names a control, the guide was on for the whole
@@ -2064,7 +2283,16 @@ opts out with `lock:false`.
   your first unsolved one, each made the button mean something other than what
   it says, chosen by state the player cannot see. A player who wants to be
   somewhere else has the map, which is explicit about where it is sending
-  them.
+  them. **The one exception is a next level that is behind a lock**, and
+  there is exactly one of those in the campaign: `BOSS IV` is the level
+  immediately before `V · EXTRA`, and that shelf is gated on the bosses
+  rather than on the rolling window. The button used to walk straight through
+  that gate — you were handed the first level of a section the map was still
+  refusing to open, and the one after it stayed shut, which is precisely what
+  "progression stopped there" looked like from the outside. It opens the map
+  on that section instead, where the lock now names the fight holding it. The
+  label changes with it (`WHAT'S LEFT`), because a button reading NEXT LEVEL
+  that goes to the map is the dishonesty this rule exists to forbid.
 - **The highlight is `.tutlive`, not `.cue`.** A cue is a 3.2-second pulse and
   the lock lasts as long as the step, so keying the highlight off the pulse
   dims the whole bar the moment it expires — including the button being asked
@@ -2079,8 +2307,9 @@ lesson used to say "collapse the world", then "Collapse", then "flatten", then
 names for one verb, none of them the one on screen, in the three levels whose
 whole job is naming things.
 
-**`00 — First Landing` is rule 5 made compulsory, and it is the owner's
-design.** `First Fold` *mentions* the landing rule while teaching the fold —
+**`00 — First Landing` IS RETIRED — kept here because its machinery is
+live and one paste restores it.** It was rule 5 made compulsory, and it is the
+owner's design.** `First Fold` *mentions* the landing rule while teaching the fold —
 the near block there is also the goal, so a player who understood none of it
 still won. This level is the same rule with nothing else in it: **two blocks
 in one silhouette column, five apart in depth, and a 180° turn between them.**
@@ -2252,48 +2481,47 @@ Note the direction while you are in there: **+z points toward the camera**
 is in *front*. The old line called it "far behind everything", which is
 backwards, and a lesson that contradicts the screen is worse than none.
 
-### Which controls it teaches — `settings.tutor`
+### Which controls it teaches — the layout, and nothing else
 
-**The default tutorial has no buttons.** `GESTURES` takes the bar off and
-teaches the three things a finger can do on the world — swipe to move,
-double-tap to change dimension, two-finger swipe to turn — with a **ghost
-hand** demonstrating whichever one the current step wants. `BUTTONS` is the
-old lesson, bar forced on, unchanged. The menu row is under Controls; it
-changes nothing outside the tutorial, because every control works in both.
+**The lesson follows `settings.ui`.** HIDDEN means the gestures are all this
+player has, so the tutorial takes the bar off and teaches the three things a
+finger can do on the world — swipe to move, double-tap to change dimension,
+two-finger swipe to turn — with a **ghost hand** demonstrating whichever one
+the current step wants. FULL or COMPACT means there are buttons, so it is the
+button lesson. `tutGestures()` is the whole derivation.
 
-**THE TUTORIAL ENDS BY TAKING THE BUTTONS OFF AND OFFERING THEM BACK.**
-Winning the last tutorial level sets `ui` to `none` and puts up one card —
-`controlsOffer()` in `js/12-play.js`, `settings.ctlAsked` in the
-`loadSettings()` whitelist so it is asked once ever. The lesson taught the
-gestures and then handed the buttons straight back, which is teaching one
-control set and covering a fifth of the screen with a different one. What it
-must not do is take them away *silently*: a player who wants the bar has no
-way of knowing it is a setting. So the tutorial does it and shows the way
-back, which is `struggleOffer()`'s shape — the thing has already happened,
-the board is behind the card, and the card is a door rather than a wall.
+**THERE USED TO BE A SECOND SETTING FOR IT, AND IT WAS THE WRONG QUESTION.**
+A `Tutorial: GESTURES / BUTTONS` row asks a first-time player to choose
+between two lessons for a game they have not seen, and the answer was already
+sitting one row above it. It went, along with `defaultTutor()`; **HIDDEN is
+now the default layout**, so the default lesson is the gestures because that
+is what the default controls are.
 
-- **Armed in `win()`, fired from `loadLevel()`.** A panel is z-index 12 and
-  the win card is 20, so a card raised at the moment of winning opens
-  *behind* the one being read. `ctlOfferPending` carries it into whatever the
-  player opens next, which is also what makes it survive LEVELS as well as
-  NEXT LEVEL.
-- **It names the keyboard too.** On a fine pointer the lesson just given was
-  the *button* lesson (`defaultTutor()`), so a desktop player has to be told
-  what is left when the bar goes — and there the honest answer is the arrow
-  keys, which have always worked.
+- **The consequence on a desktop is real and is accepted.** A fine pointer
+  now gets the gesture lesson, and a swiping hand is an odd thing to show
+  somebody holding a mouse — which is exactly what `defaultTutor()` used to
+  exist to avoid. The keyboard half of the lesson is still unbuilt; when it
+  is, this is where it gets chosen.
+- **`mastery` went the same way**, and for the same reason a removed key
+  always does: its row is gone, so `loadSettings()` no longer reads it and
+  `masteryPreview()` returns false. A save carrying `mastery:"on"` would
+  otherwise pin the preview look on with nothing left to switch it off.
 
-**AND ONE LEVEL LATER, THE BULB.** `hintOffer()` explains the hint, once
-(`settings.hintAsked`, whitelisted beside `ctlAsked`). The tutorial stops
+**THE CARD THAT OFFERED THE BUTTONS BACK IS GONE.** The tutorial used to end
+by setting `ui` to `none` itself and putting up `controlsOffer()` — on the
+reasoning that the game must not take the buttons away silently. It does not
+take them away at all now: HIDDEN is simply the default and the menu row is
+where it lives. A card explaining a setting that never changed under the
+player is a wall between the tutorial and the game, and it was the first of
+two in a row. `settings.ctlAsked` went with it, out of the whitelist too.
+
+**AND ON THE FIRST REAL LEVEL, THE BULB.** `hintOffer()` explains the hint,
+once (`settings.hintAsked`, in the `loadSettings()` whitelist). The tutorial stops
 talking at exactly the point the player meets the game, and the single most
 useful control in it is a bulb in the corner nobody has been told about —
 which is a retention hole rather than a missing nicety, since hints are the
 reason somebody stuck does not close the game.
 
-- **It is the level *after* the controls card, not the same one.** Two
-  full-bleed cards in a row on the first real level is a wall between the
-  tutorial and the game. `settings.ctlAsked` sequences them: it is false
-  while the controls card is still pending, so `hintOfferDue()` cannot fire
-  until that one has been answered.
 - **The press it asks for is free.** A hint costs a star band, and a card
   that tells the player to spend one to find out what a button does is the
   small dishonesty a player remembers. It arms `freeHint` and `showHint()`
@@ -2310,14 +2538,13 @@ since hiding the controls during the lesson about the controls is a joke at
 the player's expense. That is still true and it is *why* this inverts: the
 lesson is not about the buttons. A button marked with an arrow needs no
 lesson. The controls that genuinely cannot be discovered are the gestures,
-and they are also the ones that cost no screen.
+and they are also the ones that cost no screen — which is why they are the
+default now, and why the lesson simply reads the layout.
 
-- **The default is by pointer, not by preference.** `defaultTutor()` returns
-  `gesture` on a coarse pointer and `buttons` otherwise, the same signal the
-  volume default uses. On a mouse the gesture lesson would be eloquently
-  wrong — "swipe right" to somebody holding a mouse — so a desktop keeps the
-  buttons until the keyboard half of this is built. Changing the row sets an
-  explicit choice that outranks the default from then on.
+- **The lesson is derived, never chosen.** `tutGestures()` is
+  `settings.ui==="none"` and that is the whole of it, so the lesson and the
+  controls can never disagree — which is what the removed `Tutorial` row
+  could do, and did.
 - **The demo is a second *rendering* of the cue id, not a second source of
   truth.** `tutGuide().cue` is already the one token for "what control is
   being asked for", and `CUE_GEST` is keyed by exactly those ids, so the two
@@ -2345,16 +2572,29 @@ and they are also the ones that cost no screen.
   falls there. The pair's two tips are 52 viewBox units apart, which is the
   26px between the two dots, so the second dot lands on the second finger by
   construction and stays on it through the whole slide.
-- **THE TWO FINGERS POINT UP AND SIT SIDE BY SIDE, and drawing a hand is what
-  allowed that.** They used to point sideways, because the two contacts were
-  stacked vertically — which was right while each contact was a bare dot, on
-  the grounds that two dots abreast sliding along their own direction of
-  travel read as one dot with a trail. A drawn hand answers that on its own:
-  nobody looks at a fist with two fingers out and sees one finger. So the
-  contacts went side by side, 22px apart, the hand got to be the right way
-  up, and the second track went with it — side by side, both fingers travel
-  along the same line. Three numbers move together: the two `.gfinger`
-  margins and the symbol's two tips.
+- **THE TWO CONTACTS ARE STACKED, 32px APART, AND THE HAND TURNS A QUARTER
+  TURN TO MATCH.** Both arrangements have now been drawn and played. Side by
+  side is the grip a hand really uses, and it is the worse picture: two
+  contacts abreast, sliding along their own line of travel, read as one
+  contact with a trail — which is exactly what a single-finger swipe already
+  looks like. Stacked, the pair sits *across* its direction of movement, so
+  the two-ness is the one thing the motion cannot blur. That was the original
+  call, made when each contact was a bare dot; it survives the hand being
+  drawn, and the hand simply rotates to sit on it.
+- **The rotation is exactly ±90°, about the first fingertip, and it faces the
+  way the hand travels.** The pair is drawn pointing up with its tips 32px
+  apart horizontally, so a quarter turn about the first tip puts the second
+  one on the second dot by construction — and turning it toward the
+  direction of travel means the hand always leads with its fingers and
+  trails its fist, rather than being dragged backwards across the screen.
+  Turning it the other way flips which tip is on top, so the left-hand
+  version also drops 32px to put its first tip on the *lower* dot. **No tilt
+  on this one**: at that radius, ten degrees of character costs several
+  pixels of registration, and a fingertip that does not sit on its own
+  contact is the one thing this drawing cannot afford. **The gap was 22px
+  and the contacts overlapped**, so the pair read as one thick finger. Four
+  numbers move together: the symbol's two tips, the two `.gfinger` margins,
+  the pair's rendered width, and the translate on the left-hand version.
 - **The hand lifts with the taps**, on the same 1.9s clock as the dot and the
   rings: a hand that stayed planted while the dot blinked is the "one messy
   throb" the double-tap drawing was already fixed for once. Its tilt is a
@@ -2365,7 +2605,23 @@ and they are also the ones that cost no screen.
 - **The hint system gets all of this for free**, because there is one hand
   with two owners — see below. A hint borrows the same element, so it now
   shows a hand rather than a dot wherever it showed anything.
-- **The hand sits in the middle of the screen, over the world.** That is
+- **AND IT SAYS WHAT IT IS, IN TWO WORDS, ABOVE THE HAND.** A drawing of a
+  gesture can be read wrong: the double tap is a finger that lifts and comes
+  back, lifting is drawn as movement away from the glass, and it was reported
+  as looking like a swipe up. `GEST_SAY` in `js/15-tutorial.js` names each
+  one — *swipe right*, *double touch*, *rotate left* — and the label goes
+  where the eye already is, beside the hand, not in the coach line at the
+  foot of the screen. **Named by what the player gets, not by what the
+  fingers do**: `bRotR` is "rotate right" even though it is demonstrated as a
+  leftward two-finger slide. It is drawn *above* the contact point, because
+  the hand hangs down from its fingertip and anything under that point lands
+  in the middle of the fist.
+- **The coach line at the foot of the screen is gone**, and the tutorial's
+  words are the level's own hint at the top, moved down clear of the corner
+  buttons. One place to read rather than three. The element and every path
+  that writes it are untouched, so restoring the line is one CSS
+  declaration.
+- **The hand sits below the middle of the screen, over the world.** That is
   where the gesture actually happens — a swipe or a double tap lands on the
   world, not on a strip at the bottom — and it is where the player is already
   looking. It rode the bottom edge first, which put the demonstration in the
@@ -2389,10 +2645,9 @@ and they are also the ones that cost no screen.
   at which the dot lands again — move one and you must move the other,
   including in the reduced-motion block. 1.9s is also the swipe's loop, so
   all three demonstrations beat together.
-- **The two fingers sit side by side and point up**, which is how a hand
-  actually lands on glass. Stacked was the older drawing and the reason is
-  in the hand note above. The gesture itself reads the horizontal midpoint,
-  so either grip works and the demo is honest either way.
+- **The gesture itself reads the horizontal midpoint**, so whichever way the
+  demonstration draws the pair, the control it is teaching behaves the same
+  and the demo is honest either way.
 - **`ghostRestart()` exists because a class change does not restart a CSS
   animation.** An animation restarts when its `animation-name` changes or
   when the element goes from `display:none` to displayed — so the parts of
@@ -2554,9 +2809,16 @@ playtester reached for it in the plane *before it did anything* — the
 affordance was already legible and the game silently ignored a correct
 instinct. So:
 
-- **The eye lights when looking would tell you something** — flat, with more
-  than one block in your column, which is the only situation where the
-  landing rule decides something invisible. Judged every frame in `lookCue()`
+- **The eye lights when looking would tell you something, and that is
+  narrower than "more than one block in your column".** That was the first
+  rule and it lit far too often — most columns in most levels hold two
+  blocks and the choice between them usually decides nothing, so the button
+  was on for most of the time anybody spent flat, which is how a cue becomes
+  wallpaper. Reported as showing when it was not necessary. It now asks the
+  question the player is about to get wrong: **the goal folds into the square
+  you are standing on — so it looks like you have arrived — and the block you
+  would come back on is not it.** That is the one moment the landing rule
+  costs the level rather than a step. Judged every frame in `lookCue()`
   rather than in `syncHud`, for the same reason the boss's fold cue is: the
   answer changes when the player moves in the plane, not when a button is
   pressed. Quieter and slower than `peril` and `strike`, because those two
@@ -2677,6 +2939,36 @@ know before touching it:
 - **`resolveStep()` is shared by the game and the solver**, so they can never
   disagree. Keep it that way. Its optional `occHere` argument checks headroom in
   *both* columns; without it you can slide diagonally past a ceiling.
+- **FIRE BURNS YOU, IT DOES NOT DROP YOU.** A `spike` death used to share
+  the falling animation and say "something sharp was in that column" - both
+  correct for the piece when it was a spike and wrong since it became fire.
+  It says "you burned" now, and the cube sinks, shudders, shrinks and is
+  taken by flames built from the same `flameGeo` the fire blocks use, so it
+  is the same fire rather than a second drawing of one. `burnGrp` is built on
+  the first burn and hidden the rest of the time. The code still says
+  `spike` throughout, for the same reason it says `fold`.
+- **AND IT ENDS BLACK.** The flames go out on a charred cube, not on the one
+  that walked in — `playerChar()` drives the body's own colour to soot rather
+  than swapping a material, so it chars a pup as completely as a cube (one
+  material is shared by every part `buildPlayerMesh()` makes) and the rim
+  `outlineFor()` re-picks every frame is what keeps the silhouette readable
+  once the body has gone nearly to the void. The char is **late and fast** —
+  nothing for the first third of the burn, then all of it — because a colour
+  that starts sliding on the first frame reads as the light changing rather
+  than as something being destroyed. It is put back by the same function on
+  the first frame that is not a burn, so nothing else has to know it
+  happened.
+- **A WARNING MUST NOT LOOK LIKE AN INVITATION.** `foldPeril` used to mark
+  `GO 2D` with a red rim and a breathing red fill, which was right while every
+  button in the game was a hairline outline — and became wrong the moment they
+  all turned into lit caps: a red one that breathes reads as *press me*.
+  Reported in those words, and it is the worst misreading available, since the
+  thing it warns about costs a life. The danger state is now the one thing on
+  screen that is not a lit cap: dark, diagonal hazard stripes nothing else in
+  the game uses, a red rim, and a warning triangle before the label. Nothing
+  glows and nothing swells; only the triangle blinks, which says *look* without
+  saying *press*. `.strike` — the one moment folding is an attack — keeps the
+  lit, breathing treatment, and the two are now opposites by construction.
 - **Folding into a wall is telegraphed, not blocked.** `foldPeril()` in
   `js/12-play.js` answers "would flattening from here kill me, and which blocks
   are to blame" — the guilty ones are tinted and outlined red in the world and
@@ -2719,11 +3011,40 @@ know before touching it:
   camera and `fitViewSize()` — at .95 `legible.js` falls from 30 flagged
   levels to 11. It is a large change to how the game looks, so it is the
   owner's decision and is deliberately left at .62.
-- **Hints are free and unlimited** so nobody gets stuck, but each one lowers the
-  star cap: 0 hints → 3★, 1–2 → 2★, 3–4 → 1★, 5+ → 0★. This replaced a
-  metered/timer design deliberately — an energy timer teaches people to close
-  the app, which is the opposite of what a free game needs. `win()` writes an
-  *effective* move count so hints cannot be laundered into currency.
+- **HINTS COST A POOL, NOT STARS.** Three of them, one back every half hour,
+  and a rewarded video refills. The bank is in `js/06-persistence.js`
+  (`hintBank`, `hintsLeft()`, `spendHint()`, `grantHints()`), the count rides
+  the bulb as a badge, and pressing an empty bulb opens `hintRefillOffer()`
+  rather than doing nothing — an empty button is a dead end and this whole
+  arrangement exists to say there are none.
+- **That card is two lines and two buttons, and it was four.** The first
+  draft explained the pool, the half hour, the ad and the star rule at the
+  one moment the player wants to be back in the level, which is exactly when
+  nobody reads. What is left is what happened and when it is fixed — *Out of
+  hints / Next refill of 1 hint in 18 min* — and the rest is discoverable
+  from the badge. `offerShell()` draws no note box when the note is empty.
+- **The star cap it replaced was the wrong currency, and that reverses an
+  older call.** A hint used to lower what you could score — 0 → 3★, 1–2 →
+  2★, 3–4 → 1★, 5+ → 0★, with `win()` writing an *effective* move count so
+  hints could not be laundered. It worked and it charged the wrong person:
+  the bulb is what somebody reaches for when they are stuck, which is exactly
+  the moment the game wants them to carry on, and marking them down for it
+  turned "I don't want to be stuck" into "I don't want to be marked down".
+  Nothing but the route now decides a level's stars. **This is not the return
+  of the energy timer** — that idea was rejected for teaching people to close
+  the app, and it is still rejected: the pool gates a *hint*, never a level,
+  so nothing is ever unplayable and no clock ever has to be waited out to
+  make progress.
+- **Two ceilings, `HINT_FREE` (3) and `HINT_MAX` (9).** The pool refills to
+  the first on its own and an ad can push it to the second, because an ad
+  taken with two in hand that handed back one is the arithmetic that makes
+  somebody feel cheated by a thing they chose to watch. `hintBank.t` advances
+  by whole `HINT_REGEN_MS` rather than being reset to now, so closing the
+  game twenty-nine minutes in does not throw those minutes away, and the half
+  hour starts when the pool first drops below full rather than when it
+  empties. It is a wall-clock read and a player who moves their device clock
+  gets free hints; that is not worth defending against, and it is *why* the
+  pool is the currency rather than anything touching score.
 - **A cue has three deliveries, and `cue()` picks the most it can say.**
   Pulse the button; if the layout dropped it, **show** the gesture with the
   ghost hand; and only if the control has no gesture either, **name** the move
@@ -2783,9 +3104,46 @@ know before touching it:
   away from the camera. `bFlat` is the exception that has to be computed:
   "2D shift" going in and "3D shift" coming out, because which way you are
   about to go is the whole content of the instruction.
+- **STARS ARE GOLD, AND THEY ARRIVE.** `--star` is the one token every star
+  in the game reads — the win card, the corner total, the map's nodes, the
+  shop's prices, the flight between them — and it is deliberately *not* the
+  goal's green: green appears on the goal, on the button being asked for and
+  on a spoken cue, where it means "do this", which is the one thing a score
+  is not. On the win card the row is 42px, each star **falls** onto the card
+  with its own sound (`SFX.drop`, a triad climbing so three of them is a
+  chord), and an empty one falls too but grey and silent. The CSS delays and
+  the sound timers are written against each other and have to move together.
+- **The HUD is the move count and the stars you are still on.** It used to
+  read `7 / 5` — your count against par — and par is the solver's answer, so
+  printing it hands over how long the level is. The number is alone now, and
+  large, with the live row under it: what you have left to lose is the same
+  information from the player's side, and it is drawn rather than counted so
+  it can be read mid-move.
+- **A LOST STAR IS SEEN TO LEAVE.** Two glyphs per slot, one on top of the
+  other: the hollow star is the socket and the gold one sits in it, so losing
+  one is the gold star *falling out* of a socket that stays — it tumbles off
+  the row, fades, and two soft descending notes go with it (`SFX.starLost`).
+  The old row simply became two characters instead of three, which is a
+  change you can only notice by having looked a moment earlier, and most
+  people never did.
+- **THE ROW IS ITS OWN ELEMENT, BUILT ONCE, AND ONLY TOUCHED WHEN THE COUNT
+  CHANGES.** It was part of `moveLabel`'s innerHTML, which `syncHud` rewrites
+  on *every* redraw — so each move re-created the falling star and restarted
+  its animation from the top, and holding an arrow down left it flickering in
+  place instead of falling off. Reported from a playtest as spamming left and
+  right breaking it. `syncStars()` returns immediately when the count has not
+  moved, so a redraw writes no DOM and there is nothing to restart;
+  `void offsetWidth` is what deliberately restarts it in the one case that
+  wants it, a second star lost while the first is still in the air. **Any
+  animation that lives inside something `syncHud` rewrites has this bug** —
+  that is the general form.
+- **The star BANK is not shown inside a level.** How many you have collected
+  across the whole game cannot change while you are playing one and is not
+  what anybody is thinking about; the row under the move count is. It appears
+  on `levelDone`, because that is when it is news and when the win card's
+  stars need somewhere to fly to.
 - **Stars.** 3★ = the solver's own move count, 2★ ≤ 150%, 1★ ≤ 200%
-  (`STAR_2X` / `STAR_1X` in `js/07-difficulty.js`, read by `win()`'s
-  hint-laundering arithmetic as well, so the bands live in one place). Par is
+  (`STAR_2X` / `STAR_1X` in `js/07-difficulty.js`). Par is
   optimal, so 3★ genuinely means optimal — that half has never moved. The
   bands widened from 120/140 because a near miss was costing a whole star: on
   a ten-move level 140% is fourteen moves, so two wrong turns was zero, and
@@ -2794,6 +3152,16 @@ know before touching it:
   and score on lives.
 - **Worlds only change the world** (background, stone, ink). Piece colours and
   their shape markers never change, so no world can make a mechanic unreadable.
+- **THE WARDROBE HAS TWO TABS, NOT FOUR.** The worlds came off it when the
+  sections took ownership of how the world looks: a section picks the sky,
+  the stone and the paper now, so a world tab was selling a look the next
+  level immediately overwrote. Only the tabs went — `WORLDS3D`/`WORLDS2D`,
+  the equipped ids, `wardEquip()` and `migrateWorlds()` are all untouched,
+  the equipped world is still what `applyPalette()` writes underneath a
+  section, and a save that bought one keeps it. `wardrobePanel()` and
+  `wardTabTo()` clamp their argument, because `homePick()` hands a tab name
+  in and a stale `world3` would land the grid on a catalogue with no tab to
+  leave it by.
 - **A world is two purchases, not one.** `WORLDS3D` sets void + block, `WORLDS2D`
   sets paper + ink; you spend the whole game switching between the two pictures,
   and buying one used to silently buy a look for the other you had never seen.
@@ -2837,6 +3205,23 @@ know before touching it:
   `shards()` only; `starsEarned()` and `wardrobe.spent` still do their real
   work, so buying exercises the true purchase path. **Set it back to `false`
   before shipping.**
+- **THE AMBIENT LAYER IS CURRENTLY MUTED** — `AMB_MUTED` in `js/11-sound.js`
+  is `true`. Playtested and disliked: the birds, the sea, the wind and the
+  desert together were more presence than the game wanted, and a bed you have
+  to put up with is worse than no bed. **Everything below is kept rather than
+  deleted**, because what is wrong with it is a judgement about the mix and
+  the voices rather than about the machinery — the beds, the phrases, the
+  wave's three phases and the meteor's boom are all still written and all
+  still measured. Setting the flag to `false` is the whole of turning them
+  back on. It is asked at `ambTo()` and `ambSync()` rather than inside
+  `ambStart`, so a muted section builds **nothing**: no noise buffer, no
+  oscillators, no 250ms timer. Every part of a section you can *see* is
+  untouched — the birds still fly, the meteors still land and flash, the foam
+  still runs up the beach.
+  - **An ambient voice belongs to its bed or it does not play.** `ambVoice()`
+    and `ambCicada()` used to fall back to the master bus when `AMB.gain` was
+    missing, which would have let a bird sing straight through the mute.
+    Measured at zero now, with the loudest events called by hand.
 - **EVERY SECTION HAS AMBIENCE, and it is synthesised like everything else.**
   `ambTo(kind)` is called from `applyTheme`, so the sound of a section arrives
   with its sky and cannot be left behind by a level change; there are no audio
@@ -2871,7 +3256,10 @@ know before touching it:
     arcs opening from its beak side, and the bird itself flapping harder and
     riding up on each note. The flap is what makes the cue belong to that
     bird rather than float beside it. Phrases come every 2–6 seconds now
-    rather than every 4–11.
+    rather than every 4–11. **It is off with the sound** under `AMB_MUTED`,
+    and that is the right coupling: the cue exists to say *this bird is
+    making that noise*, and drawing sound coming out of a silent bird is
+    worse than not drawing it.
   - **Samples were asked for and synthesis is the answer.** There is no
     audio file anywhere in this project and there is a reason: the published
     build is one HTML file, its sandbox blocks fetching media, and a
@@ -2983,6 +3371,14 @@ know before touching it:
   the case, and only a confirmed purchase equips. A consequence worth keeping:
   a palette does not touch the world until it is equipped — the case previews
   it instead.
+- **THE TYPE IS TWO POINTS BIGGER THAN IT WAS, EVERYWHERE.** Reported by
+  several people at once: the menu, the popups and the map were all small.
+  Every declaration under 12px went up by 2 (the build string is the one
+  exception — it is deliberately tiny), the map's own name and description
+  went further, and the copy was cut to match: **a bigger type size is only
+  half of readable, the other half is fewer words.** The piece legend, the
+  menu notes, the map's help sheet and all five offer cards were rewritten
+  shorter in the same pass. If you add a panel, start at 12px.
 - **Panels are phone-width and centred on every screen** (`.panel`, capped at
   560px). They were written against a phone and stretched edge to edge on
   anything wider: the wardrobe's display case is a square sized as a
@@ -3041,16 +3437,24 @@ tested and failed, plus where this sits in the PCG literature, are in
   view axis is unsurvivable, which is the mechanic and not a bug, so there is
   nothing there to check — but the machine has no opinion at all about the
   state you spend the crossing in.
-- **Boss and sweep pacing are both guesswork.** Trials: `period` 2500 → 2000,
-  `fire` 340 → 300. Bosses ramp *within* a fight and *across* the campaign —
-  `BOSS I` runs 1100/1300 down to 870/1020 and `BOSS IV` 720/850 down to
-  570/660, so the opening fight is about 40% slower than it was and the last
-  one is where it always sat. **That ramp is what the `Pace` setting is meant
-  to stop being for**: a first boss slow enough to think in, rather than a
-  menu row asking a new player to diagnose their own difficulty. The whole
-  ramp is still invented. The checks bracket each fight; they say
-  nothing about whether the numbers are *fun*, or whether a human can read a
-  line, decide the axis, rotate and fold inside one beat.
+- **Boss and sweep pacing are both guesswork, and they are now the only
+  answer to "it is too fast".** Trials run `period` 2500, **2050**, 2100,
+  2000. `TRIAL II` sits just inside the two after it rather than well past
+  them, and the reason is its own geometry: every crossing there is a fold
+  taken from a particular side, so the player spends a leg turning and
+  folding rather than walking, and standing still under a slow beat is a
+  level waiting for you. It was played at 1850 and wound back — these are
+  players four levels into their second section, and a beat that punishes a
+  turn you are still learning to plan is a wall rather than tension. Bosses ramp
+  *within* a fight and *across* the campaign — `BOSS I` runs 1100/1300 down
+  to 870/1020 and `BOSS IV` 720/850 down to 570/660, so the opening fight is
+  about 40% slower than it was and the last one is where it always sat.
+  **This ramp is what the `Pace` setting used to stand in for**, and with
+  that row gone it has to carry the whole load: a first boss slow enough to
+  think in, rather than a menu asking a new player to diagnose their own
+  difficulty. Every number in it is invented. The checks bracket each fight;
+  they say nothing about whether the numbers are *fun*, or whether a human
+  can read a line, decide the axis, rotate and fold inside one beat.
 - **Nobody has played the phased fights.** Four bosses × three phases is a lot
   of authored pacing that has only ever been machine-checked. The specific
   open questions: does phase 1 read as a tutorial or as filler; is the
@@ -3073,19 +3477,21 @@ tested and failed, plus where this sits in the PCG literature, are in
   telegraphed for `aim` milliseconds and breaking the line cancels it, so it
   is fair — but there is no partial answer, no grazing hit, and a player who
   misreads the axis simply takes it.
-- **Real time is the one thing the game is not**, and `Pace` in the menu is the
-  concession. `NORMAL` / `EASED` / `SLOW` = 1 / .75 / .5, and it is **one
-  multiplication on `dt`** at the top of `bossFrame` and `trialFrame` rather
-  than a set of slowed dials. That matters most now that a fight is phased:
-  `step` and `aim` belong to the *phase*, and `creep`, `rage`, `period`,
-  `fire` and the beat of grace are all measured against the same clock, so
-  scaling the clock keeps every ratio between them. Slowing `step` alone would
-  change how many steps a hunter gets per telegraph — the fight's whole shape,
-  and the one thing phases exist to control. It is free and does not touch
-  stars, on the grounds that a hint hands you the answer and a slower clock
-  only gives you longer to say it. To reverse that judgement, cap a clock
-  level in `starsForRecord()` the way `capForHints()` caps an ordinary one.
-  What is still guesswork is whether .75 and .5 are the right two rungs.
+- **Real time is the one thing the game is not, and the `Pace` setting that
+  conceded it is gone.** `NORMAL` / `EASED` / `SLOW` = 1 / .75 / .5 let a
+  player slow every clock in the game. It went on the owner's call, for the
+  reason that was always written under it: a menu row asking a new player to
+  diagnose their own difficulty stands in for a fight that is not tuned, and
+  the fights are tuned per fight now. What is left for somebody stuck is the
+  skip, on the fifth loss. **`paceScale()` stays** — still one multiplication
+  on `dt` at the top of `bossFrame` and `trialFrame` — because that
+  multiplication is the seam it would come back through, and it is why every
+  window in a fight keeps its ratio when it does: `step` and `aim` belong to
+  the *phase*, and `creep`, `rage`, `period`, `fire` and the beat of grace
+  are all measured against the same clock. **`pace` is deliberately no longer
+  read by `loadSettings()`**, so a save written while somebody was on SLOW
+  cannot pin every clock in the game at half speed with no row left to change
+  it — the whitelist trap, running the other way.
 - **The composer cannot generate crates or keys.** It synthesises geometry move
   by move from a solution; a push changes the world, so the geometry cannot be
   derived that way without re-deriving everything downstream. Crate and key
@@ -3129,13 +3535,13 @@ tested and failed, plus where this sits in the PCG literature, are in
   the question one move earlier. It must not replace `GO 2D`; it would be its
   own control, and on the default layout that means a gesture as well.
 - **Two-finger tap only rotates right.** There is no left-rotate gesture.
-- **The gesture tutorial has no keyboard half yet**, which is why
-  `defaultTutor()` sends a fine pointer to the button lesson. The intended
-  end state is one lesson that teaches whatever the device actually has —
-  gestures on glass, keys on a desktop — and the game shipping with no
-  buttons by default in both. `TUT_SAY` already has the shape for it: a third
-  table of phrases and a third demonstration (a key cap rather than a hand),
-  keyed by the same cue ids.
+- **The gesture tutorial has no keyboard half yet, and the default now walks
+  straight into that.** HIDDEN is the default layout, the lesson follows the
+  layout, so a desktop first run is shown a swiping hand by somebody holding
+  a mouse. The intended end state is one lesson that teaches whatever the
+  device actually has — gestures on glass, keys on a desktop. `TUT_SAY`
+  already has the shape for it: a third table of phrases and a third
+  demonstration (a key cap rather than a hand), keyed by the same cue ids.
 - **The ghost hand has never been played, only screenshotted.** The open
   questions are all feel: is a hand looping for the whole step help or noise,
   is .62 against 1.0 enough of a step up when the guided lock arms, and does
@@ -3145,13 +3551,11 @@ tested and failed, plus where this sits in the PCG literature, are in
 
 ## Agreed next steps
 
-0. **Playtest the gesture tutorial**, and if it lands, build the keyboard
-   half: a `keys` table in `TUT_SAY`, a key-cap demonstration beside the
-   hand, and `defaultTutor()` returning it on a fine pointer. **The bar being
-   off by default is done**, by the tutorial's own ending question — see
-   `controlsOffer()` — rather than by changing the default layout, so a
-   player who wants the buttons is offered them at the one moment they know
-   what they would be choosing between.
+0. **Build the keyboard half of the lesson**: a `keys` table in `TUT_SAY`
+   and a key-cap demonstration beside the hand. **The bar is off by default
+   now** — `settings.ui` starts at `none` — and the lesson follows the
+   layout, so a desktop first run gets a swiping hand shown to somebody
+   holding a mouse. That is the gap this closes.
 1. **Playtest the three phased bosses.** They are real-time, which is the one
    thing no tool here can judge, and the ramp has still barely been felt. The
    questions: can a human read which axis to fold along while a line is lit,
@@ -3167,7 +3571,7 @@ tested and failed, plus where this sits in the PCG literature, are in
    but not crate or key ones, and its 59% hit rate means hand-checking a
    batch.
 3. **A crate trial**, per the limitation above.
-3a. **Move `IV · CRATES` in front of `III · GLASS`** — the owner's call, taken
+3a. **Move `IV · CRATES` in front of `III · WATER`** — the owner's call, taken
    and deferred deliberately because it is not a reorder: crate levels teach
    against geometry that assumes what came before, several later levels mix
    the two, and every affected level needs re-verifying and a
@@ -3209,8 +3613,9 @@ tested and failed, plus where this sits in the PCG literature, are in
    finished: **a card is what you reach for when the picture cannot be made to
    say it — not before.**
 9. **Ad integration.** Nothing is wired. When wrapped with Capacitor the
-   rewarded-video callback should call `grantShards(n)`, `grantAdView(id)` or
-   `grantSkip(name)` — three hooks, one per thing an ad can buy. Rewarded-only
+   rewarded-video callback should call `grantShards(n)`, `grantAdView(id)`,
+   `grantSkip(name)` or `grantHints(n)` — four hooks, one per thing an ad can
+   buy. Rewarded-only
    by design: skip a level, or buy shards. No interstitials — they pay poorly
    on a slow puzzle game and are the main cause of uninstalls.
    **The rule that keeps this out of pay-to-win: ads buy progress, never

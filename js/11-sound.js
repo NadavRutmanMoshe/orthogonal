@@ -31,58 +31,60 @@ function defaultVolume(){
   var coarse=window.matchMedia&&window.matchMedia("(pointer: coarse)").matches;
   return coarse?1:.35;
 }
-/* WHICH CONTROLS THE TUTORIAL TEACHES, and it defaults by device for the same
-   reason the volume does.
+/* THE TUTORIAL TEACHES WHATEVER THE CONTROLS ARE SET TO.
 
-   The tutorial used to force the button bar back on screen whatever the
-   layout preference said, on the grounds that hiding the controls during the
-   lesson about the controls is a joke at the player's expense. That is still
-   true - but it assumed the lesson is about the buttons, and a button marked
-   with an arrow needs no lesson. The controls that genuinely cannot be
-   discovered are the gestures, and they are also the ones that cost no screen.
+   There used to be a second setting for it - GESTURES or BUTTONS - which is
+   a question nobody can answer before they have played: it asks a first-time
+   player to choose between two lessons for a game they have not seen. The
+   layout already says which controls this player has, so the lesson follows
+   it, and the menu is one row shorter. `tutGestures()` in 15-tutorial.js is
+   the whole of the derivation.
 
-   So "gesture" teaches the swipe, the double tap and the two-finger swipe,
-   with the bar off and a ghost hand demonstrating each one; "buttons" is the
-   old lesson, unchanged. A coarse pointer is the signal, exactly as it is for
-   the volume: it means a finger, and a finger is the only thing any of these
-   gestures can be performed with. On a mouse the gesture lesson would be
-   eloquently wrong - "swipe right" to somebody holding a mouse - so a fine
-   pointer keeps the buttons until the keyboard half of this is built. */
-function defaultTutor(){
-  var coarse=window.matchMedia&&window.matchMedia("(pointer: coarse)").matches;
-  return coarse?"gesture":"buttons";
-}
-/* `mastery` is a *preview* switch, not a gameplay one. "auto" is the real
-   thing - a section wears its finished colours when every level in it is on
-   three stars. "on" forces that look everywhere, so the celebration can be
-   looked at without earning it four times over. It changes nothing but the
-   drawing: no stars move, nothing unlocks. */
-/* ctlAsked is whether the player has been asked, once, at the end of the
-   tutorial, whether they want the on-screen buttons - see controlsOffer(),
-   and hintAsked the same for the bulb one level later - see hintOffer().
-   It is a "has this happened" flag rather than a preference: the preference
-   it produces is `ui`, and the answer must not be asked for twice. */
-/* slowOffers counts how many times the game has suggested slowing a clock,
-   and noSlowOffer is the player saying stop. Both are global rather than
-   per level: somebody who does not want to be offered help does not want it
-   again on the next boss either. */
-var settings={volume:defaultVolume(),brightness:1,ui:"full",volTouched:false,
-              pace:1,mastery:"auto",tutor:defaultTutor(),
-              slowOffers:0,noSlowOffer:false,landHints:0,ctlAsked:false,
-              hintAsked:false};
+   THE DEFAULT IS HIDDEN, on the owner's call. The bar off is the shape the
+   game wants - the gestures cost no screen and the world is what you should
+   be looking at - and the tutorial now teaches them because that is what the
+   setting says. Note the consequence on a desktop: a fine pointer gets the
+   gesture lesson too, and a swiping hand is an odd thing to show somebody
+   holding a mouse. The keyboard half of the lesson is still unbuilt; when it
+   exists this is where it is chosen. */
+/* hintAsked is whether the bulb has been explained, once - see hintOffer().
+   A "has this happened" flag rather than a preference. `ctlAsked` sat here
+   too, for a card at the end of the tutorial that offered the buttons back;
+   the buttons are a setting and the card is gone. */
+/* noSlowOffer is the player saying stop to the help the game offers after a
+   run of losses. It is global rather than per level: somebody who does not
+   want to be offered help does not want it again on the next boss either. It
+   keeps its name now that the offer it was born for - slowing the clock - has
+   gone, because it is persisted and renaming it would silently un-silence
+   everyone who has already pressed the button. */
+var settings={volume:defaultVolume(),brightness:1,ui:"none",volTouched:false,
+              /* pace is retired and pinned at 1; see paceScale() below. */
+              pace:1,
+              noSlowOffer:false,landHints:0,
+              hintAsked:false,starAsked:false};
 /* How many times the landing rule is spelled out in words. The rings keep
    drawing forever - they are free and they answer the question faster than a
    sentence does - but a line of text on every fold would be nagging. */
 var LAND_HINT_TIMES=3;
 
-/* PACE — how fast the two real-time things run.
+/* PACE — how fast the two real-time things run. RETIRED AS A SETTING, and
+   the multiplier is kept.
 
-   Bosses and trials are the one part of the game that does not wait for you,
-   and "real time is the one thing this game is not" has been a known hole
-   for as long as they have existed. This is the accessibility answer: 1 is
-   the designed speed, .75 and .5 are the same fight played slower.
+   `Menu > Real time > Pace` let a player slow every clock in the game to 75%
+   or 50%. It went on the owner's call, and the reason is the one that was
+   always written under it: a menu row asking a new player to diagnose their
+   own difficulty is standing in for a fight that is not tuned properly, and
+   the fights are tuned per fight now - the first boss is slow enough to
+   think in and the ramp does the rest. What is left for somebody genuinely
+   stuck is the skip, which struggleOffer() puts up on the fifth loss.
 
-   It is deliberately *one number applied to dt*, not a set of eased dials.
+   paceScale() stays, still multiplied onto `dt` in both fight loops, because
+   that one multiplication is the seam it would come back through. `pace` is
+   deliberately no longer read by loadSettings(), so a save written while
+   somebody was on SLOW cannot pin every clock in the game at half speed with
+   no row left to change it.
+
+   It was deliberately *one number applied to dt*, not a set of eased dials.
    Every interval in a fight is derived from the clock - the step, the aim
    window, the creep, the rage multiplier, the trial's period and its fire
    window, the beat of grace after a hit - so scaling the clock scales all of
@@ -90,19 +92,9 @@ var LAND_HINT_TIMES=3;
    `step` by hand would not: it would change how many steps a hunter gets per
    telegraph, which is the fight's whole shape.
 
-   It is free, and it does not touch stars. Hints are metered because a hint
-   hands you the answer to the puzzle; a slower clock hands you nothing you
-   did not already have to work out, it just gives you longer to say it. If
-   that judgement ever needs reversing, the place to do it is
-   starsForRecord() in 07-difficulty.js - cap a clock level's stars the way
-   capForHints() caps an ordinary one. */
-/* Carried as a percentage as well as a multiplier, and the percentage is
-   what the button ids are built from. `mPace_0.5` is a legal element id and
-   getElementById finds it happily, but it is not a legal CSS selector, so
-   the first querySelector anyone reaches for would throw on it. */
-var PACES=[{v:1,pct:100,label:"NORMAL"},
-           {v:.75,pct:75,label:"EASED"},
-           {v:.5,pct:50,label:"SLOW"}];
+   It was free and did not touch stars, and if it ever comes back it should
+   stay that way: a slower clock hands you nothing you did not already have
+   to work out, it only gives you longer to say it. */
 function paceScale(){
   var p=settings.pace;
   return (typeof p==="number"&&p>0&&p<=1)?p:1;
@@ -287,10 +279,16 @@ function ambStop(){
    call outdoors arrives with air around it and a dry one sits inside your
    head instead of across the field. */
 function ambVoice(c,at,dur,vol,build){
+  /* No bed, no voice. `AMB.gain` used to fall back to the master bus, which
+     meant a call could route around a section that was not running at all -
+     harmless while the only caller was the ambience's own timer, and exactly
+     the hole that would let a bird sing through AMB_MUTED. An ambient voice
+     belongs to its bed or it does not play. */
+  if(!AMB.gain)return null;
   var g=c.createGain();
   g.gain.value=0;                    // see the note in ambWave
   g.gain.setValueAtTime(.0001,at);
-  g.connect(AMB.gain||out(c));
+  g.connect(AMB.gain);
   // A little of every call into the room, which is most of what sells it.
   try{var w=c.createGain();w.gain.value=.5;g.connect(w);w.connect(reverb(c));}
   catch(e){}
@@ -381,13 +379,14 @@ function ambToucan(c){
    is one LFO on one gain - swelling over four or five seconds and going out
    again. Sometimes, not always: a chorus that never stops is a fault. */
 function ambCicada(c){
+  if(!AMB.gain)return;               // see ambVoice
   var t=c.currentTime+.05, dur=4+Math.random()*4.5;
   var g=c.createGain(), bp=c.createBiquadFilter();
   g.gain.value=0;                    // see the note in ambWave
   bp.type="bandpass";bp.frequency.value=3600+Math.random()*1800;bp.Q.value=3.2;
   var s=ambSrc(c,bp,t);
   var am=c.createGain();am.gain.value=0;
-  bp.connect(am);am.connect(g);g.connect(AMB.gain||out(c));
+  bp.connect(am);am.connect(g);g.connect(AMB.gain);
   var lfo=c.createOscillator(), lg=c.createGain();
   lfo.type="sawtooth";lfo.frequency.value=62+Math.random()*22;
   lg.gain.value=.5;
@@ -637,9 +636,33 @@ function ambStart(kind){
 }
 /* The one entry point. Called from applyTheme, so the sound of a section
    arrives with its sky and cannot be left behind by a level change. */
+/* THE WHOLE AMBIENT LAYER IS OFF, ON ONE FLAG.
+
+   Playtested and disliked - the birds, the sea, the wind and the desert all
+   together were more presence than the game wanted, and a bed you have to
+   put up with is worse than no bed. Everything here is kept rather than
+   deleted, because what is wrong with it is a judgement about the mix and
+   the voices rather than about the machinery: the beds, the phrases, the
+   wave's three phases and the meteor's boom are all still written and all
+   still measured. Setting this to false is the whole of turning them back
+   on.
+
+   It is checked at the two entry points rather than inside ambStart, so a
+   muted section builds NOTHING - no noise buffer, no oscillators, no
+   250ms timer - instead of building a graph and turning it down. The world
+   keeps everything you can see: the birds still fly, the meteors still land
+   and flash, the foam still runs up the beach.
+
+   One consequence worth knowing: `birdSing()` is called from
+   `ambBirdPhrase`, so the ripple that marks which bird is calling is off
+   with the sound. That is the right coupling - the cue exists to say "this
+   bird is making that noise", and drawing sound coming out of a silent bird
+   is worse than not drawing it. */
+var AMB_MUTED=true;
 function ambTo(kind){
   kind=kind||null;
-  AMB.want=kind;
+  AMB.want=kind;                     // remembered, so unmuting resumes it
+  if(AMB_MUTED){if(AMB.kind)ambStop();return;}
   if(AMB.kind===kind)return;
   ambStop();
   if(kind)ambStart(kind);
@@ -647,7 +670,7 @@ function ambTo(kind){
 // Put it back after an unmute: audio() refuses to build anything while muted,
 // so the section that was playing simply did not start.
 function ambSync(){
-  if(muted){if(AMB.kind)ambStop();return;}
+  if(AMB_MUTED||muted){if(AMB.kind)ambStop();return;}
   if(AMB.want&&AMB.kind!==AMB.want)ambStart(AMB.want);
 }
 
@@ -922,6 +945,25 @@ var SFX={
         blip(f/2,.4,"triangle",.016);
       },d);
     });
+  },
+  /* A STAR LANDING ON THE WIN CARD. Heavier than star() - which is the same
+     star arriving at the counter a second later - because this one is the
+     score being handed over and that one is bookkeeping: a soft thump under
+     the ping is what makes it read as something with weight hitting the
+     card rather than as a chime. Climbs a triad, so three of them is a
+     chord arriving one note at a time. */
+  /* A star coming off the row. Quiet and downward - it fires while the player
+     is mid-level and mid-thought, so it has to be noticeable without being a
+     punishment: two soft notes falling, no thump under them. */
+  starLost:function(){
+    blip(494,.16,"sine",.028,330);
+    setTimeout(function(){blip(392,.2,"triangle",.022,262);},70);
+  },
+  drop:function(i){
+    var f=[659.25,830.6,1046.5][Math.min(i,2)];
+    blip(f,.26,"sine",.06,f*1.35);
+    blip(f/2,.3,"triangle",.03);
+    blip(96,.16,"sine",.045,72);
   },
   star:function(i){
     var f=[784,988,1245][Math.min(i,2)];

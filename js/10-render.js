@@ -755,6 +755,33 @@ var sceneQuad=null, demonGrp=null, plumeQuad=null, sparkGrp=null;
 /* One slot per section's moving layer. They are all torn down together in
    applyTheme, so a section that does not ask for one simply has none. */
 var birdGrp=null, meteorGrp=null, boatGrp=null, tumbleGrp=null, devilGrp=null;
+/* CHARRED. The burn ends with the cube black, because that is what the fire
+   leaves behind - the flames go out and something burnt is still standing
+   there for the rest of the beat. It is the body's own colour driven to soot
+   rather than a second material: buildPlayerMesh() hands one material to
+   every part it makes, so one write chars a pup as completely as a cube, and
+   the adaptive rim outlineFor() re-picks every frame is what keeps the
+   silhouette readable once the body has gone nearly to the void.
+
+   The char is late and fast (nothing until a third of the way in, then all of
+   it), so the cube is plainly itself while the flames are climbing and plainly
+   ruined once they are out - a colour that starts sliding on the first frame
+   just reads as the light changing.
+
+   Restored by the same function on the first frame that is not a burn, so
+   nothing else has to know it happened: die() puts the player back at the
+   start with the level, and the mesh it puts back is the mesh that burned. */
+var PLAYER_CHAR=0x120d0b, playerCharT=-1, charCol=new THREE.Color();
+function playerChar(t){
+  if(!playerMesh||t===playerCharT)return;
+  playerCharT=t;
+  var base=findBy(SKIN_COLORS,wardrobe.color).hex;
+  playerMesh.traverse(function(c){
+    if(!c.isMesh||!c.material||!c.material.color)return;
+    c.material.color.setHex(base).lerp(charCol.setHex(PLAYER_CHAR),t);
+  });
+}
+var burnGrp=null;                 // the flames that take you - see the death
 var boomGrp=null, foamQuad=null;
 /* The sea's clock. seaT counts down to the next break, seaFired says the
    sound for it has already been started, and foamP is the sweep. */
@@ -2851,13 +2878,24 @@ function landLive(){
     })};
   return true;
 }
-/* THE EYE LIGHTS WHEN LOOKING WOULD TELL YOU SOMETHING - flat, and more than
-   one block in your silhouette column. That is the only situation where the
-   landing rule decides something the player cannot see, so the button
-   advertises itself exactly then and is quiet the rest of the time, which is
-   what stops it becoming wallpaper. Judged every frame rather than in
-   syncHud for the same reason the boss's fold cue is: the answer changes
-   when the player moves in the plane, not when a button is pressed.
+/* THE EYE LIGHTS WHEN LOOKING WOULD TELL YOU SOMETHING, AND THAT IS NARROWER
+   THAN "more than one block in your column".
+
+   More than one candidate was the first rule and it lit far too often: most
+   columns in most levels hold two blocks, and the choice between them
+   usually decides nothing the player cares about - so the button was on for
+   most of the time anybody spent flat, which is exactly how a cue becomes
+   wallpaper. Reported as being shown when it was not necessary.
+
+   It now asks the question the player is actually about to get wrong: the
+   goal is in the square you are standing on in the plane - so it looks like
+   you have arrived - and the block you would come back on is not it. That is
+   the one moment the landing rule costs you the level rather than a step,
+   and it is the moment the eye answers.
+
+   Judged every frame rather than in syncHud for the same reason the boss's
+   fold cue is: the answer changes when the player moves in the plane, not
+   when a button is pressed.
 
    It also counts the peek for the tutorial - an EFFECTIVE peek, one where
    the world actually rose, rather than a button press that went nowhere. */
@@ -2866,9 +2904,16 @@ function lookCue(){
   var el=document.getElementById("bLook");
   if(!el)return;
   var want=false;
-  if(app==="play"&&flat&&!dying&&!levelOver()&&R&&flatPos){
+  if(app==="play"&&flat&&!dying&&!levelOver()&&R&&flatPos&&planePeek<.05){
     var land=R.landings(view,flatPos.u,flatPos.y,liveCrates());
-    want=land.length>1&&planePeek<.05;
+    if(land.length>1&&typeof liveGoal==="function"){
+      var g=liveGoal(), r=AX[view].r;
+      // The goal folds into this square: on screen you are standing on it.
+      if(g&&g[1]===flatPos.y&&g[0]*r[0]+g[2]*r[2]===flatPos.u){
+        var win=R.pick(land);
+        want=!(win.x===g[0]&&win.z===g[2]);   // ...and you would miss it
+      }
+    }
   }
   if(want!==lookLit){lookLit=want;el.classList.toggle("look",want);}
   if(flat&&planePeek>.5&&!peekCounted){
@@ -3360,9 +3405,63 @@ function animate(now){
   var pu=flat?flatPos.u:(srcX*rx+srcZ*rz), py=flat?flatPos.y:srcY;
   var fx=pu*rx+1.2*tdvx,fz=pu*rz+1.2*tdvz;
   tmp.set(srcX+(fx-srcX)*flatT, srcY+(py-srcY)*flatT, srcZ+(fz-srcZ)*flatT);
+  /* CAUGHT BY THE FIRE, and it does not fall - it burns where it stands.
+
+     The piece was a spike once and the death was the same one falling out of
+     the world uses, which is what a spike deserves and a fire does not: fire
+     does not drop you, it takes you. So the cube sinks a little, flickers,
+     shrinks, and a handful of flames come up around it - the same flameGeo
+     the fire blocks use, so it is the same fire rather than a second drawing
+     of one. `burnGrp` is built the first time anything burns and hidden the
+     rest of the time. */
+  if(burnGrp)burnGrp.visible=false;
+  if(dying!=="spike")playerChar(0);
   if(dying){
     dyingT+=1;
-    if(dying==="fall"||dying==="spike"){
+    if(dying==="spike"){
+      playerMesh.position.x+=(tmp.x-playerMesh.position.x)*.3;
+      playerMesh.position.z+=(tmp.z-playerMesh.position.z)*.3;
+      var burn=Math.min(1,dyingT/26);
+      playerMesh.position.y+=(tmp.y-.16*burn-playerMesh.position.y)*.25;
+      // it shudders as it goes, and what is left of it is thin and tall
+      var bs=1-burn*.72;
+      playerMesh.scale.set(bs*(1+Math.sin(dyingT*1.7)*.09),
+                           bs*(1+burn*.55),
+                           bs*(1+Math.cos(dyingT*1.5)*.09));
+      if(!burnGrp){
+        burnGrp=new THREE.Group();
+        for(var bfi=0;bfi<6;bfi++){
+          var bf=new THREE.Mesh(flameGeo,new THREE.MeshBasicMaterial({
+            vertexColors:true,transparent:true,opacity:0,
+            depthWrite:false,depthTest:false,side:THREE.DoubleSide}));
+          bf.renderOrder=940;
+          bf.userData={ph:Math.random()*6.283,
+            ox:(Math.random()-.5)*.6, oz:(Math.random()-.5)*.6,
+            h:.7+Math.random()*.9};
+          burnGrp.add(bf);
+        }
+        scene.add(burnGrp);
+      }
+      burnGrp.visible=true;
+      burnGrp.position.copy(playerMesh.position);
+      var bk=burnGrp.children;
+      for(var bi3=0;bi3<bk.length;bi3++){
+        var bq3=bk[bi3],bu3=bq3.userData;
+        var flick=.78+.22*Math.sin(airPhase*9+bu3.ph)+.08*Math.sin(airPhase*21+bu3.ph*3);
+        bq3.position.set(bu3.ox*(1-burn*.3),-.30+burn*.34+bu3.h*.10,bu3.oz*(1-burn*.3));
+        /* Kept close to the cube. Tall thin flames read as a column of fire
+           standing somewhere near the player rather than as the player being
+           on fire, which is the opposite of the point. */
+        var gsz=(.42+burn*.5)*flick;
+        bq3.scale.set(gsz*.9,bu3.h*gsz*.9,1);
+        if(camera)bq3.quaternion.copy(camera.quaternion);
+        // up quickly, and gone before the cube is
+        bq3.material.opacity=Math.min(1,burn/.18)*(1-burn)*(1-burn)*2.2;
+      }
+      // and what the fire leaves: the flames go out on a black cube, not on
+      // the one that walked in.
+      playerChar(Math.min(1,Math.max(0,(burn-.32)/.46)));
+    } else if(dying==="fall"){
       playerMesh.position.x+=(tmp.x-playerMesh.position.x)*.2;
       playerMesh.position.z+=(tmp.z-playerMesh.position.z)*.2;
       playerMesh.position.y-=.12+dyingT*.014;
