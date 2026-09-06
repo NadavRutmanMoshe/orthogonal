@@ -91,6 +91,9 @@
      disabled button keeps everywhere else. */
   .wact .wearn{border-color:color-mix(in srgb,var(--star) 46%,transparent);
     color:var(--star);font-size:10.5px;letter-spacing:.06em;opacity:1}
+  /* The star is a <u> inline in the label, and letter-spacing does not put a
+     word space either side of it - "EVERY★IN II" was one word. */
+  .wact .wearn .st{margin:0 5px}
   .item span.wlock{color:var(--star);font-size:9.5px;letter-spacing:.02em;
     white-space:nowrap}
   /* A REAL PRICE LOOKS LIKE A REAL PRICE. Gold like a star price - it is

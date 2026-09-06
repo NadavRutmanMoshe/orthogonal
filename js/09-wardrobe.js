@@ -210,31 +210,60 @@ function buildPlayerMesh(shape,col,mat){
     bx(.32,.13,.32,0,.17,0);
     bx(.19,.11,.19,0,.26,0);
   } else if(shape==="flame"){
-    /* A FLAME LEANS, AND IT IS TALLER THAN IT IS WIDE. The first version was
-       a symmetrical stack of squares with a nub stuck on each side, and it
-       read as a small ziggurat - reported as looking bad, correctly.
+    /* LOW-POLY, NOT VOXEL - and that is the whole fix.
 
-       Three things fix it, and none of them is more boxes:
-       - THE TAPER RUNS THE WHOLE HEIGHT, base to tip, instead of stopping
-         two thirds of the way up in a flat-topped block.
-       - EVERY LAYER IS OFFSET a little further than the one below it, in x
-         and the other way in z. A stack that leans and twists reads as
-         something rising; a stack that does not reads as masonry.
-       - ONE TONGUE, not two, and it is tall and off to one side. A flame is
-         asymmetric by nature; a pair of matching nubs is a candelabra. */
+       This was boxes twice: a stepped stack, then a leaning stepped stack
+       with a second stack beside it. Both were reported as looking bad and
+       both readings were the same one, because a stack of axis-aligned
+       squares has a staircase for a silhouette, and a staircase is masonry.
+       No arrangement of boxes gets out of that; a flame's whole identity is
+       a smooth curve to a point.
+
+       So it is the one shape in the catalogue that is not built from the
+       game's own cubes. THREE.LatheGeometry spins a profile - a teardrop,
+       fattest a third of the way up, tapering to a point - and SEVEN radial
+       segments keep it faceted rather than smooth. That is a deliberate
+       low-poly flame rather than a failed round one, and it sits with the
+       rest of the game because everything here is already flat-shaded
+       polygons with their edges drawn.
+
+       `flatShading` is set on a CLONE of the material handed in. The
+       original is shared with whatever else the caller is drawing, and one
+       shape must not decide how the others are lit. */
     g=new THREE.Group();
-    bx(.34,.10,.34,0,-.26,0);            // the flare where it meets the ground
-    bx(.28,.18,.28,.01,-.10,0);          // body
-    bx(.19,.15,.19,.04,.06,-.015);       // waist
-    bx(.12,.13,.12,.075,.20,-.03);       // neck
-    bx(.06,.07,.06,.105,.275,-.04);      // tip
-    /* THE SECOND FLAME, not a rotated stick. The tongue used to be one box
-       tilted off the side, which from most angles is a broken piece leaning
-       on the tower. A smaller copy of the same taper beside it is a fire
-       with two tongues, which is what fire looks like. */
-    bx(.10,.14,.10,-.14,-.13,.03);
-    bx(.07,.10,.07,-.165,-.01,.04);
-    bx(.045,.07,.045,-.185,.075,.05);
+    var fmat=(mat&&mat.clone)?mat.clone():mat;
+    if(fmat){fmat.flatShading=true;fmat.needsUpdate=true;}
+    /* AND THE TIP HOOKS. A teardrop spun on its axis is a droplet, or a
+       fruit; what makes it fire is that the point curls off to one side. The
+       lathe cannot say that, so the vertices above the waist are pushed
+       sideways by the square of their height - nothing at the middle,
+       everything at the tip - and the normals are recomputed so the facets
+       still catch the light correctly afterwards. */
+    function flame(s,x,y,z,tilt,hook){
+      var prof=[[0,-.310],[.115,-.302],[.200,-.245],[.243,-.140],[.246,-.030],
+                [.205,.070],[.148,.155],[.092,.225],[.042,.278],[0,.315]];
+      var pts=prof.map(function(q){
+        return new THREE.Vector2(q[0]*s,q[1]*s);
+      });
+      var geo=new THREE.LatheGeometry(pts,7);
+      var pos=geo.attributes.position, top=.315*s;
+      for(var i=0;i<pos.count;i++){
+        var vy=pos.getY(i);
+        if(vy<=0)continue;
+        var t=vy/top;
+        pos.setX(i,pos.getX(i)+hook*t*t*s);
+      }
+      pos.needsUpdate=true;
+      geo.computeVertexNormals();
+      var m=new THREE.Mesh(geo,fmat);
+      m.position.set(x,y,z);
+      m.rotation.z=tilt;
+      g.add(m);
+      return m;
+    }
+    flame(1,0,0,0,-.06,.17);             // the flame, leaning, tip curled
+    flame(.52,-.185,-.135,.075,.30,.12); // a tongue at its foot, in front
+    flame(.30,.175,-.19,-.055,-.34,-.10);// and a smaller one behind
   } else if(shape==="minnow"){
     // Flat in z on purpose: a fish read as a loaf until the body was thinner
     // than it is tall, and the fins are what carry the rest.
