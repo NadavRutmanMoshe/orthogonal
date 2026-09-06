@@ -1534,12 +1534,12 @@ function win(){
   if(fromEditor){
     $("wonTitle").textContent="Your level works";
     $("wonSub").textContent=custom.name;
-    $("bNext").textContent="BACK TO EDITOR";
+    $("bNextT").textContent="BACK TO EDITOR";
   } else if(playSource==="library"){
     var n=sortedLibrary().length;
     $("wonTitle").textContent="Solved";
     $("wonSub").textContent=L.name+"  ("+(libIndex+1)+" of "+n+")";
-    $("bNext").textContent=libIndex>=n-1?"DONE":"NEXT LEVEL";
+    $("bNextT").textContent=libIndex>=n-1?"DONE":"NEXT LEVEL";
   } else if(L.tutorial){
     /* The tutorial has been holding the player's hand the whole way, so the
        last thing it should say is where the hand goes. Only on the way out -
@@ -1554,7 +1554,7 @@ function win(){
     $("wonSub").textContent=L.name.replace(/^00 \u2014 /,"")+"  \u00b7  "+
       moveCount+" moves  \u00b7  not scored"+
       (lastTut?"  \u00b7  from here on, tap the bulb for a hint":"");
-    $("bNext").textContent="NEXT LEVEL";
+    $("bNextT").textContent="NEXT LEVEL";
     $("bRetry").style.display="none";
   } else if(B||TR){
     // Scored on lives, so hints cost nothing here and moves are not the point.
@@ -1564,7 +1564,7 @@ function win(){
     $("wonSub").textContent=L.name+"  \u00b7  "+
       (stb===3?"never hit":(BOSS_LIVES-lives)+" hit"+(BOSS_LIVES-lives===1?"":"s")+
        " taken")+"  \u00b7  "+moveCount+" moves";
-    $("bNext").textContent=last?"PLAY AGAIN":"NEXT LEVEL";
+    $("bNextT").textContent=last?"PLAY AGAIN":"NEXT LEVEL";
     $("bRetry").style.display=stb>=3?"none":"flex";
     /* THE ONE PLACE A FIGHT CAN SAY ANYTHING. A boss has no goal to stand on
        and no room for prose while it is running, so the Census's four
@@ -1588,7 +1588,7 @@ function win(){
     if(hintsUsed)sub+="  \u00b7  "+hintsUsed+" hint"+(hintsUsed===1?"":"s")+
       " taken";
     $("wonSub").textContent=sub;
-    $("bNext").textContent=last?"PLAY AGAIN":"NEXT LEVEL";
+    $("bNextT").textContent=last?"PLAY AGAIN":"NEXT LEVEL";
     $("bRetry").style.display=stw>=3?"none":"flex";
   }
   /* DID THAT LAST STAR FINISH THE SECTION?
@@ -1642,7 +1642,7 @@ function win(){
      The button goes to the map rather than into the level; see bNext. */
   if(!fromEditor&&playSource==="builtin"&&!last&&
      typeof mapLocked==="function"&&mapLocked(lvIndex+1)){
-    $("bNext").textContent="WHAT'S LEFT";
+    $("bNextT").textContent="WHAT'S LEFT";
     var lockSay=bossesLeftSay();
     if(lockSay){
       var sub3=$("wonSub");

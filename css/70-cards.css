@@ -105,8 +105,11 @@
     text-align:left;color:var(--fg-dim)}
   .tutcard p b{color:var(--goal);font-weight:500}
   .tutcard button{min-width:120px}
-  .wonrow{display:flex;gap:8px;align-items:center}
-  .won button{height:46px;padding:0 24px;font-weight:600;
+  /* Capped and centred: on the owner's narrow phone the pair used to run off
+     both edges, and a button whose rim is off-screen reads as broken. */
+  .wonrow{display:flex;gap:8px;align-items:center;justify-content:center;
+    max-width:94vw}
+  .won button{height:46px;padding:0 clamp(13px,4.4vw,24px);font-weight:600;
     --c:var(--goal);color:var(--c);
     border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent);
     --lip:color-mix(in srgb,var(--c) 44%,#04070d);
@@ -117,6 +120,31 @@
     border-color:var(--rule);background:var(--panel)}
   #bRetry svg{width:15px;height:15px;fill:none;stroke:currentColor;
     stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  /* NEXT carries an arrow on its trailing edge, drawn in the same hairline
+     the TRY AGAIN glyph is drawn in, so the pair reads as one row: one turns
+     back, one goes on. */
+  #bNext{display:flex;align-items:center;gap:9px}
+  #bNext svg{width:16px;height:16px;fill:none;stroke:currentColor;
+    stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  /* LEVELS is the home screen's cap, unrolled here: the same cyan, the same
+     four squares, the same lip. It opens the same chooser, so it should not
+     be a different object on the way out of a level than it is on the way
+     in. One size down and on its own line, which is what keeps it the third
+     choice rather than a rival to NEXT. */
+  #won button.wonlv{--c:#4ec8e0;height:38px;padding:0 18px;
+    display:flex;align-items:center;justify-content:center;gap:9px;
+    color:var(--c);font-weight:600;
+    border:1.5px solid color-mix(in srgb,var(--c) 46%,transparent);
+    --lip:color-mix(in srgb,var(--c) 34%,#04070d);
+    background:
+      radial-gradient(120% 130% at 50% -22%,
+        color-mix(in srgb,var(--c) 26%,transparent), transparent 72%),
+      var(--panel);
+    box-shadow:0 3px 0 var(--lip),
+      0 0 18px color-mix(in srgb,var(--c) 15%,transparent)}
+  #won button.wonlv:active{transform:translateY(3px);box-shadow:0 0 0 var(--lip)}
+  .wonlv svg{width:16px;height:16px;fill:currentColor;stroke:none}
+  .wonlv span{letter-spacing:.16em}
   #intro{display:flex}
   #intro.gone{display:none}
   #intro .tiny,#won .tiny{border-color:var(--rule);color:var(--fg-dim)}

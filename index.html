@@ -384,11 +384,21 @@
   <div class="wonrow">
     <button id="bRetry"><svg viewBox="0 0 24 24">
       <path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/></svg>TRY AGAIN</button>
-    <button id="bNext">NEXT</button>
+    <!-- The label is a span because win() rewrites it six ways (NEXT LEVEL,
+         PLAY AGAIN, WHAT'S LEFT, DONE, BACK TO EDITOR); textContent on the
+         button itself would take the arrow with it. -->
+    <button id="bNext"><span id="bNextT">NEXT</span><svg viewBox="0 0 24 24"
+      aria-hidden="true"><path d="M5 12h12"/><path d="M12.5 6.2 19 12l-6.5 5.8"/>
+      </svg></button>
   </div>
-  <!-- Quieter than the two above it on purpose: leaving for the picker is a
-       third choice, not a rival to NEXT. -->
-  <button class="tiny" id="bLevels" style="height:30px;padding:0 14px">LEVELS</button>
+  <!-- The same cap the home screen's LEVELS wears - cyan, four squares, a lip
+       - because it opens the same chooser. Still the quiet third choice: it
+       sits below the row and is a size down, so it does not rival NEXT. -->
+  <button class="wonlv" id="bLevels"><svg viewBox="0 0 24 24" aria-hidden="true">
+    <rect x="3.2" y="3.2" width="7.4" height="7.4" rx="1.7"/>
+    <rect x="13.4" y="3.2" width="7.4" height="7.4" rx="1.7"/>
+    <rect x="3.2" y="13.4" width="7.4" height="7.4" rx="1.7"/>
+    <rect x="13.4" y="13.4" width="7.4" height="7.4" rx="1.7"/></svg><span>LEVELS</span></button>
 </div>
 
 <!-- THE STING PAINTS BEFORE THREE.JS PARSES, and that is what this block is.
