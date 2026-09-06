@@ -3265,10 +3265,37 @@ function animate(now){
     // backgrounded tab hands back one enormous frame, and the one move the
     // whole game is about must not be skipped by returning to it.
     foldP=Math.min(1,foldP+Math.min(dtMs,60)/fdur);
-    var fe=foldP<.5 ? 4*foldP*foldP*foldP
-                    : 1-Math.pow(-2*foldP+2,3)/2;      // ease in-out cubic
+    /* EASE IN-OUT QUART, not cubic. Same shape, more of it at the ends: the
+       world leans further before it commits and takes longer to stop. The
+       middle is correspondingly quicker, which is the part that wants to be
+       quick - a collapse should travel, and then land. */
+    var fe=foldP<.5 ? 8*foldP*foldP*foldP*foldP
+                    : 1-Math.pow(-2*foldP+2,4)/2;      // ease in-out quart
     foldBase=foldFrom+(flatTarget-foldFrom)*fe;
   } else foldBase=flatTarget;
+  /* THE CAMERA'S OWN MOVE, and the reason the fold reads as a shot rather
+     than a transition. One bell over the tween - zero at both ends, so it
+     can never leave the camera somewhere it should not be, and zero at rest
+     because `foldP` sits at 1 between folds.
+
+     It is deliberately NOT part of flatT. flatT is what the world is drawn
+     from and what the rules' picture has to agree with; this only moves the
+     thing looking at it, the same seam peek uses. Squared once so the
+     camera is still nearly still while the lean is happening and does its
+     travelling with the world.
+
+     On a clock it is halved along with the duration: a fight cannot afford
+     a camera move, but killing it outright made the two folds look like
+     different verbs. */
+  var foldCine=Math.sin(Math.PI*foldP);
+  foldCine*=foldCine*((B||TR)?.5:1);
+  // Off entirely under prefers-reduced-motion, for the same reason the jolt
+  // is: this fires on an ordinary move several times a level.
+  if(typeof reduceMotion!=="undefined"&&reduceMotion&&reduceMotion.matches)
+    foldCine=0;
+  // Direction matters: standing up pulls the camera the other way round, so
+  // the two folds are mirror images rather than the same swing twice.
+  var foldDir=(flatTarget<foldFrom)?-1:1;
   var ftWant=foldBase*(1-planePeek*PEEK_RISE);
   /* THE REPLAY. Ticked here rather than in bossFrame, because bossFrame is
      stopped for exactly the things the replay plays over - and it runs on
@@ -3357,6 +3384,11 @@ function animate(now){
   // reading as a camera rather than as the same wide board.
   var vsWant=(FOLLOW>0&&app==="play")?Math.min(viewSizeT,FOLLOW_ZOOM)
            : rep?viewSizeT*.86 : viewSizeT;
+  // THE DOLLY. The frustum widens at mid-fold and closes again, so the shot
+  // steps back to take the whole collapse in. It rides the same .12 lerp
+  // below as every other size change, which softens the bell's shoulders -
+  // that is wanted: the camera should trail the world, not lead it.
+  vsWant*=1+FOLD_DOLLY*foldCine;
   var pv=viewSize;viewSize+=(vsWant-viewSize)*.12;
   if(Math.abs(pv-viewSize)>.005)updateFrustum();
 
@@ -3370,8 +3402,12 @@ function animate(now){
     turnDrag*=.82;
     if(Math.abs(turnDrag)<.05)turnDrag=0;
   }
-  // camera angle includes the peek and the drag; the fold axis never does
-  var a=(viewAngle+turnDrag+peek*26)*Math.PI/180;
+  /* camera angle includes the peek, the drag and the fold's sway; the fold
+     axis never does - `ta` below is the one the world is projected along and
+     it is built from viewAngle alone, which is what keeps the picture and
+     the rule agreeing while the camera is moving. Peek already swings 26
+     degrees through this seam; the sway is a couple. */
+  var a=(viewAngle+turnDrag+peek*26+FOLD_SWAY*foldCine*foldDir)*Math.PI/180;
   var dvx=Math.sin(a),dvz=Math.cos(a);
   var ta=viewAngle*Math.PI/180;
   var tdvx=Math.sin(ta),tdvz=Math.cos(ta),rx=Math.cos(ta),rz=-Math.sin(ta);
@@ -3395,8 +3431,14 @@ function animate(now){
      frame, which is a jump-cut rather than a slam. */
   var slam=Math.sin((1-foldSlamT)*Math.PI*1.6)*foldSlamT*foldSlamT*
            2.2*vsc*foldSlamDir;
+  /* THE RISE, the third of the three. Folding, the camera lifts a little as
+     the world goes down - the two moving apart is what sells the collapse as
+     something happening TO the world rather than to the picture of it. It is
+     added to the tilt term, not to y directly, so it scales with the arena
+     exactly as the tilt does. */
+  var cine=FOLD_RISE*foldCine*foldDir;
   camera.position.set(center.x+dvx*40+(Math.random()-.5)*sh,
-                      center.y+(tilt+peek*.22)*34+(Math.random()-.5)*sh+slam,
+                      center.y+(tilt+peek*.22+cine)*34+(Math.random()-.5)*sh+slam,
                       center.z+dvz*40+(Math.random()-.5)*sh);
   camera.up.set(0,1,0);camera.lookAt(center);
 

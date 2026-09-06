@@ -1315,8 +1315,16 @@ function foldJolt(into){
   /* Armed here because both verbs end up in this one function, which is the
      same reason the tutorial's gate lives on the four verbs rather than on
      the bindings. */
+  /* .6 OF THE TWEEN, NOT .85. The fold got longer to be watchable, and the
+     lock must not get longer with it: a puzzle you fold three times a screen
+     cannot spend three quarters of a second refusing the button. Six tenths
+     of the new duration is about what .85 of the old one was, so the hand
+     feels exactly what it felt before while the eye gets the longer shot.
+     Coming off the lock early is safe - the tween starts its next leg from
+     wherever `foldBase` has got to, so an interrupted fold bends rather than
+     jumping. */
   foldLockUntil=((typeof performance!=="undefined")?performance.now():Date.now())+
-    ((B||TR)?FOLD_MS_CLOCK:(into?FOLD_MS_IN:FOLD_MS_OUT))*.85;
+    ((B||TR)?FOLD_MS_CLOCK*.85:(into?FOLD_MS_IN:FOLD_MS_OUT)*.6);
   if(!(reduceMotion&&reduceMotion.matches)){
     /* Two motions, not one, because they say different things. The jitter is
        impact - the same decaying `shakeT` a hit uses - and the slam is
