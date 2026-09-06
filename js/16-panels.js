@@ -362,8 +362,13 @@ function menuPanel(){
       "<span><i>back to</i><b>"+esc(SECTIONS[secN].name)+"</b></span>"+
       "<u class='psecgo' aria-hidden='true'>\u203a</u></button>";
   showPanel(
-    "<div class='phead'><div class='pt'><b>Settings</b>"+
-      "<span>"+esc((L&&L.name)||"")+"</span></div>"+
+    /* NO SUBTITLE. The header used to print the level you were standing on
+       under the word Settings. It answered a question nobody asks with the
+       panel open - the level's name is on the HUD behind it, and the way
+       back to its shelf is the .psec row below, which names the section
+       rather than the level. The other tall panels put a real subtitle
+       here; this one had a label. */
+    "<div class='phead'><div class='pt'><b>Settings</b></div>"+
       "<div class='mtot'>"+starsEarned()+" ★</div>"+
       "<button class='mq mx' id='mClose' aria-label='Back to the level'>✕</button></div>"+
     "<div class='pbody'>"+secBtn+

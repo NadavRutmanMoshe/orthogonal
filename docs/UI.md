@@ -170,6 +170,10 @@ named). Undoing one of these needs the paragraph.
   `levelPicker()`. Not shown at home, on a tutorial, or from the library or
   the editor. It is the only exception to "no navigation row at all" and it
   is not a second LEVELS — it is the shelf you are standing on.
+- **The settings header has no subtitle.** It used to print the current
+  level's name under `Settings`; the level's name is on the HUD behind the
+  panel, and the `.psec` row already names where you are. The other three
+  tall panels still carry a subtitle.
 - **`LEVEL EDITOR` is not in the menu.** It is `MY LEVELS` on the home
   screen — a place you go, not a setting.
 - **Win card**: `.wonmast` is the section-finished pill and `.wonwear` under
