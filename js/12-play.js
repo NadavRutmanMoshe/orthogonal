@@ -93,6 +93,7 @@ function respawn(){
   // resuming a restart mid-turn is disorienting in exactly the wrong moment.
   view=0;viewAngle=0;viewAngleTarget=0;
   buildGrid();syncHud();
+  if(typeof trailClear==="function"){trailClear();trailHere();}
   playerMesh.position.set(player.x,player.y,player.z);
   /* Written here rather than left to the next move, because a death is
      exactly the moment somebody puts the game down. saveSession() refuses to
@@ -1114,6 +1115,51 @@ function collectHere(){
   }
 }
 
+/* ============================================================
+   WHAT GETS MARKED, AND WHEN
+
+   The drawing is in js/10-render.js; these three are the rule about which
+   squares it draws. They are here because they are part of the verbs - a
+   mark is made by moving, folding and coming back, and nothing else makes
+   one.
+
+   IN THE VOLUME the answer is trivial: the block under your feet.
+
+   ON THE FOLD it is the whole depth column, and that is the interesting one.
+   Folding merges everything at one screen position into a single silhouette
+   square, so the floor you are standing on in the plane was made by every
+   block in that column at once - not by the one you happened to be on. Marking
+   only the near one would say "I was here" about a square whose whole point is
+   that it is several places at the same time; marking the column says which
+   line through the world you flattened, and it is still legible after the
+   unfold, when the blocks are far apart again. This is the reading of the
+   owner's "all the blocks that are in the way of the closest one to the
+   camera".
+
+   MOVING WHILE FLAT marks one block, and it is the one the unfold would put
+   you on - R.pick over R.landings, the same call doUnflatten() makes, so the
+   mark and the landing can never disagree. Marking the column here instead
+   would paint the entire world after four steps, which is not a trail. */
+function trailHere(){
+  if(typeof trailMark!=="function")return;
+  trailMark(player.x,player.y-1,player.z);
+}
+function trailColumn(){
+  if(typeof trailMark!=="function"||!L||!R)return;
+  var u=R.uOf(view,player.x,player.z), y=player.y-1;
+  for(var i=0;i<L.blocks.length;i++){
+    var b=L.blocks[i];
+    if(b[1]!==y||isCrate(b))continue;
+    if(R.uOf(view,b[0],b[2])===u)trailMark(b[0],b[1],b[2]);
+  }
+}
+function trailFlatStep(){
+  if(typeof trailMark!=="function"||!R||!flatPos)return;
+  var land=R.landings(view,flatPos.u,flatPos.y,liveCrates());
+  if(!land.length)return;
+  var b=R.pick(land);
+  trailMark(b.x,flatPos.y-1,b.z);
+}
 function move3(dx,dz,dir){
   if(dying)return;
   clearCue();
@@ -1146,6 +1192,7 @@ function move3(dx,dz,dir){
   player.x=nx;player.z=nz;player.y=ny;
   if(R.deadly3(nx,ny,nz)){die("spike");return;}
   if(!moved)SFX.step();
+  trailHere();
   if(tutC){tutC.m3++;if(dir)tutC.d[dir]++;if(ny>oldY)tutC.climb++;}
   if(bossContact())return;
   syncHud();saveSession();checkWin();
@@ -1163,6 +1210,7 @@ function move2(du){
   flatPos.u=nu;flatPos.y=ny;
   if(R.deadly2(view,nu,ny)){die("spike");return;}
   SFX.step();collectHere();
+  trailFlatStep();
   if(tutC)tutC.m2++;
   if(bossContact())return;
   syncHud();saveSession();
@@ -1330,6 +1378,9 @@ function doFlatten(){
   lastSolidDepth=R.dOf(view,player.x,player.z);
   pushHistory();moveCount++;
   flatPos={u:pu,y:player.y};
+  // The column you just merged - see trailColumn(). Taken before the fold
+  // resolves, for the same reason everything else on this line is.
+  trailColumn();
   /* Captured BEFORE the fold resolves, while the player is still standing on
      something in the volume - afterwards there is only a silhouette. */
   if(typeof markWaterTrace==="function")markWaterTrace();
@@ -1369,6 +1420,7 @@ function doUnflatten(){
   var b=R.pick(land);
   pushHistory();moveCount++;
   player.x=b.x;player.z=b.z;player.y=flatPos.y;
+  trailHere();
   flat=false;flatTarget=0;SFX.unfold();foldJolt(false);
   /* RULE 5, SHOWN. Only when the column actually held a choice - see
      showLanding() - so it is silent on the levels where nothing was decided
@@ -1715,6 +1767,9 @@ function resetLevel(){
   player={x:L.start[0],y:L.start[1],z:L.start[2]};
   flat=false;flatTarget=0;flatT=0;view=0;viewAngle=0;viewAngleTarget=0;
   buildGrid();syncHud();
+  // A restart is a fresh attempt, so the trail starts again from where you
+  // are standing - a route you have already abandoned is not orientation.
+  if(typeof trailClear==="function"){trailClear();trailHere();}
   playerMesh.position.set(player.x,player.y,player.z);
 }
 /* HELP, OFFERED ON EVERY FIFTH LOSS ON A CLOCK LEVEL, AND IT IS THE SKIP.
@@ -1911,6 +1966,10 @@ function loadLevel(level,idx){
   var pst=(L.tutorial||L.boss||L.trial)?{ok:false}:statsCached(L);
   levelPar=pst.ok?pst.moves:null;
   syncMeshes();buildGrid();syncHud();
+  /* Cleared before the first mark rather than after, because syncMeshes()
+     above has already rebuilt the world and trailSync() would otherwise put
+     the previous level's marks back on any cell the two share. */
+  if(typeof trailClear==="function"){trailClear();trailHere();}
   center.copy(centerT);viewSize=viewSizeT;onResize();
   playerMesh.position.set(player.x,player.y,player.z);
   // The board first, the card a beat later - the same order the struggle

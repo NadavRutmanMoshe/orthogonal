@@ -1870,6 +1870,97 @@ function makeBlockGeo(){
   return mergeBoxes(parts);
 }
 
+/* ============================================================
+   THE TRAIL - every square you have stood on, written on the floor
+
+   A puzzle about projection is a puzzle about depth, and depth is the one
+   thing an orthographic camera refuses to say. Two blocks a long way apart
+   can sit a pixel from each other on screen; after four folds and two turns
+   the honest question "have I already been over there?" has no answer on the
+   screen at all. This is that answer, and it costs nothing to read: a soft
+   mark in the player's own colour on the top of every block they have stood
+   on.
+
+   THREE THINGS MAKE IT SUBTLE RATHER THAN A SECOND PUZZLE.
+
+   * It is the player's colour and nothing else's. Every other mark on the
+     floor in this game means DO THIS - the goal's wireframe, the landing
+     rings, the tutorial's green. A history has to be told apart from an
+     instruction at a glance, and whose history it is, is the content of it,
+     so it reads `--player` the way the shadow under your feet and the shield
+     bubble already do.
+   * It is a soft blot, not a tile. A hard square on a block's top face reads
+     as a piece - another kind of block - which is exactly the confusion a
+     game whose whole subject is which block is which cannot afford. The
+     texture falls to nothing well inside its own edges, so it sits ON the
+     surface rather than replacing it.
+   * It goes when the world folds, on the same test the anchor's mark uses
+     (flatT<.45). In the plane the top faces are edge-on and every decal on
+     them is a hairline of noise across the silhouette - and the silhouette is
+     the thing being read.
+
+   ONE MATERIAL FOR ALL OF THEM, which is what makes a colour change one
+   write in applySkin() rather than a walk over the world. The decals are
+   children of the block meshes, so they fold, scale and travel with the
+   block for free - the same trick markGeo uses - and they die with the block
+   when syncMeshes() drops it, which is why trailSync() re-attaches after
+   every rebuild.
+   ============================================================ */
+var trailSet={}, trailMat=null, trailGeo=null, trailTex=null;
+var TRAIL_A=.30;                      // subtle: read at a glance, never lit
+function trailTexture(){
+  var S=64,c=document.createElement("canvas");c.width=c.height=S;
+  var x=c.getContext("2d");
+  /* Feathered to nothing at .46 of the canvas - inside its own edges, the
+     same rule makePlume() is written to. A gradient that is still bright
+     where the pixels run out shows you its rectangle. */
+  var g=x.createRadialGradient(S/2,S/2,S*.06,S/2,S/2,S*.46);
+  g.addColorStop(0,"rgba(255,255,255,1)");
+  g.addColorStop(.52,"rgba(255,255,255,.62)");
+  g.addColorStop(1,"rgba(255,255,255,0)");
+  x.fillStyle=g;x.fillRect(0,0,S,S);
+  return new THREE.CanvasTexture(c);
+}
+function trailMaterial(){
+  if(trailMat)return trailMat;
+  if(!trailTex)trailTex=trailTexture();
+  var col=(typeof SKIN_COLORS!=="undefined"&&typeof findBy==="function")
+    ? findBy(SKIN_COLORS,wardrobe.color).hex : 0xd6336c;
+  trailMat=new THREE.MeshBasicMaterial({map:trailTex,color:col,
+    transparent:true,opacity:TRAIL_A,depthWrite:false,
+    side:THREE.DoubleSide});
+  return trailMat;
+}
+function trailAttach(k){
+  var m=meshes[k];
+  if(!m||m.userData.trail)return;
+  if(!trailGeo)trailGeo=new THREE.PlaneGeometry(.74,.74);
+  /* .463 clears the stone case's top face (.45) and the liquid surface plate
+     (.43) and still sits under the rim frame's crown (~.4995), so one height
+     works for stone, water and fire without a per-kind branch. */
+  var q=new THREE.Mesh(trailGeo,trailMaterial());
+  q.rotation.x=-Math.PI/2;
+  q.position.y=.463;
+  q.renderOrder=3;
+  m.userData.trail=q;m.add(q);
+}
+/* Cells only, never meshes: a block that does not exist yet - a boss arena
+   raising its pillars, a level being rebuilt - gets its mark the next time
+   trailSync() runs. */
+function trailMark(x,y,z){
+  var k=K(x,y,z);
+  if(trailSet[k])return;
+  trailSet[k]=1;trailAttach(k);
+}
+function trailSync(){for(var k in trailSet)trailAttach(k);}
+function trailClear(){
+  for(var k in trailSet){
+    var m=meshes[k];
+    if(m&&m.userData.trail){m.remove(m.userData.trail);m.userData.trail=null;}
+  }
+  trailSet={};
+}
+
 function addMesh(x,y,z,kind){
   var k=K(x,y,z);
   if(meshes[k])return;
@@ -2059,6 +2150,10 @@ function syncMeshes(){
     var m=meshes[k];scene.remove(m);m.material.dispose();delete meshes[k];
   }
   buildDynamic();
+  /* The decals are children of block meshes, so every mesh this function
+     dropped and rebuilt came back bare. The set of cells is the truth; the
+     decals are a view of it. */
+  trailSync();
   recomputeBounds();
 }
 var arenaLo=[0,0,0], arenaHi=[0,0,0];
@@ -3254,6 +3349,7 @@ function animate(now){
   for(var k in meshes){
     var m=meshes[k],b=m.userData.base;
     if(m.userData.mark)m.userData.mark.visible=flatT<.45;
+    if(m.userData.trail)m.userData.trail.visible=flatT<.45;
     var u=b[0]*rx+b[2]*rz,d=b[0]*tdvx+b[2]*tdvz,fd=d*.012;
     var px=u*rx+fd*tdvx,pz=u*rz+fd*tdvz;
     m.position.set(b[0]+(px-b[0])*flatT,b[1],b[2]+(pz-b[2])*flatT);

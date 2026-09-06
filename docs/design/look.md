@@ -417,3 +417,53 @@ falls because something is leaving. It plays on a fold **only on a level that
 has water**, layered over `fold()` rather than replacing it, because the fold
 is still the move the player made.
 
+
+## The trail
+
+Every square the player has stood on wears a soft blot of `--player` on its
+top face. It exists because an orthographic camera will not say what depth is:
+two blocks a long way apart can sit a pixel from one another on screen, and
+after four folds and two turns "have I already been over there?" is a question
+the screen has no answer to. The trail is the answer, and it is free to read.
+
+**It is the player's colour and nothing else's.** Every other mark on a floor
+in this game means *do this* — the goal's wireframe, the landing rings, the
+tutorial's green. A history has to be distinguishable from an instruction at a
+glance, so it wears the one hue that already means *you*: the same token the
+shadow under your feet and the shield bubble read.
+
+**It is a blot, not a tile.** A hard square on a block's top face reads as
+another kind of block, which is the one confusion a game about telling blocks
+apart cannot afford. The texture is a radial gradient that reaches zero at .46
+of its canvas — inside its own edges, the rule `makePlume()` is written to —
+so it sits *on* the surface instead of replacing it. `TRAIL_A` is .30.
+
+**Three rules decide which squares get one**, and the middle one is the
+interesting one (`trailHere`, `trailColumn`, `trailFlatStep` in
+`js/12-play.js`):
+
+- In the volume: the block under your feet.
+- **On the fold: the whole depth column.** The floor you stand on in the plane
+  was made by every block at that screen position at once, not by the one you
+  happened to be standing on. Marking only the near one would say "I was here"
+  about a square whose entire point is that it is several places at the same
+  time. Marking the column says which *line through the world* you flattened,
+  and it is still legible after the unfold, when those blocks are far apart
+  again.
+- Moving while flat: one block, the one `R.pick(R.landings(...))` returns —
+  the same call `doUnflatten()` makes, so the mark and the landing can never
+  disagree. Marking the column on every flat step would paint the whole world
+  in four moves, which is not a trail.
+
+**It goes when the world folds**, on the same `flatT<.45` test the anchor's
+mark uses: in the plane the top faces are edge-on and every decal on them is a
+hairline of noise laid across the silhouette, which is the thing being read.
+
+Mechanically the decals are children of the block meshes, so they fold, scale
+and travel with the block for nothing, and they die with the block when
+`syncMeshes()` drops it — which is why `trailSync()` re-attaches after every
+rebuild and `trailSet` (cells, not meshes) is the truth. One shared material
+for all of them, so `applySkin()` recolours the whole trail with one write.
+It is cleared and re-seeded at the player's feet on load, restart and respawn:
+a route already abandoned is not orientation. **Undo does not take a mark
+back** — the trail is where you have been, not where you are.
