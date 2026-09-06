@@ -427,6 +427,15 @@ function homeSync(){
      read as a tab on a dark panel, which is the same job a button has. */
   var sec=SECTIONS[mapSecOf(t.i)];
   b.style.setProperty("--sec",(sec&&sec.col)||"var(--goal)");
+  /* AND THE SECTION'S OWN EMBLEM, the same drawing its tile carries on the
+     chooser. `--tabc` is what secEmblem()'s fill reads, so it is set to the
+     same value `--sec` just took: one colour, one picture, on the button and
+     on the tile it leads to. */
+  var ic=$("hContIcon");
+  if(ic){
+    ic.innerHTML=sec?secEmblem(sec):"";
+    ic.style.setProperty("--tabc",(sec&&sec.col)||"var(--goal)");
+  }
   $("homeStars").textContent=stars;
 }
 /* The stand, which is the wardrobe's display case pointed at what you have

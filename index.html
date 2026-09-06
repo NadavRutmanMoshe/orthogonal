@@ -297,8 +297,18 @@
     <div class="hstand wglass"><canvas id="homeCase"></canvas><i class="wfloor"></i></div>
     <div class="hstars"><b id="homeStars">0</b><i>&#9733;</i> earned</div>
     <div class="hbtns">
-      <button class="hcont" id="hContinue"><b>START</b><i></i></button>
-      <button id="hLevels">LEVELS</button>
+      <!-- The emblem is written by homeSync(): it is the section you are
+           being sent into, drawn exactly as its tile is drawn on the
+           chooser, so the button and the place it leads carry one picture as
+           well as one colour. -->
+      <button class="hcont" id="hContinue"><span class="hci" id="hContIcon"></span>
+        <span class="hct"><b>START</b><i></i></span></button>
+      <!-- Four squares, which is literally what LEVELS opens. -->
+      <button id="hLevels"><svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="3.2" y="3.2" width="7.4" height="7.4" rx="1.7"/>
+        <rect x="13.4" y="3.2" width="7.4" height="7.4" rx="1.7"/>
+        <rect x="3.2" y="13.4" width="7.4" height="7.4" rx="1.7"/>
+        <rect x="13.4" y="13.4" width="7.4" height="7.4" rx="1.7"/></svg><span>LEVELS</span></button>
     </div>
     <!-- The two browse rows that used to sit here are gone; the wardrobe is
          the one way in now. The icon is the same hanger the HUD's wardrobe
@@ -320,7 +330,13 @@
         <path class="lite" d="M11.1 11.2h1.8v2.4h2.4v1.8h-2.4v2.4h-1.8v-2.4H8.7v-1.8
           h2.4v-2.4Z"/></svg><span>MY LEVELS</span></button>
     </div>
-    <button class="tiny" id="hMenu">SETTINGS</button>
+    <button class="tiny" id="hMenu"><svg viewBox="0 0 24 24" aria-hidden="true"
+      fill-rule="evenodd"><path d="M13.75 1.8h-3.5l-.42 2.5a8.2 8.2 0 0 0-1.83
+      1.06L5.72 4.3 3.97 7.33l1.94 1.6a8.2 8.2 0 0 0 0 2.14l-1.94 1.6 1.75
+      3.03 2.28-1.06a8.2 8.2 0 0 0 1.83 1.06l.42 2.5h3.5l.42-2.5a8.2 8.2 0 0 0
+      1.83-1.06l2.28 1.06 1.75-3.03-1.94-1.6a8.2 8.2 0 0 0 0-2.14l1.94-1.6
+      -1.75-3.03-2.28 1.06a8.2 8.2 0 0 0-1.83-1.06ZM12 12.9a2.9 2.9 0 1 1 0-5.8
+      2.9 2.9 0 0 1 0 5.8Z"/></svg><span>SETTINGS</span></button>
   </div>
 </div>
 

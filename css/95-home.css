@@ -21,10 +21,31 @@
    the equipped world's void colour, and applyPalette sets the CSS --void
    from the same world. The character simply stands there.
    ============================================================ */
+/* THE HOME SCREEN HAS ITS OWN GROUND, and it is not the world's.
+
+   It used to paint `var(--void)`, which is the 3D sky of whatever section
+   you were last standing in - rewritten per level by applyTheme(). Come home
+   from the desert and the title screen was brown; come home from hell and it
+   was red. Reported exactly that way, with a screenshot. Home is one place
+   and it should look like one place, so these are literals: a cool indigo
+   with a lift behind the wordmark and a vignette at the corners.
+
+   IT ALSO PINS THE TEXT TOKENS. `body.flat` swaps --fg and friends to
+   dark-on-light for the 2D ground, and it is still set if you open the menu
+   mid-fold and press HOME - which left dark text on this dark ground. The
+   home screen is never the plane, so it declares the dark-theme values here
+   and the swap cannot reach it. --player and --sec still come through, which
+   is what the plinth and CONTINUE need. */
 .home{position:fixed;inset:0;z-index:11;display:none;
   flex-direction:column;align-items:center;justify-content:center;
-  background:var(--void);padding:22px 16px;overflow:auto;touch-action:pan-y;
-  transition:background .5s ease}
+  --fg:#c3cde4; --fg-dim:#6d7c9c; --rule:rgba(195,205,228,.22);
+  --panel:rgba(15,20,36,.82);
+  color:var(--fg);
+  background:
+    radial-gradient(126% 62% at 50% -6%,#1d2745,transparent 68%),
+    radial-gradient(90% 70% at 50% 118%,#141a30,transparent 70%),
+    #080b16;
+  padding:22px 16px;overflow:auto;touch-action:pan-y}
 .home.on{display:flex}
 .hwrap{width:100%;max-width:340px;display:flex;flex-direction:column;
   align-items:center}
@@ -44,6 +65,11 @@
 
 .hbtns{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:12px}
 .home button{width:100%;height:44px;font-size:12.5px;letter-spacing:.14em}
+/* Every button on this screen carries a picture now, so there is one rule
+   for what a picture on a button is: 19px, solid, in the button's own colour,
+   nine pixels clear of the word. `.hward` sets its own size and keeps it. */
+.home button svg{width:19px;height:19px;flex:none;fill:currentColor;
+  stroke:none;margin-right:9px}
 /* The one thing this screen is for, so it gets the raised treatment the
    panels' primary button already has - and its own second line, because
    "CONTINUE" alone does not say what you are continuing. */
@@ -58,13 +84,19 @@
    The lip and the ground are mixed from that one value rather than authored
    beside it - the same reasoning the map's nodes use, and what keeps a pale
    section and a dark one both legible without hand-picking three values. */
-.hcont{flex-direction:column;gap:2px;height:56px;--sec:var(--goal);
+/* A ROW NOW, not a column: the emblem sits left of the two lines, which are
+   still stacked. The pair is centred as one object. */
+.hcont{flex-direction:row;gap:11px;height:56px;--sec:var(--goal);
   border-color:var(--sec);color:var(--sec);font-weight:600;
   background:color-mix(in srgb,var(--sec) 11%,transparent);
   box-shadow:0 4px 0 color-mix(in srgb,var(--sec) 46%,#04070d);
   transition:transform .12s ease,box-shadow .12s ease}
 .hcont:active{transform:translateY(3px);
   box-shadow:0 1px 0 color-mix(in srgb,var(--sec) 46%,#04070d)}
+.hct{display:flex;flex-direction:column;gap:2px;align-items:center;
+  min-width:0}
+.hci{display:flex;align-items:center;flex:none}
+.hci .secem{width:23px;height:23px}
 .hcont b{font-size:12px;letter-spacing:.16em;font-weight:600}
 .hcont i{font-style:normal;font-size:10.5px;letter-spacing:.08em;
   color:var(--fg-dim);text-transform:none}
@@ -113,6 +145,7 @@
 
 .home .tiny{width:auto;height:30px;padding:0 16px;margin-top:14px;
   font-size:11px;border-color:var(--rule);color:var(--fg-dim)}
+.home .tiny svg{width:15px;height:15px;margin-right:7px}
 
 /* Play chrome has nothing to do while the home screen is up, and the star
    total is shown inside it instead - two counts of the same number, one of
