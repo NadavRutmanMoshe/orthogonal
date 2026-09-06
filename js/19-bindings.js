@@ -29,6 +29,7 @@ bind("bTutOk",tutCardOk);
 bind("hContinue",homeGo);
 bind("hLevels",function(){audio();sectionPicker();});
 bind("hWard",function(){audio();wardrobePanel("shape");});
+bind("hMine",function(){audio();enterEditor();});
 bind("hMenu",function(){audio();menuPanel();});
 bind("bSkipTo",function(){
   $("intro").classList.add("gone");

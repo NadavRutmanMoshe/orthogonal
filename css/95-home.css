@@ -102,6 +102,12 @@
   box-shadow:0 0 0 var(--lip)}
 .hward svg{width:21px;height:21px;flex:none;fill:currentColor;stroke:none}
 .hward span{letter-spacing:.16em;font-weight:600}
+/* MY LEVELS is the same cap in the editor's own blue - the hue the editor
+   bar, the verify chip and every "second chance" button in the panels
+   already wear - so it reads as a sibling of WARDROBE rather than a second
+   wardrobe. */
+.home button.hward.hmine{--c:#6fa8ff;height:42px}
+.hmine svg{width:19px;height:19px}
 
 .home .tiny{width:auto;height:30px;padding:0 16px;margin-top:14px;
   font-size:11px;border-color:var(--rule);color:var(--fg-dim)}

@@ -30,7 +30,7 @@ rather than guessing the file.
 | `80-panel-tall.css` | full-height panel furniture shared by menu, wardrobe and map: `.panel.tall .phead .pbody .pcard .prow2 .pgo .psub .pdanger .pbuild`, the range slider skin |
 | `85-map.css` | `--vio --amb` tokens, the section chooser (`.secgrid .sectile .secem .secnum .secname .secsub .secpb .secf .seccap .secchain .seclock .secad`), `.panel.map .mhead .mcard .mbar #mtrail .mfill .mnode` (+ `.mboss .mtrial .solved .here .locked .skipped .mst`), `.mstars .mcap .msheet .mlegend`, the offer-card buttons `.ma .go .ad .qt .mn`, `.adicon`, the global reduced-motion rule |
 | `90-tutorial.css` | the guided lock (`body.tutlock`, `.tutlive`, `.tutsoft`), `.phasenote`, the ghost hand (`.ghost .gfinger .ghand .gtrack .gsay`) |
-| `95-home.css` | `.home` overlay, `.hcont` (CONTINUE, `--sec`), `.hrow` shop strip, `.htile`, `body.athome` |
+| `95-home.css` | `.home` overlay, `.hcont` (CONTINUE, `--sec`), `.hshop`, `.hward` / `.hward.hmine` (WARDROBE, MY LEVELS), `body.athome` |
 
 ## Tokens
 
@@ -90,7 +90,7 @@ buttons at the end of its builder.
 | Intro card | `#intro` (static) | `nothingBehind()` decides it shows | `70-cards` | `intro` |
 | Tutorial / explanation card | `#tutcard` | `cardPut(h,p,owner)` | `70-cards` | `tutcard` |
 | Win card | `#won` | `win()` (`12-play.js`): title, `.bigstars`, `#wonSub`, mastery/lock/story lines, buttons | `70-cards` | `win:2` |
-| Home screen | `#home` (static shell) | `homeShow`, `homeSync`, `homeStrip`/`homeTile`, `homeCase` | `95-home` | `home` |
+| Home screen | `#home` (static shell) | `homeShow`, `homeSync`, `homeCase` | `95-home` | `home` |
 | Menu | `#panel` | `menuPanel()` (`16-panels.js`); rows via `seg()` | `80-panel-tall`, `40-panels` (`.srow`), `50-layout-cues` (`.crow .seg`) | `menu` |
 | Wardrobe | `#panel.ward` | `wardrobePanel(tab)`, `wardRefresh`, `wardMeta` | `40-panels`, `80-panel-tall` | `wardrobe`, `wardrobe:color` |
 | Section chooser | `#panel.map.secs` | `sectionPicker()` → `secGridDraw`, `secEmblem`, `secChains`, `secLock` | `85-map` | `sections` |
@@ -148,8 +148,15 @@ named). Undoing one of these needs the paragraph.
   its crest is a mask. Node classes are `.mboss`/`.mtrial`, never
   `.boss`/`.trial`.
 - **Home screen**: z-index 11, *under* panels; `CONTINUE` wears the
-  section's colour; the shop rows use `pointerup` with a travel test, not
-  `tap()`; the plinth canvas is replaced, not reused (`homeCase`).
+  section's colour; the plinth canvas is replaced, not reused (`homeCase`).
+  `WARDROBE` and `MY LEVELS` are the HUD's round-button skin unrolled into a
+  pill — one `--c` drives fill, rim, glyph and lip. The two browse rows that
+  used to sit here are gone (`docs/HISTORY.md`).
+- **`enterEditor()` takes the home screen and any panel down itself**, in
+  that order, the same way `enterPlay()` does. `MY LEVELS` is what made that
+  reachable; `hidePanel()` restores the plinth, so the overlay must go first.
+- **`LEVEL EDITOR` is not in the menu.** It is `MY LEVELS` on the home
+  screen — a place you go, not a setting.
 - **Win card**: `won` story line is `esc()`d innerHTML; only newly gained
   stars fly; `NEXT LEVEL` becomes `WHAT'S LEFT` when the next level is
   behind the boss gate.

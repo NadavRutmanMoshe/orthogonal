@@ -234,7 +234,10 @@ function menuPanel(){
       "<div class='pcard'><h4>More</h4><div class='psub'>"+
         "<button id='mLegend'>WHAT THE PIECES DO</button>"+
         "<button id='mTut'>REPLAY TUTORIAL</button>"+
-        "<button id='mEditor'>LEVEL EDITOR</button>"+
+        /* LEVEL EDITOR MOVED TO THE HOME SCREEN as MY LEVELS. It is not a
+           setting - it is a place you go, like LEVELS and the wardrobe are -
+           and filing it under More next to RESET SETTINGS is what made it
+           feel like a developer switch rather than a thing to play with. */
         "<button id='mReset' class='pdanger'>RESET SETTINGS</button>"+
       "</div>"+
       /* WHICH BUILD AM I LOOKING AT? The stamp has been in the file since
@@ -287,7 +290,6 @@ function menuPanel(){
   bind("mHome",function(){hidePanel();homeShow();});
   bind("mLevels",sectionPicker);
   bind("mLegend",legendPanel);
-  bind("mEditor",function(){hidePanel();enterEditor();});
   bind("mClose",hidePanel);
 }
 
@@ -1904,6 +1906,14 @@ function esc(s){
 }
 
 function enterEditor(){
+  /* THE SCREENS COME DOWN HERE, not at the call sites - the same rule
+     enterPlay() states below, and for the same reason. The home screen is a
+     full-bleed overlay at z-index 11, so an editor opened under it is an
+     editor nobody can see; and hidePanel() actively restores that overlay's
+     plinth, so the order matters: the screen goes first, then the panel.
+     MY LEVELS on the home screen is what made this reachable. */
+  if(typeof homeUp==="function"&&homeUp())homeHide();
+  if(typeof panelOpen==="function"&&panelOpen())hidePanel();
   app="edit";fromEditor=false;
   L=custom;R=makeRules(custom);
   initDynamic();
