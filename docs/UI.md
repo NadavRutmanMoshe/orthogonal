@@ -21,7 +21,7 @@ rather than guessing the file.
 | `10-buttons.css` | the button skin (`button`, `:active`, `:disabled`), `.bar`, `.dpad`, `.rot`, `.corner`, `button.rnd` and its five hues, the hint badge `.hn`, icon classes `.ln .lite .dim .ar .tn` |
 | `20-hud.css` | the live star row `.stars`, `.moves`, `.flatbtn` and its `.peril` / `.strike` states, the eye's `.look` pulse, `.tiny` |
 | `30-editor.css` | `#editBar`, `#composeBar`, `.chip`, `.verify` |
-| `40-panels.css` | `.panel` shell (the 44vh sheet), `.srow` sliders, `.lrow` level rows, `.tabs`, the wardrobe (`.wbody .wcase .wcanvas .wact .item .grid`), `.secbar`, `.chap`, `.leg`, `button.mini` |
+| `40-panels.css` | `.panel` shell (the 44vh sheet), `.srow` sliders, `.lrow` level rows, `.tabs`, the wardrobe (`.wbody .wcase .wglass .wfloor .wcanvas .wact .item .grid`), `.secbar`, `.chap`, `.leg`, `button.mini` |
 | `50-layout-cues.css` | control layouts `body.ui-compact / ui-none / norot / tut`, `.coach`, `.crow` + `.seg`, `cuePulse` / `button.cue`, `.toast` and `.toast.cuesay` |
 | `60-splash.css` | the sting (`.splash .sstage .scube .srule .sprompt`) |
 | `65-replay.css` | `.replayui`, `.rbar`, `.rlabel`, `body.replaying` |

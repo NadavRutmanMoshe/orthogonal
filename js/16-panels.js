@@ -60,7 +60,12 @@ function wardrobePanel(tab){
     "<div class='wbody'>"+
       "<div class='wlist'><div class='grid' id='wGrid'></div></div>"+
       "<div class='wcase'>"+
-        "<canvas id='wCase3d' class='wcanvas'></canvas>"+
+        /* The canvas is wrapped so the case can have a frame and a floor: a
+           canvas is a replaced element and will not carry ::before/::after,
+           and the light spilling out of the render onto the page is what
+           makes the box read as a lit case rather than a thumbnail. */
+        "<div class='wglass'><canvas id='wCase3d' class='wcanvas'></canvas>"+
+          "<i class='wfloor'></i></div>"+
         "<div class='wturn'>DRAG TO TURN</div>"+
         "<div id='wMeta'></div>"+
       "</div>"+

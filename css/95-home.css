@@ -33,6 +33,8 @@
 .hsub{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
   letter-spacing:.28em;text-transform:uppercase;color:var(--fg-dim);
   margin-top:7px}
+/* The plinth is the wardrobe's case, same renderer, same frame - `.wglass`
+   and `.wfloor` are in css/40-panels.css, which loads before this one. */
 .hstand{width:196px;height:196px;margin:0}
 .hstand canvas{width:100%;height:100%;display:block}
 .hstars{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;

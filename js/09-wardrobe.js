@@ -292,15 +292,28 @@ function previewStart(cv){
   var cam=new THREE.PerspectiveCamera(34,1,.1,50);
   cam.position.set(0,.72,3.05);
   cam.lookAt(0,-.05,0);
-  sc.add(new THREE.AmbientLight(0xffffff,.72));
-  var key=new THREE.DirectionalLight(0xffffff,.46);
+  /* Ambient and key are both eased off from .72/.46 to make room for the
+     footlights below: with the old flat rig plus two coloured lamps the
+     front of the piece washed out to near-white and the slab took the
+     player's hue as paint rather than as light. */
+  sc.add(new THREE.AmbientLight(0xffffff,.58));
+  var key=new THREE.DirectionalLight(0xffffff,.40);
   key.position.set(2.4,3.2,2.6);sc.add(key);
   var fill=new THREE.DirectionalLight(0xffffff,.16);
   fill.position.set(-2.2,.6,-1.8);sc.add(fill);
+  /* THE FOOTLIGHTS, on the scene rather than on the root so the item turns
+     under them. Their colour is written per item by previewShow(); they are
+     born white and dim here only so a case built before anything is shown
+     still lights. Range 4.2 keeps them off the backdrop. */
+  var lampA=new THREE.PointLight(0xffffff,.6,4.2);
+  lampA.position.set(-1.15,-.42,1.35);sc.add(lampA);
+  var lampB=new THREE.PointLight(0x6fa8ff,.36,4.2);
+  lampB.position.set(1.15,-.42,1.35);sc.add(lampB);
   var root=new THREE.Group();sc.add(root);
   var reduce=window.matchMedia&&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   pv={renderer:r,scene:sc,camera:cam,root:root,canvas:cv,
+      lampA:lampA,lampB:lampB,
       yaw:-0.62,pitch:0.13,vel:0,raf:0,idle:reduce?0:PV_IDLE,drag:false};
   previewSize();
   previewDrag(cv);
@@ -364,6 +377,40 @@ function previewDrag(cv){
 // looks like after a fold. Showing the 2D catalogue as a 3D scene would be
 // previewing the wrong picture entirely - it is bought precisely for how the
 // flattened world reads.
+/* THE CASE'S OWN LIGHT.
+
+   The stand was a flat fill, a slab, and an object - correct, and dead. It
+   is the only place in the game where you look at the thing you own for its
+   own sake, and it read as a thumbnail. Three procedural pieces fix that,
+   and all three are drawn rather than loaded, like everything else here:
+
+   - A BACKDROP that is darkest at the top and lifts toward the floor, so
+     the piece stands in a space instead of on a colour.
+   - A POOL OF LIGHT under it on the slab, in the piece's own colour, added
+     rather than blended so it reads as light and not as paint.
+   - TWO FOOTLIGHTS at the front corners, low, one in the piece's colour and
+     one cool - the "lights at the bottom". They live on the SCENE and not on
+     the spinning root, so the object turns under them: a highlight that
+     travels round an edge as it rotates is the whole reason a display case
+     looks like one.
+
+   The canvases are 64px and cached by colour, because previewShow() runs on
+   every tap in the catalogue. */
+var pvTex={};
+function pvGradTex(key,draw){
+  if(pvTex[key])return pvTex[key];
+  var c=document.createElement("canvas");c.width=c.height=64;
+  draw(c.getContext("2d"),64);
+  var t=new THREE.CanvasTexture(c);
+  pvTex[key]=t;return t;
+}
+function hexCss(h){return "#"+h.toString(16).padStart(6,"0");}
+// A colour pulled toward black or toward white, whichever the ground is not.
+function pvShade(hex,k){
+  var c=new THREE.Color(hex);
+  c.r*=k;c.g*=k;c.b*=k;
+  return "#"+c.getHexString();
+}
 function previewShow(shape,colorId,w3,w2,plane){
   if(!pv)return;
   var root=pv.root;
@@ -371,11 +418,35 @@ function previewShow(shape,colorId,w3,w2,plane){
   var col=findBy(SKIN_COLORS,colorId).hex;
   var v=findBy(WORLDS3D,w3), p=findBy(WORLDS2D,w2);
   var bg=plane?p.paper:v.void, blockCol=plane?p.ink:v.block;
-  pv.scene.background=new THREE.Color(bg);
+  /* A vertical wash rather than a flat fill. On a light ground (the plane)
+     it goes the other way - darker at the floor - so the lift is always
+     *toward* the middle of the range and never off the end of it. */
+  var lift=plane?0.94:1.45;
+  pv.scene.background=pvGradTex("bg"+bg+(plane?"p":"v"),function(x,n){
+    var g=x.createLinearGradient(0,0,0,n);
+    g.addColorStop(0,pvShade(bg,plane?1.02:0.72));
+    g.addColorStop(.62,hexCss(bg));
+    g.addColorStop(1,pvShade(bg,lift));
+    x.fillStyle=g;x.fillRect(0,0,n,n);
+  });
 
   var slabMat=new THREE.MeshLambertMaterial({color:blockCol});
   var slab=new THREE.Mesh(new THREE.BoxGeometry(1,.5,1),slabMat);
   slab.position.y=-.62;root.add(slab);
+  // The pool, lying on the slab's top face (-.62 + .25) with a hair of
+  // clearance so it never z-fights with it.
+  var pool=new THREE.Mesh(new THREE.PlaneGeometry(1.4,1.4),
+    new THREE.MeshBasicMaterial({
+      map:pvGradTex("pool",function(x,n){
+        var g=x.createRadialGradient(n/2,n/2,0,n/2,n/2,n/2);
+        g.addColorStop(0,"rgba(255,255,255,.62)");
+        g.addColorStop(.45,"rgba(255,255,255,.20)");
+        g.addColorStop(1,"rgba(255,255,255,0)");
+        x.fillStyle=g;x.fillRect(0,0,n,n);
+      }),
+      color:col,transparent:true,depthWrite:false,
+      blending:THREE.AdditiveBlending}));
+  pool.rotation.x=-Math.PI/2;pool.position.y=-.368;root.add(pool);
   // two neighbours at depth, so a world's block colour reads as a world and
   // not as a single lonely brick
   [[-1,-.35],[1,-.35]].forEach(function(o){
@@ -388,6 +459,16 @@ function previewShow(shape,colorId,w3,w2,plane){
       transparent:true,opacity:.55}));
   edges.position.copy(slab.position);root.add(edges);
 
+  /* The near lamp takes the piece's own colour, the far one stays cool -
+     warm key, cool fill, which is the oldest lighting rig there is and the
+     cheapest way to make a single-colour object read as solid. Both are
+     eased off on a light ground, where a coloured lamp on near-white paper
+     is a stain rather than a light. */
+  if(pv.lampA){
+    pv.lampA.color.setHex(col);
+    pv.lampA.intensity=plane?.24:.62;
+    pv.lampB.intensity=plane?.14:.38;
+  }
   var item=buildPlayerMesh(shape,col,new THREE.MeshLambertMaterial({color:col}));
   item.position.y=-.06;
   outlineFor(item,new THREE.Color(bg));
