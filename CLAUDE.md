@@ -1789,6 +1789,17 @@ level data changed to make it.
 - **The tutorials get a `PROLOGUE` section** so the map has somewhere to put
   them. Its `at:0` shifts no other marker — these are array indices and every
   later section keeps the index it had.
+- **The map opens on the furthest thing you have dealt with in the open
+  section**, not on the foot of the trail. `mapFocus()` used to jam the
+  scroll to the bottom whenever the `here` node was in another section —
+  and the trail climbs, so the bottom is level one and the boss was off
+  screen above. Reported as not being able to see the top of the levels.
+- **A caption wraps, and its width is the room its own node leaves it.**
+  `nowrap` survived at 9.5px and did not at 13: the two longest names in
+  Section I ran past the right edge and were clipped by `.mbody`. The cap is
+  computed in the same loop that places the caption, from the node's own
+  half-width, because a flat percentage still overflows for a node far out
+  to one side.
 - **The trail climbs.** The first level of a section sits at the bottom and
   its boss at the top, laid out from the last index down rather than mirrored
   afterwards — everything hung off a node (its stars, its label) is positioned
@@ -2605,7 +2616,12 @@ default now, and why the lesson simply reads the layout.
   leftward two-finger slide. It is drawn *above* the contact point, because
   the hand hangs down from its fingertip and anything under that point lands
   in the middle of the fist.
-- **The hand sits in the middle of the screen, over the world.** That is
+- **The coach line at the foot of the screen is gone**, and the tutorial's
+  words are the level's own hint at the top, moved down clear of the corner
+  buttons. One place to read rather than three. The element and every path
+  that writes it are untouched, so restoring the line is one CSS
+  declaration.
+- **The hand sits below the middle of the screen, over the world.** That is
   where the gesture actually happens — a swipe or a double tap lands on the
   world, not on a strip at the bottom — and it is where the player is already
   looking. It rode the bottom edge first, which put the demonstration in the

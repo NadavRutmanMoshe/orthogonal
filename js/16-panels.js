@@ -1346,7 +1346,8 @@ function mapDraw(spans){
     var cap=(st==="locked"&&k==="lv")?"":esc(mapCaption(l));
     if(st==="skipped")cap=esc(mapCaption(l))+" <em>· skipped</em>";
     var right=off<0;
-    html+="<div class='mcap"+(k==="boss"||k==="trial"?" big":"")+"' data-off='"+
+    html+="<div class='mcap"+(right?" r":" l")+
+      (k==="boss"||k==="trial"?" big":"")+"' data-half='"+half+"' data-off='"+
       off.toFixed(4)+"' style='top:"+(y-8)+"px;transform:translateX("+
       (right?(half+13):(-half-13))+"px)"+(right?"":" translateX(-100%)")+"'>"+cap+"</div>";
     y+=STEP;
@@ -1399,10 +1400,22 @@ function mapDraw(spans){
    boss and the bottom is the first level - opening at scrollTop 0 would show
    every section by its ending. A section you have not started scrolls to its
    foot instead, which is where it begins. */
+/* WHERE THE MAP OPENS. On the level you are up to, if it is in this section.
+
+   If it is not - you are looking back at a section you have already been
+   through - it used to jam the scroll to the very bottom, which is the FOOT
+   of the trail, which is level one. The trail climbs, so that put the whole
+   point of the section (the boss at the top) off screen above you, and it
+   got reported as not being able to see the top of the levels. Opening on
+   the furthest thing you have dealt with here is the same answer the `here`
+   node gives, applied to a section you have finished: the trail is drawn
+   top-down, so the first solved node in the DOM is the highest one. */
 function mapFocus(){
   var body=$("mBody"); if(!body)return;
-  var here=$("mtrail").querySelector(".mnode.here");
-  if(here&&here.scrollIntoView){here.scrollIntoView({block:"center"});return;}
+  var tr=$("mtrail");
+  var el=tr.querySelector(".mnode.here")||
+         tr.querySelector(".mnode.solved,.mnode.skipped");
+  if(el&&el.scrollIntoView){el.scrollIntoView({block:"center"});return;}
   body.scrollTop=body.scrollHeight;
 }
 
@@ -1486,7 +1499,20 @@ function mapLayout(pts,H,mast){
       (SECTIONS[mapSection].col||"#35c2a5")+"' stroke-opacity='.42' "+
       "stroke-width='3.5' stroke-linecap='round'/>":"");
   trail.querySelectorAll("[data-off]").forEach(function(el){
-    el.style.left=(cx+parseFloat(el.getAttribute("data-off"))*(w*.5-44))+"px";
+    var left=cx+parseFloat(el.getAttribute("data-off"))*(w*.5-44);
+    el.style.left=left+"px";
+    /* A caption is capped by the space its own node leaves it, measured
+       rather than guessed at a percentage: a node far out to one side has
+       less room on that side, and a flat 52% still ran off the edge for the
+       longest name in Section I. `half` is the node's own half-width, which
+       is what the transform beside it already shifts by. */
+    var half=parseFloat(el.getAttribute("data-half"));
+    if(!isNaN(half)){
+      var room=el.classList.contains("r")
+        ? w-(left+half+13)-8
+        : (left-half-13)-8;
+      el.style.maxWidth=Math.max(64,room)+"px";
+    }
   });
 }
 
