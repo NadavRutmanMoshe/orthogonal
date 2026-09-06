@@ -131,8 +131,10 @@ named). Undoing one of these needs the paragraph.
 - **Panels are phone-width, centred, max 560px.** Full-height ones use
   `.panel.tall` furniture; the way out is in the header, not the footer.
 - **LEVELS opens the chooser, not the map.** `sectionPicker()` is a 2x2 of
-  the four numbered sections with PROLOGUE and V · EXTRA full-width above and
-  below. There is no tab strip on the map any more: one section per visit,
+  the four numbered sections with the V · EXTRA shelf full-width under it.
+  PROLOGUE is not on it (`secPickable()`): it is the tutorial, and the way
+  back into it is REPLAY TUTORIAL in the menu. `levelPicker()` clamps off
+  section 0 for the same reason. There is no tab strip on the map any more: one section per visit,
   and the way to another is out through the chooser (`‹` in the map header,
   `SECTIONS` in its footer). That is what stopped a section rebuilding
   in place under an already-open map. A locked tile drains, takes chains and

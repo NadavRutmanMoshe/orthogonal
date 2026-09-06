@@ -126,6 +126,8 @@ Block format `[x,y,z,k]`: 0 stone, 1 water (code says `glass`), 2 anchor,
   `starsForRecord()` and writes through `betterRecord()`.
 - **`LEVELS` opens `sectionPicker()`, not the map.** One section per visit;
   the map has no tab strip and the way to another section is out and back in.
+  PROLOGUE has no tile and no map (`secPickable()`) — it is the tutorial, and
+  `REPLAY TUTORIAL` in the menu is the way back to it.
 - **Skips live in `skips`, never in `progress`.** Ads buy progress, never
   score. `V · EXTRA` opens when every boss is down (`bossesLeft()`), and
   cannot be bought open.

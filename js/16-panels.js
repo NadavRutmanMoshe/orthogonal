@@ -1243,20 +1243,35 @@ function secLock(){
       "h2v-2.1a1.9 1.9 0 0 0-1-3.5Z'/></svg>";
 }
 
+/* PROLOGUE IS NOT A DESTINATION. Its two levels are the tutorial - no par,
+   no stars, `tutorial:true` - and the way back into them is REPLAY TUTORIAL
+   in the settings panel, which is where a lesson belongs. A tile for them on
+   the screen you pick a section from was offering the tutorial as a fifth
+   place to go, next to four sections that are the game.
+
+   Hidden from the chooser rather than removed from SECTIONS: `SECTIONS[].at`
+   are array indices that verify.js asserts against LEVELS, mapSecOf() has to
+   answer for level 0 and 1 like any other, and the tutorials still live at
+   the front of the campaign. Only the tile is gone, and levelPicker() will
+   not open on section 0 either. */
+function secPickable(n){return n>0;}
 function sectionPicker(){
   // The chooser and the map share the ambient canvas, and only one of them is
   // ever on screen - stop the old loop before its canvas is replaced.
   mapBgStop();
   var spans=sectionSpans();
-  var done=0, cleared=0, i;
+  var done=0, cleared=0, total=0, i;
   for(i=0;i<LEVELS.length;i++){
+    // The counts add up with the tiles on screen, so the tutorials are out of
+    // both halves of the fraction rather than only out of the numerator.
+    if(!secPickable(mapSecOf(i))||LEVELS[i].tutorial)continue;
+    total++;
     if(mapTouched(i))cleared++;
-    if(LEVELS[i].tutorial)continue;
     done+=starsForRecord(LEVELS[i],progress[LEVELS[i].name]);
   }
   var h="<canvas class='mbg' id='mBg' aria-hidden='true'></canvas>"+
     "<div class='mhead'><div class='mt'><b>Orthogonal</b>"+
-    "<span>"+cleared+" / "+LEVELS.length+" CLEARED</span></div>"+
+    "<span>"+cleared+" / "+total+" CLEARED</span></div>"+
     "<div class='mtot'>"+done+" ★</div>"+
     "<button class='mq' id='skHelp' aria-label='What the map means'>?</button>"+
     "<button class='mq mx' id='skClose' aria-label='Back to the level'>✕</button>"+
@@ -1276,6 +1291,7 @@ function secGridDraw(){
   if(!g)return;
   var here=mapSecOf(mapHere()), t="", n;
   for(n=0;n<SECTIONS.length;n++){
+    if(!secPickable(n))continue;
     var sec=SECTIONS[n], sp=spans[n];
     // Locked for either reason: the shelf that waits on every boss, or a
     // section the campaign has simply not reached yet.
@@ -1288,9 +1304,9 @@ function secGridDraw(){
     var mst=sectionMastered(sp);
     var np=sec.name.split(" \u00b7 ");
     var num=np.length>1?np[0]:"", ttl=np.length>1?np.slice(1).join(" \u00b7 "):sec.name;
-    // The four numbered sections are the square; the two that bracket them
-    // run the full width, above and below it.
-    var wide=(n===0||shelf);
+    // The four numbered sections are the square; the shelf that comes after
+    // them runs the full width underneath it.
+    var wide=shelf;
     t+="<button class='sectile"+(lk?" lk":"")+(mst?" mst":"")+
        (n===here&&!lk?" here":"")+(wide?" wide":"")+
        "' data-sec='"+n+"' style=\"--tabc:"+(sec.col||"#c3cde4")+"\">"+
@@ -1363,6 +1379,11 @@ function levelPicker(n){
   mapBgStop();
   if(typeof n==="number")mapSection=n;
   if(mapSection===null)mapSection=mapSecOf(mapHere());
+  /* Never the tutorial's shelf. mapHere() is level 0 or 1 for somebody who
+     has not finished the lesson, and the chooser has no tile to come back
+     to - so LEVELS from inside the tutorial opens on the first real section
+     instead of on a two-node trail with no stars on it. */
+  if(!secPickable(mapSection))mapSection=1;
   var spans=sectionSpans();
   var here=mapHere();
 
