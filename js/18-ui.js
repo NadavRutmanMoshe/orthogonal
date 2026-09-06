@@ -321,6 +321,13 @@ function syncBossBar(){
   var on=!!((B||TR)&&app==="play");
   bar.classList.toggle("on",on);
   if(!on)return;
+  /* THE ROW SITS UNDER THE LEVEL TEXT, and the level text is not a fixed
+     height: the hint runs to one line or three, and a tutorial pushes .hud
+     down to 104px. Measuring is cheaper than trying to reserve a lane in CSS
+     for the tallest case, and this runs inside syncHud, which is already the
+     thing that redraws whenever the text changes. */
+  var hud=document.querySelector(".hud");
+  if(hud)bar.style.top=(hud.offsetTop+hud.offsetHeight+12)+"px";
   // Whose row is which. The lives are yours in the player colour; the row
   // underneath belongs to whatever is opposing you, and takes that thing's
   // own colour rather than a third one the player has to learn.

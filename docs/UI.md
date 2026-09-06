@@ -118,8 +118,11 @@ named). Undoing one of these needs the paragraph.
   the lit, breathing one. Opposites by construction.
 - **Icons are solid SVG** with `.lite` / `.dim` / `.ln`; text glyphs at that
   size were reported as missing buttons.
-- **The lives bar is centred in the gap between the corners** (padding),
-  not on the viewport; measured at 327px it collided with the star total.
+- **The lives bar sits under the level text, split to the two sides**: your
+  hearts left (over your own piece), the opposition's row right. `top` is
+  measured off `.hud` in `syncBossBar()` because the hint's height moves. It
+  used to be one centred stack in the gap between the corners, which read as
+  one meter with two halves.
 - **The star total hides** behind any panel and while a clock runs.
 - **The live star row is its own element**, rebuilt only when the count
   changes; anything animated inside `syncHud()`-rewritten markup restarts

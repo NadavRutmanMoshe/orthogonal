@@ -76,12 +76,14 @@
 </div>
 
 <div class="boss" id="bossBar">
-  <!-- One stack inside the lane: .boss is now the full-width lane between the
-       two corner clusters and .bstack is the thing centred in it. -->
-  <div class="bstack">
-    <div class="blives" id="bossLives"></div>
-    <div class="bcores" id="bossCores"></div>
-  </div>
+  <!-- Two sides, not one stack. The row used to be a single centred column in
+       the gap between the corner clusters, which put your lives and the thing
+       hunting you in the same place and made you read a legend to tell them
+       apart. Now the sides say it: yours on the left, under the level text and
+       over your own piece; the opposition's on the right. syncBossBar() drops
+       the whole row below .hud, whose height moves with the hint. -->
+  <div class="bside"><div class="blives" id="bossLives"></div></div>
+  <div class="bside bthem"><div class="bcores" id="bossCores"></div></div>
 </div>
 
 <div class="hud">

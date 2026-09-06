@@ -3,50 +3,54 @@
    Loaded in the order listed in index.html; see docs/UI.md for the map of
    screens to files. */
 
-  /* Lives and cores, only on a boss. At the top because it is the one thing
-     you check between every move, and a corner would put it where the thumb
-     sits on a phone.
+  /* Lives and cores, only on a clock level. Under the level text rather than
+     up in the corner gap, and split to the two sides of the screen.
 
-     CENTRED IN THE GAP BETWEEN THE CORNERS, NOT ON THE VIEWPORT, and that is
-     a bug fix rather than a preference. It used to be `left:50%` with a
-     translate, which is only safe while the viewport is wide enough that the
-     gap happens to contain the middle - and it is not on a small phone.
-     Measured at 327 CSS px (a 900px screen at DPR 2.75, which is what the
-     owner plays on): the bar landed at 139..189 and the star total, which
-     grows LEFTWARDS as the number gets longer, reached back to 172 and
-     covered the last core - so the row read as three when one had already
-     been taken. Reported exactly that way, with a screenshot.
+     The old row was one centred stack: your hearts on top, the opposition's
+     row directly beneath them, both in the same 50px of screen. It read as
+     one meter with two halves, and the half you cared about mid-move was the
+     top one - which is exactly the reading the owner reported. Sides are the
+     cheapest way to say "these belong to different people": yours on the
+     left, above your own piece, the thing hunting you on the right.
 
-     The lane is the whole width minus the two clusters: three round buttons
-     and 14px of margin on the left, two and the same on the right, since the
-     star total is hidden on a clock level (below). `justify-content:center`
-     inside that padding puts the bar in the middle of the space that is
-     actually free, at every width, and a narrower screen simply squeezes the
-     lane rather than sliding the bar under a button. */
-  .boss{position:fixed;top:16px;left:0;right:0;z-index:11;
-    display:none;align-items:center;justify-content:center;
-    padding-left:152px;padding-right:105px;
+     That also retires the padding lane. The bar used to be squeezed between
+     the two corner clusters (152px / 105px) because it lived at top:16px in
+     the same band as the buttons and the star total, and on a 327px phone the
+     total grew leftwards over the last core. Below the text there is nothing
+     to collide with, so the row gets the same 16px gutters .hud has and lines
+     up with the title above it.
+
+     `top` is written by syncBossBar() on every redraw, because .hud's height
+     moves with the hint (one line or three, and 104px down in a tutorial).
+     The value here is only the pre-measure fallback. */
+  .boss{position:fixed;top:130px;left:0;right:0;z-index:11;
+    display:none;align-items:flex-start;justify-content:space-between;
+    padding:0 16px;
     pointer-events:none;font-family:'IBM Plex Mono',ui-monospace,monospace}
   .boss.on{display:flex}
-  .bstack{display:flex;flex-direction:column;align-items:center;gap:3px}
-  .blives,.bcores{display:flex;gap:4px;align-items:center}
+  .bside{display:flex;flex-direction:column;gap:3px}
+  .bthem{align-items:flex-end}
+  /* Both rows are 14px tall so the two sides sit on one line across the
+     screen: a heart is 13px of type, a bar is 4px of box, and without the
+     min-height the right side floated at the top of the gap. */
+  .blives,.bcores{display:flex;gap:4px;align-items:center;min-height:14px}
   .blives i{display:block;font-style:normal;font-size:13px;line-height:1;
     color:var(--player);transition:color .25s ease,transform .25s ease}
   .blives i.gone{color:var(--rule);transform:scale(.86)}
-  /* The lower row is the opposition, and it wears the opposition's colour:
+  /* The right side is the opposition, and it wears the opposition's colour:
      a boss's phases in the hunters' own red, a trial's cores in the amber
      its cores are actually drawn in. The map keeps violet for a boss node,
      which is a different job - there it separates one landmark from another
      in a list, here it separates you from the thing in front of you. */
-  .bcores i{width:14px;height:3px;border-radius:2px;background:#ff4d5e;
+  .bcores i{width:17px;height:4px;border-radius:2px;background:#ff4d5e;
     display:block;transition:background .25s ease,width .25s ease,
       opacity .25s ease}
   .boss.tr .bcores i{background:#ff8a3c}
   /* A SPENT ONE SHRINKS AS WELL AS DIMMING. Three bars of one length with a
      dim one among them is a row of three at a glance, which is how a taken
-     core read as a core still to take - the lives row above has always said
-     it twice (colour and scale) and this row said it once. */
-  .bcores i.gone{background:var(--rule);width:6px;opacity:.7}
+     core read as a core still to take - the hearts have always said it twice
+     (colour and scale) and this row said it once. */
+  .bcores i.gone{background:var(--rule);width:7px;opacity:.7}
   .boss.hurt .blives{animation:bshake .3s ease}
   @keyframes bshake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 
