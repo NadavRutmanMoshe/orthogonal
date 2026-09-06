@@ -2544,16 +2544,26 @@ function drawTrial(rx,rz){
      the world is a silhouette and a marker on a world block points at a place
      that no longer exists. The whole board going red is the correct answer
      there, and the only warning that the fold you are in is the wrong one. */
-  var edgeOnly = flatT<=.5;
-  // Flat, the row of falling blocks is the subject and the wash is the ground
-  // it is read against, so the wash comes down enough to let them show.
-  var wash = edgeOnly ? .10 : .30;
-  trialSlab.material.opacity=(live?(.62+trialFlash*.3):(.15+ph*ph*.3))*wash;
-  /* The frame is the one part of the slab that says WHERE, so in the volume
-     it comes up off .22: the fill stays out of the tiles' way, the outline
-     does not have to. */
-  trialEdge.material.opacity=(live?1:(.55+ph*.4))*(edgeOnly?.40:1);
-  trialSlab.visible=trialEdge.visible=true;
+  /* NO FRAME ANYWHERE, AND NO PANE IN THE VOLUME (owner's call).
+
+     The bounded outline was meant to read as "a pane standing somewhere".
+     In play it read as a red window hung in front of the level - a piece of
+     chrome the arena did not have - and in the plane its two long edges cut
+     the screen in half. Both are gone: `trialEdge` is never shown.
+
+     In the volume the falling blocks and the tile outlines already answer
+     both WHERE and HOW LONG, and they say it on the squares you can stand
+     on, so the slab has nothing left to add and is hidden outright.
+
+     Flat keeps the wash and only the wash: there the marks are hidden (a
+     marker on a world block points at a place that no longer exists), so
+     the whole board going red is still the only warning that the fold you
+     are in is the wrong one. It comes up from .10 to carry that alone now
+     that the outline is not helping. */
+  var inVolume = flatT<=.5;
+  trialSlab.material.opacity=(live?(.62+trialFlash*.3):(.15+ph*ph*.3))*.34;
+  trialEdge.visible=false;
+  trialSlab.visible=!inVolume;
   drawTrialMarks(sw,ph,live);
   drawFallRank(sw,ph,live,rx,rz);
 }

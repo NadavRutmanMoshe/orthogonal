@@ -94,6 +94,13 @@ the same curve, so the shadow darkening and the block arriving are one event.
   volume the blocks answer both *where* and *how long*, on the squares, where
   it can be acted on; a red pane on top of that is a second drawing of one
   fact, so it drops to a frame with almost no fill.
+- **AND THE FRAME IS GONE TOO** (owner's call, 2026-09). The bounded outline
+  was meant to read as a pane standing somewhere in the arena; in play it
+  read as a red window hung in front of the level, and in the plane its two
+  long edges cut the screen in half. `trialEdge` is never shown now, and in
+  the volume the slab is not drawn at all — the falling blocks and the tile
+  outlines are the whole warning there. The plane keeps the wash alone, up
+  from .10 to .34 now that no outline helps it. Reverting is one commit.
 - **ONE RANK, BOTH PICTURES.** The volume used to drop a block only on the
   squares that happened to have floor under them while the plane dropped a
   row straight across, so a player who folded watched blocks arrive where
