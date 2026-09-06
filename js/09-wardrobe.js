@@ -54,6 +54,9 @@ var SKIN_SHAPES=[
   {id:"barrel",  name:"Barrel",   cost:18},
   {id:"donut",   name:"Donut",    cost:22},
   {id:"star",    name:"Shard",    cost:24},
+  // A CHARACTER RATHER THAN A SOLID, like the Pup - and the one piece in
+  // chess that only ever moves along the axes, which is the whole game.
+  {id:"rook",    name:"Rook",     cost:26},
   {id:"pup",     name:"Pup",      cost:30}
 ];
 /* The world used to be one purchase covering both dimensions, which meant
@@ -131,7 +134,28 @@ function buildPlayerMesh(shape,col,mat){
   if(col===undefined)col=findBy(SKIN_COLORS,wardrobe.color).hex;
   mat=mat||new THREE.MeshBasicMaterial({color:col});
   var g;
-  if(shape==="pup"){
+  /* The two assembled shapes. Everything else in the catalogue is one
+     primitive from playerGeometry(); these are a handful of boxes, which is
+     all a silhouette this size needs and is also what the world is made of. */
+  function bx(w,h,d,x,y,z){
+    var m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+    m.position.set(x,y,z);g.add(m);return m;
+  }
+  if(shape==="rook"){
+    /* THE CASTLE, bottom to top: a wide foot, a plinth, the shaft, the
+       collar under the crown, and four merlons at the corners so the notches
+       between them read as a battlement from any of the four camera views
+       the game turns through. Fits the cube's own .62, foot to merlon, so it
+       does not stand taller than the piece it replaces. */
+    g=new THREE.Group();
+    bx(.50,.09,.50,0,-.27,0);            // foot
+    bx(.42,.05,.42,0,-.20,0);            // plinth
+    bx(.32,.30,.32,0,-.02,0);            // shaft
+    bx(.44,.07,.44,0,.17,0);             // collar
+    [[.145,.145],[.145,-.145],[-.145,.145],[-.145,-.145]].forEach(function(o){
+      bx(.15,.10,.15,o[0],.255,o[1]);    // merlons
+    });
+  } else if(shape==="pup"){
     /* A DOG, NOT A DEER. The first version was a long body, a head held high
        on nothing, two thin ears standing straight up and four long legs, and
        it was reported as not reading as a puppy - which it did not: that is
@@ -151,10 +175,6 @@ function buildPlayerMesh(shape,col,mat){
        A haunch and a chest either side of the body take it off a plain
        rectangle without costing another silhouette to read. */
     g=new THREE.Group();
-    function bx(w,h,d,x,y,z){
-      var m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
-      m.position.set(x,y,z);g.add(m);return m;
-    }
     bx(.44,.27,.31,-.02,0,0);            // body
     bx(.18,.30,.33,-.17,.01,0);          // haunch, the heavier end
     bx(.16,.28,.32,.14,.01,0);           // chest
