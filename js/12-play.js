@@ -1551,8 +1551,7 @@ function win(){
        loadLevel() fires it on the way into whatever they pick next, which is
        also what makes it survive LEVELS as well as NEXT LEVEL. */
     $("wonTitle").textContent="Got it";
-    $("wonSub").textContent=L.name.replace(/^00 \u2014 /,"")+"  \u00b7  "+
-      moveCount+" moves  \u00b7  not scored"+
+    $("wonSub").textContent=moveCount+" moves  \u00b7  not scored"+
       (lastTut?"  \u00b7  from here on, tap the bulb for a hint":"");
     $("bNextT").textContent="NEXT LEVEL";
     $("bRetry").style.display="none";
@@ -1561,7 +1560,11 @@ function win(){
     var stb=Math.max(0,Math.min(3,lives));wonStars=stb;
     $("wonTitle").innerHTML=(stb===3?"Untouched":TR?"Through":"Down")+
       "<div class='bigstars'>"+starGlyphsEls(stb)+"</div>";
-    $("wonSub").textContent=L.name+"  \u00b7  "+
+    /* THE NAME IS NOT ON THIS LINE. The level's title is two lines above
+       the card in the HUD and its number is on the node you came from; the
+       card is here to say how it went, and repeating where you are pushed
+       the score onto a second line on a narrow phone. */
+    $("wonSub").textContent=
       (stb===3?"never hit":(BOSS_LIVES-lives)+" hit"+(BOSS_LIVES-lives===1?"":"s")+
        " taken")+"  \u00b7  "+moveCount+" moves";
     $("bNextT").textContent=last?"PLAY AGAIN":"NEXT LEVEL";
@@ -1581,7 +1584,8 @@ function win(){
     var stw=levelPar!==null?starsFor(moveCount,levelPar):3;wonStars=stw;
     $("wonTitle").innerHTML=(last?"Campaign complete":(stw===3?"Perfect":"Solved"))+
       "<div class='bigstars'>"+starGlyphsEls(stw)+"</div>";
-    var sub=L.name+"  \u00b7  "+moveCount+" moves"+
+    // No level name and no number: see the boss branch above.
+    var sub=moveCount+" moves"+
       (levelPar!==null?(stw===3?" (optimal)":", best possible is "+levelPar):"");
     // Reported, never charged for: how many you took is worth knowing and is
     // no longer worth anything.
