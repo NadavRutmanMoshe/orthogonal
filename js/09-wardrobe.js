@@ -57,8 +57,61 @@ var SKIN_SHAPES=[
   // A CHARACTER RATHER THAN A SOLID, like the Pup - and the one piece in
   // chess that only ever moves along the axes, which is the whole game.
   {id:"rook",    name:"Rook",     cost:26},
-  {id:"pup",     name:"Pup",      cost:30}
+  {id:"pup",     name:"Pup",      cost:30},
+  /* THE FOUR THAT CANNOT BE BOUGHT.
+
+     One per numbered section, granted for taking every star in it, and each
+     is that section's own element standing up as a character: the nature
+     section gives a sapling, fire a flame, water a fish, the desert a
+     cactus. `sec` is the SECTIONS index that awards it and `cost` is 0
+     because there is no price - `reward:true` is what stops the wardrobe
+     offering a BUY or an ad for them.
+
+     SHAPES ONLY, and that is the owner's call rather than an accident: a
+     reward that also changed your colour would overwrite a thing the player
+     chose, and these are meant to be worn with whatever they already like.
+     Every one of them takes the equipped colour like every other shape. */
+  {id:"sapling", name:"Sapling",  cost:0, reward:true, sec:1},
+  {id:"flame",   name:"Flame",    cost:0, reward:true, sec:2},
+  {id:"minnow",  name:"Minnow",   cost:0, reward:true, sec:3},
+  {id:"cactus",  name:"Cactus",   cost:0, reward:true, sec:4}
 ];
+/* Which shape a section awards, and whether it has been taken. Kept as
+   lookups over SKIN_SHAPES rather than a second table, so adding a reward is
+   one row above and nothing else. */
+function rewardShapeFor(n){
+  for(var i=0;i<SKIN_SHAPES.length;i++)
+    if(SKIN_SHAPES[i].reward&&SKIN_SHAPES[i].sec===n)return SKIN_SHAPES[i];
+  return null;
+}
+/* GRANT, ONCE. Returns the item if this call is what earned it and null if
+   it was already owned, so the caller can decide whether it is news.
+
+   Deliberately not routed through the star balance: `spent` is untouched, so
+   a reward can never cost a player anything and can never be undone by
+   spending. It is also not a skip - it is the one thing in the game that
+   only three-starring can produce. */
+function grantShape(id){
+  if(!id||owns(id))return null;
+  wardrobe.owned.push(id);
+  saveWardrobe();
+  return findBy(SKIN_SHAPES,id);
+}
+/* Every section that is finished on every star, granted. Run on boot as well
+   as at the moment the last star lands, because a save from before these
+   existed has mastered sections in it already and would otherwise have to
+   re-finish them to be paid. */
+function sweepSectionRewards(){
+  if(typeof sectionSpans!=="function")return;
+  var sp=sectionSpans();
+  for(var n=0;n<sp.length;n++){
+    var it=rewardShapeFor(n);
+    // sectionMastered() is not used on purpose: it answers yes to everything
+    // while the mastery preview switch is on, and a preview must never be
+    // able to pay out.
+    if(it&&sp[n].max>0&&!sp[n].locked&&sp[n].got===sp[n].max)grantShape(it.id);
+  }
+}
 /* The world used to be one purchase covering both dimensions, which meant
    buying a look for the volume silently bought a look for the plane you had
    never seen. They are two different pictures - you spend the whole game
@@ -141,7 +194,47 @@ function buildPlayerMesh(shape,col,mat){
     var m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
     m.position.set(x,y,z);g.add(m);return m;
   }
-  if(shape==="rook"){
+  if(shape==="sapling"){
+    // Trunk and three staggered slabs. The stagger is what makes a canopy
+    // out of boxes; one slab is a table.
+    g=new THREE.Group();
+    bx(.14,.32,.14,0,-.15,0);            // trunk, clear of the canopy
+    bx(.44,.15,.44,0,.06,0);
+    bx(.32,.13,.32,0,.17,0);
+    bx(.19,.11,.19,0,.26,0);
+  } else if(shape==="flame"){
+    // A taper, stepped rather than smooth, plus one lick off each side so
+    // the silhouette is not a symmetrical pylon.
+    g=new THREE.Group();
+    bx(.32,.12,.32,0,-.25,0);
+    bx(.34,.24,.34,0,-.07,0);
+    bx(.22,.16,.22,0,.13,0);
+    bx(.10,.12,.10,0,.26,0);
+    bx(.08,.13,.08,.19,.02,0);
+    bx(.08,.10,.08,-.19,-.04,0);
+  } else if(shape==="minnow"){
+    // Flat in z on purpose: a fish read as a loaf until the body was thinner
+    // than it is tall, and the fins are what carry the rest.
+    g=new THREE.Group();
+    bx(.42,.28,.20,.03,0,0);            // body
+    bx(.14,.20,.16,.28,-.01,0);         // head
+    bx(.05,.06,.07,.37,.03,0);          // snout
+    bx(.10,.07,.14,-.20,0,0);           // wrist
+    bx(.07,.28,.09,-.28,0,0);           // tail fin
+    bx(.14,.11,.05,.02,.19,0);          // dorsal
+    bx(.10,.08,.05,0,-.19,0);           // belly
+    bx(.10,.07,.05,.13,-.03,.12);       // pectorals
+    bx(.10,.07,.05,.13,-.03,-.12);
+  } else if(shape==="cactus"){
+    // A saguaro: one column and two arms at different heights, because two
+    // arms at the same height is a candelabra.
+    g=new THREE.Group();
+    bx(.20,.60,.20,0,-.01,0);
+    bx(.16,.10,.14,-.17,.02,0);
+    bx(.10,.20,.13,-.22,.16,0);
+    bx(.14,.09,.13,.16,-.09,0);
+    bx(.10,.16,.12,.20,.03,0);
+  } else if(shape==="rook"){
     /* THE CASTLE, bottom to top: a wide foot, a plinth, the shaft, the
        collar under the crown, and four merlons at the corners so the notches
        between them read as a battlement from any of the four camera views

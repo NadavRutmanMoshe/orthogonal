@@ -116,7 +116,10 @@ function wardRefresh(){
       "' data-id='"+it.id+"'>"+
       "<i style='"+swatch+"'>"+(t==="shape"?shapeGlyph(it.id):"")+"</i>"+
       "<b>"+it.name+"</b>"+
-      "<span>"+(on?"equipped":have?"owned":it.cost+" <u class='st'>\u2605</u>")+"</span></div>";
+      "<span"+(!have&&it.reward?" class='wlock'":"")+">"+
+        (on?"equipped":have?"owned"
+          :it.reward?rewardShort(it):it.cost+" <u class='st'>\u2605</u>")+
+      "</span></div>";
   }
   $("wGrid").innerHTML=html;
   $("wGrid").querySelectorAll(".item").forEach(function(el){
@@ -135,15 +138,22 @@ function wardMeta(){
   var t=wardTab, id=wardSelected(t), it=findBy(wardList(t),id);
   var have=owns(id), on=wardEquipped(t)===id, bal=shards();
   var s="<div class='wname'>"+it.name+"</div>"+
-        "<div class='wcost'>"+(on?"equipped":have?"owned":it.cost+" <u class='st'>\u2605</u>")+"</div>"+
+        "<div class='wcost'>"+(on?"equipped":have?"owned"
+          :it.reward?esc(rewardSay(it)):it.cost+" <u class='st'>\u2605</u>")+"</div>"+
         "<div class='wact'>";
   if(on)              s+="<button disabled>EQUIPPED</button>";
   else if(have)       s+="<button id='wEquip' class='wgo'>EQUIP</button>";
+  /* A REWARD IS NOT FOR SALE. No BUY, no ad row, and the button says the one
+     thing that opens it. Ads buy progress, never score - and this is the one
+     item in the catalogue that IS score. */
+  else if(it.reward)  s+="<button disabled class='wearn'>EVERY "+
+                         "<u class='st'>\u2605</u> IN "+
+                         esc(secNumeral(it.sec))+"</button>";
   else if(bal<it.cost)s+="<button disabled>NEED "+(it.cost-bal)+" MORE <u class='st'>\u2605</u></button>";
   else if(buyArmed===id)
                       s+="<button id='wBuy' class='wsure'>SURE? \u00b7 "+it.cost+" <u class='st'>\u2605</u></button>";
   else                s+="<button id='wBuy' class='wgo'>BUY \u00b7 "+it.cost+" <u class='st'>\u2605</u></button>";
-  if(!have){
+  if(!have&&!it.reward){
     var need=adsFor(it.cost), got=adsWatched(id);
     s+="<button id='wAd' class='ad' disabled>"+adIcon()+"WATCH "+need+" AD"+(need===1?"":"S")+
        (got?" ("+got+"/"+need+")":"")+"</button>";
@@ -151,7 +161,7 @@ function wardMeta(){
   s+="</div>";
   // The hook name belongs in the code and in CLAUDE.md, not in a player's
   // narrow sidebar; all this has to say is why the button does nothing.
-  if(!have)s+="<div class='note'>No ad provider yet \u2014 the button is "+
+  if(!have&&!it.reward)s+="<div class='note'>No ad provider yet \u2014 the button is "+
     "dead until the game is wrapped for a store.</div>";
   $("wMeta").innerHTML=s;
   bind("wEquip",function(){wardEquip(t,id);SFX.key();wardRefresh();});
@@ -206,6 +216,28 @@ function grantShards(n){
    at 16px for "dog" is an emoji, which renders differently on every device
    and at a size it does not control, so this is a path like every other icon
    in the game (see "icons are solid SVG" in docs/UI.md). */
+/* What a reward asks for, in the shortest form that is still true: the
+   section's numeral and the condition. Falls back to the whole name where a
+   section has no numeral, which none of the four awarding ones do. */
+function rewardSay(it){
+  var sec=SECTIONS[it.sec];
+  if(!sec)return "every star";
+  return "every \u2605 in "+sec.name;
+}
+// A section's numeral, or its whole name where it has none.
+function secNumeral(n){
+  var sec=SECTIONS[n];
+  if(!sec)return "";
+  var np=sec.name.split(" \u00b7 ");
+  return np.length>1?np[0]:sec.name;
+}
+// The same thing in a 74px column: the numeral only. "every ★ in III" wrapped
+// to two lines there and made one tile taller than the row it is in.
+function rewardShort(it){
+  var sec=SECTIONS[it.sec];
+  if(!sec)return "all \u2605";
+  return secNumeral(it.sec)+" \u00b7 all <u class='st'>\u2605</u>";
+}
 function shapeSvg(d){
   return "<svg viewBox='0 0 24 24' aria-hidden='true'><path d='"+d+"'/></svg>";
 }
@@ -217,7 +249,11 @@ var SHAPE_SVG={
       "h-1.9v-2.2l-1.5.5-.3 1.7h-1.9l.3-2h-3.2l.3 2H7.7l-.4-2.4a4.9 4.9 0 0 1-"+
       "2.3-4.1Zm1.9.7v1.7c0 .8.3 1.5.8 2v-3.7Z"
 };
+// The reward characters wear their section's own emblem, read from the same
+// table the chooser's tiles read.
+var REWARD_GLYPH={sapling:"trees",flame:"hell",minnow:"ocean",cactus:"desert"};
 function shapeGlyph(id){
+  if(REWARD_GLYPH[id])return shapeSvg(ELEM_PATH[REWARD_GLYPH[id]]);
   if(SHAPE_SVG[id])return shapeSvg(SHAPE_SVG[id]);
   return {cube:"\u25a0",sphere:"\u25cf",pyramid:"\u25b2",diamond:"\u25c6",
           barrel:"\u25ac",donut:"\u25ce",star:"\u2726"}[id]||"\u25a0";
@@ -1152,29 +1188,34 @@ function mapNumeral(l,ord){
 /* One emblem per section, keyed off the section's own scenery so the tile
    and the world cannot drift apart - the same trick mapWeatherKind() plays.
    All of them are drawn in the section's colour by `fill:currentColor`. */
+/* ONE PATH PER ELEMENT, read from two places: the chooser's section tiles
+   and the wardrobe's glyph for the character that section awards. They have
+   to be the same drawing or the reward stops looking like it came from
+   there, and two copies of a path is two copies to keep in step. */
+var ELEM_PATH={
+  trees:"M12 2.4c3 3.1 5.2 6 5.2 8.6a5.2 5.2 0 0 1-4.2 5.1V21h-2v-4.9"+
+        "A5.2 5.2 0 0 1 6.8 11c0-2.6 2.2-5.5 5.2-8.6Z",
+  hell:"M12 1.8c.6 3.2 2.1 4.4 3.5 5.9 1.6 1.7 2.7 3.4 2.7 5.7a6.2 "+
+       "6.2 0 1 1-12.4 0c0-1.5.5-2.7 1.4-3.8.2 1.2.9 2 1.9 2.2.5-"+
+       "3.4 1.3-6.9 2.9-10Z",
+  ocean:"M2.4 9.6c2 0 2-1.8 4.8-1.8s2.8 1.8 4.8 1.8 2-1.8 4.8-1.8 "+
+        "2.8 1.8 4.8 1.8v2.6c-2 0-2-1.8-4.8-1.8s-2.8 1.8-4.8 1.8-2-"+
+        "1.8-4.8-1.8-2.8 1.8-4.8 1.8Zm0 6.2c2 0 2-1.8 4.8-1.8s2.8 "+
+        "1.8 4.8 1.8 2-1.8 4.8-1.8 2.8 1.8 4.8 1.8v2.6c-2 0-2-1.8-"+
+        "4.8-1.8s-2.8 1.8-4.8 1.8-2-1.8-4.8-1.8-2.8 1.8-4.8 1.8Z",
+  desert:"M3.2 7.4 12 2.6l8.8 4.8v9.2L12 21.4l-8.8-4.8Zm2.2 1.9v6.6"+
+         "L12 19.5l6.6-3.6V9.3L12 5.7ZM9.4 10.6h5.2v2.8H9.4Z"
+};
 function secEmblem(sec){
   var sc=sec&&sec.theme&&sec.theme.scene;
-  var p=
-    sc==="trees" ? "M12 2.4c3 3.1 5.2 6 5.2 8.6a5.2 5.2 0 0 1-4.2 5.1V21h-2v-4.9"+
-                   "A5.2 5.2 0 0 1 6.8 11c0-2.6 2.2-5.5 5.2-8.6Z" :
-    sc==="hell"  ? "M12 1.8c.6 3.2 2.1 4.4 3.5 5.9 1.6 1.7 2.7 3.4 2.7 5.7a6.2 "+
-                   "6.2 0 1 1-12.4 0c0-1.5.5-2.7 1.4-3.8.2 1.2.9 2 1.9 2.2.5-"+
-                   "3.4 1.3-6.9 2.9-10Z" :
-    sc==="ocean" ? "M2.4 9.6c2 0 2-1.8 4.8-1.8s2.8 1.8 4.8 1.8 2-1.8 4.8-1.8 "+
-                   "2.8 1.8 4.8 1.8v2.6c-2 0-2-1.8-4.8-1.8s-2.8 1.8-4.8 1.8-2-"+
-                   "1.8-4.8-1.8-2.8 1.8-4.8 1.8Zm0 6.2c2 0 2-1.8 4.8-1.8s2.8 "+
-                   "1.8 4.8 1.8 2-1.8 4.8-1.8 2.8 1.8 4.8 1.8v2.6c-2 0-2-1.8-"+
-                   "4.8-1.8s-2.8 1.8-4.8 1.8-2-1.8-4.8-1.8-2.8 1.8-4.8 1.8Z" :
-    sc==="desert"? "M3.2 7.4 12 2.6l8.8 4.8v9.2L12 21.4l-8.8-4.8Zm2.2 1.9v6.6"+
-                   "L12 19.5l6.6-3.6V9.3L12 5.7ZM9.4 10.6h5.2v2.8H9.4Z" :
-    /* PROLOGUE and V - EXTRA have no scenery of their own. The first gets the
-       game's own piece, a cube seen corner-on, because that is all it teaches;
-       the shelf gets a star, because beating every boss is what it is for. */
-    sec&&sec.locked
+  /* PROLOGUE and V - EXTRA have no scenery of their own. The first gets the
+     game's own piece, a cube seen corner-on, because that is all it teaches;
+     the shelf gets a star, because beating every boss is what it is for. */
+  var p=ELEM_PATH[sc]||(sec&&sec.locked
       ? "M12 2.2 14.9 8.6 21.8 9.4 16.7 14.1 18.1 21 12 17.5 5.9 21 7.3 14.1"+
         " 2.2 9.4 9.1 8.6Z"
       : "M12 2.2 21 7.4v9.2L12 21.8 3 16.6V7.4Zm0 2.5L5.4 8.5v7L12 19.3l6.6-"+
-        "3.8v-7Z";
+        "3.8v-7Z");
   return "<svg class='secem' viewBox='0 0 24 24' aria-hidden='true'>"+
          "<path d='"+p+"'/></svg>";
 }

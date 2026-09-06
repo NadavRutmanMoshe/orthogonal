@@ -157,8 +157,9 @@ named). Undoing one of these needs the paragraph.
   reachable; `hidePanel()` restores the plinth, so the overlay must go first.
 - **`LEVEL EDITOR` is not in the menu.** It is `MY LEVELS` on the home
   screen — a place you go, not a setting.
-- **Win card**: `won` story line is `esc()`d innerHTML; only newly gained
-  stars fly; `NEXT LEVEL` becomes `WHAT'S LEFT` when the next level is
+- **Win card**: `.wonmast` is the section-finished pill and `.wonwear` under
+  it names the shape that finished section just paid out (`grantShape()`);
+  `won` story line is `esc()`d innerHTML; only newly gained stars fly; `NEXT LEVEL` becomes `WHAT'S LEFT` when the next level is
   behind the boss gate.
 - **Cards** (`.won` family) are full-bleed and answer `screenUp()`; the win
   card is deliberately not in `screenUp()`.

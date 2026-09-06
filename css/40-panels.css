@@ -64,6 +64,14 @@
     font-weight:600;transition:transform .12s ease,box-shadow .12s ease}
   .wact .wgo:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(20,112,93,.5)}
   .wact .wsure{background:rgba(214,51,108,.13)}
+  /* EARNED, NOT BOUGHT. Gold, because that is what a star is worth in this
+     game and this is the only thing in the catalogue a star cannot be spent
+     on - it has to be collected. Disabled, so it keeps the visible ground a
+     disabled button keeps everywhere else. */
+  .wact .wearn{border-color:color-mix(in srgb,var(--star) 46%,transparent);
+    color:var(--star);font-size:10.5px;letter-spacing:.06em;opacity:1}
+  .item span.wlock{color:var(--star);font-size:9.5px;letter-spacing:.02em;
+    white-space:nowrap}
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
   /* THE CATALOGUE TILE IS A CAP, like everything else you press in this game
      (see "buttons are lit caps" in docs/UI.md). It was a flat outlined box

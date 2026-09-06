@@ -294,6 +294,27 @@
   but the player is drawn against the void in 3D and paper in 2D — opposite ends
   of the range — so no single colour reads against both. The rim is re-picked
   from the current background instead of fudging the colours to mid-grey.
+- **Four shapes are earned, not sold.** Sapling, Flame, Minnow and Cactus
+  carry `reward:true` and a `sec` in `SKIN_SHAPES`, and each is granted for
+  taking *every star* in the section it names — nature, fire, water, desert,
+  each standing up as a character in that section's element. They are the
+  only items in the catalogue with no BUY and no ad row, and that is the
+  point: ads buy progress, never score, so the one thing a star cannot be
+  spent on has to be the thing that only three-starring produces.
+
+  They are shapes and never colours, on the owner's call: a reward that also
+  changed your colour would overwrite something the player chose, and these
+  are meant to be worn with whatever they already like. Every one takes the
+  equipped colour like every other shape.
+
+  Paid twice over, deliberately. `win()` grants at the moment the last star
+  lands, because a reward you cannot buy is worth having only if you are told
+  you have it — that is the `.wonwear` line under the mastery pill.
+  `sweepSectionRewards()` runs once on boot for the saves that had already
+  mastered a section before any of this existed; `grantShape()` returns null
+  on a repeat, so the two paths cannot pay twice. Neither goes through
+  `sectionMastered()`, which answers yes to everything while the mastery
+  preview switch is on — a preview must never be able to pay out.
 - **`UNLIMITED_SHARDS` in `js/09-wardrobe.js` is currently `true`** so the whole
   wardrobe can be walked during playtesting — the catalogue costs more than
   perfect play earns, so it is otherwise unreachable. It short-circuits

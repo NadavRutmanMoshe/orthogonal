@@ -1615,6 +1615,17 @@ function win(){
       sub2.innerHTML=(sub2.children.length?sub2.innerHTML:esc(sub2.textContent))+
         "<em class='wonmast' style='--sec:"+(SECTIONS[sn].col||"#35c2a5")+"'>"+
         esc(SECTIONS[sn].name)+" \u00b7 every star</em>";
+      /* AND THE SECTION PAYS OUT. Granted here rather than swept later so
+         the card can name it: the whole point of a reward you cannot buy is
+         the moment you are told you have it. grantShape() returns null if it
+         was already owned, so replaying a finished section says nothing -
+         and the boot sweep in 21-boot.js has usually already paid an old
+         save by the time it gets here. */
+      var got=typeof rewardShapeFor==="function"
+        ? grantShape((rewardShapeFor(sn)||{}).id) : null;
+      if(got)sub2.innerHTML+="<em class='wonwear' style='--sec:"+
+        (SECTIONS[sn].col||"#35c2a5")+"'>"+esc(got.name)+
+        " unlocked \u00b7 in the wardrobe</em>";
       setTimeout(function(){if(SFX.mastery)SFX.mastery();},520);
     }
   }

@@ -86,7 +86,7 @@ listed in `index.html`. `21-boot.js` is the only file that *runs* anything.
 | `js/13-gestures.js` | swipe, double-tap, two-finger turn |
 | `js/14-editor.js` | tap-to-place editor, verify, minimize |
 | `js/15-tutorial.js` | cues, the coach, the ghost hand, hints, `cardPut()` |
-| `js/16-panels.js` | home screen, menu, wardrobe panel, the map, legend, library, `enterPlay()` |
+| `js/16-panels.js` | home screen, menu, wardrobe panel, the section chooser, the map, legend, library, `enterPlay()` |
 | `js/17-composer.js` | solution-first level generation |
 | `js/18-ui.js` | `$`, toasts, `showPanel()`/`hidePanel()`, `syncHud()`, star flight |
 | `js/19-bindings.js` | every button and key binding |
@@ -124,6 +124,8 @@ Block format `[x,y,z,k]`: 0 stone, 1 water (code says `glass`), 2 anchor,
 - Progress is keyed by level **name**. `progress[name]` holds a move count
   on an ordinary level and lives kept on a clock level, so reads go through
   `starsForRecord()` and writes through `betterRecord()`.
+- **`LEVELS` opens `sectionPicker()`, not the map.** One section per visit;
+  the map has no tab strip and the way to another section is out and back in.
 - **Skips live in `skips`, never in `progress`.** Ads buy progress, never
   score. `V · EXTRA` opens when every boss is down (`bossesLeft()`), and
   cannot be bought open.
@@ -197,6 +199,10 @@ is the rule.
   stacked worst case.
 - `migrateWorlds()` and the `v_`/`p_` id prefixes keep old wardrobe saves
   valid. Do not remove while any old save might exist.
+- **Four shapes carry `reward:true` and cannot be bought**: one per numbered
+  section, granted by `grantShape()` for every star in it. Paid at the moment
+  the last star lands (`win()`) and swept once on boot for older saves;
+  neither path may use `sectionMastered()`, which the preview switch fakes.
 - **`UNLIMITED_SHARDS` in `js/09-wardrobe.js` is `true` for playtesting.**
   Set it back to `false` before shipping. `AMB_MUTED` in `js/11-sound.js`
   is `true`: the ambient beds are built but muted, on the owner's call.
