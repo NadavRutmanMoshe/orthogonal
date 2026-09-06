@@ -336,12 +336,37 @@ function seg(pre,val,label,cur){
 }
 function menuPanel(){
   var vol=Math.round(settings.volume*100), bri=Math.round(settings.brightness*100);
+  /* THE WAY BACK TO THE SHELF YOU ARE STANDING ON.
+
+     This reverses "NO NAVIGATION ROW AT ALL" below, on the owner's call, and
+     it is worth saying why the reversal is not the old row coming back. The
+     row that was cut was a second LEVELS - the chooser, the same four tiles
+     the home screen already offers. This is not that: it is the section you
+     are *in*, named, in its own colour, going straight to its trail. Opened
+     from inside a level the settings sheet was a dead end unless you were
+     willing to go out through HOME and back in through LEVELS and a tile;
+     one button is that whole trip.
+
+     Only from inside a campaign level: at home LEVELS is a tap away, and a
+     library level or an editor test has no shelf to go back to. PROLOGUE has
+     no tile either (secPickable), so the tutorial gets nothing here. */
+  var secN=-1;
+  if(playSource==="builtin"&&!homeUp()&&typeof lvIndex==="number"&&lvIndex>=0&&
+     typeof mapSecOf==="function"){
+    var sn0=mapSecOf(lvIndex);
+    if(typeof secPickable==="function"&&secPickable(sn0)&&SECTIONS[sn0])secN=sn0;
+  }
+  var secBtn=secN<0?"":
+    "<button class='psec' id='mSec' style='--sec:"+
+      (SECTIONS[secN].col||"#35c2a5")+"'>"+secEmblem(SECTIONS[secN])+
+      "<span><i>back to</i><b>"+esc(SECTIONS[secN].name)+"</b></span>"+
+      "<u class='psecgo' aria-hidden='true'>\u203a</u></button>";
   showPanel(
     "<div class='phead'><div class='pt'><b>Settings</b>"+
       "<span>"+esc((L&&L.name)||"")+"</span></div>"+
       "<div class='mtot'>"+starsEarned()+" ★</div>"+
       "<button class='mq mx' id='mClose' aria-label='Back to the level'>✕</button></div>"+
-    "<div class='pbody'>"+
+    "<div class='pbody'>"+secBtn+
       /* NO NAVIGATION ROW AT ALL. HOME went to the footer with every other
          panel's way up, and LEVELS went with it on the owner's call: this is
          the settings panel, and LEVELS is on the home screen, on the HUD's
@@ -425,6 +450,9 @@ function menuPanel(){
     flash("settings reset");menuPanel();
   });
   bind("mHome",function(){hidePanel();homeShow();});
+  /* Straight onto the trail, not out through the chooser: the point of the
+     button is that it knows which shelf you are on. */
+  if(secN>=0)bind("mSec",function(){levelPicker(secN);});
   bind("mLegend",legendPanel);
   bind("mClose",hidePanel);
   bind("mFClose",hidePanel);

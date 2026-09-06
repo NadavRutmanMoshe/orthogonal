@@ -37,6 +37,33 @@
     background:rgba(53,194,165,.10);box-shadow:0 4px 0 rgba(20,112,93,.55);
     transition:transform .12s ease,box-shadow .12s ease}
   .pgo:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(20,112,93,.55)}
+  /* THE SHELF YOU ARE ON, at the top of the settings sheet and only when the
+     sheet was opened from inside a campaign level. It wears the section's own
+     colour the way the home screen's CONTINUE does, and carries the same
+     emblem its tile on the chooser carries, so the button and the place it
+     leads are one picture. Full width and above the first card, because it is
+     navigation and everything under it is a switch. */
+  .psec{--sec:#35c2a5;display:flex;align-items:center;gap:11px;width:100%;
+    height:52px;margin-top:12px;padding:0 13px;text-align:left;
+    color:color-mix(in srgb,var(--sec) 82%,#fff);
+    border:1.5px solid color-mix(in srgb,var(--sec) 46%,transparent);
+    background:
+      radial-gradient(130% 150% at 0% 50%,
+        color-mix(in srgb,var(--sec) 24%,transparent), transparent 72%),
+      var(--panel);
+    box-shadow:0 3px 0 color-mix(in srgb,var(--sec) 34%,#04070d);
+    transition:transform .12s ease,box-shadow .12s ease}
+  .psec:active{transform:translateY(3px);
+    box-shadow:0 0 0 color-mix(in srgb,var(--sec) 34%,#04070d)}
+  .psec .secem{width:24px;height:24px;flex:none;fill:var(--sec);opacity:.95}
+  .psec>span{flex:1;min-width:0;display:block}
+  .psec i{display:block;font-style:normal;font-size:10px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--fg-dim)}
+  .psec b{display:block;font-size:13px;letter-spacing:.1em;font-weight:600;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .psec .psecgo{flex:none;font-style:normal;text-decoration:none;
+    font-size:19px;line-height:1;opacity:.6}
+
   .psub{display:flex;flex-direction:column;gap:6px;margin-top:2px}
   .psub button{height:38px;font-size:12px;letter-spacing:.1em;color:var(--fg-dim);
     justify-content:flex-start;padding:0 12px}

@@ -164,6 +164,12 @@ named). Undoing one of these needs the paragraph.
 - **`enterEditor()` takes the home screen and any panel down itself**, in
   that order, the same way `enterPlay()` does. `MY LEVELS` is what made that
   reachable; `hidePanel()` restores the plinth, so the overlay must go first.
+- **The settings panel opened from inside a campaign level carries one
+  navigation row** (`.psec`, `80-panel-tall.css`): the section you are on, in
+  its colour and wearing its chooser emblem, going straight to
+  `levelPicker()`. Not shown at home, on a tutorial, or from the library or
+  the editor. It is the only exception to "no navigation row at all" and it
+  is not a second LEVELS — it is the shelf you are standing on.
 - **`LEVEL EDITOR` is not in the menu.** It is `MY LEVELS` on the home
   screen — a place you go, not a setting.
 - **Win card**: `.wonmast` is the section-finished pill and `.wonwear` under
