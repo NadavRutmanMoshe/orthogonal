@@ -30,27 +30,36 @@
   .boss.on{display:flex}
   .bside{display:flex;flex-direction:column;gap:3px}
   .bthem{align-items:flex-end}
-  /* Both rows are 14px tall so the two sides sit on one line across the
-     screen: a heart is 13px of type, a bar is 4px of box, and without the
-     min-height the right side floated at the top of the gap. */
-  .blives,.bcores{display:flex;gap:4px;align-items:center;min-height:14px}
-  .blives i{display:block;font-style:normal;font-size:13px;line-height:1;
-    color:var(--player);transition:color .25s ease,transform .25s ease}
+  /* BIGGER THAN THE TEXT ABOVE THEM, on the owner's call. At 13px the hearts
+     were the same size as the hint they sit under and read as another line
+     of chrome; this row is the one thing on a clock you check between every
+     move, and it has to be findable without looking for it. 19px hearts and
+     a 24x6 bar are about half again, which is the smallest step that reads
+     as a deliberate size rather than a rendering difference.
+
+     Both rows share a min-height so the two sides sit on one line across the
+     screen: a heart is type and a bar is a box, and without it the right
+     side floated at the top of the gap. */
+  .blives,.bcores{display:flex;gap:5px;align-items:center;min-height:20px}
+  .blives i{display:block;font-style:normal;font-size:19px;line-height:1;
+    color:var(--player);transition:color .25s ease,transform .25s ease;
+    text-shadow:0 0 10px color-mix(in srgb,var(--player) 45%,transparent)}
   .blives i.gone{color:var(--rule);transform:scale(.86)}
   /* The right side is the opposition, and it wears the opposition's colour:
      a boss's phases in the hunters' own red, a trial's cores in the amber
      its cores are actually drawn in. The map keeps violet for a boss node,
      which is a different job - there it separates one landmark from another
      in a list, here it separates you from the thing in front of you. */
-  .bcores i{width:17px;height:4px;border-radius:2px;background:#ff4d5e;
-    display:block;transition:background .25s ease,width .25s ease,
-      opacity .25s ease}
-  .boss.tr .bcores i{background:#ff8a3c}
+  .bcores i{width:24px;height:6px;border-radius:3px;background:#ff4d5e;
+    display:block;box-shadow:0 0 10px rgba(255,77,94,.45);
+    transition:background .25s ease,width .25s ease,
+      opacity .25s ease,box-shadow .25s ease}
+  .boss.tr .bcores i{background:#ff8a3c;box-shadow:0 0 10px rgba(255,138,60,.45)}
   /* A SPENT ONE SHRINKS AS WELL AS DIMMING. Three bars of one length with a
      dim one among them is a row of three at a glance, which is how a taken
      core read as a core still to take - the hearts have always said it twice
      (colour and scale) and this row said it once. */
-  .bcores i.gone{background:var(--rule);width:7px;opacity:.7}
+  .bcores i.gone{background:var(--rule);width:10px;opacity:.7;box-shadow:none}
   .boss.hurt .blives{animation:bshake .3s ease}
   @keyframes bshake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 
