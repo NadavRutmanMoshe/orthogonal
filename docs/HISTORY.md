@@ -1064,3 +1064,30 @@ circle from a geometric alphabet that says nothing about a dog. That is now a
 drawn path, like every other icon in the game, and it stayed when the model
 went back. Worth remembering the next time "the X doesn't read as an X" comes
 in: ask which X - the thing or the button that chooses it.
+
+## A stray `*/` ate the boss and the trial
+
+Reported as "trial and bosses look in section got bugged". They had gone
+black: a filled hexagon with a violet rim and no ring, an amber diamond with
+no fill and no clock.
+
+The cause was fourteen lines of prose at the top of `css/85-map.css`. The
+file's header comment closed on line 4, then the long "THE MAP — the level
+picker as a path" essay ran on as *code* until its own `*/` on line 18. A CSS
+parser handles that by treating everything from the error to the next `{...}`
+as one bogus selector and dropping the block behind it — and the block behind
+it was `:root{--vio;--vio-lip;--amb;--amb-lip}`, the whole token set the two
+landmarks are drawn from.
+
+That is why the symptom looked like a rendering bug rather than a missing
+variable: `fill:var(--vio)` with `--vio` undefined computes to the initial
+value, which is **black**, and `stroke:var(--amb)` computes to **none**, so
+every ring vanished while every hardcoded literal in the same rule (`#c6a4ff`,
+`#f0bd6c`) kept painting. One invalid custom property does not warn, does not
+fail loudly, and takes out only the declarations that name it.
+
+The fix was deleting two characters. The lesson is cheaper than the search
+was: **a comment edit in a stylesheet can delete the rule after it**, and
+nothing in the browser will say so. Checking that every `/*` in `css/` has
+exactly one `*/` is a three-line script and now worth running whenever a
+whole family of things loses its colour at once.
