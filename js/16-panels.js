@@ -272,10 +272,11 @@ function menuPanel(){
       "<div class='mtot'>"+starsEarned()+" ★</div>"+
       "<button class='mq mx' id='mClose' aria-label='Back to the level'>✕</button></div>"+
     "<div class='pbody'>"+
-      /* HOME moved to the footer, where every panel's way up now lives, so
-         this row is the one place the menu SENDS you rather than a pair of
-         exits with a duplicate in it. */
-      "<div class='prow2'><button class='pgo' id='mLevels'>LEVELS</button></div>"+
+      /* NO NAVIGATION ROW AT ALL. HOME went to the footer with every other
+         panel's way up, and LEVELS went with it on the owner's call: this is
+         the settings panel, and LEVELS is on the home screen, on the HUD's
+         way out of a level, and on the win card. A fourth copy at the top of
+         a settings sheet is a fourth thing to scroll past. */
       "<div class='pcard'><h4>Sound &amp; light</h4>"+
         "<div class='srow'><label>Volume</label>"+
           "<input type='range' id='mVol' min='0' max='100' value='"+vol+"'>"+
@@ -303,16 +304,17 @@ function menuPanel(){
            feel like a developer switch rather than a thing to play with. */
         "<button id='mReset' class='pdanger'>RESET SETTINGS</button>"+
       "</div>"+
-      /* WHICH BUILD AM I LOOKING AT? The stamp has been in the file since
-         build-single.js started writing it, but only in a comment and a
-         global - which answers the question for whoever has a terminal and
-         nobody else. A published artifact is played by people who cannot
-         open a console, and "are you on the new one?" is unanswerable
-         without this. It is the short commit, so it matches the build log
-         and `git checkout <it>` puts that exact version back. */
-      "<div class='note pbuild'>build "+
-        esc(typeof BUILD==="string"?BUILD:"unbuilt \u00b7 running from source")+
-      "</div></div>"+
+      /* THE BUILD STAMP IS OFF THE PANEL, on the owner's call, and this is a
+         reversal worth writing down. It was put here because a published
+         artifact is played by people who cannot open a console, and "are you
+         on the new one?" was otherwise unanswerable. It read as a developer
+         line at the foot of a settings sheet, which it is.
+
+         Nothing is lost that the owner needs: `BUILD` is still a global and
+         still in a comment at the top of the built file, the artifact's own
+         version picker carries the commit as each version's label, and the
+         build log prints it. Putting the line back is this one string. */
+      "</div>"+
     "</div>"+
     "<div class='pfoot'><button id='mHome'>HOME</button>"+
       "<button id='mFClose'>CLOSE</button></div>","menu");
@@ -353,7 +355,6 @@ function menuPanel(){
     flash("settings reset");menuPanel();
   });
   bind("mHome",function(){hidePanel();homeShow();});
-  bind("mLevels",sectionPicker);
   bind("mLegend",legendPanel);
   bind("mClose",hidePanel);
   bind("mFClose",hidePanel);
