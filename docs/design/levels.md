@@ -53,7 +53,7 @@ five levels in, each section is interrupted by a **trial**:
 | I · FUNDAMENTALS | 12 + trial + boss | the owner's own opening: the fold, then peril, then the turn |
 | II · FIRE | 7 + trial + boss | fire before water — a hazard reads faster than an absence |
 | III · WATER | 8 + trial + boss | ends on water + fire |
-| IV · CRATES | 10 + trial + boss | ends on crate + glass + spikes |
+| IV · DESERT | 10 + trial + boss | ends on crate + glass + spikes |
 | V · EXTRA | 27, locked | opens when every boss is down; anchors and amber live here |
 
 `SECTIONS[].at` holds array indices, so inserting a level means shifting every

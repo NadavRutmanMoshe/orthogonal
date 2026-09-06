@@ -1038,7 +1038,13 @@ var SECTIONS=[
      amber either - that one is a saturated #e0a03c, and this is a washed
      tan two steps away from it. The node shapes are what tell those apart
      anyway; the colour only has to not confuse them. */
-  {at:35, name:"IV · CRATES", sub:"shove a block and the 2D world changes", col:"#d9bd83",
+  /* DESERT, NOT CRATES, on the owner's call. Every other section is named
+     for the place you are standing in - Fundamentals aside, they are Fire,
+     Water and the shelf - and this one was named for the piece it teaches,
+     which made it the odd one out on a screen that shows all four side by
+     side. What it teaches is still said underneath, in `sub`, which is where
+     the other three say theirs too. */
+  {at:35, name:"IV · DESERT", sub:"shove a crate and the 2D world changes", col:"#d9bd83",
    story:"You can edit what they see. That is the one thing they cannot do.",
    /* THE DESERT AT NOON. Grains blowing sideways rather than rising, which
       is both what sand does and what this section is about - pushing things

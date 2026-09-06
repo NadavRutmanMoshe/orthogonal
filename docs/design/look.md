@@ -91,7 +91,7 @@ basalt under a fiery sky rather than glowing orange. The desaturation rule
 below is untouched, and it is still the check: **if you raise a section's
 `block` value, go and look at that section's fire and water.**
 
-**`IV · CRATES` moved off violet onto sand**, which fixes the one place the
+**`IV · DESERT` (was `IV · CRATES`) moved off violet onto sand**, which fixes the one place the
 old permutation was broken anyway: a crate is drawn violet, so the section
 teaching crates was wearing the colour of its own piece. Sand is kept pale
 and low in chroma so it does not collide with the trial's saturated amber
