@@ -203,15 +203,31 @@ function buildPlayerMesh(shape,col,mat){
     bx(.32,.13,.32,0,.17,0);
     bx(.19,.11,.19,0,.26,0);
   } else if(shape==="flame"){
-    // A taper, stepped rather than smooth, plus one lick off each side so
-    // the silhouette is not a symmetrical pylon.
+    /* A FLAME LEANS, AND IT IS TALLER THAN IT IS WIDE. The first version was
+       a symmetrical stack of squares with a nub stuck on each side, and it
+       read as a small ziggurat - reported as looking bad, correctly.
+
+       Three things fix it, and none of them is more boxes:
+       - THE TAPER RUNS THE WHOLE HEIGHT, base to tip, instead of stopping
+         two thirds of the way up in a flat-topped block.
+       - EVERY LAYER IS OFFSET a little further than the one below it, in x
+         and the other way in z. A stack that leans and twists reads as
+         something rising; a stack that does not reads as masonry.
+       - ONE TONGUE, not two, and it is tall and off to one side. A flame is
+         asymmetric by nature; a pair of matching nubs is a candelabra. */
     g=new THREE.Group();
-    bx(.32,.12,.32,0,-.25,0);
-    bx(.34,.24,.34,0,-.07,0);
-    bx(.22,.16,.22,0,.13,0);
-    bx(.10,.12,.10,0,.26,0);
-    bx(.08,.13,.08,.19,.02,0);
-    bx(.08,.10,.08,-.19,-.04,0);
+    bx(.34,.10,.34,0,-.26,0);            // the flare where it meets the ground
+    bx(.28,.18,.28,.01,-.10,0);          // body
+    bx(.19,.15,.19,.04,.06,-.015);       // waist
+    bx(.12,.13,.12,.075,.20,-.03);       // neck
+    bx(.06,.07,.06,.105,.275,-.04);      // tip
+    /* THE SECOND FLAME, not a rotated stick. The tongue used to be one box
+       tilted off the side, which from most angles is a broken piece leaning
+       on the tower. A smaller copy of the same taper beside it is a fire
+       with two tongues, which is what fire looks like. */
+    bx(.10,.14,.10,-.14,-.13,.03);
+    bx(.07,.10,.07,-.165,-.01,.04);
+    bx(.045,.07,.045,-.185,.075,.05);
   } else if(shape==="minnow"){
     // Flat in z on purpose: a fish read as a loaf until the body was thinner
     // than it is tall, and the fins are what carry the rest.
