@@ -83,10 +83,23 @@
      asked for. `.wide` spans both, which is where PROLOGUE and the V - EXTRA
      shelf go - one is before the campaign and one is after it, and neither
      belongs in a 2x2 of the four. */
-  .secbody{padding-bottom:34px}
-  .secgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:13px 0 0}
+  /* IT FITS, IT DOES NOT SCROLL. Five tiles on one screen is the whole point
+     of the chooser: a grid you have to scroll to see the bottom of is a list
+     again, and the owner reported the scrollbar as the thing that broke it.
+
+     So the body stops scrolling and the grid is told to fill it: two equal
+     rows for the four numbered sections and an auto row for the shelf, which
+     takes what it needs and leaves the rest to be split. Tiles clip their own
+     text rather than pushing the row taller - a section's one-line summary is
+     nice to have and a scrollbar is not. */
+  /* Beats .mbody's own `padding:0 13px 130px`, which is the room the map's
+     trail needs under its last node and is 130px of dead grid here. */
+  .panel.map>.secbody{overflow:hidden;display:flex;padding:0 13px 13px}
+  .secgrid{flex:1;min-height:0;display:grid;
+    grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr auto;
+    gap:8px;padding:13px 0 0}
   .sectile{position:relative;overflow:hidden;display:flex;flex-direction:column;
-    align-items:stretch;gap:6px;min-height:132px;padding:11px 10px 10px;
+    align-items:stretch;gap:6px;min-height:0;padding:11px 10px 10px;
     border-radius:6px;text-align:left;
     border:1px solid color-mix(in srgb,var(--tabc) 34%,var(--rule));
     background:
@@ -96,6 +109,12 @@
     box-shadow:0 3px 0 color-mix(in srgb,var(--tabc) 26%,#04070d);
     color:var(--fg);transition:transform .12s ease,box-shadow .12s ease}
   .sectile.wide{grid-column:1/-1;min-height:0}
+  /* The summary is the first thing to give when the rows are squeezed, and
+     it gives by whole lines with an ellipsis rather than by clipping through
+     the middle of one - a half-height row of letters reads as a rendering
+     fault, which is how the first version of this was reported. */
+  .secsub{display:-webkit-box;-webkit-box-orient:vertical;
+    -webkit-line-clamp:3;overflow:hidden}
   .sectile:active{transform:translateY(3px);box-shadow:0 0 0 transparent}
   /* Where you are, said the way the map says it: the section's own colour on
      the rim rather than a second badge to learn. */
@@ -147,6 +166,7 @@
      text with a chain through it reads worse than none. The name stays up. */
   .sectile.lk .secsub,.sectile.lk .secpb,.sectile.lk .secf{opacity:.4}
   .sectile.lk.wide{min-height:104px}
+  .sectile.wide .secsub{-webkit-line-clamp:2}
   .secchain{position:absolute;inset:0;width:100%;height:100%;
     pointer-events:none;opacity:.85}
   /* The fat stroke is the metal; the thin one punches the tile's own ground

@@ -1289,10 +1289,11 @@ function sectionPicker(){
   var h="<canvas class='mbg' id='mBg' aria-hidden='true'></canvas>"+
     "<div class='mhead'><div class='mt'><b>Orthogonal</b>"+
     "<span>"+cleared+" / "+total+" CLEARED</span></div>"+
-    /* ? then the total then ✕, and that order is the same on every panel
-       that has all three: help, then the number, then the way out - which is
-       always the last thing on the row. */
-    "<button class='mq' id='skHelp' aria-label='What the map means'>?</button>"+
+    /* NO ? HERE. It opened mapHelp(), which explains the shapes of the map's
+       nodes - a disc, a hexagon, a diamond - and there is not one of those on
+       this screen. Reported as a button that does nothing, which from the
+       player's side is exactly what it was. It stays on the map, where the
+       thing it explains is. */
     "<div class='mtot'>"+done+" ★</div>"+
     "<button class='mq mx' id='skClose' aria-label='Back to the level'>✕</button>"+
     "</div><div class='mbody secbody'><div class='secgrid' id='secGrid'></div></div>"+
@@ -1302,7 +1303,6 @@ function sectionPicker(){
   bind("skClose",hidePanel);
   bind("skDone",hidePanel);
   bind("skMenu",function(){hidePanel();homeShow();});
-  bind("skHelp",mapHelp);
   secGridDraw();
 }
 
@@ -1315,8 +1315,13 @@ function secGridDraw(){
     var sec=SECTIONS[n], sp=spans[n];
     // Locked for either reason: the shelf that waits on every boss, or a
     // section the campaign has simply not reached yet.
-    var shelf=!!sp.locked;
-    var lk=shelf||sec.at>mapReach();
+    // THE STATIC FLAG, NOT THE LIVE STATE. `sp.locked` is "shut right now",
+    // which goes false the moment every boss is down - so on a finished save
+    // the shelf stopped being the full-width row and fell back into the grid
+    // as a fifth square. `SECTIONS[n].locked` is "this is the shelf", which
+    // is what the layout is actually asking.
+    var shelf=!!sec.locked, shut=!!sp.locked;
+    var lk=shut||sec.at>mapReach();
     var buy=mapSectionSkippable(n);
     var pct=sp.max?Math.round(sp.got/sp.max*100):0;
     var cl=0,tot=0;
@@ -1347,7 +1352,7 @@ function secGridDraw(){
        (mst?"<span class='secmast'>ALL STARS</span>":"")+
        (lk?secChains()+"<span class='seccap'>"+secLock()+
            "<span class='seccapt'>"+
-           (shelf?"BEAT EVERY BOSS":buy?"LOCKED":"KEEP PLAYING")+"</span>"+
+           (shut?"BEAT EVERY BOSS":buy?"LOCKED":"KEEP PLAYING")+"</span>"+
            (buy?"<span class='secad'>"+adIcon()+"OPEN · 3 ADS</span>":"")+
            "</span>":"")+
        "</button>";
@@ -1361,7 +1366,7 @@ function secGridDraw(){
          broken. Everything else opens its map - including a section still
          locked, where the ad card at the top of the map is the thing that
          opens it. Pressing the chip on the tile is the shortcut. */
-      if(sp.locked){
+      if(SECTIONS[s].locked&&sp.locked){
         flash(bossesLeft().length
           ? "still standing: "+bossesLeftSay()
           : "opening …");
