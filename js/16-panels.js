@@ -89,7 +89,7 @@ function wardrobePanel(tab){
         "<div id='wMeta'></div>"+
       "</div>"+
     "</div>"+
-    "<div class='pfoot'><button id='wHome'>HOME</button>"+
+    "<div class='pfoot'><button id='wHome'>"+homeIcon()+"HOME</button>"+
       "<button id='wBack'>CLOSE</button></div>","wardrobe");
   bind("wS",function(){wardTabTo("shape");});
   bind("wC",function(){wardTabTo("color");});
@@ -287,6 +287,23 @@ function rewardShort(it){
 }
 /* A price tag, for the one shelf that is not paid for in stars. Drawn like
    every other icon in the game rather than typed as a glyph. */
+/* A house, on the one button in the footer that goes there. The four
+   full-height panels all carry it, so "up one level" is a picture as well as
+   a word - and the map's SECTIONS button gets the same four squares the home
+   screen's LEVELS button wears, because it opens the same screen. */
+function homeIcon(){
+  return "<svg class='pfi' viewBox='0 0 24 24' aria-hidden='true'>"+
+    "<path d='M11.35 2.6 2.9 9.75c-.5.42-.24 1.24.42 1.24H5v9.3c0 .61.5 1.11 "+
+    "1.11 1.11h3.6v-5.3h4.58v5.3h3.6c.61 0 1.11-.5 1.11-1.11v-9.3h1.68c.66 0 "+
+    ".92-.82.42-1.24L12.65 2.6a1 1 0 0 0-1.3 0Z'/></svg>";
+}
+function gridIcon(){
+  return "<svg class='pfi' viewBox='0 0 24 24' aria-hidden='true'>"+
+    "<rect x='3.2' y='3.2' width='7.4' height='7.4' rx='1.7'/>"+
+    "<rect x='13.4' y='3.2' width='7.4' height='7.4' rx='1.7'/>"+
+    "<rect x='3.2' y='13.4' width='7.4' height='7.4' rx='1.7'/>"+
+    "<rect x='13.4' y='13.4' width='7.4' height='7.4' rx='1.7'/></svg>";
+}
 function tagIcon(){
   return "<svg class='tagicon' viewBox='0 0 24 24' fill-rule='evenodd' "+
     "aria-hidden='true'><path d='M2.6 11.5 11.4 2.7c.4-.4.9-.6 1.4-.6h6.5c1.1 "+
@@ -369,7 +386,7 @@ function menuPanel(){
          build log prints it. Putting the line back is this one string. */
       "</div>"+
     "</div>"+
-    "<div class='pfoot'><button id='mHome'>HOME</button>"+
+    "<div class='pfoot'><button id='mHome'>"+homeIcon()+"HOME</button>"+
       "<button id='mFClose'>CLOSE</button></div>","menu");
   var v=$("mVol"), b=$("mBri");
   v.addEventListener("input",function(){
@@ -1360,7 +1377,7 @@ function sectionPicker(){
     "<div class='mtot'>"+done+" ★</div>"+
     "<button class='mq mx' id='skClose' aria-label='Back to the level'>✕</button>"+
     "</div><div class='mbody secbody'><div class='secgrid' id='secGrid'></div></div>"+
-    "<div class='pfoot'><button id='skMenu'>HOME</button>"+
+    "<div class='pfoot'><button id='skMenu'>"+homeIcon()+"HOME</button>"+
     "<button id='skDone'>CLOSE</button></div>";
   showPanel(h,"secs");
   bind("skClose",hidePanel);
@@ -1501,7 +1518,7 @@ function levelPicker(n){
         "<div class='mbody' id='mBody'><div class='mcard' id='mCard'></div>"+
         "<div id='mtrail'><svg></svg></div></div>"+
         "<div class='pfoot'>"+
-        "<button id='pkBack'>SECTIONS</button><button id='pkClose'>CLOSE</button></div>"+
+        "<button id='pkBack'>"+gridIcon()+"SECTIONS</button><button id='pkClose'>CLOSE</button></div>"+
         "<div class='msheet' id='mSheet'></div>";
   showPanel(h,"map");   // syncCorners() adds .map and hides the corner total
   bind("pkBack",sectionPicker);

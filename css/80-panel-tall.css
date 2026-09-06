@@ -82,3 +82,8 @@
     padding:9px 13px 11px;margin:0;
     border-top:1px solid var(--rule)}
   .pfoot button{flex:1;height:36px;font-size:12px;letter-spacing:.12em}
+  /* The left button is a PLACE, so it carries a picture of it; the right one
+     is an ACTION and stays a word. Inline rather than pinned to an edge: the
+     footer is two equal halves and the pair is centred in its half. */
+  .pfi{width:16px;height:16px;flex:none;margin-right:8px;
+    fill:currentColor;stroke:none}
