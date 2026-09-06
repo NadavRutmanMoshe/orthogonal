@@ -44,7 +44,7 @@ function wardrobePanel(tab){
      applyPalette() writes underneath a section, and a save that bought one
      keeps it. Only the two tabs are gone.
 
-     Guarded rather than trusted: homePick() hands a tab name in, and a stale
+     Guarded rather than trusted: callers hand a tab name in, and a stale
      "world3" would land the grid on a catalogue with no tab to leave it by. */
   wardTab=(tab==="color")?"color":"shape";
   buyArmed=null;
@@ -336,88 +336,14 @@ function homeTarget(){
   if(si>=0&&LEVELS[si])return {i:si,resume:true};
   return {i:mapHere(),resume:false};
 }
-/* THE SHOP IS ON THE SCREEN, AND EVERY TILE IS LIVE.
-
-   It started as three locked items with their prices and no behaviour - a
-   drawing, with the wardrobe button as the way in. That was wrong the first
-   time anybody used it: a thing shaped like a tile invites a press, and a
-   press that answers nothing is worse than showing no tiles at all.
-
-   So a tap always does something, and which thing it does falls out of
-   whether you own it:
-
-   - Owned goes straight onto the character. Equipping costs nothing and is
-     reversible by tapping another one, so there is no confirmation to make.
-   - Locked opens the wardrobe on that item, with its price and its BUY
-     already under the case. That is the other half of the same answer: the
-     purchase is armed and confirmed where it always was. Nothing on this
-     screen can spend a star, which is what keeps "selecting, buying and
-     equipping are three separate acts" true.
-
-   Worlds are not here. Two rows is a strip; four is the wardrobe with worse
-   ergonomics, and the shape and the colour are what a player means when they
-   say they want to look different. */
-function homeTile(t,it,glyph,swatch){
-  var have=owns(it.id), on=wardEquipped(t)===it.id;
-  return "<i class='htile"+(on?" on":have?"":" lock")+"' data-t='"+t+
-         "' data-id='"+it.id+"'><span"+
-         (swatch?" style='background:"+swatch+"'":"")+">"+(glyph||"")+"</span>"+
-         (have?"":"<b>"+it.cost+"\u2605</b>")+"</i>";
-}
-function homeStrip(){
-  var h="",i;
-  for(i=0;i<SKIN_SHAPES.length;i++)
-    h+=homeTile("shape",SKIN_SHAPES[i],shapeGlyph(SKIN_SHAPES[i].id),null);
-  $("homeShapes").innerHTML=h;
-  h="";
-  for(i=0;i<SKIN_COLORS.length;i++)
-    h+=homeTile("color",SKIN_COLORS[i],"",
-        "#"+SKIN_COLORS[i].hex.toString(16).padStart(6,"0"));
-  $("homeColors").innerHTML=h;
-}
-function homePick(t,id){
-  if(!t||!id)return;
-  if(!owns(id)){
-    /* Hand off rather than sell. wardSel is the wardrobe's own selection, so
-       setting it before opening lands the player on that exact item with the
-       case showing it and BUY underneath - the same place the tile was
-       advertising, reached in one tap instead of three. */
-    wardSel[t]=id;
-    SFX.turn();
-    wardrobePanel(t);
-    return;
-  }
-  if(wardEquipped(t)===id){SFX.turn();return;}   // already on; say so quietly
-  wardEquip(t,id);
-  SFX.key();
-  homeStrip();
-  homeStand();
-}
-/* Delegated, and on pointerup with a travel test rather than the pointerdown
-   `tap()` uses everywhere else. These rows scroll sideways, and a pointerdown
-   that calls preventDefault eats the drag that scrolls them - so a tap here
-   has to be a press that did not travel. Bound once: homeStrip() rewrites the
-   tiles on every sync, and a listener per rebuild would stack up. */
-var homeStripBound=false;
-function homeBindStrip(){
-  if(homeStripBound)return;
-  ["homeShapes","homeColors"].forEach(function(id){
-    var el=$(id); if(!el)return;
-    homeStripBound=true;
-    var sx=0,sy=0,pid=null;
-    el.addEventListener("pointerdown",function(e){
-      pid=e.pointerId;sx=e.clientX;sy=e.clientY;
-    });
-    el.addEventListener("pointerup",function(e){
-      if(e.pointerId!==pid)return;
-      pid=null;
-      if(Math.abs(e.clientX-sx)>8||Math.abs(e.clientY-sy)>8)return;
-      var t=e.target&&e.target.closest?e.target.closest(".htile"):null;
-      if(!t)return;
-      homePick(t.getAttribute("data-t"),t.getAttribute("data-id"));
-    });
-  });
-}
+/* THE BROWSE STRIP IS GONE, and with it homeTile / homeStrip / homePick /
+   homeBindStrip. Two scrolling rows of shapes and colours sat under the
+   plinth, live, so a tap equipped an owned item or opened the wardrobe on a
+   locked one. They were removed on the owner's call: they are the wardrobe's
+   own job done worse, in 34px tiles, on the one screen that should read as a
+   title screen. The wardrobe button below the plinth is the way in now, and
+   it wears the hanger so it looks like the door it is. The reasoning for the
+   strip, and why it was live rather than a drawing, is in docs/HISTORY.md. */
 function homeSync(){
   if(!$("home"))return;
   var t=homeTarget(), lv=LEVELS[t.i];
@@ -433,8 +359,6 @@ function homeSync(){
   var sec=SECTIONS[mapSecOf(t.i)];
   b.style.setProperty("--sec",(sec&&sec.col)||"var(--goal)");
   $("homeStars").textContent=stars;
-  homeStrip();
-  homeBindStrip();
 }
 /* The stand, which is the wardrobe's display case pointed at what you have
    equipped. Rebuilt rather than kept, because previewStart is a singleton and

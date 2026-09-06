@@ -1011,3 +1011,36 @@ Three things changed, none of them to the game:
   twice — once to write it and once to fix what it looked like — and the
   second pass was the one that cost. `docs/UI.md` maps every screen to its
   file and its builder so the first pass reads one file.
+
+## The home screen's browse strip, and the map's tab strip
+
+Both were the same mistake, made twice: a control put on a screen so the
+player would not have to leave it, on a screen that had a better door
+already.
+
+**The browse strip** was two scrolling rows under the plinth, SHAPE and
+COLOUR, one 34px tile per item. It began as three locked tiles with prices
+and no behaviour — a drawing, with the WARDROBE button under it as the way
+in — and that was wrong the first time anybody used it: a thing shaped like
+a tile invites a press, and a press that answers nothing is worse than
+showing no tiles. So every tile went live: owned equipped straight away,
+locked opened the wardrobe already showing that item with its BUY under it,
+and nothing on the screen could spend a star. That version worked. It was
+still removed, on the owner's call, because the screen it was on is a title
+screen, and the wardrobe does the same job with room to do it properly.
+What replaced it is one button wearing the HUD's own hanger and violet, so
+the two ways into the wardrobe are recognisably one door.
+
+**The tab strip** was a scrolling row of section chips at the top of the
+map. Pressing one rebuilt the trail, the section card, the ambient canvas
+and the weather in place, against a panel that was already open — which is
+where "the section came up half-drawn" came from. It is now a screen of its
+own (`sectionPicker()`), which fixes the bug by construction: a map is
+built once per visit, on a section that cannot change under it.
+
+Fixed in passing, because the new way back lives in the map's header:
+`mapFocus()` used `scrollIntoView({block:"center"})`, which scrolls *every*
+scrollable ancestor. The panel is one of them, so centring a node halfway
+down a trail slid the map's own header off the top of the screen. Visible in
+every map screenshot the project has ever taken. It scrolls `#mBody` by
+measured offset now, and nothing else.
