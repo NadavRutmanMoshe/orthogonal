@@ -1937,7 +1937,12 @@ function struggleOffer(){
   offerShell(kind+" \u00b7 STUCK",esc(L.name),
     "This one has beaten you "+beat+". You can come back to it whenever you "+
     "like.",
-    "<button class='ad' id='sgAd'>"+adIcon()+"SKIP THIS "+kind+" \u00b7 WATCH 3 ADS</button>"+
+    /* "SKIP IT", not "SKIP THIS BOSS": the kicker says BOSS and the title is
+       the fight's own name, so the button repeating it only made the label
+       long enough to wrap onto two lines around the video mark on a narrow
+       phone - which reads as a broken button at the moment the player is
+       least inclined to give the game the benefit of the doubt. */
+    "<button class='ad' id='sgAd'>"+adIcon()+"SKIP IT \u00b7 WATCH AN AD</button>"+
     "<button class='qt' id='sgNo'>KEEP TRYING</button>"+
     "<button class='qt' id='sgNever'>DON'T SHOW ME AGAIN</button>",
     "A skip awards <b>no stars</b>. Ads buy progress, never score.",
