@@ -57,6 +57,11 @@ function showPanel(html,kind){
   $("panel").innerHTML=html;
   $("panel").classList.add("on");
   $("panel").classList.toggle("ward",kind==="wardrobe");
+  /* The offer cards, and only them: they are the one panel that is a
+     decision rather than a place, so they get their own shape, their own
+     type scale and a scrim over the board. See `.panel.offer` in
+     css/85-map.css and offerShell() in js/12-play.js. */
+  $("panel").classList.toggle("offer",kind==="offer");
   panelKind=kind||null;
   syncCorners();
 }
@@ -65,11 +70,20 @@ function showPanel(html,kind){
    over the map too, on top of the map's own total - so the one place that
    already knows which panel is open turns it off. */
 function syncMapChrome(){
-  $("panel").classList.toggle("map",panelKind==="map");
-  // Full-height panels: the map, and the menu now that it is grouped into
-  // cards and would otherwise scroll inside a 44vh window.
-  $("panel").classList.toggle("tall",panelKind==="map"||panelKind==="menu"||
-                                     panelKind==="wardrobe");
+  $("panel").classList.toggle("map",panelKind==="map"||panelKind==="secs");
+  // The chooser wears the map's chrome (header, ambient canvas, footer row)
+  // and adds one grid of its own, so it takes .map and is told apart by this.
+  $("panel").classList.toggle("secs",panelKind==="secs");
+  // MY LEVELS and every screen under it: the one class its own rules hang
+  // off, so nothing here can reach the other tall panels' furniture.
+  $("panel").classList.toggle("mylv",panelKind==="mylevels");
+  /* Full-height panels: the map and its chooser, the menu now that it is
+     grouped into cards and would otherwise scroll inside a 44vh window, and
+     MY LEVELS, which is a place you go rather than a decision you are being
+     asked to make - and whose list has no length a 44vh sheet could hold. */
+  $("panel").classList.toggle("tall",panelKind==="map"||panelKind==="secs"||
+                                     panelKind==="menu"||panelKind==="wardrobe"||
+                                     panelKind==="mylevels");
   /* The running star total sits at z-index 30 so it can float over the win
      overlay, which also floats it over any open panel - and the menu, the
      wardrobe and the map all now carry a total of their own in their header.
@@ -79,7 +93,7 @@ function syncMapChrome(){
   // The ambient loop lives and dies with the panel, so it can never be left
   // running behind a level - least of all behind one on a clock.
   if(typeof mapBgStart==="function"){
-    if(panelKind==="map")mapBgStart(); else mapBgStop();
+    if(panelKind==="map"||panelKind==="secs")mapBgStart(); else mapBgStop();
   }
 }
 function hidePanel(){
@@ -140,6 +154,53 @@ function paperIsLight(){
   if(typeof colPaper==="undefined"||!colPaper)return true;
   return (colPaper.r*.2126+colPaper.g*.7152+colPaper.b*.0722)>.55;
 }
+/* THE LIVE STARS, AND THE ONE THAT FALLS OFF.
+
+   Most people solve a level and never notice they scored two - the row used
+   to be three small characters that quietly became two, which is a thing you
+   can only see by having looked a moment earlier. So the star that is lost is
+   *seen to leave*: the hollow one is always there underneath and the gold one
+   on top of it drops off the row and fades. After the animation the slot is
+   simply hollow, which is the picture the fall left behind.
+
+   THE ROW IS BUILT ONCE AND THEN ONLY TOUCHED WHEN THE COUNT CHANGES, and
+   that is the whole of the fix for the animation breaking under a spammed
+   arrow key. It used to be part of moveLabel's innerHTML, which syncHud
+   rewrites on EVERY redraw - so each move re-created the falling star from
+   scratch and restarted its animation from the top, and holding a direction
+   down left it flickering in place instead of falling off. Now a redraw with
+   the same count is a no-op: no DOM is written, so there is nothing to
+   restart. `void offsetWidth` is what deliberately restarts it in the one
+   case that wants it - a second star lost while the first is still falling.
+
+   It also has to go back up. Undo lowers the move count, so a star can be
+   regained; the fallen glyph loses its class and returns to its socket. */
+var starsLive=3;
+function syncStars(st){
+  var el=$("starRow"); if(!el)return;
+  if(st===null){el.hidden=true;starsLive=3;return;}
+  el.hidden=false;
+  if(!el.childElementCount){
+    var h="";
+    for(var i=0;i<3;i++)
+      h+="<u class='sl'><i class='ho'>\u2606</i><i class='fi'>\u2605</i></u>";
+    el.innerHTML=h;starsLive=3;
+  }
+  if(st===starsLive)return;                  // nothing has changed: leave it be
+  var lost=st<starsLive;
+  for(var j=0;j<3;j++){
+    var fi=el.children[j].firstElementChild.nextElementSibling;
+    fi.classList.remove("fall");
+    if(j<st)fi.style.display="";
+    else if(lost&&j<starsLive){              // these are the ones just lost
+      fi.style.display="";
+      void fi.offsetWidth;                   // restart, deliberately
+      fi.classList.add("fall");
+    } else fi.style.display="none";
+  }
+  if(lost&&SFX.starLost)SFX.starLost();
+  starsLive=st;
+}
 function syncHud(){
   /* THE CHROME FOLLOWS THE GROUND, NOT THE STATE. body.flat swaps the HUD to
      dark-on-light, which was right when the plane was a sheet of paper and
@@ -163,24 +224,36 @@ function syncHud(){
      `athome` rather than `home`, because `.home` is the overlay's own class
      and a bare `.home` selector would match the body carrying it too - which
      it did, handing the whole document `display:none`. See the note in
-     css/style.css. */
+     css/95-home.css. */
   document.body.classList.toggle("athome",homeUp());
   var inPlay=app==="play"&&!homeUp();
   ["bHint","bLook","bMenu","bWard","bRestart"].forEach(function(id){
     var el=$(id); if(el)el.style.display=inPlay?"flex":"none";
   });
-  $("starTotal").classList.toggle("on",inPlay);
+  /* THE BANK IS NOT SHOWN INSIDE A LEVEL. How many stars you have collected
+     across the whole game cannot change while you are playing one, and it is
+     not what you are thinking about - the row under the move count is. It
+     was also the thing covering the cores row on a small phone: the pill
+     grows leftwards as the number gets longer. It appears the moment the
+     level is won, because that is when it is news and when the win card's
+     stars have to have somewhere to fly to. */
+  $("starTotal").classList.toggle("on",inPlay&&levelDone);
+  syncHintN();
   syncStarTotal();
   syncBossBar();
 
   if(app==="edit"){
-    $("lvName").textContent="EDITOR";
+    /* THE LEVEL'S NAME, not the word EDITOR. MY LEVELS can have several
+       levels in it and they are opened one at a time from a list, so the one
+       thing the corner has to answer is which of them is on the board. */
+    $("lvName").textContent=(custom.name&&custom.name!=="Untitled")?
+      custom.name:"EDITOR";
     $("lvHint").textContent=
-      tool==="glass"  ? "Glass is solid to stand on but vanishes when the world flattens." :
-      tool==="anchor" ? "An anchor claims you when you unfold, overriding the nearest-camera rule." :
-      tool==="crate"  ? "Crates can be shoved in the volume, which changes what the plane looks like. A crate resting on an anchor is stuck for good." :
-      tool==="key"    ? "Keys are collected in the plane, on the square they fold into." :
-      tool==="spike"  ? "Spikes cast like stone but kill you underfoot \u2014 so they poison the whole silhouette column." :
+      tool==="glass"  ? "Water: stand on it, but it leaves nothing in 2D." :
+      tool==="anchor" ? "Amber catches you when you come back to 3D." :
+      tool==="crate"  ? "Walk into a crate and it slides. On amber it sticks for good." :
+      tool==="key"    ? "Keys are collected in 2D, on the square they fold into." :
+      tool==="spike"  ? "Fire is solid, and it burns the whole line it folds into." :
       "Tap the ground to start. Tap a block face to build off it.";
     $("lvHint").className="hint";
   }
@@ -210,26 +283,39 @@ function syncHud(){
   $("bFlat").classList.toggle("strike",!!strike&&!pf);
   $("bFlat").title=pf?(pf.kind==="crush"
     ?"something already fills that square in the plane"
-    :"a spike folds into the square under you")
+    :"fire folds into the square under you")
     :(strike?"one of them is in your column: fold now":"");
   $("bUp").disabled=flat;$("bDown").disabled=flat;
   var noRot=flat||(app==="play"&&L&&L.rotate===false);
   $("bRotL").disabled=noRot;$("bRotR").disabled=noRot;
+  /* AND A LEVEL THAT HAS NO TURN DOES NOT SHOW ONE. Disabled was the old
+     behaviour and it is right for the *flat* case - there the buttons come
+     back the moment you stand up, so greying them says "not now". A level
+     with `rotate:false` is a different sentence: the turn does not exist yet.
+     The opening eight levels are all locked, so the buttons arriving on
+     `05 — No Way From Here` is the reveal that level is built around, and a
+     pair of dead controls sitting in the bar for eight levels would spend it
+     in advance. Deliberately not keyed off `noRot`, which includes flat. */
+  document.body.classList.toggle("norot",
+    app==="play"&&!!L&&L.rotate===false);
   if(app==="play"&&L&&L.tutorial){
     // No par, no stars: this level is teaching, not marking.
-    $("moveLabel").innerHTML="<b>"+moveCount+"</b> moves";
+    $("moveLabel").innerHTML="<b>"+moveCount+"</b>";syncStars(null);
   } else if(app==="play"&&(B||TR)){
     // On a clock: the score is the row of lives at the top of the screen, so
-    // showing three stars beside a move count here would be a second, wrong
-    // answer to the same question.
-    $("moveLabel").innerHTML="<b>"+moveCount+"</b> moves";
+    // a row of stars beside the move count would be a second, wrong answer
+    // to the same question.
+    $("moveLabel").innerHTML="<b>"+moveCount+"</b>";syncStars(null);
   } else if(app==="play"){
-    var ml=levelPar!==null ? "<b>"+moveCount+"</b> / "+levelPar
-                           : "<b>"+moveCount+"</b>";
-    var st=(levelPar===null||moveCount===0)?3:starsFor(moveCount,levelPar);
-    st=Math.min(st,hintCap());
-    $("moveLabel").innerHTML=ml+"<div class='stars'>"+starGlyphs(st)+"</div>";
-  } else $("moveLabel").innerHTML="";
+    /* THE NUMBER AND THE STARS YOU ARE STILL ON. Not "7 / 5": par is the
+       solver's answer and printing it hands over how long the level is. What
+       the row says instead is what you have left to lose, which is the same
+       information from the player's side - and it is drawn rather than
+       counted, so it can be glanced at mid-move. */
+    $("moveLabel").innerHTML="<b>"+moveCount+"</b>";
+    syncStars((levelPar===null||moveCount===0)?3
+              :starsFor(moveCount,levelPar));
+  } else {$("moveLabel").innerHTML="";syncStars(null);}
   tutSync();
 }
 
@@ -253,6 +339,13 @@ function syncBossBar(){
   var on=!!((B||TR)&&app==="play");
   bar.classList.toggle("on",on);
   if(!on)return;
+  /* THE ROW SITS UNDER THE LEVEL TEXT, and the level text is not a fixed
+     height: the hint runs to one line or three, and a tutorial pushes .hud
+     down to 104px. Measuring is cheaper than trying to reserve a lane in CSS
+     for the tallest case, and this runs inside syncHud, which is already the
+     thing that redraws whenever the text changes. */
+  var hud=document.querySelector(".hud");
+  if(hud)bar.style.top=(hud.offsetTop+hud.offsetHeight+12)+"px";
   // Whose row is which. The lives are yours in the player colour; the row
   // underneath belongs to whatever is opposing you, and takes that thing's
   // own colour rather than a third one the player has to learn.
@@ -272,6 +365,20 @@ function syncBossBar(){
       co+="<i class='"+(k<TR.cores.length-trialCore?"":"gone")+"'></i>";
   $("bossLives").innerHTML=lv;
   $("bossCores").innerHTML=co;
+}
+/* The pool, on the bulb. Asked from syncHud rather than kept in sync by a
+   timer: hintsLeft() re-checks the half hour every time it is read, so the
+   count is right whenever anything redraws - which is every move - and there
+   is no interval running behind a fight for the sake of a badge. */
+function syncHintN(){
+  var b=$("bHint"), n=$("hintN");
+  if(!b||!n||typeof hintsLeft!=="function")return;
+  var left=hintsLeft();
+  n.textContent=left;
+  b.classList.add("has");
+  b.classList.toggle("out",left<=0);
+  b.title=left>0?left+" hint"+(left===1?"":"s")+" left"
+                :"out of hints \u2014 next in "+hintWaitSay();
 }
 function syncStarTotal(){
   var n=$("starTotalN");
@@ -329,6 +436,25 @@ function flyStars(srcEls,base,gained){
   });
 }
 
+/* THE VIDEO MARK, for every button that costs an ad.
+
+   A screen with a play sign in it is the one drawing everybody already reads
+   as "this plays a video", so the button says what it is before the words
+   are read - and the words are then free to say what you GET rather than
+   spending themselves on the price. One helper rather than five copies of
+   the same path, because there are five ad buttons in the game and they must
+   not drift. `fill:currentColor` in the CSS is what makes it take the
+   button's own hue. */
+function adIcon(){
+  return "<svg class='adicon' viewBox='0 0 24 24' aria-hidden='true'>"+
+    "<path d='M3 6.2c0-1.2 1-2.2 2.2-2.2h13.6C20 4 21 5 21 6.2v9.6c0 "+
+      "1.2-1 2.2-2.2 2.2H5.2C4 18 3 17 3 15.8V6.2Zm2.4.6v8.4c0 .4.3.6.6."+
+      "6h12c.3 0 .6-.2.6-.6V6.8c0-.4-.3-.6-.6-.6H6c-.3 0-.6.2-.6.6Z'/>"+
+    "<path d='M10.4 8.6v4.8c0 .5.5.8.9.5l3.6-2.4c.4-.2.4-.8 0-1l-3.6-2.4c-"+
+      ".4-.3-.9 0-.9.5Z'/>"+
+    "<path d='M8 20.4h8c.5 0 .9.4.9.9s-.4.9-.9.9H8c-.5 0-.9-.4-.9-.9s.4-.9."+
+      "9-.9Z'/></svg>";
+}
 function tap(el,fn){
   if(!el)return;
   el.addEventListener("pointerdown",function(e){

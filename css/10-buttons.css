@@ -1,0 +1,134 @@
+/* Orthogonal — css/10-buttons.css
+   The button skin (cap, lip, press, disabled), the control bar, d-pad, turn buttons, the five round corner buttons and their icons, the hint badge.
+   Loaded in the order listed in index.html; see docs/UI.md for the map of
+   screens to files. */
+  /* ============================================================
+     BUTTONS — one skin, and it is meant to look pressable
+
+     Everything here used to be a 1px outline on nothing with a 2px radius:
+     honest, quiet, and reported as feeling stale and not inviting. Nothing
+     on screen said which things could be pressed, because a hairline
+     rectangle is what this game draws for a *block edge* as well.
+
+     The skin is three things and it is the one `.hcont` already used, lifted
+     to every button in the game so there is one language:
+
+       - a FILL, a soft top-lit gradient over the panel colour, so a button
+         is an object rather than a hole;
+       - a LIP, `0 3px 0` of a darker shade of the button's own hue, which is
+         the whole of what makes a flat rectangle read as a key cap;
+       - a PRESS, which moves the cap down onto the lip.
+
+     `--c` is the button's hue and `--lip` its shadow, so a family sets one
+     property and the fill, the rim, the glyph and the lip all follow. The
+     two animated cues (cuePulse, tutlive) list `0 3px 0 var(--lip)` in their
+     own keyframes, because a box-shadow animation replaces the base one
+     outright and the cap would otherwise flatten while it pulses. */
+  button{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;
+    letter-spacing:.08em;color:var(--fg);
+    --c:#8c9dc4; --lip:rgba(4,7,14,.66);
+    background:
+      linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,0) 62%),
+      var(--panel);
+    border:1px solid var(--rule);border-radius:9px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 3px 0 var(--lip);
+    transition:color .35s ease,border-color .35s ease,background .12s ease,
+      transform .1s ease,box-shadow .1s ease;
+    user-select:none;padding:0;pointer-events:auto;flex-shrink:0}
+  button:active{transform:translateY(3px);box-shadow:0 0 0 var(--lip)}
+  /* Flat and unlit - a button with no cap has nothing under it, which is the
+     honest drawing of one that will not answer right now.
+
+     IT KEEPS ITS BODY THOUGH. The first version also dropped the background
+     to transparent at .3 opacity, which on a dark ground is not "greyed out",
+     it is *gone* - and the two controls that spend the most time disabled are
+     the turn buttons, which are off in the plane. A player who folds, sees an
+     empty corner and concludes the game has taken rotation away is reading
+     the drawing correctly; the drawing was wrong. Present, flat and obviously
+     inert is the state being described. */
+  button:disabled{opacity:.5;cursor:default;box-shadow:none;transform:none;
+    background:var(--panel);border-color:var(--rule)}
+  button:focus-visible{outline:2px solid var(--player);outline-offset:2px}
+
+  .bar{position:fixed;bottom:18px;left:0;right:0;padding:0 16px;z-index:10;
+    pointer-events:none;display:none}
+  .bar.on{display:block}
+
+  /* play bar */
+  #playBar{display:none;justify-content:space-between;align-items:flex-end;gap:10px}
+  #playBar.on{display:flex}
+  .dpad{display:grid;grid-template-columns:repeat(3,44px);
+    grid-template-rows:repeat(3,44px);gap:5px}
+  .dpad button{font-size:17px;--c:#b4c6ea;color:var(--c);border-radius:11px;
+    border-color:color-mix(in srgb,var(--c) 30%,transparent);
+    --lip:color-mix(in srgb,var(--c) 26%,#04070d)}
+  .rcol{display:flex;flex-direction:column;gap:5px;align-items:stretch}
+  .rot{display:flex;gap:5px}
+  .rot button{width:58px;height:38px;font-size:15px;--c:#c3a8ff;
+    color:var(--c);border-color:color-mix(in srgb,var(--c) 30%,transparent);
+    --lip:color-mix(in srgb,var(--c) 26%,#04070d)}
+  .corner{position:fixed;top:14px;z-index:12;display:flex;gap:7px}
+  .corner.tl{left:14px}
+  .corner.tr{right:14px}
+  /* A HUE EACH, so the five round buttons are told apart by colour before a
+     glyph is read - which is what you want on a row of circles a thumb is
+     reaching for without looking. They are the colours those things already
+     mean elsewhere in the game: the bulb is the gold of a star, the eye is
+     the goal's teal, the wardrobe the violet of the map's landmarks, and
+     restart the blue every "second chance" in the panels wears. */
+  #bMenu{--c:#93a6d4}
+  #bWard{--c:#a274ff}
+  #bHint{--c:var(--star)}
+  #bRestart{--c:#6fa8ff}
+  #bLook{--c:#3fd6c4}
+  button.rnd{width:42px;height:42px;border-radius:50%;padding:0;
+    color:var(--c);
+    border:1.5px solid color-mix(in srgb,var(--c) 46%,transparent);
+    --lip:color-mix(in srgb,var(--c) 34%,#04070d);
+    background:
+      radial-gradient(120% 108% at 50% -8%,
+        color-mix(in srgb,var(--c) 30%,transparent), transparent 72%),
+      var(--panel);
+    box-shadow:0 3px 0 var(--lip),
+      0 0 16px color-mix(in srgb,var(--c) 16%,transparent);
+    backdrop-filter:blur(5px)}
+  button.rnd:active{box-shadow:0 0 0 var(--lip)}
+  /* HOW MANY HINTS ARE IN THE POOL, on the bulb itself. A badge rather than a
+     row in the HUD: it is an answer to "can I press this", so it belongs on
+     the thing being pressed. Empty reads as empty - the badge goes grey and
+     the bulb dims - because the press still does something there (it opens
+     the refill card) and a button that looks live and is not is worse than
+     one that plainly says it is out. */
+  #bHint{position:relative}
+  #bHint .hn{position:absolute;right:-2px;bottom:-2px;min-width:15px;height:15px;
+    padding:0 3px;border-radius:8px;display:none;align-items:center;
+    justify-content:center;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9px;font-weight:700;line-height:1;
+    background:var(--c);color:var(--void);
+    border:1.5px solid var(--void)}
+  #bHint.has .hn{display:flex}
+  #bHint.out{opacity:.62}
+  #bHint.out .hn{background:var(--fg-dim);color:var(--void)}
+  /* Solid by default, and the three helper classes are what give an icon a
+     second tone: `.ln` is the stroked half of a shape (an arc, a hook),
+     `.lite` is the light catching it, `.dim` the part turning away. */
+  button.rnd svg{width:23px;height:23px;fill:currentColor;stroke:none}
+  /* `.ln`, not `.st`: `.st` is already the gold star in a shop price, and an
+     icon path carrying it came out stroked in `--star`. Check any new class
+     name against the ones already in this file - this is the third time
+     (see .mboss/.boss and .home/.athome). */
+  button svg .ln{fill:none;stroke:currentColor;stroke-linecap:round;
+    stroke-linejoin:round}
+  button svg .lite{fill:#fff;opacity:.62;stroke:#fff}
+  button svg .dim{opacity:.48}
+  /* The bar's own icons: solid arrowheads with rounded corners, which is the
+     stroke doing the rounding rather than a dozen curve segments. */
+  .bar button svg.ar{width:22px;height:22px;fill:currentColor;
+    stroke:currentColor;stroke-width:2.6;stroke-linejoin:round}
+  .bar button svg.tn{width:24px;height:24px}
+  .bar button svg.tn .ln{stroke-width:2.9}
+  /* Its panel is open: the button takes the player's own colour rather than
+     its own, so "this is the thing you are inside" reads the same on all of
+     them. One property, and the fill, the rim and the lip follow. */
+  button.rnd.on{--c:var(--player)}

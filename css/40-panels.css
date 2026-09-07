@@ -1,0 +1,290 @@
+/* Orthogonal — css/40-panels.css
+   The panel shell, settings rows, level-list rows, tabs, the wardrobe (case, grid, items, buy), section bars, the legend.
+   Loaded in the order listed in index.html; see docs/UI.md for the map of
+   screens to files. */
+
+  /* Phone-width, centred, on every screen. The panels were written against a
+     phone and stretched edge to edge on anything wider: the wardrobe's case
+     is a square sized as a percentage of the panel, so at 1600px it became a
+     600px block with two absurd columns of tiles beside it, and the level
+     picker turned into 10px monospace ruled across a metre of glass. Capping
+     the width changes nothing at phone size - 100% - 32px is exactly what
+     left:16px/right:16px gave - and makes every panel behave on a desktop. */
+  .panel{position:fixed;left:50%;transform:translateX(-50%);
+    width:calc(100% - 32px);max-width:560px;bottom:196px;z-index:12;
+    background:var(--panel);border:1px solid var(--rule);border-radius:3px;
+    padding:12px 13px;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:12.5px;line-height:1.65;color:var(--fg);display:none;
+    max-height:44vh;overflow:auto;pointer-events:auto;
+    backdrop-filter:blur(6px);transition:color .35s ease}
+  .panel.on{display:block}
+  .panel h3{margin:0 0 7px;font-size:12px;letter-spacing:.14em;
+    color:var(--fg-dim);font-weight:500}
+  .panel .ok{color:var(--goal)}
+  .panel .bad{color:var(--player)}
+  .panel .warn{color:#e0a03c}
+  .panel .mono{color:var(--fg-dim);word-break:break-all}
+  .panel textarea{width:100%;height:110px;background:transparent;
+    border:1px solid var(--rule);color:var(--fg);border-radius:2px;
+    font-family:inherit;font-size:12px;padding:7px;resize:none;margin-top:6px}
+  .panel .prow{display:flex;gap:5px;margin-top:8px}
+  .panel .prow button{height:32px;flex:1;font-size:12px}
+  .srow{display:flex;align-items:center;gap:9px;padding:8px 0;
+    border-bottom:1px solid var(--rule)}
+  .srow label{width:74px;flex-shrink:0;color:var(--fg-dim)}
+  .srow span{width:42px;text-align:right;color:var(--fg)}
+  .srow input[type=range]{flex:1;height:22px;accent-color:#d6336c;
+    background:transparent;margin:0;padding:0}
+  .panel input[type=text],.panel input:not([type]){width:100%;height:34px;background:transparent;
+    border:1px solid var(--rule);color:var(--fg);border-radius:2px;
+    font-family:inherit;font-size:13px;padding:0 8px;margin-top:8px;
+    letter-spacing:.04em}
+  .panel input::placeholder{color:var(--fg-dim)}
+  .lrow{display:flex;align-items:center;gap:8px;padding:7px 0;
+    border-bottom:1px solid var(--rule);scroll-margin:40px}
+  .lrow.here .lname{color:var(--player)}
+  .lname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;color:var(--fg)}
+  .lrow .mono{font-size:11px;white-space:nowrap}
+  .lbtns{display:flex;gap:3px;flex-shrink:0}
+  /* MY LEVELS' OWN SHAPE. It is a full-height panel (see `.panel.tall` in
+     80-panel-tall.css), so its two doors are full-width caps at the top of
+     the body and the list under them is exactly as wide as they are - one
+     level per line, the way the map lists a section.
+
+     The name takes whatever the row's five verbs leave it and ellipsises,
+     because the name is what you are looking for and the verbs are the same
+     five on every row: once the pattern is read, the buttons are shapes in
+     fixed positions rather than words to re-read. */
+  .mlbtn{width:100%;height:46px;font-size:13px;letter-spacing:.12em;
+    margin-top:12px}
+  .mllist{margin-top:14px}
+  .mlrow{display:flex;align-items:center;gap:4px;width:100%;height:42px;
+    border-bottom:1px solid var(--rule)}
+  /* The name and the pencil that renames it are one thing, so they travel
+     together on the left: the name sizes to its own text and ellipsises when
+     there is not room, and the pencil sits against it rather than out with
+     the verbs, because what it edits is the word beside it. */
+  .mlrow .mlname{flex:1;min-width:0;display:flex;align-items:center;gap:5px}
+  /* `flex:0 1 auto` beats the `.lname` above, which is `flex:1` for the map's
+     rows: left at 1 the name stretches the whole way and takes the pencil
+     with it, out to the right where the verbs are. */
+  .mlrow .lname{flex:0 1 auto;min-width:0;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap;color:var(--fg)}
+  /* A level that has never solved. Inside the name's own span so it is the
+     first thing the ellipsis eats on a very long name - the row still has to
+     fit on one line. */
+  .mlrow .lname i{font-style:normal;color:var(--fg-dim);font-size:10.5px;
+    letter-spacing:.06em;text-transform:uppercase;margin-left:7px}
+  .mlrow .lbtns{display:flex;gap:2px;flex-shrink:0}
+  /* Tighter than a `.mini` anywhere else: five of them and a name share one
+     line on a phone, and every pixel taken off the tracking is a pixel the
+     name gets back. */
+  .mlrow button.mini{height:27px;padding:0 5px;font-size:10.5px;
+    letter-spacing:0}
+  /* A glyph button is square: no letters in it, so the horizontal padding
+     that fits a word would just make it wide. */
+  .mlrow button.mini.mlic{width:29px;padding:0}
+  .mlrow button.mini.mlx{width:27px;padding:0;font-size:14px}
+  .mlrow .mlic svg{width:15px;height:15px;fill:currentColor}
+  .mlrow .mlname .mlic{opacity:.72}
+  .mlrow .mlname .mlic:active{opacity:1}
+  /* The upload arrow on LOAD A LEVEL, sized and spaced like the HOME icon in
+     every panel footer - `.pfi` is that rule, and this is the same picture
+     doing the same job. */
+  .mlbtn .pfi{width:17px;height:17px}
+  /* A level's own name is this screen's subtitle on RENAME, SHARE and
+     DELETE, and a name can be any length: it stays on one line here rather
+     than wrapping and pushing the star total and the ✕ down the header.
+     Scoped to MY LEVELS - the other tall panels' subtitles are counts. */
+  .panel.mylv .phead .pt span{overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap}
+  /* The ground choices, one per world the campaign has shown you. The same
+     chip the editor's piece bar wears, so a choice looks like a choice in
+     both places. */
+  .grow{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
+  .grow .chip{flex:1 0 29%;height:34px}
+  /* Pills, matching the map's section tabs, so the two panels agree about
+     what a tab is. */
+  .tabs{display:flex;gap:5px;margin:10px 0 10px;padding:0 13px}
+  .tab{flex:1;height:32px;font-size:11.5px;letter-spacing:.1em;border-radius:17px;
+    color:var(--fg-dim)}
+  /* THE SHELF THAT IS NOT PAID FOR IN STARS. Gold on the tag rather than on
+     the word, so the tab still reads as one of three and not as an advert -
+     but the thing that tells them apart is visible before the label is. */
+  .tab .tagicon{width:13px;height:13px;flex:none;margin-right:6px;
+    fill:currentColor}
+  .tab.tdeal .tagicon{fill:var(--star)}
+  .tab.tdeal.on{border-color:var(--star);
+    background:color-mix(in srgb,var(--star) 22%,var(--panel));
+    box-shadow:0 2px 0 color-mix(in srgb,var(--star) 40%,#04070d)}
+  /* THE SELECTED TAB IS READ, NOT ADMIRED. It was the player's colour on a
+     12% wash of a hard-coded rose, which is two problems: the literal is the
+     rose `--player` happened to be the day it was typed, so every other skin
+     tinted the pill one colour and lettered it another; and colour-on-its-
+     own-colour at 12% has almost no contrast to begin with. Over a bright
+     section it stopped being legible altogether - reported as "when I press
+     colour I can't read it".
+
+     So the word stays at full `--fg` weight and the hue does the marking:
+     a solid ground mixed into the panel, the rim in `--player`, and a lip
+     under it like every other pressed thing in the game. */
+  .tab.on{border-color:var(--player);color:var(--fg);font-weight:600;
+    background:color-mix(in srgb,var(--player) 26%,var(--panel));
+    box-shadow:0 2px 0 color-mix(in srgb,var(--player) 40%,#04070d)}
+  .panel.ward .wbody{padding-left:13px;padding-right:13px}
+  .panel.ward{padding-left:0;padding-right:0}
+  /* Beats .panel.ward.on's own cap. At 56vh the tile list was clipped through
+     the middle of a row and the case's note ran under the BACK button. */
+  .panel.ward.tall.on{top:8px;bottom:8px;max-height:none}
+  /* The case's buttons get the same lift the map's nodes have. */
+  .wact .wgo{background:rgba(53,194,165,.10);box-shadow:0 3px 0 rgba(20,112,93,.5);
+    font-weight:600;transition:transform .12s ease,box-shadow .12s ease}
+  .wact .wgo:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(20,112,93,.5)}
+  .wact .wsure{background:rgba(214,51,108,.13)}
+  /* EARNED, NOT BOUGHT. Gold, because that is what a star is worth in this
+     game and this is the only thing in the catalogue a star cannot be spent
+     on - it has to be collected. Disabled, so it keeps the visible ground a
+     disabled button keeps everywhere else. */
+  .wact .wearn{border-color:color-mix(in srgb,var(--star) 46%,transparent);
+    color:var(--star);font-size:10.5px;letter-spacing:.06em;opacity:1}
+  /* The star is a <u> inline in the label, and letter-spacing does not put a
+     word space either side of it - "EVERY★IN II" was one word. */
+  .wact .wearn .st{margin:0 5px}
+  .item span.wlock{color:var(--star);font-size:9.5px;letter-spacing:.02em;
+    white-space:nowrap}
+  /* A REAL PRICE LOOKS LIKE A REAL PRICE. Gold like a star price - it is
+     still the shop's currency slot - but set solid and a little heavier,
+     because the one thing a player must not misread is which of the two
+     kinds of money they are about to spend. */
+  .item span.wusd,.wcost.wusd{color:var(--star);font-weight:600;
+    letter-spacing:.04em}
+  .wact .wbuyusd{border-color:color-mix(in srgb,var(--star) 54%,transparent);
+    color:var(--star);gap:8px;opacity:1}
+  .wact .wbuyusd .tagicon{width:14px;height:14px;fill:currentColor;flex:none}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+  /* THE CATALOGUE TILE IS A CAP, like everything else you press in this game
+     (see "buttons are lit caps" in docs/UI.md). It was a flat outlined box
+     with a 1px border and nothing under it, which is the one thing on this
+     screen you spend the whole visit pressing - so it got the lip, the wash
+     off the top edge, and the press. */
+  .item{border:1px solid var(--rule);border-radius:5px;padding:8px 4px;
+    text-align:center;cursor:pointer;
+    background:linear-gradient(color-mix(in srgb,#fff 4%,transparent),
+      transparent 62%),var(--panel);
+    box-shadow:0 2px 0 color-mix(in srgb,var(--rule) 80%,#04070d);
+    transition:border-color .2s,background .2s,box-shadow .12s ease,
+      transform .12s ease}
+  .item:active{transform:translateY(2px);box-shadow:0 0 0 transparent}
+  .item.on{border-color:var(--goal);
+    box-shadow:0 2px 0 color-mix(in srgb,var(--goal) 40%,#04070d)}
+  /* Selected is what is on the stand; equipped is what you are wearing. They
+     are different things and an item is often both, so selection is drawn
+     with outline and a tint - using border-color for both would mean one
+     silently overwriting the other depending on rule order.
+
+     THE TINT IS MIXED FROM `--player`, not written as a literal. It was
+     rgba(214,51,108,.11), which is the rose the variable happened to hold
+     the day it was typed; every other colour left a pink wash behind the
+     item that had moved on - the same bug the home strip's equipped ring
+     was fixed for. */
+  .item.sel{outline:1px solid var(--player);outline-offset:-1px;
+    background:linear-gradient(color-mix(in srgb,#fff 5%,transparent),
+      transparent 62%),
+      color-mix(in srgb,var(--player) 12%,var(--panel));
+    box-shadow:0 2px 0 color-mix(in srgb,var(--player) 34%,#04070d)}
+
+  /* The wardrobe is a browsing UI rather than a block of text: it owns its
+     height, and the item list scrolls inside it instead of the whole panel
+     scrolling, so the display case stays put while you look through. */
+  .panel.ward.on{display:flex;flex-direction:column;overflow:hidden;
+    max-height:min(56vh,calc(100vh - 250px))}
+  .wbody{display:flex;gap:9px;flex:1;min-height:0}
+  .wlist{flex:1 1 0;min-width:0;overflow-y:auto;overflow-x:hidden}
+  .wlist .grid{grid-template-columns:repeat(2,1fr)}
+  .wcase{flex:0 0 40%;min-width:0;display:flex;flex-direction:column}
+  /* THE CASE, AND ITS LIGHT. Shared with the home screen's plinth, which is
+     the same singleton renderer pointed at what you have equipped - so a
+     change here is a change to both, which is the point.
+
+     The renderer already lights the piece from below (see previewShow() in
+     js/09-wardrobe.js). This is the half of that which lives on the page:
+     the box gets a rim and a corner radius so it reads as an object, and
+     `.wfloor` is a bar of the player's own colour, blurred, sitting on the
+     bottom edge - the spill. Both are mixed from `--player`, which is
+     rewritten by applySkin(), so the case is lit in whatever colour is
+     standing in it and never in a hard-coded rose. */
+  .wglass{position:relative;border-radius:7px;overflow:hidden;
+    border:1px solid color-mix(in srgb,var(--player) 26%,var(--rule));
+    box-shadow:0 0 22px color-mix(in srgb,var(--player) 14%,transparent),
+      0 11px 26px -8px color-mix(in srgb,var(--player) 34%,transparent),
+      inset 0 1px 0 color-mix(in srgb,#fff 9%,transparent)}
+  /* INSIDE the bottom edge, not below it: the box clips its corners, so a
+     glow hung underneath was clipped away entirely. On the lip it is a strip
+     of footlights, which is the thing being drawn anyway. */
+  .wfloor{position:absolute;left:9%;right:9%;bottom:-11px;height:22px;
+    border-radius:50%;pointer-events:none;
+    background:color-mix(in srgb,var(--player) 72%,transparent);
+    filter:blur(11px);opacity:.6}
+  .wcanvas{position:relative;inset:auto;width:100%;aspect-ratio:1/1;display:block;
+    background:var(--void);touch-action:none;cursor:grab}
+  .wcanvas:active{cursor:grabbing}
+  .wturn{font-size:10px;letter-spacing:.11em;color:var(--fg-dim);
+    text-align:center;margin:4px 0 6px}
+  .wname{font-size:13.5px;color:var(--fg);font-weight:500;line-height:1.3}
+  .wcost{font-size:11px;color:var(--fg-dim);margin-top:1px}
+  /* A price is a star price, so the star in it is gold wherever it is
+     written - the number stays quiet, the currency is what carries. */
+  /* A `u` rather than an `i`, because `.item i` is already the tile's own
+     swatch box - an <i> in here becomes a 32px square. */
+  .st{text-decoration:none;color:var(--star)}
+  .wact{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+  .wact button{height:30px;width:100%;font-size:11.5px}
+  .wact .wgo{border-color:var(--goal);color:var(--goal)}
+  .wact .wsure{border-color:var(--player);color:var(--player)}
+  .wcase .note{margin-top:5px}
+  /* The list scrolls under this row, so it needs a hard edge of its own -
+     without one, a half-scrolled tile reads as though it is behind the
+     button rather than clipped by the list. */
+
+  .wlist{padding-bottom:2px}
+  .item i{display:block;width:30px;height:30px;margin:0 auto 5px;border-radius:5px;
+    font-style:normal;font-size:16px;line-height:30px;color:var(--fg);
+    box-shadow:inset 0 1px 0 color-mix(in srgb,#fff 14%,transparent),
+      inset 0 -6px 10px -6px #000}
+  /* A shape whose glyph is a drawing rather than a character - see
+     shapeGlyph() in js/16-panels.js. */
+  .item i svg{width:20px;height:20px;vertical-align:-4px;fill:currentColor}
+  .item b{display:block;font-size:11.5px;font-weight:500;color:var(--fg)}
+  .item span{display:block;font-size:10.5px;color:var(--fg-dim);margin-top:2px}
+  .wact .ad{gap:8px}
+  .wact .ad .adicon{width:16px;height:16px}
+  .note{font-size:11px;color:var(--fg-dim);line-height:1.6;margin-top:6px}
+  .note code{color:var(--fg)}
+  /* How far through a section you are, in stars rather than levels solved:
+     clearing a section is the loop's unit of progress, so the bar has to
+     answer "is this one finished with" at a glance. */
+  .secbar{display:block;height:2px;background:var(--rule);border-radius:2px;
+    margin:5px 0 3px;overflow:hidden}
+  .secbar i{display:block;height:100%;background:var(--goal);
+    transition:width .4s ease}
+  /* The boss closes its section, so its row is marked and pulled slightly
+     clear of the levels above it. */
+  .lrow.bossrow{border-bottom-color:#a274ff55;margin-top:3px}
+  .lrow.bossrow .lname{color:#a274ff;letter-spacing:.06em}
+  /* A trial sits inside a section rather than closing one, so it is marked
+     in the same amber but quieter - a landmark, not a wall. */
+  .lrow.trialrow{border-bottom-color:#ff8a3c33}
+  .lrow.trialrow .lname{color:#e0a03c;letter-spacing:.05em}
+  .chap.locked{color:var(--fg-dim)}
+  .chap.locked .secbar{opacity:.5}
+  .chap{margin:12px 0 4px;font-size:11.5px;letter-spacing:.16em;color:var(--player)}
+  .chap:first-child{margin-top:2px}
+  .chap span{display:block;color:var(--fg-dim);letter-spacing:.03em;
+    font-size:11.5px;margin-top:2px;text-transform:none}
+  .leg{display:flex;gap:9px;align-items:flex-start;padding:7px 0;
+    border-bottom:1px solid var(--rule)}
+  .leg i{width:15px;height:15px;flex-shrink:0;border-radius:2px;margin-top:1px}
+  .leg span{flex:1;line-height:1.55}
+  button.mini{height:24px;padding:0 7px;font-size:11px;letter-spacing:.06em}
+

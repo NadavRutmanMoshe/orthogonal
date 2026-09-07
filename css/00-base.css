@@ -1,0 +1,54 @@
+/* Orthogonal — css/00-base.css
+   Tokens (:root), body, the flat theme swap, the HUD text (title, hint, axis).
+   Loaded in the order listed in index.html; see docs/UI.md for the map of
+   screens to files. */
+:root{
+    --void:#0f1424; --paper:#e6e1d3; --ink:#1a1c2b;
+    --player:#d6336c; --goal:#35c2a5;
+    /* A STAR IS GOLD, NOT GREEN. Green is the goal's colour and it appears
+       on the goal, the button that is being asked for and the cue words -
+       it means "do this", which is the one thing a score is not. Gold is
+       what a star is everywhere else in the world, and it is the only hue in
+       the palette nothing else has claimed. One token, so the win card, the
+       counter, the map, the shop and the flight can never drift apart. */
+    --star:#f5c542; --star-glow:rgba(245,197,66,.55);
+    --fg:#c3cde4; --fg-dim:#6d7c9c; --rule:rgba(195,205,228,.22);
+    /* .93, NOT .82. A panel is a sheet you read; at .82 over a bright
+       section - the desert at noon, hell - the world came through it and the
+       text on top went muddy. Reported on the wardrobe's COLOUR tab, which
+       is the worst case because that pill is a translucent tint over a
+       translucent sheet. Still translucent, because the blur behind it is
+       what says the world is still there; just no longer see-through. */
+    --panel:rgba(15,20,36,.93);
+  }
+  body.flat{ --fg:#1a1c2b; --fg-dim:#7d7666; --rule:rgba(26,28,43,.24);
+    --star:#c07d09; --star-glow:rgba(192,125,9,.4);
+    --panel:rgba(230,225,211,.94); }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--void);
+    touch-action:none;transition:background .5s ease}
+  body.flat{background:var(--paper)}
+  /* The game's canvas, and only it. This used to be a bare `canvas` selector,
+     which also caught the wardrobe's preview canvas and pinned it over the
+     whole viewport - the game's renderer is the only one that is a direct
+     child of body, so the child combinator is the thing that distinguishes
+     them. Any future in-panel canvas depends on this staying scoped. */
+  body>canvas{display:block;position:fixed;inset:0;z-index:0}
+
+  /* A tutorial drops the text down the screen: with the coach line gone this
+     is the only prose left, and it reads better clear of the corner buttons
+     than tucked under them. */
+  body.tut .hud{top:104px}
+  .hud{position:fixed;top:60px;left:0;right:0;padding:0 16px;z-index:10;
+    display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
+    pointer-events:none;color:var(--fg);transition:color .5s ease}
+  .title{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;
+    font-size:16.5px;letter-spacing:-.01em;line-height:1.15}
+  .hint{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;
+    letter-spacing:.03em;color:var(--fg-dim);margin-top:4px;max-width:54vw;
+    line-height:1.5;transition:color .5s ease}
+  .axis{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;
+    letter-spacing:.13em;text-align:right;color:var(--fg-dim);line-height:1.7;
+    transition:color .5s ease;white-space:nowrap}
+  .axis b{display:block;color:var(--fg);font-weight:500;transition:color .5s ease}
+

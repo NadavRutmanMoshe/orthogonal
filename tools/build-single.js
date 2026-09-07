@@ -53,8 +53,11 @@ if(artifact&&!inlineVendor)
   console.warn("!  --artifact without --vendor: the CSP will block three.js");
 let html=fs.readFileSync(path.join(ROOT,"index.html"),"utf8");
 
-html=html.replace(/<link rel="stylesheet" href="css\/style.css">/,
-  "<style>\n"+fs.readFileSync(path.join(ROOT,"css","style.css"),"utf8")+"\n</style>");
+/* The stylesheet is several files, one per screen, linked in cascade order
+   from index.html. Each link becomes its own <style> block in that same
+   order, so the built page has exactly the cascade the source page has. */
+html=html.replace(/<link rel="stylesheet" href="css\/([^"]+)">/g,(m,f)=>
+  "<style>\n"+fs.readFileSync(path.join(ROOT,"css",f),"utf8")+"\n</style>");
 
 html=html.replace(/<script src="vendor\/three\.min\.js"><\/script>/,
   inlineVendor

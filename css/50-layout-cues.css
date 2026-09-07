@@ -1,0 +1,79 @@
+/* Orthogonal — css/50-layout-cues.css
+   Control layouts (ui-compact / ui-none / norot / tut), the coach line, .crow, the cue pulse, toasts.
+   Loaded in the order listed in index.html; see docs/UI.md for the map of
+   screens to files. */
+  /* Control layout. The bar is a preference, not a fixture: on a phone you
+     may want it under your thumbs, on a desktop you'd rather see the world. */
+  body.ui-compact .dpad{display:none}
+/* A level with no turn shows no turn buttons - see syncHud. The bar's right
+   cluster is a flex row, so the two simply leave and GO 2D closes up. */
+  body.norot #bRotL,body.norot #bRotR{display:none}
+  body.ui-compact #playBar{justify-content:flex-end}
+  body.ui-none #playBar{display:none}
+  /* A tutorial teaches the buttons, so it overrides the layout preference
+     while it is running. Hiding the controls during the lesson about the
+     controls would be a joke at the player's expense. */
+  body.tut.ui-none #playBar.on{display:flex}
+  body.tut .dpad{display:grid}
+  body.tut.ui-compact #playBar{justify-content:space-between}
+
+  /* The coach line. Tutorial levels talk to you here instead of in the
+     small hint slot, because a first-time player is looking at the world,
+     not at the corner of the screen. */
+  /* THE COACH LINE IS GONE, on the owner's call. The tutorial's words now
+     live in one place - the level's own hint at the top of the screen - and
+     what the current step is asking for is said by the hand and its two-word
+     label in the middle. A sentence at the foot of the screen is a third
+     place to look on the one screen that should be easy to read. The element
+     and every path that writes it are untouched, so putting the line back is
+     this one declaration. */
+  .coach{display:none;
+    position:fixed;left:16px;right:16px;bottom:176px;z-index:11;
+    pointer-events:none;text-align:center;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13.5px;
+    line-height:1.65;letter-spacing:.02em;color:var(--fg);
+    opacity:0;transition:opacity .3s ease,color .5s ease}
+  .coach.on{opacity:1}
+  .coach i{display:block;font-style:normal;font-size:10.5px;letter-spacing:.18em;
+    color:var(--goal);margin-bottom:5px}
+  .coach b{color:var(--player);font-weight:500}
+  body.ui-none .coach{bottom:28px}
+  body.tut.ui-none .coach{bottom:176px}
+  .crow{display:flex;align-items:center;gap:7px;padding:8px 0;
+    border-bottom:1px solid var(--rule)}
+  .crow label{width:74px;flex-shrink:0;color:var(--fg-dim)}
+  /* A row whose card heading already names it: the three options take the
+     whole width rather than leaving a label-shaped hole. */
+  .crow.bare{border-bottom:0;padding-bottom:2px}
+  .crow .seg{flex:1;display:flex;gap:4px}
+  .crow .seg button{flex:1;height:27px;font-size:10.5px;letter-spacing:.05em}
+  .crow .seg button.on{border-color:var(--player);color:var(--player);
+    background:rgba(214,51,108,.13)}
+
+  @keyframes cuePulse{
+    0%,100%{box-shadow:0 3px 0 var(--lip),0 0 0 0 rgba(53,194,165,0);
+      border-color:var(--goal)}
+    50%{box-shadow:0 3px 0 var(--lip),0 0 0 5px rgba(53,194,165,.22);
+      border-color:var(--goal)}
+  }
+  button.cue{animation:cuePulse 1s ease-in-out infinite;
+    border-color:var(--goal) !important;color:var(--goal) !important}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:auto;top:76px;
+    z-index:15;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12.5px;
+    letter-spacing:.05em;color:var(--player);opacity:0;transition:opacity .25s;
+    pointer-events:none;text-align:center;padding:0 20px}
+  .toast.on{opacity:1}
+  /* The spoken cue: green because green already means "do this" on the
+     button pulse, and down by the controls because that is where the eye and
+     the thumb are - at the top it landed across the level's own hint. */
+  .toast.cuesay{top:auto;bottom:176px;color:var(--goal);line-height:1.5}
+  .toast.cuesay b{display:block;font-size:15px;font-weight:600;
+    letter-spacing:.12em;text-transform:uppercase}
+  .toast.cuesay i{display:block;font-style:normal;font-size:11px;
+    letter-spacing:.08em;color:var(--fg-dim);margin-top:4px}
+  /* The accounting on its own, when the ghost hand is saying the move. It
+     keeps the slot - clear of the level's hint text, where the eye already
+     is - but not the shout: there is no instruction here, only a footnote to
+     one that is being drawn a few centimetres above it. */
+  .toast.cuesay.noteonly i{font-size:12px;color:var(--fg-dim);margin-top:0}
+  body.ui-none .toast.cuesay{bottom:28px}

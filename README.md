@@ -46,7 +46,7 @@ folder is close to all of it. See `CLAUDE.md` for what is still missing.
 ## Layout
 
     index.html         markup and the script load order
-    css/style.css
+    css/               one stylesheet per screen, loaded in numeric order
     js/00-storage.js   localStorage shim
     js/01..20          the game, loaded in numeric order
     vendor/            three.js r128

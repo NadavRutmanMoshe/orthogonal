@@ -1,0 +1,116 @@
+/* Orthogonal — css/80-panel-tall.css
+   Panel furniture shared by menu, wardrobe and map: .panel.tall, .phead, .pcard, .pgo, .psub, range sliders.
+   Loaded in the order listed in index.html; see docs/UI.md for the map of
+   screens to files. */
+  /* ============================================================
+     PANEL FURNITURE — shared by the menu, the wardrobe and the map
+
+     The map went first and ended up with a language of its own: a pinned
+     header with a way out in it, grouped cards, and buttons that look like
+     something you press. Next to it the menu read as a debug screen - eleven
+     identical outlined rectangles with no hierarchy, so nothing looked more
+     important than anything else and the sliders were whatever the browser
+     drew. These are the map's parts, factored out so every panel wears them.
+     ============================================================ */
+  .panel.tall{top:8px;bottom:8px;max-height:none;overflow:hidden;
+    display:none;flex-direction:column;padding:0}
+  .panel.tall.on{display:flex}
+  .phead{display:flex;align-items:center;gap:10px;padding:12px 13px 10px;
+    border-bottom:1px solid var(--rule);flex-shrink:0}
+  .phead .pt{flex:1;min-width:0}
+  .phead .pt b{display:block;font-family:'Space Grotesk',system-ui,sans-serif;
+    font-size:16px;font-weight:700;letter-spacing:-.02em;color:var(--fg)}
+  .phead .pt span{display:block;font-size:11px;letter-spacing:.14em;color:var(--fg-dim)}
+  .pbody{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 13px 16px}
+
+  /* A group of settings, with a label that says what the group is for. */
+  .pcard{margin-top:12px;padding:11px 12px 12px;border:1px solid var(--rule);
+    border-radius:4px;background:rgba(255,255,255,.018)}
+  .pcard>h4{margin:0 0 8px;font-size:11px;letter-spacing:.16em;font-weight:500;
+    color:var(--fg-dim);text-transform:uppercase}
+  .pcard .note{margin-top:9px}
+
+  /* Two weights of button, so a panel has a shape. The primary one lifts. */
+  .prow2{display:flex;gap:7px;margin-top:12px}
+  .prow2 button{flex:1;height:46px;font-size:13px;letter-spacing:.12em}
+  .pgo{border-color:var(--goal);color:var(--goal);font-weight:600;
+    background:rgba(53,194,165,.10);box-shadow:0 4px 0 rgba(20,112,93,.55);
+    transition:transform .12s ease,box-shadow .12s ease}
+  .pgo:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(20,112,93,.55)}
+  /* THE SHELF YOU ARE ON, at the top of the settings sheet and only when the
+     sheet was opened from inside a campaign level. It wears the section's own
+     colour the way the home screen's CONTINUE does, and carries the same
+     emblem its tile on the chooser carries, so the button and the place it
+     leads are one picture. Full width and above the first card, because it is
+     navigation and everything under it is a switch. */
+  .psec{--sec:#35c2a5;display:flex;align-items:center;gap:11px;width:100%;
+    height:52px;margin-top:12px;padding:0 13px;text-align:left;
+    color:color-mix(in srgb,var(--sec) 82%,#fff);
+    border:1.5px solid color-mix(in srgb,var(--sec) 46%,transparent);
+    background:
+      radial-gradient(130% 150% at 0% 50%,
+        color-mix(in srgb,var(--sec) 24%,transparent), transparent 72%),
+      var(--panel);
+    box-shadow:0 3px 0 color-mix(in srgb,var(--sec) 34%,#04070d);
+    transition:transform .12s ease,box-shadow .12s ease}
+  .psec:active{transform:translateY(3px);
+    box-shadow:0 0 0 color-mix(in srgb,var(--sec) 34%,#04070d)}
+  .psec .secem{width:24px;height:24px;flex:none;fill:var(--sec);opacity:.95}
+  .psec>span{flex:1;min-width:0;display:block}
+  .psec i{display:block;font-style:normal;font-size:10px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--fg-dim)}
+  .psec b{display:block;font-size:13px;letter-spacing:.1em;font-weight:600;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .psec .psecgo{flex:none;font-style:normal;text-decoration:none;
+    font-size:19px;line-height:1;opacity:.6}
+
+  .psub{display:flex;flex-direction:column;gap:6px;margin-top:2px}
+  .psub button{height:38px;font-size:12px;letter-spacing:.1em;color:var(--fg-dim);
+    justify-content:flex-start;padding:0 12px}
+  .psub button:active{color:var(--fg)}
+  .pdanger{color:#e0455f}
+
+  /* Sliders. `accent-color` gives the browser's own chunky control, which is
+     the one part of the UI the game did not draw itself. */
+  .srow input[type=range]{-webkit-appearance:none;appearance:none;
+    background:transparent;height:24px;accent-color:auto}
+  .srow input[type=range]::-webkit-slider-runnable-track{
+    height:3px;border-radius:3px;background:var(--rule)}
+  .srow input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;
+    width:15px;height:15px;border-radius:50%;background:var(--player);
+    margin-top:-6px;box-shadow:0 2px 0 rgba(0,0,0,.45)}
+  .srow input[type=range]::-moz-range-track{
+    height:3px;border-radius:3px;background:var(--rule)}
+  .srow input[type=range]::-moz-range-thumb{width:15px;height:15px;border:none;
+    border-radius:50%;background:var(--player);box-shadow:0 2px 0 rgba(0,0,0,.45)}
+  .srow input[type=range]:focus-visible{outline:2px solid var(--player);
+    outline-offset:3px;border-radius:3px}
+  .pcard .srow{border-bottom:none;padding:5px 0}
+  .pcard .srow+.srow{border-top:1px solid var(--rule-2,rgba(195,205,228,.10))}
+  .pcard .crow{border-bottom:none;padding:5px 0}
+
+  /* ============================================================
+
+  /* THE FOOTER, AND IT IS THE SAME FOOTER ON EVERY FULL-HEIGHT PANEL.
+
+     Menu, wardrobe, the section chooser and the map all end in this row, and
+     the two buttons in it always mean the same two things in the same two
+     places: LEFT GOES UP ONE LEVEL, RIGHT CLOSES TO THE GAME. Up is HOME for
+     everything one hop from it and SECTIONS on the map, which is one hop
+     further in. Reported by the owner as the thing consistent paging buys -
+     you stop reading the buttons after the second screen, because your thumb
+     already knows where they are.
+
+     What it replaced: the menu had no footer at all and put HOME and LEVELS
+     at the top of its body; the wardrobe had one lone BACK; the chooser and
+     the map each carried a `.prow` with its padding written inline. Four
+     shapes for one job. */
+  .pfoot{display:flex;gap:6px;flex-shrink:0;
+    padding:9px 13px 11px;margin:0;
+    border-top:1px solid var(--rule)}
+  .pfoot button{flex:1;height:36px;font-size:12px;letter-spacing:.12em}
+  /* The left button is a PLACE, so it carries a picture of it; the right one
+     is an ACTION and stays a word. Inline rather than pinned to an edge: the
+     footer is two equal halves and the pair is centred in its half. */
+  .pfi{width:16px;height:16px;flex:none;margin-right:8px;
+    fill:currentColor;stroke:none}

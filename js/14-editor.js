@@ -91,11 +91,56 @@ function onCanvasTap(e){
   syncMeshes();syncHud();
 }
 
+var TOOL_IDS={add:"tAdd",glass:"tGlass",anchor:"tAnchor",crate:"tCrate",
+              key:"tKey",spike:"tSpike",erase:"tErase",start:"tStart",
+              goal:"tGoal"};
 function setTool(t){
   tool=t;
-  var ids={add:"tAdd",glass:"tGlass",anchor:"tAnchor",crate:"tCrate",key:"tKey",
-           spike:"tSpike",erase:"tErase",start:"tStart",goal:"tGoal"};
-  for(var k in ids)$(ids[k]).classList.toggle("sel",k===t);
+  for(var k in TOOL_IDS)$(TOOL_IDS[k]).classList.toggle("sel",k===t);
+}
+/* HOW FAR THE CAMPAIGN HAS ACTUALLY TAKEN YOU, as a level index. mapReach()
+   is the map's own answer to that - the furthest node the rolling window
+   opens - so the editor and the map cannot disagree about what you have
+   been shown. Clamped, because mapReach() deliberately reaches one window
+   past the last level. */
+function seenIndex(){
+  var n=(typeof mapReach==="function")?mapReach():LEVELS.length;
+  return Math.max(0,Math.min(n,LEVELS.length-1));
+}
+/* WHICH PIECES YOU MAY BUILD WITH: the ones the campaign has put in front of
+   you, and nothing else.
+
+   The editor used to open with all five, which is a piece list as a spoiler
+   - fire, water and the crate are each a section's one lesson, and being
+   handed them in the editor before meeting them is being told the answer to
+   a level you have not reached. The four that are not pieces (erase, start,
+   goal, and stone, which every level is made of) are always there.
+
+   Read off the levels themselves rather than from a table of which section
+   teaches what, so inserting a level that uses a piece earlier moves the
+   unlock with it and there is no second list to keep in step. */
+function seenTools(){
+  var out={add:true,erase:true,start:true,goal:true},reach=seenIndex();
+  for(var i=0;i<=reach;i++){
+    var b=LEVELS[i].blocks||[];
+    for(var j=0;j<b.length;j++){
+      var k=b[j][3]||0;
+      if(k===1)out.glass=true;else if(k===2)out.anchor=true;
+      else if(k===3)out.crate=true;else if(k===4)out.spike=true;
+    }
+    if((LEVELS[i].keys||[]).length)out.key=true;
+  }
+  return out;
+}
+// A chip for a piece you have not met is not drawn at all, rather than drawn
+// disabled: a greyed-out row of five is the same spoiler with a lock on it.
+function syncTools(){
+  var seen=seenTools();
+  for(var k in TOOL_IDS){
+    var el=$(TOOL_IDS[k]);
+    if(el)el.style.display=seen[k]?"":"none";
+  }
+  if(!seen[tool])setTool("add");
 }
 
 function validate(){
@@ -182,26 +227,56 @@ function runMinimize(){
   },30);
 }
 
+/* SAVE KEEPS WHAT IS ON THE BOARD, solvable or not.
+
+   The only way to save used to be VERIFY then SAVE, and VERIFY refuses
+   anything the solver cannot finish - so a half-built level could not be
+   kept at all, and closing the game threw the evening away. A level is now
+   created named (see newLevelPanel()) and this writes into that entry, which
+   is why it does not ask for a name: the name is what the row on MY LEVELS
+   already is.
+
+   The numbers are still taken when they can be. statsFor() runs the solver,
+   so it is asked only once the level is at least well-formed - validate()
+   first, and a null score is what a draft looks like everywhere that reads
+   one. */
+function saveCurrent(){
+  if(!custom.blocks.length){flash("place some blocks first");return;}
+  var st=validate()?{ok:false}:statsFor(custom);
+  var e=findLevel(editingId);
+  if(!e){
+    e={id:"l"+Date.now(),name:custom.name||"Untitled"};
+    library.push(e);editingId=e.id;
+  }
+  e.name=custom.name||e.name;
+  e.blocks=custom.blocks.map(function(v){return v.slice();});
+  e.keys=(custom.keys||[]).map(function(v){return v.slice();});
+  e.start=custom.start.slice();e.goal=custom.goal.slice();
+  e.rotate=custom.rotate!==false;
+  e.theme=(custom.theme==null?null:custom.theme);
+  e.score=st.ok?st.score:null;e.moves=st.ok?st.moves:null;
+  e.needsRot=!!st.needsRot;e.flattens=st.flattens||0;
+  libSave().then(function(){
+    flash(st.ok?"saved \u2014 solves in "+st.moves+" moves":"saved \u2014 draft");
+  });
+}
+
+/* VERIFY's own SAVE. It asks for a name only when the level does not have
+   one yet - work started from the composer or pasted in over the editor -
+   and then hands over to saveCurrent(), so there is one writer into the
+   library and not two with different rules about what may be saved. */
 function saveDialog(){
-  showPanel("<h3>SAVE TO LIBRARY</h3>"+
+  if(editingId&&findLevel(editingId)){saveCurrent();hidePanel();return;}
+  showPanel("<h3>SAVE TO MY LEVELS</h3>"+
     "<input id='nm' placeholder='level name' />"+
     "<div class='prow'><button id='pDo'>SAVE</button>"+
     "<button id='pClose3'>CANCEL</button></div>");
   $("nm").value=custom.name==="Untitled"?"":custom.name;
   bind("pDo",function(){
-    var st=statsFor(custom);
-    if(!st.ok){flash("solve it before saving");return;}
-    var nm=($("nm").value||"").trim()||("Level "+(library.length+1));
-    custom.name=nm;
-    library.push({
-      id:"l"+Date.now(),name:nm,
-      blocks:custom.blocks.map(function(v){return v.slice();}),
-      keys:(custom.keys||[]).map(function(v){return v.slice();}),
-      start:custom.start.slice(),goal:custom.goal.slice(),
-      rotate:custom.rotate!==false,
-      score:st.score,moves:st.moves,needsRot:st.needsRot,flattens:st.flattens
-    });
-    libSave().then(function(){hidePanel();flash("saved \u2014 "+library.length+" in library");});
+    var nm=($("nm").value||"").trim();
+    if(!nm){flash("give it a name first");return;}
+    custom.name=nm;editingId=null;
+    saveCurrent();hidePanel();
   });
   bind("pClose3",hidePanel);
 }

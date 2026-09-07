@@ -755,6 +755,33 @@ var sceneQuad=null, demonGrp=null, plumeQuad=null, sparkGrp=null;
 /* One slot per section's moving layer. They are all torn down together in
    applyTheme, so a section that does not ask for one simply has none. */
 var birdGrp=null, meteorGrp=null, boatGrp=null, tumbleGrp=null, devilGrp=null;
+/* CHARRED. The burn ends with the cube black, because that is what the fire
+   leaves behind - the flames go out and something burnt is still standing
+   there for the rest of the beat. It is the body's own colour driven to soot
+   rather than a second material: buildPlayerMesh() hands one material to
+   every part it makes, so one write chars a pup as completely as a cube, and
+   the adaptive rim outlineFor() re-picks every frame is what keeps the
+   silhouette readable once the body has gone nearly to the void.
+
+   The char is late and fast (nothing until a third of the way in, then all of
+   it), so the cube is plainly itself while the flames are climbing and plainly
+   ruined once they are out - a colour that starts sliding on the first frame
+   just reads as the light changing.
+
+   Restored by the same function on the first frame that is not a burn, so
+   nothing else has to know it happened: die() puts the player back at the
+   start with the level, and the mesh it puts back is the mesh that burned. */
+var PLAYER_CHAR=0x120d0b, playerCharT=-1, charCol=new THREE.Color();
+function playerChar(t){
+  if(!playerMesh||t===playerCharT)return;
+  playerCharT=t;
+  var base=findBy(SKIN_COLORS,wardrobe.color).hex;
+  playerMesh.traverse(function(c){
+    if(!c.isMesh||!c.material||!c.material.color)return;
+    c.material.color.setHex(base).lerp(charCol.setHex(PLAYER_CHAR),t);
+  });
+}
+var burnGrp=null;                 // the flames that take you - see the death
 var boomGrp=null, foamQuad=null;
 /* The sea's clock. seaT counts down to the next break, seaFired says the
    sound for it has already been started, and foamP is the sweep. */
@@ -1843,6 +1870,131 @@ function makeBlockGeo(){
   return mergeBoxes(parts);
 }
 
+/* ============================================================
+   THE TRAIL - every square you have stood on, written on the floor
+
+   A puzzle about projection is a puzzle about depth, and depth is the one
+   thing an orthographic camera refuses to say. Two blocks a long way apart
+   can sit a pixel from each other on screen; after four folds and two turns
+   the honest question "have I already been over there?" has no answer on the
+   screen at all. This is that answer, and it costs nothing to read: a soft
+   mark in the player's own colour on the top of every block they have stood
+   on.
+
+   THREE THINGS MAKE IT SUBTLE RATHER THAN A SECOND PUZZLE.
+
+   * It is the player's colour and nothing else's. Every other mark on the
+     floor in this game means DO THIS - the goal's wireframe, the landing
+     rings, the tutorial's green. A history has to be told apart from an
+     instruction at a glance, and whose history it is, is the content of it,
+     so it reads `--player` the way the shadow under your feet and the shield
+     bubble already do.
+   * It is a soft blot, not a tile. A hard square on a block's top face reads
+     as a piece - another kind of block - which is exactly the confusion a
+     game whose whole subject is which block is which cannot afford. The
+     texture falls to nothing well inside its own edges, so it sits ON the
+     surface rather than replacing it.
+   * It goes when the world folds, on the same test the anchor's mark uses
+     (flatT<.45). In the plane the top faces are edge-on and every decal on
+     them is a hairline of noise across the silhouette - and the silhouette is
+     the thing being read.
+
+   ONE MATERIAL FOR ALL OF THEM, which is what makes a colour change one
+   write in applySkin() rather than a walk over the world. The decals are
+   children of the block meshes, so they fold, scale and travel with the
+   block for free - the same trick markGeo uses - and they die with the block
+   when syncMeshes() drops it, which is why trailSync() re-attaches after
+   every rebuild.
+   ============================================================ */
+var trailSet={}, trailMat=null, trailGeo=null, trailTex=null;
+var TRAIL_A=.62;
+
+/* THE MARK CARRIES ITS OWN CONTRAST, and that is the whole of this texture.
+
+   The first cut was one soft blob of `--player` at .30, and it failed on the
+   case that matters: a green skin standing on grass. A single translucent
+   colour can only be seen against a ground it differs from, and the player
+   picks the colour - so the ground it has to work against is every surface
+   in the game at once, in every hue the wardrobe sells.
+
+   So the mark is drawn like the player's own piece is: a bright body with a
+   DARK RIM around it. The trick is that both come out of one texture and one
+   material. `material.color` is the player's hue and the texture multiplies
+   it, so a texel of RGB 1 paints the hue at full strength and a texel of RGB
+   .10 paints a near-black ring of the same hue - whatever hue that is. On a
+   bright surface the dark ring is what you see; on a dark one the lit body
+   is. There is no ground it disappears into, and no colour it disappears in.
+
+   Written per pixel rather than as a gradient because the bands have to be
+   crisp: a feathered rim is a soft edge, and a soft edge is exactly what was
+   invisible. It is 4096 iterations, once, at boot. */
+function trailTexture(){
+  var S=64,c=document.createElement("canvas");c.width=c.height=S;
+  var x=c.getContext("2d"), img=x.createImageData(S,S), d=img.data;
+  var mid=(S-1)/2;
+  for(var py=0;py<S;py++)for(var px=0;px<S;px++){
+    var dx=px-mid, dy=py-mid, r=Math.sqrt(dx*dx+dy*dy)/mid;   // 0..1 of half
+    var lum,a;
+    if(r<.60){ lum=255; a=.78+.17*(1-r/.60); }        // the body, lit
+    else if(r<.74){ lum=255; a=1; }                   // its bright edge
+    else if(r<.90){ lum=26;  a=.60; }                 // the dark rim
+    else if(r<1){   lum=26;  a=.60*(1-(r-.90)/.10); } // one pixel of feather
+    else { lum=0; a=0; }
+    var o=(py*S+px)*4;
+    d[o]=d[o+1]=d[o+2]=lum; d[o+3]=Math.round(a*255);
+  }
+  x.putImageData(img,0,0);
+  return new THREE.CanvasTexture(c);
+}
+/* Lifted a quarter of the way to white before it is used, so a dark skin -
+   Black is a charcoal, Brown is a mud - still reads as a mark rather than as
+   a smudge on the block. The rim is multiplied off the same value, so it
+   darkens with it and the pair stays a pair. */
+function trailTint(hex){
+  if(!trailMat)return;
+  trailMat.color.setHex(hex).lerp(new THREE.Color(0xffffff),.25);
+}
+function trailMaterial(){
+  if(trailMat)return trailMat;
+  if(!trailTex)trailTex=trailTexture();
+  var col=(typeof SKIN_COLORS!=="undefined"&&typeof findBy==="function")
+    ? findBy(SKIN_COLORS,wardrobe.color).hex : 0xd6336c;
+  trailMat=new THREE.MeshBasicMaterial({map:trailTex,color:0xffffff,
+    transparent:true,opacity:TRAIL_A,depthWrite:false,
+    side:THREE.DoubleSide});
+  trailTint(col);
+  return trailMat;
+}
+function trailAttach(k){
+  var m=meshes[k];
+  if(!m||m.userData.trail)return;
+  if(!trailGeo)trailGeo=new THREE.PlaneGeometry(.74,.74);
+  /* .463 clears the stone case's top face (.45) and the liquid surface plate
+     (.43) and still sits under the rim frame's crown (~.4995), so one height
+     works for stone, water and fire without a per-kind branch. */
+  var q=new THREE.Mesh(trailGeo,trailMaterial());
+  q.rotation.x=-Math.PI/2;
+  q.position.y=.463;
+  q.renderOrder=3;
+  m.userData.trail=q;m.add(q);
+}
+/* Cells only, never meshes: a block that does not exist yet - a boss arena
+   raising its pillars, a level being rebuilt - gets its mark the next time
+   trailSync() runs. */
+function trailMark(x,y,z){
+  var k=K(x,y,z);
+  if(trailSet[k])return;
+  trailSet[k]=1;trailAttach(k);
+}
+function trailSync(){for(var k in trailSet)trailAttach(k);}
+function trailClear(){
+  for(var k in trailSet){
+    var m=meshes[k];
+    if(m&&m.userData.trail){m.remove(m.userData.trail);m.userData.trail=null;}
+  }
+  trailSet={};
+}
+
 function addMesh(x,y,z,kind){
   var k=K(x,y,z);
   if(meshes[k])return;
@@ -2032,6 +2184,10 @@ function syncMeshes(){
     var m=meshes[k];scene.remove(m);m.material.dispose();delete meshes[k];
   }
   buildDynamic();
+  /* The decals are children of block meshes, so every mesh this function
+     dropped and rebuilt came back bare. The set of cells is the truth; the
+     decals are a view of it. */
+  trailSync();
   recomputeBounds();
 }
 var arenaLo=[0,0,0], arenaHi=[0,0,0];
@@ -2305,6 +2461,11 @@ function drawBoss(rx,rz,tdvx,tdvz){
    The charge has to read as a countdown rather than a warning light, so
    opacity ramps with how far through the beat it is - "how long have I got"
    is then legible at a glance instead of needing a number. */
+/* One pulse for every warning a trial draws, so the tiles, their borders and
+   anything added later breathe on the same beat rather than each on its own.
+   Deliberately not perilPulse: that one is the fold's crush warning and is
+   stamped inside the block loop, which does not run before this. */
+function trialWarnPulse(){return .5+.5*Math.sin(Date.now()*.0085);}
 function drawTrial(rx,rz){
   if(!trialSlab)return;
   if(!TR||app!=="play"||!TR.beats.length){
@@ -2383,13 +2544,26 @@ function drawTrial(rx,rz){
      the world is a silhouette and a marker on a world block points at a place
      that no longer exists. The whole board going red is the correct answer
      there, and the only warning that the fold you are in is the wrong one. */
-  var edgeOnly = flatT<=.5;
-  // Flat, the row of falling blocks is the subject and the wash is the ground
-  // it is read against, so the wash comes down enough to let them show.
-  var wash = edgeOnly ? .07 : .30;
-  trialSlab.material.opacity=(live?(.62+trialFlash*.3):(.15+ph*ph*.3))*wash;
-  trialEdge.material.opacity=(live?1:(.5+ph*.4))*(edgeOnly?.22:1);
-  trialSlab.visible=trialEdge.visible=true;
+  /* NO FRAME ANYWHERE, AND NO PANE IN THE VOLUME (owner's call).
+
+     The bounded outline was meant to read as "a pane standing somewhere".
+     In play it read as a red window hung in front of the level - a piece of
+     chrome the arena did not have - and in the plane its two long edges cut
+     the screen in half. Both are gone: `trialEdge` is never shown.
+
+     In the volume the falling blocks and the tile outlines already answer
+     both WHERE and HOW LONG, and they say it on the squares you can stand
+     on, so the slab has nothing left to add and is hidden outright.
+
+     Flat keeps the wash and only the wash: there the marks are hidden (a
+     marker on a world block points at a place that no longer exists), so
+     the whole board going red is still the only warning that the fold you
+     are in is the wrong one. It comes up from .10 to carry that alone now
+     that the outline is not helping. */
+  var inVolume = flatT<=.5;
+  trialSlab.material.opacity=(live?(.62+trialFlash*.3):(.15+ph*ph*.3))*.34;
+  trialEdge.visible=false;
+  trialSlab.visible=!inVolume;
   drawTrialMarks(sw,ph,live);
   drawFallRank(sw,ph,live,rx,rz);
 }
@@ -2471,8 +2645,11 @@ function drawFallRank(sw,ph,live,rx,rz){
       m.visible=true;
       m.position.set(cells[i][0],y-.5+.44+drop,cells[i][1]);
       m.scale.set(live?1.1:1,live?.5:1,live?1.1:1);
-      m.material.opacity=live?.95:(.30+ph*.5);
-      if(m.userData.edge)m.userData.edge.material.opacity=live?1:(.35+ph*.55);
+      /* Same reasoning as the tiles: the rank is the other half of "it is
+         coming down there", and a block you cannot see until it is nearly on
+         you is not a telegraph. */
+      m.material.opacity=live?.95:(.52+ph*.4);
+      if(m.userData.edge)m.userData.edge.material.opacity=live?1:(.6+ph*.4);
     }
   }
   for(var k=n;k<planeFalls.length;k++)planeFalls[k].visible=false;
@@ -2523,7 +2700,7 @@ function drawTrialMarks(sw,ph,live){
       m.scale.setScalar(1);
       continue;
     }
-    if(m.userData.ring)m.userData.ring.material.color.setHex(0xff8a94);
+    if(m.userData.ring)m.userData.ring.material.color.setHex(0xffc2c8);
     var mine=(!flat&&player.x===c[0]&&player.y===c[1]&&player.z===c[2]);
     if(mine)here=m;
     /* The ramp is the countdown, same as the slab's - but these start
@@ -2531,10 +2708,24 @@ function drawTrialMarks(sw,ph,live){
        telegraph that is invisible for the first half of its beat is not a
        telegraph. The square you are actually standing on is louder again:
        "there is a slice" and "you are in it" are different sentences. */
-    m.material.opacity=(live?.92:.34+ph*ph*.5)*(mine?1:.8);
+    /* RAISED, on the owner's report that "the spikes will come down there"
+       was not being read in time. The ramp still is the countdown - it still
+       climbs across the beat and the square you are standing on is still
+       louder than the rest - it simply no longer starts near invisible. Red
+       at .34 over a lit grass block is a discolouration; at .58 it is a
+       marked square. What is lost is a little of the difference between the
+       start of a beat and its middle, and that difference was never the
+       thing being read: the fall itself says how long is left. */
+    m.material.opacity=(live?.95:.58+ph*ph*.34)*(mine?1:.88);
     m.scale.setScalar(mine?1.04+(live?.06:0):1);
+    /* And the border BREATHES rather than ramping. The fill carries the
+       countdown, so the outline is free to carry the other half of the
+       sentence - that this is a live warning and not a texture on the floor.
+       A pulse is what the eye catches in peripheral vision, which is where a
+       player on a clock is looking when they are looking anywhere else. */
     if(m.userData.ring)
-      m.userData.ring.material.opacity=(live?1:.5+ph*.5)*(mine?1:.75);
+      m.userData.ring.material.opacity=
+        (live?1:.72+.28*trialWarnPulse())*(mine?1:.85);
   }
   // Drawn last so it sits over its neighbours rather than z-fighting them.
   if(here)here.renderOrder=903;
@@ -2851,13 +3042,24 @@ function landLive(){
     })};
   return true;
 }
-/* THE EYE LIGHTS WHEN LOOKING WOULD TELL YOU SOMETHING - flat, and more than
-   one block in your silhouette column. That is the only situation where the
-   landing rule decides something the player cannot see, so the button
-   advertises itself exactly then and is quiet the rest of the time, which is
-   what stops it becoming wallpaper. Judged every frame rather than in
-   syncHud for the same reason the boss's fold cue is: the answer changes
-   when the player moves in the plane, not when a button is pressed.
+/* THE EYE LIGHTS WHEN LOOKING WOULD TELL YOU SOMETHING, AND THAT IS NARROWER
+   THAN "more than one block in your column".
+
+   More than one candidate was the first rule and it lit far too often: most
+   columns in most levels hold two blocks, and the choice between them
+   usually decides nothing the player cares about - so the button was on for
+   most of the time anybody spent flat, which is exactly how a cue becomes
+   wallpaper. Reported as being shown when it was not necessary.
+
+   It now asks the question the player is actually about to get wrong: the
+   goal is in the square you are standing on in the plane - so it looks like
+   you have arrived - and the block you would come back on is not it. That is
+   the one moment the landing rule costs you the level rather than a step,
+   and it is the moment the eye answers.
+
+   Judged every frame rather than in syncHud for the same reason the boss's
+   fold cue is: the answer changes when the player moves in the plane, not
+   when a button is pressed.
 
    It also counts the peek for the tutorial - an EFFECTIVE peek, one where
    the world actually rose, rather than a button press that went nowhere. */
@@ -2866,9 +3068,16 @@ function lookCue(){
   var el=document.getElementById("bLook");
   if(!el)return;
   var want=false;
-  if(app==="play"&&flat&&!dying&&!levelOver()&&R&&flatPos){
+  if(app==="play"&&flat&&!dying&&!levelOver()&&R&&flatPos&&planePeek<.05){
     var land=R.landings(view,flatPos.u,flatPos.y,liveCrates());
-    want=land.length>1&&planePeek<.05;
+    if(land.length>1&&typeof liveGoal==="function"){
+      var g=liveGoal(), r=AX[view].r;
+      // The goal folds into this square: on screen you are standing on it.
+      if(g&&g[1]===flatPos.y&&g[0]*r[0]+g[2]*r[2]===flatPos.u){
+        var win=R.pick(land);
+        want=!(win.x===g[0]&&win.z===g[2]);   // ...and you would miss it
+      }
+    }
   }
   if(want!==lookLit){lookLit=want;el.classList.toggle("look",want);}
   if(flat&&planePeek>.5&&!peekCounted){
@@ -3209,6 +3418,7 @@ function animate(now){
   for(var k in meshes){
     var m=meshes[k],b=m.userData.base;
     if(m.userData.mark)m.userData.mark.visible=flatT<.45;
+    if(m.userData.trail)m.userData.trail.visible=flatT<.45;
     var u=b[0]*rx+b[2]*rz,d=b[0]*tdvx+b[2]*tdvz,fd=d*.012;
     var px=u*rx+fd*tdvx,pz=u*rz+fd*tdvz;
     m.position.set(b[0]+(px-b[0])*flatT,b[1],b[2]+(pz-b[2])*flatT);
@@ -3360,9 +3570,63 @@ function animate(now){
   var pu=flat?flatPos.u:(srcX*rx+srcZ*rz), py=flat?flatPos.y:srcY;
   var fx=pu*rx+1.2*tdvx,fz=pu*rz+1.2*tdvz;
   tmp.set(srcX+(fx-srcX)*flatT, srcY+(py-srcY)*flatT, srcZ+(fz-srcZ)*flatT);
+  /* CAUGHT BY THE FIRE, and it does not fall - it burns where it stands.
+
+     The piece was a spike once and the death was the same one falling out of
+     the world uses, which is what a spike deserves and a fire does not: fire
+     does not drop you, it takes you. So the cube sinks a little, flickers,
+     shrinks, and a handful of flames come up around it - the same flameGeo
+     the fire blocks use, so it is the same fire rather than a second drawing
+     of one. `burnGrp` is built the first time anything burns and hidden the
+     rest of the time. */
+  if(burnGrp)burnGrp.visible=false;
+  if(dying!=="spike")playerChar(0);
   if(dying){
     dyingT+=1;
-    if(dying==="fall"||dying==="spike"){
+    if(dying==="spike"){
+      playerMesh.position.x+=(tmp.x-playerMesh.position.x)*.3;
+      playerMesh.position.z+=(tmp.z-playerMesh.position.z)*.3;
+      var burn=Math.min(1,dyingT/26);
+      playerMesh.position.y+=(tmp.y-.16*burn-playerMesh.position.y)*.25;
+      // it shudders as it goes, and what is left of it is thin and tall
+      var bs=1-burn*.72;
+      playerMesh.scale.set(bs*(1+Math.sin(dyingT*1.7)*.09),
+                           bs*(1+burn*.55),
+                           bs*(1+Math.cos(dyingT*1.5)*.09));
+      if(!burnGrp){
+        burnGrp=new THREE.Group();
+        for(var bfi=0;bfi<6;bfi++){
+          var bf=new THREE.Mesh(flameGeo,new THREE.MeshBasicMaterial({
+            vertexColors:true,transparent:true,opacity:0,
+            depthWrite:false,depthTest:false,side:THREE.DoubleSide}));
+          bf.renderOrder=940;
+          bf.userData={ph:Math.random()*6.283,
+            ox:(Math.random()-.5)*.6, oz:(Math.random()-.5)*.6,
+            h:.7+Math.random()*.9};
+          burnGrp.add(bf);
+        }
+        scene.add(burnGrp);
+      }
+      burnGrp.visible=true;
+      burnGrp.position.copy(playerMesh.position);
+      var bk=burnGrp.children;
+      for(var bi3=0;bi3<bk.length;bi3++){
+        var bq3=bk[bi3],bu3=bq3.userData;
+        var flick=.78+.22*Math.sin(airPhase*9+bu3.ph)+.08*Math.sin(airPhase*21+bu3.ph*3);
+        bq3.position.set(bu3.ox*(1-burn*.3),-.30+burn*.34+bu3.h*.10,bu3.oz*(1-burn*.3));
+        /* Kept close to the cube. Tall thin flames read as a column of fire
+           standing somewhere near the player rather than as the player being
+           on fire, which is the opposite of the point. */
+        var gsz=(.42+burn*.5)*flick;
+        bq3.scale.set(gsz*.9,bu3.h*gsz*.9,1);
+        if(camera)bq3.quaternion.copy(camera.quaternion);
+        // up quickly, and gone before the cube is
+        bq3.material.opacity=Math.min(1,burn/.18)*(1-burn)*(1-burn)*2.2;
+      }
+      // and what the fire leaves: the flames go out on a black cube, not on
+      // the one that walked in.
+      playerChar(Math.min(1,Math.max(0,(burn-.32)/.46)));
+    } else if(dying==="fall"){
       playerMesh.position.x+=(tmp.x-playerMesh.position.x)*.2;
       playerMesh.position.z+=(tmp.z-playerMesh.position.z)*.2;
       playerMesh.position.y-=.12+dyingT*.014;
