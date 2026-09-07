@@ -337,7 +337,19 @@ function hintRegen(){
   if(hintBank.n>=HINT_FREE)hintBank.t=now;
   if(hintBank.n!==was)hintSave();
 }
-function hintsLeft(){hintRegen();return hintBank.n;}
+/* NO LIMITS TAKES THE POOL OFF. Answered here rather than at the four call
+   sites, so the bulb, the refill offer, spendHint() and the badge all get the
+   same answer from one place. HINT_INF is a number rather than Infinity
+   because the badge prints this and the offers compare it. `typeof` because
+   the pass lives in js/09-wardrobe.js, which loads after this file. */
+var HINT_INF=999;
+function hintsUnlimited(){
+  return typeof noLimits==="function"&&noLimits();
+}
+function hintsLeft(){
+  if(hintsUnlimited())return HINT_INF;
+  hintRegen();return hintBank.n;
+}
 // Milliseconds until the next one arrives, or 0 when the pool is full.
 function hintNextMs(){
   hintRegen();
@@ -345,6 +357,7 @@ function hintNextMs(){
   return Math.max(0,hintBank.t+HINT_REGEN_MS-Date.now());
 }
 function spendHint(){
+  if(hintsUnlimited())return true;   // nothing to spend from
   if(hintsLeft()<=0)return false;
   // The half hour starts when the pool first drops below full, not when it
   // empties - so the first hint you spend is already earning the next one.

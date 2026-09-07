@@ -374,10 +374,14 @@ function syncHintN(){
   var b=$("bHint"), n=$("hintN");
   if(!b||!n||typeof hintsLeft!=="function")return;
   var left=hintsLeft();
-  n.textContent=left;
+  // With NO LIMITS there is no count to print, and a badge reading 999 is a
+  // number nobody is meant to read. The lemniscate is one glyph wide.
+  var inf=(typeof hintsUnlimited==="function")&&hintsUnlimited();
+  n.textContent=inf?"\u221e":left;
   b.classList.add("has");
   b.classList.toggle("out",left<=0);
-  b.title=left>0?left+" hint"+(left===1?"":"s")+" left"
+  b.title=inf?"hints never run out":
+          left>0?left+" hint"+(left===1?"":"s")+" left"
                 :"out of hints \u2014 next in "+hintWaitSay();
 }
 function syncStarTotal(){

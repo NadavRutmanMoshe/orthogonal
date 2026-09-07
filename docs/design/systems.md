@@ -169,6 +169,21 @@
   empties. It is a wall-clock read and a player who moves their device clock
   gets free hints; that is not worth defending against, and it is *why* the
   pool is the currency rather than anything touching score.
+- **The money shelf sells three things and none of them is score.** The
+  DEALS tab is `PASSES` (`js/09-wardrobe.js`) followed by the `deal:true`
+  entries of `SKIN_SHAPES`. The Rook is a shape for a price. The two passes
+  are not shapes and do not equip: **NO LIMITS** takes off the three ceilings
+  the game otherwise makes you wait out or watch a video for — the hint pool
+  (`hintsUnlimited()`), the ad on a skip (`noLimits()` at the three offer
+  sites), and the star balance in the shop (`shards()` returns 9999) — and
+  **EVERYTHING** is that plus every shape sold for money, granted by rule
+  inside `owns()` rather than by writing ids into the owned list, so a shape
+  added to the catalogue later is already in a pass bought today. The four
+  `reward:true` shapes are *not* in it and never will be: they are score, and
+  money buys progress, never score. **The second pass costs less once the
+  first is owned** — `dealPrice()` swaps in `usdUp` and the panel prints the
+  old price struck through — because charging somebody twice for the half
+  they already bought is how a shelf loses the people who paid.
 - **A cue has three deliveries, and `cue()` picks the most it can say.**
   Pulse the button; if the layout dropped it, **show** the gesture with the
   ghost hand; and only if the control has no gesture either, **name** the move

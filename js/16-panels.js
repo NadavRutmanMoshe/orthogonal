@@ -27,8 +27,22 @@ var buyArmed=null;   // the id whose BUY has been tapped once, awaiting a second
    which slice of SKIN_SHAPES the grid is showing. That is what keeps a bought
    item from needing a second code path anywhere else in the game. */
 function isDeal(it){return !!(it&&it.deal);}
+/* WHAT IT COSTS, WITH THE OLD PRICE STILL VISIBLE when a pass already owned
+   has taken most of it off. A discount nobody can see is a discount nobody
+   was given: the struck-through number is the whole of what says "you have
+   already paid for part of this". */
+function dealPriceSay(it){
+  var p="$"+esc(dealPrice(it));
+  return dealDiscounted(it)
+    ? "<i class='wwas'>$"+esc(it.usd)+"</i>"+p
+    : p;
+}
 function wardList(t){
-  if(t==="deal") return SKIN_SHAPES.filter(isDeal);
+  /* THE PASSES FIRST, THEN THE SHAPES SOLD FOR MONEY. Two lists rather than
+     one because a pass is not a shape - it does not equip and it does not
+     stand in the case - but they belong on the same shelf, which is the one
+     shelf in the game that is not paid for in stars. */
+  if(t==="deal") return PASSES.concat(SKIN_SHAPES.filter(isDeal));
   if(t==="shape")return SKIN_SHAPES.filter(function(it){return !isDeal(it);});
   return t==="color" ?SKIN_COLORS:
          t==="world3"?WORLDS3D:WORLDS2D;
@@ -124,9 +138,12 @@ function wardTabTo(t){
 }
 function wardPreview(){
   var sel=wardSelected(wardTab);
-  // A deal is a shape, so it stands in the case as one.
-  previewShow(
-    (wardTab==="shape"||wardTab==="deal")?sel:wardrobe.shape,
+  // A deal that IS a shape stands in the case as one; a pass is not a shape,
+  // so the case keeps showing the piece you are wearing rather than trying to
+  // build a mesh out of an id that names no geometry.
+  var shapeSel=(wardTab==="shape"||wardTab==="deal")?sel:wardrobe.shape;
+  if(isPass(findBy(wardList(wardTab),sel)))shapeSel=wardrobe.shape;
+  previewShow(shapeSel,
     wardTab==="color"?sel:wardrobe.color,
     wardrobe.world3,wardrobe.world2,false);
 }
@@ -151,9 +168,9 @@ function wardRefresh(){
       "<i style='"+swatch+"'>"+(t==="color"?"":shapeGlyph(it.id))+"</i>"+
       "<b>"+it.name+"</b>"+
       "<span"+(!have?(it.reward?" class='wlock'":isDeal(it)?" class='wusd'":""):"")+">"+
-        (on?"equipped":have?"owned"
+        (on?"equipped":have?(isPass(it)?"active":"owned")
           :it.reward?rewardShort(it)
-          :isDeal(it)?"$"+esc(it.usd)
+          :isDeal(it)?dealPriceSay(it)
           :it.cost+" <u class='st'>\u2605</u>")+
       "</span></div>";
   }
@@ -175,12 +192,26 @@ function wardMeta(){
   var have=owns(id), on=wardEquipped(t)===id, bal=shards();
   var s="<div class='wname'>"+it.name+"</div>"+
         "<div class='wcost"+(!have&&isDeal(it)?" wusd":"")+"'>"+
-          (on?"equipped":have?"owned"
+          (on?"equipped":have?(isPass(it)?"in force":"owned")
           :it.reward?esc(rewardSay(it))
-          :isDeal(it)?"$"+esc(it.usd)
+          :isDeal(it)?dealPriceSay(it)
           :it.cost+" <u class='st'>\u2605</u>")+"</div>"+
+        /* WHAT A PASS ACTUALLY DOES, listed. A shape is its own description -
+           it is standing in the case - and a pass is not: nothing on this
+           panel would otherwise say that "No Limits" is about hints, skips
+           and the star price, which is the only reason to want it. */
+        (isPass(it)
+          ? "<ul class='wgives'><li>"+it.gives.map(esc).join("</li><li>")+
+            "</li></ul>"+
+            (it.needs&&hasPass(it.needs)
+              ? "<div class='wcredit'>"+esc(findBy(PASSES,it.needs).name)+
+                " already paid for \u2014 this is the rest.</div>":"")
+          : "")+
         "<div class='wact'>";
-  if(on)              s+="<button disabled>EQUIPPED</button>";
+  /* A PASS HAS NOTHING TO EQUIP. It is not worn, it is in force - so once it
+     is bought the only honest button is the one that says so. */
+  if(isPass(it)&&have) s+="<button disabled class='wgo'>ACTIVE</button>";
+  else if(on)         s+="<button disabled>EQUIPPED</button>";
   else if(have)       s+="<button id='wEquip' class='wgo'>EQUIP</button>";
   /* A REWARD IS NOT FOR SALE. No BUY, no ad row, and the button says the one
      thing that opens it. Ads buy progress, never score - and this is the one
@@ -192,7 +223,7 @@ function wardMeta(){
      until there is a store to charge. Dead for the same reason the ad
      buttons are dead and said the same way, in the note below. */
   else if(isDeal(it)) s+="<button disabled class='wbuyusd'>"+tagIcon()+
-                         "BUY \u00b7 $"+esc(it.usd)+"</button>";
+                         "BUY \u00b7 $"+esc(dealPrice(it))+"</button>";
   else if(bal<it.cost)s+="<button disabled>NEED "+(it.cost-bal)+" MORE <u class='st'>\u2605</u></button>";
   else if(buyArmed===id)
                       s+="<button id='wBuy' class='wsure'>SURE? \u00b7 "+it.cost+" <u class='st'>\u2605</u></button>";
@@ -358,7 +389,18 @@ var SHAPE_SVG={
 // The reward characters wear their section's own emblem, read from the same
 // table the chooser's tiles read.
 var REWARD_GLYPH={sapling:"trees",flame:"hell",minnow:"ocean",cactus:"desert"};
+/* THE TWO PASSES' OWN GLYPHS. Neither is a shape, so neither has a piece to
+   draw: an open padlock for the one that takes the limits off, a crown for
+   the one that carries the lot. */
+var PASS_SVG={
+  pass_nolimits:"M4.8 10.2h10.4c.9 0 1.6.7 1.6 1.6v7.4c0 .9-.7 1.6-1.6 1.6H4.8"+
+    "c-.9 0-1.6-.7-1.6-1.6v-7.4c0-.9.7-1.6 1.6-1.6Zm4 4.4h2.4v3.2H8.8ZM12.8 "+
+    "10.2V7.1a4 4 0 0 1 8 0v1.8h-2.3V7.1a1.7 1.7 0 0 0-3.4 0v3.1Z",
+  pass_all:"M2.4 7.4 7.6 11.6 12 4.2l4.4 7.4 5.2-4.2-1.8 10.1H4.2ZM4.3 "+
+    "18.9h15.4v2.2H4.3Z"
+};
 function shapeGlyph(id){
+  if(PASS_SVG[id])return shapeSvg(PASS_SVG[id]);
   if(REWARD_GLYPH[id])return shapeSvg(ELEM_PATH[REWARD_GLYPH[id]]);
   if(SHAPE_SVG[id])return shapeSvg(SHAPE_SVG[id]);
   return {cube:"\u25a0",sphere:"\u25cf",pyramid:"\u25b2",diamond:"\u25c6",
@@ -1504,7 +1546,8 @@ function secGridDraw(){
        (lk?secChains()+"<span class='seccap'>"+secLock()+
            "<span class='seccapt'>"+
            (shut?"BEAT EVERY BOSS":buy?"LOCKED":"KEEP PLAYING")+"</span>"+
-           (buy?"<span class='secad'>"+adIcon()+"OPEN · 3 ADS</span>":"")+
+           (buy?"<span class='secad'>"+(noLimits()?"OPEN":
+                 adIcon()+"OPEN \u00b7 3 ADS")+"</span>":"")+
            "</span>":"")+
        "</button>";
   }
@@ -1628,8 +1671,10 @@ function mapDraw(spans){
     "<u class='mbar'><u style='width:"+(lk?0:pct)+"%'></u></u>"+
     "<div class='mf'><span>"+cleared+"/"+tot+" cleared</span>"+
     "<span>"+sp.got+"/"+sp.max+" ★</span></div>"+
+    /* NO LIMITS: the same door, without the toll. */
     (mapSectionSkippable(n)
-      ? "<button class='skipsec' id='mSecAd'>"+adIcon()+"START THIS SECTION · WATCH 3 ADS</button>"
+      ? "<button class='skipsec' id='mSecAd'>"+(noLimits()?"START THIS SECTION":
+          adIcon()+"START THIS SECTION · WATCH 3 ADS")+"</button>"
       : "")+
     /* THE LOCK HAS TO SAY WHAT IS HOLDING IT. This is the shelf, and the one
        thing a player cannot work out from anywhere else in the game is which
@@ -1910,8 +1955,11 @@ function mapSheet(i){
   if(st==="locked"&&mapSkippable(i)){
     var ads=mapAds(k);
     var what=k==="boss"?"THE BOSS":k==="trial"?"THE TRIAL":"THIS LEVEL";
-    acts="<button class='ad' id='mAd'>"+adIcon()+"OPEN "+what+" · WATCH "+ads+" AD"+
-         (ads>1?"S":"")+"</button><button class='qt' id='mNo'>NOT NOW</button>";
+    acts=(noLimits()
+         ? "<button class='go' id='mAd'>OPEN "+what+"</button>"
+         : "<button class='ad' id='mAd'>"+adIcon()+"OPEN "+what+" · WATCH "+ads+
+           " AD"+(ads>1?"S":"")+"</button>")+
+         "<button class='qt' id='mNo'>NOT NOW</button>";
     note="Opens <b>this one</b> and nothing else, and awards <b>no stars</b>.";
   }else if(st==="locked"){
     /* The shelf, and the only lock in the game an ad cannot open. Which

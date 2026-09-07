@@ -1943,10 +1943,19 @@ function struggleOffer(){
        asked for. It is long enough to wrap on a narrow phone at the ad
        button's ordinary tracking, so `.panel.offer .ma .ad` tightens its type
        instead of the label losing words - see css/85-map.css. */
-    "<button class='ad' id='sgAd'>"+adIcon()+"SKIP THIS "+kind+" \u00b7 WATCH 1 AD</button>"+
+    /* NO LIMITS SKIPS WITHOUT THE VIDEO. Same button, same call, same rule
+       underneath - a skip still awards no stars - but the price line comes
+       off and with it the ad screen, because the blue and the screen mean
+       "this plays a video" and this one no longer does. */
+    (noLimits()
+      ? "<button class='go' id='sgAd'>SKIP THIS "+kind+"</button>"
+      : "<button class='ad' id='sgAd'>"+adIcon()+"SKIP THIS "+kind+
+        " \u00b7 WATCH 1 AD</button>")+
     "<button class='qt' id='sgNo'>KEEP TRYING</button>"+
     "<button class='qt' id='sgNever'>DON'T SHOW ME AGAIN</button>",
-    "A skip awards <b>no stars</b>. Ads buy progress, never score.",
+    // The rule holds either way; what changes is what bought the skip.
+    noLimits()?"A skip awards <b>no stars</b>. Nothing sold in this game does."
+             :"A skip awards <b>no stars</b>. Ads buy progress, never score.",
     B?"var(--vio)":"var(--amb)");
   bind("sgNo",function(){hidePanel();});
   bindNever();

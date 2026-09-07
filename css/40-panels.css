@@ -330,6 +330,23 @@
     text-align:center;margin:4px 0 6px}
   .wname{font-size:13.5px;color:var(--fg);font-weight:500;line-height:1.3}
   .wcost{font-size:11px;color:var(--fg-dim);margin-top:1px}
+  /* THE PRICE THAT NO LONGER APPLIES, struck through and dim, immediately
+     before the one that does. It is the only thing on this shelf that says a
+     purchase already made has been counted. */
+  .wwas{font-style:normal;text-decoration:line-through;color:var(--fg-dim);
+    font-weight:400;font-size:.86em;margin-right:6px;opacity:.7}
+  /* WHAT A PASS DOES. A shape describes itself by standing in the case; a
+     pass has nothing to stand, so it gets three lines instead. Tight, and in
+     the panel's own voice - a browser's default list markers and indent read
+     as a document dropped into a game. */
+  .wgives{list-style:none;margin:7px 0 0;padding:0;display:flex;
+    flex-direction:column;gap:4px}
+  .wgives li{position:relative;padding-left:12px;font-size:10.5px;
+    line-height:1.45;color:var(--fg-dim);letter-spacing:.01em}
+  .wgives li::before{content:"";position:absolute;left:0;top:6px;width:4px;
+    height:4px;border-radius:50%;background:var(--star);opacity:.8}
+  .wcredit{margin-top:7px;font-size:10px;line-height:1.5;
+    color:color-mix(in srgb,var(--star) 62%,var(--fg-dim))}
   /* A price is a star price, so the star in it is gold wherever it is
      written - the number stays quiet, the currency is what carries. */
   /* A `u` rather than an `i`, because `.item i` is already the tile's own

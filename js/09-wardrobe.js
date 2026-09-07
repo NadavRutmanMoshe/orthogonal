@@ -151,8 +151,77 @@ var wardrobe={owned:["rose","cube","v_indigo","p_indigo"],
 function adsFor(cost){return cost<=0?0:Math.ceil(cost/10);}
 function adsWatched(id){return (wardrobe.ads&&wardrobe.ads[id])||0;}
 
+/* ============================================================
+   THE TWO PASSES — the shelf's other half
+
+   The DEALS tab had one thing on it: a shape, for a price. These two are not
+   shapes, and that is the point of them - they are the game's two ceilings
+   taken off.
+
+   * NO LIMITS ends the waiting. Hints stop draining, the skip on a fight you
+     have lost four times stops asking for a video, and the wardrobe's star
+     balance stops being a balance. Every one of those is, today, a thing you
+     either wait out or watch an ad for; this is the version of the game
+     where you do neither.
+   * EVERYTHING is NO LIMITS plus every shape that is sold for money rather
+     than earned - the Rook now, and whatever else lands on this shelf later.
+     It grants them by rule (`owns()` below) rather than by writing ids into
+     the owned list, so a shape added to the catalogue next month is already
+     included in a pass bought today.
+
+   AND THE SECOND ONE COSTS LESS ONCE YOU HAVE THE FIRST. Somebody who bought
+   NO LIMITS and then wants the shapes is being asked for the shapes, not for
+   the pass a second time - so `dealPrice()` swaps in `usdUp`, which is what
+   is left after nearly all of the first purchase comes off. Selling the same
+   thing twice is how a shelf like this loses the people who already paid.
+
+   The four rewards (`reward:true` in SKIN_SHAPES) are NOT in EVERYTHING and
+   never will be: they are score, and the game's oldest rule about money is
+   that it buys progress and never score.
+   ============================================================ */
+var PASSES=[
+  {id:"pass_nolimits", name:"No Limits", deal:true, pass:true, usd:"4.99",
+   gives:["Hints never run out","Skip any fight, no ad","Every star in the shop"]},
+  {id:"pass_all", name:"Everything", deal:true, pass:true, usd:"9.99",
+   /* What it costs once NO LIMITS is already owned: 9.99 less 4.50 of the
+      4.99 already paid, so the upgrade is the shapes and almost nothing
+      else. Written out rather than computed, because a price is a decision
+      and not a sum. */
+   usdUp:"5.49", needs:"pass_nolimits",
+   gives:["Everything in No Limits","Every shape sold for money",
+          "Any that are added later"]},
+];
+function isPass(it){return !!(it&&it.pass);}
+/* Which passes are in force. `pass_all` contains `pass_nolimits`, so it is
+   asked here once rather than at each of the five places that read it. */
+function hasPass(id){
+  return wardrobe.owned.indexOf(id)>=0 ||
+         (id==="pass_nolimits"&&wardrobe.owned.indexOf("pass_all")>=0);
+}
+function noLimits(){return hasPass("pass_nolimits");}
+/* The upgrade price, or the plain one. Also what the grid and the case print,
+   so the two cannot disagree about what this costs right now. */
+function dealPrice(it){
+  if(it&&it.usdUp&&it.needs&&hasPass(it.needs))return it.usdUp;
+  return it&&it.usd;
+}
+function dealDiscounted(it){return dealPrice(it)!==(it&&it.usd);}
+
 function findBy(list,id){for(var i=0;i<list.length;i++)if(list[i].id===id)return list[i];return list[0];}
-function owns(id){return wardrobe.owned.indexOf(id)>=0;}
+/* OWNED, OR COVERED BY A PASS. EVERYTHING carries every shape on the money
+   shelf, so those are answered by the pass rather than copied into the owned
+   list - which is what lets a shape added to SKIN_SHAPES later be included in
+   a pass bought before it existed. */
+function owns(id){
+  if(wardrobe.owned.indexOf(id)>=0)return true;
+  if(wardrobe.owned.indexOf("pass_all")>=0){
+    var it=null;
+    for(var i=0;i<SKIN_SHAPES.length;i++)
+      if(SKIN_SHAPES[i].id===id){it=SKIN_SHAPES[i];break;}
+    if(it&&it.deal)return true;
+  }
+  return false;
+}
 function starsEarned(){
   var t=0;
   for(var i=0;i<LEVELS.length;i++){
@@ -171,6 +240,10 @@ function starsEarned(){
 var UNLIMITED_SHARDS=true;
 function shards(){
   if(UNLIMITED_SHARDS)return 9999;
+  // NO LIMITS: the shop stops being a balance. Buying still runs the real
+  // path - it pushes to owned and adds to `spent` - so nothing downstream
+  // needs to know, and the true balance comes back if the pass ever goes.
+  if(noLimits())return 9999;
   return Math.max(0,starsEarned()-wardrobe.spent);
 }
 
