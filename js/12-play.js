@@ -1505,11 +1505,11 @@ function hintRefillOffer(){
      the one moment the player wants to get back to the level, which is
      exactly when nobody reads. What they need is what happened and when it
      is fixed; the rest is discoverable from the badge on the bulb. */
-  offerShell("Out of hints",
+  offerShell("The bulb","Out of hints",
     "Next refill of 1 hint in <b>"+hintWaitSay()+"</b>.",
     "<button class='ad' id='hrAd'>"+adIcon()+"REFILL \u00b7 WATCH AN AD (+"+HINT_AD+
       ")</button>"+
-    "<button class='qt' id='hrNo'>WAIT IT OUT</button>","");
+    "<button class='qt' id='hrNo'>WAIT IT OUT</button>","","var(--star)");
   bind("hrNo",function(){hidePanel();});
   bind("hrAd",function(){
     var n=grantHints(HINT_AD);
@@ -1859,20 +1859,49 @@ function starsOffer(){
   if(!starsOfferDue())return;
   if(levelOver()||panelOpen()||screenUp())return;
   settings.starAsked=true;saveSettings();
-  offerShell("Three stars",
+  /* `.go`, not `.ad`. The blue is the ad button's colour and nothing else's -
+     it is the one thing on a card that has to mean "this plays a video", and
+     this button plays nothing. A plain confirm wears the goal's green, like
+     every other confirm in the game. */
+  offerShell("Scoring","Three stars",
     "Three stars means you found the <b>shortest route</b> \u2014 not that "+
     "you finished.",
-    "<button class='ad' id='stOk'>TRY FOR THREE</button>",
+    "<button class='go' id='stOk'>TRY FOR THREE</button>",
     "Half again as many moves is two stars, twice as many is one. <b>This one "+
-    "is three moves.</b>");
+    "is three moves.</b>","var(--star)");
   bind("stOk",function(){hidePanel();});
 }
-function offerShell(title,lead,acts,note){
-  // An empty note draws no box: a card with two lines in it should be two
-  // lines tall, not two lines and a gap where a paragraph used to be.
-  showPanel("<h3>"+title+"</h3><div class='mn'>"+lead+"</div>"+
+/* THE OFFER CARD, AND WHY IT HAS FOUR PARTS RATHER THAN THREE.
+
+   It used to be `<h3>` · lead · buttons · note, and the two flaws were the
+   same flaw twice. The title went through `.panel h3`, which is the 12px
+   dim letter-spaced *label* every panel puts over a list - so the one line
+   naming what the card is about was the quietest thing on it, and the skip
+   card printed the level's own name in it. And the lead and the note were
+   both `.mn`, so the sentence that carries the decision and the footnote
+   under the buttons were the same size in the same grey: a flat card where
+   the eye has nowhere to land.
+
+   Now: a KICKER in the card's own colour saying which of the game's things
+   this is about, a TITLE in the display face at 20px, a LEAD at reading
+   weight in `--fg`, the buttons, and the NOTE below a hairline where a
+   footnote belongs. `tone` is the accent - gold for the two that are about
+   the bulb and the stars, the boss's violet or the trial's amber for the
+   skip - so the card is recognisable before it is read, in the colour that
+   thing already wears everywhere else in the game.
+
+   The shell also carries the scrim (see `.panel.offer` in 85-map.css): an
+   offer is a decision, and a decision wants the board behind it turned
+   down. Every other panel is unaffected, because the class is what carries
+   it and only this function sets it. */
+function offerShell(kick,title,lead,acts,note,tone){
+  // An empty note draws no rule: a card with two lines in it should be two
+  // lines tall, not two lines and a hairline under nothing.
+  showPanel("<div class='okick'>"+kick+"</div><h3>"+title+"</h3>"+
+            "<div class='olead'>"+lead+"</div>"+
             "<div class='ma'>"+acts+"</div>"+
-            (note?"<div class='mn'>"+note+"</div>":""));
+            (note?"<div class='mn'>"+note+"</div>":""),"offer");
+  $("panel").style.setProperty("--ok",tone||"var(--goal)");
 }
 function struggleOffer(){
   if(!L||levelOver()||panelOpen()||screenUp())return;
@@ -1899,13 +1928,20 @@ function struggleOffer(){
      keeps the rule the map keeps: ADS BUY PROGRESS, NEVER SCORE. A skip is
      not in `progress`, so it awards no stars by construction and the level
      stays on the map, still playable. */
-  offerShell(esc(L.name),
+  /* ONE AD, NOT THREE (owner's call). Three was priced against the section
+     unlock on the map, which opens a whole shelf and is still three. This
+     opens one level you have already lost at repeatedly, and it is offered
+     at the exact moment somebody is deciding whether to keep playing at all
+     - a price that reads as a wall there is a price that closes the game
+     instead of collecting anything. */
+  offerShell(kind+" \u00b7 STUCK",esc(L.name),
     "This one has beaten you "+beat+". You can come back to it whenever you "+
     "like.",
     "<button class='ad' id='sgAd'>"+adIcon()+"SKIP THIS "+kind+" \u00b7 WATCH 3 ADS</button>"+
     "<button class='qt' id='sgNo'>KEEP TRYING</button>"+
     "<button class='qt' id='sgNever'>DON'T SHOW ME AGAIN</button>",
-    "A skip awards <b>no stars</b>. Ads buy progress, never score.");
+    "A skip awards <b>no stars</b>. Ads buy progress, never score.",
+    B?"var(--vio)":"var(--amb)");
   bind("sgNo",function(){hidePanel();});
   bindNever();
   /* Not gated on an ad here, for the same reason grantSkip() is not: there

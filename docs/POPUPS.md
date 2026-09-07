@@ -16,7 +16,7 @@ There are **six kinds of pop-up**, and they are six different designs:
 |---|---|---|---|
 | **Toast** | one line, low centre, ~2s, no buttons | `50-layout-cues.css` `.toast` | `toast` |
 | **Spoken cue** | the same slot, big teal move + a grey note | `.toast.cuesay` | `toast` |
-| **Offer card** | a sheet over the board, title · lead · buttons · note | `85-map.css` (`.ma .go .ad .qt .mn`) | `hintoffer` |
+| **Offer card** | a sheet over a dimmed board: kicker · title · lead · buttons · note | `85-map.css` (`.panel.offer`, `.ma .go .ad .qt .mn`) | `starsoffer` |
 | **Full-bleed card** | takes the whole screen, one OK | `70-cards.css` `.tutcard` | `tutcard` |
 | **Win card** | full-bleed, title · stars · sub · buttons | `70-cards.css` `.won` | `win:12` |
 | **Phase note** | a line struck across a boss between phases | `90-tutorial.css` `.phasenote` | `phase` |
@@ -145,22 +145,16 @@ hand, and with nothing on screen it is the note under the spoken move.
 
 ## 3 · Offer cards
 
-A sheet over the board: **title**, one **lead** line, the **buttons**, and an
-optional **note** in small grey. `offerShell(title,lead,acts,note)`,
-`js/12-play.js:1895`. Four of them exist.
-
-### THE BULB — shown once, the first ordinary level
-*Shot: `hintoffer`. `hintOffer()`, `12-play.js:1843`.*
-
-- **Title:** `The bulb`
-- **Lead:** `Stuck? The bulb shows you the **next move**.`
-- **Buttons:** `SHOW ME` · `GOT IT`
-- **Note:** `You have **3**, and one comes back every half hour. They cost no
-  stars, and this one is free.`
+A sheet over a dimmed board, in five parts: a **kicker** in the card's own
+colour, a **title** in the display face, one **lead** line at reading weight,
+the **buttons**, and an optional **note** under a hairline.
+`offerShell(kick,title,lead,acts,note,tone)`, `js/12-play.js`. Three of them
+exist — the card that introduced the bulb was cut.
 
 ### THREE STARS — shown once, on the first level that scores
-*Shot: `starsoffer`. `starsOffer()`, `12-play.js:1884`.*
+*Shot: `starsoffer`. `starsOffer()`. Tone: gold.*
 
+- **Kicker:** `SCORING`
 - **Title:** `Three stars`
 - **Lead:** `Three stars means you found the **shortest route** — not that you
   finished.`
@@ -169,21 +163,24 @@ optional **note** in small grey. `offerShell(title,lead,acts,note)`,
   **This one is three moves.**`
 
 ### OUT OF HINTS — the bulb with an empty pool
-*Shot: `refill`. `hintRefillOffer()`, `12-play.js:1508`.*
+*Shot: `refill`. `hintRefillOffer()`. Tone: gold.*
 
+- **Kicker:** `THE BULB`
 - **Title:** `Out of hints`
 - **Lead:** `Next refill of 1 hint in **N min**.` (or `hr`, or `now`)
 - **Buttons:** `REFILL · WATCH AN AD (+N)` · `WAIT IT OUT`
 - **Note:** none
 
 ### THE SKIP — after repeated losses on a boss or trial
-*Shot: `struggle`. `struggleOffer()`, `12-play.js:1902`.*
+*Shot: `struggle`. `struggleOffer()`. Tone: the boss's violet, or the trial's
+amber.*
 
+- **Kicker:** `BOSS · STUCK` (or `TRIAL · STUCK`)
 - **Title:** the level's own name, e.g. `BOSS I — Catch Me If You Can!`
 - **Lead:** `This one has beaten you N times. You can come back to it whenever
   you like.`
-- **Buttons:** `SKIP THIS BOSS · WATCH 3 ADS` (or `SKIP THIS TRIAL`) ·
-  `KEEP TRYING` · `DON'T SHOW ME AGAIN`
+- **Buttons:** `SKIP IT · WATCH AN AD` · `KEEP TRYING` ·
+  `DON'T SHOW ME AGAIN`
 - **Note:** `A skip awards **no stars**. Ads buy progress, never score.`
 
 ---

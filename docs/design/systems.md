@@ -118,6 +118,35 @@
   nobody reads. What is left is what happened and when it is fixed — *Out of
   hints / Next refill of 1 hint in 18 min* — and the rest is discoverable
   from the badge. `offerShell()` draws no note box when the note is empty.
+- **AND NOTHING INTRODUCES THE BULB ANY MORE** (owner's call, 2026-09). A
+  card on the first level after the tutorial used to explain what the bulb
+  was and hand over one free press (`hintOffer()`, `settings.hintAsked`,
+  `freeHint`). It was cut with the settings card before it: the first level
+  the player is finally alone on is the level that has to feel like the game
+  starting, and it opened with a dismissal. The badge, the refill card and
+  the last tutorial's win card (*from here on, tap the bulb for a hint*) say
+  it three times between them at no cost. `hintAsked` came out of the
+  `loadSettings()` whitelist with the card; **`freeHint` is deliberately
+  still there**, armed by nothing — `showHint()` honours it and still says
+  *free · this one is on us*, so a future card or reward that wants to give
+  a hint away is one assignment.
+- **AN OFFER CARD IS A DECISION, AND IS DRAWN AS ONE** (`.panel.offer`,
+  `css/85-map.css`). Kicker in the card's own colour, title in the display
+  face at 20px, lead at reading weight, buttons, then the note under a
+  hairline — and a full-screen scrim, carried on the card's own box-shadow
+  because `.panel`'s backdrop-filter makes it the containing block for any
+  fixed child. Before this the title went through `.panel h3` (the 12px dim
+  *list label*) and the lead and the note were both `.mn`, so the card had
+  nothing for the eye to land on and the skip card printed a level's name in
+  a label. The three tones are the colours those things already wear: gold
+  for the bulb and the stars, `--vio` for a boss, `--amb` for a trial.
+- **THE SKIP IS ONE AD, NOT THREE** (owner's call). Three was priced against
+  the map's section unlock, which opens a whole shelf and is still three.
+  The skip opens one level, is offered only after repeated losses, and lands
+  at the moment somebody is deciding whether to keep playing at all — a
+  price that reads as a wall there collects nothing and closes the game.
+  Nothing in the code counts ads on this path (`grantSkip()` is called
+  directly, awaiting an SDK), so this was the label.
 - **The star cap it replaced was the wrong currency, and that reverses an
   older call.** A hint used to lower what you could score — 0 → 3★, 1–2 →
   2★, 3–4 → 1★, 5+ → 0★, with `win()` writing an *effective* move count so

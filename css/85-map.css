@@ -480,6 +480,62 @@ L96 14 L0 14 Z' fill='%23fff'/></svg>");
     font-weight:700;letter-spacing:-.015em;margin:4px 0 0;color:var(--fg)}
   .msheet .mm{font-size:12.5px;color:var(--fg-dim);margin-top:5px}
   .msheet .mm .g{color:var(--goal)} .msheet .mm .a{color:#6fa8ff}
+  /* ============================================================
+     THE OFFER CARD
+
+     Three of them: the star rule, the hint refill, and the skip. They are
+     the only panel in the game that is a DECISION rather than a place you
+     have gone to, and until now they were drawn as an ordinary panel with a
+     list label for a title - flat, quiet, and easy to dismiss without
+     reading, which for the two that teach a rule is the whole failure.
+
+     Four things separate a decision from a panel here:
+
+     1. IT IS OVER THE BOARD, not beside it. The 100vmax spread on the second
+        shadow is a scrim: the world goes down two thirds and the card is the
+        only lit thing left. A pseudo-element cannot do this - `.panel` has a
+        backdrop-filter, which makes it the containing block for a fixed
+        child, so `inset:0` would resolve to the card itself. The shadow is
+        painted outside the border box and is not clipped by anything.
+     2. IT HAS A TYPE SCALE. Kicker 10.5, title 20 in the display face, lead
+        13 at reading weight, note 11 under a rule. The old card set the lead
+        and the note in the same 11.5 grey, which is a card with nothing to
+        land on.
+     3. IT HAS A COLOUR, `--ok`, written by offerShell(): gold for the bulb
+        and the stars, the hunters' violet for a boss, the trial's amber for
+        a trial. It is the colour that thing already wears on the map and in
+        the HUD, so the card is recognised before it is read.
+     4. IT IS BUTTON-SHAPED. 14px radius against the panel's 3, because every
+        other pressable thing in this game is a lit cap with that radius and
+        a card whose whole content is three buttons should not be the one
+        square-cornered object on screen. */
+  .panel.offer{border-radius:14px;padding:17px 16px 16px;max-width:400px;
+    border-color:color-mix(in srgb,var(--ok,var(--goal)) 24%,var(--rule));
+    max-height:min(78vh,560px);
+    box-shadow:0 20px 44px -14px rgba(0,0,0,.66),
+      0 0 0 100vmax color-mix(in srgb,var(--void) 66%,transparent)}
+  .panel.offer .okick{font-size:10.5px;letter-spacing:.2em;font-weight:600;
+    text-transform:uppercase;color:var(--ok,var(--goal));line-height:1.2}
+  /* Beats `.panel h3`, which is the 12px dim label every other panel puts
+     over a list - the wrong element for the one line that names the card. */
+  .panel.offer h3{font-family:'Space Grotesk',system-ui,sans-serif;
+    font-size:20px;font-weight:700;letter-spacing:-.015em;color:var(--fg);
+    text-transform:none;margin:4px 0 0;line-height:1.2}
+  .panel.offer .olead{font-size:13px;line-height:1.6;color:var(--fg);
+    margin-top:8px;letter-spacing:.01em}
+  .panel.offer .olead b{color:var(--ok,var(--goal));font-weight:600}
+  .panel.offer .ma{margin-top:15px}
+  /* A label that outgrows its button wraps inside it rather than running out
+     of it - the belt to the braces of keeping the labels short. Scoped to
+     the offer so the map's own sheet keeps its fixed row height. */
+  .panel.offer .ma button{height:auto;min-height:46px;padding:11px 12px;
+    line-height:1.35;text-align:center}
+  .panel.offer .ma .qt{min-height:36px;padding:8px 12px}
+  /* The note is a footnote, so it sits below a hairline rather than floating
+     under the buttons at the same weight as the sentence above them. */
+  .panel.offer .mn{margin-top:14px;padding-top:11px;font-size:11px;
+    border-top:1px solid var(--rule)}
+
   /* Shared with the panel, because the struggle offer is the same offer the
      map makes and should not be a second visual language for it. */
   .msheet .ma,.panel .ma{display:flex;flex-direction:column;gap:6px;margin-top:12px}

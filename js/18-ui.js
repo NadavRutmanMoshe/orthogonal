@@ -57,6 +57,11 @@ function showPanel(html,kind){
   $("panel").innerHTML=html;
   $("panel").classList.add("on");
   $("panel").classList.toggle("ward",kind==="wardrobe");
+  /* The offer cards, and only them: they are the one panel that is a
+     decision rather than a place, so they get their own shape, their own
+     type scale and a scrim over the board. See `.panel.offer` in
+     css/85-map.css and offerShell() in js/12-play.js. */
+  $("panel").classList.toggle("offer",kind==="offer");
   panelKind=kind||null;
   syncCorners();
 }
