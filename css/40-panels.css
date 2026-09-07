@@ -58,37 +58,123 @@
      fixed positions rather than words to re-read. */
   .mlbtn{width:100%;height:46px;font-size:13px;letter-spacing:.12em;
     margin-top:12px}
-  .mllist{margin-top:14px}
-  .mlrow{display:flex;align-items:center;gap:4px;width:100%;height:42px;
-    border-bottom:1px solid var(--rule)}
-  /* The name and the pencil that renames it are one thing, so they travel
-     together on the left: the name sizes to its own text and ellipsises when
-     there is not room, and the pencil sits against it rather than out with
-     the verbs, because what it edits is the word beside it. */
-  .mlrow .mlname{flex:1;min-width:0;display:flex;align-items:center;gap:5px}
+  .mllist{margin-top:14px;display:flex;flex-direction:column;gap:7px}
+  /* A ROW IS A CARD IN ITS OWN WORLD'S COLOUR.
+
+     It was a hairline list: four identical lines of white text with the same
+     four grey buttons on each, reached from a home screen where every other
+     door is coloured. The one thing a custom level already knows about
+     itself is the ground it stands on, so `--sec` (written per row by
+     myLevelsPanel() from SECTIONS[].col) drives the card's rim, its lit
+     edge, the emblem and the line of type under the name - the same use of
+     `--sec` the map's card, the home screen's CONTINUE and `.psec` make.
+
+     TWO LINES, not one. One line put the name, a pencil and four buttons in
+     330px and the name lost - "The Long Way Round" ellipsised to fit a row
+     whose other half was the same on every row. Splitting it gives the name
+     nearly the whole width and buys a place to say what the level is, which
+     is the thing docs/UI.md sent to MORE when there was nowhere to put it.
+     It is still one level per row; the row is simply two lines tall. */
+  .mlrow{--sec:#7183a6;display:flex;flex-direction:column;gap:7px;width:100%;
+    padding:9px 9px;border:1px solid color-mix(in srgb,var(--sec) 22%,var(--rule));
+    border-left:3px solid color-mix(in srgb,var(--sec) 62%,transparent);
+    border-radius:8px;
+    background:
+      linear-gradient(100deg,color-mix(in srgb,var(--sec) 11%,transparent),
+        transparent 58%),
+      rgba(255,255,255,.02)}
+  /* The ground's own glyph, the one its tile on the chooser carries. */
+  .mlhead{display:flex;align-items:center;gap:9px;min-width:0}
+  .mlem{flex:none;width:26px;display:flex;align-items:center;justify-content:center}
+  .mlem .secem{width:22px;height:22px;fill:var(--sec);opacity:.9}
+  .mlmain{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+  .mltop{display:flex;align-items:center;gap:6px;min-width:0}
   /* `flex:0 1 auto` beats the `.lname` above, which is `flex:1` for the map's
      rows: left at 1 the name stretches the whole way and takes the pencil
-     with it, out to the right where the verbs are. */
+     with it, out to the right. */
   .mlrow .lname{flex:0 1 auto;min-width:0;overflow:hidden;
-    text-overflow:ellipsis;white-space:nowrap;color:var(--fg)}
-  /* A level that has never solved. Inside the name's own span so it is the
-     first thing the ellipsis eats on a very long name - the row still has to
-     fit on one line. */
-  .mlrow .lname i{font-style:normal;color:var(--fg-dim);font-size:10.5px;
-    letter-spacing:.06em;text-transform:uppercase;margin-left:7px}
-  .mlrow .lbtns{display:flex;gap:2px;flex-shrink:0}
-  /* Tighter than a `.mini` anywhere else: five of them and a name share one
-     line on a phone, and every pixel taken off the tracking is a pixel the
-     name gets back. */
-  .mlrow button.mini{height:27px;padding:0 5px;font-size:10.5px;
-    letter-spacing:0}
-  /* A glyph button is square: no letters in it, so the horizontal padding
-     that fits a word would just make it wide. */
-  .mlrow button.mini.mlic{width:29px;padding:0}
-  .mlrow button.mini.mlx{width:27px;padding:0;font-size:14px}
+    text-overflow:ellipsis;white-space:nowrap;color:var(--fg);font-size:13px}
+  /* A level that has never solved, as a tag rather than as a word in the
+     name. In the name's own span it was the first thing the ellipsis ate,
+     which is backwards: the tag is the part that cannot be guessed. Amber,
+     because it is a state and not a fault. */
+  .mldraft{flex:none;font-style:normal;font-size:9px;letter-spacing:.12em;
+    color:#e0b25c;border:1px solid rgba(224,178,92,.4);border-radius:3px;
+    padding:1px 4px;background:rgba(224,178,92,.10)}
+  .mlmeta{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;font-size:10.5px;letter-spacing:0;
+    color:color-mix(in srgb,var(--sec) 55%,var(--fg-dim))}
+  /* The four verbs, across the whole card and sharing it equally. */
+  .mlrow .lbtns{display:flex;gap:5px;width:100%}
+  .mlrow button.mini{flex:1;height:30px;padding:0;font-size:11px;
+    letter-spacing:.02em}
+  .mlrow button.mini.mlx{font-size:15px}
   .mlrow .mlic svg{width:15px;height:15px;fill:currentColor}
-  .mlrow .mlname .mlic{opacity:.72}
-  .mlrow .mlname .mlic:active{opacity:1}
+  /* THE FOUR VERBS ARE TOLD APART BY COLOUR, not by reading four glyphs at
+     10px. Play is the goal's teal, the one colour in this game that means
+     "do this"; delete is the only one that cannot be undone, so it is the
+     only red; the pencil and the share node stay quiet, because they are
+     edits rather than decisions. */
+  .mlrow .mlplay{--c:var(--goal);color:var(--c);
+    border-color:color-mix(in srgb,var(--c) 34%,transparent);
+    --lip:color-mix(in srgb,var(--c) 26%,#04070d)}
+  .mlrow button.mini.mlx{--c:#e0455f;color:color-mix(in srgb,var(--c) 74%,var(--fg));
+    border-color:color-mix(in srgb,var(--c) 28%,transparent);
+    --lip:color-mix(in srgb,var(--c) 24%,#04070d)}
+  /* The pencil is the one glyph button that is not in the verb row: it
+     edits the word beside it, so it sits against the name. */
+  .mlrow .mltop button.mini.mlic{flex:none;width:28px;height:25px;opacity:.7}
+  .mlrow .mltop button.mini.mlic:active{opacity:1}
+  /* THE LEVEL A SCREEN IS ABOUT. Same parts as a row, no verbs: RENAME,
+     SHARE and DELETE all act on one level and all used to open on the same
+     grey sentence. */
+  .mlhero{--sec:#7183a6;display:flex;align-items:center;gap:10px;
+    margin-top:12px;padding:11px 10px;border-radius:8px;
+    border:1px solid color-mix(in srgb,var(--sec) 24%,var(--rule));
+    border-left:3px solid color-mix(in srgb,var(--sec) 62%,transparent);
+    background:
+      linear-gradient(100deg,color-mix(in srgb,var(--sec) 13%,transparent),
+        transparent 58%),
+      rgba(255,255,255,.02)}
+  .mlhero .mlem{width:28px}
+  .mlhero .mlem .secem{width:24px;height:24px}
+  .mlhero .mlmain{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+  .mlhero b{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;font-family:'Space Grotesk',system-ui,sans-serif;
+    font-size:15px;font-weight:700;letter-spacing:-.01em;color:var(--fg)}
+  /* THE TYPED-IN FIELDS, given the same body the buttons around them have.
+     A transparent box with a 2px corner beside a stack of 9px caps reads as
+     a gap in the panel rather than as a place to type. Scoped to MY LEVELS:
+     the settings sheet and the import panels have their own crowding. */
+  .panel.mylv input[type=text],.panel.mylv input:not([type]),
+  .panel.mylv textarea{border-radius:8px;background:rgba(255,255,255,.025);
+    border-color:color-mix(in srgb,var(--fg-dim) 34%,var(--rule))}
+  .panel.mylv input[type=text],.panel.mylv input:not([type]){height:44px;
+    padding:0 11px;font-size:14px;margin-top:12px}
+  .panel.mylv input:focus,.panel.mylv textarea:focus{outline:none;
+    border-color:color-mix(in srgb,var(--goal) 62%,transparent);
+    box-shadow:0 0 0 3px color-mix(in srgb,var(--goal) 14%,transparent)}
+  .panel.mylv textarea{padding:9px 10px;margin-top:8px}
+  /* DELETING IS THE ONE CAP IN THIS GAME THAT IS RED ALL THROUGH. It was red
+     letters on the ordinary grey cap, which is the same weight as CLOSE. */
+  .panel.mylv .pdanger{--c:#e0455f;color:color-mix(in srgb,var(--c) 78%,#fff);
+    border-color:color-mix(in srgb,var(--c) 52%,transparent);
+    background:
+      linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,0) 62%),
+      color-mix(in srgb,var(--c) 15%,var(--panel));
+    box-shadow:0 4px 0 color-mix(in srgb,var(--c) 30%,#04070d)}
+  .panel.mylv .pdanger:active{transform:translateY(3px);
+    box-shadow:0 1px 0 color-mix(in srgb,var(--c) 30%,#04070d)}
+  /* NOTHING HERE YET, as a picture over a sentence. */
+  .mlnone{margin-top:26px;display:flex;flex-direction:column;align-items:center;
+    text-align:center;gap:9px;padding:0 14px}
+  .mlnonecu{width:54px;height:54px;opacity:.5}
+  .mlnonecu .ft{fill:#8296bf}
+  .mlnonecu .fr{fill:#5a6d94}
+  .mlnonecu .fl{fill:#3d4a66}
+  .mlnone b{font-family:'Space Grotesk',system-ui,sans-serif;font-size:14px;
+    font-weight:700;letter-spacing:-.01em;color:var(--fg)}
+  .mlnone span{font-size:11px;line-height:1.6;color:var(--fg-dim)}
   /* The upload arrow on LOAD A LEVEL, sized and spaced like the HOME icon in
      every panel footer - `.pfi` is that rule, and this is the same picture
      doing the same job. */
@@ -102,8 +188,19 @@
   /* The ground choices, one per world the campaign has shown you. The same
      chip the editor's piece bar wears, so a choice looks like a choice in
      both places. */
-  .grow{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
-  .grow .chip{flex:1 0 29%;height:34px}
+  /* A GRID, not a wrapping row: with four grounds the odd one out stretched
+     to the full width of the panel and read as a heading rather than as the
+     fourth of four. */
+  .grow{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:8px}
+  /* The same chip the editor's piece bar wears, carrying the same kind of
+     picture: its section's emblem over its section's name, in its section's
+     colour. `--c` is written per chip by newLevelPanel(). */
+  .grow .chip{height:52px;gap:3px}
+  /* The emblem takes the section's colour outright rather than the chip's
+     text colour, which is that hue mixed towards the foreground - fire's
+     flame came out pink. */
+  .grow .chip .secem{width:21px;height:21px;fill:var(--c);opacity:.92}
+  .grow .chip i{font-size:10px;letter-spacing:.04em}
   /* Pills, matching the map's section tabs, so the two panels agree about
      what a tab is. */
   .tabs{display:flex;gap:5px;margin:10px 0 10px;padding:0 13px}

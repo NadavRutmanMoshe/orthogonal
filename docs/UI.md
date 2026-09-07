@@ -187,12 +187,18 @@ named). Undoing one of these needs the paragraph.
   (`panelKind` `mylevels`, which also carries `.mylv` for its own rules), and
   the home button opens `myLevelsPanel()`. Its body is two full-width caps —
   `ADD LEVEL` (primary, `.pgo`) then `LOAD A LEVEL`, same size — and the list
-  under them is exactly as wide: **one level per line** (`.mlrow`). The name
-  sizes to its own text with the **pencil that renames it against it**
-  (`.mlname`, and `flex:0 1 auto` on `.lname` so it does not stretch and drag
-  the pencil right); the row's other four are ▶ play, `EDIT` (the one word,
-  because there is no honest glyph for "open the editor"), the share node and
-  ×. `penIcon()`, `playIcon()`, `shareIcon()` and `upIcon()` are next to
+  under them is exactly as wide: **one level per card** (`.mlrow`). A card
+  wears **its ground's colour** in `--sec` (`SECTIONS[].col`, via
+  `groundOf()`) on its rim, its lit left edge, its emblem and its meta line,
+  and is **three lines**: the name with the **pencil that renames it against
+  it** (`flex:0 1 auto` on `.lname` so it does not stretch and drag the
+  pencil right) and a `DRAFT` tag; then `ground · N moves`; then the four
+  verbs across the full width — ▶ play (the goal's teal), `EDIT` (the one
+  word, because there is no honest glyph for "open the editor"), the share
+  node and × (the only red, because it is the only thing here that cannot be
+  undone). Those four shared the name's line until the name lost on a 327px
+  phone. `RENAME`, `SHARE` and `DELETE` each open on `mlHero()` — the same
+  card with its verbs taken off — so the screen is visibly the row pressed. `penIcon()`, `playIcon()`, `shareIcon()` and `upIcon()` are next to
   `homeIcon()` in `16-panels.js`; `LOAD A LEVEL` wears the upload arrow in
   `.pfi` size. The editor is what `EDIT` and `ADD LEVEL` open, through the
   one door `loadIntoEditor()`, which is what sets `editingId`.
@@ -215,7 +221,10 @@ named). Undoing one of these needs the paragraph.
   chip you have not met is not drawn, rather than drawn disabled. The
   ground chips on `NEW LEVEL` are the same rule (`seenSections()`), and the
   chosen ground is a `SECTIONS` index on the level (`theme`), applied by
-  `levelTheme()` in the editor and in play.
+  `levelTheme()` in the editor and in play. A ground chip on `NEW LEVEL`
+  wears its section's colour and emblem, the same pair the chooser tile and
+  the MY LEVELS card wear; `.grow` is a 3-column grid so a fourth ground does
+  not stretch to the panel's full width.
 - **Sharing is text.** `sharePanel()` prints one level as
   `orthogonal-level-1` JSON, selected and with a COPY button; `LOAD A
   LEVEL` takes that, a bare level, or a whole project file, and always

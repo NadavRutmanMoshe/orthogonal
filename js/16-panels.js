@@ -2087,6 +2087,26 @@ function levelNote(lv){
   if(lv.score==null)return g.toLowerCase()+" · draft";
   return g.toLowerCase()+" · "+tierOf(lv.score)+" · "+lv.moves+" moves";
 }
+/* THE WORLD A LEVEL STANDS IN, as a colour and a picture.
+
+   MY LEVELS was a grey list: four identical rows of white text and grey
+   buttons, on a screen the player reached from a home screen where every
+   other door is coloured. Nothing on it said which of your levels was which
+   before the name was read, and nothing said anything at all about the
+   worlds the game had just spent four sections teaching.
+
+   A custom level already carries its ground as a SECTIONS index, so it
+   already has both: `col`, the colour that section wears on the chooser, the
+   map and CONTINUE, and secEmblem(), the glyph its tile carries. This is the
+   one lookup both the row and the NEW LEVEL chips read, so a ground looks
+   the same wherever it is offered or shown. A level with no ground is the
+   editor's default night, which is PROLOGUE's own slate. */
+function groundOf(n){
+  var s=(n!=null&&typeof SECTIONS!=="undefined")?SECTIONS[n]:null;
+  return {sec:s,col:(s&&s.col)||"#7183a6",
+          name:s?groundName(n):"night",
+          em:secEmblem(s)};
+}
 
 /* THE PAGE SHAPE, borrowed rather than re-invented. MY LEVELS is a place you
    go, like the map and the wardrobe, so it is a full-height panel wearing the
@@ -2109,6 +2129,21 @@ function mlScreen(title,sub,body,foot){
     "<div class='pfoot'>"+foot+"</div>","mylevels");
   bind("mlX",hidePanel);
 }
+/* THE LEVEL THE SCREEN IS ABOUT, at the top of it. RENAME, SHARE and DELETE
+   each act on exactly one level, and each used to open on a header, a
+   sentence and a button - three screens that looked the same and named the
+   level only in a subtitle in caps. This is the row from MY LEVELS with its
+   verbs taken off: the same emblem, the same colour, the same two lines, so
+   the screen you land on is visibly the row you pressed. */
+function mlHero(lv){
+  var g=groundOf(lv.theme);
+  var meta=g.name.toLowerCase()+(lv.score==null?" · draft":
+    " · "+lv.moves+" moves");
+  return "<div class='mlhero' style='--sec:"+g.col+"'>"+
+    "<span class='mlem'>"+g.em+"</span>"+
+    "<span class='mlmain'><b>"+esc(lv.name)+"</b>"+
+      "<span class='mlmeta'>"+esc(meta)+"</span></span></div>";
+}
 // The footer every screen under MY LEVELS wears: up one level, then out.
 function mlFoot(backId,backLabel){
   return "<button id='"+backId+"'>"+backLabel+"</button>"+
@@ -2119,9 +2154,18 @@ function myLevelsPanel(){
   var body="<button class='mlbtn pgo' id='mlAdd'>+ &nbsp;ADD LEVEL</button>"+
            "<button class='mlbtn' id='mlLoad'>"+upIcon()+"LOAD A LEVEL</button>";
   if(!library.length){
-    body+="<div class='note'>Nothing here yet. ADD LEVEL asks for a name and "+
-          "opens the editor on it; SAVE keeps whatever you have built, "+
-          "finished or not.</div>";
+    /* NOTHING YET IS A PICTURE, not a paragraph of grey. An empty list is
+       the first thing most players see here, so it carries the same block
+       the editor's SOLID chip carries - the thing they are about to place -
+       over the sentence that says what the two buttons do. */
+    body+="<div class='mlnone'>"+
+      "<svg class='mlnonecu' viewBox='0 0 24 24' aria-hidden='true'>"+
+        "<path class='ft' d='M12 3.4 20.6 8.3 12 13.2 3.4 8.3Z'/>"+
+        "<path class='fl' d='M3.4 8.3 12 13.2v7.4L3.4 15.7Z'/>"+
+        "<path class='fr' d='M20.6 8.3 12 13.2v7.4l8.6-4.9Z'/></svg>"+
+      "<b>No levels yet</b>"+
+      "<span>ADD LEVEL asks for a name and opens the editor on it; "+
+      "SAVE keeps whatever you have built, finished or not.</span></div>";
   } else {
     /* ONE LEVEL, ONE LINE, and the line is as wide as the buttons above it.
        The name takes whatever the row's five verbs leave and ellipsises;
@@ -2132,14 +2176,32 @@ function myLevelsPanel(){
        and one that does not. */
     body+="<div class='mllist'>";
     for(var i=0;i<library.length;i++){
-      var lv=library[i];
-      body+="<div class='mlrow'>"+
-        "<span class='mlname'><span class='lname'>"+esc(lv.name)+
-          (lv.score==null?"<i>draft</i>":"")+"</span>"+
-          "<button class='mini mlic' data-name='"+lv.id+"' "+
-            "aria-label='Rename'>"+penIcon()+"</button></span>"+
+      var lv=library[i], g=groundOf(lv.theme);
+      /* GROUND AND LENGTH, and not the tier. Three facts do not fit beside
+         four buttons at a size anyone would read, and of the three the
+         solver's difficulty word is the one that is already on MORE - the
+         ground is what the emblem beside it is saying, and the move count is
+         the only number the player set themselves. */
+      var meta=g.name.toLowerCase()+(lv.score==null?"":" · "+lv.moves+" moves");
+      /* WHAT THE LEVEL IS, THEN WHAT YOU CAN DO TO IT. The four verbs used
+         to share a line with the name, and on the owner's 327px phone the
+         name lost - "The Long Way Round" ellipsised to make room for four
+         buttons that are identical on every row. They get their own line
+         across the whole card instead, which is also the first time they
+         have been a comfortable size to hit. */
+      body+="<div class='mlrow' style='--sec:"+g.col+"'>"+
+        "<span class='mlhead'>"+
+          "<span class='mlem'>"+g.em+"</span>"+
+          "<span class='mlmain'>"+
+            "<span class='mltop'><span class='lname'>"+esc(lv.name)+"</span>"+
+              (lv.score==null?"<i class='mldraft'>DRAFT</i>":"")+
+              "<button class='mini mlic' data-name='"+lv.id+"' "+
+                "aria-label='Rename'>"+penIcon()+"</button></span>"+
+            "<span class='mlmeta'>"+esc(meta)+"</span>"+
+          "</span>"+
+        "</span>"+
         "<span class='lbtns'>"+
-          "<button class='mini mlic' data-play='"+lv.id+"' "+
+          "<button class='mini mlic mlplay' data-play='"+lv.id+"' "+
             "aria-label='Play'>"+playIcon()+"</button>"+
           "<button class='mini' data-edit='"+lv.id+"'>EDIT</button>"+
           "<button class='mini mlic' data-share='"+lv.id+"' "+
@@ -2188,10 +2250,18 @@ function myLevelsPanel(){
 function newLevelPanel(){
   var secs=seenSections(),pick=secs[0],keep="";
   function draw(){
+    /* A GROUND CHIP IS THE WORLD IT PICKS: its section's colour and its
+       section's emblem, the same pair the chooser tile and the row on MY
+       LEVELS wear. It used to be the word alone in the editor's grey chip,
+       which asked the player to remember that FIRE is the red one - on a
+       screen whose whole question is "which world?". */
     var chips="";
-    for(var i=0;i<secs.length;i++)
-      chips+="<button class='chip"+(secs[i]===pick?" sel":"")+"' data-g='"+
-             secs[i]+"'>"+esc(groundName(secs[i]))+"</button>";
+    for(var i=0;i<secs.length;i++){
+      var g=groundOf(secs[i]);
+      chips+="<button class='chip gchip"+(secs[i]===pick?" sel":"")+
+             "' style='--c:"+g.col+"' data-g='"+secs[i]+"'>"+g.em+
+             "<i>"+esc(groundName(secs[i]))+"</i></button>";
+    }
     mlScreen("New Level","NAME AND GROUND",
       "<input id='nlName' placeholder='level name' />"+
       "<div class='note'>GROUND — the world your level stands in.</div>"+
@@ -2240,6 +2310,7 @@ function renamePanel(id){
   var lv=findLevel(id);
   if(!lv)return;
   mlScreen("Rename",esc(lv.name).toUpperCase(),
+    mlHero(lv)+
     "<input id='rnName' placeholder='level name' />"+
     "<button class='mlbtn pgo' id='rnGo'>RENAME</button>",
     mlFoot("rnBack","← MY LEVELS"));
@@ -2264,8 +2335,9 @@ function deletePanel(id){
   var lv=findLevel(id);
   if(!lv)return;
   mlScreen("Delete",esc(lv.name).toUpperCase(),
-    "<div class='note'>Delete <b>"+esc(lv.name)+"</b>? This cannot be undone, "+
-    "and there is no copy of it anywhere else.</div>"+
+    mlHero(lv)+
+    "<div class='note'>This cannot be undone, and there is no copy of it "+
+    "anywhere else.</div>"+
     "<button class='mlbtn pdanger' id='dlGo'>DELETE IT</button>",
     mlFoot("dlBack","← KEEP IT"));
   bind("mlClose",hidePanel);
@@ -2285,6 +2357,7 @@ function sharePanel(id){
   var lv=findLevel(id);
   if(!lv)return;
   mlScreen("Share",esc(lv.name).toUpperCase(),
+    mlHero(lv)+
     "<div class='note'>Copy this and send it. Whoever gets it pastes it into "+
     "LOAD A LEVEL.</div>"+
     "<textarea id='shTxt'></textarea>"+
