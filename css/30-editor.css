@@ -15,9 +15,37 @@
     letter-spacing:.1em;color:var(--player);margin-top:5px;line-height:1.6;
     max-width:62vw;word-break:break-word}
   .row{display:flex;gap:4px;align-items:stretch}
-  .chip{flex:1;height:38px;font-size:11px;letter-spacing:.04em;padding:0 2px}
-  .chip.sel{border-color:var(--player);color:var(--player);
-    background:rgba(214,51,108,.13)}
+  /* THE PIECE CHIPS. Each one wears its piece's hue in `--c` (set by
+     drawToolChips() in js/14-editor.js) and everything on the chip follows
+     it: the cube's three faces, the rim, the lip and the lit state. The cube
+     carries the meaning, so the word under it can be small. */
+  .chip{flex:1;height:47px;font-size:11px;letter-spacing:.03em;padding:2px;
+    flex-direction:column;gap:2px;
+    border-color:color-mix(in srgb,var(--c) 14%,var(--rule));
+    color:color-mix(in srgb,var(--c) 38%,var(--fg));
+    --lip:color-mix(in srgb,var(--c) 22%,#04070d)}
+  .chip i{font-style:normal;line-height:1}
+  .chip .cu{width:23px;height:23px;display:block;flex-shrink:0}
+  .chip .ft{fill:color-mix(in srgb,var(--c) 76%,#fff)}
+  .chip .fr{fill:var(--c)}
+  .chip .fl{fill:color-mix(in srgb,var(--c) 66%,#000)}
+  /* Water leaves nothing in 2D, so its cube is see-through. Fire glows. */
+  .chip .cu.soft{opacity:.7}
+  .chip .cu.hot{filter:drop-shadow(0 0 3px color-mix(in srgb,var(--c) 45%,transparent))}
+  .chip .cu.wire path{fill:none;stroke:color-mix(in srgb,var(--c) 62%,transparent);
+    stroke-width:1.2;stroke-dasharray:2.4 2.2;stroke-linejoin:round}
+  /* Lit: the hue comes all the way up, and the chip takes an inner ring so
+     a piece whose own colour is loud (fire, the player) is still obviously
+     *not* the selected one until it is. */
+  .chip.sel{border-color:var(--c);color:color-mix(in srgb,var(--c) 70%,#fff);
+    background:
+      linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,0) 62%),
+      color-mix(in srgb,var(--c) 17%,var(--panel));
+    box-shadow:0 3px 0 var(--lip),
+      inset 0 0 0 1px color-mix(in srgb,var(--c) 45%,transparent),
+      0 0 16px color-mix(in srgb,var(--c) 24%,transparent)}
+  .chip.sel:active{box-shadow:0 0 0 var(--lip)}
+  .chip.sel .cu{transform:translateY(-1px)}
   .row2 button{height:40px}
   .row2 .ico{width:40px;font-size:14px}
   .verify{flex:1;border-color:var(--goal);color:var(--goal);

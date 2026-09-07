@@ -94,6 +94,63 @@ function onCanvasTap(e){
 var TOOL_IDS={add:"tAdd",glass:"tGlass",anchor:"tAnchor",crate:"tCrate",
               key:"tKey",spike:"tSpike",erase:"tErase",start:"tStart",
               goal:"tGoal"};
+/* THE CHIP IS THE PIECE.
+
+   The tool row used to be nine words in nine identical grey caps, which asks
+   the player to remember that AMBER is the yellow one and CRATE is the violet
+   one - a mapping the board already shows them. So the chip carries the thing
+   it places: one isometric cube, three faces, drawn from a single `--c` per
+   chip. The top face lightens that hue, the right face is it, the left face
+   darkens it, which is the same three-tone read a block has in the world; and
+   the same `--c` drives the chip's rim, its lip and its lit state, so the row
+   is told apart by colour before a word is read.
+
+   The colours are the legend's colours (legendPanel(), js/16-panels.js) - the
+   one place the game has already committed to what each piece looks like.
+
+   Two of the nine are not blocks and are not drawn as one: GOAL is the flat
+   pad it is on the board, and ERASE is an empty wire cube, the honest drawing
+   of taking a block away. START is the player, so it is a cube in --player
+   and follows the skin.
+
+   Drawn once and idempotent (`data-art`), because the chips are static markup
+   in index.html that syncTools() only ever shows and hides. */
+var TOOL_ART={
+  add:   {c:"#5a6d94"},
+  glass: {c:"#7fc4d8",art:"soft"},
+  anchor:{c:"#d9a441"},
+  crate: {c:"#9b7fd4"},
+  key:   {c:"#e3c14a"},
+  spike: {c:"#b4384a",art:"hot"},
+  erase: {c:"#8c9dc4",art:"wire"},
+  start: {c:"var(--player)"},
+  goal:  {c:"var(--goal)",art:"pad"}
+};
+function toolArt(art){
+  if(art==="wire")
+    return "<svg class='cu wire' viewBox='0 0 24 24' aria-hidden='true'>"+
+      "<path d='M12 3.4 20.6 8.3 12 13.2 3.4 8.3Z'/>"+
+      "<path d='M3.4 8.3 12 13.2v7.4L3.4 15.7Z'/>"+
+      "<path d='M20.6 8.3 12 13.2v7.4l8.6-4.9Z'/></svg>";
+  if(art==="pad")
+    return "<svg class='cu' viewBox='0 0 24 24' aria-hidden='true'>"+
+      "<path class='ft' d='M12 7.2 21 12.4 12 17.6 3 12.4Z'/>"+
+      "<path class='fl' d='M3 12.4 12 17.6 21 12.4v2L12 19.6 3 14.4Z'/></svg>";
+  return "<svg class='cu"+(art?" "+art:"")+"' viewBox='0 0 24 24' aria-hidden='true'>"+
+    "<path class='ft' d='M12 3.4 20.6 8.3 12 13.2 3.4 8.3Z'/>"+
+    "<path class='fl' d='M3.4 8.3 12 13.2v7.4L3.4 15.7Z'/>"+
+    "<path class='fr' d='M20.6 8.3 12 13.2v7.4l8.6-4.9Z'/></svg>";
+}
+function drawToolChips(){
+  for(var k in TOOL_IDS){
+    var el=$(TOOL_IDS[k]);
+    if(!el||el.getAttribute("data-art"))continue;
+    var a=TOOL_ART[k]||{};
+    el.setAttribute("data-art","1");
+    if(a.c)el.style.setProperty("--c",a.c);
+    el.innerHTML=toolArt(a.art)+"<i>"+el.textContent.trim()+"</i>";
+  }
+}
 function setTool(t){
   tool=t;
   for(var k in TOOL_IDS)$(TOOL_IDS[k]).classList.toggle("sel",k===t);
@@ -136,6 +193,7 @@ function seenTools(){
 // disabled: a greyed-out row of five is the same spoiler with a lock on it.
 function syncTools(){
   var seen=seenTools();
+  drawToolChips();
   for(var k in TOOL_IDS){
     var el=$(TOOL_IDS[k]);
     if(el)el.style.display=seen[k]?"":"none";

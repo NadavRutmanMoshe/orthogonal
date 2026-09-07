@@ -200,6 +200,11 @@ named). Undoing one of these needs the paragraph.
   solver cannot finish and shows it as a **draft** everywhere a score is
   printed. `VERIFY` is still advice, and its own SAVE routes through the
   same function.
+- **A piece chip is the piece.** Each chip in `#editBar`'s tool row carries an
+  isometric cube in that piece's legend colour, drawn by `drawToolChips()`
+  (`js/14-editor.js`) from one `--c` per chip that also drives the rim, the
+  lip and the lit state. GOAL is the flat pad it is on the board and ERASE is
+  an empty wire cube; START is `var(--player)`, so it follows the skin.
 - **The editor only offers pieces the campaign has shown you**
   (`seenTools()` / `syncTools()` in `14-editor.js`, off `mapReach()`); a
   chip you have not met is not drawn, rather than drawn disabled. The
