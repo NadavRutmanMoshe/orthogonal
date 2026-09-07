@@ -116,9 +116,31 @@ body.flat.bosshold::before{background:rgba(90,84,68,.34)}
 /* Lower than the middle: the hand is the thing being watched and the world
    above it is the thing being learned, so the demonstration sits under the
    board rather than across it. */
-.ghost{position:fixed;left:50%;top:60%;z-index:11;
+/* WHERE THE HAND IS, AND WHY IT IS NOT ON THE BOARD.
+
+   It used to sit at 60% - a couple of centimetres under the middle of the
+   screen, which on a small tutorial arena is *on top of the blocks*, and its
+   swipe track ran across the bottom row of them. Reported, twice: players
+   read the hand as pointing at the player's own square and tried to touch
+   the piece. The gesture works anywhere on the screen; the demonstration was
+   accidentally saying it did not.
+
+   So the hand is pushed down into the empty band under the arena, and how
+   far depends on what else is down there:
+   - a HINT (`once`) can arrive on any level, where the control bar is at the
+     bottom of the screen (its top is at about 81% with the d-pad up), so 72%
+     is as low as it can go without landing on the buttons;
+   - the GESTURE LESSON (`body.tutgest`) has no control bar at all - it is
+     hidden by rule, further down this file - so its hand goes lower still,
+     clear of any arena the tutorials use and with only the coach line under
+     it. */
+.ghost{position:fixed;left:50%;top:72%;z-index:11;
   width:190px;height:118px;margin:-59px 0 0 -95px;
   pointer-events:none;opacity:0;transition:opacity .35s ease}
+body.tutgest .ghost{top:82%}
+/* Landscape gives the arena the whole height of a short screen, so the band
+   under it is thinner and the hand has to sit lower to stay out of it. */
+@media (orientation:landscape){body.tutgest .ghost{top:86%}}
 .ghost.on{opacity:.62}
 /* Under the lock the hand is the lit control, so it goes to full strength -
    the same step up the cued button used to take. */
@@ -141,12 +163,20 @@ body.tutlock .ghost.on{opacity:1}
    the fist: the hand hangs *down* from its fingertip, which is the contact
    point at the ghost's own centre, so everything under that point is drawing.
    Above it there is only the tap's ripple and the 42px an upward swipe
-   travels, and 78px clears both. */
+   travels, and 78px clears both.
+
+   A SIDEWAYS GESTURE NEEDS NOTHING LIKE THAT MUCH, and it is the one that
+   has to fit: 78px of gap put the name back up among the blocks as soon as
+   the hand itself was pushed down clear of them. A horizontal swipe never
+   goes above its own dot, and the two-finger pair's upper contact stops at
+   -29, so 54px clears the lot and keeps the name with the hand it belongs
+   to. `.gy` and the double tap keep the full 78. */
 .glabel{position:absolute;left:50%;top:-78px;transform:translateX(-50%);
   white-space:nowrap;text-transform:uppercase;
   font-family:'IBM Plex Mono',ui-monospace,monospace;
   font-size:15px;font-weight:600;letter-spacing:.16em;color:var(--goal);
   text-shadow:0 2px 10px rgba(0,0,0,.55)}
+.ghost.gx .glabel{top:-54px}
 .glabel:empty{display:none}
 .gtrack{position:absolute;left:50%;top:50%;border-radius:3px;
   transform:translate(-50%,-50%);display:none}

@@ -118,6 +118,11 @@ named). Undoing one of these needs the paragraph.
 - **`.flatbtn.peril`** (fold will kill you) is dark hazard stripes and a
   blinking triangle, never a glow; **`.strike`** (fold will kill *it*) is
   the lit, breathing one. Opposites by construction.
+- **The ghost hand sits under the arena, not on it.** `.ghost` is at 72% of
+  the screen for a hint (as low as it goes without landing on the control
+  bar) and 82% during a gesture lesson (`body.tutgest`, which hides the bar),
+  86% in landscape. It used to be at 60% - on top of the blocks, with its
+  swipe track across them - and players read it as "touch the piece".
 - **Icons are solid SVG** with `.lite` / `.dim` / `.ln`; text glyphs at that
   size were reported as missing buttons.
 - **The lives bar sits under the level text, split to the two sides**: your
