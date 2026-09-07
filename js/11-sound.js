@@ -47,10 +47,11 @@ function defaultVolume(){
    gesture lesson too, and a swiping hand is an odd thing to show somebody
    holding a mouse. The keyboard half of the lesson is still unbuilt; when it
    exists this is where it is chosen. */
-/* hintAsked is whether the bulb has been explained, once - see hintOffer().
-   A "has this happened" flag rather than a preference. `ctlAsked` sat here
-   too, for a card at the end of the tutorial that offered the buttons back;
-   the buttons are a setting and the card is gone. */
+/* starAsked is whether the star rule has been explained, once - see
+   starsOffer(). A "has this happened" flag rather than a preference.
+   `ctlAsked` sat here too, for a card at the end of the tutorial that
+   offered the buttons back, and `hintAsked` for the card that explained the
+   bulb; the buttons are a setting, and both of those cards are gone. */
 /* noSlowOffer is the player saying stop to the help the game offers after a
    run of losses. It is global rather than per level: somebody who does not
    want to be offered help does not want it again on the next boss either. It
@@ -61,7 +62,7 @@ var settings={volume:defaultVolume(),brightness:1,ui:"none",volTouched:false,
               /* pace is retired and pinned at 1; see paceScale() below. */
               pace:1,
               noSlowOffer:false,landHints:0,
-              hintAsked:false,starAsked:false};
+              starAsked:false};
 /* How many times the landing rule is spelled out in words. The rings keep
    drawing forever - they are free and they answer the question faster than a
    sentence does - but a line of text on every fold would be nagging. */

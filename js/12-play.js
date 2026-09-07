@@ -1814,45 +1814,28 @@ function bindNever(){
    `settings.ctlAsked` went with it, out of the loadSettings() whitelist as
    well - a key whose feature is removed comes out of the list with it. */
 
-/* THE BULB, EXPLAINED ON THE FIRST LEVEL AFTER THE TUTORIAL.
+/* THE BULB IS NO LONGER EXPLAINED BY A CARD, on the owner's call, and this
+   removes the second of the two that used to stand between the tutorial and
+   the game (`settings.ctlAsked` above was the first).
 
-   The tutorial's last card says where the hand goes and then the game stops
-   talking - and the single most useful control in it is a bulb in the corner
-   that nobody has been told about. Hints are the reason a player who is
-   stuck does not close the game, so a hint nobody knows exists is a
-   retention hole rather than a missing nicety.
+   The argument for it stands and is worth keeping written down: the last
+   tutorial card says where the hand goes, then the game stops talking, and
+   the most useful control on the screen is a bulb nobody has been told
+   about. What it cost was a card in the player's way on the first level they
+   were finally left alone on - which is the level that has to feel like the
+   game starting. The badge on the bulb says how many are in the pool, the
+   refill card below explains the pool the moment it matters, and the last
+   tutorial's win card still ends with "from here on, tap the bulb for a
+   hint". That is three sayings of it that cost nobody a dismissal.
 
-   AND THE PRESS IT ASKS FOR IS FREE. A hint costs one out of a pool of
-   three, and this card tells the player to spend one in order to find out
-   what the button does - so it arms `freeHint` and showHint() skips the
-   accounting exactly once. Charging for a control you demanded they try is
-   the kind of small dishonesty a player remembers. It used to be a star band
-   rather than a hint; the flag is unchanged and so is the reason for it. */
-function hintOfferDue(){
-  return !settings.hintAsked&&
-         playSource==="builtin"&&!!L&&!L.tutorial&&!L.boss&&!L.trial;
-}
-function hintOffer(){
-  if(!hintOfferDue())return;
-  if(levelOver()||panelOpen()||screenUp())return;
-  settings.hintAsked=true;saveSettings();
-  freeHint=true;
-  offerShell("The bulb",
-    "Stuck? The bulb shows you the <b>next move</b>.",
-    "<button class='ad' id='hnTry'>SHOW ME</button>"+
-    "<button class='qt' id='hnNo'>GOT IT</button>",
-    "You have <b>"+HINT_FREE+"</b>, and one comes back every half hour. They "+
-    "cost no stars, and this one is free.");
-  bind("hnNo",function(){hidePanel();});
-  bind("hnTry",function(){
-    hidePanel();
-    // The pulse rather than the hint itself: the point is to show them where
-    // the button is and let *them* press it, which is the thing they have to
-    // remember. cue() falls through to the hand or to words if the layout
-    // ever drops the bulb, so this says it whatever is on screen.
-    setTimeout(function(){cue("bHint");},260);
-  });
-}
+   `settings.hintAsked` went out of the loadSettings() whitelist with it - a
+   key whose feature is removed comes out of the list.
+
+   `freeHint` is deliberately left in place, armed by nothing. It is the seam
+   for "this press is on us": showHint() still honours it and still says
+   `free · this one is on us`, so any future card or reward that wants to
+   hand over a hint is one assignment, exactly as it was here. */
+
 /* THE STARS, EXPLAINED ON THE ONE LEVEL BUILT TO SHOW THEM.
 
    Testers ignore the star system, and the reason is that nothing ever points
@@ -1980,6 +1963,5 @@ function loadLevel(level,idx){
   // The board first, the card a beat later - the same order the struggle
   // offer uses, and for the same reason: it is a door standing in front of
   // something, so the something has to be there.
-  if(hintOfferDue())setTimeout(hintOffer,520);
-  else if(starsOfferDue())setTimeout(starsOffer,520);
+  if(starsOfferDue())setTimeout(starsOffer,520);
 }

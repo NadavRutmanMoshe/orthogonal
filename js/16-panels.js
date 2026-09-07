@@ -453,7 +453,7 @@ function menuPanel(){
 
     // including "stop suggesting things": a reset is a reset
     settings.noSlowOffer=false;settings.landHints=0;
-    settings.hintAsked=false;settings.starAsked=false;
+    settings.starAsked=false;
     muted=false;
     applyVolume();
     applyBrightness();applyUI();saveSettings();syncHud();

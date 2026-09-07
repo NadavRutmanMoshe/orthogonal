@@ -96,7 +96,10 @@ function loadSettings(){
            tomorrow. Bounded rather than trusted, because a hand-edited save
            should not be able to switch help off with a nonsense value. */
         if(o.noSlowOffer===true)settings.noSlowOffer=true;
-        if(o.hintAsked===true)settings.hintAsked=true;
+        /* `hintAsked` is NOT read here any more: the card it gated is gone,
+           and a key not read here does not exist after a reload. An old save
+           may still carry it; it is ignored rather than migrated, because
+           nothing is left that would ask. */
         if(o.starAsked===true)settings.starAsked=true;
         if(typeof o.landHints==="number"&&o.landHints>=0)
           settings.landHints=Math.min(99,o.landHints|0);
