@@ -1974,8 +1974,11 @@ function loadLevel(level,idx){
      changing sky and weather every frame would be paying for a lookup that
      changes about once every ten levels. A level with no section - the
      editor, the library, a composed level - gets the default sky. */
+  /* A custom level brings its own ground (levelTheme reads the section index
+     the editor stored on it); the campaign's comes from where the level sits
+     in it; anything else is the default night. */
   if(typeof applyTheme==="function")
-    applyTheme(playSource==="builtin"?themeForLevel(lvIndex):null);
+    applyTheme(playSource==="builtin"?themeForLevel(lvIndex):levelTheme(L));
   $("lvName").textContent=L.name;
   $("lvHint").textContent=L.hint;
   $("won").classList.remove("on");

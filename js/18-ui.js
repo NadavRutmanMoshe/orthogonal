@@ -237,7 +237,11 @@ function syncHud(){
   syncBossBar();
 
   if(app==="edit"){
-    $("lvName").textContent="EDITOR";
+    /* THE LEVEL'S NAME, not the word EDITOR. MY LEVELS can have several
+       levels in it and they are opened one at a time from a list, so the one
+       thing the corner has to answer is which of them is on the board. */
+    $("lvName").textContent=(custom.name&&custom.name!=="Untitled")?
+      custom.name:"EDITOR";
     $("lvHint").textContent=
       tool==="glass"  ? "Water: stand on it, but it leaves nothing in 2D." :
       tool==="anchor" ? "Amber catches you when you come back to 3D." :

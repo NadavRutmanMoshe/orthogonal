@@ -227,11 +227,11 @@ level data changed to make it.
 - **`mapReach()` counts solved levels only, never skips.** Counting a skip
   would drag the rolling window forward with it and quietly hand over
   everything in between — the exact levels the skip exists to leave for later.
-- **THE GAME OFFERS THE SKIP EVERY FIFTH LOSS ON A CLOCK LEVEL.** `fails`
+- **THE GAME OFFERS THE SKIP EVERY THIRD LOSS ON A CLOCK LEVEL.** `fails`
   counts full losses per level — lives run out, not a life spent — persisted
   beside `skips`, moved by `LEVEL_RENAMES` like everything else, and cleared
   the moment the level is beaten, so it tracks the *current* run of failures
-  rather than a lifetime total. Every `STRUGGLE_OFFER` (5) losses,
+  rather than a lifetime total. Every `STRUGGLE_OFFER` (3) losses,
   `struggleOffer()` puts up the way past.
 - **It used to escalate, and the first rung went with the Pace setting.**
   The old order was the order a person would actually try: slow the clock
@@ -242,6 +242,13 @@ level data changed to make it.
   playing, and too eager for a card whose only button is "give up on this
   one". Three losses is a player still learning the beat; five is a player
   who is stuck.
+- **AND FIVE IS BACK TO THREE, on the owner's call.** The argument above is
+  about the wrong risk. The card is not a wall: it offers the skip and KEEP
+  TRYING side by side, so a player who is still learning the beat presses
+  KEEP TRYING and has lost nothing by being asked. Waiting for the fifth
+  loss is how somebody puts the game down on the fourth. The card's own
+  sentence counts the losses it is standing on, so it says "beaten you 3
+  times" without anything else changing.
 - **EVERY offer carries DON'T SHOW ME AGAIN, and it silences all of them**
   (`settings.noSlowOffer`, cleared by the settings reset). It is global
   rather than per level: somebody who does not want the game suggesting

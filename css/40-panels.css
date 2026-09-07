@@ -47,6 +47,20 @@
     white-space:nowrap;color:var(--fg)}
   .lrow .mono{font-size:11px;white-space:nowrap}
   .lbtns{display:flex;gap:3px;flex-shrink:0}
+  /* MY LEVELS' OWN ROW SHAPE. A name, what the level is under it, and the
+     five things you can do to it on the line below - five mini buttons and a
+     name do not fit across a phone, and the name is what you are looking
+     for, so it gets the width and the buttons get their own line. */
+  .mlrow{flex-wrap:wrap}
+  .mlrow .lname{white-space:normal;overflow:visible;line-height:1.4}
+  .mlrow .lname small{display:block;color:var(--fg-dim);font-size:10.5px;
+    letter-spacing:.05em;text-transform:uppercase}
+  .mlrow .lbtns{width:100%;justify-content:flex-end;margin-top:4px}
+  /* The ground choices, one per world the campaign has shown you. The same
+     chip the editor's piece bar wears, so a choice looks like a choice in
+     both places. */
+  .grow{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
+  .grow .chip{flex:1 0 29%;height:32px}
   /* Pills, matching the map's section tabs, so the two panels agree about
      what a tab is. */
   .tabs{display:flex;gap:5px;margin:10px 0 10px;padding:0 13px}

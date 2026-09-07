@@ -910,7 +910,20 @@ var SFX={
   die:function(){blip(220,.5,"sawtooth",.05,55);},
   undo:function(){blip(260,.07,"sine",.03);},
   hint:function(){blip(700,.12,"sine",.035,1050);},
-  shove:function(){blip(140,.16,"square",.045,105);},
+  /* A CRATE SLIDING. It was one square wave at 140Hz falling to 105, which
+     is a buzzer: a hard-edged tone with no start and no end to it, fired
+     several times a level all the way through the desert section, and it was
+     reported as the annoying sound. What a crate on sand actually is, is
+     grit - broadband and short - with weight under it. So the voice is now
+     noise swept downward (the scrape) over a soft sine thud (the weight),
+     with one triangle tap so it still has a front edge on a phone speaker.
+     No square wave anywhere in it, and quieter than the old one. */
+  shove:function(){
+    var c=audio();if(!c)return;
+    noiseFall(c,c.currentTime,.20,.018);
+    blip(96,.22,"sine",.038,70);
+    blip(196,.07,"triangle",.013,150);
+  },
   key:function(){blip(880,.16,"sine",.05,1320);},
   win:function(){
     [523,659,784,1047].forEach(function(f,i){

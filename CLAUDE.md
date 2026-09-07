@@ -84,9 +84,9 @@ listed in `index.html`. `21-boot.js` is the only file that *runs* anything.
 | `js/11-sound.js` | synthesised audio, the master chain, `settings`, `VERBS`, `applyUI()` |
 | `js/12-play.js` | the verbs (move, shove, fold, unfold, die, win), the fight, the trial clock, the replay, the offer cards |
 | `js/13-gestures.js` | swipe, double-tap, two-finger turn |
-| `js/14-editor.js` | tap-to-place editor, verify, minimize |
+| `js/14-editor.js` | tap-to-place editor, verify, minimize, `saveCurrent()`, `seenTools()` |
 | `js/15-tutorial.js` | cues, the coach, the ghost hand, hints, `cardPut()` |
-| `js/16-panels.js` | home screen, menu, wardrobe panel, the section chooser, the map, legend, library, `enterPlay()` |
+| `js/16-panels.js` | home screen, menu, wardrobe panel, the section chooser, the map, legend, MY LEVELS, `enterPlay()` |
 | `js/17-composer.js` | solution-first level generation |
 | `js/18-ui.js` | `$`, toasts, `showPanel()`/`hidePanel()`, `syncHud()`, star flight |
 | `js/19-bindings.js` | every button and key binding |
@@ -132,6 +132,23 @@ Block format `[x,y,z,k]`: 0 stone, 1 water (code says `glass`), 2 anchor,
   score. `V · EXTRA` opens when every boss is down (`bossesLeft()`), and
   cannot be bought open.
 - Always `node tools/verify.js` after touching a non-boss level.
+
+**The player's own levels** (`docs/UI.md`)
+- **MY LEVELS on the home screen is a list, not the editor** —
+  `myLevelsPanel()`. A row is PLAY · EDIT · NAME · SHARE · ×; `libraryPanel()`
+  survives behind `MORE` as the designer's workbench.
+- **A custom level is created named and saved as a draft.** `ADD LEVEL` asks
+  for the name and the ground and writes the library entry at once;
+  `editingId` says which entry the editor is on, and `saveCurrent()` keeps
+  whatever is on the board, solvable or not. Only `VERIFY` still asks the
+  solver.
+- **You build with what the campaign has shown you.** `seenTools()` hides
+  piece chips you have not met and `seenSections()` the grounds; both read
+  `mapReach()`, so they cannot disagree with the map. A custom level's
+  ground is a `SECTIONS` index in `theme`, applied by `levelTheme()`.
+- **A shared level is `orthogonal-level-1` JSON**, copied out of
+  `sharePanel()` and back in through `LOAD A LEVEL`, which always adds and
+  re-scores what it takes.
 
 ## Invariants that bite
 
@@ -283,7 +300,7 @@ load-bearing per screen.
 
 - The owner is learning, not shipping. Explanations of *why* are wanted, not
   just working code.
-- Levels can be pasted in and out as JSON from the editor's ⋯ menu.
+- Levels can be pasted in and out as JSON from the editor's ⋯ menu (`ioPanel`), and one at a time from MY LEVELS' SHARE.
 
 ### How to work on this, agreed with the owner
 

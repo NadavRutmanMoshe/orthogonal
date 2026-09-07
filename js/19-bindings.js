@@ -29,7 +29,7 @@ bind("bTutOk",tutCardOk);
 bind("hContinue",homeGo);
 bind("hLevels",function(){audio();sectionPicker();});
 bind("hWard",function(){audio();wardrobePanel("shape");});
-bind("hMine",function(){audio();enterEditor();});
+bind("hMine",function(){audio();myLevelsPanel();});
 bind("hMenu",function(){audio();menuPanel();});
 bind("bSkipTo",function(){
   $("intro").classList.add("gone");
@@ -92,9 +92,7 @@ bind("bNext",function(){
     var s=sortedLibrary();
     libIndex++;
     if(libIndex>=s.length){enterEditor();flash("library complete");return;}
-    var lv=s[libIndex];
-    enterPlay({name:lv.name,hint:tierOf(lv.score)+" \u00b7 "+lv.moves+" moves",
-      blocks:lv.blocks,keys:lv.keys||[],start:lv.start,goal:lv.goal,rotate:lv.rotate},undefined,false);
+    playLibraryLevel(s[libIndex]);
     return;
   }
   var n=lvIndex>=LEVELS.length-1?0:lvIndex+1;
@@ -139,11 +137,14 @@ bind("cRotL",function(){pushMove("rot-");});
 bind("cRotR",function(){pushMove("rot+");});
 bind("cFlat",function(){pushMove("FLAT");});
 bind("cPop",function(){pushMove("POP");});
-bind("eLevels",function(){
-  playSource="builtin";
-  enterPlay(LEVELS[lvIndex],lvIndex,false);
-});
-bind("eLib",libraryPanel);
+/* THE EDITOR'S TOP ROW IS THE LEVEL'S OWN ROW: the way back to the list of
+   your levels, and the way to keep this one. It used to be a way back into
+   the campaign (which the home screen already is, and which threw away
+   whatever was on the board) beside a LIBRARY button that was the only way
+   to save at all - and that save refused anything the solver could not
+   finish. */
+bind("eLevels",function(){myLevelsPanel();});
+bind("eLib",function(){saveCurrent();});
 
 bind("cDel",popMove);
 bind("cBuild",buildComposed);
@@ -162,7 +163,7 @@ bind("eRotL",function(){rotateView(-1);});
 bind("eRotR",function(){rotateView(1);});
 bind("eUndo",function(){undo();});
 bind("eVerify",runVerify);
-bind("eFile",libraryPanel);
+bind("eFile",ioPanel);
 bind("eTest",function(){
   var bad=validate();
   if(bad){showPanel("<h3>CAN'T TEST</h3><span class='bad'>"+bad+"</span>");return;}

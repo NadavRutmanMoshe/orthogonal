@@ -1985,18 +1985,321 @@ function legendPanel(){
   bind("lgBack",menuPanel);
 }
 
-function libraryPanel(){
-  var sorted=library.slice().sort(function(a,b){return a.score-b.score;});
-  var html="<h3>LIBRARY \u2014 "+library.length+" LEVEL"+(library.length===1?"":"S")+"</h3>";
+/* ============================================================
+   MY LEVELS
+   ============================================================
+   The player's own levels, as a place rather than as a tool.
+
+   What was here before was LIBRARY: a list sorted by the solver's
+   difficulty score, reachable only from inside the editor, and a level could
+   not enter it at all until it was solvable - VERIFY, then SAVE. That is a
+   level designer's workflow, and it costs a beginner their work: build half
+   a level, put the game down, and there was nothing to come back to.
+
+   So: MY LEVELS is opened from the home screen, it lists what you have made
+   in the order you made it, and every row carries the four things you can do
+   to a level you own - open it, rename it, share it, delete it. ADD LEVEL is
+   the top button because starting one is the thing this screen is for.
+
+   Three rules hold the whole screen up:
+
+   - A LEVEL EXISTS BEFORE IT WORKS. The entry is created when you name it,
+     and SAVE writes whatever is on the board - unsolvable, half-built, one
+     block. Solvability is what VERIFY is for, and it stays advice.
+   - YOU BUILD WITH WHAT YOU HAVE BEEN SHOWN. The piece chips and the ground
+     choices are filtered by how far the campaign has actually taken you
+     (seenTools(), seenSections()), so the editor teaches in the same order
+     the game does rather than opening with five pieces nobody has met.
+   - SHARE IS TEXT. There is no server here and there is not going to be one,
+     so a shared level is a block of JSON you copy, and LOAD A LEVEL is the
+     same block pasted back in. It is the project file's format, one level at
+     a time, so the two can read each other. */
+
+/* The sections whose ground a custom level may be built on: the ones the
+   campaign has actually walked you through. Same seenIndex() the piece chips
+   use, so the ground and the blocks can never disagree about what you have
+   been shown. */
+function seenSections(){
+  var out=[],reach=seenIndex();
+  for(var i=0;i<SECTIONS.length;i++){
+    if(SECTIONS[i].at>reach)continue;
+    if(SECTIONS[i].locked&&!sectionsUnlocked())continue;
+    out.push(i);
+  }
+  if(!out.length)out.push(0);
+  return out;
+}
+// "IV · DESERT" is the section; "DESERT" is the ground. The short half is
+// derived rather than authored so renaming a section renames its ground too.
+function groundName(n){
+  var nm=SECTIONS[n].name;
+  var dot=nm.indexOf("·");
+  return (dot<0?nm:nm.slice(dot+1)).trim();
+}
+/* The theme a custom level is built on. Stored as a section index, so a
+   custom level inherits every part of a section's look - sky, ground,
+   scenery, weather, the paper it folds onto - rather than a surface name
+   that would leave the sky behind. Null is the default night, which is what
+   the editor has always drawn on. */
+function levelTheme(lv){
+  if(!lv||lv.theme==null||typeof SECTIONS==="undefined")return null;
+  var s=SECTIONS[lv.theme];
+  return s?s.theme:null;
+}
+// What a row says about a level under its name. A level that has never
+// solved says so plainly: it is a draft, not a broken thing.
+function levelNote(lv){
+  var g=(lv.theme!=null&&SECTIONS[lv.theme])?groundName(lv.theme):"NIGHT";
+  if(lv.score==null)return g.toLowerCase()+" · draft";
+  return g.toLowerCase()+" · "+tierOf(lv.score)+" · "+lv.moves+" moves";
+}
+
+function myLevelsPanel(){
+  var html="<h3>MY LEVELS — "+library.length+"</h3>";
+  html+="<div class='prow'><button id='mlAdd'>+ &nbsp;ADD LEVEL</button></div>";
   if(!library.length){
-    html+="Nothing saved yet. Build a level, hit VERIFY, then SAVE.<br><br>";
+    html+="<div class='mn'>Nothing here yet. ADD LEVEL asks for a name and "+
+          "opens the editor on it; SAVE keeps whatever you have built, "+
+          "finished or not.</div>";
   } else {
-    html+="Sorted easiest first, by the solver's own numbers.<br>";
+    for(var i=0;i<library.length;i++){
+      var lv=library[i];
+      html+="<div class='lrow mlrow'>"+
+        "<span class='lname'>"+esc(lv.name)+
+          "<small>"+levelNote(lv)+"</small></span>"+
+        "<span class='lbtns'>"+
+          "<button class='mini' data-play='"+lv.id+"'>PLAY</button>"+
+          "<button class='mini' data-edit='"+lv.id+"'>EDIT</button>"+
+          "<button class='mini' data-name='"+lv.id+"'>NAME</button>"+
+          "<button class='mini' data-share='"+lv.id+"'>SHARE</button>"+
+          "<button class='mini' data-del='"+lv.id+"'>×</button>"+
+        "</span></div>";
+    }
+  }
+  html+="<div class='prow'><button id='mlLoad'>LOAD A LEVEL</button>"+
+        "<button id='mlMore'>MORE</button></div>";
+  html+="<div class='prow'><button id='mlHome'>HOME</button>"+
+        "<button id='mlClose'>CLOSE</button></div>";
+  showPanel(html);
+
+  var p=$("panel");
+  p.querySelectorAll("[data-play]").forEach(function(el){
+    tap(el,function(){startLibrary(el.getAttribute("data-play"));});
+  });
+  p.querySelectorAll("[data-edit]").forEach(function(el){
+    tap(el,function(){editLevel(el.getAttribute("data-edit"));});
+  });
+  p.querySelectorAll("[data-name]").forEach(function(el){
+    tap(el,function(){renamePanel(el.getAttribute("data-name"));});
+  });
+  p.querySelectorAll("[data-share]").forEach(function(el){
+    tap(el,function(){sharePanel(el.getAttribute("data-share"));});
+  });
+  p.querySelectorAll("[data-del]").forEach(function(el){
+    tap(el,function(){deletePanel(el.getAttribute("data-del"));});
+  });
+  bind("mlAdd",newLevelPanel);
+  bind("mlLoad",loadLevelPanel);
+  bind("mlMore",libraryPanel);
+  bind("mlHome",function(){hidePanel();homeShow();});
+  bind("mlClose",hidePanel);
+}
+
+/* NAMING IS THE FIRST STEP, not the last one. The name is what the row on
+   this screen is, so a level cannot be made without one - and the ground is
+   asked for in the same breath because it is the one decision that is
+   awkward to change once there are blocks on it. */
+function newLevelPanel(){
+  var secs=seenSections(),pick=secs[0];
+  function draw(){
+    var chips="";
+    for(var i=0;i<secs.length;i++)
+      chips+="<button class='chip"+(secs[i]===pick?" sel":"")+"' data-g='"+
+             secs[i]+"'>"+esc(groundName(secs[i]))+"</button>";
+    showPanel("<h3>NEW LEVEL</h3>"+
+      "<input id='nlName' placeholder='level name' />"+
+      "<div class='mn'>GROUND — the world your level stands in.</div>"+
+      "<div class='grow'>"+chips+"</div>"+
+      "<div class='prow'><button id='nlGo'>CREATE</button>"+
+      "<button id='nlBack'>CANCEL</button></div>");
+    $("nlName").value=keep;
+    $("panel").querySelectorAll("[data-g]").forEach(function(el){
+      tap(el,function(){keep=$("nlName").value;pick=+el.getAttribute("data-g");draw();});
+    });
+    bind("nlBack",myLevelsPanel);
+    bind("nlGo",function(){
+      var nm=($("nlName").value||"").trim();
+      if(!nm){flash("give it a name first");return;}
+      var e={id:"l"+Date.now(),name:nm,blocks:[],keys:[],
+             start:[0,1,0],goal:[3,1,0],rotate:true,theme:pick,
+             score:null,moves:null,needsRot:false,flattens:0};
+      library.push(e);
+      libSave().then(function(){loadIntoEditor(e);flash("new level — "+nm);});
+    });
+  }
+  var keep="";
+  draw();
+}
+
+// One door into the editor, from the row and from CREATE, so a level always
+// arrives with its id and its ground attached.
+function loadIntoEditor(lv){
+  snapshot();
+  custom.name=lv.name;
+  custom.blocks=lv.blocks.map(function(v){return v.slice();});
+  custom.keys=(lv.keys||[]).map(function(v){return v.slice();});
+  custom.start=lv.start.slice();custom.goal=lv.goal.slice();
+  custom.rotate=lv.rotate!==false;
+  custom.theme=(lv.theme==null?null:lv.theme);
+  editingId=lv.id;
+  ghosted.clear();
+  enterEditor();
+}
+function editLevel(id){
+  var lv=findLevel(id);
+  if(!lv)return;
+  loadIntoEditor(lv);
+  flash("editing "+lv.name);
+}
+
+function renamePanel(id){
+  var lv=findLevel(id);
+  if(!lv)return;
+  showPanel("<h3>RENAME</h3>"+
+    "<input id='rnName' placeholder='level name' />"+
+    "<div class='prow'><button id='rnGo'>RENAME</button>"+
+    "<button id='rnBack'>CANCEL</button></div>");
+  $("rnName").value=lv.name;
+  bind("rnBack",myLevelsPanel);
+  bind("rnGo",function(){
+    var nm=($("rnName").value||"").trim();
+    if(!nm){flash("give it a name first");return;}
+    lv.name=nm;
+    // The editor is showing this level's name in the HUD if it is the one
+    // open, so the two are kept in step rather than left to disagree.
+    if(editingId===id)custom.name=nm;
+    libSave().then(function(){myLevelsPanel();flash("renamed");});
+  });
+}
+
+/* DELETING IS THE ONE THING HERE THAT CANNOT BE UNDONE - there is no undo
+   stack for the library and no copy of it anywhere else - so it is the one
+   thing that asks. */
+function deletePanel(id){
+  var lv=findLevel(id);
+  if(!lv)return;
+  showPanel("<h3>DELETE</h3>"+
+    "Delete <b>"+esc(lv.name)+"</b>? This cannot be undone, and there is no "+
+    "copy of it anywhere else."+
+    "<div class='prow'><button id='dlGo'>DELETE</button>"+
+    "<button id='dlBack'>KEEP IT</button></div>");
+  bind("dlBack",myLevelsPanel);
+  bind("dlGo",function(){
+    library=library.filter(function(x){return x.id!==id;});
+    if(editingId===id)editingId=null;
+    libSave().then(function(){myLevelsPanel();flash("deleted");});
+  });
+}
+
+/* SHARING IS TEXT, and it is the same shape the project file uses for one of
+   its levels, so anything that can read one can read the other. Selected on
+   open, because the whole point is to copy it and a textarea you have to
+   drag-select on a phone is not a share button. */
+function sharePanel(id){
+  var lv=findLevel(id);
+  if(!lv)return;
+  showPanel("<h3>SHARE — "+esc(lv.name)+"</h3>"+
+    "Copy this and send it. Whoever gets it pastes it into LOAD A LEVEL."+
+    "<textarea id='shTxt'></textarea>"+
+    "<div class='prow'><button id='shCopy'>COPY</button>"+
+    "<button id='shBack'>BACK</button></div>");
+  $("shTxt").value=JSON.stringify(shareData(lv));
+  $("shTxt").focus();$("shTxt").select();
+  bind("shBack",myLevelsPanel);
+  bind("shCopy",function(){
+    var t=$("shTxt");t.focus();t.select();
+    /* Three ways, because all three fail somewhere real: the async clipboard
+       needs a secure context and a permission, execCommand is deprecated but
+       is what an old WebView has, and if both refuse the text is already
+       selected on screen and the player can copy it by hand. */
+    var done=false;
+    try{
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(t.value);done=true;
+      }
+    }catch(e){}
+    if(!done){try{done=document.execCommand("copy");}catch(e){}}
+    flash(done?"copied":"select it and copy");
+  });
+}
+function shareData(lv){
+  return {format:"orthogonal-level-1",name:lv.name,blocks:lv.blocks,
+          keys:lv.keys||[],start:lv.start,goal:lv.goal,
+          rotate:lv.rotate!==false,theme:lv.theme==null?null:lv.theme};
+}
+
+/* The other end of SHARE. It takes one shared level, a bare level object, or
+   a whole project file, because those are the three things somebody will
+   actually paste in here - and it never replaces what you have: this button
+   adds. Replacing is still on the project file's own panel, where it says so
+   in the button. */
+function loadLevelPanel(){
+  showPanel("<h3>LOAD A LEVEL</h3>"+
+    "Paste a level somebody shared with you. It is added to your levels; "+
+    "nothing you have is touched."+
+    "<textarea id='ldTxt' placeholder='paste here'></textarea>"+
+    "<div class='prow'><button id='ldGo'>ADD IT</button>"+
+    "<button id='ldBack'>BACK</button></div>");
+  bind("ldBack",myLevelsPanel);
+  bind("ldGo",function(){
+    var list;
+    try{
+      var o=JSON.parse($("ldTxt").value);
+      list=o.levels||(o.length?o:[o]);
+      for(var i=0;i<list.length;i++)
+        if(!list[i].blocks||!list[i].start||!list[i].goal)throw 0;
+    }catch(e){flash("that isn't a level");return;}
+    for(var j=0;j<list.length;j++)library.push(adoptLevel(list[j],j));
+    libSave().then(function(){
+      myLevelsPanel();
+      flash("added "+list.length+" level"+(list.length===1?"":"s"));
+    });
+  });
+}
+/* A level from outside is re-scored here rather than trusted: the numbers on
+   it were written by somebody else's solver run and they decide where it
+   sorts and what its row says. A fresh id for the same reason - two people
+   who both started from the same shared level must not collide. */
+function adoptLevel(o,n){
+  var e={id:"l"+Date.now()+"_"+n,name:(o.name||"Untitled").slice(0,40),
+         blocks:o.blocks,keys:o.keys||[],start:o.start,goal:o.goal,
+         rotate:o.rotate!==false,
+         theme:(typeof o.theme==="number"&&SECTIONS[o.theme])?o.theme:null,
+         score:null,moves:null,needsRot:false,flattens:0};
+  var st=statsFor(e);
+  if(st.ok){e.score=st.score;e.moves=st.moves;e.needsRot=st.needsRot;
+            e.flattens=st.flattens;}
+  return e;
+}
+
+/* THE WORKBENCH BEHIND MY LEVELS. Everything here is a level designer's
+   tool rather than a player's door: the same levels sorted by what the
+   solver thinks of them, the whole library as one file, and the composer.
+   MY LEVELS is the screen; this is MORE. */
+function libraryPanel(){
+  var sorted=sortedLibrary();
+  var html="<h3>MORE \u2014 "+library.length+" LEVEL"+(library.length===1?"":"S")+"</h3>";
+  if(!library.length){
+    html+="Nothing saved yet. ADD LEVEL on MY LEVELS starts one.<br><br>";
+  } else {
+    html+="Sorted easiest first, by the solver's own numbers. A level that "+
+          "has never solved sorts last and reads as a draft.<br>";
     for(var i=0;i<sorted.length;i++){
       var lv=sorted[i];
       html+="<div class='lrow'><span class='lname'>"+esc(lv.name)+"</span>"+
-        "<span class='mono'>"+tierOf(lv.score)+" &middot; "+lv.moves+" moves"+
-        (lv.needsRot?" &middot; rot":"")+"</span>"+
+        "<span class='mono'>"+(lv.score==null?"draft":
+          tierOf(lv.score)+" &middot; "+lv.moves+" moves"+
+          (lv.needsRot?" &middot; rot":""))+"</span>"+
         "<span class='lbtns'>"+
           "<button class='mini' data-play='"+lv.id+"'>PLAY</button>"+
           "<button class='mini' data-edit='"+lv.id+"'>EDIT</button>"+
@@ -2008,7 +2311,7 @@ function libraryPanel(){
   html+="<div class='prow'><button id='pCompose'>COMPOSE FROM A SOLUTION</button></div>";
   html+="<div class='prow'><button id='pProj'>PROJECT FILE (ALL LEVELS)</button></div>";
   html+="<div class='prow'><button id='pIO'>THIS LEVEL</button>"+
-        "<button id='pNew'>NEW LEVEL</button>"+
+        "<button id='pBackMine'>MY LEVELS</button>"+
         "<button id='pClose4'>CLOSE</button></div>";
   showPanel(html);
 
@@ -2017,33 +2320,16 @@ function libraryPanel(){
     tap(el,function(){startLibrary(el.getAttribute("data-play"));});
   });
   p.querySelectorAll("[data-edit]").forEach(function(el){
-    tap(el,function(){
-      var lv=findLevel(el.getAttribute("data-edit"));
-      if(!lv)return;
-      snapshot();
-      custom.name=lv.name;custom.blocks=lv.blocks.map(function(v){return v.slice();});
-      custom.start=lv.start.slice();custom.goal=lv.goal.slice();
-      custom.rotate=lv.rotate;
-      ghosted.clear();R=makeRules(custom);syncMeshes();hidePanel();
-      flash("loaded "+lv.name);
-    });
+    tap(el,function(){editLevel(el.getAttribute("data-edit"));});
   });
   p.querySelectorAll("[data-del]").forEach(function(el){
-    tap(el,function(){
-      var id=el.getAttribute("data-del");
-      library=library.filter(function(x){return x.id!==id;});
-      libSave().then(libraryPanel);
-    });
+    tap(el,function(){deletePanel(el.getAttribute("data-del"));});
   });
   bind("pCampaign",function(){startLibrary(null);});
   bind("pCompose",enterCompose);
   bind("pProj",projectPanel);
   bind("pIO",ioPanel);
-  bind("pNew",function(){
-    snapshot();custom.blocks=[];custom.start=[0,1,0];custom.goal=[3,1,0];
-    custom.name="Untitled";ghosted.clear();
-    R=makeRules(custom);syncMeshes();hidePanel();
-  });
+  bind("pBackMine",myLevelsPanel);
   bind("pClose4",hidePanel);
 }
 
@@ -2052,7 +2338,13 @@ function findLevel(id){
   return null;
 }
 function sortedLibrary(){
-  return library.slice().sort(function(a,b){return a.score-b.score;});
+  // A draft has no score at all. `undefined - n` is NaN and NaN compares
+  // false both ways, which leaves the sort's order undefined rather than
+  // wrong-looking - so a draft is given a score past the end instead.
+  var far=1e9;
+  return library.slice().sort(function(a,b){
+    return (a.score==null?far:a.score)-(b.score==null?far:b.score);
+  });
 }
 function startLibrary(id){
   var s=sortedLibrary();
@@ -2060,9 +2352,17 @@ function startLibrary(id){
   libIndex=0;
   if(id){ for(var i=0;i<s.length;i++) if(s[i].id===id) libIndex=i; }
   playSource="library";
-  var lv=s[libIndex];
-  enterPlay({name:lv.name,hint:tierOf(lv.score)+" \u00b7 "+lv.moves+" moves",
-    blocks:lv.blocks,keys:lv.keys||[],start:lv.start,goal:lv.goal,rotate:lv.rotate},undefined,false);
+  playLibraryLevel(s[libIndex]);
+}
+/* One place that turns a saved level into something enterPlay() can take, so
+   the row's PLAY, PLAY ALL IN ORDER and NEXT LEVEL cannot hand over three
+   different levels. `theme` rides along: a level built on sand is played on
+   sand (see levelTheme() and loadLevel()). */
+function playLibraryLevel(lv){
+  enterPlay({name:lv.name,
+    hint:lv.score==null?"your level":tierOf(lv.score)+" \u00b7 "+lv.moves+" moves",
+    blocks:lv.blocks,keys:lv.keys||[],start:lv.start,goal:lv.goal,
+    rotate:lv.rotate!==false,theme:lv.theme==null?null:lv.theme},undefined,false);
 }
 
 function projectPanel(){
@@ -2115,10 +2415,17 @@ function ioPanel(){
       custom.keys=o.keys||[];
       custom.name=o.name||"Untitled";custom.hint=o.hint||"";
       custom.rotate=o.rotate!==false;
+      custom.theme=(typeof o.theme==="number"&&SECTIONS[o.theme])?o.theme:null;
+      /* Pasted-in text is a DIFFERENT level, so it is not still the saved one
+         the editor had open: keeping the id would make the next SAVE quietly
+         overwrite a level you never touched. It saves as a new entry, under
+         the name that came in with it. */
+      editingId=null;
+      if(typeof applyTheme==="function")applyTheme(levelTheme(custom));
       ghosted.clear();R=makeRules(custom);initDynamic();syncMeshes();hidePanel();flash("loaded");
     }catch(err){flash("that isn't valid level data");}
   });
-  bind("pBack",libraryPanel);
+  bind("pBack",myLevelsPanel);
 }
 
 function esc(s){
@@ -2138,6 +2445,15 @@ function enterEditor(){
   if(typeof panelOpen==="function"&&panelOpen())hidePanel();
   app="edit";fromEditor=false;
   L=custom;R=makeRules(custom);
+  /* THE GROUND THE LEVEL WAS BUILT ON, put back every time the editor opens.
+     A custom level carries a section index rather than a surface name, so it
+     gets that section's whole world - sky, ground, scenery, weather - and
+     the editor shows what the level will actually be played on rather than
+     the default night. */
+  if(typeof applyTheme==="function")applyTheme(levelTheme(custom));
+  // Which piece chips are on the bar is a question about campaign progress,
+  // so it is asked here, once, every time the editor opens.
+  if(typeof syncTools==="function")syncTools();
   initDynamic();
   flat=false;flatTarget=0;flatT=0;
   $("won").classList.remove("on");

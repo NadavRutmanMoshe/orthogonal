@@ -64,7 +64,7 @@
   reason that was always written under it: a menu row asking a new player to
   diagnose their own difficulty stands in for a fight that is not tuned, and
   the fights are tuned per fight now. What is left for somebody stuck is the
-  skip, on the fifth loss. **`paceScale()` stays** — still one multiplication
+  skip, on the third loss. **`paceScale()` stays** — still one multiplication
   on `dt` at the top of `bossFrame` and `trialFrame` — because that
   multiplication is the seam it would come back through, and it is why every
   window in a fight keeps its ratio when it does: `step` and `aim` belong to

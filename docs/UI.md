@@ -98,7 +98,8 @@ buttons at the end of its builder.
 | Level sheet on the map | `#mSheet` inside the map | `mapSheet(i)` | `85-map` (`.msheet`) | `sheet:5` |
 | Map help sheet | same | `mapHelp()` | `85-map` | `maphelp` |
 | Legend | `#panel` | `legendPanel()` — **no button opens it any more**; `WHAT THE PIECES DO` came off the menu so the settings sheet fits one screen. The builder is intact and one `bind` away | `40-panels` (`.leg`) | `legend` |
-| Library / project / import-export | `#panel` | `libraryPanel`, `projectPanel`, `ioPanel` | `40-panels` | `library` |
+| MY LEVELS | `#panel` | `myLevelsPanel()`, and its four small screens `newLevelPanel`, `renamePanel`, `sharePanel`, `deletePanel`, `loadLevelPanel` | `40-panels` (`.mlrow`, `.grow`) | `mylevels`, `newlevel` |
+| MORE / project / import-export | `#panel` | `libraryPanel` (the designer's workbench behind MY LEVELS), `projectPanel`, `ioPanel` | `40-panels` | `library` |
 | Offer cards (stars, refill, skip) | `#panel.offer` | `offerShell(kick,title,lead,acts,note,tone)` via `starsOffer`, `hintRefillOffer`, `struggleOffer` | `85-map` (`.panel.offer .okick .olead`, `.ma .go .ad .qt .mn`) | `starsoffer`, `refill`, `struggle` |
 | Ad buttons everywhere | | `adIcon()` (`18-ui.js`), one helper, five callers | `.adicon` in `85-map` | |
 
@@ -176,6 +177,29 @@ named). Undoing one of these needs the paragraph.
   tall panels still carry a subtitle.
 - **`LEVEL EDITOR` is not in the menu.** It is `MY LEVELS` on the home
   screen — a place you go, not a setting.
+- **`MY LEVELS` is a list, not the editor.** The home button opens
+  `myLevelsPanel()`; the editor is what a row's `EDIT` (or `ADD LEVEL`)
+  opens, through the one door `loadIntoEditor()`, which is what sets
+  `editingId`. A row carries the five verbs a level you own has — PLAY,
+  EDIT, NAME, SHARE, × — on their own line under the name, because five
+  mini buttons and a name do not fit across a phone (`.mlrow`).
+- **A level exists before it works.** `ADD LEVEL` asks for a name and a
+  ground and writes the entry immediately; the editor's `SAVE` (`eLib`,
+  top-right of `#editBar`) calls `saveCurrent()`, which keeps a level the
+  solver cannot finish and shows it as a **draft** everywhere a score is
+  printed. `VERIFY` is still advice, and its own SAVE routes through the
+  same function.
+- **The editor only offers pieces the campaign has shown you**
+  (`seenTools()` / `syncTools()` in `14-editor.js`, off `mapReach()`); a
+  chip you have not met is not drawn, rather than drawn disabled. The
+  ground chips on `NEW LEVEL` are the same rule (`seenSections()`), and the
+  chosen ground is a `SECTIONS` index on the level (`theme`), applied by
+  `levelTheme()` in the editor and in play.
+- **Sharing is text.** `sharePanel()` prints one level as
+  `orthogonal-level-1` JSON, selected and with a COPY button; `LOAD A
+  LEVEL` takes that, a bare level, or a whole project file, and always
+  *adds* — replacing is on the project file's own panel, where the button
+  says so.
 - **Win card**: `.wonmast` is the section-finished pill and `.wonwear` under
   it names the shape that finished section just paid out (`grantShape()`);
   `won` story line is `esc()`d innerHTML; only newly gained stars fly; `NEXT LEVEL` becomes `WHAT'S LEFT` when the next level is

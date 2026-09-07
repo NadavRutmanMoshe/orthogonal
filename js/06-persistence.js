@@ -227,16 +227,20 @@ function progSave(){
    to be asked - the map already allows a skip on a landmark, and this is the
    same door opened at the moment it is actually wanted.
 
-   FIVE, NOT THREE. It was three while the first card was cheap advice you
-   could act on and carry on playing - slow the clock down. That row is gone,
-   so the only card left is the one whose button says "give up on this one",
-   and offering that on the third loss is too eager: three losses is a player
-   still learning the beat, five is a player who is stuck.
+   THREE, ON THE OWNER'S CALL, AND IT HAS BEEN BOTH. It was three while the
+   first card was cheap advice you could act on and carry on playing - slow
+   the clock down - then five once the only card left was the one whose
+   button says "give up on this one", on the reasoning that three losses is
+   a player still learning the beat. Back to three because the door is not a
+   wall: the card offers a skip and KEEP TRYING side by side, and a player
+   who is still learning presses KEEP TRYING and loses nothing by having been
+   asked. Waiting until the fifth loss is how somebody puts the game down on
+   the fourth.
 
    Counted only on a REAL loss - lives run out - not on a life spent, and
    cleared when the level is finally beaten, so the offer follows the current
    run of failures rather than a lifetime total. */
-var FAIL_KEY="orthogonal:fails", fails={}, STRUGGLE_OFFER=5;
+var FAIL_KEY="orthogonal:fails", fails={}, STRUGGLE_OFFER=3;
 function failLoad(){
   if(!window.storage)return Promise.resolve();
   return window.storage.get(FAIL_KEY).then(function(r){

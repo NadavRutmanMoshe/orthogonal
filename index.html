@@ -231,18 +231,22 @@
 
 <div class="bar" id="editBarWrap">
   <div id="editBar">
+    <!-- The level's own row: out to the list of your levels, and the one
+         button that keeps this one. SAVE takes a draft; see saveCurrent(). -->
     <div class="row rowTop">
-      <button class="tiny" id="eLevels">&#8592; LEVELS</button>
+      <button class="tiny" id="eLevels">&#8592; MY LEVELS</button>
       <span class="spacer"></span>
-      <button class="tiny" id="eLib">LIBRARY</button>
+      <button class="tiny" id="eLib">SAVE</button>
     </div>
     <div class="row">
       <button class="chip sel" id="tAdd">SOLID</button>
-      <button class="chip" id="tGlass">GLASS</button>
-      <button class="chip" id="tAnchor">ANCHOR</button>
+      <!-- WATER and FIRE, which is what the player reads everywhere else in
+           the game; the ids keep the code's own older names. -->
+      <button class="chip" id="tGlass">WATER</button>
+      <button class="chip" id="tAnchor">AMBER</button>
       <button class="chip" id="tCrate">CRATE</button>
       <button class="chip" id="tKey">KEY</button>
-      <button class="chip" id="tSpike">SPIKE</button>
+      <button class="chip" id="tSpike">FIRE</button>
       <button class="chip" id="tErase">ERASE</button>
       <button class="chip" id="tStart">START</button>
       <button class="chip" id="tGoal">GOAL</button>
