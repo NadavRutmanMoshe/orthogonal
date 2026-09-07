@@ -131,8 +131,9 @@ named). Undoing one of these needs the paragraph.
   on every redraw.
 - **Panels are phone-width, centred, max 560px.** Full-height ones use
   `.panel.tall` furniture.
-- **The four full-height panels share one page shape** (menu, wardrobe,
-  chooser, map). **Header:** title + subtitle left; then, always in this
+- **The five full-height panels share one page shape** (menu, wardrobe,
+  chooser, map, MY LEVELS — the last through `mlScreen()`, which is the only
+  way its own screens are built). **Header:** title + subtitle left; then, always in this
   order and always right-aligned, `?` (only where help exists), the star
   total (`.mtot`), `✕`. **Footer** (`.pfoot` in `80-panel-tall.css`): two
   equal buttons — left goes UP one level (`HOME`, or `SECTIONS` on the map),
@@ -177,12 +178,15 @@ named). Undoing one of these needs the paragraph.
   tall panels still carry a subtitle.
 - **`LEVEL EDITOR` is not in the menu.** It is `MY LEVELS` on the home
   screen — a place you go, not a setting.
-- **`MY LEVELS` is a list, not the editor.** The home button opens
-  `myLevelsPanel()`; the editor is what a row's `EDIT` (or `ADD LEVEL`)
-  opens, through the one door `loadIntoEditor()`, which is what sets
-  `editingId`. A row carries the five verbs a level you own has — PLAY,
-  EDIT, NAME, SHARE, × — on their own line under the name, because five
-  mini buttons and a name do not fit across a phone (`.mlrow`).
+- **`MY LEVELS` is a place, not a sheet.** It is a `.panel.tall` screen
+  (`panelKind` `mylevels`, which also carries `.mylv` for its own rules), and
+  the home button opens `myLevelsPanel()`. Its body is two full-width caps —
+  `ADD LEVEL` (primary, `.pgo`) then `LOAD A LEVEL`, same size — and the list
+  under them is exactly as wide: **one level per line** (`.mlrow`), name
+  ellipsising into the five verbs a level you own has (PLAY, EDIT, NAME,
+  SHARE, ×). `MORE TOOLS` at the foot of the body is the old library panel.
+  The editor is what `EDIT` and `ADD LEVEL` open, through the one door
+  `loadIntoEditor()`, which is what sets `editingId`.
 - **A level exists before it works.** `ADD LEVEL` asks for a name and a
   ground and writes the entry immediately; the editor's `SAVE` (`eLib`,
   top-right of `#editBar`) calls `saveCurrent()`, which keeps a level the

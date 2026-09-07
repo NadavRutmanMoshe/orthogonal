@@ -2054,19 +2054,54 @@ function levelNote(lv){
   return g.toLowerCase()+" · "+tierOf(lv.score)+" · "+lv.moves+" moves";
 }
 
+/* THE PAGE SHAPE, borrowed rather than re-invented. MY LEVELS is a place you
+   go, like the map and the wardrobe, so it is a full-height panel wearing the
+   same furniture they wear: a header that says where you are with the way out
+   in it, a body that scrolls, and a footer whose LEFT button goes up one
+   level and whose RIGHT one closes. Every screen under MY LEVELS goes through
+   here, so naming a level and sharing one cannot drift into two shapes.
+
+   It was an ordinary panel first - a 44vh sheet floating over the home
+   screen with its buttons in `.prow` pairs - and that is what a decision
+   looks like in this game, not what a place looks like. */
+function mlScreen(title,sub,body,foot){
+  showPanel(
+    "<div class='phead'><div class='pt'><b>"+title+"</b>"+
+      (sub?"<span>"+sub+"</span>":"")+"</div>"+
+      "<div class='mtot'>"+starsEarned()+" ★</div>"+
+      "<button class='mq mx' id='mlX' aria-label='Back to the level'>✕</button>"+
+    "</div>"+
+    "<div class='pbody'>"+body+"</div>"+
+    "<div class='pfoot'>"+foot+"</div>","mylevels");
+  bind("mlX",hidePanel);
+}
+// The footer every screen under MY LEVELS wears: up one level, then out.
+function mlFoot(backId,backLabel){
+  return "<button id='"+backId+"'>"+backLabel+"</button>"+
+         "<button id='mlClose'>CLOSE</button>";
+}
+
 function myLevelsPanel(){
-  var html="<h3>MY LEVELS — "+library.length+"</h3>";
-  html+="<div class='prow'><button id='mlAdd'>+ &nbsp;ADD LEVEL</button></div>";
+  var body="<button class='mlbtn pgo' id='mlAdd'>+ &nbsp;ADD LEVEL</button>"+
+           "<button class='mlbtn' id='mlLoad'>LOAD A LEVEL</button>";
   if(!library.length){
-    html+="<div class='mn'>Nothing here yet. ADD LEVEL asks for a name and "+
+    body+="<div class='note'>Nothing here yet. ADD LEVEL asks for a name and "+
           "opens the editor on it; SAVE keeps whatever you have built, "+
           "finished or not.</div>";
   } else {
+    /* ONE LEVEL, ONE LINE, and the line is as wide as the buttons above it.
+       The name takes whatever the row's five verbs leave and ellipsises;
+       everything else a level could say about itself - its ground, its tier,
+       its move count - is on MORE, because this screen is a list of your
+       levels rather than a report on them. The one exception is a draft,
+       which is said here: it is the difference between a level that plays
+       and one that does not. */
+    body+="<div class='mllist'>";
     for(var i=0;i<library.length;i++){
       var lv=library[i];
-      html+="<div class='lrow mlrow'>"+
+      body+="<div class='mlrow'>"+
         "<span class='lname'>"+esc(lv.name)+
-          "<small>"+levelNote(lv)+"</small></span>"+
+          (lv.score==null?"<i>draft</i>":"")+"</span>"+
         "<span class='lbtns'>"+
           "<button class='mini' data-play='"+lv.id+"'>PLAY</button>"+
           "<button class='mini' data-edit='"+lv.id+"'>EDIT</button>"+
@@ -2075,12 +2110,14 @@ function myLevelsPanel(){
           "<button class='mini' data-del='"+lv.id+"'>×</button>"+
         "</span></div>";
     }
+    body+="</div>";
   }
-  html+="<div class='prow'><button id='mlLoad'>LOAD A LEVEL</button>"+
-        "<button id='mlMore'>MORE</button></div>";
-  html+="<div class='prow'><button id='mlHome'>HOME</button>"+
-        "<button id='mlClose'>CLOSE</button></div>";
-  showPanel(html);
+  // The designer's workbench, kept quiet at the foot of the body: it is a
+  // door out of this screen, not one of its two actions.
+  body+="<div class='psub mlsub'><button id='mlMore'>MORE TOOLS</button></div>";
+  mlScreen("My Levels",library.length+" LEVEL"+(library.length===1?"":"S"),body,
+    "<button id='mlHome'>"+homeIcon()+"HOME</button>"+
+    "<button id='mlClose'>CLOSE</button>");
 
   var p=$("panel");
   p.querySelectorAll("[data-play]").forEach(function(el){
@@ -2106,26 +2143,27 @@ function myLevelsPanel(){
 }
 
 /* NAMING IS THE FIRST STEP, not the last one. The name is what the row on
-   this screen is, so a level cannot be made without one - and the ground is
+   MY LEVELS is, so a level cannot be made without one - and the ground is
    asked for in the same breath because it is the one decision that is
-   awkward to change once there are blocks on it. */
+   awkward to change once there are blocks standing on it. */
 function newLevelPanel(){
-  var secs=seenSections(),pick=secs[0];
+  var secs=seenSections(),pick=secs[0],keep="";
   function draw(){
     var chips="";
     for(var i=0;i<secs.length;i++)
       chips+="<button class='chip"+(secs[i]===pick?" sel":"")+"' data-g='"+
              secs[i]+"'>"+esc(groundName(secs[i]))+"</button>";
-    showPanel("<h3>NEW LEVEL</h3>"+
+    mlScreen("New Level","NAME AND GROUND",
       "<input id='nlName' placeholder='level name' />"+
-      "<div class='mn'>GROUND — the world your level stands in.</div>"+
+      "<div class='note'>GROUND — the world your level stands in.</div>"+
       "<div class='grow'>"+chips+"</div>"+
-      "<div class='prow'><button id='nlGo'>CREATE</button>"+
-      "<button id='nlBack'>CANCEL</button></div>");
+      "<button class='mlbtn pgo' id='nlGo'>CREATE</button>",
+      mlFoot("nlBack","← MY LEVELS"));
     $("nlName").value=keep;
     $("panel").querySelectorAll("[data-g]").forEach(function(el){
       tap(el,function(){keep=$("nlName").value;pick=+el.getAttribute("data-g");draw();});
     });
+    bind("mlClose",hidePanel);
     bind("nlBack",myLevelsPanel);
     bind("nlGo",function(){
       var nm=($("nlName").value||"").trim();
@@ -2137,12 +2175,9 @@ function newLevelPanel(){
       libSave().then(function(){loadIntoEditor(e);flash("new level — "+nm);});
     });
   }
-  var keep="";
   draw();
 }
 
-// One door into the editor, from the row and from CREATE, so a level always
-// arrives with its id and its ground attached.
 function loadIntoEditor(lv){
   snapshot();
   custom.name=lv.name;
@@ -2165,11 +2200,12 @@ function editLevel(id){
 function renamePanel(id){
   var lv=findLevel(id);
   if(!lv)return;
-  showPanel("<h3>RENAME</h3>"+
+  mlScreen("Rename",esc(lv.name).toUpperCase(),
     "<input id='rnName' placeholder='level name' />"+
-    "<div class='prow'><button id='rnGo'>RENAME</button>"+
-    "<button id='rnBack'>CANCEL</button></div>");
+    "<button class='mlbtn pgo' id='rnGo'>RENAME</button>",
+    mlFoot("rnBack","← MY LEVELS"));
   $("rnName").value=lv.name;
+  bind("mlClose",hidePanel);
   bind("rnBack",myLevelsPanel);
   bind("rnGo",function(){
     var nm=($("rnName").value||"").trim();
@@ -2188,11 +2224,12 @@ function renamePanel(id){
 function deletePanel(id){
   var lv=findLevel(id);
   if(!lv)return;
-  showPanel("<h3>DELETE</h3>"+
-    "Delete <b>"+esc(lv.name)+"</b>? This cannot be undone, and there is no "+
-    "copy of it anywhere else."+
-    "<div class='prow'><button id='dlGo'>DELETE</button>"+
-    "<button id='dlBack'>KEEP IT</button></div>");
+  mlScreen("Delete",esc(lv.name).toUpperCase(),
+    "<div class='note'>Delete <b>"+esc(lv.name)+"</b>? This cannot be undone, "+
+    "and there is no copy of it anywhere else.</div>"+
+    "<button class='mlbtn pdanger' id='dlGo'>DELETE IT</button>",
+    mlFoot("dlBack","← KEEP IT"));
+  bind("mlClose",hidePanel);
   bind("dlBack",myLevelsPanel);
   bind("dlGo",function(){
     library=library.filter(function(x){return x.id!==id;});
@@ -2208,13 +2245,15 @@ function deletePanel(id){
 function sharePanel(id){
   var lv=findLevel(id);
   if(!lv)return;
-  showPanel("<h3>SHARE — "+esc(lv.name)+"</h3>"+
-    "Copy this and send it. Whoever gets it pastes it into LOAD A LEVEL."+
+  mlScreen("Share",esc(lv.name).toUpperCase(),
+    "<div class='note'>Copy this and send it. Whoever gets it pastes it into "+
+    "LOAD A LEVEL.</div>"+
     "<textarea id='shTxt'></textarea>"+
-    "<div class='prow'><button id='shCopy'>COPY</button>"+
-    "<button id='shBack'>BACK</button></div>");
+    "<button class='mlbtn pgo' id='shCopy'>COPY</button>",
+    mlFoot("shBack","← MY LEVELS"));
   $("shTxt").value=JSON.stringify(shareData(lv));
   $("shTxt").focus();$("shTxt").select();
+  bind("mlClose",hidePanel);
   bind("shBack",myLevelsPanel);
   bind("shCopy",function(){
     var t=$("shTxt");t.focus();t.select();
@@ -2244,12 +2283,13 @@ function shareData(lv){
    adds. Replacing is still on the project file's own panel, where it says so
    in the button. */
 function loadLevelPanel(){
-  showPanel("<h3>LOAD A LEVEL</h3>"+
-    "Paste a level somebody shared with you. It is added to your levels; "+
-    "nothing you have is touched."+
+  mlScreen("Load A Level","PASTE ONE SOMEBODY SHARED",
+    "<div class='note'>It is added to your levels; nothing you have is "+
+    "touched.</div>"+
     "<textarea id='ldTxt' placeholder='paste here'></textarea>"+
-    "<div class='prow'><button id='ldGo'>ADD IT</button>"+
-    "<button id='ldBack'>BACK</button></div>");
+    "<button class='mlbtn pgo' id='ldGo'>ADD IT</button>",
+    mlFoot("ldBack","← MY LEVELS"));
+  bind("mlClose",hidePanel);
   bind("ldBack",myLevelsPanel);
   bind("ldGo",function(){
     var list;

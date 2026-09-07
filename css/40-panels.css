@@ -47,20 +47,46 @@
     white-space:nowrap;color:var(--fg)}
   .lrow .mono{font-size:11px;white-space:nowrap}
   .lbtns{display:flex;gap:3px;flex-shrink:0}
-  /* MY LEVELS' OWN ROW SHAPE. A name, what the level is under it, and the
-     five things you can do to it on the line below - five mini buttons and a
-     name do not fit across a phone, and the name is what you are looking
-     for, so it gets the width and the buttons get their own line. */
-  .mlrow{flex-wrap:wrap}
-  .mlrow .lname{white-space:normal;overflow:visible;line-height:1.4}
-  .mlrow .lname small{display:block;color:var(--fg-dim);font-size:10.5px;
-    letter-spacing:.05em;text-transform:uppercase}
-  .mlrow .lbtns{width:100%;justify-content:flex-end;margin-top:4px}
+  /* MY LEVELS' OWN SHAPE. It is a full-height panel (see `.panel.tall` in
+     80-panel-tall.css), so its two doors are full-width caps at the top of
+     the body and the list under them is exactly as wide as they are - one
+     level per line, the way the map lists a section.
+
+     The name takes whatever the row's five verbs leave it and ellipsises,
+     because the name is what you are looking for and the verbs are the same
+     five on every row: once the pattern is read, the buttons are shapes in
+     fixed positions rather than words to re-read. */
+  .mlbtn{width:100%;height:46px;font-size:13px;letter-spacing:.12em;
+    margin-top:12px}
+  .mllist{margin-top:14px}
+  .mlrow{display:flex;align-items:center;gap:4px;width:100%;height:42px;
+    border-bottom:1px solid var(--rule)}
+  .mlrow .lname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;color:var(--fg)}
+  /* A level that has never solved. Inside the name's own span so it is the
+     first thing the ellipsis eats on a very long name - the row still has to
+     fit on one line. */
+  .mlrow .lname i{font-style:normal;color:var(--fg-dim);font-size:10.5px;
+    letter-spacing:.06em;text-transform:uppercase;margin-left:7px}
+  .mlrow .lbtns{display:flex;gap:2px;flex-shrink:0}
+  /* Tighter than a `.mini` anywhere else: five of them and a name share one
+     line on a phone, and every pixel taken off the tracking is a pixel the
+     name gets back. */
+  .mlrow button.mini{height:27px;padding:0 5px;font-size:10.5px;
+    letter-spacing:0}
+  .mlrow button.mini:last-child{padding:0 7px;font-size:13px}
+  .mlsub{margin-top:16px}
+  /* A level's own name is this screen's subtitle on RENAME, SHARE and
+     DELETE, and a name can be any length: it stays on one line here rather
+     than wrapping and pushing the star total and the ✕ down the header.
+     Scoped to MY LEVELS - the other tall panels' subtitles are counts. */
+  .panel.mylv .phead .pt span{overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap}
   /* The ground choices, one per world the campaign has shown you. The same
      chip the editor's piece bar wears, so a choice looks like a choice in
      both places. */
   .grow{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
-  .grow .chip{flex:1 0 29%;height:32px}
+  .grow .chip{flex:1 0 29%;height:34px}
   /* Pills, matching the map's section tabs, so the two panels agree about
      what a tab is. */
   .tabs{display:flex;gap:5px;margin:10px 0 10px;padding:0 13px}

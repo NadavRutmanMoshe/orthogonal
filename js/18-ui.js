@@ -74,10 +74,16 @@ function syncMapChrome(){
   // The chooser wears the map's chrome (header, ambient canvas, footer row)
   // and adds one grid of its own, so it takes .map and is told apart by this.
   $("panel").classList.toggle("secs",panelKind==="secs");
-  // Full-height panels: the map and its chooser, and the menu now that it is
-  // grouped into cards and would otherwise scroll inside a 44vh window.
+  // MY LEVELS and every screen under it: the one class its own rules hang
+  // off, so nothing here can reach the other tall panels' furniture.
+  $("panel").classList.toggle("mylv",panelKind==="mylevels");
+  /* Full-height panels: the map and its chooser, the menu now that it is
+     grouped into cards and would otherwise scroll inside a 44vh window, and
+     MY LEVELS, which is a place you go rather than a decision you are being
+     asked to make - and whose list has no length a 44vh sheet could hold. */
   $("panel").classList.toggle("tall",panelKind==="map"||panelKind==="secs"||
-                                     panelKind==="menu"||panelKind==="wardrobe");
+                                     panelKind==="menu"||panelKind==="wardrobe"||
+                                     panelKind==="mylevels");
   /* The running star total sits at z-index 30 so it can float over the win
      overlay, which also floats it over any open panel - and the menu, the
      wardrobe and the map all now carry a total of their own in their header.

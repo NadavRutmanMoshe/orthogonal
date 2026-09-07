@@ -204,9 +204,10 @@ is the rule.
   (`homeCase()`). `body>canvas` in the CSS is what keeps the game's own
   canvas distinct.
 - Panels are phone-width and centred, capped at 560px. Type starts at 12px.
-- **The four full-height panels wear one page shape**: header is title ·
+- **The five full-height panels wear one page shape**: header is title ·
   `?` · star total · `✕`; footer (`.pfoot`) is up-one-level · `CLOSE`. Adding
-  a control to one of them means adding it to all four or to none.
+  a control to one of them means adding it to all five or to none. MY LEVELS
+  is the fifth, and every screen under it goes through `mlScreen()`.
 - The running star total is hidden by any open panel and while a clock runs.
 - `nothingBehind()` decides intro-card versus home screen and START versus
   CONTINUE; `NEXT LEVEL` is always the next level, except into a locked shelf
