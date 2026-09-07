@@ -372,9 +372,8 @@ function applySkin(){
   playerMesh.position.copy(pos);
   scene.add(playerMesh);
   var col=findBy(SKIN_COLORS,wardrobe.color).hex;
-  if(footMesh)footMesh.material.color.setHex(col);
-  // The shield bubble is the player's own colour for the same reason the
-  // shadow under their feet is: whose shield it is, is the content of it.
+  // The shield bubble is the player's own colour: whose shield it is, is the
+  // content of it.
   if(typeof shieldFill!=="undefined"&&shieldFill)
     shieldFill.material.color.setHex(col);
   // The step trail is whose steps they are, so it follows the piece. One

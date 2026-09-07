@@ -7,7 +7,7 @@
 /* ============================================================
    THREE
    ============================================================ */
-var scene,camera,renderer,meshes={},playerMesh,goalMesh,gridLines,groundPlane,footMesh;
+var scene,camera,renderer,meshes={},playerMesh,goalMesh,gridLines,groundPlane;
 var huntMeshes=[],lineMeshes=[];
 var twinCross=null,twinTether=null;
 var trialSlab,trialEdge;
@@ -150,11 +150,15 @@ function initGL(){
 
   playerMesh=buildPlayerMesh();
   scene.add(playerMesh);
-  footMesh=new THREE.Mesh(new THREE.PlaneGeometry(.94,.94),
-    new THREE.MeshBasicMaterial({color:0xd6336c,transparent:true,
-      opacity:.42,side:THREE.DoubleSide}));
-  footMesh.rotation.x=-Math.PI/2;
-  scene.add(footMesh);
+  /* THERE IS NO PLATE UNDER THE PLAYER any more. It was a .94 square in the
+     player's own colour laid on the block below them, and the argument for
+     it was that it says which square you are standing on. What it actually
+     did was draw a coloured square wider than the piece itself: the cube is
+     .62 across, so the plate stuck out past it on every side, and under any
+     shape narrower than that - the ball, the flame, the sapling - it read as
+     a flat sticker the character was standing in the middle of. Reported as
+     exactly that. The square you are on is said by the piece being on it,
+     and on a clock the trial's own floor outlines say it again. */
   buildShield();
 
   goalMesh=new THREE.Mesh(new THREE.BoxGeometry(.5,.5,.5),
@@ -3662,12 +3666,6 @@ function animate(now){
      bubble goes, the blink is still there for the rest of the beat. */
   playerMesh.visible=shieldMs>0||
     !(trialGrace>0&&Math.floor(Date.now()/85)%2===0);
-  if(footMesh){
-    footMesh.visible=!dying;
-    footMesh.position.set(playerMesh.position.x,
-      playerMesh.position.y-.32,playerMesh.position.z);
-    footMesh.material.opacity=.42*(1-flatT*.7);
-  }
 
   // A boss arena has no goal square - the target is the boss itself, which
   // draws itself in drawBoss() - so the marker is simply hidden there.

@@ -2009,7 +2009,7 @@ function legendPanel(){
     "<div class='leg'><i style='background:#d9a441'></i><span><b>Amber</b> \u2014 "+
       "catches you on the way back to 3D. It pins a crate.</span></div>"+
     "<div class='leg'><i style='background:#d6336c'></i><span><b>You</b> \u2014 "+
-      "the plate shows what you stand on.</span></div>"+
+      "one square, and whatever shape you are wearing.</span></div>"+
     "<div class='leg'><i style='background:#35c2a5'></i><span><b>Goal</b> \u2014 "+
       "reach it in 3D. Standing on it in 2D is not enough.</span></div>"+
     "<div class='leg'><i style='background:transparent;border:1px solid var(--rule)'></i>"+
