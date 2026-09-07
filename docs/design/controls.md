@@ -34,21 +34,8 @@ exclusive — every gesture also has a key and, unless hidden, a button:
   that**; if the turn ever feels mushy again, check the signs before touching
   `TURN_DEG`. `docs/HISTORY.md` has the worked example.
 - two-finger tap — turn right, unchanged: it is a drag that never travelled
-- **THE FOLD IS A SHOT, NOT A TRANSITION** (2026-09, owner's call, and the
-  one change here flagged as maybe-revertible). Three things on one bell over
-  the tween — `FOLD_DOLLY` .085 widens the frustum at mid-fold so the camera
-  steps back to take the collapse in, `FOLD_SWAY` 2.6° drifts the camera
-  across it for parallax, `FOLD_RISE` .055 lifts it as the world goes down —
-  plus the ease raised from cubic to quart and the durations from 520/620 to
-  **700/860**. All three are zero at both ends of the tween and zero at rest,
-  half strength on a clock, and off under `prefers-reduced-motion`; setting
-  the three constants to 0 and the durations back restores the old fold
-  exactly. **None of it touches `flatT`** — it moves the camera only, through
-  the same seam peek uses, so the picture and the rule still agree. The lock
-  in `foldJolt()` dropped 85% → 60% of the duration in the same commit, so
-  the longer shot did not become a longer wait for the thumb.
-- **THE FOLD IS A TIMED TWEEN, NOT A LERP** (`FOLD_MS_IN` 700, `FOLD_MS_OUT`
-  860, `FOLD_MS_CLOCK` 380, in `js/05-state.js`). It used to be
+- **THE FOLD IS A TIMED TWEEN, NOT A LERP** (`FOLD_MS_IN` 520, `FOLD_MS_OUT`
+  620, `FOLD_MS_CLOCK` 380, in `js/05-state.js`). It used to be
   `flatT += (want-flatT)*rate`, which is an exponential ease-*out*: most of
   the travel happens in the first few frames and the rest is half a second of
   creeping the last two percent. So the verb the whole game is built on was

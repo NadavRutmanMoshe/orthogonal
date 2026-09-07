@@ -26,17 +26,7 @@ var foldSlamT=0, foldSlamDir=-1;
    up is the slower of the two because it is the one moment that shows you
    travelling to the front of the stack. On a clock both are cut short - the
    fight cannot wait most of a second for the picture. */
-var FOLD_MS_IN=700, FOLD_MS_OUT=860, FOLD_MS_CLOCK=380;
-/* THE CINEMATIC FOLD. Three numbers, all on one bell curve that opens and
-   closes with the tween (`foldCine`), so setting them to 0 puts the old
-   fold back exactly. See the block above the camera in js/10-render.js.
-   `DOLLY` widens the frustum at mid-fold - the camera steps back to take
-   the whole move in and comes back down onto it. `SWAY` is degrees of
-   camera drift across the same window, which is what gives the collapse
-   parallax instead of a flat wipe; it moves the camera only, never the
-   fold axis. `RISE` lifts the camera with it so the step back is not
-   purely a zoom. */
-var FOLD_DOLLY=0.085, FOLD_SWAY=2.6, FOLD_RISE=0.055;
+var FOLD_MS_IN=520, FOLD_MS_OUT=620, FOLD_MS_CLOCK=380;
 /* The tween's own state, owned by 10-render.js. `foldLast` is what the loop
    last wrote to flatT, which is how an external write to it is noticed. */
 var foldBase=0, foldFrom=0, foldP=1, foldWas=0, foldLast=0;
