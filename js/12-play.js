@@ -1937,12 +1937,13 @@ function struggleOffer(){
   offerShell(kind+" \u00b7 STUCK",esc(L.name),
     "This one has beaten you "+beat+". You can come back to it whenever you "+
     "like.",
-    /* "SKIP IT", not "SKIP THIS BOSS": the kicker says BOSS and the title is
-       the fight's own name, so the button repeating it only made the label
-       long enough to wrap onto two lines around the video mark on a narrow
-       phone - which reads as a broken button at the moment the player is
-       least inclined to give the game the benefit of the doubt. */
-    "<button class='ad' id='sgAd'>"+adIcon()+"SKIP IT \u00b7 WATCH AN AD</button>"+
+    /* The owner's own wording, off the pop-ups sheet. "1 AD" rather than "AN
+       AD" because the number is the thing that changed and a numeral says it
+       at a glance; the label keeps naming the fight because that is what was
+       asked for. It is long enough to wrap on a narrow phone at the ad
+       button's ordinary tracking, so `.panel.offer .ma .ad` tightens its type
+       instead of the label losing words - see css/85-map.css. */
+    "<button class='ad' id='sgAd'>"+adIcon()+"SKIP THIS "+kind+" \u00b7 WATCH 1 AD</button>"+
     "<button class='qt' id='sgNo'>KEEP TRYING</button>"+
     "<button class='qt' id='sgNever'>DON'T SHOW ME AGAIN</button>",
     "A skip awards <b>no stars</b>. Ads buy progress, never score.",

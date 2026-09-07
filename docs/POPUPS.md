@@ -179,7 +179,7 @@ amber.*
 - **Title:** the level's own name, e.g. `BOSS I — Catch Me If You Can!`
 - **Lead:** `This one has beaten you N times. You can come back to it whenever
   you like.`
-- **Buttons:** `SKIP IT · WATCH AN AD` · `KEEP TRYING` ·
+- **Buttons:** `SKIP THIS BOSS · WATCH 1 AD` (or `TRIAL`) · `KEEP TRYING` ·
   `DON'T SHOW ME AGAIN`
 - **Note:** `A skip awards **no stars**. Ads buy progress, never score.`
 

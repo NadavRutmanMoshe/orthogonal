@@ -531,6 +531,20 @@ L96 14 L0 14 Z' fill='%23fff'/></svg>");
   .panel.offer .ma button{height:auto;min-height:46px;padding:11px 12px;
     line-height:1.35;text-align:center}
   .panel.offer .ma .qt{min-height:36px;padding:8px 12px}
+  /* THE AD BUTTON CARRIES THE LONGEST LABEL IN THE GAME, and it names the
+     fight - so on a narrow phone the TYPE gives way, not the words.
+
+     The arithmetic, because it is the kind of thing that quietly rots: at
+     327px (the owner's phone) the card is 295 wide, less 32 of card padding
+     and 24 of button padding leaves 239 for the label, and
+     `SKIP THIS BOSS · WATCH 1 AD` is 26 monospace characters plus the 19px
+     video mark and its gap. At the row's ordinary 12.5px/.13em that comes
+     to 250 and wraps by a hair, which is what put `AD` on a line of its own.
+     The clamp lands it near 10.5px there and back at 12.5 on a normal phone;
+     the wrap above stays as the backstop for a longer name than any level
+     carries today. */
+  .panel.offer .ma .ad{font-size:clamp(10.5px,3.2vw,12.5px);
+    letter-spacing:.09em;gap:7px}
   /* The note is a footnote, so it sits below a hairline rather than floating
      under the buttons at the same weight as the sentence above them. */
   .panel.offer .mn{margin-top:14px;padding-top:11px;font-size:11px;
