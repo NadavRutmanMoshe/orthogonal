@@ -134,9 +134,11 @@ Block format `[x,y,z,k]`: 0 stone, 1 water (code says `glass`), 2 anchor,
 - Always `node tools/verify.js` after touching a non-boss level.
 
 **The player's own levels** (`docs/UI.md`)
-- **MY LEVELS on the home screen is a list, not the editor** —
-  `myLevelsPanel()`. A row is PLAY · EDIT · NAME · SHARE · ×; `libraryPanel()`
-  survives behind `MORE` as the designer's workbench.
+- **MY LEVELS on the home screen is a full-height screen** —
+  `myLevelsPanel()`, and every screen under it goes through `mlScreen()`. A
+  row is one line: the name with the rename pencil against it, then ▶ · EDIT ·
+  share · ×. `libraryPanel()` (sort, project file, composer) has no button any
+  more and is one `bind` away, like `legendPanel()`.
 - **A custom level is created named and saved as a draft.** `ADD LEVEL` asks
   for the name and the ground and writes the library entry at once;
   `editingId` says which entry the editor is on, and `saveCurrent()` keeps

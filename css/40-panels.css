@@ -61,8 +61,16 @@
   .mllist{margin-top:14px}
   .mlrow{display:flex;align-items:center;gap:4px;width:100%;height:42px;
     border-bottom:1px solid var(--rule)}
-  .mlrow .lname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;
-    white-space:nowrap;color:var(--fg)}
+  /* The name and the pencil that renames it are one thing, so they travel
+     together on the left: the name sizes to its own text and ellipsises when
+     there is not room, and the pencil sits against it rather than out with
+     the verbs, because what it edits is the word beside it. */
+  .mlrow .mlname{flex:1;min-width:0;display:flex;align-items:center;gap:5px}
+  /* `flex:0 1 auto` beats the `.lname` above, which is `flex:1` for the map's
+     rows: left at 1 the name stretches the whole way and takes the pencil
+     with it, out to the right where the verbs are. */
+  .mlrow .lname{flex:0 1 auto;min-width:0;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap;color:var(--fg)}
   /* A level that has never solved. Inside the name's own span so it is the
      first thing the ellipsis eats on a very long name - the row still has to
      fit on one line. */
@@ -74,8 +82,17 @@
      name gets back. */
   .mlrow button.mini{height:27px;padding:0 5px;font-size:10.5px;
     letter-spacing:0}
-  .mlrow button.mini:last-child{padding:0 7px;font-size:13px}
-  .mlsub{margin-top:16px}
+  /* A glyph button is square: no letters in it, so the horizontal padding
+     that fits a word would just make it wide. */
+  .mlrow button.mini.mlic{width:29px;padding:0}
+  .mlrow button.mini.mlx{width:27px;padding:0;font-size:14px}
+  .mlrow .mlic svg{width:15px;height:15px;fill:currentColor}
+  .mlrow .mlname .mlic{opacity:.72}
+  .mlrow .mlname .mlic:active{opacity:1}
+  /* The upload arrow on LOAD A LEVEL, sized and spaced like the HOME icon in
+     every panel footer - `.pfi` is that rule, and this is the same picture
+     doing the same job. */
+  .mlbtn .pfi{width:17px;height:17px}
   /* A level's own name is this screen's subtitle on RENAME, SHARE and
      DELETE, and a name can be any length: it stays on one line here rather
      than wrapping and pushing the star total and the ✕ down the header.

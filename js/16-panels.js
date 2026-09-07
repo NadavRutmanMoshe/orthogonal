@@ -310,6 +310,40 @@ function tagIcon(){
     "0 2 .9 2 2v6.5c0 .5-.2 1-.6 1.4l-8.8 8.8c-.8.8-2 .8-2.8 0l-6.5-6.5c-.8-."+
     "8-.8-2 0-2.8Zm14.3-5.4a1.9 1.9 0 1 0 0 3.8 1.9 1.9 0 0 0 0-3.8Z'/></svg>";
 }
+/* THE ROW'S OWN GLYPHS. A level's line has five things on it and a name that
+   has to stay readable, so the three verbs a picture says better than a word
+   are drawn: the pencil that renames (sitting against the name, because that
+   is what it edits), the triangle that plays, and the share node. EDIT keeps
+   its word - it is the one that opens the whole editor, and there is no
+   glyph for that which is not a guess. */
+function penIcon(){
+  return "<svg class='mli' viewBox='0 0 24 24' aria-hidden='true'>"+
+    "<path d='M3.4 17.3 14.9 5.8l3.3 3.3L6.7 20.6l-4 .7Zm13.1-13 1.7-1.7a1.4 "+
+    "1.4 0 0 1 2 0l1.3 1.3a1.4 1.4 0 0 1 0 2l-1.7 1.7Z'/></svg>";
+}
+function playIcon(){
+  return "<svg class='mli' viewBox='0 0 24 24' aria-hidden='true'>"+
+    "<path d='M7.4 4.6 19 11.3a.8.8 0 0 1 0 1.4L7.4 19.4a.8.8 0 0 1-1.2-.7V5.3"+
+    "a.8.8 0 0 1 1.2-.7Z'/></svg>";
+}
+// The three-node share, not a box with an arrow out of it: the box-and-arrow
+// is one stroke away from the upload glyph on LOAD A LEVEL, and those two are
+// the opposite directions of the same idea.
+function shareIcon(){
+  return "<svg class='mli' viewBox='0 0 24 24' aria-hidden='true'>"+
+    "<path d='M8.1 13.6a2.9 2.9 0 1 1 0-3.2l6-3.3a2.9 2.9 0 1 1 .7 1.5l-6 "+
+    "3.3a2.9 2.9 0 0 1 0 .2l6 3.3a2.9 2.9 0 1 1-.7 1.5Z'/></svg>";
+}
+// Coming in from outside: an arrow up out of a tray. LOAD A LEVEL is the one
+// door in this screen that takes something from somewhere else.
+function upIcon(){
+  return "<svg class='pfi' viewBox='0 0 24 24' aria-hidden='true'>"+
+    "<path d='M11.15 3.5a1.2 1.2 0 0 1 1.7 0l4.3 4.3a1 1 0 0 1-1.4 1.4L13 6.5"+
+    "v8.1a1 1 0 0 1-2 0V6.5L8.25 9.2a1 1 0 0 1-1.4-1.4Z'/>"+
+    "<path d='M4 15.4a1 1 0 0 1 1 1v2.4c0 .3.2.5.5.5h13c.3 0 .5-.2.5-.5v-2.4a1"+
+    " 1 0 1 1 2 0v2.4c0 1.4-1.1 2.5-2.5 2.5h-13A2.5 2.5 0 0 1 3 18.8v-2.4a1 1 "+
+    "0 0 1 1-1Z'/></svg>";
+}
 function shapeSvg(d){
   return "<svg viewBox='0 0 24 24' aria-hidden='true'><path d='"+d+"'/></svg>";
 }
@@ -2083,7 +2117,7 @@ function mlFoot(backId,backLabel){
 
 function myLevelsPanel(){
   var body="<button class='mlbtn pgo' id='mlAdd'>+ &nbsp;ADD LEVEL</button>"+
-           "<button class='mlbtn' id='mlLoad'>LOAD A LEVEL</button>";
+           "<button class='mlbtn' id='mlLoad'>"+upIcon()+"LOAD A LEVEL</button>";
   if(!library.length){
     body+="<div class='note'>Nothing here yet. ADD LEVEL asks for a name and "+
           "opens the editor on it; SAVE keeps whatever you have built, "+
@@ -2100,21 +2134,27 @@ function myLevelsPanel(){
     for(var i=0;i<library.length;i++){
       var lv=library[i];
       body+="<div class='mlrow'>"+
-        "<span class='lname'>"+esc(lv.name)+
+        "<span class='mlname'><span class='lname'>"+esc(lv.name)+
           (lv.score==null?"<i>draft</i>":"")+"</span>"+
+          "<button class='mini mlic' data-name='"+lv.id+"' "+
+            "aria-label='Rename'>"+penIcon()+"</button></span>"+
         "<span class='lbtns'>"+
-          "<button class='mini' data-play='"+lv.id+"'>PLAY</button>"+
+          "<button class='mini mlic' data-play='"+lv.id+"' "+
+            "aria-label='Play'>"+playIcon()+"</button>"+
           "<button class='mini' data-edit='"+lv.id+"'>EDIT</button>"+
-          "<button class='mini' data-name='"+lv.id+"'>NAME</button>"+
-          "<button class='mini' data-share='"+lv.id+"'>SHARE</button>"+
-          "<button class='mini' data-del='"+lv.id+"'>×</button>"+
+          "<button class='mini mlic' data-share='"+lv.id+"' "+
+            "aria-label='Share'>"+shareIcon()+"</button>"+
+          "<button class='mini mlx' data-del='"+lv.id+"' "+
+            "aria-label='Delete'>×</button>"+
         "</span></div>";
     }
     body+="</div>";
   }
-  // The designer's workbench, kept quiet at the foot of the body: it is a
-  // door out of this screen, not one of its two actions.
-  body+="<div class='psub mlsub'><button id='mlMore'>MORE TOOLS</button></div>";
+  /* NO MORE TOOLS BUTTON, on the owner's call. This screen has two actions
+     and a list, and a third door at the foot of it - to a panel of a level
+     designer's tools - is a door most players have no use for. libraryPanel()
+     is intact and one `bind` away, the same way legendPanel() is; the
+     composer and the project file are behind it. */
   mlScreen("My Levels",library.length+" LEVEL"+(library.length===1?"":"S"),body,
     "<button id='mlHome'>"+homeIcon()+"HOME</button>"+
     "<button id='mlClose'>CLOSE</button>");
@@ -2137,7 +2177,6 @@ function myLevelsPanel(){
   });
   bind("mlAdd",newLevelPanel);
   bind("mlLoad",loadLevelPanel);
-  bind("mlMore",libraryPanel);
   bind("mlHome",function(){hidePanel();homeShow();});
   bind("mlClose",hidePanel);
 }

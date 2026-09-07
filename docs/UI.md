@@ -182,11 +182,18 @@ named). Undoing one of these needs the paragraph.
   (`panelKind` `mylevels`, which also carries `.mylv` for its own rules), and
   the home button opens `myLevelsPanel()`. Its body is two full-width caps —
   `ADD LEVEL` (primary, `.pgo`) then `LOAD A LEVEL`, same size — and the list
-  under them is exactly as wide: **one level per line** (`.mlrow`), name
-  ellipsising into the five verbs a level you own has (PLAY, EDIT, NAME,
-  SHARE, ×). `MORE TOOLS` at the foot of the body is the old library panel.
-  The editor is what `EDIT` and `ADD LEVEL` open, through the one door
-  `loadIntoEditor()`, which is what sets `editingId`.
+  under them is exactly as wide: **one level per line** (`.mlrow`). The name
+  sizes to its own text with the **pencil that renames it against it**
+  (`.mlname`, and `flex:0 1 auto` on `.lname` so it does not stretch and drag
+  the pencil right); the row's other four are ▶ play, `EDIT` (the one word,
+  because there is no honest glyph for "open the editor"), the share node and
+  ×. `penIcon()`, `playIcon()`, `shareIcon()` and `upIcon()` are next to
+  `homeIcon()` in `16-panels.js`; `LOAD A LEVEL` wears the upload arrow in
+  `.pfi` size. The editor is what `EDIT` and `ADD LEVEL` open, through the
+  one door `loadIntoEditor()`, which is what sets `editingId`.
+  **`libraryPanel()` has no button any more** (the owner cut `MORE TOOLS`);
+  it, `projectPanel()` and the composer are intact and one `bind` away, the
+  same way `legendPanel()` is.
 - **A level exists before it works.** `ADD LEVEL` asks for a name and a
   ground and writes the entry immediately; the editor's `SAVE` (`eLib`,
   top-right of `#editBar`) calls `saveCurrent()`, which keeps a level the
