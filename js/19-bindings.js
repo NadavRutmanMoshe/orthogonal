@@ -30,6 +30,11 @@ bind("hContinue",homeGo);
 bind("hLevels",function(){audio();sectionPicker();});
 bind("hWard",function(){audio();wardrobePanel("shape");});
 bind("hMine",function(){audio();myLevelsPanel();});
+/* Shut, and it says so rather than doing nothing. A toast is what this game
+   says a one-line aside with, and it is the only chrome that survives
+   `body.athome` - the HUD, the bar and the star total are all taken down
+   there, and the toast is not. */
+bind("hMulti",function(){audio();flash("multiplayer \u00b7 coming soon");});
 bind("hMenu",function(){audio();menuPanel();});
 bind("bSkipTo",function(){
   $("intro").classList.add("gone");
