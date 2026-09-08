@@ -867,23 +867,29 @@ function noiseRise(c,at,dur,vol){
 /* THE CROWD — the room the fight is being watched in
 
    A boss is the only thing in this game with an audience implied by its
-   shape: three phases, a clock, lives, a replay. The kill cam finally puts
-   that room on the soundtrack — a cheer over a kill, a groan over a death —
-   and it is the one voice here that is a bed rather than an event, so it is
-   built rather than blipped.
+   shape: three phases, a clock, lives, a replay. The kill cam puts that room
+   on the soundtrack, and it is the one voice here that is a bed rather than
+   an event, so it is built rather than blipped.
 
-   WHAT MAKES NOISE SOUND LIKE PEOPLE is not the filter, it is the envelope.
-   Flat noise through a bandpass is wind; the same noise with a slow random
-   walk multiplied into it is a room, because a crowd is hundreds of voices
-   whose sum wanders. So the walk is baked into the buffer sample by sample
-   and the filter only decides which room it is: up and bright for a cheer,
-   down and closed for a groan. The sweep direction is doing the emotional
-   work — rising is approval in every culture that has recorded a crowd.
+   IT ONLY CHEERS. There was a groan for deaths and it was cut: a bandpassed
+   noise bed swept down to 155Hz is a fair drawing of a crowd going "ohhh",
+   and on a phone speaker under a screenful of television snow it is
+   indistinguishable from the snow having a soundtrack. Reported exactly that
+   way. So the room reacts to the thing worth reacting to and is silent for
+   the other, which is also what a room does.
 
-   Deliberately quiet (.034 against a blip's .05). It fires on the same beat
-   as SFX.strike() or SFX.die() and it must sit UNDER them: the hit is the
-   event, this is the room reacting to it a moment later. */
-function crowdBed(c,at,dur,vol,cheer){
+   WHAT MAKES NOISE SOUND LIKE PEOPLE is not the filter, it is the envelope —
+   and, more than either, THE HANDS. Flat noise through a bandpass is wind;
+   the same noise with a slow random walk multiplied into it is a room,
+   because a crowd is hundreds of voices whose sum wanders. But the bed alone
+   is ambiguous, which is what the groan proved, so the bed is now the quiet
+   half and the claps carry it: applause is the one crowd sound nothing else
+   in this game could be mistaken for.
+
+   Deliberately quiet (.026 against a blip's .05). It fires on the same beat
+   as SFX.strike() and must sit UNDER it: the hit is the event, this is the
+   room reacting to it. */
+function crowdBed(c,at,dur,vol){
   var len=Math.floor(c.sampleRate*(dur+.3));
   var buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);
   var env=0;
@@ -893,14 +899,14 @@ function crowdBed(c,at,dur,vol,cheer){
     d[i]=(Math.random()*2-1)*(.5+.5*Math.abs(env));
   }
   var src=c.createBufferSource();src.buffer=buf;
-  var bp=c.createBiquadFilter();bp.type="bandpass";bp.Q.value=cheer?.85:1.4;
-  bp.frequency.setValueAtTime(cheer?520:340,at);
-  bp.frequency.exponentialRampToValueAtTime(cheer?1450:190,at+dur*.5);
-  bp.frequency.exponentialRampToValueAtTime(cheer?820:155,at+dur);
+  var bp=c.createBiquadFilter();bp.type="bandpass";bp.Q.value=.85;
+  bp.frequency.setValueAtTime(620,at);
+  bp.frequency.exponentialRampToValueAtTime(1600,at+dur*.42);
+  bp.frequency.exponentialRampToValueAtTime(980,at+dur);
   var g=c.createGain();
   g.gain.setValueAtTime(.0001,at);
-  g.gain.exponentialRampToValueAtTime(vol,at+(cheer?.18:.34));
-  g.gain.setValueAtTime(vol,at+dur*.52);
+  g.gain.exponentialRampToValueAtTime(vol,at+.16);
+  g.gain.setValueAtTime(vol,at+dur*.5);
   g.gain.exponentialRampToValueAtTime(.0001,at+dur+.22);
   src.connect(bp);bp.connect(g);g.connect(out(c));
   src.start(at);src.stop(at+dur+.28);
@@ -916,6 +922,16 @@ function crowdClap(c,at,vol){
   var g=c.createGain();g.gain.value=vol;
   src.connect(hp);hp.connect(g);g.connect(out(c));
   src.start(at);src.stop(at+.12);
+}
+/* WHERE THE HANDS FALL. Real applause is not evenly spread: it arrives in a
+   rush and thins out, so the times are the square of a uniform draw, which
+   piles them at the front and leaves a tail. Uniform times sounded like a
+   machine ticking, which is the same failure a metrical clap would be. */
+function crowdClaps(c,at,n,dur){
+  for(var i=0;i<n;i++){
+    var u=Math.random();
+    crowdClap(c,at+.06+u*u*dur,.009+Math.random()*.009);
+  }
 }
 /* HAPTICS - the same event, felt.
 
@@ -1002,21 +1018,39 @@ var SFX={
     blip(150,.22,"square",.055,70);
     blip(900,.3,"sine",.04,1400);
   },
-  /* THE CROWD, on the two beats that have one: a core going down, or one of
-     yours. `cheer` picks which room. A cheer gets a scatter of hands over the
-     bed; a groan gets two low voices sagging under it, which is what a boo
-     actually is - a vowel, falling. */
-  crowd:function(cheer){
+  /* THE ROOM, ON A KILL. Hands first and loudest, a bright bed under them,
+     and two voices going up over the top - one crowd sound this game could
+     not be mistaken for, one that says how many people, and one that says
+     they are people. There is deliberately no death half; see crowdBed(). */
+  cheer:function(){
     var c=audio();if(!c)return;
     var t=c.currentTime;
-    crowdBed(c,t,cheer?2.4:2.0,.034,!!cheer);
-    if(cheer){
-      for(var i=0;i<11;i++)
-        crowdClap(c,t+.10+Math.random()*1.15,.010+Math.random()*.008);
-    }else{
-      blip(168,1.1,"sawtooth",.016,118);
-      setTimeout(function(){blip(132,1.0,"triangle",.014,96);},140);
-    }
+    crowdBed(c,t,2.4,.026);
+    crowdClaps(c,t,20,1.5);
+    blip(430,.5,"sine",.012,690);
+    setTimeout(function(){blip(520,.45,"triangle",.010,810);},170);
+  },
+  /* THE RECORD LIGHT COMING ON. Two short high chirps, the noise every
+     camcorder ever made when the button went down - it lands on the beat the
+     viewfinder appears, so the picture and the sound say the same thing at
+     the same moment. Tiny: it is a click on a device, not an event in the
+     fight. */
+  rec:function(){
+    blip(1760,.045,"sine",.020);
+    setTimeout(function(){blip(2200,.055,"sine",.018);},95);
+  },
+  /* THE KILL, HAPPENING AGAIN. Played on the film's closing fold, which is
+     the frame where the world drops onto the thing you caught - so it is the
+     game's own fold, then the game's own strike, with the gap between them
+     the fold tween's own length. Nothing new is synthesised: reliving it
+     should sound like it did, one remove quieter, which is what the halved
+     gain on the strike is for. */
+  relive:function(ms){
+    SFX.fold();
+    setTimeout(function(){
+      blip(150,.22,"square",.030,70);
+      blip(900,.3,"sine",.022,1400);
+    },Math.max(0,ms|0));
   },
   // One per star landing on the counter, climbing as they arrive, so three
   // stars resolve upward instead of repeating the same note three times.

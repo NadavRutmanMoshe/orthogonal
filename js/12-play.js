@@ -413,7 +413,10 @@ function killCamStart(mode){
      indistinguishable from the snow having a soundtrack. Reported exactly
      that way. A death now plays the visual and nothing under it, which is
      also the better beat: the room going silent is what a room does. */
-  if(mode==="kill"&&typeof SFX!=="undefined"&&SFX.crowd)SFX.crowd(true);
+  /* `isKill`, not `win`: win() is a function in this file and a local of that
+     name would shadow it inside this one. Same rule as `moveHistory`. */
+  var isKill=(mode==="kill");
+  if(isKill&&typeof SFX!=="undefined"&&SFX.cheer)SFX.cheer();
   var hold=kcHold(mode);
   kcT.push(setTimeout(function(){
     kcNoiseStart();el.classList.add("snow");
@@ -424,6 +427,9 @@ function killCamStart(mode){
      edges of the screen rather than appearing on top of an empty picture. */
   kcT.push(setTimeout(function(){
     el.classList.add("vf");kcNoiseStop();
+    // The record light and the chirp on the same beat, so the picture and
+    // the sound say the same thing. A kill only: a death is watched silent.
+    if(isKill&&typeof SFX!=="undefined"&&SFX.rec)SFX.rec();
   },hold+KC_SNOW_MS+KC_CAM_MS-200));
   /* AND THE END POSITION, STATED. The snow and the camera are cleared by CSS
      animations, and an animation only lands if frames are drawn - hitch
@@ -757,6 +763,21 @@ function replayFrame(dtReal){
   /* And the last beat: the world folds onto the player. On a death that is
      the hunter's own verb being used on them; on a kill it is the fold they
      actually made, replayed. */
+  /* AND ON A KILL IT IS SCORED, once, on the frame the fold starts. The film
+     was silent, which is what made it feel like footage of nothing: the one
+     thing a replay of your best move has to do is let you hear it land. So
+     the game's own fold plays, and its own strike lands REP_FOLD_MS later,
+     which is exactly when the fold on screen closes.
+
+     `repFx` is the one-shot latch. replayFrame runs every frame and this
+     branch runs for the whole of the fold and the hold after it, so without
+     it the strike would be re-queued sixty times a second. A death stays
+     silent on purpose - see killCamStart(). */
+  if(!rep.fx){
+    rep.fx=true;
+    if(rep.mode==="kill"&&typeof SFX!=="undefined"&&SFX.relive)
+      SFX.relive(REP_FOLD_MS);
+  }
   rep.foldMs+=dtReal;
   var k=Math.min(1,rep.foldMs/REP_FOLD_MS);
   rep.fold=k*k*(3-2*k);

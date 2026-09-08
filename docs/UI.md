@@ -177,6 +177,20 @@ named). Undoing one of these needs the paragraph.
   noise and a repeating gradient is a texture. **REC and the timecode live in
   the top bar**, not under it - under it they land on the level's name and
   hint, the same collision the REPLAY label was moved out of.
+- **The first beat is the only asymmetric one**, and deliberately: `KC_HOLD_
+  DEATH` 1300ms against `KC_HOLD_KILL` 620ms. A death is news and needs a
+  moment on the board it happened on before the spectacle starts; a kill is
+  not news, and holding a cleared arena is dead air.
+- **A kill is scored and a death is silent** — owner's call, and it survives a
+  re-read of the code as an accident. `SFX.cheer()` on the beat of the hit,
+  `SFX.rec()` when the viewfinder lands, `SFX.relive()` on the film's closing
+  fold (the game's own fold, then its own strike `REP_FOLD_MS` later, at half
+  gain), latched one-shot by `rep.fx` because that branch runs every frame of
+  the fold. A death plays `SFX.die()` and nothing else: the groan that used to
+  sit under the snow was a bandpassed noise bed swept down to 155Hz, and on a
+  phone speaker under television snow it was indistinguishable from the snow
+  having a soundtrack. Applause carries the crowd now, not the bed — it is the
+  one crowd sound nothing else here could be mistaken for.
 - **The film is held, not delayed.** `rep` is set the instant the hit lands -
   that is what freezes the fight and saves the pose - and only the playback
   waits, on `rep.leadUntil`. It is a **wall-clock deadline**, because the four
