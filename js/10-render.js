@@ -2460,6 +2460,173 @@ function huntMesh(){
   scene.add(g);
   return g;
 }
+/* ============================================================
+   GOING TO ASH — the only death animation in the game
+
+   Until now nothing actually died on screen. A hunter you killed was spliced
+   out of the array and its mesh simply stopped being drawn; the player losing
+   a life was teleported home between two frames. The sting said what had
+   happened and the board never showed it, which is the one thing a kill cam
+   exists to be about.
+
+   So a piece that dies comes apart: it breaks into a cloud of specks that
+   lift, drift and thin out to nothing.
+
+   WHAT MAKES IT READ AS COMING APART RATHER THAN AS AN EXPLOSION is the
+   staggered release. Every speck carries a delay taken from how high up the
+   body it started, so the top of the piece leaves first and the bottom is
+   still solid a third of a second later; until its delay is up a speck sits
+   exactly where it started, which is to say it is still part of the piece.
+   Released all at once this is a firework, and a firework is something that
+   happens TO a thing rather than something the thing does.
+
+   IT IS CUBES IN ONE GEOMETRY, NOT `THREE.Points`. Points were the obvious
+   answer - one vertex per speck, one buffer write, no index - and they do not
+   draw at all in the three.js this game vendors (r128, a trimmed build): a
+   deliberately enormous plain-coloured Points placed on top of a hunter
+   rendered nothing, so the Points path is simply not in the bundle. Do not
+   reach for it again without testing it first.
+
+   What is here instead is the thing this game is already made of: little
+   cubes. One BufferGeometry holds all of them, 8 vertices and 36 indices
+   each, and a burst moves whole cubes by writing their 8 vertices - so it is
+   still one mesh and one draw call, which is what matters at the most
+   expensive instant the game has (a hit, a shake, a slow-mo and a kill cam
+   winding up, with up to four clouds overlapping on a double kill). It is
+   also the better picture: a world of cubes should come apart into cubes.
+
+   The colour is per-vertex, each speck mixed some way from the piece's own
+   colour toward a pale ash, so the cloud reads as a thing turning to dust
+   rather than as coloured confetti. Opacity is per-cloud rather than per
+   speck - the stagger already supplies the texture that would have bought. */
+var ashPool=[], ASH_N=110, ASH_MS=1400, ASH_SPREAD=.9, ASH_SIZE=.05;
+// The eight corners of a unit cube, and the six faces over them. Built once.
+var ASH_CORNER=[[-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],
+                [-1,-1, 1],[1,-1, 1],[1,1, 1],[-1,1, 1]];
+var ASH_FACE=[4,5,6, 4,6,7,  1,0,3, 1,3,2,  5,1,2, 5,2,6,
+              0,4,7, 0,7,3,  7,6,2, 7,2,3,  0,1,5, 0,5,4];
+function ashMake(){
+  var g=new THREE.BufferGeometry(), V=ASH_N*8;
+  g.setAttribute("position",new THREE.BufferAttribute(new Float32Array(V*3),3));
+  g.setAttribute("color",new THREE.BufferAttribute(new Float32Array(V*3),3));
+  var idx=new Uint16Array(ASH_N*36);
+  for(var i=0;i<ASH_N;i++)
+    for(var f=0;f<36;f++)idx[i*36+f]=i*8+ASH_FACE[f];
+  g.setIndex(new THREE.BufferAttribute(idx,1));
+  var p=new THREE.Mesh(g,new THREE.MeshBasicMaterial({
+    vertexColors:true,transparent:true,opacity:1,depthWrite:false,
+    side:THREE.DoubleSide}));
+  /* Never culled: the bounding sphere is computed once from an empty buffer
+     and the cloud then travels outside it, so three.js would drop the whole
+     cloud mid-burst on some camera angles. */
+  p.frustumCulled=false;p.renderOrder=880;p.visible=false;
+  p.userData={ms:0,live:false,
+    st:new Float32Array(ASH_N*3),vel:new Float32Array(ASH_N*3),
+    dly:new Float32Array(ASH_N)};
+  scene.add(p);ashPool.push(p);
+  return p;
+}
+var ASH_COL=new THREE.Color(0xd8d2c6);
+// Write one speck's cube: its 8 corners around (x,y,z).
+function ashPut(pos,i,x,y,z){
+  for(var v=0;v<8;v++){
+    var o=(i*8+v)*3, c=ASH_CORNER[v];
+    pos[o]=x+c[0]*ASH_SIZE;
+    pos[o+1]=y+c[1]*ASH_SIZE;
+    pos[o+2]=z+c[2]*ASH_SIZE;
+  }
+}
+function ashBurst(x,y,z,hex){
+  if(typeof THREE==="undefined"||!scene)return;
+  var p=null,i,v;
+  for(i=0;i<ashPool.length;i++)if(!ashPool[i].userData.live){p=ashPool[i];break;}
+  // Four at once is a double kill plus the player; past that the oldest is
+  // taken over, because a fifth cloud nobody can pick out is not worth a
+  // fifth buffer.
+  if(!p)p=(ashPool.length>=4)?ashPool[0]:ashMake();
+  var u=p.userData, base=new THREE.Color(hex===undefined?0xff4d5e:hex);
+  var pos=p.geometry.attributes.position.array;
+  var col=p.geometry.attributes.color.array;
+  var tmpc=new THREE.Color();
+  for(i=0;i<ASH_N;i++){
+    var ox=(Math.random()-.5)*ASH_SPREAD,
+        oy=(Math.random()-.5)*ASH_SPREAD,
+        oz=(Math.random()-.5)*ASH_SPREAD;
+    u.st[i*3]=x+ox; u.st[i*3+1]=y+oy; u.st[i*3+2]=z+oz;
+    ashPut(pos,i,x+ox,y+oy,z+oz);
+    // Top first. The random factor keeps the edge of the crumble ragged;
+    // a clean sweep down the body reads as a wipe, not as a collapse.
+    u.dly[i]=(.5-oy/ASH_SPREAD)*.34*(.55+Math.random()*.8);
+    // Outward from the middle, and up. The upward bias is what says the
+    // pieces are being taken rather than thrown.
+    var sp=1.35+Math.random()*1.15;
+    u.vel[i*3]=ox*sp+(Math.random()-.5)*.3;
+    u.vel[i*3+1]=.8+Math.random()*1.15;
+    u.vel[i*3+2]=oz*sp+(Math.random()-.5)*.3;
+    tmpc.copy(base).lerp(ASH_COL,Math.random()*.8);
+    for(v=0;v<8;v++){
+      var o=(i*8+v)*3;
+      col[o]=tmpc.r;col[o+1]=tmpc.g;col[o+2]=tmpc.b;
+    }
+  }
+  p.geometry.attributes.position.needsUpdate=true;
+  p.geometry.attributes.color.needsUpdate=true;
+  p.material.opacity=1;
+  u.ms=0;u.live=true;p.visible=true;
+}
+/* The two things that die, in the colours they are drawn in. The renderer
+   owns this rather than the caller: what a piece looks like is its business.
+
+   AND WHERE IT IS DRAWN, WHICH IS NOT WHERE IT IS. `huntMeshes[i].position`
+   eases toward the logical cell (`lerp` .35 a frame in drawBoss), so a hunter
+   that is mid-step is a third of a square behind `h.x/h.z` - and the cloud
+   came off empty air beside it, which is exactly what the first version did.
+   Pass the hunter's index and the ash starts on the thing the player can see;
+   the cell is the fallback, and the only caller without an index is the
+   replay, where the mesh has been re-posed to the recorded square anyway. */
+function ashHunter(x,y,z,idx){
+  var m=(idx!==undefined&&huntMeshes&&huntMeshes[idx]);
+  if(m&&m.visible)ashBurst(m.position.x,m.position.y,m.position.z,0xff4d5e);
+  else ashBurst(x,y,z,0xff4d5e);
+}
+function ashPlayer(x,y,z){
+  var hex=0xd6336c;
+  try{ hex=findBy(SKIN_COLORS,wardrobe.color).hex; }catch(e){}
+  // Same argument as ashHunter: the player's mesh is where the player looks
+  // to be, and on the frame a charge lands it is still arriving.
+  if(playerMesh&&playerMesh.visible)
+    ashBurst(playerMesh.position.x,playerMesh.position.y,playerMesh.position.z,hex);
+  else ashBurst(x,y,z,hex);
+}
+/* Real time, not fight time: a cloud must keep drifting through the slow-mo
+   and through the frozen board a kill cam holds, exactly like the film does. */
+function ashFrame(dt){
+  for(var k=0;k<ashPool.length;k++){
+    var p=ashPool[k],u=p.userData;
+    if(!u.live)continue;
+    u.ms+=dt;
+    var a=u.ms/1000, pos=p.geometry.attributes.position.array;
+    for(var i=0;i<ASH_N;i++){
+      var t=a-u.dly[i];
+      if(t<=0)continue;                    // still part of the body
+      // Drifting, not flying: the quadratic term is drag, so the cloud slows
+      // as it thins instead of leaving the screen at speed.
+      var d=t-.3*t*t;
+      ashPut(pos,i,u.st[i*3]  +u.vel[i*3]  *d,
+                   u.st[i*3+1]+u.vel[i*3+1]*d,
+                   u.st[i*3+2]+u.vel[i*3+2]*d);
+    }
+    p.geometry.attributes.position.needsUpdate=true;
+    var f=u.ms/ASH_MS;
+    p.material.opacity=f<.18?1:Math.max(0,1-(f-.18)/.82);
+    if(u.ms>=ASH_MS){u.live=false;p.visible=false;}
+  }
+}
+function ashClear(){
+  for(var k=0;k<ashPool.length;k++){
+    ashPool[k].userData.live=false;ashPool[k].visible=false;
+  }
+}
 /* The telegraph. A charge you cannot see coming is not a fight, so a planted
    hunter draws the line it is about to come down, brightening as the beat
    closes. It is drawn in the volume rather than folded with the world,
@@ -3963,6 +4130,9 @@ function animate(now){
      overlay across a meadow was the one thing left that looked like a
      diagram rather than a place. Raise the second term to bring it back. */
   if(gridLines) gridLines.material.opacity=(app==="edit"?.09+.16*flatT:0);
+
+  // The ash drifts on real time, like the film it plays under. See ashFrame().
+  ashFrame(dtMs);
 
   renderer.render(scene,camera);
 }

@@ -123,6 +123,7 @@ function bossReset(){
   rep=null;bossPendingAdvance=false;bossPendingDeath=false;replayClear();
   document.body.classList.remove("replaying");
   bossStingHide();killCamHide();
+  if(typeof ashClear==="function")ashClear();
   hunters=[];twinCore=0;twinAt=null;bossPhase=0;
   if(B&&B.twin)twinSpawn(0);
   else if(B){bossRestoreArena();bossEnterPhase(false);}
@@ -649,8 +650,14 @@ function replayStart(mode,who,line,at){
     if(d===3)d=-1;
     swing=d*90;
   }
+  /* WHERE THE ASH GOES WHEN THE FILM REACHES THE KILL. On a kill it is the
+     victim's own cell, copied here because `who` is a live hunter object that
+     has already been spliced off the board and will be re-posed by the film;
+     on a death the player is re-derived every frame by replayPose(), so the
+     film reads their drawn position at the moment instead and this is null. */
+  var ashAt=(mode==="kill"&&who)?{x:who.x,y:who.y,z:who.z}:null;
   rep={mode:mode,i:i0,t0:repBuf[i0].t,t1:t1,ms:0,fold:0,foldMs:0,view:want,
-       who:who||null,line:line||null,
+       who:who||null,line:line||null,ashAt:ashAt,
        vat:viewAngleTarget,angle:viewAngleTarget+swing,
        saved:{x:player.x,y:player.y,z:player.z,flat:flat,
               fu:flatPos?flatPos.u:0,fy:flatPos?flatPos.y:0,view:view,
@@ -786,6 +793,15 @@ function replayFrame(dtReal){
     rep.fx=true;
     if(rep.mode==="kill"&&typeof SFX!=="undefined"&&SFX.relive)
       SFX.relive(REP_FOLD_MS);
+    /* AND IT COMES APART AGAIN, which is the half of the film that was
+       missing: the replay showed the two of them arriving in one square and
+       then simply stopped. On a kill the cell was copied at replayStart; on a
+       death `player` is holding the posed position this very frame, which is
+       the square the film has just walked them into. */
+    var az=rep.ashAt||player;
+    if(rep.mode==="kill"){
+      if(typeof ashHunter==="function")ashHunter(az.x,az.y,az.z);
+    }else if(typeof ashPlayer==="function")ashPlayer(az.x,az.y,az.z);
   }
   rep.foldMs+=dtReal;
   var k=Math.min(1,rep.foldMs/REP_FOLD_MS);
@@ -1082,6 +1098,10 @@ function bossFoldCrush(){
     if(!twinAligned())return;
     bossHp--;bossHitFlash=1;
     SFX.strike();shakeT=1;slowMo();
+    // Both halves go: a core is the pair, and killing it is killing both.
+    if(typeof ashHunter==="function")
+      for(var th=0;th<hunters.length;th++)
+        ashHunter(hunters[th].x,hunters[th].y,hunters[th].z,th);
     /* The twin counts cores, not hunters, so it keeps its own word - "one
        down" would be a lie about a thing that has two halves and three
        hearts. The news is under it, like everywhere else. */
@@ -1107,6 +1127,14 @@ function bossFoldCrush(){
      has been removed from the board. */
   replayMark();
   var victim=hunters[doomed[0]];
+  /* EVERY ONE OF THEM COMES APART, and it has to happen before the splice -
+     a spliced hunter has no square left to come apart at. Each doomed cell
+     gets its own cloud, so a double kill is visibly two things dying in one
+     place rather than one bigger puff. */
+  for(var a=0;a<doomed.length;a++){
+    var dh=hunters[doomed[a]];
+    if(typeof ashHunter==="function")ashHunter(dh.x,dh.y,dh.z,doomed[a]);
+  }
   for(var d=doomed.length-1;d>=0;d--)hunters.splice(doomed[d],1);
   bossHitFlash=1;
   SFX.strike();shakeT=1;slowMo();
@@ -1291,6 +1319,14 @@ function bossHurt(why,who,line){
           h:who?{x:who.x,y:who.y,z:who.z}:null};        // asserted here as well as at the call site
   lives--;
   SFX.die();shakeT=1;slowMo();
+  /* AND YOU COME APART TOO. Taken from `at` rather than from `player`,
+     because a flat death is standing somewhere else by the time this runs -
+     `at.h` is the hunter's cell and it is where the two of you met, which is
+     where the ash belongs. Standing, the two are the same square anyway. */
+  if(typeof ashPlayer==="function"){
+    var az=at.h||at;
+    ashPlayer(az.x,az.y,az.z);
+  }
   /* SMASHED. It was FLATTENED, which was the game's own verb turned around
      and read as clever rather than as bad news - and "flat" is a state this
      game puts you in on purpose, several times a minute, by pressing a
@@ -1340,6 +1376,9 @@ function bossHurt(why,who,line){
 // move rather than a fold. It stays because it is the one attack that works
 // while the geometry is against you.
 function bossTakeCrate(idx){
+  if(typeof ashHunter==="function"){
+    var ch=hunters[idx];ashHunter(ch.x,ch.y,ch.z,idx);  // before the splice
+  }
   hunters.splice(idx,1);
   bossHitFlash=1;
   SFX.strike();shakeT=1;
@@ -1367,6 +1406,7 @@ function trialReset(){
   rep=null;bossPendingAdvance=false;bossPendingDeath=false;replayClear();
   document.body.classList.remove("replaying");
   bossStingHide();killCamHide();
+  if(typeof ashClear==="function")ashClear();
   if(TR)lives=BOSS_LIVES;
 }
 function trialFrame(dt){
