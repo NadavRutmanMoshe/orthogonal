@@ -735,11 +735,13 @@ function bossFrame(dt){
   for(var i=0;i<hunters.length;i++){
     var h=hunters[i];
     /* A STANDING TARGET does not walk, does not plant a line and never
-       charges - it is the pack with the clock taken out, so the kill can be
-       taught without the fight running underneath it. It is still solid to
-       every other rule: bossContact() still charges you for walking into it,
-       and the doom pass at the foot of this function still lights the GO 2D
-       button when you have lined it up. See `still` in bossPhases(). */
+       charges - the pack with its clock taken out. No level uses it: SPARRING
+       opened on one for a playtest and the owner asked for an opponent that
+       can kill, which is docs/HISTORY.md. The machinery stays because putting
+       it back is one word of level data, and because everything else still
+       treats such a hunter as one - it is a wall to your step, and the doom
+       pass at the foot of this function still lights the GO 2D button when
+       you have lined it up. See `still` in bossPhases(). */
     if(ph.still){h.line=null;h.lock=0;continue;}
     /* Planted. It does not walk while a lock is held, so the line you are
        shown is the line that fires - a telegraph that drifts is not a
@@ -826,15 +828,40 @@ function hunterAt(x,y,z,skip){
     if(i!==skip&&hunters[i].x===x&&hunters[i].y===y&&hunters[i].z===z)return true;
   return false;
 }
-// Called after any move you make. They are not solid - you can walk through
-// the square one is standing in - because a body you cannot pass is a body
-// that can trap you against a wall, and the fight is about position, not
-// about being cornered. Walking into one simply costs the same as being
-// walked into.
-function bossContact(){
-  if(!B||dying||levelDone)return false;
-  for(var i=0;i<hunters.length;i++)
-    if(hunterTouching(hunters[i])){bossHurt("you walked into it",hunters[i]);return true;}
+/* YOUR OWN MOVE NEVER KILLS YOU BY CONTACT, and that is the owner's call
+   after playtesting. Walking into one used to cost a life - "walking into one
+   simply costs the same as being walked into" - and it played as an instant
+   death with no telegraph in front of it, which is the one thing this fight
+   promises not to do. The kill is the line: theirs down it, yours across it.
+
+   So a hunter is now SOLID TO YOUR STEP. The move is refused the way a wall
+   refuses one - no life, no move spent - and the square stays theirs. That is
+   the only version of "it does not kill me" the fight survives: if you could
+   stand on one, you would share its silhouette column in every view at once,
+   and every fight in the game would be "walk onto it, fold" for two moves.
+   The old note's objection stands and is accepted - a body you cannot pass is
+   a body that can corner you - and the answer to being cornered is the verb
+   this game is about.
+
+   Nothing here constrains THEM. A hunter still steps onto you and still
+   charges down its line, both of which still cost a life; see bossFrame. */
+function hunterHere(x,y,z){
+  if(!B)return false;
+  for(var i=0;i<hunters.length;i++){
+    var h=hunters[i];
+    if(h.x===x&&h.y===y&&h.z===z)return true;
+  }
+  return false;
+}
+/* The same question asked of a silhouette column, for a step taken in the
+   plane: flattened, "the square one is standing in" is a column, and walking
+   into that column is walking into it. */
+function hunterInColumn(u,y){
+  if(!B)return false;
+  for(var i=0;i<hunters.length;i++){
+    var h=hunters[i];
+    if(h.y===y&&R.uOf(view,h.x,h.z)===u)return true;
+  }
   return false;
 }
 function hunterTouching(h){
@@ -1192,6 +1219,9 @@ function move3(dx,dz,dir){
   var ny=resolveStep(function(h){return R.solid(nx,h,nz,cr);},player.y,
                      function(h){return R.solid(here.x,h,here.z,cr);});
   if(ny===null){flash("blocked");SFX.bump();return;}
+  // And one of them is a wall while it is standing there. Refused before the
+  // move is spent, so a bump costs nothing at all. See hunterHere().
+  if(hunterHere(nx,ny,nz)){flash("it is in the way");SFX.bump();return;}
   pushHistory();moveCount++;
   if(moved){
     gCrates[moved.i]=[moved.to.x,moved.to.y,moved.to.z];SFX.shove();
@@ -1206,7 +1236,6 @@ function move3(dx,dz,dir){
   if(!moved)SFX.step();
   trailHere();
   if(tutC){tutC.m3++;if(dir)tutC.d[dir]++;if(ny>oldY)tutC.climb++;}
-  if(bossContact())return;
   syncHud();saveSession();checkWin();
 }
 function move2(du){
@@ -1217,6 +1246,9 @@ function move2(du){
   var ny=resolveStep(function(h){return R.siloSolid(view,nu,h,cr2);},flatPos.y,
                      function(h){return R.siloSolid(view,hu,h,cr2);});
   if(ny===null){flash("blocked");SFX.bump();return;}
+  // Same rule in the plane, where their square is a whole column: walking
+  // into it is refused rather than fatal.
+  if(hunterInColumn(nu,ny)){flash("it is in the way");SFX.bump();return;}
   pushHistory();moveCount++;
   if(ny===FELL){flatPos.u=nu;die("fall");return;}
   flatPos.u=nu;flatPos.y=ny;
@@ -1224,7 +1256,6 @@ function move2(du){
   SFX.step();collectHere();
   trailFlatStep();
   if(tutC)tutC.m2++;
-  if(bossContact())return;
   syncHud();saveSession();
 }
 /* What would folding from right here do to you, and which blocks are to blame?
@@ -1458,7 +1489,11 @@ function doUnflatten(){
   }
   if(tutC)tutC.unflat++;
   if(R.deadly3(player.x,player.y,player.z)){die("spike");return;}
-  if(bossContact())return;         // you came back down on top of one
+  /* Standing up onto one is no longer a death either - your own move never
+     kills you by contact. It is not a state you can hold: a hunter sharing
+     your square is touching you, and the next beat of its own clock is
+     "it reached you". Getting there at all needs it to enter your column
+     while you are flat, which is already its kill. */
   syncHud();saveSession();
   checkWin();
 }

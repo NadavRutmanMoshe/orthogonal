@@ -2486,12 +2486,37 @@ function huntMesh(){
    happens along that row whichever way you are looking, and the whole tension
    is that the axis you must fold along to answer it may not be the one you
    are facing. */
+/* HOW WIDE THE PANE IS ACROSS ITS OWN LINE, and it is the whole of this
+   drawing's answer to "am I lined up with it".
+
+   It was .06 of a cell, which is a pane you can only see from the side. The
+   side is the wrong place: the view a player is in when the line matters most
+   is the one looking straight DOWN it - that is what being aligned means, and
+   it is the view the fold is taken from - and edge-on a .06 pane is two
+   pixels of red. So the one drawing that says "this row is about to be
+   folded onto you" disappeared exactly when the player had done the thing it
+   was there to reward.
+
+   Nothing else changed: it is the same pane, the same collapse, the same
+   beat. It simply has a width now, so end-on it is a bar you can see, and it
+   still reads as a plane rather than a beam because it is far longer than it
+   is wide and it flattens onto the floor as the charge lands.
+
+   .46 is measured rather than felt: at .25 it was still thin against a
+   1-wide hunter at the far end of BOSS IV's floor, and at .7 it starts
+   reading as a block standing in the row rather than as a plane through it. */
+var RAY_W=.46;
 function lineMesh(){
-  var g=new THREE.Mesh(new THREE.BoxGeometry(1,1,.06),
+  /* A unit box, scaled on all three axes by drawLines(): length along the
+     line, height falling with the beat, and RAY_W across. The width used to
+     be baked into the geometry, which is why it could not be changed in one
+     place - and the rim is a child, so it takes the same scale and cannot
+     drift out of register with the pane it outlines. */
+  var g=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),
     new THREE.MeshBasicMaterial({color:0xff4d5e,transparent:true,opacity:.5,
       depthWrite:false,side:THREE.DoubleSide}));
   var e=new THREE.LineSegments(
-    new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,.06)),
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,1)),
     new THREE.LineBasicMaterial({color:0xff8a94,transparent:true,opacity:.7}));
   g.add(e);g.userData.edge=e;
   g.renderOrder=880;
@@ -2516,15 +2541,16 @@ function drawLines(){
     /* The pane stands along the line and comes down onto it. Height falls
        with the beat, so what the player watches is the row being flattened -
        and it lands as a bar at floor level exactly when the charge fires.
-       The box is 1x1x.06, so the thin axis has to be turned to lie along the
-       line: scaled on x it is a pane facing down z, and a line running in z
-       needs it turned a quarter turn. */
+       The box is a unit cube, so the narrow axis has to be turned to lie
+       along the line: scaled on x it is a pane facing down z, and a line
+       running in z needs it turned a quarter turn. RAY_W is the width across
+       it, and it is what makes the pane visible end-on - see above. */
     var run=1-Math.min(1,h.lock/bossAim());
     var hgt=Math.max(.07,1.15*(1-run*run));
     if(Math.abs(tz-h.z)>Math.abs(tx-h.x)){
-      m.rotation.y=Math.PI/2; m.scale.set(lz,hgt,1);
+      m.rotation.y=Math.PI/2; m.scale.set(lz,hgt,RAY_W);
     } else {
-      m.rotation.y=0;         m.scale.set(lx,hgt,1);
+      m.rotation.y=0;         m.scale.set(lx,hgt,RAY_W);
     }
     m.position.set(mx,h.y-.5+hgt/2,mz);
     // full bright as the beat closes: this is the last thing you see before

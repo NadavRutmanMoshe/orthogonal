@@ -138,16 +138,17 @@ single press that demonstrates a conjunction. Players reached BOSS I able to
 see a thing walking toward them with no account of what they were supposed to
 do about it, which is the report this level answers.
 
-So it is said, in words, over a board where saying it is enough.
-`SPARRING — Standing Target` sits immediately before BOSS I: three by seven,
-bare, the tutorials' scale rather than an arena's, with **one hunter that does
-not move** at the far end and the four rules listed at the top of the screen.
-The player starts one row off its line, and that is the whole of the level
-design — it makes the first three lines of the primer three separate presses:
+So it is said, in words, over the smallest board a real fight fits on.
+`SPARRING — One of Them` sits immediately before BOSS I: three by seven, bare,
+the tutorials' scale rather than an arena's, with **one hunter** at the far end
+and the four rules listed at the top of the screen (`L.primer` — deliberately
+not the retired *brief*, which was a card). The player starts one row off its
+line, and that is the whole of the level design — it makes the first three
+lines of the primer three separate presses:
 
 | | |
 |---|---|
-| **1 · align** | one step toward the camera, onto its row |
+| **1 · align** | one step onto its row |
 | **2 · look** | one turn, so that row runs into the screen and you share a silhouette column |
 | **3 · GO 2D** | and it is crushed |
 
@@ -157,18 +158,31 @@ of `bossFrame()` whatever else is going on, so the moment the turn lands the
 code that tells them in a real fight, before they commit. That is worth more
 than the list: the list is read once, the green is a rule they can check.
 
-**The fourth line cannot be taught here and is still said.** "Be faster than
-it is" means nothing against something standing still; it is printed so that
-BOSS I is charging for something the player has already been told, rather than
-for something they have to infer from dying.
+**IT OPENED ON A DUMMY AND THAT LASTED ONE PLAYTEST.** The first version's
+hunter stood still (`still:true`), and the owner played it and asked for one
+that can kill. That is the right call, and the fourth line of the primer is
+why: "be faster than it is" cannot be *shown* by something that never moves,
+so the dummy taught three of the four rules and quietly contradicted the
+fourth. A lesson whose stakes are zero teaches the moves without teaching the
+fight. See `docs/HISTORY.md`.
 
-**`still` is a phase flag, not a level one** (`bossPhases()`). A still hunter
-spawns, can be crushed, and does nothing else — no step, no line, no charge —
-and `bossFrame()` skips it before any of that. Everything else still sees an
-ordinary hunter: `bossContact()` charges you for walking into it, the doom
-pass lights the button, the kill cam plays. It is a phase flag because a later
-fight could reasonably open on one and then wake it up, and because that is
-where `cunning` already lives.
+**What keeps it a lesson is the arena and the clock, not the opponent.** It is
+BOSS I's phase one — one hunter, bare floor, nothing else on the board — on
+the smallest arena it fits on, with a slower beat: `step` 1400 against BOSS I's
+1100, because eleven squares at 1100 is about twelve seconds before it can
+touch you, and seven squares at 1400 is about ten — on the level where a
+player meets one of these for the first time. The escalation is wound down to
+match (`floorStep` 700 rather than 300, `creepEvery` 9000), so however long
+they take reading four lines, this fight can never become faster than the one
+they have not had yet. Both `bosssim` policies agree about the shape: a player
+who never moves is dead in 8.7s, and a duellist clears it in 1.4s.
+
+**`still` survives as a phase flag** (`bossPhases()`) though no level uses it
+now. A still hunter spawns, can be crushed, and does nothing else — no step,
+no line, no charge — and `bossFrame()` skips it before any of that; everything
+else still sees an ordinary hunter, the doom pass and the kill cam included.
+It stays for the same reason `cunning` does: putting it back is one word of
+level data, and the machinery is smaller than the argument about it.
 
 **`teach:true` turns off two of `bossArena()`'s checks and only two.** A board
 like this has no lethal columns (nothing stands on it) and three rows of depth
@@ -208,6 +222,19 @@ walk into a wall.
 
 ### Details that are load-bearing
 
+- **A HUNTER IS SOLID TO YOUR STEP, and your own move never kills you by
+  contact.** Walking into one used to cost a life — the note read "walking
+  into one simply costs the same as being walked into" — and played as an
+  instant death with nothing in front of it, which is the one thing this
+  fight promises not to do. It is refused now, the way a wall is: no life, no
+  move spent, `it is in the way`. That is the *only* version of "it does not
+  kill me" the fight survives — if you could stand on one you would share its
+  silhouette column in every view at once, and every fight in the game would
+  be "walk onto it, then fold" for two moves. The old note's objection stands
+  and is accepted: a body you cannot pass is a body that can corner you. The
+  answer to being cornered is the verb this game is about. Nothing here
+  constrains *them* — a hunter still steps onto you and still charges down
+  its line, and both still cost a life.
 - **A charge needs the same height, not just the same row.** `bossLine()`
   used to check only x and z, so a hunter standing on a pillar had a line on
   a player on the floor below it and charged straight through the block it
@@ -246,6 +273,15 @@ walk into a wall.
   the one verb the player already owns. It works because the attack was
   already that shape — a hunter on your row *is* a hunter in your silhouette
   column the moment you face along that row, which is why folding answers it.
+  **And the pane has a width** (`RAY_W`, `10-render.js`). It was .06 of a
+  cell, which is a pane you can only see from the side — and the side is the
+  wrong place, because the view that matters is the one looking straight
+  *down* the line. That is what being aligned means, it is the view the fold
+  is taken from, and edge-on a .06 pane was two pixels of red. So the one
+  drawing that says "this row is about to be folded onto you" vanished
+  exactly when the player had done the thing it exists to reward. At .46 it
+  is a bar end-on and still a plane broadside, because it stays far longer
+  than it is wide and still flattens onto the floor as the charge lands.
   The Census was already saying it too: they live in the plane. A hunter that
   can genuinely fold is a sixth design and a different question; see
   `docs/HISTORY.md`.
@@ -352,9 +388,10 @@ walk into a wall.
   entirely. `replayMark()` takes it on the first line of `bossHurt`, before
   anything moves.
 - **MOST DEATHS ARRIVE WITH NO LINE AT ALL, and that is what kept the camera
-  broken through three fixes.** Three of `bossHurt`'s four callers pass none
-  — *it closed on you*, *it reached you*, *you walked into it* — and only the
-  charge passes one. **A flat kill is always one of the three**: waiting in
+  broken through three fixes.** Two of `bossHurt`'s three callers pass none
+  — *it closed on you*, *it reached you* — and only the charge passes one.
+  (There were four: *you walked into it* went when hunters became solid to
+  your step.) **A flat kill is always one of the three**: waiting in
   the plane means a hunter walks into your silhouette column and
   `hunterTouching()` fires. The derivation below was guarded on a line object
   *with zeroes in it*, which is what `huntLine()` returns while flat but not

@@ -32,6 +32,7 @@ One line, no buttons, gone in about two seconds. `flash()` in `js/18-ui.js`.
 | Text | When | Where |
 |---|---|---|
 | `blocked` | you walk into something solid | `12-play.js:1187`, `:1212` |
+| `it is in the way` | you walk into a hunter — refused like a wall, no life and no move | `12-play.js` (`hunterHere`, `hunterInColumn`) |
 | `nothing solid behind that` | GO 3D with no block to land on | `12-play.js:1432` |
 | `nothing to undo` | undo on move zero | `05-state.js:254` |
 | `amber has it` | you try to shove a crate an anchor is pinning | `12-play.js:1176` |
@@ -50,14 +51,14 @@ One line, no buttons, gone in about two seconds. `flash()` in `js/18-ui.js`.
 
 ### Fights — a hit
 
-All four end in ` · N lives left` (or `1 life left`).
+All three end in ` · N lives left` (or `1 life left`).
 
 | Text | When | Where |
 |---|---|---|
 | `it closed on you · …` | a hunter reached you on its own turn | `12-play.js:728` |
 | `it came down the line · …` | a hunter fired along your line | `12-play.js:752` |
 | `it reached you · …` | a hunter caught you moving | `12-play.js:780` |
-| `you walked into it · …` | you stepped into a hunter | `12-play.js:830` |
+| ~~`you walked into it · …`~~ | **retired** — stepping into a hunter is refused now, not fatal | see `it is in the way` above |
 | `caught by the sweep · …` | a trial's plane caught you in the volume | `12-play.js:1058` |
 | `flat in the slice · …` | it caught you folded | `12-play.js:1058` |
 | `N lives left` / `1 life left` | any other hit on a clock | `12-play.js:76` |

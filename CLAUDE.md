@@ -124,13 +124,14 @@ Block format `[x,y,z,k]`: 0 stone, 1 water (code says `glass`), 2 anchor,
 - Progress is keyed by level **name**. `progress[name]` holds a move count
   on an ordinary level and lives kept on a clock level, so reads go through
   `starsForRecord()` and writes through `betterRecord()`.
-- **A fight is taught before it is fought.** `SPARRING — Standing Target` sits
-  before `BOSS I`: a `tutorial:true` level carrying `boss` data, one hunter
-  with `still:true` (spawns, can be crushed, never moves), and the kill's four
-  rules printed at the top of the screen from `L.primer`. `teach:true` on the
-  boss exempts the arena from `bossArena()`'s two quality gates - lethal
-  columns and depth - and from nothing else. It is a hexagon on the map, earns
-  a tick rather than stars, and `bossesLeft()` skips it, so it gates nothing.
+- **A fight is taught before it is fought.** `SPARRING — One of Them` sits
+  before `BOSS I`: a `tutorial:true` level carrying `boss` data - BOSS I's
+  phase one on the smallest arena it fits on, with a slower beat - and the
+  kill's four rules printed at the top of the screen from `L.primer`.
+  `teach:true` on the boss exempts the arena from `bossArena()`'s two quality
+  gates - lethal columns and depth - and from nothing else. It is a hexagon on
+  the map, earns a tick rather than stars, and `bossesLeft()` skips it, so it
+  gates nothing.
 - **`LEVELS` opens `sectionPicker()`, not the map.** One section per visit;
   the map has no tab strip and the way to another section is out and back in.
   PROLOGUE has no tile and no map (`secPickable()`) — it is the tutorial, and
@@ -185,9 +186,15 @@ is the rule.
 - `folding()` refuses the verb while the fold tween runs; it is a stamp
   taken at commit, not a read of `foldP`.
 - Undo does not touch a fight.
+- **A hunter is solid to your step and your own move never kills you by
+  contact**: walking into one is refused like a wall (`hunterHere()`,
+  `hunterInColumn()`), no life and no move. Being able to stand on one would
+  make every fight "walk onto it, fold". Their step and their charge still
+  kill.
 - A phase may carry `still:true`: that hunter never steps, never plants a line
-  and never charges, and everything else still treats it as one. `bosssim.js`
-  knows about it too, or it would be simulating a fight nobody authored.
+  and never charges, and everything else still treats it as one. No level uses
+  it; `bosssim.js` knows about it too, or it would be simulating a fight
+  nobody authored.
 
 **Solver and tutorial** (`tutorial.md`, `levels.md`)
 - Tutorial steps are predicates over counters and state; never a step index.
@@ -270,6 +277,9 @@ is the rule.
   at that section's fire and water.
 - `applyTheme()` runs once per level and drops block meshes when the surface
   changes; `syncMeshes` reuses meshes by cell otherwise.
+- `RAY_W` .46 is the width of the charge telegraph across its own row. It was
+  a .06 pane, invisible end-on - which is the view you are in when you are
+  lined up, and the one the fold is taken from.
 - `INK_SETTLE` .18 and `PAPER_LIFT` .20 are the whole 2D look; both have
   been raised and reverted. The paper is derived from the sky.
 - `DEPTH_STEP` .34 charges the first cell of depth outright; `CAM_TILT` .62

@@ -1124,3 +1124,63 @@ and `lost` is false against it, so nothing falls or plays the losing sound on
 the way back in. The general lesson is the one the comment now carries: **a
 cache of "what is on screen" may only be written where the screen is**, and
 any path that skips the drawing has to invalidate it rather than guess at it.
+
+---
+
+## The sparring dummy, and the death with nothing in front of it
+
+SPARRING was built to answer a report: players reached BOSS I able to see a
+thing walking at them and with no account of what the fight wanted from them.
+The first version put a hunter that **could not move** at the far end of a
+small bare board (`still:true` on the phase, machinery still in
+`bossPhases()`), on the reasoning that the kill is a conjunction — line up,
+look down that line, fold, and be first — and a conjunction cannot be taught
+by pressing one button, so it should be said in words over a board with
+nothing else happening on it.
+
+It lasted one playtest. The owner's note was "make it so it can kill me like
+in the boss phase 1", and it is right for a reason the level itself was
+printing at the top of the screen: the fourth rule is *be faster than it is*,
+and a target that never moves does not merely fail to teach that, it
+contradicts it. The three rules a dummy can teach are the three the player
+would have worked out anyway; the one that needs teaching is the only one it
+cannot show. A lesson with no stakes teaches the moves and not the fight.
+
+So the hunter is BOSS I's phase-one hunter now, and what makes the level a
+lesson instead of a fifth boss is everything *around* it: the smallest arena
+that fight fits on, `step` 1400 against BOSS I's 1100 (seven squares at 1400
+is about the ten seconds eleven squares at 1100 buys you there), and the
+escalation wound down — `floorStep` 700, `creepEvery` 9000 — so a player who
+takes their time reading four lines is never handed a faster fight than the
+one they have not had yet. `still` is kept, unused, exactly as `cunning` is:
+one word of level data puts the dummy back.
+
+**The second half of the same note was the more interesting one.** "There is
+an insta kill if you go into an opponent, it shouldn't happen — only time
+under the same axis should kill." Walking into a hunter cost a life, and the
+comment defending that had been written from the pack's side: *they are not
+solid, because a body you cannot pass is a body that can trap you against a
+wall, and walking into one simply costs the same as being walked into*. Both
+halves are true and the conclusion was still wrong, because the two events are
+not the same from the player's chair. Being walked into is the end of a
+sequence you watched happen. Walking into one is your own move, and this fight
+is built on the promise that nothing kills you without a telegraph first — so
+the one death with nothing in front of it was the one the player caused.
+
+The fix is not "make it harmless". If the player can stand on a hunter's
+square they share its silhouette column in every view at once, so folding
+kills it for free, and every fight in the game collapses to *walk onto it,
+fold* for two moves. So a hunter is **solid to your step**: the move is
+refused the way a wall refuses one — no life, no move spent, `it is in the
+way`. The old objection stands and is accepted; being cornered is a cost, and
+the answer to it is the verb the game is about. Nothing changed on their side.
+
+**And the telegraph got a width.** The pane a planted hunter draws along the
+row it is about to charge down was `.06` of a cell thick — visible broadside,
+and two pixels of red seen end-on. End-on is exactly the view that matters:
+looking straight down the line *is* being aligned, and it is the view the fold
+is taken from, so the drawing that says "this row is about to be folded onto
+you" disappeared at the moment the player had done the thing it exists to
+reward. `RAY_W` is `.46` now, one number in `10-render.js`, and the pane is
+still a pane: far longer than it is wide, and still flattening onto the floor
+as the charge lands.

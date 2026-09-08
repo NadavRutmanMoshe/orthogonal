@@ -322,30 +322,43 @@ var LEVELS=[
      [2,1,-5],[2,1,-4],[2,1,-3],[3,2,-6],[3,2,-5],[3,2,-4],
      [4,3,-6],[4,3,-5],[1,3,-5]],
    start:[0,1,0],goal:[1,4,-5],rotate:true},
-{name:"SPARRING — Standing Target",
-   won:"That one was standing still. The next one is not.",
-   hint:"It will not move. Nothing else is different.",
-   /* THE FIGHT, TAUGHT ON A DUMMY. Players were reaching BOSS I without
+{name:"SPARRING — One of Them",
+   won:"That was one of them, on an empty floor. There are three more.",
+   hint:"One of them, and nothing in the way.",
+   /* THE FIGHT, TAUGHT AS A FIGHT. Players were reaching BOSS I without
       knowing what the fight *asks* - they could see a thing walking at them
       and no way to answer it - so the four rules are said here in words, over
-      a board where each one is a single press and nothing is chasing anybody.
+      the smallest board a real fight fits on.
 
-      Three by seven, the tutorials' own scale rather than a boss arena's, and
-      bare: this is the first phase of every fight in the game with the clock
-      taken out of it. The target stands at the far end (`still:true`, see
-      bossPhases) and the player starts one row off its line, which is what
-      makes the primer's first three lines three separate moves rather than one:
+      IT WAS A DUMMY FOR ONE PLAYTEST AND IT IS NOT ANY MORE. The first
+      version stood still (`still:true`, machinery still in bossPhases), and
+      the owner played it and asked for a hunter that can kill you. That is
+      the right call and it is the fourth line of the primer that says why:
+      "be faster than it is" is not a rule you can be shown by something that
+      never moves, and a lesson whose stakes are zero teaches the moves
+      without teaching the fight. See docs/HISTORY.md.
 
-        1. ALIGN - one step toward the camera, onto its row.
+      What keeps it a lesson rather than a fifth boss is the ARENA and the
+      CLOCK, not the opponent. Three by seven and bare - the smallest thing
+      BOSS I's phase one could be drawn on - with that phase's shape and a
+      slower clock: 1400 rather than 1100, because the board is smaller and
+      the hunter's step is what a player is really given to read the four
+      lines in. Measured: BOSS I opens with 11 squares between you and 1100ms
+      a step, which is about twelve seconds before it can touch you; seven
+      squares at 1400 is about ten, on a level where you have never seen one
+      of these before. The escalation is wound right down to match -
+      floorStep 700 rather than 300, creepEvery 9000 - so taking your time
+      here can never hand you a fight that is faster than BOSS I's first.
+
+      The player starts one row off its line, which is what makes the primer's
+      first three lines three separate moves rather than one:
+
+        1. ALIGN - one step onto its row.
         2. LOOK   - one turn, so the row runs into the screen and the two of
                     you share a silhouette column. The GO 2D button turns
                     green the instant that is true, which is the lesson
                     answering back.
         3. GO 2D  - and it is crushed.
-
-      The fourth line cannot be taught by a dummy - being faster than it is
-      only means anything once it moves - so it is said, and BOSS I is where
-      it is charged for.
 
       `teach:true` exempts the arena from two of bossArena()'s quality gates:
       a bare floor has no lethal columns and three rows are too flat to fold
@@ -355,12 +368,9 @@ var LEVELS=[
            "Face its direction.",
            "{do:2d}.",
            "Be faster than it is."],
-   boss:{teach:true,
-     /* step and aim are what it WOULD move and aim at, kept honest so this
-        reads as a hunter with the walking switched off rather than as a
-        different animal. Nothing reads them while `still` is set. */
-     phases:[{at:[[6,1,1]],still:true,step:1100,aim:1300,
-              say:"one of them, and it is not moving"}]},
+   boss:{teach:true,floorStep:700,creepEvery:9000,
+     phases:[{at:[[6,1,1]],step:1400,aim:1500,
+              say:"one of them, and nothing in the way"}]},
    blocks:box(0,6,0,0,0,2,[]),
    start:[0,1,0],rotate:true,tutorial:true},
 {name:"BOSS I — Catch Me If You Can!",
@@ -1476,5 +1486,10 @@ var LEVEL_RENAMES={
     to itself. That is correct and expected - numbers come back round, and a
     save under that name already holds the right level. */
  "03 — Turn to see": "68 — Turn to see",
- "02 — The Near One": "70 — The Near One"
+ "02 — The Near One": "70 — The Near One",
+
+ /* SPARRING stood still for exactly one playtest. The level is the same
+    level - same board, same spawn, same lesson - with an opponent that can
+    now kill you, so a save that beat the dummy has beaten this. */
+ "SPARRING — Standing Target": "SPARRING — One of Them"
 };
