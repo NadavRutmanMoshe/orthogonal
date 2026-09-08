@@ -80,6 +80,7 @@ buttons at the end of its builder.
 | Running star total | `#starTotal` | `syncStarTotal`, `starPop`, `flyStars` | `75-bossbar` | `win:2` |
 | Control bar: d-pad, turn, GO 2D | `#playBarWrap` | `syncHud` (classes), `applyUI` (layout) | `10-buttons`, `20-hud`, `50-layout-cues` | `level:2 --ui full` |
 | Editor / composer bars | `#editBarWrap`, `#composeBarWrap` | `14-editor.js`, `17-composer.js` | `30-editor` | `editor` |
+| SAVE (editor only) | `#eLib` in `.corner.tr` (`index.html`) | `syncSave()` (`18-ui.js`), off `editDirty` | `10-buttons` (`.esave`) | `editor` |
 | Coach line (hidden by default) | `#coach` | `tutSync` | `50-layout-cues` | `tutorial` |
 | Ghost hand + label | `#ghost`, `#ghostSay` | `tutGhost`, `ghostRestart`, `cue()` | `90-tutorial` | `tutorial` |
 | Guided-lock dim | `body.tutlock` | `tutEngage`, `tutUnlock` | `90-tutorial` | `tutorial --wait 4000` |
@@ -207,16 +208,24 @@ named). Undoing one of these needs the paragraph.
   it, `projectPanel()` and the composer are intact and one `bind` away, the
   same way `legendPanel()` is.
 - **A level exists before it works.** `ADD LEVEL` asks for a name and a
-  ground and writes the entry immediately; the editor's `SAVE` (`eLib`,
-  top-right of `#editBar`) calls `saveCurrent()`, which keeps a level the
+  ground and writes the entry immediately; the editor's `SAVE` — the green
+  pill in the **top-right corner**, which the editor leaves empty because
+  `syncHud()` hides the five round buttons outside play, and which carries an
+  amber dot while `editDirty` — calls `saveCurrent()`, which keeps a level the
   solver cannot finish and shows it as a **draft** everywhere a score is
   printed. `VERIFY` is still advice, and its own SAVE routes through the
   same function.
-- **A piece chip is the piece.** Each chip in `#editBar`'s tool row carries an
-  isometric cube in that piece's legend colour, drawn by `drawToolChips()`
-  (`js/14-editor.js`) from one `--c` per chip that also drives the rim, the
-  lip and the lit state. GOAL is the flat pad it is on the board and ERASE is
-  an empty wire cube; START is `var(--player)`, so it follows the skin.
+- **A piece chip is the piece as the renderer draws it**, not as the legend
+  swatches it. `toolArt()` / `drawToolChips()` (`js/14-editor.js`) read the
+  same constants `addMesh()` and `buildDynamic()` use: stone's rim frame,
+  water's surface plate and cyan edge, amber's floating octahedron, the
+  crate's obsidian body with violet cracks, fire's lava crust with the flames
+  standing off the top, the goal's teal wireframe box (diagonals and all —
+  it is a wireframe of a *triangulated* cube). **START is your own piece**:
+  it reads `wardrobe.shape` through `shapeGlyph()` and is in `--player`, so
+  it is redrawn on every `syncTools()`. `--c` per chip drives the rim, the
+  lip and the lit state; the bodies that are not that colour (crate, fire)
+  say so with a class.
 - **The editor only offers pieces the campaign has shown you**
   (`seenTools()` / `syncTools()` in `14-editor.js`, off `mapReach()`); a
   chip you have not met is not drawn, rather than drawn disabled. The

@@ -26,12 +26,49 @@
     --lip:color-mix(in srgb,var(--c) 22%,#04070d)}
   .chip i{font-style:normal;line-height:1}
   .chip .cu{width:23px;height:23px;display:block;flex-shrink:0}
+  /* Three faces off one hue, lit the way the renderer lights a block: the
+     top catches the light, the right face is the hue, the left turns away. */
   .chip .ft{fill:color-mix(in srgb,var(--c) 76%,#fff)}
   .chip .fr{fill:var(--c)}
   .chip .fl{fill:color-mix(in srgb,var(--c) 66%,#000)}
-  /* Water leaves nothing in 2D, so its cube is see-through. Fire glows. */
-  .chip .cu.soft{opacity:.7}
-  .chip .cu.hot{filter:drop-shadow(0 0 3px color-mix(in srgb,var(--c) 45%,transparent))}
+  .chip .fb{fill:color-mix(in srgb,var(--c) 50%,#000)}
+  /* Stone's rim frame, drawn on the top face. */
+  .chip .cu .rim{fill:none;stroke:color-mix(in srgb,var(--c) 55%,#000);
+    stroke-width:1;opacity:.6}
+  /* WATER. See-through, with the surface plate a little below the top and
+     the bright cyan edge the water block carries. */
+  .chip .cu.water{opacity:.86}
+  .chip .cu.water .plate{fill:color-mix(in srgb,var(--c) 40%,#fff);opacity:.85}
+  .chip .cu.water .wire{fill:none;stroke:#bdeaf7;stroke-width:1;opacity:.9;
+    stroke-linejoin:round}
+  /* AMBER's floating octahedron - the last piece still carrying a symbol. */
+  .chip .cu.amber .mark{fill:#ffe9b8}
+  /* OBSIDIAN. A near-black body with violet fire in the cracks: `--c` is the
+     violet the edge and the veins glow with, not the body's colour. */
+  .chip .cu.obsid .ft{fill:#2a1e46}
+  .chip .cu.obsid .fr{fill:#1d1433}
+  .chip .cu.obsid .fl{fill:#140d24}
+  .chip .cu.obsid .vein{fill:none;stroke:#a274ff;stroke-width:1.3;
+    stroke-linecap:round;opacity:.95}
+  .chip .cu.obsid .wire{fill:none;stroke:#e0d4ff;stroke-width:.9;opacity:.6;
+    stroke-linejoin:round}
+  /* LAVA CRUST, and the flames standing off the top of it. */
+  .chip .cu.lava .ft{fill:#3a241c}
+  .chip .cu.lava .fr{fill:#2a1712}
+  .chip .cu.lava .fl{fill:#1c0f0c}
+  .chip .cu.lava .vein{fill:none;stroke:#ff7a3c;stroke-width:1.3;
+    stroke-linecap:round}
+  .chip .cu.lava .flame{fill:var(--c);
+    filter:drop-shadow(0 0 3px color-mix(in srgb,var(--c) 60%,transparent))}
+  /* THE GOAL, as goalMesh draws it: a wireframe of a triangulated box, which
+     is where the diagonals come from. */
+  .chip .cu.goalw path{fill:none;stroke:var(--c);stroke-width:1.1;
+    stroke-linejoin:round;opacity:.95}
+  /* YOUR PIECE. A glyph from the wardrobe when the shape has one, otherwise
+     the block itself - either way in `--player`, so it follows the skin. */
+  .chip .cu.pglyph{display:flex;align-items:center;justify-content:center;
+    color:var(--c);font-size:19px;line-height:1}
+  .chip .cu.pglyph svg{width:21px;height:21px;fill:currentColor}
   .chip .cu.wire path{fill:none;stroke:color-mix(in srgb,var(--c) 62%,transparent);
     stroke-width:1.2;stroke-dasharray:2.4 2.2;stroke-linejoin:round}
   /* Lit: the hue comes all the way up, and the chip takes an inner ring so
