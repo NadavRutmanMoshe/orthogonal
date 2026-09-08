@@ -185,14 +185,19 @@ function bossPhases(b){
             step:p.step||b.step||620,   // ms between hunter steps
             aim:p.aim||b.aim||700,      // ms it plants on your line before it charges
             cunning:!!p.cunning,
-            /* A STANDING TARGET. It spawns, it can be crushed, and it does
-               nothing else: no step, no line, no charge. There is exactly one
-               thing this is for - teaching the kill on a board where the
-               clock is not also being taught (SPARRING, in 02-levels.js) - and
-               it is a phase flag rather than a level one so a later fight
-               could open on one and then wake it up. Everything that reads the
-               pack still sees an ordinary hunter, `doom` included, so the
-               GO 2D button goes green off the same code the real fights use. */
+            /* IT CANNOT WALK. Its feet are taken away and nothing else is:
+               it still plants a line the moment you share its row or column,
+               the ray still comes down that row, and the charge still kills
+               you. Everything that reads the pack sees an ordinary hunter.
+
+               What that buys is a fight whose subject is the KILL rather than
+               the board. A hunter that closes on you is asking where to stand
+               and when to run, which is what a boss is for; one that cannot
+               follow you asks only "line up, face it, fold, and be first" -
+               and it asks it exactly when the player chooses to step onto its
+               line, so the danger is opt-in. SPARRING is the level (see
+               02-levels.js); it is a phase flag rather than a level one so a
+               later fight could open on one and then let it go. */
             still:!!p.still,
             /* How many times a cunning hunter refuses a line you could fold
                on before it takes it anyway. The same patience valve the twin

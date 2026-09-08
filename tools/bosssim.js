@@ -132,12 +132,6 @@ function sim(lv,policy,ms){
     let hit=null;
     for(let i=0;i<hs.length;i++){
       const h=hs[i];
-      // A standing target: no step, no line, no charge. Modelled here so the
-      // two policies are played against the fight the game actually runs -
-      // simulating a walking hunter on a board authored with a still one
-      // measures a fiction, which is the mistake this whole file exists to
-      // avoid. See `still` in bossPhases().
-      if(ph().still)continue;
       if(h.lock>0){
         if(!lineOn(h)){h.lock=0;continue;}       // the line broke: it walks
         h.lock-=TICK;
@@ -147,6 +141,12 @@ function sim(lv,policy,ms){
       h.ms+=TICK;
       if(h.ms<h.step)continue;
       h.ms=0;
+      /* A still hunter skips the walk and nothing else - it still reads its
+       * line on this beat and still plants and charges. Modelled here because
+       * a walking hunter simulated against a board authored with a fixed one
+       * measures a fiction, which is the mistake this whole file exists to
+       * avoid. See `still` in bossPhases(). */
+      if(!ph().still){
       const goal=goalFor(h);
       // Three grades, exactly as the game asks it: 0 no line, 1 a line, 2 a
       // line the player cannot fold on from where they stand.
@@ -161,6 +161,7 @@ function sim(lv,policy,ms){
         h.x=nx.x;h.y=nx.y;h.z=nx.z;
       }
       if(grace<=0&&touched()){hit="reached";break;}
+      }
       if(lineOn(h)){
         // Declines a line the player could answer, but only while declining
         // is cheap - the same patience valve the game uses, and without it

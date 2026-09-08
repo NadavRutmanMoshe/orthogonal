@@ -59,11 +59,12 @@ five levels in, each section is interrupted by a **trial**:
 **And the section ends on two fights, not one.** `SPARRING — One of Them`
 sits between `12` and `BOSS I`: a teaching level that happens to be a boss, on
 a three-by-seven board — BOSS I's opening phase with the arena shrunk to the
-tutorials' scale and the clock wound down. It is there because
+tutorials' scale and a hunter that cannot walk. It is there because
 players were arriving at BOSS I able to see a thing walking at them and unable
-to say what the fight was *asking*; the four rules of the kill are printed at
-the top of the screen (`primer`, see `docs/UI.md`) over a board where the first
-three of them are one press each. It is `tutorial:true`, so it is not scored,
+to say what the fight was *asking*; the four rules of the kill are a live
+checklist at the top of the screen (`primer`, see `docs/UI.md`) over a board
+where the first three of them are one press each, and it says which line you
+missed when it kills you. It is `tutorial:true`, so it is not scored,
 it takes no stars off the section's total, and it is not one of the bosses
 `V · EXTRA` waits on. The design is in `docs/design/bosses.md`.
 

@@ -323,54 +323,98 @@ var LEVELS=[
      [4,3,-6],[4,3,-5],[1,3,-5]],
    start:[0,1,0],goal:[1,4,-5],rotate:true},
 {name:"SPARRING — One of Them",
-   won:"That was one of them, on an empty floor. There are three more.",
-   hint:"One of them, and nothing in the way.",
-   /* THE FIGHT, TAUGHT AS A FIGHT. Players were reaching BOSS I without
-      knowing what the fight *asks* - they could see a thing walking at them
-      and no way to answer it - so the four rules are said here in words, over
-      the smallest board a real fight fits on.
+   won:"That one stood still and still nearly had you. The next three walk.",
+   hint:"It cannot walk. It can still shoot down its own row.",
+   /* THE FIGHT, TAUGHT AS A FIGHT, ON AN OPPONENT THAT CANNOT CHASE YOU.
 
-      IT WAS A DUMMY FOR ONE PLAYTEST AND IT IS NOT ANY MORE. The first
-      version stood still (`still:true`, machinery still in bossPhases), and
-      the owner played it and asked for a hunter that can kill you. That is
-      the right call and it is the fourth line of the primer that says why:
-      "be faster than it is" is not a rule you can be shown by something that
-      never moves, and a lesson whose stakes are zero teaches the moves
-      without teaching the fight. See docs/HISTORY.md.
+      Players were reaching BOSS I able to see a thing walking at them and
+      with no account of what the fight wanted from them, so the four rules of
+      the kill are said here - as a CHECKLIST that ticks itself as they come
+      true, over the smallest board a real fight fits on.
 
-      What keeps it a lesson rather than a fifth boss is the ARENA and the
-      CLOCK, not the opponent. Three by seven and bare - the smallest thing
-      BOSS I's phase one could be drawn on - with that phase's shape and a
-      slower clock: 1400 rather than 1100, because the board is smaller and
-      the hunter's step is what a player is really given to read the four
-      lines in. Measured: BOSS I opens with 11 squares between you and 1100ms
-      a step, which is about twelve seconds before it can touch you; seven
-      squares at 1400 is about ten, on a level where you have never seen one
-      of these before. The escalation is wound right down to match -
-      floorStep 700 rather than 300, creepEvery 9000 - so taking your time
-      here can never hand you a fight that is faster than BOSS I's first.
+      THREE VERSIONS, AND THE THIRD IS THE ONE (docs/HISTORY.md). It opened on
+      a dummy that could not act at all, which taught three rules and
+      contradicted the fourth - "be faster than it is" cannot be shown by
+      something with no clock. Then it was BOSS I's phase-one hunter outright,
+      walking, and that turned the lesson into a fight: a hunter that closes
+      on you makes the BOARD the subject - where to stand, when to run - and
+      the board is what BOSS I is for.
 
-      The player starts one row off its line, which is what makes the primer's
-      first three lines three separate moves rather than one:
+      So it does not walk, and it does everything else. `still:true` is a
+      hunter with its feet taken away, not its teeth: it plants a line on you
+      the moment you share its row or its column, the ray comes down that row
+      exactly as it does in every fight, and it kills you if you are still
+      standing there when the beat closes. That is the whole of rule four, and
+      it can only be learned by losing to it once.
 
-        1. ALIGN - one step onto its row.
-        2. LOOK   - one turn, so the row runs into the screen and the two of
-                    you share a silhouette column. The GO 2D button turns
-                    green the instant that is true, which is the lesson
-                    answering back.
+      Which makes the geometry the lesson rather than the pressure. The player
+      starts one row OFF its line, so nothing can happen until they choose to
+      step onto it - the danger is opt-in, and the four rules are read in
+      safety:
+
+        1. ALIGN - one step onto its row. The ray comes up: you are now in
+                   its line as much as it is in yours.
+        2. LOOK   - one turn, so that row runs into the screen and the two of
+                   you share a silhouette column. The GO 2D button turns
+                   green the instant that is true.
         3. GO 2D  - and it is crushed.
+        4. FASTER - all of that before the beat closes, or it fires first.
+
+      `step` is what it would walk at and is now only the beat it re-checks
+      its line on; `aim` 2200 is the real dial, and it is the window a first
+      timer has to turn and fold in. Both are feel and both are the owner's to
+      move. `floorStep` and `creepEvery` are wound down so a slow reader is
+      never handed a faster fight than BOSS I's opening.
 
       `teach:true` exempts the arena from two of bossArena()'s quality gates:
       a bare floor has no lethal columns and three rows are too flat to fold
       for profit. Both are true, and both are the point - see bossArena. */
-   primer:["To kill an opponent:",
-           "Align with it.",
-           "Face its direction.",
-           "{do:2d}.",
-           "Be faster than it is."],
+   /* THE CHECKLIST. Each step is a predicate over the kill state, exactly as
+      a tutorial step is a predicate over counters - so it cannot go out of
+      sync with the board, and undo, death and a player doing things in the
+      wrong order all just re-evaluate. syncPrimer() draws it, primerMarks()
+      re-reads it every frame, killState() computes what it reads. */
+   primer:{lead:"To kill an opponent:",
+     steps:[
+       {say:"Align with it.",        done:function(k){return k.aligned;}},
+       {say:"Face its direction.",   done:function(k){return k.facing;}},
+       {say:"{do:2d}.",              done:function(k){return k.folded;}},
+       /* NO PREDICATE AT ALL, and that is the honest drawing of it: being
+          fast is not a state you are in, it is a race you have not lost yet.
+          So it ticks only when the fight is won (primerMarks() ticks every
+          line then) and goes HOT in between - the box turns red for exactly
+          as long as the ray is live, which is the only moment the sentence
+          means anything. */
+       {say:"Be faster than it is.", hot:function(k){return k.aimed;}}],
+     /* WHAT WENT WRONG, from the state the player was last shown. Read off
+        primerLast, which is a frame old on purpose: the charge moves the
+        hunter onto you before bossHurt runs, so the live board at the moment
+        of death says you were perfectly lined up, every time. First match
+        wins, most specific first. */
+     why:[
+       {when:function(k){return k.cause==="fall";},
+        say:"You walked off the edge. Nothing here asks you to leave the floor."},
+       /* The tokens matter more here than anywhere: this is the sentence a
+          player reads right after losing a life, so it is the last one that
+          can afford to name a control that is not on their screen. "It turns
+          green" rather than "the button turns green" for the same reason -
+          the hunter goes green too, and it is there in every layout. */
+       {when:function(k){return k.facing;},
+        say:"You had it \u2014 same column, right axis. It was simply faster. "+
+            "{do:2d} the moment it turns green."},
+       /* "Turn", not {do:turnr}: that token renders as a text glyph the mono
+          face does not have, and the turn is the one control this level can
+          name in words - it was taught nine levels ago and both layouts call
+          it the same thing. The token that has to be right is {do:2d}, and
+          it starts its own sentence so "Press" / "Double-tap" reads. */
+       {when:function(k){return k.aligned;},
+        say:"You were in its line and still looking across it. Turn so that "+
+            "row runs into the screen. {do:2d}."},
+       {when:function(k){return true;},
+        say:"Its row is its weapon. Step onto it only when you can answer."}]},
    boss:{teach:true,floorStep:700,creepEvery:9000,
-     phases:[{at:[[6,1,1]],step:1400,aim:1500,
-              say:"one of them, and nothing in the way"}]},
+     phases:[{at:[[6,1,1]],still:true,step:1400,aim:2200,
+              say:"one of them, and it cannot follow you"}]},
    blocks:box(0,6,0,0,0,2,[]),
    start:[0,1,0],rotate:true,tutorial:true},
 {name:"BOSS I — Catch Me If You Can!",

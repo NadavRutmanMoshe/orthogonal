@@ -1127,7 +1127,7 @@ any path that skips the drawing has to invalidate it rather than guess at it.
 
 ---
 
-## The sparring dummy, and the death with nothing in front of it
+## SPARRING: three opponents, a checklist, and a death with nothing in front of it
 
 SPARRING was built to answer a report: players reached BOSS I able to see a
 thing walking at them and with no account of what the fight wanted from them.
@@ -1146,14 +1146,28 @@ contradicts it. The three rules a dummy can teach are the three the player
 would have worked out anyway; the one that needs teaching is the only one it
 cannot show. A lesson with no stakes teaches the moves and not the fight.
 
-So the hunter is BOSS I's phase-one hunter now, and what makes the level a
-lesson instead of a fifth boss is everything *around* it: the smallest arena
-that fight fits on, `step` 1400 against BOSS I's 1100 (seven squares at 1400
-is about the ten seconds eleven squares at 1100 buys you there), and the
-escalation wound down — `floorStep` 700, `creepEvery` 9000 — so a player who
-takes their time reading four lines is never handed a faster fight than the
-one they have not had yet. `still` is kept, unused, exactly as `cunning` is:
-one word of level data puts the dummy back.
+**So it became BOSS I's phase-one hunter outright, and that was wrong in the
+other direction.** It walked, it closed, and the level stopped being about the
+kill: a hunter coming at you makes the *board* the subject — where to stand,
+when to run, how much floor is behind you — and the board is exactly what
+BOSS I is for. The lesson was now competing with the thing it was supposed to
+prepare you for, on a board a third the size.
+
+**The third version is the one, and it is one word: `still` means it cannot
+walk, not that it cannot act.** It plants a line the moment you share its row
+or column, the ray comes down that row, and it kills you if you are still
+standing there when the beat closes — the whole of rule four, learnable by
+losing to it once. What it cannot do is follow you, and that is what makes the
+danger *opt-in*: the start square is one row off its line, so nothing happens
+until the player steps onto it, and the four rules can be read in complete
+safety. `aim` (2200) is the dial that matters — the window a first-timer has
+to turn and fold in — and `step` is now only the beat it re-reads its line on.
+
+The general shape of the mistake is worth keeping: **a teaching level's
+opponent should be missing the ability that makes the real fight hard, not the
+ability the lesson is about.** The dummy removed the lesson; the full hunter
+removed nothing; taking away its feet removes the pressure to *move* and keeps
+the pressure to *act*, which is the one the four rules describe.
 
 **The second half of the same note was the more interesting one.** "There is
 an insta kill if you go into an opponent, it shouldn't happen — only time
@@ -1174,6 +1188,27 @@ fold* for two moves. So a hunter is **solid to your step**: the move is
 refused the way a wall refuses one — no life, no move spent, `it is in the
 way`. The old objection stands and is accepted; being cornered is a cost, and
 the answer to it is the verb the game is about. Nothing changed on their side.
+
+**And the list became a checklist.** Four sentences of static text at the top
+of the screen are a card on the wall: read once, then furniture — and the
+owner asked for the obvious better thing, which is that the list answer back.
+Every line is a predicate over the kill state now (`killState()`), exactly as
+a tutorial step is a predicate over counters, so the boxes tick and untick as
+the player moves and turns and the rule can be *found* by moving rather than
+by reading. The fourth line has no predicate at all: being fast is not a state
+you are in, so it goes red for exactly as long as the ray is live and ticks
+when the fight is won.
+
+The half of that which needed care is the **death note**. The list says which
+line you missed — *you had it, it was simply faster*, or *you were in its line
+and still looking across it* — and the first version read the live board,
+which is wrong on the only death that matters: the charge stands the hunter on
+your square *before* `bossHurt()` runs, so at that instant you are perfectly
+aligned and perfectly facing, and the note congratulates you on the thing that
+just killed you. It reads `primerLast` instead, refreshed by `primerMarks()`
+from the render loop before `bossFrame()` — the board as it was when the
+checklist in front of the player was last drawn, which is the only state a
+death can honestly be explained against.
 
 **And the telegraph got a width.** The pane a planted hunter draws along the
 row it is about to charge down was `.06` of a cell thick — visible broadside,

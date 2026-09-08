@@ -24,6 +24,9 @@
 function die(kind){
   if(dying)return;
   dying=kind;dyingT=0;
+  // A fall or a burn is a death the checklist can also speak to; running out
+  // of lives is the level ending, and the note goes with it.
+  if(kind!=="boss"&&kind!=="trial")primerNote(kind);
   // It has landed, so `dying` is the guard from here - both clocks stop dead
   // while it plays out, which is what deathPending was standing in for.
   deathPending=false;
@@ -734,15 +737,6 @@ function bossFrame(dt){
   var ph=B.phases[bossPhase];
   for(var i=0;i<hunters.length;i++){
     var h=hunters[i];
-    /* A STANDING TARGET does not walk, does not plant a line and never
-       charges - the pack with its clock taken out. No level uses it: SPARRING
-       opened on one for a playtest and the owner asked for an opponent that
-       can kill, which is docs/HISTORY.md. The machinery stays because putting
-       it back is one word of level data, and because everything else still
-       treats such a hunter as one - it is a wall to your step, and the doom
-       pass at the foot of this function still lights the GO 2D button when
-       you have lined it up. See `still` in bossPhases(). */
-    if(ph.still){h.line=null;h.lock=0;continue;}
     /* Planted. It does not walk while a lock is held, so the line you are
        shown is the line that fires - a telegraph that drifts is not a
        telegraph - and stepping off the line is what breaks it. That is the
@@ -766,27 +760,33 @@ function bossFrame(dt){
     h.ms+=dt;
     if(h.ms<h.step)continue;
     h.ms=0;
-    var goal=huntGoal(h);
-    /* Three grades of square, not two - see bossNext. A cunning hunter rates
-       a line you cannot answer above a line you can, which is the whole of
-       phase three: "it is lined up" stops meaning "I can eat it", because the
-       line it chose is the one your current view cannot fold on and the
-       answer is a rotation you have to spend a beat on.
+    /* A STILL HUNTER SKIPS THE WALK AND NOTHING ELSE - see `still` in
+       bossPhases(). It re-reads its line on this same beat and plants on it
+       exactly as the others do, so the only thing it cannot do is follow you.
+       The touch check goes with the walk: it cannot have arrived anywhere. */
+    if(!ph.still){
+      var goal=huntGoal(h);
+      /* Three grades of square, not two - see bossNext. A cunning hunter
+         rates a line you cannot answer above a line you can, which is the
+         whole of phase three: "it is lined up" stops meaning "I can eat it",
+         because the line it chose is the one your current view cannot fold on
+         and the answer is a rotation you have to spend a beat on.
 
-       Graded only while you are standing up. Flat, every hunter sharing your
-       silhouette column already has a line and you cannot fold again anyway,
-       so there is nothing for it to prefer. */
-    var nx=bossNext(R,h,goal,cr,function(c){
-      var has=flat?(R.uOf(view,c.x,c.z)===flatPos.u&&c.y===flatPos.y)
-                  :!!bossLine(R,c,goal,cr);
-      if(!has)return 0;
-      if(flat)return 1;
-      return doomedCell(c.x,c.y,c.z,cr)?1:2;
-    });
-    // Never onto another hunter's square: two of them in one cell reads as
-    // one of them, and the pack should look like a pack.
-    if(nx&&!hunterAt(nx.x,nx.y,nx.z,i)){h.x=nx.x;h.y=nx.y;h.z=nx.z;}
-    if(hunterTouching(h)){bossHurt("it reached you",h);return;}
+         Graded only while you are standing up. Flat, every hunter sharing
+         your silhouette column already has a line and you cannot fold again
+         anyway, so there is nothing for it to prefer. */
+      var nx=bossNext(R,h,goal,cr,function(c){
+        var has=flat?(R.uOf(view,c.x,c.z)===flatPos.u&&c.y===flatPos.y)
+                    :!!bossLine(R,c,goal,cr);
+        if(!has)return 0;
+        if(flat)return 1;
+        return doomedCell(c.x,c.y,c.z,cr)?1:2;
+      });
+      // Never onto another hunter's square: two of them in one cell reads as
+      // one of them, and the pack should look like a pack.
+      if(nx&&!hunterAt(nx.x,nx.y,nx.z,i)){h.x=nx.x;h.y=nx.y;h.z=nx.z;}
+      if(hunterTouching(h)){bossHurt("it reached you",h);return;}
+    }
     // Lined up, so it plants. The beat that follows is the whole fight.
     h.line=huntLine(h,cr);
     if(h.line){
@@ -929,6 +929,69 @@ function bossFoldCrush(){
         ("folded onto it · "+hunters.length+" left"));
   syncHud();
 }
+/* ============================================================
+   THE KILL STATE - what the checklist reads
+
+   One object, computed from the live board, answering the four questions
+   SPARRING's primer asks (`L.primer`, drawn by syncPrimer() and re-marked
+   every frame by primerMarks()). It is deliberately not a set of counters:
+   like a tutorial step, every line of the checklist is a predicate over the
+   board as it stands, so undo, a death, a rotation or a player doing things
+   in the wrong order all just re-evaluate, and the list can never claim
+   something that is not true in front of them.
+
+   `facing` is foldKills() without the crush test, computed here rather than
+   read off `h.doom`, because doom is written at the foot of bossFrame and
+   bossFrame returns early for a paused board, a card, a replay - all the
+   moments when the player is most likely to be reading the list.
+   ============================================================ */
+function killState(cause){
+  var k={aligned:false,facing:false,folded:!!flat,aimed:false,
+         won:!!levelDone,cause:cause||null};
+  if(!B)return k;
+  for(var i=0;i<hunters.length;i++){
+    var h=hunters[i];
+    if(h.lock>0)k.aimed=true;
+    if(flat){
+      // In the plane you are a whole column, so lining up and facing are the
+      // same question and it has already been answered by the fold.
+      if(flatPos&&h.y===flatPos.y&&R.uOf(view,h.x,h.z)===flatPos.u){
+        k.aligned=true;k.facing=true;
+      }
+      continue;
+    }
+    if(h.y===player.y&&(h.x===player.x||h.z===player.z))k.aligned=true;
+    if(h.y===player.y&&
+       R.uOf(view,h.x,h.z)===R.uOf(view,player.x,player.z))k.facing=true;
+  }
+  return k;
+}
+/* The state the player was last SHOWN, kept a frame behind on purpose.
+
+   primerMarks() runs from the render loop before bossFrame, so this holds the
+   board as it was when the checklist in front of them was last drawn - which
+   is what a death has to be explained against. Explaining against the live
+   board would be wrong every time on the one death that matters: the charge
+   moves the hunter onto your square before bossHurt runs, so at that instant
+   you are perfectly aligned, perfectly facing, and the note would congratulate
+   you for it. */
+var primerLast=null;
+/* Which of the level's `why` lines fits what just happened. Set on the way
+   into a death and cleared by the next move; syncPrimer() prints it. */
+var primerWhy=null;
+function primerNote(cause){
+  if(!L||!L.primer||!L.primer.why)return;
+  var k=primerLast||killState(cause);
+  k={aligned:k.aligned,facing:k.facing,folded:k.folded,aimed:k.aimed,
+     won:k.won,cause:cause||null};
+  var w=L.primer.why;
+  for(var i=0;i<w.length;i++)
+    if(w[i].when(k)){primerWhy=w[i].say;syncHud();return;}
+}
+function primerClear(){
+  if(primerWhy===null)return;
+  primerWhy=null;syncHud();
+}
 // True when folding right now would kill at least one of them - what turns
 // the GO 2D button green. foldKills() already refuses a column with a pillar
 // in it, so this can never be true at the same moment peril is.
@@ -948,6 +1011,9 @@ function bossCrushable(){
 }
 function bossHurt(why,who,line){
   if(shielded())return;
+  // What the checklist says went wrong, taken here: everything below moves
+  // the board off the moment being explained. See primerNote().
+  primerNote(why);
   replayMark();               // the kill pose, before the board moves off it
   /* AND A COPY OF THE MOMENT, taken here for the same reason.
 

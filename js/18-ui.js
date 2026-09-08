@@ -356,20 +356,26 @@ function syncHud(){
 }
 
 /* ============================================================
-   THE PRIMER — the rules of a level, listed under its hint
+   THE PRIMER — a level's rules, as a checklist that ticks itself
 
    Almost every level in this game teaches by being played: the coach cues a
    control and pressing it is the explanation. A fight cannot open that way,
-   because the thing it has to say is a conjunction - line up AND look down
-   that line AND fold, and do all of it before the other one does - and there
-   is no single press that demonstrates a conjunction. So SPARRING says it, in
-   a numbered list, above a board where each line is one move.
+   because the thing it has to say is a conjunction — be on its line, AND be
+   looking down that line, AND fold, AND do all of it before it does — and
+   there is no single press that demonstrates a conjunction. So SPARRING says
+   it, in a list, above a board where each line is one move.
 
-   It goes through tutWords() for the same reason the coach's prose does: the
-   verb has one player-facing name and the controls have two sets of names,
-   so `{do:2d}` is "Press GO 2D" under buttons and "Double-tap the world"
-   under gestures. A lesson that names a control that is not on the player's
-   screen is the bug that function exists to prevent.
+   A LIST WOULD BE A CARD ON THE WALL. The four rules were static text for one
+   playtest and that is a thing you read once and stop seeing; what makes them
+   a lesson is that each line answers back. Every step is a predicate over the
+   kill state (killState(), 12-play.js), the boxes tick and untick as the
+   player moves and turns, and the fourth goes red for exactly as long as the
+   hunter's ray is live. The player can therefore *find* the rule by moving —
+   which is how every other thing in this game is taught — and the words are
+   only there to name what they are watching happen.
+
+   And when it kills them, the same list says which line they missed
+   (`why` in the level data, chosen in primerNote()).
 
    NOT the retired "brief". That was a full-bleed card that opened a trial or
    a boss, and it went because a card explaining what the board already shows
@@ -378,23 +384,65 @@ function syncHud(){
    board cannot show, it is never in the way, and it does not have to be
    dismissed.
 
-   Rebuilt only when the level or the control layout changes. syncHud() runs
-   on every redraw and this is five lines of markup; more to the point,
-   rewriting it would restart anything animated inside it - the same rule the
-   live star row is its own element for.
+   TWO PASSES, and they are separate on purpose. syncPrimer() writes markup
+   and is called from syncHud, so it runs when the level or the control layout
+   changes — anything animated inside markup that is rewritten every redraw
+   restarts, which is the rule the live star row is its own element for.
+   primerMarks() only toggles classes, and it runs every frame from the render
+   loop, because what the checklist describes changes without the player
+   touching anything: a hunter plants a line on its own clock. It is the third
+   thing re-judged per frame, alongside the GO 2D button and the eye.
    ============================================================ */
-var primerShown=null;
+var primerShown=null, primerRows=null, primerMarked="";
+function primerSteps(){
+  return (app==="play"&&L&&L.primer&&L.primer.steps)?L.primer.steps:null;
+}
 function syncPrimer(){
   var el=$("lvPrimer");if(!el)return;
-  var b=(app==="play"&&L&&L.primer)||null;
-  el.hidden=!b;
-  if(!b)return;
+  var st=primerSteps();
+  el.hidden=!st;
+  if(!st){primerRows=null;primerShown=null;return;}
   var key=L.name+"|"+((typeof tutGestures==="function"&&tutGestures())?"g":"b");
-  if(key===primerShown)return;
-  primerShown=key;
-  var out="<i>"+tutWords(b[0])+"</i><ol>";
-  for(var i=1;i<b.length;i++)out+="<li>"+tutWords(b[i])+"</li>";
-  el.innerHTML=out+"</ol>";
+  if(key!==primerShown){
+    primerShown=key;primerMarked="";
+    var out="<i>"+tutWords(L.primer.lead||"")+"</i><ol>";
+    for(var i=0;i<st.length;i++)out+="<li><span>"+tutWords(st[i].say)+"</span></li>";
+    // The note the level leaves after a death. Its own element, so saying
+    // something does not rewrite the list above it.
+    el.innerHTML=out+"</ol><em class='pwhy'></em>";
+    primerRows=el.querySelectorAll("li");
+  }
+  var why=el.querySelector(".pwhy");
+  if(why){
+    var w=(typeof primerWhy==="string")?primerWhy:null;
+    why.innerHTML=w?tutWords(w):"";
+    why.classList.toggle("on",!!w);
+  }
+  primerMarks();
+}
+/* The boxes. Called from here and from the render loop, so it has to be cheap
+   and it has to be idempotent: the marks are joined into one short string and
+   nothing is touched while that string is unchanged. */
+function primerMarks(){
+  var st=primerSteps();
+  if(!st||!primerRows||primerRows.length!==st.length)return;
+  var k=killState(null);
+  if(typeof primerLast!=="undefined")primerLast=k;
+  var sig="",i,done,hot;
+  for(i=0;i<st.length;i++){
+    // A won level is a finished list. Without this the win card shows the two
+    // lines that describe where you were STANDING unticked - the kill sends
+    // you home and unfolds you - which reads as "you did it wrong and won".
+    done=k.won||!!(st[i].done&&st[i].done(k));
+    hot=!done&&!!(st[i].hot&&st[i].hot(k));
+    sig+=done?"1":hot?"2":"0";
+  }
+  if(sig===primerMarked)return;
+  primerMarked=sig;
+  for(i=0;i<st.length;i++){
+    primerRows[i].classList.toggle("on",sig.charAt(i)==="1");
+    primerRows[i].classList.toggle("hot",sig.charAt(i)==="2");
+  }
 }
 /* ============================================================
    THE STAR TOTAL, AND STARS IN FLIGHT

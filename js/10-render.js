@@ -3932,6 +3932,14 @@ function animate(now){
     $("bFlat").classList.toggle("peril",pk);
     $("bFlat").classList.toggle("strike",!!hit&&!pk);
   }
+  /* And the checklist, for the same reason and with the same discipline: what
+     it describes changes without the player touching anything - a hunter
+     plants its line on its own clock - so the marks are re-judged here rather
+     than at the last keypress. It only toggles classes, and only when they
+     have actually changed. BEFORE bossFrame, deliberately: primerLast is what
+     a death is explained against, and it has to be the board the player was
+     last shown rather than the one the charge has already landed on. */
+  if(typeof primerMarks==="function")primerMarks();
 
   if(bossFlash>0)bossFlash=Math.max(0,bossFlash-.055);
   bossFrame(dtMs);trialFrame(dtMs);

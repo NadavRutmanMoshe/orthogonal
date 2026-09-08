@@ -76,7 +76,7 @@ buttons at the end of its builder.
 |---|---|---|---|---|
 | Corner buttons (menu, wardrobe, bulb, restart, eye) | `index.html` `.corner.tl` / `.corner.tr` | `syncHud`, `syncHintN` | `10-buttons` | any level |
 | HUD text: level name, hint, move count, live stars | `.hud`: `#lvName #lvHint #moveLabel #starRow` | `syncHud`, `syncStars` | `00-base`, `20-hud` | `level:2` |
-| The primer: a level's rules, listed under its hint | `.primer`: `#lvPrimer` | `syncPrimer` (`18-ui.js`) from `L.primer` | `00-base` | `level:15` |
+| The primer: a level's rules, as a live checklist | `.primer`: `#lvPrimer` | `syncPrimer` writes it, `primerMarks` marks it every frame (`18-ui.js`), from `L.primer` | `00-base` | `level:15` |
 | Lives / cores bar on a clock | `#bossBar` | `syncBossBar` | `75-bossbar` | `boss`, `trial` |
 | Running star total | `#starTotal` | `syncStarTotal`, `starPop`, `flyStars` | `75-bossbar` | `win:2` |
 | Control bar: d-pad, turn, GO 2D | `#playBarWrap` | `syncHud` (classes), `applyUI` (layout) | `10-buttons`, `20-hud`, `50-layout-cues` | `level:2 --ui full` |
@@ -128,15 +128,26 @@ named). Undoing one of these needs the paragraph.
   swipe track across them - and players read it as "touch the piece".
 - **Icons are solid SVG** with `.lite` / `.dim` / `.ln`; text glyphs at that
   size were reported as missing buttons.
-- **The primer is `L.primer`, at the top, and only SPARRING has one.** A list
-  of a level's rules under its hint, for the one lesson that cannot be taught
-  by pressing anything (`docs/design/bosses.md`). It goes through `tutWords()`
-  like the coach's prose, so `{do:2d}` says what the player's own control
-  layout says; it is rebuilt only when the level or that layout changes; and it
-  is filled **before** `syncBossBar()`, which measures `.hud` to place the
-  lives row. **It is not the retired "brief"** — that was a full-bleed card
+- **The primer is `L.primer`, at the top, and only SPARRING has one.** A
+  **checklist** of a level's rules under its hint, for the one lesson that
+  cannot be taught by pressing anything (`docs/design/bosses.md`). Each line
+  is a predicate over `killState()`, so the boxes tick and untick as the
+  player moves — a static list is a card on the wall, which is what it was for
+  one playtest. **Two passes, and they must stay separate:** `syncPrimer()`
+  writes markup and runs from `syncHud`; `primerMarks()` only toggles classes
+  and runs **every frame** from the render loop, because a hunter plants its
+  line on its own clock. It goes through `tutWords()` like the coach's prose,
+  so `{do:2d}` says what the player's own control layout says, and it is
+  filled **before** `syncBossBar()`, which measures `.hud` to place the lives
+  row. **It is not the retired "brief"** — that was a full-bleed card
   explaining a fight, dropped for saying what the board already said, and the
   word is still spoken for in `cardOwner`.
+- **A death is explained against `primerLast`, not the live board.** The
+  `.pwhy` line under the checklist names the step the player missed. It reads
+  the state from a frame *before* the hit, because the charge stands the
+  hunter on your square before `bossHurt()` runs — explained live, every death
+  would congratulate you on being perfectly lined up. It is cleared by the
+  next committed move (`pushHistory()`).
 - **The lives bar sits under the level text, split to the two sides**: your
   hearts left (over your own piece), the opposition's row right. `top` is
   measured off `.hud` in `syncBossBar()` because the hint's height moves. It

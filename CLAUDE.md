@@ -126,8 +126,9 @@ Block format `[x,y,z,k]`: 0 stone, 1 water (code says `glass`), 2 anchor,
   `starsForRecord()` and writes through `betterRecord()`.
 - **A fight is taught before it is fought.** `SPARRING — One of Them` sits
   before `BOSS I`: a `tutorial:true` level carrying `boss` data - BOSS I's
-  phase one on the smallest arena it fits on, with a slower beat - and the
-  kill's four rules printed at the top of the screen from `L.primer`.
+  phase one on the smallest arena it fits on, with a hunter that cannot walk -
+  and the kill's four rules at the top of the screen as a live checklist
+  (`L.primer`) that ticks itself and says what you missed when it kills you.
   `teach:true` on the boss exempts the arena from `bossArena()`'s two quality
   gates - lethal columns and depth - and from nothing else. It is a hexagon on
   the map, earns a tick rather than stars, and `bossesLeft()` skips it, so it
@@ -191,10 +192,10 @@ is the rule.
   `hunterInColumn()`), no life and no move. Being able to stand on one would
   make every fight "walk onto it, fold". Their step and their charge still
   kill.
-- A phase may carry `still:true`: that hunter never steps, never plants a line
-  and never charges, and everything else still treats it as one. No level uses
-  it; `bosssim.js` knows about it too, or it would be simulating a fight
-  nobody authored.
+- A phase may carry `still:true`: that hunter cannot walk and can do
+  everything else - it plants a line the moment you share its row and the
+  charge still kills you. SPARRING is the level. `bosssim.js` knows about it
+  too, or it would be simulating a fight nobody authored.
 
 **Solver and tutorial** (`tutorial.md`, `levels.md`)
 - Tutorial steps are predicates over counters and state; never a step index.
@@ -207,16 +208,21 @@ is the rule.
   green, the lock, the hand and `tutPoke` all read it.
 
 **HUD and chrome** (`docs/UI.md`, `chrome.md`)
-- `syncHud()` owns every body class and button class, with two exceptions
+- `syncHud()` owns every body class and button class, with three exceptions
   that are re-judged per frame in the render loop: the `GO 2D` button on a
-  clock (`.strike`/`.peril`) and the eye (`lookCue()`).
+  clock (`.strike`/`.peril`), the eye (`lookCue()`) and the primer's
+  checklist (`primerMarks()`).
 - Anything animated inside markup that `syncHud()` rewrites restarts on
   every redraw. The live star row is its own element for that reason.
-- `L.primer` is the list of rules under a level's hint (`syncPrimer()`, one
-  level uses it), and it is **not** the retired `brief`, which was a card and
-  whose name is still taken. It renders through `tutWords()` so it names the
-  player's own controls, and it is filled before `syncBossBar()` measures
-  `.hud`.
+- `L.primer` is the **checklist** of rules under a level's hint (one level has
+  one), and it is **not** the retired `brief`, which was a card and whose name
+  is still taken. Each step is a predicate over `killState()`, never a step
+  index; `syncPrimer()` writes the markup and `primerMarks()` re-marks it
+  every frame from the render loop - the third thing re-judged there. Its
+  `why` lines explain a death from `primerLast`, the state a frame *before*
+  the hit, because the charge stands the hunter on you first. It renders
+  through `tutWords()` so it names the player's own controls, and it is filled
+  before `syncBossBar()` measures `.hud`.
 - `.hud` chrome follows `paperIsLight()`, not the verb.
 - **Class names collide silently**: `.boss` (HUD bar, `pointer-events:none`)
   vs `.mboss` (map node); `.home` (overlay) vs `body.athome`; `.st` (star

@@ -70,10 +70,44 @@
     transition:color .5s ease}
   .primer i{display:block;font-style:normal;color:var(--fg-dim);
     letter-spacing:.06em;margin-bottom:3px}
-  .primer ol{margin:0;padding:0;list-style:none;counter-reset:primer}
-  .primer li{counter-increment:primer;position:relative;padding-left:19px}
-  .primer li::before{content:counter(primer) ".";position:absolute;left:0;
-    color:var(--goal)}
+  .primer ol{margin:0;padding:0;list-style:none}
+  .primer li{position:relative;padding-left:19px;
+    transition:color .25s ease,opacity .25s ease}
+  /* THE BOX IS DRAWN, NOT TYPED. A ballot-box glyph is not in this game's
+     mono face and comes out of whatever the browser substitutes, at whatever
+     size that face thinks is right; a bordered square is the same 11px on
+     every device. The tick is a glyph because ✓ is one of the few that every
+     face has, and it is the same one the map puts under a finished tutorial. */
+  .primer li::before{content:"";position:absolute;left:0;top:.34em;
+    width:11px;height:11px;box-sizing:border-box;border-radius:2px;
+    border:1px solid var(--rule);
+    font-size:9px;line-height:10px;text-align:center;
+    transition:border-color .2s ease,background .2s ease,color .2s ease}
+  /* Done: ticked, and the line steps back. A checklist you have finished with
+     should stop competing with the one you have not. */
+  .primer li.on{color:var(--fg-dim)}
+  .primer li.on::before{content:"\2713";color:var(--goal);
+    border-color:var(--goal);
+    background:color-mix(in srgb,var(--goal) 20%,transparent)}
+  /* HOT is not "next", it is "now, and running out". Only the fourth line
+     uses it and only while the ray is live, so it is the peril colour and it
+     breathes at the same rate the GO 2D button does. */
+  .primer li.hot{color:#ff9aa2}
+  .primer li.hot::before{content:"!";color:#ff4d5e;border-color:#ff4d5e;
+    background:rgba(255,77,94,.2);
+    /* perilblink is declared in 20-hud.css. @keyframes names are document-
+       global, so a later file's animation is usable here; the load order the
+       cascade depends on does not apply to them. */
+    animation:perilblink 1.15s ease-in-out infinite}
+  /* WHAT THE LIST SAYS WENT WRONG. Set on a death, cleared by the next move
+     (pushHistory). Amber rather than red: the hit has already been said in
+     the player's own colour by the toast and the lives row, and this is the
+     part that is meant to be read rather than felt. */
+  .primer .pwhy{display:none;font-style:normal;margin-top:7px;
+    padding-left:19px;text-indent:-19px;color:#e0b25c;line-height:1.55}
+  .primer .pwhy.on{display:block}
+  .primer .pwhy::before{content:"\2192";display:inline-block;width:19px;
+    text-indent:0;opacity:.8}
   .primer b{color:var(--fg);font-weight:500}
   .axis{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;
     letter-spacing:.13em;text-align:right;color:var(--fg-dim);line-height:1.7;

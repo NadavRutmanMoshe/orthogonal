@@ -138,13 +138,13 @@ single press that demonstrates a conjunction. Players reached BOSS I able to
 see a thing walking toward them with no account of what they were supposed to
 do about it, which is the report this level answers.
 
-So it is said, in words, over the smallest board a real fight fits on.
+So it is said, over the smallest board a real fight fits on.
 `SPARRING — One of Them` sits immediately before BOSS I: three by seven, bare,
-the tutorials' scale rather than an arena's, with **one hunter** at the far end
-and the four rules listed at the top of the screen (`L.primer` — deliberately
-not the retired *brief*, which was a card). The player starts one row off its
-line, and that is the whole of the level design — it makes the first three
-lines of the primer three separate presses:
+the tutorials' scale rather than an arena's, with **one hunter that cannot
+walk** at the far end and the four rules at the top of the screen as a
+**checklist** (`L.primer` — deliberately not the retired *brief*, which was a
+card). The player starts one row off its line, and that is the whole of the
+level design — it makes the first three lines three separate presses:
 
 | | |
 |---|---|
@@ -155,34 +155,50 @@ lines of the primer three separate presses:
 **The button answers back.** `doom` is recomputed for every hunter at the foot
 of `bossFrame()` whatever else is going on, so the moment the turn lands the
 `GO 2D` button goes green — the player is told they have it right by the same
-code that tells them in a real fight, before they commit. That is worth more
-than the list: the list is read once, the green is a rule they can check.
+code that tells them in a real fight, before they commit.
 
-**IT OPENED ON A DUMMY AND THAT LASTED ONE PLAYTEST.** The first version's
-hunter stood still (`still:true`), and the owner played it and asked for one
-that can kill. That is the right call, and the fourth line of the primer is
-why: "be faster than it is" cannot be *shown* by something that never moves,
-so the dummy taught three of the four rules and quietly contradicted the
-fourth. A lesson whose stakes are zero teaches the moves without teaching the
-fight. See `docs/HISTORY.md`.
+**And so does the list, which is why it is a checklist and not a list.** Four
+sentences of static text are a card on the wall: read once, then furniture.
+Every line is a predicate over `killState()` instead — box one ticks when you
+step onto its row, box two when you turn and the two of you share a silhouette
+column, box three when you fold — so the player can *find* the rule by moving,
+which is how everything else in this game is taught. The words only name what
+they are already watching happen. The fourth line has no predicate at all,
+because being fast is not a state you are in: it goes red for exactly as long
+as the ray is live, and ticks when the fight is won.
 
-**What keeps it a lesson is the arena and the clock, not the opponent.** It is
-BOSS I's phase one — one hunter, bare floor, nothing else on the board — on
-the smallest arena it fits on, with a slower beat: `step` 1400 against BOSS I's
-1100, because eleven squares at 1100 is about twelve seconds before it can
-touch you, and seven squares at 1400 is about ten — on the level where a
-player meets one of these for the first time. The escalation is wound down to
-match (`floorStep` 700 rather than 300, `creepEvery` 9000), so however long
-they take reading four lines, this fight can never become faster than the one
-they have not had yet. Both `bosssim` policies agree about the shape: a player
-who never moves is dead in 8.7s, and a duellist clears it in 1.4s.
+**And when it kills you, the same list says which line you missed.** `why` in
+the level data, first match wins: *you had it — same column, right axis, it
+was simply faster*, or *you were in its line and still looking across it —
+turn*, or *its row is its weapon*. It is read off `primerLast`, the state a
+frame **before** the hit, and that is not an optimisation — the charge stands
+the hunter on your square before `bossHurt()` runs, so the live board says you
+were perfectly aligned at the moment you died, every single time. The note
+clears on the next committed move.
 
-**`still` survives as a phase flag** (`bossPhases()`) though no level uses it
-now. A still hunter spawns, can be crushed, and does nothing else — no step,
-no line, no charge — and `bossFrame()` skips it before any of that; everything
-else still sees an ordinary hunter, the doom pass and the kill cam included.
-It stays for the same reason `cunning` does: putting it back is one word of
-level data, and the machinery is smaller than the argument about it.
+**THREE VERSIONS, AND THE THIRD IS THE ONE** (`docs/HISTORY.md` has the
+whole search). It opened on a **dummy** that could not act at all, which
+taught three rules and contradicted the fourth — "be faster than it is" cannot
+be shown by something with no clock. Then it was **BOSS I's phase-one hunter
+outright**, walking, and that turned the lesson into a fight: a hunter that
+closes on you makes the *board* the subject — where to stand, when to run —
+and the board is what BOSS I is for.
+
+**So `still:true` is a hunter with its feet taken away, not its teeth.** It
+plants a line the moment you share its row or its column, the ray comes down
+that row exactly as it does in every fight, and it kills you if you are still
+standing there when the beat closes. That is the whole of rule four, and it
+can only be learned by losing to it once. `bossFrame()` skips the walk and the
+touch check for it and nothing else; everything else sees an ordinary hunter,
+the doom pass, the telegraph and the kill cam included.
+
+**What that buys is a danger the player opts into.** The start square is one
+row *off* its line, so nothing can happen at all until they choose to step
+onto it: the four rules are read in complete safety, and the clock starts when
+they say so. `aim` (2200 here) is the real dial — it is the window a first
+timer has to turn and fold in — and `step` is now only the beat it re-reads
+its line on. Both `bosssim` policies agree about the shape: a player who never
+moves is never even shot at, and a duellist clears it in 1.4s.
 
 **`teach:true` turns off two of `bossArena()`'s checks and only two.** A board
 like this has no lethal columns (nothing stands on it) and three rows of depth
