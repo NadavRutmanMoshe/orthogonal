@@ -200,6 +200,10 @@ function slowMo(){ slowMoMs=SLOWMO_MS; }
      - KILL: only on the fold that CLEARS a phase, from your own side. Killing
        one of a pair is not the end of anything and a replay there would
        interrupt a fight that is still running. */
+/* How long the strike sting holds the screen. The CSS animation is .92s end
+   to end; this is the wall-clock timer that takes the element back down after
+   it, and the two have to move together. See bossSting() in js/12-play.js. */
+var STING_MS=940;
 var REP_HZ=20;                 // one sample every 50ms
 var REP_KEEP=6000;             // how much history the ring holds
 var REP_DEATH_MS=1900, REP_KILL_MS=1500;   // how much of it each mode shows

@@ -217,6 +217,20 @@
      css/90-tutorial.css, which is where its sibling the phase note lives. -->
 <div class="deathsay" id="deathSay"></div>
 
+<!-- THE STRIKE STING. The one beat in the game that is allowed to be loud:
+     a core going down, or one of your own lives going. It is DOM rather than
+     anything in the scene because it has to cover the whole screen and it has
+     to be free on a phone in the most expensive moment the game has - see
+     .bsting in css/65-replay.css, and bossSting() in js/12-play.js, which is
+     the only thing that writes it. -->
+<div class="bsting" id="bossSting" aria-hidden="true">
+  <i class="bsflash"></i>
+  <i class="bsray"></i>
+  <i class="bsring one"></i>
+  <i class="bsring two"></i>
+  <div class="bsword"><b id="bossStingWord"></b><i id="bossStingSub"></i></div>
+</div>
+
 <!-- THE REPLAY'S OWN CHROME. A replay that looks exactly like play is just
      the game behaving oddly, so it gets the two things film has used for the
      same job forever: bars top and bottom, and a label saying what it is.

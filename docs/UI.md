@@ -24,7 +24,7 @@ rather than guessing the file.
 | `40-panels.css` | `.panel` shell (the 44vh sheet), `.srow` sliders, `.lrow` level rows, `.tabs`, the wardrobe (`.wbody .wcase .wglass .wfloor .wcanvas .wact .item .grid`), `.secbar`, `.chap`, `.leg`, `button.mini` |
 | `50-layout-cues.css` | control layouts `body.ui-compact / ui-none / norot / tut`, `.coach`, `.crow` + `.seg`, `cuePulse` / `button.cue`, `.toast` and `.toast.cuesay` |
 | `60-splash.css` | the sting (`.splash .sstage .scube .srule .sprompt`) |
-| `65-replay.css` | `.replayui`, `.rbar`, `.rlabel`, `body.replaying` |
+| `65-replay.css` | the kill cam end to end: the strike sting (`.bsting .bsflash .bsray .bsring .bsword`), then `.replayui`, `.rbar`, `.rlabel`, `body.replaying` |
 | `70-cards.css` | the full-bleed cards: `.won` (win card, intro card), `.bigstars`, `.wonmast .wonlock .wonstory`, `.tutcard`, `#bRetry` |
 | `75-bossbar.css` | `.boss` lives/cores bar, `.startotal`, `.flystar`, `.sg` |
 | `80-panel-tall.css` | full-height panel furniture shared by menu, wardrobe, chooser and map: `.panel.tall .phead .pbody .pcard .prow2 .pgo .psub .pdanger .pfoot`, the range slider skin |
@@ -87,6 +87,7 @@ buttons at the end of its builder.
 | Guided-lock dim | `body.tutlock` | `tutEngage`, `tutUnlock` | `90-tutorial` | `tutorial --wait 4000` |
 | Phase note on a boss | `#phaseNote` | `phaseNote()` (`12-play.js`) | `90-tutorial` | `phase` |
 | What killed you, over the kill cam | `#deathSay` | `deathSayShow()` / `deathSayTick()` (`12-play.js`), from `L.primer.why` | `90-tutorial` | `level:15 --eval "press('up')"` |
+| The strike sting: a core down, or a life gone | `#bossSting` (static) | `bossSting()` / `bossStingHide()` (`12-play.js`) | `65-replay` | (use `--eval`) |
 | Replay chrome | `#replayUI` | `replayStart` / `replayEnd` | `65-replay` | (use `--eval`) |
 | Toast / spoken cue | `#toast` | `flash()`, `flashCue()` | `50-layout-cues` | `toast` |
 | The sting | `#splash` | `20-splash.js` | `60-splash` | `splash` |
@@ -143,6 +144,18 @@ named). Undoing one of these needs the paragraph.
   row. **It is not the retired "brief"** — that was a full-bleed card
   explaining a fight, dropped for saying what the board already said, and the
   word is still spoken for in `cardOwner`.
+- **A hit gets one loud beat, and it is the only one in the game.** `.bsting`
+  is a full-bleed sting - a bloom, speed lines, two rings and one word - fired
+  by `bossSting()` on a core going down (`CRUSHED` / `PHASE CLEAR` /
+  `BOSS DOWN`) and on a life going (`FLATTENED`). One token, `--k`, drives all
+  of it: the goal's teal on a kill, which is what a doomed hunter already
+  turns, and the pack's red on a death, which is what a hunter already is - so
+  it is read as colour before it is read as a word. It is DOM rather than
+  scene geometry because it has to cover the screen in the most expensive
+  instant the game has. **Its timer is a `setTimeout`, not a frame counter**:
+  the sting IS the CSS animation and has to expire when the animation does, in
+  real seconds; counted off the render loop's `dt` it expired in two frames on
+  a slow device and never appeared at all.
 - **What killed you is said in the middle of the screen, not in the list.**
   `.deathsay` is one short line at `top:38%` — the phase note's position and
   family, one layer above the replay chrome, because it is a caption ON the
@@ -291,7 +304,8 @@ named). Undoing one of these needs the paragraph.
 
 canvas 0 · `.hud` 10 · `.bar` 10 · `.boss` 11 · `.coach` 11 · `.home` 11 ·
 `.corner` 12 · `.panel` 12 · `.replayui` 14 · `.toast` 15 · `.phasenote` 16 ·
-`.won` cards 20 · `.startotal` 30 · `.flystar` 40 · `.splash` 60.
+`.bsting` 19 · `.won` cards 20 · `.startotal` 30 · `.flystar` 40 ·
+`.splash` 60.
 
 ## Screenshots
 

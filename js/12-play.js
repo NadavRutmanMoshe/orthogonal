@@ -122,6 +122,7 @@ function bossReset(){
   shieldMs=0;deathPending=false;slowMoMs=0;
   rep=null;bossPendingAdvance=false;bossPendingDeath=false;replayClear();
   document.body.classList.remove("replaying");
+  bossStingHide();
   hunters=[];twinCore=0;twinAt=null;bossPhase=0;
   if(B&&B.twin)twinSpawn(0);
   else if(B){bossRestoreArena();bossEnterPhase(false);}
@@ -295,6 +296,52 @@ function bossAdvance(){
 /* Nothing answers while the board is being handed back to the player - a
    phase boundary, or a kill cam replaying the charge that just landed. */
 function bossHolding(){return bossPause>0||!!rep;}
+/* ============================================================
+   THE STRIKE STING — the big, loud beat
+
+   A hit used to be a shake, a two-tone blip and a toast, and the toast said
+   the important part. That is the correct weight for everything else this
+   fight does and the wrong weight for the two events the fight is actually
+   made of: one of them going down, or one of you going. So both now get a
+   full-screen sting — a bloom, speed lines, two rings and one word — and the
+   toast stays underneath as the bookkeeping it always was.
+
+   It is one call, it writes two strings and one class, and everything else
+   is in the CSS (`.bsting`, css/65-replay.css). Two reasons it is built this
+   way rather than as an animation in the scene: it has to be free at the
+   most expensive instant in the game, and it has to be re-triggerable
+   instantly — a second kill 400ms after the first must restart it, not queue
+   behind it. `void el.offsetWidth` is what restarts a CSS animation, and it
+   is the same trick deathSayShow() uses one screen down for the same reason.
+
+   `kind` is "kill" or "death" and it picks the colour: the goal's teal, which
+   is what a doomed hunter already turns, or the pack's red, which is what a
+   hunter already is. So the sting is legible before the word is read. */
+/* ON WALL-CLOCK TIME, not on the render loop's dt, and that is the whole
+   reason this is a setTimeout rather than a tick beside deathSayTick(). The
+   sting IS a CSS animation - the timer only takes the element back down when
+   the animation has finished - so it has to expire when the animation does,
+   in real seconds. Counted off frame time it expired in two frames on a slow
+   device, and the sting never appeared at all: found exactly that way, on the
+   headless renderer, which draws this scene at a handful of frames a second.
+   Same shape as flash() one file down, and for the same reason. */
+var stingTimer=null;
+function bossSting(kind,word,sub){
+  var el=$("bossSting");if(!el)return;
+  var w=$("bossStingWord"), b=$("bossStingSub");
+  if(w)w.textContent=word||"";
+  if(b)b.textContent=sub||"";
+  el.className="bsting "+(kind==="death"?"death":"kill");
+  void el.offsetWidth;                 // restart the animation, never extend it
+  el.classList.add("on");
+  clearTimeout(stingTimer);
+  stingTimer=setTimeout(function(){el.className="bsting";},STING_MS);
+  haptic(kind==="death"?[18,40,26]:[26,30,14]);
+}
+function bossStingHide(){
+  clearTimeout(stingTimer);
+  var el=$("bossSting");if(el)el.className="bsting";
+}
 /* ============================================================
    THE REPLAY - recorder and control. See 05-state.js for the design.
    ============================================================ */
@@ -882,6 +929,9 @@ function bossFoldCrush(){
     if(!twinAligned())return;
     bossHp--;bossHitFlash=1;
     SFX.strike();shakeT=1;slowMo();
+    bossSting("kill",bossHp<=0?"BOSS DOWN":"CORE DOWN",
+      bossHp<=0?"both halves in one square":
+        (bossHp+(bossHp===1?" core left":" cores left")));
     if(bossHp<=0){hunters=[];buildGrid();win();return;}
     /* A core goes, and the centre moves. Leaving it where it was would mean
        the answer is in the same place three times running, and the second
@@ -904,6 +954,16 @@ function bossFoldCrush(){
   for(var d=doomed.length-1;d>=0;d--)hunters.splice(doomed[d],1);
   bossHitFlash=1;
   SFX.strike();shakeT=1;slowMo();
+  /* WHICH WORD, and it is the only place the fight names its own stakes. The
+     last hunter of the last phase is the fight ending; the last of any other
+     phase is a shelf clearing; anything else is one of several going down and
+     must NOT claim more than that, or the sting is louder than the news. */
+  var lastOne=(hunters.length===doomed.length);
+  bossSting("kill",
+    lastOne?((bossPhase>=B.phases.length-1)?"BOSS DOWN":"PHASE CLEAR"):"CRUSHED",
+    doomed.length>1?(doomed.length+" in one square"):
+      (lastOne?"the last of them":
+        ((hunters.length-doomed.length)+" left")));
   /* What the survivors get for surviving. A fold that kills nothing is now
      worse than free, and a fold that kills one of three leaves the other two
      angrier - so the fight accelerates toward its own end rather than
@@ -1071,6 +1131,11 @@ function bossHurt(why,who,line){
           h:who?{x:who.x,y:who.y,z:who.z}:null};        // asserted here as well as at the call site
   lives--;
   SFX.die();shakeT=1;slowMo();
+  /* FLATTENED, because that is literally what happened and it is the game's
+     own verb turned around: the thing you have spent the whole fight doing to
+     them has just been done to you. */
+  bossSting("death","FLATTENED",
+    lives<=0?"no lives left":(lives+(lives===1?" life left":" lives left")));
   bossGraceMs=B.grace;
   shieldMs=SHIELD_MS;
   var bar=$("bossBar");
@@ -1117,6 +1182,7 @@ function bossTakeCrate(idx){
   hunters.splice(idx,1);
   bossHitFlash=1;
   SFX.strike();shakeT=1;
+  bossSting("kill",hunters.length?"CRUSHED":"PHASE CLEAR","under the crate");
   if(!hunters.length){bossAdvance();return true;}
   flash("crushed under the crate · "+hunters.length+" left");
   syncHud();
@@ -1138,6 +1204,7 @@ function trialReset(){
   shieldMs=0;deathPending=false;slowMoMs=0;
   rep=null;bossPendingAdvance=false;bossPendingDeath=false;replayClear();
   document.body.classList.remove("replaying");
+  bossStingHide();
   if(TR)lives=BOSS_LIVES;
 }
 function trialFrame(dt){
