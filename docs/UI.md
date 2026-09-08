@@ -304,7 +304,12 @@ named). Undoing one of these needs the paragraph.
   reading as a menu (owner's call). Shut is said with the chooser's own
   language — drained, dashed rim, a padlock (`.sectile.lk`, `85-map.css`) —
   never a second one; at 30px the padlock is the whole sentence and the `SOON`
-  cap went with the size. It keeps a lit background: a control that goes to
+  cap went with the size. **It and SETTINGS are one pair, so they are one
+  width** (178px): two hug-width pills of different lengths stacked on one
+  axis read as a mistake rather than as a pair, because the longer word is an
+  accident of the alphabet. With a fixed box there is a column again, so both
+  icons are pinned at the same offset and the labels stay centred — the same
+  arrangement the four full-width doors above use. It keeps a lit background: a control that goes to
   *nothing* reads as a rendering failure rather than as a locked door.
   Pressing it says when, through `flash()` — the only chrome that survives
   `body.athome`.

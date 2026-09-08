@@ -172,12 +172,23 @@
 .home button.hward.hlevels{--c:#4ec8e0;height:44px}
 .hlevels svg{width:18px;height:18px}
 
-.home .tiny{width:auto;height:30px;padding:0 16px;margin-top:14px;
+/* THE TWO SMALL BUTTONS ARE ONE PAIR, so they are one width.
+
+   They used to hug their own labels, which was right while SETTINGS was
+   alone: a single short pill under four full-width doors reads as a footnote,
+   which is what it is. The moment MULTIPLAYER joined it under there, two
+   different widths stacked on one axis stopped reading as a pair and started
+   reading as a mistake - the longer word simply made a wider button, which is
+   an accident of the alphabet rather than a decision. Reported that way.
+
+   So both take the same box, and with a box there is a column again: the icon
+   goes back to being pinned rather than inline, at the same offset in both,
+   and the labels stay centred on the button as if the icon were not there -
+   the same arrangement the four doors above use, for the same reason. */
+.home .tiny{width:178px;height:32px;padding:0;margin-top:13px;
   font-size:11px;border-color:var(--rule);color:var(--fg-dim)}
-/* SETTINGS is the one button that hugs its label rather than filling the
-   width, so it keeps its icon inline - there is no column for it to join. */
-.home .tiny svg{position:static;transform:none;width:15px;height:15px;
-  margin-right:7px}
+.home .tiny svg{position:absolute;left:15px;top:50%;
+  transform:translateY(-50%);width:15px;height:15px;margin:0}
 
 /* Play chrome has nothing to do while the home screen is up, and the star
    total is shown inside it instead - two counts of the same number, one of
@@ -217,15 +228,16 @@ body.athome .startotal{display:none}
    It keeps a lit background, like every disabled button in this game: a
    control that goes to nothing at all reads as a rendering failure rather
    than as a locked door. */
-.home .tiny.hmulti{margin-top:9px;padding:0 12px 0 13px;gap:0;
+.home .tiny.hmulti{margin-top:8px;
   border-style:dashed;color:#8a94ad;
   filter:saturate(.4) brightness(.92)}
 /* No cap to press down onto: the press is what says a button answered, and
    this one does not. */
 .home .tiny.hmulti:active{transform:none;box-shadow:0 3px 0 var(--lip)}
-/* The padlock is the one icon here that is NOT in front of the label: that
-   place is for the icon saying what the button is, and this says what is
-   wrong with it. `.home .tiny svg` puts every icon on this button to the
-   left of the word, so the lock has to say otherwise. */
-.home .tiny.hmulti .hlock{margin:0 0 0 9px;width:12px;height:12px;
+/* The padlock is the one icon here that is NOT in the column: the column is
+   for the icon saying what the button is, and this says what is wrong with
+   it, so it sits at the other end where a price or a chevron would. `.home
+   .tiny svg` pins every icon on this button to the left, so the lock has to
+   say otherwise on both sides. */
+.home .tiny.hmulti .hlock{left:auto;right:14px;width:12px;height:12px;
   fill:#c6cddd;opacity:.85}
