@@ -270,6 +270,15 @@
   <div class="rlabel"><s></s><b>REPLAY</b><i id="replayNote"></i></div>
 </div>
 
+<!-- THE WAY OUT. The whole sequence is the better part of seven seconds and
+     a player who has seen it does not want it again; this is a full-bleed
+     catcher that only accepts a press while the film is up, so the tap that
+     skips can never also reach the board underneath. It lives outside
+     #replayUI because that layer is pointer-events:none by design and the
+     skip is the one thing here that must be pressable. See replaySkip() in
+     js/12-play.js. -->
+<div class="rskip" id="repSkip"><i>TAP TO SKIP</i></div>
+
 <div class="bar on" id="playBarWrap">
   <div id="playBar" class="on">
     <div class="dpad">

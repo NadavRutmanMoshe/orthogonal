@@ -326,3 +326,36 @@
     .killcam.cam .kccam{animation:none;opacity:0}
     .killcam.cam .kcsnow{animation:none;opacity:0}
   }
+
+/* ============================================================
+   TAP TO SKIP
+
+   The sting, the wind-up and the film together are the better part of seven
+   seconds, and a player on their third death has seen all of it. So the
+   whole screen is a skip button for as long as the film is up.
+
+   It is a full-bleed catcher rather than a small button on purpose: the
+   thing being asked for is "get on with it", and hunting for a 40px target
+   to say that is worse than the wait. It is also why the catcher takes the
+   press at all - `.replayui` and `.killcam` are both pointer-events:none so
+   that nothing here can swallow a tap by accident, and this one layer is the
+   deliberate exception, live only while `body.replaying` is set.
+
+   z-index 17 puts it under the kill cam (18) and the sting (19), which do not
+   want presses, and over everything else, which must not receive this one.
+   ============================================================ */
+  .rskip{position:fixed;inset:0;z-index:17;pointer-events:none;opacity:0;
+    transition:opacity .3s ease}
+  body.replaying .rskip{pointer-events:auto;opacity:1}
+  /* In the lower bar, where there is nothing else - the REPLAY label sits
+     above it and the timecode and REC are in the upper one. */
+  .rskip i{position:absolute;left:0;right:0;bottom:0;height:8.5vh;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-style:normal;
+    font-size:10px;letter-spacing:.3em;text-transform:uppercase;
+    color:rgba(232,238,252,.5);
+    animation:rskipbreath 2.4s ease-in-out infinite}
+  @keyframes rskipbreath{0%,100%{opacity:.55}50%{opacity:1}}
+  @media (prefers-reduced-motion: reduce){
+    .rskip i{animation:none}
+  }

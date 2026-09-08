@@ -35,6 +35,12 @@ bind("hMine",function(){audio();myLevelsPanel();});
    `body.athome` - the HUD, the bar and the star total are all taken down
    there, and the toast is not. */
 bind("hMulti",function(){audio();flash("multiplayer \u00b7 coming soon");});
+/* THE FILM'S OWN WAY OUT. Through tap() like every other control, which is
+   what gives it preventDefault and stopPropagation - the press that skips
+   must not also reach the board underneath, where a double tap is the fold.
+   The catcher only accepts presses while `body.replaying` is set (see .rskip
+   in css/65-replay.css), so this can never fire outside a film. */
+bind("repSkip",function(){replaySkip();});
 bind("hMenu",function(){audio();menuPanel();});
 bind("bSkipTo",function(){
   $("intro").classList.add("gone");

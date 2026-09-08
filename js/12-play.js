@@ -904,6 +904,22 @@ function replayFrame(dtReal){
   rep.fold=k*k*(3-2*k);
   if(rep.foldMs>REP_FOLD_MS+REP_HOLD_MS)replayEnd();
 }
+/* THE WAY OUT OF THE FILM, at any point in it - including the wind-up, which
+   is where a player who wants out is most likely to be pressing.
+
+   It goes through replayEnd() rather than round it, because replayEnd is the
+   one place that restores the board, the camera and the player's mesh and
+   then runs whatever was waiting behind the film: the phase advance, or the
+   last death. Skipping past that would leave the fight holding a pose that
+   nothing is going to take it out of. The kill cam is hard-cleared after,
+   rather than faded, because a skip should be immediate - the fade is for a
+   film that ended on its own terms. */
+function replaySkip(){
+  if(!rep)return;
+  replayEnd();
+  killCamHide();
+  bossStingHide();
+}
 /* Take the dead one off the board for the rest of the film. On a kill that is
    the hunter whose cell the ash came off; on a death it is the player, and the
    only way to un-draw the player is to hide the mesh, which replayEnd() puts
