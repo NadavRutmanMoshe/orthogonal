@@ -30,7 +30,7 @@ rather than guessing the file.
 | `80-panel-tall.css` | full-height panel furniture shared by menu, wardrobe, chooser and map: `.panel.tall .phead .pbody .pcard .prow2 .pgo .psub .pdanger .pfoot`, the range slider skin |
 | `85-map.css` | `--vio --amb` tokens, the section chooser (`.secgrid .sectile .secem .secnum .secname .secsub .secpb .secf .seccap .secchain .seclock .secad`), `.panel.map .mhead .mcard .mbar #mtrail .mfill .mnode` (+ `.mboss .mtrial .solved .here .locked .skipped .mst`), `.mstars .mcap .msheet .mlegend`, the offer-card buttons `.ma .go .ad .qt .mn`, `.adicon`, the global reduced-motion rule |
 | `90-tutorial.css` | the guided lock (`body.tutlock`, `.tutlive`, `.tutsoft`), `.phasenote`, the ghost hand (`.ghost .gfinger .ghand .gtrack .gsay`) |
-| `95-home.css` | `.home` overlay, `.hcont` (CONTINUE, `--sec`), `.hshop`, `.hward` / `.hward.hmine` / `.hward.hmulti.hlk` + `.hlock` `.hsoon` (WARDROBE, MY LEVELS, the locked MULTIPLAYER), `body.athome` |
+| `95-home.css` | `.home` overlay, `.hcont` (CONTINUE, `--sec`), `.hshop`, `.hward` / `.hward.hmine` (WARDROBE, MY LEVELS), `.tiny` (SETTINGS) and `.tiny.hmulti` + `.hlock` (the locked MULTIPLAYER under it), `body.athome` |
 
 ## Tokens
 
@@ -241,15 +241,18 @@ named). Undoing one of these needs the paragraph.
   `WARDROBE` and `MY LEVELS` are the HUD's round-button skin unrolled into a
   pill — one `--c` drives fill, rim, glyph and lip. The two browse rows that
   used to sit here are gone (`docs/HISTORY.md`).
-- **`MULTIPLAYER` is on the screen and shut**, at the foot of `.hshop`. It
-  wears the section chooser's own lock language rather than a second one —
-  colour drained out, dashed rim, a padlock and a cap naming what is holding
-  it (`.sectile.lk`, `85-map.css`) — because a shelf you can see and cannot
-  open is a promise and an empty space is nothing. It keeps a lit background:
-  a control that goes to *nothing* reads as a rendering failure rather than as
-  a locked door. Pressing it says so through `flash()`, which is the only
-  chrome that survives `body.athome`. Its class is `hlk`, not `lk`: see the
-  collision list below.
+- **`MULTIPLAYER` is on the screen, shut, and the smallest thing there** —
+  a `.tiny` *under* SETTINGS, not a pill in `.hshop`. It is present because a
+  door you can see and cannot open is a promise and an empty space is nothing;
+  it is small and low because a promise must not outrank the four doors that
+  work. At full pill size the screen stopped reading as four doors and started
+  reading as a menu (owner's call). Shut is said with the chooser's own
+  language — drained, dashed rim, a padlock (`.sectile.lk`, `85-map.css`) —
+  never a second one; at 30px the padlock is the whole sentence and the `SOON`
+  cap went with the size. It keeps a lit background: a control that goes to
+  *nothing* reads as a rendering failure rather than as a locked door.
+  Pressing it says when, through `flash()` — the only chrome that survives
+  `body.athome`.
 - **`enterEditor()` takes the home screen and any panel down itself**, in
   that order, the same way `enterPlay()` does. `MY LEVELS` is what made that
   reachable; `hidePanel()` restores the plinth, so the overlay must go first.
@@ -367,6 +370,5 @@ owner will see. A page error is printed after the file name with `!!`.
 `.boss` (HUD) vs `.mboss` (map) · `.home` (overlay) vs `body.athome` · `.st`
 (gold price) vs `.ln` (stroked icon path) · `history` vs `window.history` ·
 `.secbar` (wardrobe, `40-panels`) vs `.secpb` (chooser tile's bar) ·
-`.hlk` (home's locked pill) vs `.lk` (chooser tile, `85-map`) ·
 `kcStamp()` vs `#kcTime` (an element id is already a window property).
 Grep before naming.
