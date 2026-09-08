@@ -591,7 +591,7 @@ function replayMark(){
    it has to be passed, because bossHurt resets all of it before the film
    starts; on a kill nothing has moved yet, so the live state is the moment
    and `at` is built from it. */
-function replayStart(mode,who,line,at){
+function replayStart(mode,who,line,at,dead){
   if(!at)at={x:player.x,y:player.y,z:player.z,flat:flat,view:view,
              u:flatPos?flatPos.u:0,fy:flatPos?flatPos.y:0,h:who||null};
   if(!B||rep||repBuf.length<2)return false;
@@ -731,19 +731,34 @@ function replayStart(mode,who,line,at){
     if(d===3)d=-1;
     swing=d*90;
   }
-  /* WHERE THE ASH GOES WHEN THE FILM REACHES THE KILL. On a kill it is the
-     victim's own cell, copied here because `who` is a live hunter object that
-     has already been spliced off the board and will be re-posed by the film;
-     on a death the player is re-derived every frame by replayPose(), so the
-     film reads their drawn position at the moment instead and this is null. */
-  var ashAt=(mode==="kill"&&who)?{x:who.x,y:who.y,z:who.z}:null;
+  /* WHO DIED, AS CELLS - AND IT IS A LIST, because a fold can take more than
+     one. That is the entire point of a double crush: two hunters share a
+     silhouette column, which means they differ ONLY in depth, so they are at
+     two DIFFERENT squares that the fold drops into one. The first version
+     kept a single cell, so the film burst one cloud and left the second
+     hunter standing in the replay - reported with a screenshot of exactly
+     that.
+
+     Copied rather than referenced: `who` and its siblings are live hunter
+     objects that have already been spliced off the board, and the film
+     re-poses `hunters` from the recorded frames on every pass.
+
+     On a death the list is empty: the player is re-derived every frame by
+     replayPose(), so the film reads their drawn position at the moment. */
+  var deadAt=null;
+  if(mode==="kill"){
+    var src=(dead&&dead.length)?dead:(who?[who]:[]);
+    deadAt=[];
+    for(var q=0;q<src.length;q++)
+      deadAt.push({x:src[q].x,y:src[q].y,z:src[q].z});
+  }
   /* Where the tape is cued to. Everything before `t0` is off the front of the
      film and must not be heard; `si` walks forward from there and never back,
      which is also what stops one event playing twice on a frame boundary. */
   var si=0;
   while(si<repSfxBuf.length&&repSfxBuf[si].t<repBuf[i0].t)si++;
   rep={mode:mode,i:i0,t0:repBuf[i0].t,t1:t1,ms:0,fold:0,foldMs:0,view:want,
-       who:who||null,line:line||null,ashAt:ashAt,si:si,
+       who:who||null,line:line||null,dead:deadAt,si:si,
        vat:viewAngleTarget,angle:viewAngleTarget+swing,
        saved:{x:player.x,y:player.y,z:player.z,flat:flat,
               fu:flatPos?flatPos.u:0,fy:flatPos?flatPos.y:0,view:view,
@@ -890,26 +905,29 @@ function replayFrame(dtReal){
     rep.fx=true;
     if(rep.mode==="kill"&&typeof SFX!=="undefined"&&SFX.relive)
       SFX.relive(REP_FOLD_MS);
-    /* AND IT COMES APART AGAIN, which is the half of the film that was
-       missing: the replay showed the two of them arriving in one square and
-       then simply stopped. On a kill the cell was copied at replayStart; on a
-       death `player` is holding the posed position this very frame, which is
-       the square the film has just walked them into. */
-    var az=rep.ashAt||player;
+    /* AND THEY COME APART AGAIN, which is the half of the film that was
+       missing: the replay showed them arriving in one square and then simply
+       stopped. One cloud per cell, so a double crush replays as the two
+       deaths it was. On a death `player` is holding the posed position this
+       very frame, which is the square the film has just walked them into. */
     if(rep.mode==="kill"){
-      if(typeof ashHunter==="function")ashHunter(az.x,az.y,az.z);
-    }else if(typeof ashPlayer==="function")ashPlayer(az.x,az.y,az.z);
+      var dd=rep.dead||[];
+      for(var q=0;q<dd.length;q++)
+        if(typeof ashHunter==="function")ashHunter(dd[q].x,dd[q].y,dd[q].z);
+    }else if(typeof ashPlayer==="function"){
+      ashPlayer(player.x,player.y,player.z);
+    }
   }
-  /* AND THE ONE THAT DIED IS GONE FROM HERE ON, which the first version of
-     this forgot: the ash went up and the piece it came off carried on being
-     drawn underneath it, standing in its own dust. Reported as "in the replay
-     I still see the one who died".
+  /* AND THE ONES THAT DIED ARE GONE FROM HERE ON, which the first version of
+     this forgot: the ash went up and the pieces it came off carried on being
+     drawn underneath it, standing in their own dust. Reported twice - once
+     for the player, and once for the second hunter of a double crush.
 
      It has to be re-applied every frame rather than done once beside the
      burst, because replayPose() above rebuilds `hunters` from the recorded
-     frame on every pass and would put the victim straight back. The victim is
-     found by cell rather than by index - the recorded array is rebuilt from a
-     snapshot and its indices are not the live board's. */
+     frame on every pass and would put them straight back. They are found by
+     cell rather than by index - the recorded array is rebuilt from a snapshot
+     and its indices are not the live board's. */
   replayGone();
   rep.foldMs+=dtReal;
   var k=Math.min(1,rep.foldMs/REP_FOLD_MS);
@@ -932,11 +950,11 @@ function replaySkip(){
   killCamHide();
   bossStingHide();
 }
-/* Take the dead one off the board for the rest of the film. On a kill that is
-   the hunter whose cell the ash came off; on a death it is the player, and the
-   only way to un-draw the player is to hide the mesh, which replayEnd() puts
-   back. Both are cheap enough to run every frame, which is what they need to
-   be - see the call site. */
+/* Take the dead off the board for the rest of the film. On a kill that is
+   every hunter the fold caught - one cell each, and there can be several,
+   because two hunters in one silhouette column are at two different squares.
+   On a death it is the player. Cheap enough to run every frame, which is what
+   it has to be; see the call site. */
 function replayGone(){
   if(!rep)return;
   rep.gone=true;
@@ -946,10 +964,12 @@ function replayGone(){
      and the player stood in their own dust. The flag above is what that line
      reads; see js/10-render.js. */
   if(rep.mode!=="kill")return;
-  var a=rep.ashAt;if(!a)return;
+  var dd=rep.dead;if(!dd||!dd.length)return;
   for(var i=hunters.length-1;i>=0;i--)
-    if(hunters[i].x===a.x&&hunters[i].y===a.y&&hunters[i].z===a.z)
-      hunters.splice(i,1);
+    for(var j=0;j<dd.length;j++)
+      if(hunters[i].x===dd[j].x&&hunters[i].y===dd[j].y&&hunters[i].z===dd[j].z){
+        hunters.splice(i,1);break;
+      }
 }
 function phaseNote(text){
   var el=$("phaseNote");if(!el)return;
@@ -1272,10 +1292,17 @@ function bossFoldCrush(){
   var victim=hunters[doomed[0]];
   /* EVERY ONE OF THEM COMES APART, and it has to happen before the splice -
      a spliced hunter has no square left to come apart at. Each doomed cell
-     gets its own cloud, so a double kill is visibly two things dying in one
-     place rather than one bigger puff. */
+     gets its own cloud, so a double kill is visibly two things dying rather
+     than one bigger puff.
+
+     The cells are kept as well as burst. The film needs all of them, not just
+     the one `victim` points at: two hunters in one silhouette column are at
+     two DIFFERENT squares, so a single remembered cell left the second one
+     standing in the replay. */
+  var deadCells=[];
   for(var a=0;a<doomed.length;a++){
     var dh=hunters[doomed[a]];
+    deadCells.push({x:dh.x,y:dh.y,z:dh.z});
     if(typeof ashHunter==="function")ashHunter(dh.x,dh.y,dh.z,doomed[a]);
   }
   for(var d=doomed.length-1;d>=0;d--)hunters.splice(doomed[d],1);
@@ -1320,7 +1347,9 @@ function bossFoldCrush(){
        skipped: bossAdvance() goes straight to win() there, so the film was
        cut off by the card the moment it was earned. The advance - phase or
        win - waits behind the replay either way. */
-    if(replayStart("kill",victim)){bossPendingAdvance=true;syncHud();return;}
+    if(replayStart("kill",victim,null,null,deadCells)){
+      bossPendingAdvance=true;syncHud();return;
+    }
     bossAdvance();return;
   }
   flash(doomed.length>1?(doomed.length+" in one square · "+hunters.length+" left"):
