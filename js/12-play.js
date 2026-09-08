@@ -124,6 +124,7 @@ function bossReset(){
   document.body.classList.remove("replaying");
   bossStingHide();killCamHide();repSfxInstall();
   if(typeof ashClear==="function")ashClear();
+  if(typeof playerMesh!=="undefined"&&playerMesh)playerMesh.visible=true;
   hunters=[];twinCore=0;twinAt=null;bossPhase=0;
   if(B&&B.twin)twinSpawn(0);
   else if(B){bossRestoreArena();bossEnterPhase(false);}
@@ -810,6 +811,11 @@ function replayPose(f){
 }
 function replayEnd(){
   if(!rep)return;
+  /* Unconditionally, for the same reason the camera angle below is restored
+     unconditionally: replayGone() hides the player's mesh on a death film and
+     there is exactly one place that puts it back. Missing it once means an
+     invisible player for the rest of the run. */
+  if(typeof playerMesh!=="undefined"&&playerMesh)playerMesh.visible=true;
   var sv=rep.saved;
   player.x=sv.x;player.y=sv.y;player.z=sv.z;
   flat=sv.flat;flatTarget=sv.flat?1:0;
@@ -882,10 +888,37 @@ function replayFrame(dtReal){
       if(typeof ashHunter==="function")ashHunter(az.x,az.y,az.z);
     }else if(typeof ashPlayer==="function")ashPlayer(az.x,az.y,az.z);
   }
+  /* AND THE ONE THAT DIED IS GONE FROM HERE ON, which the first version of
+     this forgot: the ash went up and the piece it came off carried on being
+     drawn underneath it, standing in its own dust. Reported as "in the replay
+     I still see the one who died".
+
+     It has to be re-applied every frame rather than done once beside the
+     burst, because replayPose() above rebuilds `hunters` from the recorded
+     frame on every pass and would put the victim straight back. The victim is
+     found by cell rather than by index - the recorded array is rebuilt from a
+     snapshot and its indices are not the live board's. */
+  replayGone();
   rep.foldMs+=dtReal;
   var k=Math.min(1,rep.foldMs/REP_FOLD_MS);
   rep.fold=k*k*(3-2*k);
   if(rep.foldMs>REP_FOLD_MS+REP_HOLD_MS)replayEnd();
+}
+/* Take the dead one off the board for the rest of the film. On a kill that is
+   the hunter whose cell the ash came off; on a death it is the player, and the
+   only way to un-draw the player is to hide the mesh, which replayEnd() puts
+   back. Both are cheap enough to run every frame, which is what they need to
+   be - see the call site. */
+function replayGone(){
+  if(!rep)return;
+  if(rep.mode==="kill"){
+    var a=rep.ashAt;if(!a)return;
+    for(var i=hunters.length-1;i>=0;i--)
+      if(hunters[i].x===a.x&&hunters[i].y===a.y&&hunters[i].z===a.z)
+        hunters.splice(i,1);
+  }else if(typeof playerMesh!=="undefined"&&playerMesh){
+    playerMesh.visible=false;
+  }
 }
 function phaseNote(text){
   var el=$("phaseNote");if(!el)return;
@@ -1486,6 +1519,7 @@ function trialReset(){
   document.body.classList.remove("replaying");
   bossStingHide();killCamHide();repSfxInstall();
   if(typeof ashClear==="function")ashClear();
+  if(typeof playerMesh!=="undefined"&&playerMesh)playerMesh.visible=true;
   if(TR)lives=BOSS_LIVES;
 }
 function trialFrame(dt){
