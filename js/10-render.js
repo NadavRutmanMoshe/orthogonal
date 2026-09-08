@@ -7,7 +7,7 @@
 /* ============================================================
    THREE
    ============================================================ */
-var scene,camera,renderer,meshes={},playerMesh,goalMesh,gridLines,groundPlane,footMesh;
+var scene,camera,renderer,meshes={},playerMesh,goalMesh,gridLines,groundPlane;
 var huntMeshes=[],lineMeshes=[];
 var twinCross=null,twinTether=null;
 var trialSlab,trialEdge;
@@ -150,11 +150,15 @@ function initGL(){
 
   playerMesh=buildPlayerMesh();
   scene.add(playerMesh);
-  footMesh=new THREE.Mesh(new THREE.PlaneGeometry(.94,.94),
-    new THREE.MeshBasicMaterial({color:0xd6336c,transparent:true,
-      opacity:.42,side:THREE.DoubleSide}));
-  footMesh.rotation.x=-Math.PI/2;
-  scene.add(footMesh);
+  /* THERE IS NO PLATE UNDER THE PLAYER any more. It was a .94 square in the
+     player's own colour laid on the block below them, and the argument for
+     it was that it says which square you are standing on. What it actually
+     did was draw a coloured square wider than the piece itself: the cube is
+     .62 across, so the plate stuck out past it on every side, and under any
+     shape narrower than that - the ball, the flame, the sapling - it read as
+     a flat sticker the character was standing in the middle of. Reported as
+     exactly that. The square you are on is said by the piece being on it,
+     and on a clock the trial's own floor outlines say it again. */
   buildShield();
 
   goalMesh=new THREE.Mesh(new THREE.BoxGeometry(.5,.5,.5),
@@ -755,6 +759,33 @@ var sceneQuad=null, demonGrp=null, plumeQuad=null, sparkGrp=null;
 /* One slot per section's moving layer. They are all torn down together in
    applyTheme, so a section that does not ask for one simply has none. */
 var birdGrp=null, meteorGrp=null, boatGrp=null, tumbleGrp=null, devilGrp=null;
+/* CHARRED. The burn ends with the cube black, because that is what the fire
+   leaves behind - the flames go out and something burnt is still standing
+   there for the rest of the beat. It is the body's own colour driven to soot
+   rather than a second material: buildPlayerMesh() hands one material to
+   every part it makes, so one write chars a pup as completely as a cube, and
+   the adaptive rim outlineFor() re-picks every frame is what keeps the
+   silhouette readable once the body has gone nearly to the void.
+
+   The char is late and fast (nothing until a third of the way in, then all of
+   it), so the cube is plainly itself while the flames are climbing and plainly
+   ruined once they are out - a colour that starts sliding on the first frame
+   just reads as the light changing.
+
+   Restored by the same function on the first frame that is not a burn, so
+   nothing else has to know it happened: die() puts the player back at the
+   start with the level, and the mesh it puts back is the mesh that burned. */
+var PLAYER_CHAR=0x120d0b, playerCharT=-1, charCol=new THREE.Color();
+function playerChar(t){
+  if(!playerMesh||t===playerCharT)return;
+  playerCharT=t;
+  var base=findBy(SKIN_COLORS,wardrobe.color).hex;
+  playerMesh.traverse(function(c){
+    if(!c.isMesh||!c.material||!c.material.color)return;
+    c.material.color.setHex(base).lerp(charCol.setHex(PLAYER_CHAR),t);
+  });
+}
+var burnGrp=null;                 // the flames that take you - see the death
 var boomGrp=null, foamQuad=null;
 /* The sea's clock. seaT counts down to the next break, seaFired says the
    sound for it has already been started, and foamP is the sweep. */
@@ -1843,9 +1874,146 @@ function makeBlockGeo(){
   return mergeBoxes(parts);
 }
 
+/* ============================================================
+   THE TRAIL - every square you have stood on, written on the floor
+
+   A puzzle about projection is a puzzle about depth, and depth is the one
+   thing an orthographic camera refuses to say. Two blocks a long way apart
+   can sit a pixel from each other on screen; after four folds and two turns
+   the honest question "have I already been over there?" has no answer on the
+   screen at all. This is that answer, and it costs nothing to read: a soft
+   mark in the player's own colour on the top of every block they have stood
+   on.
+
+   THREE THINGS MAKE IT SUBTLE RATHER THAN A SECOND PUZZLE.
+
+   * It is the player's colour and nothing else's. Every other mark on the
+     floor in this game means DO THIS - the goal's wireframe, the landing
+     rings, the tutorial's green. A history has to be told apart from an
+     instruction at a glance, and whose history it is, is the content of it,
+     so it reads `--player` the way the shadow under your feet and the shield
+     bubble already do.
+   * It is a soft blot, not a tile. A hard square on a block's top face reads
+     as a piece - another kind of block - which is exactly the confusion a
+     game whose whole subject is which block is which cannot afford. The
+     texture falls to nothing well inside its own edges, so it sits ON the
+     surface rather than replacing it.
+   * It goes when the world folds, on the same test the anchor's mark uses
+     (flatT<.45). In the plane the top faces are edge-on and every decal on
+     them is a hairline of noise across the silhouette - and the silhouette is
+     the thing being read.
+
+   ONE MATERIAL FOR ALL OF THEM, which is what makes a colour change one
+   write in applySkin() rather than a walk over the world. The decals are
+   children of the block meshes, so they fold, scale and travel with the
+   block for free - the same trick markGeo uses - and they die with the block
+   when syncMeshes() drops it, which is why trailSync() re-attaches after
+   every rebuild.
+   ============================================================ */
+var trailSet={}, trailMat=null, trailGeo=null, trailTex=null;
+var TRAIL_A=.62;
+
+/* THE MARK CARRIES ITS OWN CONTRAST, and that is the whole of this texture.
+
+   The first cut was one soft blob of `--player` at .30, and it failed on the
+   case that matters: a green skin standing on grass. A single translucent
+   colour can only be seen against a ground it differs from, and the player
+   picks the colour - so the ground it has to work against is every surface
+   in the game at once, in every hue the wardrobe sells.
+
+   So the mark is drawn like the player's own piece is: a bright body with a
+   DARK RIM around it. The trick is that both come out of one texture and one
+   material. `material.color` is the player's hue and the texture multiplies
+   it, so a texel of RGB 1 paints the hue at full strength and a texel of RGB
+   .10 paints a near-black ring of the same hue - whatever hue that is. On a
+   bright surface the dark ring is what you see; on a dark one the lit body
+   is. There is no ground it disappears into, and no colour it disappears in.
+
+   Written per pixel rather than as a gradient because the bands have to be
+   crisp: a feathered rim is a soft edge, and a soft edge is exactly what was
+   invisible. It is 4096 iterations, once, at boot. */
+function trailTexture(){
+  var S=64,c=document.createElement("canvas");c.width=c.height=S;
+  var x=c.getContext("2d"), img=x.createImageData(S,S), d=img.data;
+  var mid=(S-1)/2;
+  for(var py=0;py<S;py++)for(var px=0;px<S;px++){
+    var dx=px-mid, dy=py-mid, r=Math.sqrt(dx*dx+dy*dy)/mid;   // 0..1 of half
+    var lum,a;
+    if(r<.60){ lum=255; a=.78+.17*(1-r/.60); }        // the body, lit
+    else if(r<.74){ lum=255; a=1; }                   // its bright edge
+    else if(r<.90){ lum=26;  a=.60; }                 // the dark rim
+    else if(r<1){   lum=26;  a=.60*(1-(r-.90)/.10); } // one pixel of feather
+    else { lum=0; a=0; }
+    var o=(py*S+px)*4;
+    d[o]=d[o+1]=d[o+2]=lum; d[o+3]=Math.round(a*255);
+  }
+  x.putImageData(img,0,0);
+  return new THREE.CanvasTexture(c);
+}
+/* Lifted a quarter of the way to white before it is used, so a dark skin -
+   Black is a charcoal, Brown is a mud - still reads as a mark rather than as
+   a smudge on the block. The rim is multiplied off the same value, so it
+   darkens with it and the pair stays a pair. */
+function trailTint(hex){
+  if(!trailMat)return;
+  trailMat.color.setHex(hex).lerp(new THREE.Color(0xffffff),.25);
+}
+function trailMaterial(){
+  if(trailMat)return trailMat;
+  if(!trailTex)trailTex=trailTexture();
+  var col=(typeof SKIN_COLORS!=="undefined"&&typeof findBy==="function")
+    ? findBy(SKIN_COLORS,wardrobe.color).hex : 0xd6336c;
+  trailMat=new THREE.MeshBasicMaterial({map:trailTex,color:0xffffff,
+    transparent:true,opacity:TRAIL_A,depthWrite:false,
+    side:THREE.DoubleSide});
+  trailTint(col);
+  return trailMat;
+}
+function trailAttach(k){
+  var m=meshes[k];
+  if(!m||m.userData.trail)return;
+  if(!trailGeo)trailGeo=new THREE.PlaneGeometry(.74,.74);
+  /* .463 clears the stone case's top face (.45) and the liquid surface plate
+     (.43) and still sits under the rim frame's crown (~.4995), so one height
+     works for stone, water and fire without a per-kind branch. */
+  var q=new THREE.Mesh(trailGeo,trailMaterial());
+  q.rotation.x=-Math.PI/2;
+  q.position.y=.463;
+  q.renderOrder=3;
+  m.userData.trail=q;m.add(q);
+}
+/* Cells only, never meshes: a block that does not exist yet - a boss arena
+   raising its pillars, a level being rebuilt - gets its mark the next time
+   trailSync() runs. */
+function trailMark(x,y,z){
+  var k=K(x,y,z);
+  if(trailSet[k])return;
+  trailSet[k]=1;trailAttach(k);
+}
+function trailSync(){for(var k in trailSet)trailAttach(k);}
+function trailClear(){
+  for(var k in trailSet){
+    var m=meshes[k];
+    if(m&&m.userData.trail){m.remove(m.userData.trail);m.userData.trail=null;}
+  }
+  trailSet={};
+}
+
 function addMesh(x,y,z,kind){
   var k=K(x,y,z);
   if(meshes[k])return;
+  var m=makeBlockMesh(kind);
+  m.position.set(x,y,z);
+  m.userData.base=[x,y,z];
+  scene.add(m);meshes[k]=m;
+}
+/* ONE BLOCK, BUILT AND HANDED BACK, standing at the origin and in nobody's
+   scene. addMesh() positions it and puts it in the world; pieceShot() below
+   photographs it for the editor's tool chips, which is the whole reason this
+   is a function rather than the body of addMesh(). The chips used to be
+   hand-drawn SVG approximations of these, and an approximation of a thing the
+   player is looking at on the same screen is just a wrong picture. */
+function makeBlockMesh(kind){
   var glass=kind===1, anchor=kind===2, spike=kind===4;
   var mat=glass
     /* Water reads through a warm section, which is where it is taught, so it
@@ -1861,8 +2029,6 @@ function addMesh(x,y,z,kind){
      full cells with a surface plate, so they are told apart in silhouette
      before a single colour is read. */
   var m=new THREE.Mesh(glass?waterGeo:(spike?fireGeo:boxGeo),mat);
-  m.position.set(x,y,z);
-  m.userData.base=[x,y,z];
   m.userData.glass=glass;
   m.userData.anchor=anchor;
   m.userData.kind=kind||0;
@@ -1915,7 +2081,182 @@ function addMesh(x,y,z,kind){
     m.userData.tips=tips;
     m.add(tips);
   }
-  scene.add(m);meshes[k]=m;
+  return m;
+}
+/* ============================================================
+   PIECE PORTRAITS — the real mesh, photographed small
+
+   The editor's tool chips are pictures of the pieces they place. They were
+   drawn by hand in SVG first, twice: once off the legend's flat swatch
+   colours and once off the renderer's constants. Both were approximations,
+   and an approximation is a *wrong picture* of a thing the player is looking
+   at on the same screen - the grass block on the board has a surface, the
+   crate has violet fire in its cracks, fire has flames that flicker. No
+   amount of hand-drawing catches up with that, and every section retextures
+   the stone anyway.
+
+   So the chip is a photograph. This builds the actual mesh - the same
+   makeBlockMesh() the world is made of, the same buildPlayerMesh() that is
+   standing on the board, the same wireframe box the goal is - lights it with
+   the scene's own three lamps, points the game's camera angle at it and
+   renders one frame into an offscreen target, then hands back a data URL.
+
+   IT USES THE GAME'S OWN RENDERER, and that is the whole design constraint.
+   A second WebGLRenderer is a second context, and this game has already paid
+   for that lesson twice (the wardrobe's display case, homeCase()). Rendering
+   into a WebGLRenderTarget costs no context at all; the render target and
+   the readback buffer are made once and reused, and every piece of renderer
+   state this borrows - target, clear colour, clear alpha - is put back
+   before it returns.
+
+   Cached on what the picture actually depends on: the piece, the section's
+   surface (a stone block is grass in II and basalt in the hell section) and
+   the equipped skin, which is what START is a portrait of.
+   ============================================================ */
+var SHOT_PX=144;
+var shotScene=null, shotCam=null, shotRT=null, shotBuf=null, shotCache={};
+function shotRig(){
+  if(shotScene)return;
+  shotScene=new THREE.Scene();
+  // The scene's own rig, copied rather than shared: a light belongs to one
+  // scene, and moving the world's lamps into this one would unlight the game.
+  shotScene.add(new THREE.AmbientLight(0xffffff,.45));
+  var d1=new THREE.DirectionalLight(0xfff0e0,.85);
+  d1.position.set(6,10,8);shotScene.add(d1);
+  var d2=new THREE.DirectionalLight(0x88aaff,.35);
+  d2.position.set(-7,4,-6);shotScene.add(d2);
+  /* The game's own angle: the main camera sits at (0, CAM_TILT*34, 40) with
+     the view unturned, so a block in a chip is lit and foreshortened exactly
+     as the same block is on the board. Orthographic, like the world. */
+  shotCam=new THREE.OrthographicCamera(-1,1,1,-1,-200,200);
+  shotCam.position.set(0,CAM_TILT*34,40);
+  shotCam.up.set(0,1,0);shotCam.lookAt(0,0,0);
+  shotCam.updateMatrixWorld();
+  shotRT=new THREE.WebGLRenderTarget(SHOT_PX,SHOT_PX);
+  shotBuf=new Uint8Array(SHOT_PX*SHOT_PX*4);
+}
+/* Frame whatever was handed in. Measured rather than assumed, because the
+   things being photographed are not one size: a block is a cell, fire stands
+   flames off the top of it, the anchor floats its octahedron above, and the
+   player is whatever shape the wardrobe is wearing. The eight corners of the
+   bounding box are pushed into camera space and the frustum takes the
+   largest of them, which is the only way to fit an orthographic view without
+   guessing. */
+function shotFit(obj){
+  obj.updateMatrixWorld(true);
+  var box=new THREE.Box3().setFromObject(obj);
+  if(box.isEmpty())return;
+  /* CENTRED FIRST. Fire stands its flames above the cell and the anchor
+     floats its octahedron there, so those two are not centred on the origin
+     the way a plain block is - and fitting a lopsided thing around the origin
+     wastes half the chip on the empty side of it. Move the piece so its own
+     middle is what the camera is pointed at, then measure. */
+  var c=box.getCenter(new THREE.Vector3());
+  obj.position.sub(c);
+  obj.updateMatrixWorld(true);
+  box.translate(c.negate());
+  var inv=new THREE.Matrix4().copy(shotCam.matrixWorld).invert();
+  var v=new THREE.Vector3(), h=0;
+  for(var i=0;i<8;i++){
+    v.set((i&1)?box.max.x:box.min.x,(i&2)?box.max.y:box.min.y,
+          (i&4)?box.max.z:box.min.z).applyMatrix4(inv);
+    h=Math.max(h,Math.abs(v.x),Math.abs(v.y));
+  }
+  h*=1.08;                       // a little air, so nothing touches the edge
+  shotCam.left=-h;shotCam.right=h;shotCam.top=h;shotCam.bottom=-h;
+  shotCam.updateProjectionMatrix();
+}
+// What each chip is a portrait of. Block kinds are the level format's own
+// numbers; the two that are not blocks are named.
+function shotPiece(kind){
+  if(kind==="start")
+    return (typeof buildPlayerMesh==="function")?buildPlayerMesh():null;
+  if(kind==="goal"){
+    /* The goal tumbles in the world (rotation.y and .x both advance every
+       frame), so an axis-aligned still of it is a square with an X in it and
+       reads as nothing. Caught mid-turn instead, at the attitude it spends
+       most of its time near. */
+    var gm=new THREE.Mesh(new THREE.BoxGeometry(.5,.5,.5),
+      new THREE.MeshBasicMaterial({color:0x35c2a5,wireframe:true}));
+    gm.rotation.set(.42,.62,0);
+    return gm;
+  }
+  if(kind===3)return makeCrateMesh();
+  var m=makeBlockMesh(kind);
+  /* Fire's flames are placed by the frame loop, so a block built and never
+     drawn has four of them stacked at the origin. One call puts them where
+     they stand in the volume; their quaternion has to be re-aimed at THIS
+     camera, since fireFlames() faces them at the world's. */
+  if(m.userData.tips&&typeof fireFlames==="function"){
+    fireFlames(m.userData.tips,0,1,0);
+    m.userData.tips.children.forEach(function(c){
+      c.quaternion.copy(shotCam.quaternion);
+    });
+  }
+  return m;
+}
+function shotKey(kind){
+  var th=(curTheme&&(curTheme.surface||curTheme.scene))||"night";
+  return kind+"|"+th+"|"+
+    ((typeof wardrobe!=="undefined")?wardrobe.shape+"|"+wardrobe.color:"");
+}
+function pieceShot(kind){
+  if(!renderer||!boxGeo||!TEX)return null;
+  var key=shotKey(kind);
+  if(shotCache[key])return shotCache[key];
+  shotRig();
+  var obj=null;
+  try{ obj=shotPiece(kind); }catch(e){ obj=null; }
+  if(!obj)return null;
+  shotScene.add(obj);
+  shotFit(obj);
+
+  var wasRT=renderer.getRenderTarget();
+  var wasCol=new THREE.Color(); renderer.getClearColor(wasCol);
+  var wasAlpha=renderer.getClearAlpha();
+  renderer.setRenderTarget(shotRT);
+  renderer.setClearColor(0x000000,0);
+  renderer.clear(true,true,true);
+  renderer.render(shotScene,shotCam);
+  renderer.readRenderTargetPixels(shotRT,0,0,SHOT_PX,SHOT_PX,shotBuf);
+  renderer.setRenderTarget(wasRT);
+  renderer.setClearColor(wasCol,wasAlpha);
+  shotScene.remove(obj);
+  /* MATERIALS ONLY. Every builder above makes its materials fresh, so they
+     are this function's to release; the GEOMETRY is usually one of the
+     world's singletons - boxGeo, waterGeo, fireGeo, edgeGeo, flameGeo - and
+     disposing one of those would empty the board. The few a portrait does
+     own (the goal's little box, an assembled player shape) are small and are
+     left to the collector rather than risking the wrong dispose. */
+  obj.traverse(function(n){ if(n.material&&n.material.dispose)n.material.dispose(); });
+
+  var c=document.createElement("canvas");
+  c.width=c.height=SHOT_PX;
+  var g=c.getContext("2d"), img=g.createImageData(SHOT_PX,SHOT_PX), d=img.data;
+  /* GL reads bottom-up, canvas writes top-down, so the rows are reversed on
+     the way across. The colour is un-premultiplied at the same time: blending
+     into a transparent target leaves rgb already multiplied by alpha, and
+     putImageData wants it straight - without this the water block, which is
+     the one piece drawn at .78, comes out a fifth too dark. */
+  for(var y=0;y<SHOT_PX;y++){
+    var src=(SHOT_PX-1-y)*SHOT_PX*4, dst=y*SHOT_PX*4;
+    for(var x=0;x<SHOT_PX*4;x+=4){
+      var a=shotBuf[src+x+3];
+      if(a===0||a===255){
+        d[dst+x]=shotBuf[src+x];d[dst+x+1]=shotBuf[src+x+1];
+        d[dst+x+2]=shotBuf[src+x+2];
+      }else{
+        var f=255/a;
+        d[dst+x]  =Math.min(255,shotBuf[src+x]*f);
+        d[dst+x+1]=Math.min(255,shotBuf[src+x+1]*f);
+        d[dst+x+2]=Math.min(255,shotBuf[src+x+2]*f);
+      }
+      d[dst+x+3]=a;
+    }
+  }
+  g.putImageData(img,0,0);
+  shotCache[key]=c.toDataURL();
+  return shotCache[key];
 }
 function removeMesh(x,y,z){
   var k=K(x,y,z),m=meshes[k];
@@ -1979,22 +2320,28 @@ function buildTrialMarks(){
     scene.add(m);trialMarks.push(m);
   }
 }
+/* A crate, at the origin, in nobody's scene - same split and same reason as
+   makeBlockMesh() above. */
+function makeCrateMesh(){
+  var m=new THREE.Mesh(boxGeo,
+    new THREE.MeshLambertMaterial({color:colCrate.clone(),vertexColors:true,
+      /* Obsidian, and deliberately NOT the section's surface: a crate is a
+         thing you brought, not a piece of the ground you stand on. The
+         same texture goes on emissiveMap so the violet in the cracks LIGHTS
+         the block - the body is near-black, and a multiply alone would
+         leave the veins as dark as everything else. */
+      map:TEX?TEX.obsidian:null,
+      emissiveMap:TEX?TEX.obsidian:null,
+      emissive:new THREE.Color(0x2a1046)}));
+  m.add(new THREE.LineSegments(edgeGeo,
+    new THREE.LineBasicMaterial({color:0xe0d4ff,transparent:true,opacity:.8})));
+  // no mark: obsidian says crate on its own - see addMesh
+  return m;
+}
 function buildDynamic(){
   clearDynamic();
   for(var i=0;i<gCrates.length;i++){
-    var m=new THREE.Mesh(boxGeo,
-      new THREE.MeshLambertMaterial({color:colCrate.clone(),vertexColors:true,
-        /* Obsidian, and deliberately NOT the section's surface: a crate is a
-           thing you brought, not a piece of the ground you stand on. The
-           same texture goes on emissiveMap so the violet in the cracks LIGHTS
-           the block - the body is near-black, and a multiply alone would
-           leave the veins as dark as everything else. */
-        map:TEX?TEX.obsidian:null,
-        emissiveMap:TEX?TEX.obsidian:null,
-        emissive:new THREE.Color(0x2a1046)}));
-    m.add(new THREE.LineSegments(edgeGeo,
-      new THREE.LineBasicMaterial({color:0xe0d4ff,transparent:true,opacity:.8})));
-    // no mark: obsidian says crate on its own - see addMesh
+    var m=makeCrateMesh();
     scene.add(m);crateMeshes.push(m);
     m.position.set(gCrates[i][0],gCrates[i][1],gCrates[i][2]);
   }
@@ -2032,6 +2379,10 @@ function syncMeshes(){
     var m=meshes[k];scene.remove(m);m.material.dispose();delete meshes[k];
   }
   buildDynamic();
+  /* The decals are children of block meshes, so every mesh this function
+     dropped and rebuilt came back bare. The set of cells is the truth; the
+     decals are a view of it. */
+  trailSync();
   recomputeBounds();
 }
 var arenaLo=[0,0,0], arenaHi=[0,0,0];
@@ -2305,6 +2656,11 @@ function drawBoss(rx,rz,tdvx,tdvz){
    The charge has to read as a countdown rather than a warning light, so
    opacity ramps with how far through the beat it is - "how long have I got"
    is then legible at a glance instead of needing a number. */
+/* One pulse for every warning a trial draws, so the tiles, their borders and
+   anything added later breathe on the same beat rather than each on its own.
+   Deliberately not perilPulse: that one is the fold's crush warning and is
+   stamped inside the block loop, which does not run before this. */
+function trialWarnPulse(){return .5+.5*Math.sin(Date.now()*.0085);}
 function drawTrial(rx,rz){
   if(!trialSlab)return;
   if(!TR||app!=="play"||!TR.beats.length){
@@ -2383,13 +2739,26 @@ function drawTrial(rx,rz){
      the world is a silhouette and a marker on a world block points at a place
      that no longer exists. The whole board going red is the correct answer
      there, and the only warning that the fold you are in is the wrong one. */
-  var edgeOnly = flatT<=.5;
-  // Flat, the row of falling blocks is the subject and the wash is the ground
-  // it is read against, so the wash comes down enough to let them show.
-  var wash = edgeOnly ? .07 : .30;
-  trialSlab.material.opacity=(live?(.62+trialFlash*.3):(.15+ph*ph*.3))*wash;
-  trialEdge.material.opacity=(live?1:(.5+ph*.4))*(edgeOnly?.22:1);
-  trialSlab.visible=trialEdge.visible=true;
+  /* NO FRAME ANYWHERE, AND NO PANE IN THE VOLUME (owner's call).
+
+     The bounded outline was meant to read as "a pane standing somewhere".
+     In play it read as a red window hung in front of the level - a piece of
+     chrome the arena did not have - and in the plane its two long edges cut
+     the screen in half. Both are gone: `trialEdge` is never shown.
+
+     In the volume the falling blocks and the tile outlines already answer
+     both WHERE and HOW LONG, and they say it on the squares you can stand
+     on, so the slab has nothing left to add and is hidden outright.
+
+     Flat keeps the wash and only the wash: there the marks are hidden (a
+     marker on a world block points at a place that no longer exists), so
+     the whole board going red is still the only warning that the fold you
+     are in is the wrong one. It comes up from .10 to carry that alone now
+     that the outline is not helping. */
+  var inVolume = flatT<=.5;
+  trialSlab.material.opacity=(live?(.62+trialFlash*.3):(.15+ph*ph*.3))*.34;
+  trialEdge.visible=false;
+  trialSlab.visible=!inVolume;
   drawTrialMarks(sw,ph,live);
   drawFallRank(sw,ph,live,rx,rz);
 }
@@ -2471,8 +2840,11 @@ function drawFallRank(sw,ph,live,rx,rz){
       m.visible=true;
       m.position.set(cells[i][0],y-.5+.44+drop,cells[i][1]);
       m.scale.set(live?1.1:1,live?.5:1,live?1.1:1);
-      m.material.opacity=live?.95:(.30+ph*.5);
-      if(m.userData.edge)m.userData.edge.material.opacity=live?1:(.35+ph*.55);
+      /* Same reasoning as the tiles: the rank is the other half of "it is
+         coming down there", and a block you cannot see until it is nearly on
+         you is not a telegraph. */
+      m.material.opacity=live?.95:(.52+ph*.4);
+      if(m.userData.edge)m.userData.edge.material.opacity=live?1:(.6+ph*.4);
     }
   }
   for(var k=n;k<planeFalls.length;k++)planeFalls[k].visible=false;
@@ -2523,7 +2895,7 @@ function drawTrialMarks(sw,ph,live){
       m.scale.setScalar(1);
       continue;
     }
-    if(m.userData.ring)m.userData.ring.material.color.setHex(0xff8a94);
+    if(m.userData.ring)m.userData.ring.material.color.setHex(0xffc2c8);
     var mine=(!flat&&player.x===c[0]&&player.y===c[1]&&player.z===c[2]);
     if(mine)here=m;
     /* The ramp is the countdown, same as the slab's - but these start
@@ -2531,10 +2903,24 @@ function drawTrialMarks(sw,ph,live){
        telegraph that is invisible for the first half of its beat is not a
        telegraph. The square you are actually standing on is louder again:
        "there is a slice" and "you are in it" are different sentences. */
-    m.material.opacity=(live?.92:.34+ph*ph*.5)*(mine?1:.8);
+    /* RAISED, on the owner's report that "the spikes will come down there"
+       was not being read in time. The ramp still is the countdown - it still
+       climbs across the beat and the square you are standing on is still
+       louder than the rest - it simply no longer starts near invisible. Red
+       at .34 over a lit grass block is a discolouration; at .58 it is a
+       marked square. What is lost is a little of the difference between the
+       start of a beat and its middle, and that difference was never the
+       thing being read: the fall itself says how long is left. */
+    m.material.opacity=(live?.95:.58+ph*ph*.34)*(mine?1:.88);
     m.scale.setScalar(mine?1.04+(live?.06:0):1);
+    /* And the border BREATHES rather than ramping. The fill carries the
+       countdown, so the outline is free to carry the other half of the
+       sentence - that this is a live warning and not a texture on the floor.
+       A pulse is what the eye catches in peripheral vision, which is where a
+       player on a clock is looking when they are looking anywhere else. */
     if(m.userData.ring)
-      m.userData.ring.material.opacity=(live?1:.5+ph*.5)*(mine?1:.75);
+      m.userData.ring.material.opacity=
+        (live?1:.72+.28*trialWarnPulse())*(mine?1:.85);
   }
   // Drawn last so it sits over its neighbours rather than z-fighting them.
   if(here)here.renderOrder=903;
@@ -2851,13 +3237,24 @@ function landLive(){
     })};
   return true;
 }
-/* THE EYE LIGHTS WHEN LOOKING WOULD TELL YOU SOMETHING - flat, and more than
-   one block in your silhouette column. That is the only situation where the
-   landing rule decides something the player cannot see, so the button
-   advertises itself exactly then and is quiet the rest of the time, which is
-   what stops it becoming wallpaper. Judged every frame rather than in
-   syncHud for the same reason the boss's fold cue is: the answer changes
-   when the player moves in the plane, not when a button is pressed.
+/* THE EYE LIGHTS WHEN LOOKING WOULD TELL YOU SOMETHING, AND THAT IS NARROWER
+   THAN "more than one block in your column".
+
+   More than one candidate was the first rule and it lit far too often: most
+   columns in most levels hold two blocks, and the choice between them
+   usually decides nothing the player cares about - so the button was on for
+   most of the time anybody spent flat, which is exactly how a cue becomes
+   wallpaper. Reported as being shown when it was not necessary.
+
+   It now asks the question the player is actually about to get wrong: the
+   goal is in the square you are standing on in the plane - so it looks like
+   you have arrived - and the block you would come back on is not it. That is
+   the one moment the landing rule costs you the level rather than a step,
+   and it is the moment the eye answers.
+
+   Judged every frame rather than in syncHud for the same reason the boss's
+   fold cue is: the answer changes when the player moves in the plane, not
+   when a button is pressed.
 
    It also counts the peek for the tutorial - an EFFECTIVE peek, one where
    the world actually rose, rather than a button press that went nowhere. */
@@ -2866,9 +3263,16 @@ function lookCue(){
   var el=document.getElementById("bLook");
   if(!el)return;
   var want=false;
-  if(app==="play"&&flat&&!dying&&!levelOver()&&R&&flatPos){
+  if(app==="play"&&flat&&!dying&&!levelOver()&&R&&flatPos&&planePeek<.05){
     var land=R.landings(view,flatPos.u,flatPos.y,liveCrates());
-    want=land.length>1&&planePeek<.05;
+    if(land.length>1&&typeof liveGoal==="function"){
+      var g=liveGoal(), r=AX[view].r;
+      // The goal folds into this square: on screen you are standing on it.
+      if(g&&g[1]===flatPos.y&&g[0]*r[0]+g[2]*r[2]===flatPos.u){
+        var win=R.pick(land);
+        want=!(win.x===g[0]&&win.z===g[2]);   // ...and you would miss it
+      }
+    }
   }
   if(want!==lookLit){lookLit=want;el.classList.toggle("look",want);}
   if(flat&&planePeek>.5&&!peekCounted){
@@ -3209,6 +3613,7 @@ function animate(now){
   for(var k in meshes){
     var m=meshes[k],b=m.userData.base;
     if(m.userData.mark)m.userData.mark.visible=flatT<.45;
+    if(m.userData.trail)m.userData.trail.visible=flatT<.45;
     var u=b[0]*rx+b[2]*rz,d=b[0]*tdvx+b[2]*tdvz,fd=d*.012;
     var px=u*rx+fd*tdvx,pz=u*rz+fd*tdvz;
     m.position.set(b[0]+(px-b[0])*flatT,b[1],b[2]+(pz-b[2])*flatT);
@@ -3360,9 +3765,63 @@ function animate(now){
   var pu=flat?flatPos.u:(srcX*rx+srcZ*rz), py=flat?flatPos.y:srcY;
   var fx=pu*rx+1.2*tdvx,fz=pu*rz+1.2*tdvz;
   tmp.set(srcX+(fx-srcX)*flatT, srcY+(py-srcY)*flatT, srcZ+(fz-srcZ)*flatT);
+  /* CAUGHT BY THE FIRE, and it does not fall - it burns where it stands.
+
+     The piece was a spike once and the death was the same one falling out of
+     the world uses, which is what a spike deserves and a fire does not: fire
+     does not drop you, it takes you. So the cube sinks a little, flickers,
+     shrinks, and a handful of flames come up around it - the same flameGeo
+     the fire blocks use, so it is the same fire rather than a second drawing
+     of one. `burnGrp` is built the first time anything burns and hidden the
+     rest of the time. */
+  if(burnGrp)burnGrp.visible=false;
+  if(dying!=="spike")playerChar(0);
   if(dying){
     dyingT+=1;
-    if(dying==="fall"||dying==="spike"){
+    if(dying==="spike"){
+      playerMesh.position.x+=(tmp.x-playerMesh.position.x)*.3;
+      playerMesh.position.z+=(tmp.z-playerMesh.position.z)*.3;
+      var burn=Math.min(1,dyingT/26);
+      playerMesh.position.y+=(tmp.y-.16*burn-playerMesh.position.y)*.25;
+      // it shudders as it goes, and what is left of it is thin and tall
+      var bs=1-burn*.72;
+      playerMesh.scale.set(bs*(1+Math.sin(dyingT*1.7)*.09),
+                           bs*(1+burn*.55),
+                           bs*(1+Math.cos(dyingT*1.5)*.09));
+      if(!burnGrp){
+        burnGrp=new THREE.Group();
+        for(var bfi=0;bfi<6;bfi++){
+          var bf=new THREE.Mesh(flameGeo,new THREE.MeshBasicMaterial({
+            vertexColors:true,transparent:true,opacity:0,
+            depthWrite:false,depthTest:false,side:THREE.DoubleSide}));
+          bf.renderOrder=940;
+          bf.userData={ph:Math.random()*6.283,
+            ox:(Math.random()-.5)*.6, oz:(Math.random()-.5)*.6,
+            h:.7+Math.random()*.9};
+          burnGrp.add(bf);
+        }
+        scene.add(burnGrp);
+      }
+      burnGrp.visible=true;
+      burnGrp.position.copy(playerMesh.position);
+      var bk=burnGrp.children;
+      for(var bi3=0;bi3<bk.length;bi3++){
+        var bq3=bk[bi3],bu3=bq3.userData;
+        var flick=.78+.22*Math.sin(airPhase*9+bu3.ph)+.08*Math.sin(airPhase*21+bu3.ph*3);
+        bq3.position.set(bu3.ox*(1-burn*.3),-.30+burn*.34+bu3.h*.10,bu3.oz*(1-burn*.3));
+        /* Kept close to the cube. Tall thin flames read as a column of fire
+           standing somewhere near the player rather than as the player being
+           on fire, which is the opposite of the point. */
+        var gsz=(.42+burn*.5)*flick;
+        bq3.scale.set(gsz*.9,bu3.h*gsz*.9,1);
+        if(camera)bq3.quaternion.copy(camera.quaternion);
+        // up quickly, and gone before the cube is
+        bq3.material.opacity=Math.min(1,burn/.18)*(1-burn)*(1-burn)*2.2;
+      }
+      // and what the fire leaves: the flames go out on a black cube, not on
+      // the one that walked in.
+      playerChar(Math.min(1,Math.max(0,(burn-.32)/.46)));
+    } else if(dying==="fall"){
       playerMesh.position.x+=(tmp.x-playerMesh.position.x)*.2;
       playerMesh.position.z+=(tmp.z-playerMesh.position.z)*.2;
       playerMesh.position.y-=.12+dyingT*.014;
@@ -3398,12 +3857,6 @@ function animate(now){
      bubble goes, the blink is still there for the rest of the beat. */
   playerMesh.visible=shieldMs>0||
     !(trialGrace>0&&Math.floor(Date.now()/85)%2===0);
-  if(footMesh){
-    footMesh.visible=!dying;
-    footMesh.position.set(playerMesh.position.x,
-      playerMesh.position.y-.32,playerMesh.position.z);
-    footMesh.material.opacity=.42*(1-flatT*.7);
-  }
 
   // A boss arena has no goal square - the target is the boss itself, which
   // draws itself in drawBoss() - so the marker is simply hidden there.

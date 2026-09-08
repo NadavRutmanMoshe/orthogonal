@@ -1,0 +1,101 @@
+/* Orthogonal — css/20-hud.css
+   The live star row, the move count, the GO 2D button states (peril, strike), the look cue, .tiny.
+   Loaded in the order listed in index.html; see docs/UI.md for the map of
+   screens to files. */
+  /* THE LIVE ROW. Two glyphs per slot, one on top of the other: the hollow
+     star is the socket and the gold one sits in it, so losing a star is the
+     gold one falling out of a socket that stays. Bigger than the old row -
+     it is the only score on screen now - and right-aligned under the number.
+     See liveStarRow() in js/18-ui.js. */
+  .stars{display:flex;gap:5px;justify-content:flex-end;margin-top:4px}
+  .stars[hidden]{display:none}
+  .stars .sl{position:relative;display:block;width:19px;height:19px;
+    text-decoration:none}
+  .stars i{position:absolute;inset:0;font-style:normal;font-size:18px;
+    line-height:19px;text-align:center}
+  .stars .ho{color:var(--rule)}
+  .stars .fi{color:var(--star);text-shadow:0 0 9px var(--star-glow)}
+  .stars .fi.fall{animation:stfall .66s cubic-bezier(.35,0,.75,1) forwards}
+  @keyframes stfall{
+    0%  {transform:translateY(0) rotate(0);opacity:1}
+    18% {transform:translateY(-5px) rotate(-9deg);opacity:1}
+    100%{transform:translateY(34px) rotate(46deg);opacity:0}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .stars .fi.fall{animation:stfade .4s linear forwards}
+    @keyframes stfade{to{opacity:0}}
+  }
+  /* Peek is latched: held down, so it is drawn held down. */
+  button.held{--c:var(--goal);transform:translateY(3px);
+    box-shadow:0 0 0 var(--lip)}
+  .tinyrow .tiny{flex:1}
+  .moves{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;
+    letter-spacing:.12em;color:var(--fg-dim);margin-top:3px;
+    transition:color .5s ease}
+  /* The count is on its own now - no par beside it and no word after it -
+     so it is sized to be read at a glance rather than to sit quietly next to
+     something else. */
+  .moves b{color:var(--fg);font-weight:600;font-size:17px;line-height:1.1;
+    font-variant-numeric:tabular-nums;display:block;text-align:right}
+  .par{color:var(--goal)}
+  /* The verb the whole game is built on, so it is the biggest, fullest thing
+     on the bar and it wears the player's own colour. */
+  .flatbtn{height:54px;padding:0 18px;font-weight:700;letter-spacing:.15em;
+    font-size:12px;--c:var(--player);color:var(--c);
+    border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent);
+    --lip:color-mix(in srgb,var(--c) 42%,#04070d);
+    background:
+      linear-gradient(180deg,color-mix(in srgb,var(--c) 22%,transparent),
+        color-mix(in srgb,var(--c) 7%,transparent)),
+      var(--panel)}
+  /* FOLDING FROM HERE WOULD KILL YOU, AND IT HAS TO LOOK LIKE A HAZARD.
+
+     Marked, not disabled - it is still a legal move and some players will
+     want to see what happens. But once every button in the game became a lit
+     cap, a red one that breathed read as *press me*: reported exactly that
+     way, and it is the worst possible misreading, because the thing it is
+     warning about costs a life.
+
+     So the danger state is the one thing on screen that is NOT a lit cap. It
+     goes dark, it gains diagonal hazard stripes - a pattern nothing else in
+     the game uses and everybody already reads as "do not" - and it carries a
+     warning triangle before the label. Nothing glows and nothing swells; the
+     only movement is the triangle blinking, which says "look at me" without
+     saying "press me". Compare `.strike` below, which is an invitation and
+     is drawn like one. */
+  .flatbtn.peril{border-color:#ff4d5e;color:#ff9aa2;--lip:#4a0d14;
+    animation:none;
+    background:
+      repeating-linear-gradient(-45deg,
+        rgba(255,77,94,.22) 0 7px, rgba(255,77,94,0) 7px 15px),
+      linear-gradient(180deg, rgba(96,16,26,.62), rgba(44,6,12,.82))}
+  .flatbtn.peril::before{content:"\26A0";font-size:15px;line-height:1;
+    margin-right:9px;color:#ff4d5e;
+    animation:perilblink 1.15s ease-in-out infinite}
+  @keyframes perilblink{50%{opacity:.32}}
+  body.flat .flatbtn.peril{color:#8c1420;
+    background:
+      repeating-linear-gradient(-45deg,
+        rgba(200,30,50,.26) 0 7px, rgba(200,30,50,0) 7px 15px),
+      linear-gradient(180deg, rgba(255,190,195,.75), rgba(240,150,158,.8))}
+  /* Folding right now would crush the boss. The one moment the fold is an
+     attack rather than a risk, so it gets the goal colour AND the lit,
+     breathing treatment - it is the one state on this button that genuinely
+     means press me, and peril above is deliberately drawn as its opposite. */
+  .flatbtn.strike{border-color:var(--goal);color:var(--goal);
+    animation:strikepulse .9s ease-in-out infinite}
+  @keyframes strikepulse{50%{background:rgba(53,194,165,.2)}}
+  /* THE EYE, LIT WHEN LOOKING WOULD ACTUALLY TELL YOU SOMETHING - flat, with
+     more than one block in your column. Slower and quieter than the two
+     above it: those two are about to cost you a life, this one is an offer.
+     Same goal colour as the strike cue, because both mean "there is
+     something you can do here". */
+  button.rnd.look{animation:lookpulse 1.9s ease-in-out infinite}
+  @keyframes lookpulse{
+    0%,100%{box-shadow:0 3px 0 var(--lip),0 0 0 0 var(--star-glow),
+      0 0 16px color-mix(in srgb,var(--c) 16%,transparent)}
+    50%{box-shadow:0 3px 0 var(--lip),0 0 0 7px rgba(63,214,196,0),
+      0 0 26px color-mix(in srgb,var(--c) 70%,transparent)}
+  }
+  .tiny{height:28px;font-size:11.5px;letter-spacing:.1em;color:var(--fg-dim);padding:0 8px}
+  .tinyrow{display:flex;gap:4px;justify-content:flex-end}

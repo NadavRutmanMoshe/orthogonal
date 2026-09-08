@@ -29,7 +29,7 @@ function die(kind){
   deathPending=false;
   var spend=(B||TR)&&kind!=="boss"&&kind!=="trial";
   flash(kind==="fall"?"you fell":
-        kind==="spike"?"something sharp was in that column":
+        kind==="spike"?"you burned":
         kind==="boss"||kind==="trial"?"out of lives":
         "the world closed on you");
   SFX.die();
@@ -88,11 +88,12 @@ function respawn(){
   player={x:L.start[0],y:L.start[1],z:L.start[2]};
   flat=false;flatTarget=0;flatT=0;
   // And the rotation you started the level with. You got here by falling,
-  // being crushed or standing on something sharp, so you are being put back
+  // being crushed or walking into fire, so you are being put back
   // at the beginning - facing the way the level opens is part of that, and
   // resuming a restart mid-turn is disorienting in exactly the wrong moment.
   view=0;viewAngle=0;viewAngleTarget=0;
   buildGrid();syncHud();
+  if(typeof trailClear==="function"){trailClear();trailHere();}
   playerMesh.position.set(player.x,player.y,player.z);
   /* Written here rather than left to the next move, because a death is
      exactly the moment somebody puts the game down. saveSession() refuses to
@@ -1114,6 +1115,56 @@ function collectHere(){
   }
 }
 
+/* ============================================================
+   WHAT GETS MARKED, AND WHEN
+
+   The drawing is in js/10-render.js; these three are the rule about which
+   squares it draws. They are here because they are part of the verbs - a
+   mark is made by moving, folding and coming back, and nothing else makes
+   one.
+
+   IN THE VOLUME the answer is trivial: the block under your feet.
+
+   ON THE FOLD it is the run from your own block FORWARD to the one nearest
+   the camera, and the word forward is the whole rule. Folding merges
+   everything at one screen position into a single silhouette square, so the
+   floor you stand on in the plane was made by several blocks at once - but
+   only the ones between you and the front are places the fold actually took
+   you through. A block BEHIND you in depth is in the same silhouette and was
+   never crossed; painting it says you have been somewhere you have not.
+
+   No maximum has to be computed: nothing sits in front of the front block, so
+   "every solid at or ahead of my depth" stops there on its own.
+
+   MOVING WHILE FLAT marks one block, and it is the one the unfold would put
+   you on - R.pick over R.landings, the same call doUnflatten() makes, so the
+   mark and the landing can never disagree. Marking the column here instead
+   would paint the entire world after four steps, which is not a trail. */
+function trailHere(){
+  if(typeof trailMark!=="function")return;
+  trailMark(player.x,player.y-1,player.z);
+}
+function trailColumn(){
+  if(typeof trailMark!=="function"||!L||!R)return;
+  var u=R.uOf(view,player.x,player.z), y=player.y-1;
+  // AX[v].d points toward the camera, so a larger d is nearer the front and
+  // R.pick's "highest t wins" and this test are reading the same number.
+  var t0=R.dOf(view,player.x,player.z);
+  for(var i=0;i<L.blocks.length;i++){
+    var b=L.blocks[i];
+    if(b[1]!==y||isCrate(b))continue;
+    if(R.uOf(view,b[0],b[2])!==u)continue;
+    if(R.dOf(view,b[0],b[2])<t0)continue;      // behind you: never crossed
+    trailMark(b[0],b[1],b[2]);
+  }
+}
+function trailFlatStep(){
+  if(typeof trailMark!=="function"||!R||!flatPos)return;
+  var land=R.landings(view,flatPos.u,flatPos.y,liveCrates());
+  if(!land.length)return;
+  var b=R.pick(land);
+  trailMark(b.x,flatPos.y-1,b.z);
+}
 function move3(dx,dz,dir){
   if(dying)return;
   clearCue();
@@ -1146,6 +1197,7 @@ function move3(dx,dz,dir){
   player.x=nx;player.z=nz;player.y=ny;
   if(R.deadly3(nx,ny,nz)){die("spike");return;}
   if(!moved)SFX.step();
+  trailHere();
   if(tutC){tutC.m3++;if(dir)tutC.d[dir]++;if(ny>oldY)tutC.climb++;}
   if(bossContact())return;
   syncHud();saveSession();checkWin();
@@ -1163,6 +1215,7 @@ function move2(du){
   flatPos.u=nu;flatPos.y=ny;
   if(R.deadly2(view,nu,ny)){die("spike");return;}
   SFX.step();collectHere();
+  trailFlatStep();
   if(tutC)tutC.m2++;
   if(bossContact())return;
   syncHud();saveSession();
@@ -1330,6 +1383,9 @@ function doFlatten(){
   lastSolidDepth=R.dOf(view,player.x,player.z);
   pushHistory();moveCount++;
   flatPos={u:pu,y:player.y};
+  // The column you just merged - see trailColumn(). Taken before the fold
+  // resolves, for the same reason everything else on this line is.
+  trailColumn();
   /* Captured BEFORE the fold resolves, while the player is still standing on
      something in the volume - afterwards there is only a silhouette. */
   if(typeof markWaterTrace==="function")markWaterTrace();
@@ -1369,6 +1425,7 @@ function doUnflatten(){
   var b=R.pick(land);
   pushHistory();moveCount++;
   player.x=b.x;player.z=b.z;player.y=flatPos.y;
+  trailHere();
   flat=false;flatTarget=0;SFX.unfold();foldJolt(false);
   /* RULE 5, SHOWN. Only when the column actually held a choice - see
      showLanding() - so it is silent on the levels where nothing was decided
@@ -1427,7 +1484,40 @@ function press(dir){
   else if(dir==="up")move3(-d[0],-d[2],dir);
   else if(dir==="down")move3(d[0],d[2],dir);
 }
-function hintCap(){return capForHints(hintsUsed);}
+/* HOW LONG UNTIL THE NEXT FREE HINT, said the way a person would say it.
+   Rounded up, because "in 1 min" that is really 40 seconds is a promise the
+   clock keeps and "in 0 min" is not a sentence. */
+function hintWaitSay(){
+  var ms=hintNextMs();
+  if(ms<=0)return "now";
+  var m=Math.ceil(ms/60000);
+  return m<60?m+" min":Math.ceil(m/60)+" hr";
+}
+/* THE POOL IS EMPTY, AND THIS IS THE WAY ON. Same shape as every other offer
+   in the game - the thing has already happened, the board is behind the card,
+   and the card is a door rather than a wall. It reaches grantHints() and
+   nothing else, which is the whole of what an ad SDK has to call here. */
+function hintRefillOffer(){
+  if(panelOpen()||screenUp())return;
+  SFX.bump();
+  /* Two lines and two buttons, and nothing else. The first draft explained
+     the pool, the half hour, the ad and the star rule - four sentences at
+     the one moment the player wants to get back to the level, which is
+     exactly when nobody reads. What they need is what happened and when it
+     is fixed; the rest is discoverable from the badge on the bulb. */
+  offerShell("The bulb","Out of hints",
+    "Next refill of 1 hint in <b>"+hintWaitSay()+"</b>.",
+    "<button class='ad' id='hrAd'>"+adIcon()+"REFILL \u00b7 WATCH AN AD (+"+HINT_AD+
+      ")</button>"+
+    "<button class='qt' id='hrNo'>WAIT IT OUT</button>","","var(--star)");
+  bind("hrNo",function(){hidePanel();});
+  bind("hrAd",function(){
+    var n=grantHints(HINT_AD);
+    hidePanel();syncHud();
+    flash(n+" hint"+(n===1?"":"s")+" \u00b7 tap the bulb");
+    setTimeout(function(){cue("bHint");},260);
+  });
+}
 function keysLeft(){
   var n=0;
   for(var i=0;i<R.keys.length;i++) if(!(gKeys&(1<<i))) n++;
@@ -1462,23 +1552,28 @@ function checkWin(){
   win();
 }
 var starsBefore=0,starsAfter=0,starsGained=0;
+// How many filled stars the win card is about to draw. Read after the branch
+// that drew them, so the sound and the glyphs cannot disagree.
+var wonStars=0;
 function win(){
+  wonStars=0;
   levelDone=true;
+  /* The star total is hidden while a clock is running and `levelDone` is what
+     brings it back, so the chrome has to be re-asked now rather than at the
+     next move - there are no more moves. It also has to be up before the
+     flight is scheduled, since flyStars() measures where it is. */
+  syncHud();
   SFX.win();
   clearSession();
   starsBefore=starsAfter=starsGained=0;
   if(levelKey&&playSource==="builtin"){
-    // store the move count that reflects the stars actually earned, so hints
-    // can't be laundered into currency
+    /* HINTS NO LONGER TOUCH THIS. There used to be an "effective" move count
+       here, inflated to whatever band the hints you had taken capped you at,
+       so a hint could not be laundered into currency. Hints are paid for out
+       of their own pool now - see the hint bank in 06-persistence.js - so
+       what is stored is simply what you did, and the level is scored on the
+       route you actually walked. */
     var effective=moveCount;
-    var capped=hintCap();
-    if(levelPar!==null&&capped<3){
-      // The bands live in starsFor(); read from there rather than repeated,
-      // or a change to the thresholds silently launders hints into stars.
-      if(capped===2)effective=Math.max(effective,levelPar+1);
-      else if(capped===1)effective=Math.max(effective,Math.floor(levelPar*STAR_2X)+1);
-      else effective=Math.max(effective,Math.floor(levelPar*STAR_1X)+1);
-    }
     // Stars gained is the *improvement*, not the stars just scored: replaying
     // a 3-star level pays nothing, and going 2 -> 3 pays exactly the one new
     // star. starsEarned() already sums best-per-level, so this keeps the
@@ -1496,12 +1591,12 @@ function win(){
   if(fromEditor){
     $("wonTitle").textContent="Your level works";
     $("wonSub").textContent=custom.name;
-    $("bNext").textContent="BACK TO EDITOR";
+    $("bNextT").textContent="BACK TO EDITOR";
   } else if(playSource==="library"){
     var n=sortedLibrary().length;
     $("wonTitle").textContent="Solved";
     $("wonSub").textContent=L.name+"  ("+(libIndex+1)+" of "+n+")";
-    $("bNext").textContent=libIndex>=n-1?"DONE":"NEXT LEVEL";
+    $("bNextT").textContent=libIndex>=n-1?"DONE":"NEXT LEVEL";
   } else if(L.tutorial){
     /* The tutorial has been holding the player's hand the whole way, so the
        last thing it should say is where the hand goes. Only on the way out -
@@ -1512,22 +1607,24 @@ function win(){
        so a card put up now would open behind the one the player is reading.
        loadLevel() fires it on the way into whatever they pick next, which is
        also what makes it survive LEVELS as well as NEXT LEVEL. */
-    if(lastTut&&playSource==="builtin"&&!settings.ctlAsked)ctlOfferPending=true;
     $("wonTitle").textContent="Got it";
-    $("wonSub").textContent=L.name.replace(/^00 \u2014 /,"")+"  \u00b7  "+
-      moveCount+" moves  \u00b7  not scored"+
+    $("wonSub").textContent=moveCount+" moves  \u00b7  not scored"+
       (lastTut?"  \u00b7  from here on, tap the bulb for a hint":"");
-    $("bNext").textContent="NEXT LEVEL";
+    $("bNextT").textContent="NEXT LEVEL";
     $("bRetry").style.display="none";
   } else if(B||TR){
     // Scored on lives, so hints cost nothing here and moves are not the point.
-    var stb=Math.max(0,Math.min(3,lives));
+    var stb=Math.max(0,Math.min(3,lives));wonStars=stb;
     $("wonTitle").innerHTML=(stb===3?"Untouched":TR?"Through":"Down")+
       "<div class='bigstars'>"+starGlyphsEls(stb)+"</div>";
-    $("wonSub").textContent=L.name+"  \u00b7  "+
+    /* THE NAME IS NOT ON THIS LINE. The level's title is two lines above
+       the card in the HUD and its number is on the node you came from; the
+       card is here to say how it went, and repeating where you are pushed
+       the score onto a second line on a narrow phone. */
+    $("wonSub").textContent=
       (stb===3?"never hit":(BOSS_LIVES-lives)+" hit"+(BOSS_LIVES-lives===1?"":"s")+
        " taken")+"  \u00b7  "+moveCount+" moves";
-    $("bNext").textContent=last?"PLAY AGAIN":"NEXT LEVEL";
+    $("bNextT").textContent=last?"PLAY AGAIN":"NEXT LEVEL";
     $("bRetry").style.display=stb>=3?"none":"flex";
     /* THE ONE PLACE A FIGHT CAN SAY ANYTHING. A boss has no goal to stand on
        and no room for prose while it is running, so the Census's four
@@ -1541,15 +1638,18 @@ function win(){
     if(L.won)$("wonSub").innerHTML=esc($("wonSub").textContent)+
       "<em class='wonstory'>"+esc(L.won)+"</em>";
   } else {
-    var stw=Math.min(levelPar!==null?starsFor(moveCount,levelPar):3,hintCap());
+    var stw=levelPar!==null?starsFor(moveCount,levelPar):3;wonStars=stw;
     $("wonTitle").innerHTML=(last?"Campaign complete":(stw===3?"Perfect":"Solved"))+
       "<div class='bigstars'>"+starGlyphsEls(stw)+"</div>";
-    var sub=L.name+"  \u00b7  "+moveCount+" moves"+
+    // No level name and no number: see the boss branch above.
+    var sub=moveCount+" moves"+
       (levelPar!==null?(stw===3?" (optimal)":", best possible is "+levelPar):"");
+    // Reported, never charged for: how many you took is worth knowing and is
+    // no longer worth anything.
     if(hintsUsed)sub+="  \u00b7  "+hintsUsed+" hint"+(hintsUsed===1?"":"s")+
-      " (capped at "+hintCap()+")";
+      " taken";
     $("wonSub").textContent=sub;
-    $("bNext").textContent=last?"PLAY AGAIN":"NEXT LEVEL";
+    $("bNextT").textContent=last?"PLAY AGAIN":"NEXT LEVEL";
     $("bRetry").style.display=stw>=3?"none":"flex";
   }
   /* DID THAT LAST STAR FINISH THE SECTION?
@@ -1576,7 +1676,40 @@ function win(){
       sub2.innerHTML=(sub2.children.length?sub2.innerHTML:esc(sub2.textContent))+
         "<em class='wonmast' style='--sec:"+(SECTIONS[sn].col||"#35c2a5")+"'>"+
         esc(SECTIONS[sn].name)+" \u00b7 every star</em>";
+      /* AND THE SECTION PAYS OUT. Granted here rather than swept later so
+         the card can name it: the whole point of a reward you cannot buy is
+         the moment you are told you have it. grantShape() returns null if it
+         was already owned, so replaying a finished section says nothing -
+         and the boot sweep in 21-boot.js has usually already paid an old
+         save by the time it gets here. */
+      var got=typeof rewardShapeFor==="function"
+        ? grantShape((rewardShapeFor(sn)||{}).id) : null;
+      if(got)sub2.innerHTML+="<em class='wonwear' style='--sec:"+
+        (SECTIONS[sn].col||"#35c2a5")+"'>"+esc(got.name)+
+        " unlocked \u00b7 in the wardrobe</em>";
       setTimeout(function(){if(SFX.mastery)SFX.mastery();},520);
+    }
+  }
+  /* AND IF THE NEXT LEVEL IS BEHIND A LOCK, SAY SO HERE.
+
+     There is exactly one place in the campaign this happens: BOSS IV is the
+     level immediately before V · EXTRA, and that shelf is gated on every
+     boss being beaten rather than on the rolling window. Beat this fight
+     with one still standing - skipped, most likely, since the game offers
+     that after three losses - and the shelf does not open. That has to be
+     said on the card the player is reading, naming the fight, or the next
+     thing they see is a map that has silently stopped moving.
+
+     The button goes to the map rather than into the level; see bNext. */
+  if(!fromEditor&&playSource==="builtin"&&!last&&
+     typeof mapLocked==="function"&&mapLocked(lvIndex+1)){
+    $("bNextT").textContent="WHAT'S LEFT";
+    var lockSay=bossesLeftSay();
+    if(lockSay){
+      var sub3=$("wonSub");
+      sub3.innerHTML=(sub3.children.length?sub3.innerHTML:esc(sub3.textContent))+
+        "<em class='wonlock'>"+esc(SECTIONS[mapSecOf(lvIndex+1)].name)+
+        " needs "+esc(lockSay)+"</em>";
     }
   }
   /* The picker only lists the campaign, so offering it after a library level
@@ -1585,6 +1718,17 @@ function win(){
     $("bRetry").style.display="none";$("bLevels").style.display="none";
   } else $("bLevels").style.display="flex";
   setTimeout(function(){$("won").classList.add("on");},380);
+  /* THE STARS FALL, AND EACH ONE IS HEARD LANDING. The CSS drops them off
+     `.won.on` at .06/.20/.34 with a .38s fall, so these three land on the
+     same beats; only the ones actually earned make a sound, which is what
+     makes one star and three stars different events rather than the same
+     animation with different characters in it. Both halves have to move
+     together if either does. */
+  if(wonStars>0)for(var si=0;si<wonStars&&si<3;si++)(function(k){
+    setTimeout(function(){
+      if($("won").classList.contains("on")&&SFX.drop)SFX.drop(k);
+    },380+60+k*140+250);
+  })(si);
   // The stars that are new are the rightmost ones: you had starsBefore, you
   // now have starsAfter, so glyphs [starsBefore, starsAfter) are the ones
   // that just arrived and the only ones that fly. Nothing gained, nothing
@@ -1600,7 +1744,7 @@ function win(){
       var fly=[];
       for(var i=starsBefore;i<starsAfter&&i<all.length;i++)fly.push(all[i]);
       flyStars(fly,base,starsGained);
-    },900);
+    },1250);
   }
 }
 function rotateView(dir){
@@ -1628,141 +1772,136 @@ function resetLevel(){
   player={x:L.start[0],y:L.start[1],z:L.start[2]};
   flat=false;flatTarget=0;flatT=0;view=0;viewAngle=0;viewAngleTarget=0;
   buildGrid();syncHud();
+  // A restart is a fresh attempt, so the trail starts again from where you
+  // are standing - a route you have already abandoned is not orientation.
+  if(typeof trailClear==="function"){trailClear();trailHere();}
   playerMesh.position.set(player.x,player.y,player.z);
 }
-/* HELP THAT ESCALATES, offered every third loss on a clock level.
+/* HELP, OFFERED ON EVERY FIFTH LOSS ON A CLOCK LEVEL, AND IT IS THE SKIP.
 
-   Straight to "skip this" was wrong: it hands over the only two levels in
-   the game with a real-time component the moment they get hard, and a player
-   who is nearly there is told to give up. The order is now the order a
-   person would actually try - MAKE IT SLOWER FIRST, and only offer the way
-   past once slowing has run out.
+   There used to be two rungs: slow the clock down first, and only offer the
+   way past once slowing had run out. The Pace setting has gone - a fight is
+   tuned per fight now, and asking a player to diagnose their own difficulty
+   in a menu was the thing that setting was always standing in for - so the
+   first rung went with it and there is one offer left.
 
-   So on every third loss: if the clock can still be slowed, offer that and
-   point at the exact setting; if it is already at its slowest, offer the
-   skip. A player who was already on SLOW therefore sees the skip on their
-   first offer, which is right - there is nothing else left to try.
+   Every third loss went with it too. Three is right when the first card is
+   cheap advice you can act on and keep playing; it is too eager for a card
+   whose only button is "give up on this one". Five losses is a player who is
+   genuinely stuck rather than one who is still learning the beat.
 
-   Every offer can be declined for good: each card carries DON'T SHOW ME
-   AGAIN, and it silences both kinds. That is a global preference rather than
-   a per-level one: somebody who does not want the game suggesting things
-   does not want it per level. */
-function paceSlower(){
-  for(var i=0;i<PACES.length;i++)
-    if(PACES[i].v<paceScale())return PACES[i];      // PACES runs fast to slow
-  return null;
-}
-/* The opt-out, on every card this function can put up.
-
-   It was on the slow offer only, and only from the second one - the reasoning
-   being that a suggestion you have not seen yet is not one you can be tired
-   of. In practice the two cards are one thing to the player ("the game keeps
-   interrupting me"), and the one they see most is the skip card, which had
-   no way out at all. Every offer carries it now, and it silences all of
-   them: `noSlowOffer` is read at the top of struggleOffer(). Global rather
-   than per level, because somebody who does not want the game suggesting
-   things does not want it on the next boss either. */
+   The opt-out stays and is still global: each card carries DON'T SHOW ME
+   AGAIN, read at the top of struggleOffer() before it has decided anything.
+   `settings.noSlowOffer` keeps its name even though there is nothing slow
+   left to refuse - it is a persisted key, and renaming it would silently
+   un-silence every player who has already pressed it. */
 function bindNever(){
   bind("sgNever",function(){
     settings.noSlowOffer=true;saveSettings();hidePanel();
     flash("no more suggestions");
   });
 }
-/* THE CONTROLS QUESTION, ASKED ONCE, AT THE END OF THE TUTORIAL.
+/* THE CONTROLS QUESTION IS GONE, AND SO IS THE CARD THAT ASKED IT.
 
-   The default tutorial teaches the gestures and takes the bar off while it
-   does - and then handed the buttons straight back the moment it finished,
-   which taught a control set and then covered a fifth of the screen with a
-   different one. The bar off is the default the game wants; what it cannot
-   do is take the buttons away silently, because a player who wants them has
-   no way of knowing they are a setting.
+   The tutorial used to end by taking the bar off and putting up a card
+   offering it back - the reasoning being that the game must not take the
+   buttons away silently. It does not take them away at all now: HIDDEN is
+   simply the default, the layout row in the menu is where it lives, and the
+   lesson teaches whatever that row says. A card explaining a setting the
+   player never had changed under them is a wall between the tutorial and the
+   game, and it was the first of two in a row.
 
-   So the tutorial ends by *doing* it and offering the way back. That is the
-   same shape as struggleOffer(): the thing has already happened, the board
-   is behind the card, and the card is a door rather than a wall. Asked once
-   ever - `settings.ctlAsked` - because a preference asked twice is nagging,
-   and it is in the loadSettings() whitelist or it would be asked on every
-   reload.
+   `settings.ctlAsked` went with it, out of the loadSettings() whitelist as
+   well - a key whose feature is removed comes out of the list with it. */
 
-   It names the keyboard as well, deliberately. On a fine pointer the lesson
-   just given was the button lesson (see defaultTutor()), so somebody on a
-   desktop has to be told what is left when the bar goes - and the honest
-   answer there is the arrow keys, which have always worked. */
-var ctlOfferPending=false;
-function controlsOffer(){
-  ctlOfferPending=false;
-  if(settings.ctlAsked)return;
-  if(!L||levelOver()||panelOpen()||screenUp())return;
-  settings.ctlAsked=true;
-  // Done before the card goes up, not by the buttons on it: the card is
-  // showing the player what has already changed, and KEEP SWIPING has to be
-  // a dismissal rather than an action.
-  settings.ui="none";
-  saveSettings();applyUI();syncHud();
-  offerShell("Controls",
-    "The buttons are off. You have the whole screen, and the three moves are "+
-    "the ones the tutorial just showed you \u2014 <b>swipe</b> to walk, "+
-    "<b>double-tap</b> to go "+VB().n2+" / "+VB().n3+", <b>two-finger swipe</b> "+
-    "to turn.",
-    "<button class='qt' id='ctlNo'>KEEP SWIPING</button>"+
-    "<button class='ad' id='ctlYes'>SHOW THE BUTTONS</button>",
-    "The gestures work either way, and so do the arrow keys. You can change "+
-    "this any time under <b>Menu \u203a Controls</b>.");
-  bind("ctlNo",function(){hidePanel();});
-  bind("ctlYes",function(){
-    settings.ui="full";saveSettings();applyUI();syncHud();hidePanel();
-    flash("buttons on");
-  });
+/* THE BULB IS NO LONGER EXPLAINED BY A CARD, on the owner's call, and this
+   removes the second of the two that used to stand between the tutorial and
+   the game (`settings.ctlAsked` above was the first).
+
+   The argument for it stands and is worth keeping written down: the last
+   tutorial card says where the hand goes, then the game stops talking, and
+   the most useful control on the screen is a bulb nobody has been told
+   about. What it cost was a card in the player's way on the first level they
+   were finally left alone on - which is the level that has to feel like the
+   game starting. The badge on the bulb says how many are in the pool, the
+   refill card below explains the pool the moment it matters, and the last
+   tutorial's win card still ends with "from here on, tap the bulb for a
+   hint". That is three sayings of it that cost nobody a dismissal.
+
+   `settings.hintAsked` went out of the loadSettings() whitelist with it - a
+   key whose feature is removed comes out of the list.
+
+   `freeHint` is deliberately left in place, armed by nothing. It is the seam
+   for "this press is on us": showHint() still honours it and still says
+   `free · this one is on us`, so any future card or reward that wants to
+   hand over a hint is one assignment, exactly as it was here. */
+
+/* THE STARS, EXPLAINED ON THE ONE LEVEL BUILT TO SHOW THEM.
+
+   Testers ignore the star system, and the reason is that nothing ever points
+   at it: a level is beaten or it is not, the three glyphs in the corner move
+   silently, and a player who walks every level and never folds a shortcut is
+   never told they missed anything. So it is said once, in words, on the
+   first level carrying `stars:true` - which is `09 — Four Across`, where par
+   is exactly what walking costs. The player is told to aim for three, gets
+   them for free, and then meets `10 — Five Across`, which looks identical
+   and where walking is one move too many. The card is the setup; the second
+   level is the punchline.
+
+   Deliberately NOT a reward or a gate - it explains a rule that is already
+   running. `settings.starAsked` is in the loadSettings() whitelist beside
+   the other two, or it would be asked on every reload. */
+function starsOfferDue(){
+  return !settings.starAsked&&playSource==="builtin"&&
+         !!L&&!!L.stars&&!L.tutorial;
 }
-/* THE BULB, EXPLAINED ONE LEVEL AFTER THE BUTTONS.
-
-   The tutorial's last card says where the hand goes and then the game stops
-   talking - and the single most useful control in it is a bulb in the corner
-   that nobody has been told about. Hints are the reason a player who is
-   stuck does not close the game, so a hint nobody knows exists is a
-   retention hole rather than a missing nicety.
-
-   It is deliberately the level AFTER the controls card rather than the same
-   one: two full-bleed cards in a row on the first real level is a wall
-   between the tutorial and the game. `settings.ctlAsked` is what sequences
-   them - it is false while the controls card is still pending, so this can
-   only come up once that one has been answered.
-
-   AND THE PRESS IT ASKS FOR IS FREE. A hint costs a star band, and this card
-   tells the player to spend one in order to find out what the button does -
-   so it arms `freeHint` and showHint() skips the accounting exactly once.
-   Charging for a control you demanded they try is the kind of small
-   dishonesty a player remembers. */
-function hintOfferDue(){
-  return !settings.hintAsked&&settings.ctlAsked&&!ctlOfferPending&&
-         playSource==="builtin"&&!!L&&!L.tutorial&&!L.boss&&!L.trial;
-}
-function hintOffer(){
-  if(!hintOfferDue())return;
+function starsOffer(){
+  if(!starsOfferDue())return;
   if(levelOver()||panelOpen()||screenUp())return;
-  settings.hintAsked=true;saveSettings();
-  freeHint=true;
-  offerShell("The bulb",
-    "Stuck on a level? The bulb in the corner shows you the <b>next move</b> "+
-    "\u2014 it is always there, it is unlimited, and nothing in this game is "+
-    "ever a dead end you cannot be shown the way out of.",
-    "<button class='ad' id='hnTry'>SHOW ME</button>"+
-    "<button class='qt' id='hnNo'>GOT IT</button>",
-    "Hints do lower the stars you can score on a level \u2014 but not this one. "+
-    "<b>The next hint you take is free</b>, because we asked you to try it.");
-  bind("hnNo",function(){hidePanel();});
-  bind("hnTry",function(){
-    hidePanel();
-    // The pulse rather than the hint itself: the point is to show them where
-    // the button is and let *them* press it, which is the thing they have to
-    // remember. cue() falls through to the hand or to words if the layout
-    // ever drops the bulb, so this says it whatever is on screen.
-    setTimeout(function(){cue("bHint");},260);
-  });
+  settings.starAsked=true;saveSettings();
+  /* `.go`, not `.ad`. The blue is the ad button's colour and nothing else's -
+     it is the one thing on a card that has to mean "this plays a video", and
+     this button plays nothing. A plain confirm wears the goal's green, like
+     every other confirm in the game. */
+  offerShell("Scoring","Three stars",
+    "Three stars means you found the <b>shortest route</b> \u2014 not that "+
+    "you finished.",
+    "<button class='go' id='stOk'>TRY FOR THREE</button>",
+    "Half again as many moves is two stars, twice as many is one. <b>This one "+
+    "is three moves.</b>","var(--star)");
+  bind("stOk",function(){hidePanel();});
 }
-function offerShell(title,lead,acts,note){
-  showPanel("<h3>"+title+"</h3><div class='mn'>"+lead+"</div>"+
-            "<div class='ma'>"+acts+"</div><div class='mn'>"+note+"</div>");
+/* THE OFFER CARD, AND WHY IT HAS FOUR PARTS RATHER THAN THREE.
+
+   It used to be `<h3>` · lead · buttons · note, and the two flaws were the
+   same flaw twice. The title went through `.panel h3`, which is the 12px
+   dim letter-spaced *label* every panel puts over a list - so the one line
+   naming what the card is about was the quietest thing on it, and the skip
+   card printed the level's own name in it. And the lead and the note were
+   both `.mn`, so the sentence that carries the decision and the footnote
+   under the buttons were the same size in the same grey: a flat card where
+   the eye has nowhere to land.
+
+   Now: a KICKER in the card's own colour saying which of the game's things
+   this is about, a TITLE in the display face at 20px, a LEAD at reading
+   weight in `--fg`, the buttons, and the NOTE below a hairline where a
+   footnote belongs. `tone` is the accent - gold for the two that are about
+   the bulb and the stars, the boss's violet or the trial's amber for the
+   skip - so the card is recognisable before it is read, in the colour that
+   thing already wears everywhere else in the game.
+
+   The shell also carries the scrim (see `.panel.offer` in 85-map.css): an
+   offer is a decision, and a decision wants the board behind it turned
+   down. Every other panel is unaffected, because the class is what carries
+   it and only this function sets it. */
+function offerShell(kick,title,lead,acts,note,tone){
+  // An empty note draws no rule: a card with two lines in it should be two
+  // lines tall, not two lines and a hairline under nothing.
+  showPanel("<div class='okick'>"+kick+"</div><h3>"+title+"</h3>"+
+            "<div class='olead'>"+lead+"</div>"+
+            "<div class='ma'>"+acts+"</div>"+
+            (note?"<div class='mn'>"+note+"</div>":""),"offer");
+  $("panel").style.setProperty("--ok",tone||"var(--goal)");
 }
 function struggleOffer(){
   if(!L||levelOver()||panelOpen()||screenUp())return;
@@ -1784,43 +1923,40 @@ function struggleOffer(){
   if(settings.noSlowOffer)return;
   var kind=B?"BOSS":"TRIAL";
   var beat=(fails[levelKey]||STRUGGLE_OFFER)+" times";
-  var slower=paceSlower();
 
-  if(slower){
-    settings.slowOffers=(settings.slowOffers||0)+1;
-    saveSettings();
-    offerShell(esc(L.name),
-      "This one has beaten you "+beat+". A "+kind.toLowerCase()+" is the only "+
-      "kind of level that does not wait for you \u2014 you can slow its clock "+
-      "down, and it costs you nothing.",
-      "<button class='ad' id='sgSlow'>SLOW THE CLOCK \u00b7 "+slower.label+
-        " ("+slower.pct+"%)</button>"+
-      "<button class='qt' id='sgNo'>KEEP TRYING</button>"+
-      "<button class='qt' id='sgNever'>DON'T SHOW ME AGAIN</button>",
-      "It slows every part of the fight together, so it keeps its shape. "+
-      "<b>No stars are lost.</b> You can change it any time under "+
-      "<b>Menu \u203a Real time \u203a Pace</b>.");
-    bind("sgNo",function(){hidePanel();});
-    bindNever();
-    bind("sgSlow",function(){
-      settings.pace=slower.v;saveSettings();hidePanel();
-      flash("clocks at "+slower.pct+"%");
-    });
-    return;
-  }
-
-  /* Nothing left to slow, so this is the way past. It reaches grantSkip()
-     and nothing else, which is what keeps the rule the map keeps: ADS BUY
-     PROGRESS, NEVER SCORE. A skip is not in `progress`, so it awards no
-     stars by construction and the level stays on the map, still playable. */
-  offerShell(esc(L.name),
-    "This one has beaten you "+beat+", and the clock is already as slow as it "+
-    "goes. You can go past it and come back whenever you like.",
-    "<button class='ad' id='sgAd'>SKIP THIS "+kind+" \u00b7 WATCH 3 ADS</button>"+
+  /* The one offer. It reaches grantSkip() and nothing else, which is what
+     keeps the rule the map keeps: ADS BUY PROGRESS, NEVER SCORE. A skip is
+     not in `progress`, so it awards no stars by construction and the level
+     stays on the map, still playable. */
+  /* ONE AD, NOT THREE (owner's call). Three was priced against the section
+     unlock on the map, which opens a whole shelf and is still three. This
+     opens one level you have already lost at repeatedly, and it is offered
+     at the exact moment somebody is deciding whether to keep playing at all
+     - a price that reads as a wall there is a price that closes the game
+     instead of collecting anything. */
+  offerShell(kind+" \u00b7 STUCK",esc(L.name),
+    "This one has beaten you "+beat+". You can come back to it whenever you "+
+    "like.",
+    /* The owner's own wording, off the pop-ups sheet. "1 AD" rather than "AN
+       AD" because the number is the thing that changed and a numeral says it
+       at a glance; the label keeps naming the fight because that is what was
+       asked for. It is long enough to wrap on a narrow phone at the ad
+       button's ordinary tracking, so `.panel.offer .ma .ad` tightens its type
+       instead of the label losing words - see css/85-map.css. */
+    /* NO LIMITS SKIPS WITHOUT THE VIDEO. Same button, same call, same rule
+       underneath - a skip still awards no stars - but the price line comes
+       off and with it the ad screen, because the blue and the screen mean
+       "this plays a video" and this one no longer does. */
+    (noLimits()
+      ? "<button class='go' id='sgAd'>SKIP THIS "+kind+"</button>"
+      : "<button class='ad' id='sgAd'>"+adIcon()+"SKIP THIS "+kind+
+        " \u00b7 WATCH 1 AD</button>")+
     "<button class='qt' id='sgNo'>KEEP TRYING</button>"+
     "<button class='qt' id='sgNever'>DON'T SHOW ME AGAIN</button>",
-    "A skip awards <b>no stars</b> and leaves the level on the map, still "+
-    "playable. Ads buy progress, never score.");
+    // The rule holds either way; what changes is what bought the skip.
+    noLimits()?"A skip awards <b>no stars</b>. Nothing sold in this game does."
+             :"A skip awards <b>no stars</b>. Ads buy progress, never score.",
+    B?"var(--vio)":"var(--amb)");
   bind("sgNo",function(){hidePanel();});
   bindNever();
   /* Not gated on an ad here, for the same reason grantSkip() is not: there
@@ -1847,8 +1983,11 @@ function loadLevel(level,idx){
      changing sky and weather every frame would be paying for a lookup that
      changes about once every ten levels. A level with no section - the
      editor, the library, a composed level - gets the default sky. */
+  /* A custom level brings its own ground (levelTheme reads the section index
+     the editor stored on it); the campaign's comes from where the level sits
+     in it; anything else is the default night. */
   if(typeof applyTheme==="function")
-    applyTheme(playSource==="builtin"?themeForLevel(lvIndex):null);
+    applyTheme(playSource==="builtin"?themeForLevel(lvIndex):levelTheme(L));
   $("lvName").textContent=L.name;
   $("lvHint").textContent=L.hint;
   $("won").classList.remove("on");
@@ -1869,11 +2008,14 @@ function loadLevel(level,idx){
   var pst=(L.tutorial||L.boss||L.trial)?{ok:false}:statsCached(L);
   levelPar=pst.ok?pst.moves:null;
   syncMeshes();buildGrid();syncHud();
+  /* Cleared before the first mark rather than after, because syncMeshes()
+     above has already rebuilt the world and trailSync() would otherwise put
+     the previous level's marks back on any cell the two share. */
+  if(typeof trailClear==="function"){trailClear();trailHere();}
   center.copy(centerT);viewSize=viewSizeT;onResize();
   playerMesh.position.set(player.x,player.y,player.z);
   // The board first, the card a beat later - the same order the struggle
   // offer uses, and for the same reason: it is a door standing in front of
   // something, so the something has to be there.
-  if(ctlOfferPending)setTimeout(controlsOffer,520);
-  else if(hintOfferDue())setTimeout(hintOffer,520);
+  if(starsOfferDue())setTimeout(starsOffer,520);
 }

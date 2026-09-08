@@ -779,6 +779,108 @@ rotation had opposite signs in this camera, and adding them looked like extra
 sensitivity while actually being subtraction. A single worked example on paper
 would have caught it before any of it shipped.
 
+## The shelf that would not open, and the back door into it
+
+Reported from a playtest by the owner's mother: she finished section IV, the
+Extra shelf stayed locked, and when she got into it anyway the levels she
+solved there opened nothing — "progression stopped". Three separate faults,
+and only the first one is the interesting one.
+
+**The gate was right and unreadable.** `sectionsUnlocked()` asks whether every
+boss is in `progress`, and a *skipped* boss is deliberately not in `progress`
+— that is the rule that stops an ad buying the reward for beating the game.
+But `struggleOffer()` offers the skip itself after three losses on a
+landmark, so the game hands out the state that seals the shelf and then never
+mentions it again: the tab drew a padlock and the sheet said "this shelf
+opens when every boss is down", which is true, unfalsifiable from the
+player's chair, and describes a save they cannot inspect. The fix is not to
+loosen the gate — it is to make it name itself. `bossesLeft()` is the
+primitive now and the gate is derived from it, so the section card, the
+locked sheet and the win card on `BOSS IV` all say *which* fight is standing,
+and each of them offers a tap that goes there.
+
+**Two back doors walked straight through it.** `NEXT LEVEL` goes to
+`lvIndex+1` unconditionally, and `BOSS IV` is the level immediately before the
+shelf — so beating that fight handed you the first level of a section the map
+was refusing to open. `mapHere()` had the same hole from the other end: the
+first level you have not dealt with is that same shelf level, so the home
+screen's `CONTINUE` pointed into it too. Both now stop at the lock, and
+`mapHere()` answers with the fight instead, because that is where the player
+actually is.
+
+**And inside a locked section the rolling window does not apply at all** —
+`mapLocked()` short-circuits on `s.locked` before it ever looks at
+`mapReach()`. That is correct for a shelf nobody should be in, and it is
+exactly why the back doors were bad: once through one, every level you solved
+unlocked only itself. Closing the doors is the whole fix; the short-circuit
+stays.
+
+The lesson is the one this file keeps re-learning in different costumes: **a
+gate the player cannot see the far side of has to say what is holding it.**
+The rule was never wrong. It was silent, and silent read as broken.
+
+## Hints: three currencies, and the one that was wrong
+
+Hints have been metered three ways. The first was the obvious one and was
+rejected before it shipped: **an energy timer** — a fixed stock of attempts
+that refills on a clock. It was turned down for a reason that has not changed,
+which is that a timer standing between a player and *the level* teaches them
+to close the app, and a free puzzle game cannot afford to teach that.
+
+What shipped instead was **a star cap**: nought hints kept three stars, one or
+two dropped you to two, three or four to one, five or more to none, with
+`win()` writing an inflated "effective" move count so a hint could not be
+laundered into currency. Mechanically it was clean and the laundering hole was
+genuinely closed. It was still the wrong currency, and the owner called it:
+the bulb is what somebody reaches for at the exact moment they are stuck,
+which is the moment the game most wants them to carry on — and marking them
+down for it turns "I don't want to be stuck" into "I don't want to be marked
+down". The bulb then goes unused by the only person it exists for, and the
+star economy quietly becomes a tax on being new.
+
+The third is **a pool**: three hints, one back every half hour, an ad refills
+to a higher ceiling. It looks like the energy timer that was rejected and it
+is not the same object, and the difference is the whole point — **the pool
+gates a hint, never a level.** Nothing is ever unplayable, no clock ever has
+to be waited out to make progress, and the thing being sold is help rather
+than access. It also charges in a currency the game can afford to take: time
+is not score, so `starsEarned()` is now decided by the route walked and
+nothing else.
+
+Two details that were got right on the first pass because they are the ones
+that make a pool feel mean when they are got wrong. The regeneration clock
+advances by whole half hours rather than resetting to now, so closing the game
+twenty-nine minutes in does not throw those minutes away; and it starts when
+the pool first drops below full rather than when it empties, so the first hint
+you spend is already earning the next. And there are two ceilings, three for
+the free refill and nine for an ad, because an ad taken with two in hand that
+handed back one is the arithmetic that makes somebody feel cheated by a thing
+they chose to watch.
+
+## The Pace setting, and what a difficulty menu is standing in for
+
+`Menu > Real time > Pace` let a player run every clock in the game at 100%,
+75% or 50%. It was one multiplication on `dt`, which is the right way to build
+it — every window in a fight is derived from the clock, so scaling the clock
+keeps every ratio — and it was free, on the grounds that a slower clock hands
+you nothing you did not already have to work out.
+
+It went anyway, on the owner's call, and the reason was written under it the
+whole time: **a menu row asking a player to diagnose their own difficulty is
+standing in for a fight that is not tuned.** The row existed because the first
+boss was too fast; the answer to that is a first boss that is slow enough to
+think in, which is what the per-fight ramp is now for. Keeping both meant the
+ramp never had to be right.
+
+Two things were kept rather than deleted. `paceScale()` still multiplies `dt`
+in both fight loops, because that one multiplication is the seam the whole
+setting would come back through. And `pace` was removed from
+`loadSettings()`'s whitelist — deliberately, because a save written while
+somebody was on SLOW would otherwise pin every clock in the game at half speed
+with no row left to change it. That is the whitelist trap running the other
+way: usually a key that is written and not read is silently forgotten; here a
+key that is read and no longer writable is silently permanent.
+
 ## Smaller things, settled
 
 - **The verb's name.** `GO 2D / GO 3D` was auditioned against `FOLD /
@@ -883,3 +985,109 @@ would have caught it before any of it shipped.
   oscillators wired straight to the destination, the ceiling is set by the
   loudest possible moment and everything quieter has to live far beneath it.
   A limiter on the master bus is what made loudness a free parameter.
+
+## The memory file ate the budget it was meant to save
+
+`CLAUDE.md` grew to 244KB — about sixty thousand tokens, loaded into every
+session before a word of the request was read. It was doing two jobs: the
+one-line invariants a session needs to avoid breaking something, and the
+paragraph of reasoning behind each, which a session needs only when it is
+about to reverse that decision. The second job had swallowed the first, and
+a request to move a button was paying for the history of the boss fight.
+Reported by the owner as UI changes costing far more usage than they should.
+
+Three things changed, none of them to the game:
+
+- **The reasoning moved to `docs/design/*.md`, verbatim**, one file per
+  subject, and `CLAUDE.md` came down to 19KB of invariants plus a table
+  saying which doc to open for which change. Nothing was cut; it was
+  filed. The rule going forward is one line here, the paragraph there.
+- **`css/style.css` (103KB) became fourteen files, one per screen**, cut
+  at existing section boundaries and linked in the same order, so the
+  cascade is byte-for-byte what it was — checked by concatenating them
+  back and diffing. A change to the map now reads 25KB, not 103.
+- **`tools/shot.js` photographs any screen headless**, seeding a save and
+  calling the game's own functions. A UI change made blind was being made
+  twice — once to write it and once to fix what it looked like — and the
+  second pass was the one that cost. `docs/UI.md` maps every screen to its
+  file and its builder so the first pass reads one file.
+
+## The home screen's browse strip, and the map's tab strip
+
+Both were the same mistake, made twice: a control put on a screen so the
+player would not have to leave it, on a screen that had a better door
+already.
+
+**The browse strip** was two scrolling rows under the plinth, SHAPE and
+COLOUR, one 34px tile per item. It began as three locked tiles with prices
+and no behaviour — a drawing, with the WARDROBE button under it as the way
+in — and that was wrong the first time anybody used it: a thing shaped like
+a tile invites a press, and a press that answers nothing is worse than
+showing no tiles. So every tile went live: owned equipped straight away,
+locked opened the wardrobe already showing that item with its BUY under it,
+and nothing on the screen could spend a star. That version worked. It was
+still removed, on the owner's call, because the screen it was on is a title
+screen, and the wardrobe does the same job with room to do it properly.
+What replaced it is one button wearing the HUD's own hanger and violet, so
+the two ways into the wardrobe are recognisably one door.
+
+**The tab strip** was a scrolling row of section chips at the top of the
+map. Pressing one rebuilt the trail, the section card, the ambient canvas
+and the weather in place, against a panel that was already open — which is
+where "the section came up half-drawn" came from. It is now a screen of its
+own (`sectionPicker()`), which fixes the bug by construction: a map is
+built once per visit, on a section that cannot change under it.
+
+Fixed in passing, because the new way back lives in the map's header:
+`mapFocus()` used `scrollIntoView({block:"center"})`, which scrolls *every*
+scrollable ancestor. The panel is one of them, so centring a node halfway
+down a trail slid the map's own header off the top of the screen. Visible in
+every map screenshot the project has ever taken. It scrolls `#mBody` by
+measured offset now, and nothing else.
+
+## The Pup was rebuilt, and put back
+
+The voxel Pup was reported as not reading as a puppy, and it does not: a long
+body, a head held high on a thin neck, two upright ears and four long legs is
+the silhouette of a fawn. It was rebuilt to the four things that separate a
+dog from a deer - a muzzle out and low, ears hanging beside the head, short
+legs under a deep body, a raised tail - and the rebuild is correct about all
+four.
+
+The owner played both and kept the original: it is cuter, and cute is the
+whole job of a thing you buy for 30 stars to look at. **Read as** and **liked**
+are different tests and the second one wins here.
+
+What was actually wrong was the *icon*, which is a different object on a
+different screen: the wardrobe tile picked the Pup with `◐`, a half-filled
+circle from a geometric alphabet that says nothing about a dog. That is now a
+drawn path, like every other icon in the game, and it stayed when the model
+went back. Worth remembering the next time "the X doesn't read as an X" comes
+in: ask which X - the thing or the button that chooses it.
+
+## A stray `*/` ate the boss and the trial
+
+Reported as "trial and bosses look in section got bugged". They had gone
+black: a filled hexagon with a violet rim and no ring, an amber diamond with
+no fill and no clock.
+
+The cause was fourteen lines of prose at the top of `css/85-map.css`. The
+file's header comment closed on line 4, then the long "THE MAP — the level
+picker as a path" essay ran on as *code* until its own `*/` on line 18. A CSS
+parser handles that by treating everything from the error to the next `{...}`
+as one bogus selector and dropping the block behind it — and the block behind
+it was `:root{--vio;--vio-lip;--amb;--amb-lip}`, the whole token set the two
+landmarks are drawn from.
+
+That is why the symptom looked like a rendering bug rather than a missing
+variable: `fill:var(--vio)` with `--vio` undefined computes to the initial
+value, which is **black**, and `stroke:var(--amb)` computes to **none**, so
+every ring vanished while every hardcoded literal in the same rule (`#c6a4ff`,
+`#f0bd6c`) kept painting. One invalid custom property does not warn, does not
+fail loudly, and takes out only the declarations that name it.
+
+The fix was deleting two characters. The lesson is cheaper than the search
+was: **a comment edit in a stylesheet can delete the rule after it**, and
+nothing in the browser will say so. Checking that every `/*` in `css/` has
+exactly one `*/` is a three-line script and now worth running whenever a
+whole family of things loses its colour at once.

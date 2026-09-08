@@ -109,12 +109,34 @@ var CUE_GEST={
   bFlat:{k:"dbl"},
   bRotR:{k:"two",d:"left"},     bRotL:{k:"two",d:"right"}
 };
+/* WHAT THE HAND IS DOING, IN TWO WORDS, DRAWN BESIDE IT.
+
+   The demonstration alone is not always readable: the double tap is a finger
+   that lifts and comes back, and lifting is drawn as movement away from the
+   glass - so it was reported as looking like a swipe up. A picture that can
+   be read two ways needs a name on it, and the name has to be where the eye
+   already is, which is the middle of the screen where the hand is, not the
+   coach line at the foot of it.
+
+   Named by what the player GETS, not by what the fingers do: `bRotR` is
+   "rotate right" even though it is demonstrated as a leftward two-finger
+   slide. The direction of the fingers is what the drawing is for; the name
+   is for the outcome. */
+var GEST_SAY={
+  bRight:"swipe right", bLeft:"swipe left",
+  bUp:"swipe up",       bDown:"swipe down",
+  bFlat:"double touch",
+  bRotR:"rotate right", bRotL:"rotate left"
+};
 /* Gesture mode is a setting and a device default. It governs the *lesson*
    only - which controls the three teaching levels teach - and not whether
    the hand can appear at all: a hint on a HIDDEN layout uses it whatever
    this says, because there the alternative is a pulse on nothing. */
 function tutGestures(){
-  return settings.tutor==="gesture";
+  // Derived, not chosen: the lesson teaches whatever controls this player
+  // actually has. HIDDEN means the gestures are all there is, so that is the
+  // lesson; a bar on screen means the buttons are.
+  return settings.ui==="none";
 }
 function tutGestureLesson(){
   return app==="play" && !!L && !!L.tut && tutGestures();
@@ -186,6 +208,8 @@ function ghostTo(id,held){
     el.className="ghost";
     return false;
   }
+  var say=$("ghostSay");
+  if(say)say.textContent=GEST_SAY[id]||"";
   var cls="ghost on "+(held?"held":"once")+" g-"+g.k;
   if(g.k==="swipe"||g.k==="two"){
     var sp=GHOST_SPAN[g.d];
@@ -329,6 +353,14 @@ var TUT_AGAIN_MS=2600;   // after the player has used the right control once
    owed an explanation, and that is exactly what the dim says. */
 function tutBlocks(id){
   if(app!=="play")return false;
+  /* NOT IN GESTURE MODE. The dim and the gate are one mechanism - the dim is
+     what explains the gate - and neither is needed once the lesson is a hand
+     in the middle of the screen: it is unmissable where a green button on a
+     strip at the bottom was not. Blocking without the dim would be worse
+     than either, because a swipe that silently does nothing is the exact
+     thing the dim exists to explain. So both go together, and the button
+     lesson keeps both. */
+  if(tutGestureLesson())return false;
   if(tutLock!==null)return tutLock!==id;
   var g=tutGuide();
   if(!g||!g.hold||!g.cue||id===g.cue)return false;
@@ -531,6 +563,16 @@ function tutGuide(){
             (TUT_MOVE_SAY[mv]||step.say),cue:btn,lock:step.lock,
             card:null,show:extra.show,hold:false};
   }
+  /* AND SOME LESSONS STOP RATHER THAN HANDING OVER TO THE SOLVER.
+
+     Falling through to the solver's own next move is right for a level whose
+     job is to get a first-time player to the goal - it is the third case the
+     coach was built for. It is wrong for a level whose job is to hand the
+     player a verb and then get out of the way: once `05` has shown that the
+     turn exists, the rest of it is the first puzzle they own, and a coach
+     still naming every move takes that away. `tutFree:true` says the steps
+     are the whole lesson. */
+  if(L.tutFree)return null;
   if(!btn)return null;                       // finished, or nothing to suggest
   return {idx:-1,say:TUT_MOVE_SAY[mv],cue:btn,lock:undefined,
           card:null,show:null,hold:false};
@@ -743,6 +785,7 @@ function tutCueTo(id){
    incapable of. Derived, it re-heals instead. */
 function tutEngage(){
   if(tutLock!==null)return;
+  if(tutGestureLesson())return;      // see tutBlocks: the hand is the guide
   var g=tutGuide(); if(!g)return;
   if(g.lock===false||!g.cue)return;
   tutCueTo(g.cue);
@@ -767,6 +810,14 @@ function tutUnlock(){ tutRelease(); tutCueTo(null); tutGhost(null); }
 
 function showHint(){
   if(app!=="play"||dying||levelOver())return;
+  /* AN EMPTY POOL IS A DOOR, NOT A DEAD BUTTON. Asked before the solver runs
+     and before the tutorial branch below, because a bulb that answers nothing
+     is the one thing this whole arrangement must not produce - the card says
+     what happened, when the next one arrives on its own, and offers the ad
+     that refills it now. A tutorial hint is free (there is a coach line to
+     re-point at, not an answer to hand over) and so is the one the game
+     asked for; both go through the same escape hatch below. */
+  if(!(L&&L.tut)&&!freeHint&&hintsLeft()<=0){hintRefillOffer();return;}
   if(L&&L.tut){
     var ti=tutStep();
     if(ti>=0){
@@ -790,16 +841,19 @@ function showHint(){
            "\u2192":"bRight","\u2190":"bLeft","\u2191":"bUp","\u2193":"bDown"};
   var say=cue(map[m]||"bFlat");
   /* The one the game asked for is on the game. See hintOffer(): the card
-     that explains the bulb tells the player to press it, and charging a star
-     for doing as you are told is the trap that whole card exists to avoid. */
+     that explains the bulb tells the player to press it, and charging them
+     for doing as they are told is the trap that whole card exists to avoid. */
   var free=freeHint;
-  if(free)freeHint=false; else hintsUsed++;
+  if(free)freeHint=false; else {hintsUsed++;spendHint();}
   SFX.hint();
   syncHud();
-  var cap=hintCap();
+  var left=hintsLeft();
+  /* What it cost, in the currency it actually costs now. Stars are not in
+     this sentence any more and must not come back into it: the pool is the
+     whole price of a hint. */
   var note=free?"free \u00b7 this one is on us"
-          :cap===0?"hints used \u00b7 no stars this level"
-                  :"hint "+hintsUsed+" \u00b7 max "+cap+" star"+(cap===1?"":"s");
+          :left===0?"last one \u00b7 another in "+hintWaitSay()
+                   :left+" hint"+(left===1?"":"s")+" left";
   /* With the bar hidden there is no button to pulse, so the move itself is
      the message and the accounting is a footnote to it. Both used to be one
      run-on line in the toast, which wrapped into "go right - hint 4," /

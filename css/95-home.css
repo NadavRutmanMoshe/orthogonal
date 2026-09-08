@@ -1,0 +1,196 @@
+/* Orthogonal — css/95-home.css
+   The home screen: plinth, CONTINUE, the shop strip.
+   Loaded in the order listed in index.html; see docs/UI.md for the map of
+   screens to files. */
+/* ============================================================
+   THE HOME SCREEN — where the game starts from
+
+   z-index 11 puts it over the world, the HUD and the bar, and *under* the
+   panels (12), which is the whole arrangement: the map and the wardrobe open
+   over the home screen the same way they open over a level, and closing one
+   puts you back here rather than dropping you into a level you never chose.
+   The win card (20) and the sting (60) still cover it.
+
+   The stand is the wardrobe's display case, not a copy of it - homeCase()
+   hands this canvas to previewStart(). One consequence is load-bearing and
+   lives in hidePanel(): that case is a singleton, so opening a panel over
+   the home screen tears the stand down and it has to be put back on the way
+   out.
+
+   The canvas has no visible edge because previewShow paints its scene with
+   the equipped world's void colour, and applyPalette sets the CSS --void
+   from the same world. The character simply stands there.
+   ============================================================ */
+/* THE HOME SCREEN HAS ITS OWN GROUND, and it is not the world's.
+
+   It used to paint `var(--void)`, which is the 3D sky of whatever section
+   you were last standing in - rewritten per level by applyTheme(). Come home
+   from the desert and the title screen was brown; come home from hell and it
+   was red. Reported exactly that way, with a screenshot. Home is one place
+   and it should look like one place, so these are literals: a cool indigo
+   with a lift behind the wordmark and a vignette at the corners.
+
+   IT ALSO PINS THE TEXT TOKENS. `body.flat` swaps --fg and friends to
+   dark-on-light for the 2D ground, and it is still set if you open the menu
+   mid-fold and press HOME - which left dark text on this dark ground. The
+   home screen is never the plane, so it declares the dark-theme values here
+   and the swap cannot reach it. --player and --sec still come through, which
+   is what the plinth and CONTINUE need. */
+.home{position:fixed;inset:0;z-index:11;display:none;
+  flex-direction:column;align-items:center;justify-content:center;
+  --fg:#c3cde4; --fg-dim:#6d7c9c; --rule:rgba(195,205,228,.22);
+  --panel:rgba(15,20,36,.82);
+  color:var(--fg);
+  background:
+    radial-gradient(126% 62% at 50% -6%,#1d2745,transparent 68%),
+    radial-gradient(90% 70% at 50% 118%,#141a30,transparent 70%),
+    #080b16;
+  padding:22px 16px;overflow:auto;touch-action:pan-y}
+.home.on{display:flex}
+.hwrap{width:100%;max-width:340px;display:flex;flex-direction:column;
+  align-items:center}
+.htitle{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;
+  font-size:27px;letter-spacing:-.03em;color:var(--fg);line-height:1}
+.hsub{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
+  letter-spacing:.28em;text-transform:uppercase;color:var(--fg-dim);
+  margin-top:7px}
+/* The plinth is the wardrobe's case, same renderer, same frame - `.wglass`
+   and `.wfloor` are in css/40-panels.css, which loads before this one. */
+.hstand{width:196px;height:196px;margin:0}
+.hstand canvas{width:100%;height:100%;display:block}
+.hstars{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--fg-dim)}
+.hstars b{color:var(--star);font-weight:600;font-size:12px}
+.hstars i{font-style:normal;color:var(--star);margin:0 4px 0 1px}
+
+.hbtns{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.home button{width:100%;height:44px;font-size:12.5px;letter-spacing:.14em}
+/* EVERY ICON ON THIS SCREEN SITS IN ONE COLUMN.
+
+   Each button used to centre its own icon-and-label pair, so the icons
+   landed wherever the label happened to leave them - five buttons, five
+   different x positions, which is what the owner saw. The fix is to stop
+   letting the label move the icon: the button is a positioning context, the
+   icon is pinned 18px from its left edge, and the label stays centred on the
+   button as if the icon were not there.
+
+   That is also why the labels keep their own centring rather than being
+   left-aligned after the icon: a column of centred words with a column of
+   icons beside it reads as a menu; a column of left-aligned rows reads as a
+   list, and this is the title screen. */
+.home button{position:relative}
+.home button svg{position:absolute;left:18px;top:50%;
+  transform:translateY(-50%);
+  width:19px;height:19px;flex:none;fill:currentColor;stroke:none}
+/* The one thing this screen is for, so it gets the raised treatment the
+   panels' primary button already has - and its own second line, because
+   "CONTINUE" alone does not say what you are continuing. */
+/* CONTINUE WEARS THE COLOUR OF WHERE IT IS SENDING YOU. `--sec` is written
+   by homeSync() from the section the target level is in, so the button is
+   the same hue as that section's tab, trail and nodes on the map - which
+   makes the first thing on the screen and the place it leads read as one
+   thing rather than as a green button and, one tap later, a red section.
+   It falls back to the goal green, which is what it always was, so a level
+   with no section (the editor, the library) changes nothing.
+
+   The lip and the ground are mixed from that one value rather than authored
+   beside it - the same reasoning the map's nodes use, and what keeps a pale
+   section and a dark one both legible without hand-picking three values. */
+/* A ROW NOW, not a column: the emblem sits left of the two lines, which are
+   still stacked. The pair is centred as one object. */
+/* The emblem is in the same 18px column as every other icon, so CONTINUE's
+   two stacked lines stay centred on the button rather than being pushed off
+   by the picture beside them. */
+.hcont{flex-direction:row;gap:0;height:56px;--sec:var(--goal);
+  border-color:var(--sec);color:var(--sec);font-weight:600;
+  background:color-mix(in srgb,var(--sec) 11%,transparent);
+  box-shadow:0 4px 0 color-mix(in srgb,var(--sec) 46%,#04070d);
+  transition:transform .12s ease,box-shadow .12s ease}
+.hcont:active{transform:translateY(3px);
+  box-shadow:0 1px 0 color-mix(in srgb,var(--sec) 46%,#04070d)}
+.hct{display:flex;flex-direction:column;gap:2px;align-items:center;
+  min-width:0}
+.hci{position:absolute;left:17px;top:50%;transform:translateY(-50%);
+  display:flex;align-items:center}
+/* The emblem is an <svg>, so the absolute rule above would place it a second
+   time - inside .hci, which is itself absolute - and CONTINUE's icon landed
+   18px right of everybody else's. It is already where it needs to be. */
+.hci .secem{position:static;transform:none;width:22px;height:22px}
+.hcont b{font-size:12px;letter-spacing:.16em;font-weight:600}
+.hcont i{font-style:normal;font-size:10.5px;letter-spacing:.08em;
+  color:var(--fg-dim);text-transform:none}
+.hcont i:empty{display:none}
+
+/* THE WARDROBE DOOR, and nothing else under the plinth.
+
+   Two scrolling rows of shape and colour tiles used to live here, live, so
+   the character could be changed without opening anything. They are gone on
+   the owner's call - a title screen with a browse widget bolted under it is
+   a shop with a title on top, and the wardrobe already does that job with
+   room to do it properly. What is left is one button, and it is worth saying
+   what it now is:
+
+   IT IS THE HUD'S WARDROBE BUTTON, UNROLLED. Same hanger, same violet, same
+   lit cap - fill, rim, glyph and lip all mixed from one `--c`, exactly as
+   `button.rnd` does it. Two doors to one room should not be two designs, and
+   the violet is already what the wardrobe means everywhere else in the game
+   (the corner button, the map's landmarks). The only difference is the
+   shape: a pill with a word in it rather than a circle, because here there
+   is room for the word and no row of circles to be told apart from. */
+.hshop{width:100%;margin-top:14px;padding-top:12px;
+  border-top:1px solid var(--rule);
+  display:flex;flex-direction:column;align-items:stretch;gap:8px}
+.home button.hward{--c:#a274ff;display:flex;align-items:center;
+  justify-content:center;gap:9px;height:46px;color:var(--c);
+  border:1.5px solid color-mix(in srgb,var(--c) 46%,transparent);
+  --lip:color-mix(in srgb,var(--c) 34%,#04070d);
+  background:
+    radial-gradient(120% 130% at 50% -22%,
+      color-mix(in srgb,var(--c) 26%,transparent), transparent 72%),
+    var(--panel);
+  box-shadow:0 3px 0 var(--lip),
+    0 0 18px color-mix(in srgb,var(--c) 15%,transparent);
+  transition:transform .12s ease,box-shadow .12s ease}
+.home button.hward:active{transform:translateY(3px);
+  box-shadow:0 0 0 var(--lip)}
+.hward svg{width:21px;height:21px}
+.hward span{letter-spacing:.16em;font-weight:600}
+/* MY LEVELS is the same cap in the editor's own blue - the hue the editor
+   bar, the verify chip and every "second chance" button in the panels
+   already wear - so it reads as a sibling of WARDROBE rather than a second
+   wardrobe. */
+.home button.hward.hmine{--c:#6fa8ff;height:42px}
+.hmine svg{width:19px;height:19px}
+/* LEVELS GETS A HUE OF ITS OWN. It was the only button in the column still
+   wearing the default grey, which on a screen where CONTINUE, WARDROBE and
+   MY LEVELS are all lit made it read as the disabled one.
+
+   Cyan, and it is the last unclaimed colour on this screen: violet is the
+   wardrobe's everywhere in the game, #6fa8ff is the editor's and the panels'
+   "second chance" blue, gold is a star and teal is `--goal`, which means "do
+   this" and must not be spent on a navigation button. */
+.home button.hward.hlevels{--c:#4ec8e0;height:44px}
+.hlevels svg{width:18px;height:18px}
+
+.home .tiny{width:auto;height:30px;padding:0 16px;margin-top:14px;
+  font-size:11px;border-color:var(--rule);color:var(--fg-dim)}
+/* SETTINGS is the one button that hugs its label rather than filling the
+   width, so it keeps its icon inline - there is no column for it to join. */
+.home .tiny svg{position:static;transform:none;width:15px;height:15px;
+  margin-right:7px}
+
+/* Play chrome has nothing to do while the home screen is up, and the star
+   total is shown inside it instead - two counts of the same number, one of
+   them floating over a title screen, is one too many.
+
+   THE BODY CLASS IS `athome`, NOT `home`, AND IT HAS TO BE. `.home` is the
+   overlay's own class, and a bare `.home` selector matches any element
+   carrying it - including `<body class="home">`. The body inherited
+   `position:fixed; display:none` from the rule above and the entire document
+   measured 0x0, with getComputedStyle still cheerfully reporting `flex` on
+   the overlay because a computed display survives an ancestor being hidden.
+   This is the same collision as `.mboss`/`.boss` on the map and `history` /
+   `window.history` in the layout notes: check a new class name against the
+   ones already in this file. */
+body.athome .hud,body.athome .bar,body.athome .coach,body.athome .boss,
+body.athome .startotal{display:none}

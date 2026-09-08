@@ -1,0 +1,99 @@
+/* Orthogonal — css/75-bossbar.css
+   The lives/cores bar on a clock level, the running star total, the flying star.
+   Loaded in the order listed in index.html; see docs/UI.md for the map of
+   screens to files. */
+
+  /* Lives and cores, only on a clock level. Under the level text rather than
+     up in the corner gap, and split to the two sides of the screen.
+
+     The old row was one centred stack: your hearts on top, the opposition's
+     row directly beneath them, both in the same 50px of screen. It read as
+     one meter with two halves, and the half you cared about mid-move was the
+     top one - which is exactly the reading the owner reported. Sides are the
+     cheapest way to say "these belong to different people": yours on the
+     left, above your own piece, the thing hunting you on the right.
+
+     That also retires the padding lane. The bar used to be squeezed between
+     the two corner clusters (152px / 105px) because it lived at top:16px in
+     the same band as the buttons and the star total, and on a 327px phone the
+     total grew leftwards over the last core. Below the text there is nothing
+     to collide with, so the row gets the same 16px gutters .hud has and lines
+     up with the title above it.
+
+     `top` is written by syncBossBar() on every redraw, because .hud's height
+     moves with the hint (one line or three, and 104px down in a tutorial).
+     The value here is only the pre-measure fallback. */
+  .boss{position:fixed;top:130px;left:0;right:0;z-index:11;
+    display:none;align-items:flex-start;justify-content:space-between;
+    padding:0 16px;
+    pointer-events:none;font-family:'IBM Plex Mono',ui-monospace,monospace}
+  .boss.on{display:flex}
+  .bside{display:flex;flex-direction:column;gap:3px}
+  .bthem{align-items:flex-end}
+  /* BIGGER THAN THE TEXT ABOVE THEM, on the owner's call. At 13px the hearts
+     were the same size as the hint they sit under and read as another line
+     of chrome; this row is the one thing on a clock you check between every
+     move, and it has to be findable without looking for it. 19px hearts and
+     a 24x6 bar are about half again, which is the smallest step that reads
+     as a deliberate size rather than a rendering difference.
+
+     Both rows share a min-height so the two sides sit on one line across the
+     screen: a heart is type and a bar is a box, and without it the right
+     side floated at the top of the gap. */
+  .blives,.bcores{display:flex;gap:5px;align-items:center;min-height:20px}
+  .blives i{display:block;font-style:normal;font-size:19px;line-height:1;
+    color:var(--player);transition:color .25s ease,transform .25s ease;
+    text-shadow:0 0 10px color-mix(in srgb,var(--player) 45%,transparent)}
+  .blives i.gone{color:var(--rule);transform:scale(.86)}
+  /* The right side is the opposition, and it wears the opposition's colour:
+     a boss's phases in the hunters' own red, a trial's cores in the amber
+     its cores are actually drawn in. The map keeps violet for a boss node,
+     which is a different job - there it separates one landmark from another
+     in a list, here it separates you from the thing in front of you. */
+  .bcores i{width:24px;height:6px;border-radius:3px;background:#ff4d5e;
+    display:block;box-shadow:0 0 10px rgba(255,77,94,.45);
+    transition:background .25s ease,width .25s ease,
+      opacity .25s ease,box-shadow .25s ease}
+  .boss.tr .bcores i{background:#ff8a3c;box-shadow:0 0 10px rgba(255,138,60,.45)}
+  /* A SPENT ONE SHRINKS AS WELL AS DIMMING. Three bars of one length with a
+     dim one among them is a row of three at a glance, which is how a taken
+     core read as a core still to take - the hearts have always said it twice
+     (colour and scale) and this row said it once. */
+  .bcores i.gone{background:var(--rule);width:10px;opacity:.7;box-shadow:none}
+  .boss.hurt .blives{animation:bshake .3s ease}
+  @keyframes bshake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+
+  /* Your running star total, and the target the win screen's stars fly to.
+     z-index 30 puts it over the win overlay (20) on purpose - the count has
+     to be visible at the moment it goes up, or the flight has nothing to
+     arrive at. Sits to the left of the two round buttons in that corner. */
+  .startotal{position:fixed;top:14px;right:104px;z-index:30;height:42px;
+    display:none;align-items:center;gap:5px;padding:0 13px;
+    border:1.5px solid color-mix(in srgb,var(--star) 34%,transparent);
+    border-radius:21px;
+    background:
+      radial-gradient(120% 108% at 50% -8%,
+        color-mix(in srgb,var(--star) 20%,transparent), transparent 72%),
+      var(--panel);
+    box-shadow:0 3px 0 color-mix(in srgb,var(--star) 26%,#04070d);
+    backdrop-filter:blur(6px);
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    color:var(--fg);transition:color .35s ease,transform .18s ease,
+      border-color .35s ease}
+  .startotal.on{display:flex}
+  .startotal b{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+  .startotal i{font-style:normal;font-size:13px;color:var(--star);
+    text-shadow:0 0 10px var(--star-glow)}
+  .startotal.pop{transform:scale(1.16);border-color:var(--star)}
+
+  /* A star in flight. The wrapper carries the horizontal leg and the inner
+     glyph the vertical one, on different easings - that mismatch is what
+     bends the path into an arc instead of a straight diagonal slide. */
+  .flystar{position:fixed;z-index:40;pointer-events:none;
+    transition:transform .62s cubic-bezier(.32,.5,.5,1)}
+  .flystar i{display:block;font-style:normal;font-size:26px;line-height:1;
+    color:var(--star);text-shadow:0 0 16px var(--star-glow);
+    transition:transform .62s cubic-bezier(.6,.02,.72,.5),opacity .62s ease}
+  .sg{display:inline-block;transition:transform .22s ease,opacity .22s ease}
+  .sg.launch{transform:translateY(-6px) scale(1.3)}
+

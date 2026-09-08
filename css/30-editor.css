@@ -1,0 +1,94 @@
+/* Orthogonal — css/30-editor.css
+   The editor and composer bars.
+   Loaded in the order listed in index.html; see docs/UI.md for the map of
+   screens to files. */
+
+  /* edit bar */
+  #editBar{display:none;flex-direction:column;gap:6px}
+  #editBar.on{display:flex}
+  .rowTop{gap:6px}
+  .rowTop .tiny{height:26px}
+  .spacer{flex:1}
+  #composeBar{display:none;flex-direction:column;gap:6px}
+  #composeBar.on{display:flex}
+  .script{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;
+    letter-spacing:.1em;color:var(--player);margin-top:5px;line-height:1.6;
+    max-width:62vw;word-break:break-word}
+  .row{display:flex;gap:4px;align-items:stretch}
+  /* THE PIECE CHIPS. Each one wears its piece's hue in `--c` (set by
+     drawToolChips() in js/14-editor.js) and everything on the chip follows
+     it: the cube's three faces, the rim, the lip and the lit state. The cube
+     carries the meaning, so the word under it can be small. */
+  .chip{flex:1;height:47px;font-size:11px;letter-spacing:.03em;padding:2px;
+    flex-direction:column;gap:2px;
+    border-color:color-mix(in srgb,var(--c) 14%,var(--rule));
+    color:color-mix(in srgb,var(--c) 38%,var(--fg));
+    --lip:color-mix(in srgb,var(--c) 22%,#04070d)}
+  .chip i{font-style:normal;line-height:1}
+  .chip .cu{width:23px;height:23px;display:block;flex-shrink:0}
+  /* A PHOTOGRAPH OF THE PIECE (pieceShot(), js/10-render.js). Slightly bigger
+     than the drawings it replaces, because a render has air around it where a
+     hand-drawn path fills its own box, and rendered rather than sharpened -
+     it is a picture of a lit object, not an icon. */
+  .chip img.shot{width:27px;height:27px;object-fit:contain;margin:-2px 0}
+  /* Three faces off one hue, lit the way the renderer lights a block: the
+     top catches the light, the right face is the hue, the left turns away. */
+  .chip .ft{fill:color-mix(in srgb,var(--c) 76%,#fff)}
+  .chip .fr{fill:var(--c)}
+  .chip .fl{fill:color-mix(in srgb,var(--c) 66%,#000)}
+  .chip .fb{fill:color-mix(in srgb,var(--c) 50%,#000)}
+  /* Stone's rim frame, drawn on the top face. */
+  .chip .cu .rim{fill:none;stroke:color-mix(in srgb,var(--c) 55%,#000);
+    stroke-width:1;opacity:.6}
+  /* WATER. See-through, with the surface plate a little below the top and
+     the bright cyan edge the water block carries. */
+  .chip .cu.water{opacity:.86}
+  .chip .cu.water .plate{fill:color-mix(in srgb,var(--c) 40%,#fff);opacity:.85}
+  .chip .cu.water .wire{fill:none;stroke:#bdeaf7;stroke-width:1;opacity:.9;
+    stroke-linejoin:round}
+  /* AMBER's floating octahedron - the last piece still carrying a symbol. */
+  .chip .cu.amber .mark{fill:#ffe9b8}
+  /* OBSIDIAN. A near-black body with violet fire in the cracks: `--c` is the
+     violet the edge and the veins glow with, not the body's colour. */
+  .chip .cu.obsid .ft{fill:#2a1e46}
+  .chip .cu.obsid .fr{fill:#1d1433}
+  .chip .cu.obsid .fl{fill:#140d24}
+  .chip .cu.obsid .vein{fill:none;stroke:#a274ff;stroke-width:1.3;
+    stroke-linecap:round;opacity:.95}
+  .chip .cu.obsid .wire{fill:none;stroke:#e0d4ff;stroke-width:.9;opacity:.6;
+    stroke-linejoin:round}
+  /* LAVA CRUST, and the flames standing off the top of it. */
+  .chip .cu.lava .ft{fill:#3a241c}
+  .chip .cu.lava .fr{fill:#2a1712}
+  .chip .cu.lava .fl{fill:#1c0f0c}
+  .chip .cu.lava .vein{fill:none;stroke:#ff7a3c;stroke-width:1.3;
+    stroke-linecap:round}
+  .chip .cu.lava .flame{fill:var(--c);
+    filter:drop-shadow(0 0 3px color-mix(in srgb,var(--c) 60%,transparent))}
+  /* THE GOAL, as goalMesh draws it: a wireframe of a triangulated box, which
+     is where the diagonals come from. */
+  .chip .cu.goalw path{fill:none;stroke:var(--c);stroke-width:1.1;
+    stroke-linejoin:round;opacity:.95}
+  /* YOUR PIECE. A glyph from the wardrobe when the shape has one, otherwise
+     the block itself - either way in `--player`, so it follows the skin. */
+  .chip .cu.pglyph{display:flex;align-items:center;justify-content:center;
+    color:var(--c);font-size:19px;line-height:1}
+  .chip .cu.pglyph svg{width:21px;height:21px;fill:currentColor}
+  .chip .cu.wire path{fill:none;stroke:color-mix(in srgb,var(--c) 62%,transparent);
+    stroke-width:1.2;stroke-dasharray:2.4 2.2;stroke-linejoin:round}
+  /* Lit: the hue comes all the way up, and the chip takes an inner ring so
+     a piece whose own colour is loud (fire, the player) is still obviously
+     *not* the selected one until it is. */
+  .chip.sel{border-color:var(--c);color:color-mix(in srgb,var(--c) 70%,#fff);
+    background:
+      linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,0) 62%),
+      color-mix(in srgb,var(--c) 17%,var(--panel));
+    box-shadow:0 3px 0 var(--lip),
+      inset 0 0 0 1px color-mix(in srgb,var(--c) 45%,transparent),
+      0 0 16px color-mix(in srgb,var(--c) 24%,transparent)}
+  .chip.sel:active{box-shadow:0 0 0 var(--lip)}
+  .chip.sel .cu{transform:translateY(-1px)}
+  .row2 button{height:40px}
+  .row2 .ico{width:40px;font-size:14px}
+  .verify{flex:1;border-color:var(--goal);color:var(--goal);
+    font-weight:600;letter-spacing:.13em}

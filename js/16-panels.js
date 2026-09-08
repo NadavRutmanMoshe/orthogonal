@@ -18,25 +18,64 @@
    would burn a WebGL context. See the note above previewStop().
    ---------------------------------------------------------------------- */
 var wardTab="shape";
-var wardSel={shape:null,color:null,world3:null,world2:null};
+var wardSel={shape:null,color:null,deal:null,world3:null,world2:null};
 var buyArmed=null;   // the id whose BUY has been tapped once, awaiting a second
 
+/* THE DEALS SHELF IS A VIEW OF THE SHAPE CATALOGUE, not a fourth catalogue.
+   Everything on it is a shape, so it equips as a shape, previews as a shape
+   and is stored in `wardrobe.shape` like any other - the tab only decides
+   which slice of SKIN_SHAPES the grid is showing. That is what keeps a bought
+   item from needing a second code path anywhere else in the game. */
+function isDeal(it){return !!(it&&it.deal);}
+/* WHAT IT COSTS, WITH THE OLD PRICE STILL VISIBLE when a pass already owned
+   has taken most of it off. A discount nobody can see is a discount nobody
+   was given: the struck-through number is the whole of what says "you have
+   already paid for part of this". */
+function dealPriceSay(it){
+  var p="$"+esc(dealPrice(it));
+  return dealDiscounted(it)
+    ? "<i class='wwas'>$"+esc(it.usd)+"</i>"+p
+    : p;
+}
 function wardList(t){
-  return t==="shape" ?SKIN_SHAPES:
-         t==="color" ?SKIN_COLORS:
+  /* THE PASSES FIRST, THEN THE SHAPES SOLD FOR MONEY. Two lists rather than
+     one because a pass is not a shape - it does not equip and it does not
+     stand in the case - but they belong on the same shelf, which is the one
+     shelf in the game that is not paid for in stars. */
+  if(t==="deal") return PASSES.concat(SKIN_SHAPES.filter(isDeal));
+  if(t==="shape")return SKIN_SHAPES.filter(function(it){return !isDeal(it);});
+  return t==="color" ?SKIN_COLORS:
          t==="world3"?WORLDS3D:WORLDS2D;
 }
 function wardEquipped(t){
-  return t==="shape" ?wardrobe.shape:
+  return (t==="shape"||t==="deal")?wardrobe.shape:
          t==="color" ?wardrobe.color:
          t==="world3"?wardrobe.world3:wardrobe.world2;
 }
 function wardSelected(t){
   if(!wardSel[t])wardSel[t]=wardEquipped(t);
+  /* AND IT HAS TO BE ON THIS SHELF. The deals tab is a slice of the shape
+     catalogue, so its equipped id is whatever shape you are wearing - which
+     is almost never one of the deals. Left alone, the panel opened showing
+     the first deal's name over the equipped cube's state and called it
+     "equipped". Falls back to the first thing on the shelf instead. */
+  var list=wardList(t), i;
+  for(i=0;i<list.length;i++) if(list[i].id===wardSel[t]) return wardSel[t];
+  wardSel[t]=list.length?list[0].id:wardSel[t];
   return wardSel[t];
 }
 function wardrobePanel(tab){
-  wardTab=tab||"shape";
+  /* TWO TABS, NOT FOUR. The worlds came off the wardrobe when the sections
+     took ownership of how the world looks: a section picks the sky, the
+     stone and the paper now, so a world tab was selling a look the campaign
+     immediately overwrote. The catalogues, the equipped ids and
+     migrateWorlds() are all left alone - the equipped world is still what
+     applyPalette() writes underneath a section, and a save that bought one
+     keeps it. Only the two tabs are gone.
+
+     Guarded rather than trusted: callers hand a tab name in, and a stale
+     "world3" would land the grid on a catalogue with no tab to leave it by. */
+  wardTab=(tab==="color"||tab==="deal")?tab:"shape";
   buyArmed=null;
   showPanel(
     "<div class='phead'><div class='pt'><b>Wardrobe</b>"+
@@ -46,23 +85,31 @@ function wardrobePanel(tab){
     "<div class='tabs'>"+
       "<button class='tab' id='wS'>SHAPE</button>"+
       "<button class='tab' id='wC'>COLOUR</button>"+
-      "<button class='tab' id='wV'>3D</button>"+
-      "<button class='tab' id='wP'>2D</button>"+
+      /* The tag says what the shelf is before the word is read, which is the
+         same reason the ad buttons carry a screen: a price is the one thing
+         on this panel that is not paid for in stars. */
+      "<button class='tab tdeal' id='wD'>"+tagIcon()+"DEALS</button>"+
     "</div>"+
     "<div class='wbody'>"+
       "<div class='wlist'><div class='grid' id='wGrid'></div></div>"+
       "<div class='wcase'>"+
-        "<canvas id='wCase3d' class='wcanvas'></canvas>"+
+        /* The canvas is wrapped so the case can have a frame and a floor: a
+           canvas is a replaced element and will not carry ::before/::after,
+           and the light spilling out of the render onto the page is what
+           makes the box read as a lit case rather than a thumbnail. */
+        "<div class='wglass'><canvas id='wCase3d' class='wcanvas'></canvas>"+
+          "<i class='wfloor'></i></div>"+
         "<div class='wturn'>DRAG TO TURN</div>"+
         "<div id='wMeta'></div>"+
       "</div>"+
     "</div>"+
-    "<div class='prow'><button id='wBack'>BACK</button></div>","wardrobe");
+    "<div class='pfoot'><button id='wHome'>"+homeIcon()+"HOME</button>"+
+      "<button id='wBack'>CLOSE</button></div>","wardrobe");
   bind("wS",function(){wardTabTo("shape");});
   bind("wC",function(){wardTabTo("color");});
-  bind("wV",function(){wardTabTo("world3");});
-  bind("wP",function(){wardTabTo("world2");});
+  bind("wD",function(){wardTabTo("deal");});
   bind("wBack",hidePanel);
+  bind("wHome",function(){hidePanel();homeShow();});
   bind("wX",hidePanel);
   wardRefresh();
   // The canvas has no measurable size until the panel has been laid out, so
@@ -72,51 +119,60 @@ function wardrobePanel(tab){
   requestAnimationFrame(function(){
     var cv=$("wCase3d");
     if(!cv||panelKind!=="wardrobe"||!panelOpen())return;
+    /* ALREADY RUNNING ON THIS CANVAS: leave it alone. Open the wardrobe
+       twice inside one frame - a double tap on the corner button will do it -
+       and both openings queue this callback against the same new canvas. The
+       second previewStart() calls previewStop(), which ends the context with
+       loseContext() on that very canvas, and a canvas whose context was lost
+       that way returns null from getContext() forever after; three.js then
+       dies reading `precision` off the null. Same trap homeCase() sidesteps
+       by replacing its element - this one just declines to rebuild. */
+    if(typeof pv!=="undefined"&&pv&&pv.canvas===cv){wardPreview();return;}
     previewStart(cv);
     wardPreview();
   });
 }
 function wardTabTo(t){
-  wardTab=t;buyArmed=null;
+  wardTab=(t==="color"||t==="deal")?t:"shape";buyArmed=null;
   wardRefresh();wardPreview();
 }
 function wardPreview(){
   var sel=wardSelected(wardTab);
-  previewShow(
-    wardTab==="shape" ?sel:wardrobe.shape,
-    wardTab==="color" ?sel:wardrobe.color,
-    wardTab==="world3"?sel:wardrobe.world3,
-    wardTab==="world2"?sel:wardrobe.world2,
-    wardTab==="world2");
+  // A deal that IS a shape stands in the case as one; a pass is not a shape,
+  // so the case keeps showing the piece you are wearing rather than trying to
+  // build a mesh out of an id that names no geometry.
+  var shapeSel=(wardTab==="shape"||wardTab==="deal")?sel:wardrobe.shape;
+  if(isPass(findBy(wardList(wardTab),sel)))shapeSel=wardrobe.shape;
+  previewShow(shapeSel,
+    wardTab==="color"?sel:wardrobe.color,
+    wardrobe.world3,wardrobe.world2,false);
 }
 function wardRefresh(){
   var t=wardTab, list=wardList(t), cur=wardEquipped(t), sel=wardSelected(t);
-  $("wHead").textContent=t==="shape"?"THE SHAPE YOU PLAY AS":
-    t==="color"?"ITS COLOUR":t==="world3"?"THE VOLUME":"THE PLANE";
+  $("wHead").textContent=t==="deal"?"NOT FOR STARS":
+                         t==="shape"?"THE SHAPE YOU PLAY AS":"ITS COLOUR";
   $("wBal").innerHTML=shards()+" \u2605";
   $("wBal").title="to spend";
   $("wS").classList.toggle("on",t==="shape");
   $("wC").classList.toggle("on",t==="color");
-  $("wV").classList.toggle("on",t==="world3");
-  $("wP").classList.toggle("on",t==="world2");
+  $("wD").classList.toggle("on",t==="deal");
   var html="";
   for(var i=0;i<list.length;i++){
     var it=list[i], have=owns(it.id), on=cur===it.id;
     // each swatch shows the two colours that item actually sets
     var swatch = t==="color"
       ? "background:#"+it.hex.toString(16).padStart(6,"0")
-      : t==="world3"
-        ? "background:linear-gradient(135deg,#"+it.void.toString(16).padStart(6,"0")+
-          " 0 50%,#"+it.block.toString(16).padStart(6,"0")+" 50% 100%)"
-      : t==="world2"
-        ? "background:linear-gradient(135deg,#"+it.paper.toString(16).padStart(6,"0")+
-          " 0 50%,#"+it.ink.toString(16).padStart(6,"0")+" 50% 100%)"
-        : "background:var(--rule)";
+      : "background:var(--rule)";
     html+="<div class='item"+(on?" on":"")+(sel===it.id?" sel":"")+
       "' data-id='"+it.id+"'>"+
-      "<i style='"+swatch+"'>"+(t==="shape"?shapeGlyph(it.id):"")+"</i>"+
+      "<i style='"+swatch+"'>"+(t==="color"?"":shapeGlyph(it.id))+"</i>"+
       "<b>"+it.name+"</b>"+
-      "<span>"+(on?"equipped":have?"owned":it.cost+" \u2605")+"</span></div>";
+      "<span"+(!have?(it.reward?" class='wlock'":isDeal(it)?" class='wusd'":""):"")+">"+
+        (on?"equipped":have?(isPass(it)?"active":"owned")
+          :it.reward?rewardShort(it)
+          :isDeal(it)?dealPriceSay(it)
+          :it.cost+" <u class='st'>\u2605</u>")+
+      "</span></div>";
   }
   $("wGrid").innerHTML=html;
   $("wGrid").querySelectorAll(".item").forEach(function(el){
@@ -135,24 +191,56 @@ function wardMeta(){
   var t=wardTab, id=wardSelected(t), it=findBy(wardList(t),id);
   var have=owns(id), on=wardEquipped(t)===id, bal=shards();
   var s="<div class='wname'>"+it.name+"</div>"+
-        "<div class='wcost'>"+(on?"equipped":have?"owned":it.cost+" \u2605")+"</div>"+
+        "<div class='wcost"+(!have&&isDeal(it)?" wusd":"")+"'>"+
+          (on?"equipped":have?(isPass(it)?"in force":"owned")
+          :it.reward?esc(rewardSay(it))
+          :isDeal(it)?dealPriceSay(it)
+          :it.cost+" <u class='st'>\u2605</u>")+"</div>"+
+        /* WHAT A PASS ACTUALLY DOES, listed. A shape is its own description -
+           it is standing in the case - and a pass is not: nothing on this
+           panel would otherwise say that "No Limits" is about hints, skips
+           and the star price, which is the only reason to want it. */
+        (isPass(it)
+          ? "<ul class='wgives'><li>"+it.gives.map(esc).join("</li><li>")+
+            "</li></ul>"+
+            (it.needs&&hasPass(it.needs)
+              ? "<div class='wcredit'>"+esc(findBy(PASSES,it.needs).name)+
+                " already paid for \u2014 this is the rest.</div>":"")
+          : "")+
         "<div class='wact'>";
-  if(on)              s+="<button disabled>EQUIPPED</button>";
+  /* A PASS HAS NOTHING TO EQUIP. It is not worn, it is in force - so once it
+     is bought the only honest button is the one that says so. */
+  if(isPass(it)&&have) s+="<button disabled class='wgo'>ACTIVE</button>";
+  else if(on)         s+="<button disabled>EQUIPPED</button>";
   else if(have)       s+="<button id='wEquip' class='wgo'>EQUIP</button>";
-  else if(bal<it.cost)s+="<button disabled>NEED "+(it.cost-bal)+" MORE \u2605</button>";
+  /* A REWARD IS NOT FOR SALE. No BUY, no ad row, and the button says the one
+     thing that opens it. Ads buy progress, never score - and this is the one
+     item in the catalogue that IS score. */
+  else if(it.reward)  s+="<button disabled class='wearn'>EVERY "+
+                         "<u class='st'>\u2605</u> IN "+
+                         esc(secNumeral(it.sec))+"</button>";
+  /* NO STARS, NO ADS, NO SECOND TAP TO CONFIRM - there is nothing to confirm
+     until there is a store to charge. Dead for the same reason the ad
+     buttons are dead and said the same way, in the note below. */
+  else if(isDeal(it)) s+="<button disabled class='wbuyusd'>"+tagIcon()+
+                         "BUY \u00b7 $"+esc(dealPrice(it))+"</button>";
+  else if(bal<it.cost)s+="<button disabled>NEED "+(it.cost-bal)+" MORE <u class='st'>\u2605</u></button>";
   else if(buyArmed===id)
-                      s+="<button id='wBuy' class='wsure'>SURE? \u00b7 "+it.cost+" \u2605</button>";
-  else                s+="<button id='wBuy' class='wgo'>BUY \u00b7 "+it.cost+" \u2605</button>";
-  if(!have){
+                      s+="<button id='wBuy' class='wsure'>SURE? \u00b7 "+it.cost+" <u class='st'>\u2605</u></button>";
+  else                s+="<button id='wBuy' class='wgo'>BUY \u00b7 "+it.cost+" <u class='st'>\u2605</u></button>";
+  if(!have&&!it.reward&&!isDeal(it)){
     var need=adsFor(it.cost), got=adsWatched(id);
-    s+="<button id='wAd' disabled>WATCH "+need+" AD"+(need===1?"":"S")+
+    s+="<button id='wAd' class='ad' disabled>"+adIcon()+"WATCH "+need+" AD"+(need===1?"":"S")+
        (got?" ("+got+"/"+need+")":"")+"</button>";
   }
   s+="</div>";
   // The hook name belongs in the code and in CLAUDE.md, not in a player's
   // narrow sidebar; all this has to say is why the button does nothing.
-  if(!have)s+="<div class='note'>Ads need an SDK, so the button is dead "+
-    "until the game is wrapped for a store.</div>";
+  if(!have&&isDeal(it))
+    s+="<div class='note'>No store yet \u2014 nothing can be charged until "+
+       "the game is wrapped for one. The button is dead on purpose.</div>";
+  else if(!have&&!it.reward)s+="<div class='note'>No ad provider yet \u2014 the button is "+
+    "dead until the game is wrapped for a store.</div>";
   $("wMeta").innerHTML=s;
   bind("wEquip",function(){wardEquip(t,id);SFX.key();wardRefresh();});
   bind("wBuy",function(){
@@ -200,9 +288,123 @@ function grantShards(n){
   wardrobe.spent=Math.max(0,wardrobe.spent-n);
   saveWardrobe();
 }
+/* Geometric characters for the geometric shapes, and a drawing for the one
+   that is not. The pup was ◐ - a half-filled circle, which is a shape from a
+   different alphabet and says nothing about a dog. Anything a font provides
+   at 16px for "dog" is an emoji, which renders differently on every device
+   and at a size it does not control, so this is a path like every other icon
+   in the game (see "icons are solid SVG" in docs/UI.md). */
+/* What a reward asks for, in the shortest form that is still true: the
+   section's numeral and the condition. Falls back to the whole name where a
+   section has no numeral, which none of the four awarding ones do. */
+function rewardSay(it){
+  var sec=SECTIONS[it.sec];
+  if(!sec)return "every star";
+  return "every \u2605 in "+sec.name;
+}
+// A section's numeral, or its whole name where it has none.
+function secNumeral(n){
+  var sec=SECTIONS[n];
+  if(!sec)return "";
+  var np=sec.name.split(" \u00b7 ");
+  return np.length>1?np[0]:sec.name;
+}
+// The same thing in a 74px column: the numeral only. "every ★ in III" wrapped
+// to two lines there and made one tile taller than the row it is in.
+function rewardShort(it){
+  var sec=SECTIONS[it.sec];
+  if(!sec)return "all \u2605";
+  return secNumeral(it.sec)+" \u00b7 all <u class='st'>\u2605</u>";
+}
+/* A price tag, for the one shelf that is not paid for in stars. Drawn like
+   every other icon in the game rather than typed as a glyph. */
+/* A house, on the one button in the footer that goes there. The four
+   full-height panels all carry it, so "up one level" is a picture as well as
+   a word - and the map's SECTIONS button gets the same four squares the home
+   screen's LEVELS button wears, because it opens the same screen. */
+function homeIcon(){
+  return "<svg class='pfi' viewBox='0 0 24 24' aria-hidden='true'>"+
+    "<path d='M11.35 2.6 2.9 9.75c-.5.42-.24 1.24.42 1.24H5v9.3c0 .61.5 1.11 "+
+    "1.11 1.11h3.6v-5.3h4.58v5.3h3.6c.61 0 1.11-.5 1.11-1.11v-9.3h1.68c.66 0 "+
+    ".92-.82.42-1.24L12.65 2.6a1 1 0 0 0-1.3 0Z'/></svg>";
+}
+function gridIcon(){
+  return "<svg class='pfi' viewBox='0 0 24 24' aria-hidden='true'>"+
+    "<rect x='3.2' y='3.2' width='7.4' height='7.4' rx='1.7'/>"+
+    "<rect x='13.4' y='3.2' width='7.4' height='7.4' rx='1.7'/>"+
+    "<rect x='3.2' y='13.4' width='7.4' height='7.4' rx='1.7'/>"+
+    "<rect x='13.4' y='13.4' width='7.4' height='7.4' rx='1.7'/></svg>";
+}
+function tagIcon(){
+  return "<svg class='tagicon' viewBox='0 0 24 24' fill-rule='evenodd' "+
+    "aria-hidden='true'><path d='M2.6 11.5 11.4 2.7c.4-.4.9-.6 1.4-.6h6.5c1.1 "+
+    "0 2 .9 2 2v6.5c0 .5-.2 1-.6 1.4l-8.8 8.8c-.8.8-2 .8-2.8 0l-6.5-6.5c-.8-."+
+    "8-.8-2 0-2.8Zm14.3-5.4a1.9 1.9 0 1 0 0 3.8 1.9 1.9 0 0 0 0-3.8Z'/></svg>";
+}
+/* THE ROW'S OWN GLYPHS. A level's line has five things on it and a name that
+   has to stay readable, so the three verbs a picture says better than a word
+   are drawn: the pencil that renames (sitting against the name, because that
+   is what it edits), the triangle that plays, and the share node. EDIT keeps
+   its word - it is the one that opens the whole editor, and there is no
+   glyph for that which is not a guess. */
+function penIcon(){
+  return "<svg class='mli' viewBox='0 0 24 24' aria-hidden='true'>"+
+    "<path d='M3.4 17.3 14.9 5.8l3.3 3.3L6.7 20.6l-4 .7Zm13.1-13 1.7-1.7a1.4 "+
+    "1.4 0 0 1 2 0l1.3 1.3a1.4 1.4 0 0 1 0 2l-1.7 1.7Z'/></svg>";
+}
+function playIcon(){
+  return "<svg class='mli' viewBox='0 0 24 24' aria-hidden='true'>"+
+    "<path d='M7.4 4.6 19 11.3a.8.8 0 0 1 0 1.4L7.4 19.4a.8.8 0 0 1-1.2-.7V5.3"+
+    "a.8.8 0 0 1 1.2-.7Z'/></svg>";
+}
+// The three-node share, not a box with an arrow out of it: the box-and-arrow
+// is one stroke away from the upload glyph on LOAD A LEVEL, and those two are
+// the opposite directions of the same idea.
+function shareIcon(){
+  return "<svg class='mli' viewBox='0 0 24 24' aria-hidden='true'>"+
+    "<path d='M8.1 13.6a2.9 2.9 0 1 1 0-3.2l6-3.3a2.9 2.9 0 1 1 .7 1.5l-6 "+
+    "3.3a2.9 2.9 0 0 1 0 .2l6 3.3a2.9 2.9 0 1 1-.7 1.5Z'/></svg>";
+}
+// Coming in from outside: an arrow up out of a tray. LOAD A LEVEL is the one
+// door in this screen that takes something from somewhere else.
+function upIcon(){
+  return "<svg class='pfi' viewBox='0 0 24 24' aria-hidden='true'>"+
+    "<path d='M11.15 3.5a1.2 1.2 0 0 1 1.7 0l4.3 4.3a1 1 0 0 1-1.4 1.4L13 6.5"+
+    "v8.1a1 1 0 0 1-2 0V6.5L8.25 9.2a1 1 0 0 1-1.4-1.4Z'/>"+
+    "<path d='M4 15.4a1 1 0 0 1 1 1v2.4c0 .3.2.5.5.5h13c.3 0 .5-.2.5-.5v-2.4a1"+
+    " 1 0 1 1 2 0v2.4c0 1.4-1.1 2.5-2.5 2.5h-13A2.5 2.5 0 0 1 3 18.8v-2.4a1 1 "+
+    "0 0 1 1-1Z'/></svg>";
+}
+function shapeSvg(d){
+  return "<svg viewBox='0 0 24 24' aria-hidden='true'><path d='"+d+"'/></svg>";
+}
+var SHAPE_SVG={
+  rook:"M5 3h3.2v2h1.8V3h4v2h1.8V3H19v4.2H5Zm1.6 4.9h10.8l-.8 1.9H7.4Zm.8 "+
+       "2.5h9.2l1.1 6.2H6.3Zm-2.8 6.9h14.8v1.5H4.6Zm-.7 2.1h16.2v2.1H3.9Z",
+  pup:"M4.6 9.1c0-1 .5-1.6 1.3-1.6.6 0 1 .3 1.4.9l.5.8h4.3c1.4 0 2.6.5 3.5 "+
+      "1.5l1.6 1.7h2.3c.7 0 1.3.6 1.3 1.3 0 .6-.4 1.1-1 1.2l-1.4.3-.6 1.4v2.6"+
+      "h-1.9v-2.2l-1.5.5-.3 1.7h-1.9l.3-2h-3.2l.3 2H7.7l-.4-2.4a4.9 4.9 0 0 1-"+
+      "2.3-4.1Zm1.9.7v1.7c0 .8.3 1.5.8 2v-3.7Z"
+};
+// The reward characters wear their section's own emblem, read from the same
+// table the chooser's tiles read.
+var REWARD_GLYPH={sapling:"trees",flame:"hell",minnow:"ocean",cactus:"desert"};
+/* THE TWO PASSES' OWN GLYPHS. Neither is a shape, so neither has a piece to
+   draw: an open padlock for the one that takes the limits off, a crown for
+   the one that carries the lot. */
+var PASS_SVG={
+  pass_nolimits:"M4.8 10.2h10.4c.9 0 1.6.7 1.6 1.6v7.4c0 .9-.7 1.6-1.6 1.6H4.8"+
+    "c-.9 0-1.6-.7-1.6-1.6v-7.4c0-.9.7-1.6 1.6-1.6Zm4 4.4h2.4v3.2H8.8ZM12.8 "+
+    "10.2V7.1a4 4 0 0 1 8 0v1.8h-2.3V7.1a1.7 1.7 0 0 0-3.4 0v3.1Z",
+  pass_all:"M2.4 7.4 7.6 11.6 12 4.2l4.4 7.4 5.2-4.2-1.8 10.1H4.2ZM4.3 "+
+    "18.9h15.4v2.2H4.3Z"
+};
 function shapeGlyph(id){
+  if(PASS_SVG[id])return shapeSvg(PASS_SVG[id]);
+  if(REWARD_GLYPH[id])return shapeSvg(ELEM_PATH[REWARD_GLYPH[id]]);
+  if(SHAPE_SVG[id])return shapeSvg(SHAPE_SVG[id]);
   return {cube:"\u25a0",sphere:"\u25cf",pyramid:"\u25b2",diamond:"\u25c6",
-          barrel:"\u25ac",donut:"\u25ce",star:"\u2726",pup:"\u25d0"}[id]||"\u25a0";
+          barrel:"\u25ac",donut:"\u25ce",star:"\u2726"}[id]||"\u25a0";
 }
 
 function seg(pre,val,label,cur){
@@ -210,14 +412,47 @@ function seg(pre,val,label,cur){
 }
 function menuPanel(){
   var vol=Math.round(settings.volume*100), bri=Math.round(settings.brightness*100);
+  /* THE WAY BACK TO THE SHELF YOU ARE STANDING ON.
+
+     This reverses "NO NAVIGATION ROW AT ALL" below, on the owner's call, and
+     it is worth saying why the reversal is not the old row coming back. The
+     row that was cut was a second LEVELS - the chooser, the same four tiles
+     the home screen already offers. This is not that: it is the section you
+     are *in*, named, in its own colour, going straight to its trail. Opened
+     from inside a level the settings sheet was a dead end unless you were
+     willing to go out through HOME and back in through LEVELS and a tile;
+     one button is that whole trip.
+
+     Only from inside a campaign level: at home LEVELS is a tap away, and a
+     library level or an editor test has no shelf to go back to. PROLOGUE has
+     no tile either (secPickable), so the tutorial gets nothing here. */
+  var secN=-1;
+  if(playSource==="builtin"&&!homeUp()&&typeof lvIndex==="number"&&lvIndex>=0&&
+     typeof mapSecOf==="function"){
+    var sn0=mapSecOf(lvIndex);
+    if(typeof secPickable==="function"&&secPickable(sn0)&&SECTIONS[sn0])secN=sn0;
+  }
+  var secBtn=secN<0?"":
+    "<button class='psec' id='mSec' style='--sec:"+
+      (SECTIONS[secN].col||"#35c2a5")+"'>"+secEmblem(SECTIONS[secN])+
+      "<span><i>back to</i><b>"+esc(SECTIONS[secN].name)+"</b></span>"+
+      "<u class='psecgo' aria-hidden='true'>\u203a</u></button>";
   showPanel(
-    "<div class='phead'><div class='pt'><b>Menu</b>"+
-      "<span>"+esc((L&&L.name)||"")+"</span></div>"+
+    /* NO SUBTITLE. The header used to print the level you were standing on
+       under the word Settings. It answered a question nobody asks with the
+       panel open - the level's name is on the HUD behind it, and the way
+       back to its shelf is the .psec row below, which names the section
+       rather than the level. The other tall panels put a real subtitle
+       here; this one had a label. */
+    "<div class='phead'><div class='pt'><b>Settings</b></div>"+
       "<div class='mtot'>"+starsEarned()+" ★</div>"+
       "<button class='mq mx' id='mClose' aria-label='Back to the level'>✕</button></div>"+
-    "<div class='pbody'>"+
-      "<div class='prow2'><button class='pgo' id='mHome'>HOME</button>"+
-        "<button class='pgo' id='mLevels'>LEVELS</button></div>"+
+    "<div class='pbody'>"+secBtn+
+      /* NO NAVIGATION ROW AT ALL. HOME went to the footer with every other
+         panel's way up, and LEVELS went with it on the owner's call: this is
+         the settings panel, and LEVELS is on the home screen, on the HUD's
+         way out of a level, and on the win card. A fourth copy at the top of
+         a settings sheet is a fourth thing to scroll past. */
       "<div class='pcard'><h4>Sound &amp; light</h4>"+
         "<div class='srow'><label>Volume</label>"+
           "<input type='range' id='mVol' min='0' max='100' value='"+vol+"'>"+
@@ -225,59 +460,45 @@ function menuPanel(){
         "<div class='srow'><label>Brightness</label>"+
           "<input type='range' id='mBri' min='60' max='140' value='"+bri+"'>"+
           "<span id='mBriV'>"+bri+"%</span></div></div>"+
+      /* ONE ROW, THREE OPTIONS, AND NO PARAGRAPH UNDER IT. The card is
+         called Controls and the three buttons are the whole of it - a
+         setting whose options are three words does not need a sentence
+         explaining them, and the note under this one was four lines of
+         gesture reference nobody had asked for. The Tutorial row went with
+         it: the lesson now teaches whatever this is set to. */
       "<div class='pcard'><h4>Controls</h4>"+
-        "<div class='crow'><label>Layout</label><span class='seg'>"+
-          seg("mUi","full","ON-SCREEN",settings.ui)+
+        "<div class='crow bare'><span class='seg'>"+
+          seg("mUi","full","FULL",settings.ui)+
           seg("mUi","compact","COMPACT",settings.ui)+
-          seg("mUi","none","HIDDEN",settings.ui)+"</span></div>"+
-        "<div class='note'>COMPACT drops the d-pad; HIDDEN clears the screen. "+
-          "Either way: <code>swipe</code> or arrows/WASD to move, "+
-          "<code>double-tap</code> the world or <code>space</code> to change "+
-          "dimension, <code>two-finger swipe</code> left or right or "+
-          "<code>Q</code>/<code>E</code> to turn.</div>"+
-        "<div class='crow'><label>Tutorial</label><span class='seg'>"+
-          seg("mTutor","gesture","GESTURES",settings.tutor)+
-          seg("mTutor","buttons","BUTTONS",settings.tutor)+"</span></div>"+
-        "<div class='note'>Which controls the three teaching levels teach. "+
-          "GESTURES takes the bar off and demonstrates the swipe, the "+
-          "double-tap and the two-finger swipe with a ghost hand; BUTTONS is "+
-          "the older lesson, with the bar forced on. It changes nothing "+
-          "outside the tutorial \u2014 every control works in both.</div></div>"+
-      "<div class='pcard'><h4>Real time</h4>"+
-        "<div class='crow'><label>Pace</label><span class='seg'>"+
-          PACES.map(function(p){
-            return seg("mPace",p.pct,p.label,Math.round(paceScale()*100));
-          }).join("")+"</span></div>"+
-        "<div class='note'>A boss and a trial are the only things in the game "+
-          "that do not wait for you. This slows both — every part of them "+
-          "together, so a fight keeps its shape — and it costs you no stars."+
-          "</div></div>"+
-      "<div class='pcard'><h4>Mastery</h4>"+
-        "<div class='crow'><label>Show as</label><span class='seg'>"+
-          seg("mMast","auto","EARNED",settings.mastery)+
-          seg("mMast","on","PREVIEW",settings.mastery)+"</span></div>"+
-        "<div class='note'>A section on the map paints itself in its own "+
-        "colour once every level in it is on three stars. EARNED is the real "+
-        "thing; PREVIEW shows it on every section so you can look at it "+
-        "without collecting it. Nothing else changes either way — no stars "+
-        "move and nothing unlocks.</div></div>"+
+          seg("mUi","none","HIDDEN",settings.ui)+"</span></div></div>"+
+      /* WHAT THE PIECES DO IS OFF THE PANEL, on the owner's call. The pieces
+         are taught where they are first met - the tutorial cards and the
+         level briefs - and a reference list under More was a fourth row that
+         pushed this card past the fold on a phone. Losing it is what makes
+         the settings sheet fit on one screen with nothing to scroll to.
+         `legendPanel()` is untouched and still one bind away. */
       "<div class='pcard'><h4>More</h4><div class='psub'>"+
-        "<button id='mLegend'>WHAT THE PIECES DO</button>"+
         "<button id='mTut'>REPLAY TUTORIAL</button>"+
-        "<button id='mEditor'>LEVEL EDITOR</button>"+
+        /* LEVEL EDITOR MOVED TO THE HOME SCREEN as MY LEVELS. It is not a
+           setting - it is a place you go, like LEVELS and the wardrobe are -
+           and filing it under More next to RESET SETTINGS is what made it
+           feel like a developer switch rather than a thing to play with. */
         "<button id='mReset' class='pdanger'>RESET SETTINGS</button>"+
       "</div>"+
-      /* WHICH BUILD AM I LOOKING AT? The stamp has been in the file since
-         build-single.js started writing it, but only in a comment and a
-         global - which answers the question for whoever has a terminal and
-         nobody else. A published artifact is played by people who cannot
-         open a console, and "are you on the new one?" is unanswerable
-         without this. It is the short commit, so it matches the build log
-         and `git checkout <it>` puts that exact version back. */
-      "<div class='note pbuild'>build "+
-        esc(typeof BUILD==="string"?BUILD:"unbuilt \u00b7 running from source")+
-      "</div></div>"+
-    "</div>","menu");
+      /* THE BUILD STAMP IS OFF THE PANEL, on the owner's call, and this is a
+         reversal worth writing down. It was put here because a published
+         artifact is played by people who cannot open a console, and "are you
+         on the new one?" was otherwise unanswerable. It read as a developer
+         line at the foot of a settings sheet, which it is.
+
+         Nothing is lost that the owner needs: `BUILD` is still a global and
+         still in a comment at the top of the built file, the artifact's own
+         version picker carries the commit as each version's label, and the
+         build log prints it. Putting the line back is this one string. */
+      "</div>"+
+    "</div>"+
+    "<div class='pfoot'><button id='mHome'>"+homeIcon()+"HOME</button>"+
+      "<button id='mFClose'>CLOSE</button></div>","menu");
   var v=$("mVol"), b=$("mBri");
   v.addEventListener("input",function(){
     settings.volume=v.value/100;
@@ -299,47 +520,27 @@ function menuPanel(){
       settings.ui=m;applyUI();saveSettings();syncHud();onResize();menuPanel();
     });
   });
-  ["gesture","buttons"].forEach(function(m){
-    bind("mTutor_"+m,function(){
-      settings.tutor=m;saveSettings();syncHud();menuPanel();
-      flash(m==="gesture"?"tutorial teaches gestures":"tutorial teaches buttons");
-    });
-  });
-  ["auto","on"].forEach(function(m){
-    bind("mMast_"+m,function(){
-      settings.mastery=m;saveSettings();menuPanel();
-      flash(m==="on"?"mastery preview on — open the map":"mastery: as earned");
-    });
-  });
-  PACES.forEach(function(p){
-    bind("mPace_"+p.pct,function(){
-      settings.pace=p.v;saveSettings();menuPanel();
-      // Takes effect on the next frame - there is no state to rebuild, which
-      // is the other reason pace is a multiplier on dt and not a set of dials
-      // baked into the fight when the level loads.
-      flash(p.v===1?"pace: normal":"clocks at "+p.pct+"%");
-    });
-  });
   bind("mTut",function(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
   });
   bind("mReset",function(){
     settings.volume=defaultVolume();settings.volTouched=false;
-    settings.brightness=1;settings.ui="full";settings.pace=1;
-    settings.tutor=defaultTutor();
+    settings.brightness=1;settings.ui="full";
+
     // including "stop suggesting things": a reset is a reset
-    settings.slowOffers=0;settings.noSlowOffer=false;settings.landHints=0;
-    settings.ctlAsked=false;settings.hintAsked=false;
+    settings.noSlowOffer=false;settings.landHints=0;
+    settings.starAsked=false;
     muted=false;
     applyVolume();
     applyBrightness();applyUI();saveSettings();syncHud();
     flash("settings reset");menuPanel();
   });
   bind("mHome",function(){hidePanel();homeShow();});
-  bind("mLevels",levelPicker);
-  bind("mLegend",legendPanel);
-  bind("mEditor",function(){hidePanel();enterEditor();});
+  /* Straight onto the trail, not out through the chooser: the point of the
+     button is that it knows which shelf you are on. */
+  if(secN>=0)bind("mSec",function(){levelPicker(secN);});
   bind("mClose",hidePanel);
+  bind("mFClose",hidePanel);
 }
 
 /* ============================================================
@@ -387,88 +588,14 @@ function homeTarget(){
   if(si>=0&&LEVELS[si])return {i:si,resume:true};
   return {i:mapHere(),resume:false};
 }
-/* THE SHOP IS ON THE SCREEN, AND EVERY TILE IS LIVE.
-
-   It started as three locked items with their prices and no behaviour - a
-   drawing, with the wardrobe button as the way in. That was wrong the first
-   time anybody used it: a thing shaped like a tile invites a press, and a
-   press that answers nothing is worse than showing no tiles at all.
-
-   So a tap always does something, and which thing it does falls out of
-   whether you own it:
-
-   - Owned goes straight onto the character. Equipping costs nothing and is
-     reversible by tapping another one, so there is no confirmation to make.
-   - Locked opens the wardrobe on that item, with its price and its BUY
-     already under the case. That is the other half of the same answer: the
-     purchase is armed and confirmed where it always was. Nothing on this
-     screen can spend a star, which is what keeps "selecting, buying and
-     equipping are three separate acts" true.
-
-   Worlds are not here. Two rows is a strip; four is the wardrobe with worse
-   ergonomics, and the shape and the colour are what a player means when they
-   say they want to look different. */
-function homeTile(t,it,glyph,swatch){
-  var have=owns(it.id), on=wardEquipped(t)===it.id;
-  return "<i class='htile"+(on?" on":have?"":" lock")+"' data-t='"+t+
-         "' data-id='"+it.id+"'><span"+
-         (swatch?" style='background:"+swatch+"'":"")+">"+(glyph||"")+"</span>"+
-         (have?"":"<b>"+it.cost+"\u2605</b>")+"</i>";
-}
-function homeStrip(){
-  var h="",i;
-  for(i=0;i<SKIN_SHAPES.length;i++)
-    h+=homeTile("shape",SKIN_SHAPES[i],shapeGlyph(SKIN_SHAPES[i].id),null);
-  $("homeShapes").innerHTML=h;
-  h="";
-  for(i=0;i<SKIN_COLORS.length;i++)
-    h+=homeTile("color",SKIN_COLORS[i],"",
-        "#"+SKIN_COLORS[i].hex.toString(16).padStart(6,"0"));
-  $("homeColors").innerHTML=h;
-}
-function homePick(t,id){
-  if(!t||!id)return;
-  if(!owns(id)){
-    /* Hand off rather than sell. wardSel is the wardrobe's own selection, so
-       setting it before opening lands the player on that exact item with the
-       case showing it and BUY underneath - the same place the tile was
-       advertising, reached in one tap instead of three. */
-    wardSel[t]=id;
-    SFX.turn();
-    wardrobePanel(t);
-    return;
-  }
-  if(wardEquipped(t)===id){SFX.turn();return;}   // already on; say so quietly
-  wardEquip(t,id);
-  SFX.key();
-  homeStrip();
-  homeStand();
-}
-/* Delegated, and on pointerup with a travel test rather than the pointerdown
-   `tap()` uses everywhere else. These rows scroll sideways, and a pointerdown
-   that calls preventDefault eats the drag that scrolls them - so a tap here
-   has to be a press that did not travel. Bound once: homeStrip() rewrites the
-   tiles on every sync, and a listener per rebuild would stack up. */
-var homeStripBound=false;
-function homeBindStrip(){
-  if(homeStripBound)return;
-  ["homeShapes","homeColors"].forEach(function(id){
-    var el=$(id); if(!el)return;
-    homeStripBound=true;
-    var sx=0,sy=0,pid=null;
-    el.addEventListener("pointerdown",function(e){
-      pid=e.pointerId;sx=e.clientX;sy=e.clientY;
-    });
-    el.addEventListener("pointerup",function(e){
-      if(e.pointerId!==pid)return;
-      pid=null;
-      if(Math.abs(e.clientX-sx)>8||Math.abs(e.clientY-sy)>8)return;
-      var t=e.target&&e.target.closest?e.target.closest(".htile"):null;
-      if(!t)return;
-      homePick(t.getAttribute("data-t"),t.getAttribute("data-id"));
-    });
-  });
-}
+/* THE BROWSE STRIP IS GONE, and with it homeTile / homeStrip / homePick /
+   homeBindStrip. Two scrolling rows of shapes and colours sat under the
+   plinth, live, so a tap equipped an owned item or opened the wardrobe on a
+   locked one. They were removed on the owner's call: they are the wardrobe's
+   own job done worse, in 34px tiles, on the one screen that should read as a
+   title screen. The wardrobe button below the plinth is the way in now, and
+   it wears the hanger so it looks like the door it is. The reasoning for the
+   strip, and why it was live rather than a drawing, is in docs/HISTORY.md. */
 function homeSync(){
   if(!$("home"))return;
   var t=homeTarget(), lv=LEVELS[t.i];
@@ -483,9 +610,16 @@ function homeSync(){
      read as a tab on a dark panel, which is the same job a button has. */
   var sec=SECTIONS[mapSecOf(t.i)];
   b.style.setProperty("--sec",(sec&&sec.col)||"var(--goal)");
+  /* AND THE SECTION'S OWN EMBLEM, the same drawing its tile carries on the
+     chooser. `--tabc` is what secEmblem()'s fill reads, so it is set to the
+     same value `--sec` just took: one colour, one picture, on the button and
+     on the tile it leads to. */
+  var ic=$("hContIcon");
+  if(ic){
+    ic.innerHTML=sec?secEmblem(sec):"";
+    ic.style.setProperty("--tabc",(sec&&sec.col)||"var(--goal)");
+  }
   $("homeStars").textContent=stars;
-  homeStrip();
-  homeBindStrip();
 }
 /* The stand, which is the wardrobe's display case pointed at what you have
    equipped. Rebuilt rather than kept, because previewStart is a singleton and
@@ -582,11 +716,37 @@ function homeGo(){
    is deliberately the bosses only, not every level: the Extra shelf is a
    reward for beating the game, and gating it on 100% would turn a bonus into
    a chore nobody collects. */
-function sectionsUnlocked(){
+/* WHICH BOSSES ARE STILL STANDING, in campaign order.
+
+   The gate itself has not moved: the shelf opens when every boss is *beaten*,
+   and a skip is deliberately not in `progress`, so buying your way past a
+   fight does not buy the reward for winning it. What was wrong is that the
+   gate could not be read. The game offers a skip itself after three losses -
+   struggleOffer() - so a player can take one, go on to finish the campaign,
+   and arrive at a shelf that says only "every boss is down" while their save
+   quietly disagrees, with nothing anywhere naming the fight that is still
+   standing. That is how it was reported: section IV finished, EXTRA still
+   shut, and no way to find out why.
+
+   So the list is the primitive and the gate is derived from it. Everything
+   that draws the lock reads the same list, which means the map can name the
+   fight and put the player in front of it. */
+function bossesLeft(){
+  var out=[];
   for(var i=0;i<LEVELS.length;i++)
-    if(LEVELS[i].boss&&progress[LEVELS[i].name]===undefined)return false;
-  return true;
+    if(LEVELS[i].boss&&progress[LEVELS[i].name]===undefined)out.push(i);
+  return out;
 }
+// "BOSS II" - the numeral is what a player looks for on the map, and the
+// subtitle after the dash is the Census's, not a label.
+function bossShort(l){return l.name.split(" \u2014 ")[0];}
+function bossesLeftSay(){
+  var n=bossesLeft().map(function(i){return bossShort(LEVELS[i]);});
+  if(!n.length)return "";
+  if(n.length===1)return n[0];
+  return n.slice(0,-1).join(", ")+" and "+n[n.length-1];
+}
+function sectionsUnlocked(){return bossesLeft().length===0;}
 function sectionSpans(){
   var out=[];
   for(var i=0;i<SECTIONS.length;i++){
@@ -619,7 +779,11 @@ function sectionSpans(){
 
    The preview switch forces the look on so it can be *seen* without being
    earned. It touches the drawing only. */
-function masteryPreview(){return settings.mastery==="on";}
+/* The preview switch is gone from the menu, so nothing can turn this on any
+   more. Kept as a function rather than deleted at every call site: it is the
+   seam the switch would come back through, and the three drawing paths that
+   ask it read better with a name than with `false`. */
+function masteryPreview(){return false;}
 function sectionMastered(sp){
   if(!sp||sp.max<=0||sp.locked)return false;
   return masteryPreview()||sp.got===sp.max;
@@ -647,7 +811,7 @@ function sectionMastered(sp){
    the first gap would re-lock levels those players had already walked past.
    ============================================================ */
 var MAP_WINDOW=2;
-var mapSection=null;          // which tab is open; null means "where you are"
+var mapSection=null;          // the section the map is on; null means "where you are"
 
 /* ---- the map's ambient world -----------------------------------------
    Wireframe cubes drifting behind the trail, each one periodically
@@ -1050,9 +1214,26 @@ function mapReach(){
   for(var i=0;i<LEVELS.length;i++) if(mapSolved(i)) last=i;
   return last+1+MAP_WINDOW;
 }
-// Where the pink node goes: the first level you have not dealt with.
+/* Where the pink node goes: the first level you have not dealt with - and
+   never one you cannot open.
+
+   The exception is the shelf, and it is the other half of the same bug. Deal
+   with everything up to BOSS IV while one boss is still standing and the
+   first untouched level is the first level of V · EXTRA, which is locked -
+   so the map's marker, mapFocus() and the home screen's CONTINUE all pointed
+   into a section the game refuses to open. CONTINUE went straight through
+   that lock, which is how somebody ends up playing a shelf the map still
+   says is shut.
+
+   Where they actually are is the fight that is holding it. */
 function mapHere(){
-  for(var i=0;i<LEVELS.length;i++) if(!mapTouched(i)) return i;
+  for(var i=0;i<LEVELS.length;i++) if(!mapTouched(i)){
+    if(mapLocked(i)){
+      var lf=bossesLeft();
+      if(lf.length)return lf[0];
+    }
+    return i;
+  }
   return LEVELS.length-1;
 }
 function mapLocked(i){
@@ -1117,7 +1298,7 @@ function mapCaption(l){
 
    A BOSS is a hexagon, which is what a cube looks like seen corner-on - the
    silhouette of the game's own piece, and the only shape on the map that is
-   also a thing in the world. Around it, four arcs: its four phases.
+   also a thing in the world. Around it, three arcs: its three phases.
 
    A TRIAL is a diamond, the square standing on its point, with the sweeping
    plane drawn straight through it. That is the trial in one picture: a flat
@@ -1181,72 +1362,289 @@ function mapNumeral(l,ord){
   return "·";
 }
 
-function levelPicker(){
+/* ============================================================
+   THE SECTION CHOOSER
+
+   LEVELS used to open the map straight onto whichever section you were in,
+   with a scrolling tab strip along the top to move between them. Two things
+   were wrong with that, and they are the same thing seen from either end.
+
+   From the player's end: the strip is a control you have to notice, and what
+   it controls - "which shelf of the campaign am I looking at" - is the one
+   choice big enough to deserve a screen of its own. Four sections is a
+   picture, not a list.
+
+   From the code's end: every tab press rebuilt the whole map in place -
+   trail, canvas, ambient loop and all - against a panel that was already
+   open, which is where the section that came up half-drawn came from. Now
+   there is no way to change section without leaving the map, so the map is
+   built once per visit and torn down once, and the way back is the way in.
+
+   The grid is 2x2 for the four numbered sections, which is the shape the
+   owner asked for. PROLOGUE and V - EXTRA are the two that are not part of
+   that four - one is before the campaign and one is after it - so they run
+   full width above and below it rather than being crammed into the square.
+   ============================================================ */
+/* One emblem per section, keyed off the section's own scenery so the tile
+   and the world cannot drift apart - the same trick mapWeatherKind() plays.
+   All of them are drawn in the section's colour by `fill:currentColor`. */
+/* ONE PATH PER ELEMENT, read from two places: the chooser's section tiles
+   and the wardrobe's glyph for the character that section awards. They have
+   to be the same drawing or the reward stops looking like it came from
+   there, and two copies of a path is two copies to keep in step. */
+var ELEM_PATH={
+  trees:"M12 2.4c3 3.1 5.2 6 5.2 8.6a5.2 5.2 0 0 1-4.2 5.1V21h-2v-4.9"+
+        "A5.2 5.2 0 0 1 6.8 11c0-2.6 2.2-5.5 5.2-8.6Z",
+  hell:"M12 1.8c.6 3.2 2.1 4.4 3.5 5.9 1.6 1.7 2.7 3.4 2.7 5.7a6.2 "+
+       "6.2 0 1 1-12.4 0c0-1.5.5-2.7 1.4-3.8.2 1.2.9 2 1.9 2.2.5-"+
+       "3.4 1.3-6.9 2.9-10Z",
+  ocean:"M2.4 9.6c2 0 2-1.8 4.8-1.8s2.8 1.8 4.8 1.8 2-1.8 4.8-1.8 "+
+        "2.8 1.8 4.8 1.8v2.6c-2 0-2-1.8-4.8-1.8s-2.8 1.8-4.8 1.8-2-"+
+        "1.8-4.8-1.8-2.8 1.8-4.8 1.8Zm0 6.2c2 0 2-1.8 4.8-1.8s2.8 "+
+        "1.8 4.8 1.8 2-1.8 4.8-1.8 2.8 1.8 4.8 1.8v2.6c-2 0-2-1.8-"+
+        "4.8-1.8s-2.8 1.8-4.8 1.8-2-1.8-4.8-1.8-2.8 1.8-4.8 1.8Z",
+  desert:"M3.2 7.4 12 2.6l8.8 4.8v9.2L12 21.4l-8.8-4.8Zm2.2 1.9v6.6"+
+         "L12 19.5l6.6-3.6V9.3L12 5.7ZM9.4 10.6h5.2v2.8H9.4Z"
+};
+function secEmblem(sec){
+  var sc=sec&&sec.theme&&sec.theme.scene;
+  /* PROLOGUE and V - EXTRA have no scenery of their own. The first gets the
+     game's own piece, a cube seen corner-on, because that is all it teaches;
+     the shelf gets a star, because beating every boss is what it is for. */
+  var p=ELEM_PATH[sc]||(sec&&sec.locked
+      ? "M12 2.2 14.9 8.6 21.8 9.4 16.7 14.1 18.1 21 12 17.5 5.9 21 7.3 14.1"+
+        " 2.2 9.4 9.1 8.6Z"
+      : "M12 2.2 21 7.4v9.2L12 21.8 3 16.6V7.4Zm0 2.5L5.4 8.5v7L12 19.3l6.6-"+
+        "3.8v-7Z");
+  return "<svg class='secem' viewBox='0 0 24 24' aria-hidden='true'>"+
+         "<path d='"+p+"'/></svg>";
+}
+/* THE CHAINS AND THE PADLOCK, drawn rather than typed.
+
+   A 🔒 glyph at this size is a smudge, and the game already paid for that
+   lesson on the corner buttons ("icons are solid SVG"). Two crossed chains
+   over the tile say shut in a way a badge in a corner does not, and they are
+   two strokes each: a fat dark one for the links and a thin one in the tile's
+   own ground punched through the middle, which is what makes a dashed line
+   read as a row of rings rather than a row of dashes. */
+function secChains(){
+  return "<svg class='secchain' viewBox='0 0 200 120' preserveAspectRatio='none'"+
+    " aria-hidden='true'>"+
+    "<path class='ck' d='M-8 16 L208 104'/><path class='ki' d='M-8 16 L208 104'/>"+
+    "<path class='ck' d='M-8 104 L208 16'/><path class='ki' d='M-8 104 L208 16'/>"+
+    "</svg>";
+}
+function secLock(){
+  return "<svg class='seclock' viewBox='0 0 24 24' aria-hidden='true'>"+
+    "<path d='M12 1.8a4.8 4.8 0 0 0-4.8 4.8v2.6h2.6V6.6a2.2 2.2 0 1 1 4.4 0v2.6"+
+      "h2.6V6.6A4.8 4.8 0 0 0 12 1.8Z'/>"+
+    "<path d='M5.4 9.9h13.2c.9 0 1.6.7 1.6 1.6v9.1c0 .9-.7 1.6-1.6 1.6H5.4c-.9 "+
+      "0-1.6-.7-1.6-1.6v-9.1c0-.9.7-1.6 1.6-1.6Zm6.6 3.4a1.9 1.9 0 0 0-1 3.5v2.1"+
+      "h2v-2.1a1.9 1.9 0 0 0-1-3.5Z'/></svg>";
+}
+
+/* PROLOGUE IS NOT A DESTINATION. Its two levels are the tutorial - no par,
+   no stars, `tutorial:true` - and the way back into them is REPLAY TUTORIAL
+   in the settings panel, which is where a lesson belongs. A tile for them on
+   the screen you pick a section from was offering the tutorial as a fifth
+   place to go, next to four sections that are the game.
+
+   Hidden from the chooser rather than removed from SECTIONS: `SECTIONS[].at`
+   are array indices that verify.js asserts against LEVELS, mapSecOf() has to
+   answer for level 0 and 1 like any other, and the tutorials still live at
+   the front of the campaign. Only the tile is gone, and levelPicker() will
+   not open on section 0 either. */
+function secPickable(n){return n>0;}
+/* The campaign's star total, counted over the sections that are actually on
+   the chooser. One function, so the chooser's header and the map's cannot
+   print two different numbers for the same thing. */
+function campaignStars(){
+  var t=0;
+  for(var i=0;i<LEVELS.length;i++){
+    if(!secPickable(mapSecOf(i))||LEVELS[i].tutorial)continue;
+    t+=starsForRecord(LEVELS[i],progress[LEVELS[i].name]);
+  }
+  return t;
+}
+function sectionPicker(){
+  // The chooser and the map share the ambient canvas, and only one of them is
+  // ever on screen - stop the old loop before its canvas is replaced.
+  mapBgStop();
+  var spans=sectionSpans();
+  var done=campaignStars(), cleared=0, total=0, i;
+  for(i=0;i<LEVELS.length;i++){
+    // The counts add up with the tiles on screen, so the tutorials are out of
+    // both halves of the fraction rather than only out of the numerator.
+    if(!secPickable(mapSecOf(i))||LEVELS[i].tutorial)continue;
+    total++;
+    if(mapTouched(i))cleared++;
+  }
+  var h="<canvas class='mbg' id='mBg' aria-hidden='true'></canvas>"+
+    "<div class='mhead'><div class='mt'><b>Orthogonal</b>"+
+    "<span>"+cleared+" / "+total+" CLEARED</span></div>"+
+    /* NO ? HERE. It opened mapHelp(), which explains the shapes of the map's
+       nodes - a disc, a hexagon, a diamond - and there is not one of those on
+       this screen. Reported as a button that does nothing, which from the
+       player's side is exactly what it was. It stays on the map, where the
+       thing it explains is. */
+    "<div class='mtot'>"+done+" ★</div>"+
+    "<button class='mq mx' id='skClose' aria-label='Back to the level'>✕</button>"+
+    "</div><div class='mbody secbody'><div class='secgrid' id='secGrid'></div></div>"+
+    "<div class='pfoot'><button id='skMenu'>"+homeIcon()+"HOME</button>"+
+    "<button id='skDone'>CLOSE</button></div>";
+  showPanel(h,"secs");
+  bind("skClose",hidePanel);
+  bind("skDone",hidePanel);
+  bind("skMenu",function(){hidePanel();homeShow();});
+  secGridDraw();
+}
+
+function secGridDraw(){
+  var spans=sectionSpans(), g=$("secGrid");
+  if(!g)return;
+  var here=mapSecOf(mapHere()), t="", n;
+  for(n=0;n<SECTIONS.length;n++){
+    if(!secPickable(n))continue;
+    var sec=SECTIONS[n], sp=spans[n];
+    // Locked for either reason: the shelf that waits on every boss, or a
+    // section the campaign has simply not reached yet.
+    // THE STATIC FLAG, NOT THE LIVE STATE. `sp.locked` is "shut right now",
+    // which goes false the moment every boss is down - so on a finished save
+    // the shelf stopped being the full-width row and fell back into the grid
+    // as a fifth square. `SECTIONS[n].locked` is "this is the shelf", which
+    // is what the layout is actually asking.
+    var shelf=!!sec.locked, shut=!!sp.locked;
+    var lk=shut||sec.at>mapReach();
+    var buy=mapSectionSkippable(n);
+    var pct=sp.max?Math.round(sp.got/sp.max*100):0;
+    var cl=0,tot=0;
+    for(var j=sp.from;j<=sp.to;j++){tot++;if(mapTouched(j))cl++;}
+    var mst=sectionMastered(sp);
+    var np=sec.name.split(" \u00b7 ");
+    var num=np.length>1?np[0]:"", ttl=np.length>1?np.slice(1).join(" \u00b7 "):sec.name;
+    // The four numbered sections are the square; the shelf that comes after
+    // them runs the full width underneath it.
+    var wide=shelf;
+    t+="<button class='sectile"+(lk?" lk":"")+(mst?" mst":"")+
+       (n===here&&!lk?" here":"")+(wide?" wide":"")+
+       "' data-sec='"+n+"' style=\"--tabc:"+(sec.col||"#c3cde4")+"\">"+
+       /* The numeral rides with the emblem and the word gets the tile's full
+          width to itself. Kept on one line beside it, FUNDAMENTALS is wider
+          than a column on a 327px phone and broke mid-word. */
+       "<span class='sectop'>"+secEmblem(sec)+
+       (num?"<span class='secnum'>"+esc(num)+"</span>":"")+"</span>"+
+       "<span class='secname'>"+esc(ttl)+"</span>"+
+       "<span class='secsub'>"+esc(sec.sub)+"</span>"+
+       // No bar where there is nothing to fill it: PROLOGUE is all tutorials,
+       // so its max is 0 and an empty track read as a section never started.
+       (sp.max?"<span class='secpb'><span style='width:"+(lk?0:pct)+
+               "%'></span></span>":"")+
+       "<span class='secf'><span>"+cl+"/"+tot+" cleared</span>"+
+       (sp.max?"<span class='secst'>"+sp.got+"/"+sp.max+" ★</span>":"")+
+       "</span>"+
+       (mst?"<span class='secmast'>ALL STARS</span>":"")+
+       (lk?secChains()+"<span class='seccap'>"+secLock()+
+           "<span class='seccapt'>"+
+           (shut?"BEAT EVERY BOSS":buy?"LOCKED":"KEEP PLAYING")+"</span>"+
+           (buy?"<span class='secad'>"+(noLimits()?"OPEN":
+                 adIcon()+"OPEN \u00b7 3 ADS")+"</span>":"")+
+           "</span>":"")+
+       "</button>";
+  }
+  g.innerHTML=t;
+  g.querySelectorAll("[data-sec]").forEach(function(el){
+    tap(el,function(){
+      var s=+el.getAttribute("data-sec"), sp=sectionSpans()[s];
+      /* THE SHELF IS THE ONE THING NOT FOR SALE, and pressing it has to say
+         so rather than doing nothing: a tile that swallows a press reads as
+         broken. Everything else opens its map - including a section still
+         locked, where the ad card at the top of the map is the thing that
+         opens it. Pressing the chip on the tile is the shortcut. */
+      if(SECTIONS[s].locked&&sp.locked){
+        flash(bossesLeft().length
+          ? "still standing: "+bossesLeftSay()
+          : "opening …");
+        if(bossesLeft().length)return;
+      }
+      levelPicker(s);
+    });
+  });
+  /* The ad chip is inside the tile, so it has to take the press before the
+     tile does. tap() listens on pointerdown and stops propagation, and an
+     event reaches the child before the parent it bubbles to - so the chip
+     wins simply by being the inner element. */
+  g.querySelectorAll(".sectile.lk .secad").forEach(function(el){
+    var s=+el.parentNode.parentNode.getAttribute("data-sec");
+    tap(el,function(){
+      grantSkip(LEVELS[SECTIONS[s].at].name);
+      secGridDraw();
+      flash("section opened · no stars for a skip");
+    });
+  });
+}
+
+/* The map, on ONE section, chosen before you got here.
+
+   `n` is that section. There is no way to change it from inside any more -
+   the tab strip is gone, and the way to another section is out through
+   sectionPicker() and back in. That is the whole fix for the section that
+   came up half-drawn: the map is now built once per visit against a section
+   that cannot change under it. */
+function levelPicker(n){
   /* Opening the map while it is already open replaces the panel's innerHTML,
      and with it the canvas. Without this the old loop would still be running
      against the detached one - drawing nothing anybody can see, and refusing
      to start again because it thinks it is already going. */
   mapBgStop();
+  if(typeof n==="number")mapSection=n;
   if(mapSection===null)mapSection=mapSecOf(mapHere());
+  /* Never the tutorial's shelf. mapHere() is level 0 or 1 for somebody who
+     has not finished the lesson, and the chooser has no tile to come back
+     to - so LEVELS from inside the tutorial opens on the first real section
+     instead of on a two-node trail with no stars on it. */
+  if(!secPickable(mapSection))mapSection=1;
   var spans=sectionSpans();
-  var here=mapHere(), total=0, done=0;
-  for(var q=0;q<LEVELS.length;q++){
-    if(LEVELS[q].tutorial)continue;
-    total+=3;done+=starsForRecord(LEVELS[q],progress[LEVELS[q].name]);
-  }
+  var here=mapHere();
 
   var h="<canvas class='mbg' id='mBg' aria-hidden='true'></canvas>"+
-        "<div class='mhead'><div class='mt'><b>Orthogonal</b>"+
+        "<div class='mhead'>"+
+        /* The section's name WITHOUT its numeral. The card directly below
+           carries "I \u00b7 FUNDAMENTALS" in full; up here, beside a star
+           pill and two round buttons, the numeral is what pushes the word off
+           the end of a 327px phone.
+
+           THE BACK CHEVRON THAT USED TO SIT LEFT OF IT IS GONE, and that is
+           the consistency pass rather than a loss: the way up now lives in
+           the footer's LEFT button on every panel - SECTIONS here, HOME on
+           the other three - and it is also the 30px that let the campaign
+           total come back onto this header beside the ? and the \u2715. */
+        "<div class='mt'><b>"+esc(SECTIONS[mapSection].name
+          .split(" \u00b7 ").slice(-1)[0])+"</b>"+
         "<span id='mSub'></span></div>"+
-        "<div class='mtot'>"+done+" ★</div>"+
         "<button class='mq' id='mHelp' aria-label='What the map means'>?</button>"+
+        "<div class='mtot'>"+campaignStars()+" \u2605</div>"+
         /* The way back to the game, in the header where it is always on
            screen. The row at the foot of the panel is below a trail that can
            be several screens long, so after scrolling down a section there
            was nothing in sight that looked like an exit and the map read as
            somewhere the game had left you. */
         "<button class='mq mx' id='mExit' aria-label='Back to the level'>✕</button></div>"+
-        "<div class='mtabs' id='mTabs'></div>"+
         "<div class='mbody' id='mBody'><div class='mcard' id='mCard'></div>"+
         "<div id='mtrail'><svg></svg></div></div>"+
-        "<div class='prow' style='padding:0 13px 11px;margin:0'>"+
-        "<button id='pkBack'>BACK</button><button id='pkClose'>CLOSE</button></div>"+
+        "<div class='pfoot'>"+
+        "<button id='pkBack'>"+gridIcon()+"SECTIONS</button><button id='pkClose'>CLOSE</button></div>"+
         "<div class='msheet' id='mSheet'></div>";
   showPanel(h,"map");   // syncCorners() adds .map and hides the corner total
-  bind("pkBack",menuPanel);
+  bind("pkBack",sectionPicker);
   bind("pkClose",hidePanel);
   bind("mExit",hidePanel);
   bind("mHelp",mapHelp);
 
-  var cleared=0;
-  for(var c=0;c<LEVELS.length;c++) if(mapTouched(c)) cleared++;
-  $("mSub").textContent=cleared+" OF "+LEVELS.length+" CLEARED";
+  var sp0=spans[mapSection], cleared=0, tot0=0;
+  for(var c=sp0.from;c<=sp0.to;c++){tot0++;if(mapTouched(c))cleared++;}
+  $("mSub").textContent=cleared+" / "+tot0+" CLEARED";
 
-  mapTabs(spans);
   mapDraw(spans);
-}
-
-function mapTabs(spans){
-  var t="";
-  for(var n=0;n<SECTIONS.length;n++){
-    var sp=spans[n], pct=sp.max?Math.round(sp.got/sp.max*100):0;
-    var lk=sp.locked||SECTIONS[n].at>mapReach();
-    var mst=sectionMastered(sp);
-    t+="<button class='mtab"+(n===mapSection?" sel":"")+(lk?" lk":"")+
-       (mst?" mst":"")+
-       "' data-tab='"+n+"' style=\"--tabc:"+(SECTIONS[n].col||"#c3cde4")+
-       ";--pct:"+(lk?0:pct)+"%\"><i></i>"+(lk?"🔒 ":mst?"★ ":"")+
-       esc(SECTIONS[n].name.split(" ")[0])+"</button>";
-  }
-  $("mTabs").innerHTML=t;
-  $("mTabs").querySelectorAll("[data-tab]").forEach(function(el){
-    tap(el,function(){
-      mapSection=+el.getAttribute("data-tab");
-      mapTabs(sectionSpans());mapDraw(sectionSpans());
-    });
-  });
-  var sel=$("mTabs").querySelector(".mtab.sel");
-  if(sel&&sel.scrollIntoView)sel.scrollIntoView({inline:"center",block:"nearest"});
 }
 
 function mapDraw(spans){
@@ -1273,15 +1671,34 @@ function mapDraw(spans){
     "<u class='mbar'><u style='width:"+(lk?0:pct)+"%'></u></u>"+
     "<div class='mf'><span>"+cleared+"/"+tot+" cleared</span>"+
     "<span>"+sp.got+"/"+sp.max+" ★</span></div>"+
+    /* NO LIMITS: the same door, without the toll. */
     (mapSectionSkippable(n)
-      ? "<button class='skipsec' id='mSecAd'>START THIS SECTION · WATCH 3 ADS</button>"
+      ? "<button class='skipsec' id='mSecAd'>"+(noLimits()?"START THIS SECTION":
+          adIcon()+"START THIS SECTION · WATCH 3 ADS")+"</button>"
+      : "")+
+    /* THE LOCK HAS TO SAY WHAT IS HOLDING IT. This is the shelf, and the one
+       thing a player cannot work out from anywhere else in the game is which
+       fight their save still counts as unbeaten - a skipped boss reads as
+       dealt with everywhere except here. Named on the card rather than only
+       in the sheet, because the card is what is on screen the moment the tab
+       is opened. */
+    (sp.locked&&bossesLeft().length
+      ? "<div class='mlock'>Still standing: <b>"+esc(bossesLeftSay())+
+        "</b><button class='mlockgo' id='mBossGo'>GO THERE</button></div>"
       : "");
+  var bg=$("mBossGo");
+  if(bg)tap(bg,function(){
+    var b=bossesLeft()[0];
+    mapSection=mapSecOf(b);
+    mapDraw(sectionSpans());
+    mapSheet(b);
+  });
   var sa=$("mSecAd");
   /* Opens the section's *first* level and nothing else, so the section is
      played from its beginning rather than handed over. */
   if(sa)tap(sa,function(){
     grantSkip(LEVELS[sec.at].name);
-    mapTabs(sectionSpans());mapDraw(sectionSpans());
+    mapDraw(sectionSpans());
     flash("section opened · no stars for a skip");
   });
 
@@ -1333,7 +1750,8 @@ function mapDraw(spans){
     var cap=(st==="locked"&&k==="lv")?"":esc(mapCaption(l));
     if(st==="skipped")cap=esc(mapCaption(l))+" <em>· skipped</em>";
     var right=off<0;
-    html+="<div class='mcap"+(k==="boss"||k==="trial"?" big":"")+"' data-off='"+
+    html+="<div class='mcap"+(right?" r":" l")+
+      (k==="boss"||k==="trial"?" big":"")+"' data-half='"+half+"' data-off='"+
       off.toFixed(4)+"' style='top:"+(y-8)+"px;transform:translateX("+
       (right?(half+13):(-half-13))+"px)"+(right?"":" translateX(-100%)")+"'>"+cap+"</div>";
     y+=STEP;
@@ -1386,10 +1804,33 @@ function mapDraw(spans){
    boss and the bottom is the first level - opening at scrollTop 0 would show
    every section by its ending. A section you have not started scrolls to its
    foot instead, which is where it begins. */
+/* WHERE THE MAP OPENS. On the level you are up to, if it is in this section.
+
+   If it is not - you are looking back at a section you have already been
+   through - it used to jam the scroll to the very bottom, which is the FOOT
+   of the trail, which is level one. The trail climbs, so that put the whole
+   point of the section (the boss at the top) off screen above you, and it
+   got reported as not being able to see the top of the levels. Opening on
+   the furthest thing you have dealt with here is the same answer the `here`
+   node gives, applied to a section you have finished: the trail is drawn
+   top-down, so the first solved node in the DOM is the highest one. */
 function mapFocus(){
   var body=$("mBody"); if(!body)return;
-  var here=$("mtrail").querySelector(".mnode.here");
-  if(here&&here.scrollIntoView){here.scrollIntoView({block:"center"});return;}
+  var tr=$("mtrail");
+  var el=tr.querySelector(".mnode.here")||
+         tr.querySelector(".mnode.solved,.mnode.skipped");
+  /* SCROLL #mBody AND NOTHING ELSE. This was scrollIntoView({block:"center"}),
+     which walks *every* scrollable ancestor on the way up - and the panel is
+     one of them, so centring a node halfway down the trail also slid the
+     map's own header off the top of the screen. Visible in every map
+     screenshot the project has: the title row cut in half at the top edge.
+     It never mattered enough to chase while the way out was a footer button;
+     it matters now that the way back to the section chooser is up there. */
+  if(el&&el.getBoundingClientRect){
+    var er=el.getBoundingClientRect(), br=body.getBoundingClientRect();
+    body.scrollTop+=(er.top-br.top)-(body.clientHeight-er.height)/2;
+    return;
+  }
   body.scrollTop=body.scrollHeight;
 }
 
@@ -1473,7 +1914,20 @@ function mapLayout(pts,H,mast){
       (SECTIONS[mapSection].col||"#35c2a5")+"' stroke-opacity='.42' "+
       "stroke-width='3.5' stroke-linecap='round'/>":"");
   trail.querySelectorAll("[data-off]").forEach(function(el){
-    el.style.left=(cx+parseFloat(el.getAttribute("data-off"))*(w*.5-44))+"px";
+    var left=cx+parseFloat(el.getAttribute("data-off"))*(w*.5-44);
+    el.style.left=left+"px";
+    /* A caption is capped by the space its own node leaves it, measured
+       rather than guessed at a percentage: a node far out to one side has
+       less room on that side, and a flat 52% still ran off the edge for the
+       longest name in Section I. `half` is the node's own half-width, which
+       is what the transform beside it already shifts by. */
+    var half=parseFloat(el.getAttribute("data-half"));
+    if(!isNaN(half)){
+      var room=el.classList.contains("r")
+        ? w-(left+half+13)-8
+        : (left-half-13)-8;
+      el.style.maxWidth=Math.max(64,room)+"px";
+    }
   });
 }
 
@@ -1481,7 +1935,7 @@ function mapSheetClose(){$("mSheet").classList.remove("on");}
 
 function mapSheet(i){
   var l=LEVELS[i], k=mapKind(l), st=mapState(i);
-  var kind=k==="boss"?"BOSS · FOUR PHASES":
+  var kind=k==="boss"?"BOSS · THREE PHASES":
            k==="trial"?"TRIAL · THREE CORES, ON A CLOCK":
            k==="tut"?"TUTORIAL · UNSCORED":"LEVEL";
   var meta=st==="solved"
@@ -1490,35 +1944,58 @@ function mapSheet(i){
     : st==="skipped"?"<span class='a'>skipped</span> · no stars yet, still playable"
     : st==="here"?"you are here"
     : st==="open"?"open — not played yet"
-    : "locked — clear what is in front of it, or skip ahead";
+    /* Two different locks, and they were saying the same sentence. Ahead of
+       the window you can clear what is in front of it or buy the door; on
+       the shelf neither is true, and telling somebody to skip ahead onto the
+       one thing an ad cannot open is how a lock becomes a dead end. */
+    : mapSkippable(i)?"locked — clear what is in front of it, or skip ahead"
+    : "locked — the shelf is still sealed";
 
   var acts,note;
   if(st==="locked"&&mapSkippable(i)){
     var ads=mapAds(k);
     var what=k==="boss"?"THE BOSS":k==="trial"?"THE TRIAL":"THIS LEVEL";
-    acts="<button class='ad' id='mAd'>OPEN "+what+" · WATCH "+ads+" AD"+
-         (ads>1?"S":"")+"</button><button class='qt' id='mNo'>NOT NOW</button>";
-    note="This opens <b>this one</b> and nothing else — everything in front of "+
-         "it stays where it is, still to play, and you can open those the same "+
-         "way. It awards <b>no stars</b>. Ads buy progress, never score.";
+    acts=(noLimits()
+         ? "<button class='go' id='mAd'>OPEN "+what+"</button>"
+         : "<button class='ad' id='mAd'>"+adIcon()+"OPEN "+what+" · WATCH "+ads+
+           " AD"+(ads>1?"S":"")+"</button>")+
+         "<button class='qt' id='mNo'>NOT NOW</button>";
+    note="Opens <b>this one</b> and nothing else, and awards <b>no stars</b>.";
   }else if(st==="locked"){
-    acts="<button class='qt' id='mNo'>CLOSE</button>";
-    note="This shelf opens when every boss is down. It is the one thing an ad "+
-         "cannot buy — beating them is what it is for.";
+    /* The shelf, and the only lock in the game an ad cannot open. Which
+       makes it the one lock that has to name its own condition: a boss you
+       SKIPPED is not a boss you beat, and nothing else in the game ever says
+       so. Skipping is offered by the game itself after three losses, so this
+       is a state a player reaches by taking the help they were handed. */
+    var lf=bossesLeft();
+    acts=(lf.length&&!mapLocked(lf[0])
+        ? "<button class='go' id='mBossTo'>GO TO "+esc(bossShort(LEVELS[lf[0]]))+"</button>"
+        : "")+"<button class='qt' id='mNo'>CLOSE</button>";
+    note="This shelf opens when every boss is <b>beaten</b> \u2014 the one "+
+         "thing an ad cannot buy."+
+         (lf.length?" Still standing: <b>"+esc(bossesLeftSay())+"</b>. A boss "+
+          "you skipped still counts as standing.":"");
   }else{
     acts="<button class='go' id='mPlay'>"+(st==="solved"?"PLAY AGAIN":"PLAY")+
          "</button><button class='qt' id='mNo'>CLOSE</button>";
-    note=st==="skipped"?"You have not beaten this one yet. Its stars are still on the table."
-      :k==="boss"?"No goal here. Four phases, and clearing the board begins the next."
-      :k==="trial"?"Three cores, a sweeping plane, three lives. Scored on lives."
+    note=st==="skipped"?"Not beaten yet. Its stars are still on the table."
+      :k==="boss"?"No goal here. Three phases; clear the board to begin the next."
+      :k==="trial"?"Three cores on a clock. Scored on lives."
       :(st==="solved"&&starsForRecord(l,progress[l.name])<3)
-        ?"Three stars is the solver's own move count, so <b>3★ means optimal</b>.":"";
+        ?"<b>Three stars means optimal.</b>":"";
   }
   $("mSheet").innerHTML="<div class='mk"+(k==="boss"?" b":k==="trial"?" t":"")+"'>"+
     kind+"</div><h4>"+esc(l.name)+"</h4><div class='mm'>"+meta+"</div>"+
     "<div class='ma'>"+acts+"</div>"+(note?"<div class='mn'>"+note+"</div>":"");
   $("mSheet").classList.add("on");
   bind("mNo",mapSheetClose);
+  var bto=$("mBossTo");
+  if(bto)tap(bto,function(){
+    var b=bossesLeft()[0];
+    mapSection=mapSecOf(b);
+    mapDraw(sectionSpans());
+    mapSheet(b);
+  });
   var play=$("mPlay");
   if(play)tap(play,function(){
     mapSheetClose();hidePanel();playSource="builtin";enterPlay(LEVELS[i],i,false);
@@ -1530,7 +2007,7 @@ function mapSheet(i){
   if(ad)tap(ad,function(){
     grantSkip(l.name);
     mapSection=mapSecOf(i);
-    mapTabs(sectionSpans());mapDraw(sectionSpans());
+    mapDraw(sectionSpans());
     mapSheet(i);
     flash("opened · no stars for a skip");
   });
@@ -1542,69 +2019,489 @@ function mapHelp(){
   };
   $("mSheet").innerHTML="<div class='mk'>THE MAP</div><h4>What the map means</h4>"+
     "<div class='mlegend'>"+
-    row("solved","7","<b>Solved.</b> Stars sit underneath — three is the solver's own move count, so 3★ is optimal.")+
-    row("here","8","<b>Where you are.</b> The one that breathes.")+
-    row("open","9","<b>Open.</b> You can always reach a couple of levels ahead, so one hard puzzle never stops you.")+
-    row("locked","●","<b>Locked.</b> Clear what is in front of it — or open that one on its own with an ad.")+
-    row("skipped","●","<b>Skipped.</b> The door opened, the level did not. Its stars are still there to take.")+
+    row("solved","7","<b>Solved.</b> Its stars sit underneath. Three means optimal.")+
+    row("here","8","<b>Where you are.</b>")+
+    row("open","9","<b>Open.</b> You can always reach a couple ahead.")+
+    row("locked","●","<b>Locked.</b> Clear what is in front of it, or open it with an ad.")+
+    row("skipped","●","<b>Skipped.</b> Its stars are still there to take.")+
     row("mtrial",mapShape("trial")+"<span>I</span>",
-        "<b>Trial</b> \u2014 a square on its point, with the plane about to sweep through it. Three cores, on a clock.")+
+        "<b>Trial</b> \u2014 three cores, on a clock.")+
     row("mboss",mapShape("boss")+"<span>I</span>",
-        "<b>Boss</b> \u2014 a cube seen corner-on. The four arcs are its four phases. Closes the section.")+
-    "</div><div class='mn'>Ads buy <b>progress, never score</b>. A skip awards no "+
-    "stars and the level stays on the map, playable, whenever you want it — and "+
-    "it opens that level alone, so nothing behind it is handed over.</div>"+
+        "<b>Boss</b> \u2014 three phases. It closes the section.")+
+    "</div><div class='mn'>Ads buy <b>progress, never score</b>. A skip awards "+
+    "no stars, opens that level alone, and leaves it playable.</div>"+
     "<div class='ma'><button class='qt' id='mNo'>CLOSE</button></div>";
   $("mSheet").classList.add("on");
   bind("mNo",mapSheetClose);
 }
 
+/* THE PIECES, IN ONE LINE EACH.
+
+   This used to run to a paragraph a piece - "casts into the plane", "ground
+   in the volume, a hole in the plane", "poisons the whole column it folds
+   into" - which is the code's own vocabulary handed to somebody who has
+   never read it. A player has three words for this game: 2D, 3D, and the
+   name of the thing in front of them. So each piece gets one sentence in
+   those words, and the two that were still called by their old names are
+   called what they are drawn as: water and fire. */
 function legendPanel(){
   showPanel("<h3>THE PIECES</h3>"+
     "<div class='leg'><i style='background:#5a6d94'></i><span><b>Stone</b> \u2014 "+
-      "solid, and it casts into the plane when you fold.</span></div>"+
-    "<div class='leg'><i style='background:#7fc4d8;opacity:.65'></i><span><b>Glass</b> \u00b7 ring \u2014 "+
-      "solid to stand on, but casts nothing. Ground in the volume, a hole in the plane.</span></div>"+
-    "<div class='leg'><i style='background:#d9a441'></i><span><b>Anchor</b> \u00b7 gem \u2014 "+
-      "claims you when you unfold, instead of the block at the front. "+
-      "Turning reaches either <i>end</i> of a column of candidates; only an "+
-      "anchor reaches one in the <i>middle</i>. It also holds a <b>crate</b> "+
-      "fast: once a crate rests on amber it can never be shoved again, so "+
-      "where you park one is a decision you cannot take back.</span></div>"+
-    "<div class='leg'><i style='background:#9b7fd4'></i><span><b>Crate</b> \u00b7 cross \u2014 "+
-      "walk into it and it slides. It casts like stone, so moving it in the volume "+
-      "changes the shape of the plane. The only thing here you can change.</span></div>"+
-    "<div class='leg'><i style='background:#8a3040'></i><span><b>Spikes</b> \u00b7 four points \u2014 "+
-      "solid, and they cast like stone, but standing on one kills you. A spike "+
-      "buried deep in the world poisons the whole column it folds into: ground "+
-      "that is safe in the volume can be lethal in the plane.</span></div>"+
-    "<div class='leg'><i style='background:#f2d16b'></i><span><b>Key</b> \u2014 "+
-      "collected in the <i>plane</i>, on the square it folds into. Which axis "+
-      "you fold along decides which keys you can reach.</span></div>"+
+      "solid, and still there in 2D.</span></div>"+
+    "<div class='leg'><i style='background:#7fc4d8;opacity:.65'></i><span><b>Water</b> \u2014 "+
+      "stand on it. It leaves nothing in 2D.</span></div>"+
+    "<div class='leg'><i style='background:#8a3040'></i><span><b>Fire</b> \u2014 "+
+      "it burns you. In 2D it burns the whole line.</span></div>"+
+    "<div class='leg'><i style='background:#9b7fd4'></i><span><b>Crate</b> \u2014 "+
+      "walk into it and it slides. It reshapes 2D.</span></div>"+
+    "<div class='leg'><i style='background:#d9a441'></i><span><b>Amber</b> \u2014 "+
+      "catches you on the way back to 3D. It pins a crate.</span></div>"+
     "<div class='leg'><i style='background:#d6336c'></i><span><b>You</b> \u2014 "+
-      "the plate underneath shows what you're standing on.</span></div>"+
+      "one square, and whatever shape you are wearing.</span></div>"+
     "<div class='leg'><i style='background:#35c2a5'></i><span><b>Goal</b> \u2014 "+
-      "you must arrive in the volume, not the plane.</span></div>"+
+      "reach it in 3D. Standing on it in 2D is not enough.</span></div>"+
     "<div class='leg'><i style='background:transparent;border:1px solid var(--rule)'></i>"+
-      "<span><b>The eye button</b> \u2014 hold it (or Shift) to lean the camera "+
-      "and read depth. It costs no move. Blocks sharing your depth stay bright; "+
-      "everything further back fades.</span></div>"+
+      "<span><b>The eye</b> \u2014 hold it to see how far away things are. "+
+      "Costs no move.</span></div>"+
     "<div class='prow'><button id='lgBack'>BACK</button></div>");
   bind("lgBack",menuPanel);
 }
 
-function libraryPanel(){
-  var sorted=library.slice().sort(function(a,b){return a.score-b.score;});
-  var html="<h3>LIBRARY \u2014 "+library.length+" LEVEL"+(library.length===1?"":"S")+"</h3>";
+/* ============================================================
+   MY LEVELS
+   ============================================================
+   The player's own levels, as a place rather than as a tool.
+
+   What was here before was LIBRARY: a list sorted by the solver's
+   difficulty score, reachable only from inside the editor, and a level could
+   not enter it at all until it was solvable - VERIFY, then SAVE. That is a
+   level designer's workflow, and it costs a beginner their work: build half
+   a level, put the game down, and there was nothing to come back to.
+
+   So: MY LEVELS is opened from the home screen, it lists what you have made
+   in the order you made it, and every row carries the four things you can do
+   to a level you own - open it, rename it, share it, delete it. ADD LEVEL is
+   the top button because starting one is the thing this screen is for.
+
+   Three rules hold the whole screen up:
+
+   - A LEVEL EXISTS BEFORE IT WORKS. The entry is created when you name it,
+     and SAVE writes whatever is on the board - unsolvable, half-built, one
+     block. Solvability is what VERIFY is for, and it stays advice.
+   - YOU BUILD WITH WHAT YOU HAVE BEEN SHOWN. The piece chips and the ground
+     choices are filtered by how far the campaign has actually taken you
+     (seenTools(), seenSections()), so the editor teaches in the same order
+     the game does rather than opening with five pieces nobody has met.
+   - SHARE IS TEXT. There is no server here and there is not going to be one,
+     so a shared level is a block of JSON you copy, and LOAD A LEVEL is the
+     same block pasted back in. It is the project file's format, one level at
+     a time, so the two can read each other. */
+
+/* The sections whose ground a custom level may be built on: the ones the
+   campaign has actually walked you through. Same seenIndex() the piece chips
+   use, so the ground and the blocks can never disagree about what you have
+   been shown. */
+function seenSections(){
+  var out=[],reach=seenIndex();
+  for(var i=0;i<SECTIONS.length;i++){
+    if(SECTIONS[i].at>reach)continue;
+    if(SECTIONS[i].locked&&!sectionsUnlocked())continue;
+    out.push(i);
+  }
+  if(!out.length)out.push(0);
+  return out;
+}
+// "IV · DESERT" is the section; "DESERT" is the ground. The short half is
+// derived rather than authored so renaming a section renames its ground too.
+function groundName(n){
+  var nm=SECTIONS[n].name;
+  var dot=nm.indexOf("·");
+  return (dot<0?nm:nm.slice(dot+1)).trim();
+}
+/* The theme a custom level is built on. Stored as a section index, so a
+   custom level inherits every part of a section's look - sky, ground,
+   scenery, weather, the paper it folds onto - rather than a surface name
+   that would leave the sky behind. Null is the default night, which is what
+   the editor has always drawn on. */
+function levelTheme(lv){
+  if(!lv||lv.theme==null||typeof SECTIONS==="undefined")return null;
+  var s=SECTIONS[lv.theme];
+  return s?s.theme:null;
+}
+// What a row says about a level under its name. A level that has never
+// solved says so plainly: it is a draft, not a broken thing.
+function levelNote(lv){
+  var g=(lv.theme!=null&&SECTIONS[lv.theme])?groundName(lv.theme):"NIGHT";
+  if(lv.score==null)return g.toLowerCase()+" · draft";
+  return g.toLowerCase()+" · "+tierOf(lv.score)+" · "+lv.moves+" moves";
+}
+/* THE WORLD A LEVEL STANDS IN, as a colour and a picture.
+
+   MY LEVELS was a grey list: four identical rows of white text and grey
+   buttons, on a screen the player reached from a home screen where every
+   other door is coloured. Nothing on it said which of your levels was which
+   before the name was read, and nothing said anything at all about the
+   worlds the game had just spent four sections teaching.
+
+   A custom level already carries its ground as a SECTIONS index, so it
+   already has both: `col`, the colour that section wears on the chooser, the
+   map and CONTINUE, and secEmblem(), the glyph its tile carries. This is the
+   one lookup both the row and the NEW LEVEL chips read, so a ground looks
+   the same wherever it is offered or shown. A level with no ground is the
+   editor's default night, which is PROLOGUE's own slate. */
+function groundOf(n){
+  var s=(n!=null&&typeof SECTIONS!=="undefined")?SECTIONS[n]:null;
+  return {sec:s,col:(s&&s.col)||"#7183a6",
+          name:s?groundName(n):"night",
+          em:secEmblem(s)};
+}
+
+/* THE PAGE SHAPE, borrowed rather than re-invented. MY LEVELS is a place you
+   go, like the map and the wardrobe, so it is a full-height panel wearing the
+   same furniture they wear: a header that says where you are with the way out
+   in it, a body that scrolls, and a footer whose LEFT button goes up one
+   level and whose RIGHT one closes. Every screen under MY LEVELS goes through
+   here, so naming a level and sharing one cannot drift into two shapes.
+
+   It was an ordinary panel first - a 44vh sheet floating over the home
+   screen with its buttons in `.prow` pairs - and that is what a decision
+   looks like in this game, not what a place looks like. */
+function mlScreen(title,sub,body,foot){
+  showPanel(
+    "<div class='phead'><div class='pt'><b>"+title+"</b>"+
+      (sub?"<span>"+sub+"</span>":"")+"</div>"+
+      "<div class='mtot'>"+starsEarned()+" ★</div>"+
+      "<button class='mq mx' id='mlX' aria-label='Back to the level'>✕</button>"+
+    "</div>"+
+    "<div class='pbody'>"+body+"</div>"+
+    "<div class='pfoot'>"+foot+"</div>","mylevels");
+  bind("mlX",hidePanel);
+}
+/* THE LEVEL THE SCREEN IS ABOUT, at the top of it. RENAME, SHARE and DELETE
+   each act on exactly one level, and each used to open on a header, a
+   sentence and a button - three screens that looked the same and named the
+   level only in a subtitle in caps. This is the row from MY LEVELS with its
+   verbs taken off: the same emblem, the same colour, the same two lines, so
+   the screen you land on is visibly the row you pressed. */
+function mlHero(lv){
+  var g=groundOf(lv.theme);
+  var meta=g.name.toLowerCase()+(lv.score==null?" · draft":
+    " · "+lv.moves+" moves");
+  return "<div class='mlhero' style='--sec:"+g.col+"'>"+
+    "<span class='mlem'>"+g.em+"</span>"+
+    "<span class='mlmain'><b>"+esc(lv.name)+"</b>"+
+      "<span class='mlmeta'>"+esc(meta)+"</span></span></div>";
+}
+// The footer every screen under MY LEVELS wears: up one level, then out.
+function mlFoot(backId,backLabel){
+  return "<button id='"+backId+"'>"+backLabel+"</button>"+
+         "<button id='mlClose'>CLOSE</button>";
+}
+
+function myLevelsPanel(){
+  var body="<button class='mlbtn pgo' id='mlAdd'>+ &nbsp;ADD LEVEL</button>"+
+           "<button class='mlbtn' id='mlLoad'>"+upIcon()+"LOAD A LEVEL</button>";
   if(!library.length){
-    html+="Nothing saved yet. Build a level, hit VERIFY, then SAVE.<br><br>";
+    /* NOTHING YET IS A PICTURE, not a paragraph of grey. An empty list is
+       the first thing most players see here, so it carries the same block
+       the editor's SOLID chip carries - the thing they are about to place -
+       over the sentence that says what the two buttons do. */
+    body+="<div class='mlnone'>"+
+      "<svg class='mlnonecu' viewBox='0 0 24 24' aria-hidden='true'>"+
+        "<path class='ft' d='M12 3.4 20.6 8.3 12 13.2 3.4 8.3Z'/>"+
+        "<path class='fl' d='M3.4 8.3 12 13.2v7.4L3.4 15.7Z'/>"+
+        "<path class='fr' d='M20.6 8.3 12 13.2v7.4l8.6-4.9Z'/></svg>"+
+      "<b>No levels yet</b>"+
+      "<span>ADD LEVEL asks for a name and opens the editor on it; "+
+      "SAVE keeps whatever you have built, finished or not.</span></div>";
   } else {
-    html+="Sorted easiest first, by the solver's own numbers.<br>";
+    /* ONE LEVEL, ONE LINE, and the line is as wide as the buttons above it.
+       The name takes whatever the row's five verbs leave and ellipsises;
+       everything else a level could say about itself - its ground, its tier,
+       its move count - is on MORE, because this screen is a list of your
+       levels rather than a report on them. The one exception is a draft,
+       which is said here: it is the difference between a level that plays
+       and one that does not. */
+    body+="<div class='mllist'>";
+    for(var i=0;i<library.length;i++){
+      var lv=library[i], g=groundOf(lv.theme);
+      /* GROUND AND LENGTH, and not the tier. Three facts do not fit beside
+         four buttons at a size anyone would read, and of the three the
+         solver's difficulty word is the one that is already on MORE - the
+         ground is what the emblem beside it is saying, and the move count is
+         the only number the player set themselves. */
+      var meta=g.name.toLowerCase()+(lv.score==null?"":" · "+lv.moves+" moves");
+      /* WHAT THE LEVEL IS, THEN WHAT YOU CAN DO TO IT. The four verbs used
+         to share a line with the name, and on the owner's 327px phone the
+         name lost - "The Long Way Round" ellipsised to make room for four
+         buttons that are identical on every row. They get their own line
+         across the whole card instead, which is also the first time they
+         have been a comfortable size to hit. */
+      body+="<div class='mlrow' style='--sec:"+g.col+"'>"+
+        "<span class='mlhead'>"+
+          "<span class='mlem'>"+g.em+"</span>"+
+          "<span class='mlmain'>"+
+            "<span class='mltop'><span class='lname'>"+esc(lv.name)+"</span>"+
+              (lv.score==null?"<i class='mldraft'>DRAFT</i>":"")+
+              "<button class='mini mlic' data-name='"+lv.id+"' "+
+                "aria-label='Rename'>"+penIcon()+"</button></span>"+
+            "<span class='mlmeta'>"+esc(meta)+"</span>"+
+          "</span>"+
+        "</span>"+
+        "<span class='lbtns'>"+
+          "<button class='mini mlic mlplay' data-play='"+lv.id+"' "+
+            "aria-label='Play'>"+playIcon()+"</button>"+
+          "<button class='mini' data-edit='"+lv.id+"'>EDIT</button>"+
+          "<button class='mini mlic' data-share='"+lv.id+"' "+
+            "aria-label='Share'>"+shareIcon()+"</button>"+
+          "<button class='mini mlx' data-del='"+lv.id+"' "+
+            "aria-label='Delete'>×</button>"+
+        "</span></div>";
+    }
+    body+="</div>";
+  }
+  /* NO MORE TOOLS BUTTON, on the owner's call. This screen has two actions
+     and a list, and a third door at the foot of it - to a panel of a level
+     designer's tools - is a door most players have no use for. libraryPanel()
+     is intact and one `bind` away, the same way legendPanel() is; the
+     composer and the project file are behind it. */
+  mlScreen("My Levels",library.length+" LEVEL"+(library.length===1?"":"S"),body,
+    "<button id='mlHome'>"+homeIcon()+"HOME</button>"+
+    "<button id='mlClose'>CLOSE</button>");
+
+  var p=$("panel");
+  p.querySelectorAll("[data-play]").forEach(function(el){
+    tap(el,function(){startLibrary(el.getAttribute("data-play"));});
+  });
+  p.querySelectorAll("[data-edit]").forEach(function(el){
+    tap(el,function(){editLevel(el.getAttribute("data-edit"));});
+  });
+  p.querySelectorAll("[data-name]").forEach(function(el){
+    tap(el,function(){renamePanel(el.getAttribute("data-name"));});
+  });
+  p.querySelectorAll("[data-share]").forEach(function(el){
+    tap(el,function(){sharePanel(el.getAttribute("data-share"));});
+  });
+  p.querySelectorAll("[data-del]").forEach(function(el){
+    tap(el,function(){deletePanel(el.getAttribute("data-del"));});
+  });
+  bind("mlAdd",newLevelPanel);
+  bind("mlLoad",loadLevelPanel);
+  bind("mlHome",function(){hidePanel();homeShow();});
+  bind("mlClose",hidePanel);
+}
+
+/* NAMING IS THE FIRST STEP, not the last one. The name is what the row on
+   MY LEVELS is, so a level cannot be made without one - and the ground is
+   asked for in the same breath because it is the one decision that is
+   awkward to change once there are blocks standing on it. */
+function newLevelPanel(){
+  var secs=seenSections(),pick=secs[0],keep="";
+  function draw(){
+    /* A GROUND CHIP IS THE WORLD IT PICKS: its section's colour and its
+       section's emblem, the same pair the chooser tile and the row on MY
+       LEVELS wear. It used to be the word alone in the editor's grey chip,
+       which asked the player to remember that FIRE is the red one - on a
+       screen whose whole question is "which world?". */
+    var chips="";
+    for(var i=0;i<secs.length;i++){
+      var g=groundOf(secs[i]);
+      chips+="<button class='chip gchip"+(secs[i]===pick?" sel":"")+
+             "' style='--c:"+g.col+"' data-g='"+secs[i]+"'>"+g.em+
+             "<i>"+esc(groundName(secs[i]))+"</i></button>";
+    }
+    mlScreen("New Level","NAME AND GROUND",
+      "<input id='nlName' placeholder='level name' />"+
+      "<div class='note'>GROUND — the world your level stands in.</div>"+
+      "<div class='grow'>"+chips+"</div>"+
+      "<button class='mlbtn pgo' id='nlGo'>CREATE</button>",
+      mlFoot("nlBack","← MY LEVELS"));
+    $("nlName").value=keep;
+    $("panel").querySelectorAll("[data-g]").forEach(function(el){
+      tap(el,function(){keep=$("nlName").value;pick=+el.getAttribute("data-g");draw();});
+    });
+    bind("mlClose",hidePanel);
+    bind("nlBack",myLevelsPanel);
+    bind("nlGo",function(){
+      var nm=($("nlName").value||"").trim();
+      if(!nm){flash("give it a name first");return;}
+      var e={id:"l"+Date.now(),name:nm,blocks:[],keys:[],
+             start:[0,1,0],goal:[3,1,0],rotate:true,theme:pick,
+             score:null,moves:null,needsRot:false,flattens:0};
+      library.push(e);
+      libSave().then(function(){loadIntoEditor(e);flash("new level — "+nm);});
+    });
+  }
+  draw();
+}
+
+function loadIntoEditor(lv){
+  snapshot();
+  custom.name=lv.name;
+  custom.blocks=lv.blocks.map(function(v){return v.slice();});
+  custom.keys=(lv.keys||[]).map(function(v){return v.slice();});
+  custom.start=lv.start.slice();custom.goal=lv.goal.slice();
+  custom.rotate=lv.rotate!==false;
+  custom.theme=(lv.theme==null?null:lv.theme);
+  editingId=lv.id;
+  // Freshly loaded is freshly saved: the board and the library entry agree.
+  editDirty=false;
+  ghosted.clear();
+  enterEditor();
+}
+function editLevel(id){
+  var lv=findLevel(id);
+  if(!lv)return;
+  loadIntoEditor(lv);
+  flash("editing "+lv.name);
+}
+
+function renamePanel(id){
+  var lv=findLevel(id);
+  if(!lv)return;
+  mlScreen("Rename",esc(lv.name).toUpperCase(),
+    mlHero(lv)+
+    "<input id='rnName' placeholder='level name' />"+
+    "<button class='mlbtn pgo' id='rnGo'>RENAME</button>",
+    mlFoot("rnBack","← MY LEVELS"));
+  $("rnName").value=lv.name;
+  bind("mlClose",hidePanel);
+  bind("rnBack",myLevelsPanel);
+  bind("rnGo",function(){
+    var nm=($("rnName").value||"").trim();
+    if(!nm){flash("give it a name first");return;}
+    lv.name=nm;
+    // The editor is showing this level's name in the HUD if it is the one
+    // open, so the two are kept in step rather than left to disagree.
+    if(editingId===id)custom.name=nm;
+    libSave().then(function(){myLevelsPanel();flash("renamed");});
+  });
+}
+
+/* DELETING IS THE ONE THING HERE THAT CANNOT BE UNDONE - there is no undo
+   stack for the library and no copy of it anywhere else - so it is the one
+   thing that asks. */
+function deletePanel(id){
+  var lv=findLevel(id);
+  if(!lv)return;
+  mlScreen("Delete",esc(lv.name).toUpperCase(),
+    mlHero(lv)+
+    "<div class='note'>This cannot be undone, and there is no copy of it "+
+    "anywhere else.</div>"+
+    "<button class='mlbtn pdanger' id='dlGo'>DELETE IT</button>",
+    mlFoot("dlBack","← KEEP IT"));
+  bind("mlClose",hidePanel);
+  bind("dlBack",myLevelsPanel);
+  bind("dlGo",function(){
+    library=library.filter(function(x){return x.id!==id;});
+    if(editingId===id)editingId=null;
+    libSave().then(function(){myLevelsPanel();flash("deleted");});
+  });
+}
+
+/* SHARING IS TEXT, and it is the same shape the project file uses for one of
+   its levels, so anything that can read one can read the other. Selected on
+   open, because the whole point is to copy it and a textarea you have to
+   drag-select on a phone is not a share button. */
+function sharePanel(id){
+  var lv=findLevel(id);
+  if(!lv)return;
+  mlScreen("Share",esc(lv.name).toUpperCase(),
+    mlHero(lv)+
+    "<div class='note'>Copy this and send it. Whoever gets it pastes it into "+
+    "LOAD A LEVEL.</div>"+
+    "<textarea id='shTxt'></textarea>"+
+    "<button class='mlbtn pgo' id='shCopy'>COPY</button>",
+    mlFoot("shBack","← MY LEVELS"));
+  $("shTxt").value=JSON.stringify(shareData(lv));
+  $("shTxt").focus();$("shTxt").select();
+  bind("mlClose",hidePanel);
+  bind("shBack",myLevelsPanel);
+  bind("shCopy",function(){
+    var t=$("shTxt");t.focus();t.select();
+    /* Three ways, because all three fail somewhere real: the async clipboard
+       needs a secure context and a permission, execCommand is deprecated but
+       is what an old WebView has, and if both refuse the text is already
+       selected on screen and the player can copy it by hand. */
+    var done=false;
+    try{
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(t.value);done=true;
+      }
+    }catch(e){}
+    if(!done){try{done=document.execCommand("copy");}catch(e){}}
+    flash(done?"copied":"select it and copy");
+  });
+}
+function shareData(lv){
+  return {format:"orthogonal-level-1",name:lv.name,blocks:lv.blocks,
+          keys:lv.keys||[],start:lv.start,goal:lv.goal,
+          rotate:lv.rotate!==false,theme:lv.theme==null?null:lv.theme};
+}
+
+/* The other end of SHARE. It takes one shared level, a bare level object, or
+   a whole project file, because those are the three things somebody will
+   actually paste in here - and it never replaces what you have: this button
+   adds. Replacing is still on the project file's own panel, where it says so
+   in the button. */
+function loadLevelPanel(){
+  mlScreen("Load A Level","PASTE ONE SOMEBODY SHARED",
+    "<div class='note'>It is added to your levels; nothing you have is "+
+    "touched.</div>"+
+    "<textarea id='ldTxt' placeholder='paste here'></textarea>"+
+    "<button class='mlbtn pgo' id='ldGo'>ADD IT</button>",
+    mlFoot("ldBack","← MY LEVELS"));
+  bind("mlClose",hidePanel);
+  bind("ldBack",myLevelsPanel);
+  bind("ldGo",function(){
+    var list;
+    try{
+      var o=JSON.parse($("ldTxt").value);
+      list=o.levels||(o.length?o:[o]);
+      for(var i=0;i<list.length;i++)
+        if(!list[i].blocks||!list[i].start||!list[i].goal)throw 0;
+    }catch(e){flash("that isn't a level");return;}
+    for(var j=0;j<list.length;j++)library.push(adoptLevel(list[j],j));
+    libSave().then(function(){
+      myLevelsPanel();
+      flash("added "+list.length+" level"+(list.length===1?"":"s"));
+    });
+  });
+}
+/* A level from outside is re-scored here rather than trusted: the numbers on
+   it were written by somebody else's solver run and they decide where it
+   sorts and what its row says. A fresh id for the same reason - two people
+   who both started from the same shared level must not collide. */
+function adoptLevel(o,n){
+  var e={id:"l"+Date.now()+"_"+n,name:(o.name||"Untitled").slice(0,40),
+         blocks:o.blocks,keys:o.keys||[],start:o.start,goal:o.goal,
+         rotate:o.rotate!==false,
+         theme:(typeof o.theme==="number"&&SECTIONS[o.theme])?o.theme:null,
+         score:null,moves:null,needsRot:false,flattens:0};
+  var st=statsFor(e);
+  if(st.ok){e.score=st.score;e.moves=st.moves;e.needsRot=st.needsRot;
+            e.flattens=st.flattens;}
+  return e;
+}
+
+/* THE WORKBENCH BEHIND MY LEVELS. Everything here is a level designer's
+   tool rather than a player's door: the same levels sorted by what the
+   solver thinks of them, the whole library as one file, and the composer.
+   MY LEVELS is the screen; this is MORE. */
+function libraryPanel(){
+  var sorted=sortedLibrary();
+  var html="<h3>MORE \u2014 "+library.length+" LEVEL"+(library.length===1?"":"S")+"</h3>";
+  if(!library.length){
+    html+="Nothing saved yet. ADD LEVEL on MY LEVELS starts one.<br><br>";
+  } else {
+    html+="Sorted easiest first, by the solver's own numbers. A level that "+
+          "has never solved sorts last and reads as a draft.<br>";
     for(var i=0;i<sorted.length;i++){
       var lv=sorted[i];
       html+="<div class='lrow'><span class='lname'>"+esc(lv.name)+"</span>"+
-        "<span class='mono'>"+tierOf(lv.score)+" &middot; "+lv.moves+" moves"+
-        (lv.needsRot?" &middot; rot":"")+"</span>"+
+        "<span class='mono'>"+(lv.score==null?"draft":
+          tierOf(lv.score)+" &middot; "+lv.moves+" moves"+
+          (lv.needsRot?" &middot; rot":""))+"</span>"+
         "<span class='lbtns'>"+
           "<button class='mini' data-play='"+lv.id+"'>PLAY</button>"+
           "<button class='mini' data-edit='"+lv.id+"'>EDIT</button>"+
@@ -1616,7 +2513,7 @@ function libraryPanel(){
   html+="<div class='prow'><button id='pCompose'>COMPOSE FROM A SOLUTION</button></div>";
   html+="<div class='prow'><button id='pProj'>PROJECT FILE (ALL LEVELS)</button></div>";
   html+="<div class='prow'><button id='pIO'>THIS LEVEL</button>"+
-        "<button id='pNew'>NEW LEVEL</button>"+
+        "<button id='pBackMine'>MY LEVELS</button>"+
         "<button id='pClose4'>CLOSE</button></div>";
   showPanel(html);
 
@@ -1625,33 +2522,16 @@ function libraryPanel(){
     tap(el,function(){startLibrary(el.getAttribute("data-play"));});
   });
   p.querySelectorAll("[data-edit]").forEach(function(el){
-    tap(el,function(){
-      var lv=findLevel(el.getAttribute("data-edit"));
-      if(!lv)return;
-      snapshot();
-      custom.name=lv.name;custom.blocks=lv.blocks.map(function(v){return v.slice();});
-      custom.start=lv.start.slice();custom.goal=lv.goal.slice();
-      custom.rotate=lv.rotate;
-      ghosted.clear();R=makeRules(custom);syncMeshes();hidePanel();
-      flash("loaded "+lv.name);
-    });
+    tap(el,function(){editLevel(el.getAttribute("data-edit"));});
   });
   p.querySelectorAll("[data-del]").forEach(function(el){
-    tap(el,function(){
-      var id=el.getAttribute("data-del");
-      library=library.filter(function(x){return x.id!==id;});
-      libSave().then(libraryPanel);
-    });
+    tap(el,function(){deletePanel(el.getAttribute("data-del"));});
   });
   bind("pCampaign",function(){startLibrary(null);});
   bind("pCompose",enterCompose);
   bind("pProj",projectPanel);
   bind("pIO",ioPanel);
-  bind("pNew",function(){
-    snapshot();custom.blocks=[];custom.start=[0,1,0];custom.goal=[3,1,0];
-    custom.name="Untitled";ghosted.clear();
-    R=makeRules(custom);syncMeshes();hidePanel();
-  });
+  bind("pBackMine",myLevelsPanel);
   bind("pClose4",hidePanel);
 }
 
@@ -1660,7 +2540,13 @@ function findLevel(id){
   return null;
 }
 function sortedLibrary(){
-  return library.slice().sort(function(a,b){return a.score-b.score;});
+  // A draft has no score at all. `undefined - n` is NaN and NaN compares
+  // false both ways, which leaves the sort's order undefined rather than
+  // wrong-looking - so a draft is given a score past the end instead.
+  var far=1e9;
+  return library.slice().sort(function(a,b){
+    return (a.score==null?far:a.score)-(b.score==null?far:b.score);
+  });
 }
 function startLibrary(id){
   var s=sortedLibrary();
@@ -1668,9 +2554,17 @@ function startLibrary(id){
   libIndex=0;
   if(id){ for(var i=0;i<s.length;i++) if(s[i].id===id) libIndex=i; }
   playSource="library";
-  var lv=s[libIndex];
-  enterPlay({name:lv.name,hint:tierOf(lv.score)+" \u00b7 "+lv.moves+" moves",
-    blocks:lv.blocks,keys:lv.keys||[],start:lv.start,goal:lv.goal,rotate:lv.rotate},undefined,false);
+  playLibraryLevel(s[libIndex]);
+}
+/* One place that turns a saved level into something enterPlay() can take, so
+   the row's PLAY, PLAY ALL IN ORDER and NEXT LEVEL cannot hand over three
+   different levels. `theme` rides along: a level built on sand is played on
+   sand (see levelTheme() and loadLevel()). */
+function playLibraryLevel(lv){
+  enterPlay({name:lv.name,
+    hint:lv.score==null?"your level":tierOf(lv.score)+" \u00b7 "+lv.moves+" moves",
+    blocks:lv.blocks,keys:lv.keys||[],start:lv.start,goal:lv.goal,
+    rotate:lv.rotate!==false,theme:lv.theme==null?null:lv.theme},undefined,false);
 }
 
 function projectPanel(){
@@ -1723,10 +2617,17 @@ function ioPanel(){
       custom.keys=o.keys||[];
       custom.name=o.name||"Untitled";custom.hint=o.hint||"";
       custom.rotate=o.rotate!==false;
+      custom.theme=(typeof o.theme==="number"&&SECTIONS[o.theme])?o.theme:null;
+      /* Pasted-in text is a DIFFERENT level, so it is not still the saved one
+         the editor had open: keeping the id would make the next SAVE quietly
+         overwrite a level you never touched. It saves as a new entry, under
+         the name that came in with it. */
+      editingId=null;
+      if(typeof applyTheme==="function")applyTheme(levelTheme(custom));
       ghosted.clear();R=makeRules(custom);initDynamic();syncMeshes();hidePanel();flash("loaded");
     }catch(err){flash("that isn't valid level data");}
   });
-  bind("pBack",libraryPanel);
+  bind("pBack",myLevelsPanel);
 }
 
 function esc(s){
@@ -1736,8 +2637,25 @@ function esc(s){
 }
 
 function enterEditor(){
+  /* THE SCREENS COME DOWN HERE, not at the call sites - the same rule
+     enterPlay() states below, and for the same reason. The home screen is a
+     full-bleed overlay at z-index 11, so an editor opened under it is an
+     editor nobody can see; and hidePanel() actively restores that overlay's
+     plinth, so the order matters: the screen goes first, then the panel.
+     MY LEVELS on the home screen is what made this reachable. */
+  if(typeof homeUp==="function"&&homeUp())homeHide();
+  if(typeof panelOpen==="function"&&panelOpen())hidePanel();
   app="edit";fromEditor=false;
   L=custom;R=makeRules(custom);
+  /* THE GROUND THE LEVEL WAS BUILT ON, put back every time the editor opens.
+     A custom level carries a section index rather than a surface name, so it
+     gets that section's whole world - sky, ground, scenery, weather - and
+     the editor shows what the level will actually be played on rather than
+     the default night. */
+  if(typeof applyTheme==="function")applyTheme(levelTheme(custom));
+  // Which piece chips are on the bar is a question about campaign progress,
+  // so it is asked here, once, every time the editor opens.
+  if(typeof syncTools==="function")syncTools();
   initDynamic();
   flat=false;flatTarget=0;flatT=0;
   $("won").classList.remove("on");

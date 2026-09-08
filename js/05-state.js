@@ -9,8 +9,11 @@
    ============================================================ */
 var app="play";              // "play" | "edit"
 var L=null,R=null,lvIndex=0,fromEditor=false;
+/* `theme` is a SECTIONS index or null: which world a custom level is built
+   on, chosen when the level is named and carried into play with it. Null is
+   the default night the editor has always drawn on. */
 var custom={name:"Untitled",hint:"Your level.",blocks:[],keys:[],
-            start:[0,1,0],goal:[3,1,0],rotate:true};
+            start:[0,1,0],goal:[3,1,0],rotate:true,theme:null};
 var view=0,flat=false,flatT=0,flatTarget=0,viewAngle=0,viewAngleTarget=0;
 var player={x:0,y:0,z:0},flatPos={u:0,y:0};
 var tool="add", undoStack=[];
@@ -257,6 +260,15 @@ function undoMove(){
   buildGrid();syncHud();
 }
 var library=[];              // saved levels, persisted
+/* WHICH SAVED LEVEL THE EDITOR IS EDITING, or null for scratch work.
+
+   MY LEVELS creates the entry first and opens the editor on it, so SAVE has
+   somewhere to go without asking a second time - and so a level that is not
+   solvable yet is still a level you own rather than something the editor is
+   holding for you. Cleared by NEW and by deleting the entry being edited,
+   because a save into an id that is no longer in the library would silently
+   resurrect it. */
+var editingId=null;
 var playSource="builtin";    // "builtin" | "library" | "test"
 var libIndex=0;
 var ghosted=new Set();       // blocks the minimizer found to be inert
