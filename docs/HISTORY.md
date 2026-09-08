@@ -1091,3 +1091,36 @@ was: **a comment edit in a stylesheet can delete the rule after it**, and
 nothing in the browser will say so. Checking that every `/*` in `css/` has
 exactly one `*/` is a three-line script and now worth running whenever a
 whole family of things loses its colour at once.
+
+## The live star row remembered the wrong level
+
+Reported as "it shows one star instead of 3 when I get into a level". The row
+under the move count opened a fresh, unplayed level already down a star or
+two, and stayed wrong for the whole level: `09 — No Bridge 2` was solved in
+three moves, the win card said *Perfect · 3 moves (optimal)*, and the HUD
+behind it still showed one gold star.
+
+`syncStars()` writes no DOM when the count it is handed matches the count it
+believes is on screen. That early return is not an optimisation, it is the fix
+for a real bug — the row is redrawn by `syncHud()` on every move, and
+re-creating the falling star each time restarted its animation, so holding a
+direction down left it flickering in place instead of falling off. So
+`starsLive` has to be a claim about *what is drawn*, and the hiding path broke
+that claim: a tutorial, a boss, a trial or the editor calls `syncStars(null)`,
+which hid the row and set `starsLive=3` — a level's worth of golds it had
+never written. `TRIAL I` sits between `06 — Limited` and `07 — The Rotation`,
+so the sequence is ordinary play: lose two stars on 06, cross the trial, and
+every level after it opens on three, is told three, sees `3===3`, and returns
+without touching a row that is still showing one.
+
+It self-healed only by getting *worse*: the first move that actually cost a
+star made the counts disagree again and redrew the row correctly. Solve
+cleanly and the stale row survived to the win card, which is exactly the case
+where the two numbers contradict each other in the same screenshot.
+
+The fix is one sentinel: hiding sets `starsLive=-1`, "I do not know what is on
+screen". It matches no count, so the first call after a hide always redraws,
+and `lost` is false against it, so nothing falls or plays the losing sound on
+the way back in. The general lesson is the one the comment now carries: **a
+cache of "what is on screen" may only be written where the screen is**, and
+any path that skips the drawing has to invalidate it rather than guess at it.

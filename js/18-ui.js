@@ -193,11 +193,22 @@ function paperIsLight(){
    case that wants it - a second star lost while the first is still falling.
 
    It also has to go back up. Undo lowers the move count, so a star can be
-   regained; the fallen glyph loses its class and returns to its socket. */
-var starsLive=3;
+   regained; the fallen glyph loses its class and returns to its socket.
+
+   `starsLive` IS A CLAIM ABOUT THE DOM, NOT ABOUT THE LEVEL, so hiding the
+   row cannot set it to 3: that is the whole of the "one star on a fresh
+   level" bug. Hiding writes no glyphs, so a row left at one star by the
+   previous level still says one star underneath - and the next level opens
+   on three, sees 3===3, and takes the early return that exists to stop the
+   animation restarting. The stale row then survives the whole level, because
+   every count it is asked for afterwards is one it thinks it is already
+   drawing. -1 is "I do not know what is on screen": it matches no count, so
+   the first call after a hide always redraws, and `lost` is false against it
+   so nothing falls or plays a sound on the way back in. */
+var starsLive=-1;
 function syncStars(st){
   var el=$("starRow"); if(!el)return;
-  if(st===null){el.hidden=true;starsLive=3;return;}
+  if(st===null){el.hidden=true;starsLive=-1;return;}
   el.hidden=false;
   if(!el.childElementCount){
     var h="";
