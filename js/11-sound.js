@@ -58,7 +58,11 @@ function defaultVolume(){
    keeps its name now that the offer it was born for - slowing the clock - has
    gone, because it is persisted and renaming it would silently un-silence
    everyone who has already pressed the button. */
-var settings={volume:defaultVolume(),brightness:1,ui:"none",volTouched:false,
+/* The one place the buttons default lives. RESET SETTINGS reads it too,
+   so the reset cannot drift away from a fresh install the way it had:
+   it put the buttons back to "full" while a first run starts hidden. */
+var UI_DEFAULT="none";
+var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false,
               /* pace is retired and pinned at 1; see paceScale() below. */
               pace:1,
               noSlowOffer:false,landHints:0,

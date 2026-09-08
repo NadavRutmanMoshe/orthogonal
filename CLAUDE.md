@@ -219,6 +219,9 @@ is the rule.
 - `loadSettings()` is a **whitelist**. A key not read there does not exist
   after reload; a key whose feature is removed comes out of the list.
 - `noSlowOffer` keeps its name though nothing slow is left; it is persisted.
+- The buttons default is `UI_DEFAULT` (`js/11-sound.js`, `"none"`). The fresh
+  `settings` object and `RESET SETTINGS` both read it, so a reset cannot drift
+  away from a first run; any other default belongs next to it, not inlined.
 - A stored volume only wins once `volTouched`. Volume is applied *after* the
   limiter (`outGain`); changing `MIX` or `POST` means re-measuring the
   stacked worst case.

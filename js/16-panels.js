@@ -525,14 +525,17 @@ function menuPanel(){
   });
   bind("mReset",function(){
     settings.volume=defaultVolume();settings.volTouched=false;
-    settings.brightness=1;settings.ui="full";
+    settings.brightness=1;settings.ui=UI_DEFAULT;
 
     // including "stop suggesting things": a reset is a reset
     settings.noSlowOffer=false;settings.landHints=0;
     settings.starAsked=false;
     muted=false;
     applyVolume();
-    applyBrightness();applyUI();saveSettings();syncHud();
+    /* onResize() as well, exactly as the FULL/COMPACT/HIDDEN segment does:
+       putting the buttons back changes how much screen the arena has, and
+       fitViewSize() only re-runs from here. */
+    applyBrightness();applyUI();saveSettings();syncHud();onResize();
     flash("settings reset");menuPanel();
   });
   bind("mHome",function(){hidePanel();homeShow();});
