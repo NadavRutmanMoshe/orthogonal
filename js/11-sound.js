@@ -1039,14 +1039,19 @@ var SFX={
     blip(1760,.045,"sine",.020);
     setTimeout(function(){blip(2200,.055,"sine",.018);},95);
   },
-  /* THE KILL, HAPPENING AGAIN. Played on the film's closing fold, which is
-     the frame where the world drops onto the thing you caught - so it is the
-     game's own fold, then the game's own strike, with the gap between them
-     the fold tween's own length. Nothing new is synthesised: reliving it
-     should sound like it did, one remove quieter, which is what the halved
-     gain on the strike is for. */
+  /* THE HIT, LANDING AGAIN, on the film's closing fold - the beat where the
+     world drops onto the thing you caught. Nothing new is synthesised: it is
+     the game's own strike, at half gain, because reliving it should sound
+     like it did one remove away.
+
+     IT NO LONGER PLAYS THE FOLD. It used to open with SFX.fold(), and once
+     the replay grew a soundtrack that became a duplicate: the fold the player
+     actually made is on the tape at the moment they made it (see repSfx in
+     js/12-play.js) and plays itself. Only the strike is here, and only
+     because it is deliberately kept OFF the tape - it fires on the last
+     instant of the recorded window, and the closing fold takes another half
+     second after that, so recorded it would land before its own picture. */
   relive:function(ms){
-    SFX.fold();
     setTimeout(function(){
       blip(150,.22,"square",.030,70);
       blip(900,.3,"sine",.022,1400);

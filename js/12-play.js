@@ -122,7 +122,7 @@ function bossReset(){
   shieldMs=0;deathPending=false;slowMoMs=0;
   rep=null;bossPendingAdvance=false;bossPendingDeath=false;replayClear();
   document.body.classList.remove("replaying");
-  bossStingHide();killCamHide();
+  bossStingHide();killCamHide();repSfxInstall();
   if(typeof ashClear==="function")ashClear();
   hunters=[];twinCore=0;twinAt=null;bossPhase=0;
   if(B&&B.twin)twinSpawn(0);
@@ -466,7 +466,68 @@ function killCamHide(){
 /* ============================================================
    THE REPLAY - recorder and control. See 05-state.js for the design.
    ============================================================ */
-function replayClear(){repBuf=[];repT=0;repAcc=0;}
+/* ============================================================
+   THE SOUNDTRACK — what was heard, recorded by listening
+
+   The film had the pictures and none of the noise, which is the difference
+   between watching footage of a thing and reliving it. Every step, bump,
+   fold, turn, shove and shot the player made in the recorded seconds is now
+   on the tape and plays back in the film at the moment it happened.
+
+   IT IS RECORDED BY WRAPPING SFX ONCE, not by scattering a `repSfxMark()`
+   call beside every SFX call in the game. The scattered version has to be
+   kept in step with the four verbs, the fight, the crates and everything
+   added later, and it is wrong the first time somebody adds a sound and
+   forgets. This cannot disagree with the game because it literally observes
+   what the game played: if you can hear it, it is on the tape.
+
+   The clock is the frame ring's own (`repT+repAcc`), so an event's time is
+   directly comparable with `repBuf[i].t` and needs no conversion at
+   playback. The ring is trimmed on the same horizon, so the tape can never
+   outgrow the film it belongs to.
+
+   `strike` is deliberately NOT on the list. It only ever fires on the kill
+   itself, which is the last instant of the recorded window, and the film
+   ends with a stylised closing fold that takes another half second - so the
+   recorded strike would land before the picture it belongs to. It is played
+   by the fold beat in replayFrame() instead, where it lands with the crush.
+   ============================================================ */
+var repSfxBuf=[], repSfxRaw={};
+var REP_SFX=["step","bump","fold","unfold","turn","shove","spill","shot",
+             "sweep","key","die"];
+function repSfxInstall(){
+  if(typeof SFX==="undefined"||SFX.taped)return;
+  SFX.taped=true;
+  REP_SFX.forEach(function(n){
+    var f=SFX[n];
+    if(typeof f!=="function")return;
+    repSfxRaw[n]=f;
+    SFX[n]=function(){
+      /* Recorded only while a fight is genuinely running in front of the
+         player - the same question replayTick() asks - and never while the
+         film is playing, or the tape would record itself. */
+      if(B&&app==="play"&&!rep&&!dying&&!levelDone&&!bossPause)
+        repSfxBuf.push({t:repT+repAcc,n:n});
+      return f.apply(SFX,arguments);
+    };
+  });
+}
+function repSfxTrim(){
+  while(repSfxBuf.length&&repT-repSfxBuf[0].t>REP_KEEP)repSfxBuf.shift();
+}
+/* Play everything on the tape up to recorded-time `t`. Through the ORIGINALS
+   rather than through SFX, so a sound the film plays can never find its way
+   back onto the tape - the recorder's own `!rep` guard already refuses, and
+   two locks on that door is the right number for a thing that would otherwise
+   grow without limit and be very hard to see. */
+function repSfxAt(t){
+  if(!rep)return;
+  while(rep.si<repSfxBuf.length&&repSfxBuf[rep.si].t<=t){
+    var f=repSfxRaw[repSfxBuf[rep.si++].n];
+    if(f)f.call(SFX);
+  }
+}
+function replayClear(){repBuf=[];repT=0;repAcc=0;repSfxBuf=[];}
 /* Sampled off the render loop's real frame time, and only while the fight is
    genuinely in front of the player - the same question bossFrame asks - so a
    paused board does not fill the ring with copies of one moment. */
@@ -482,6 +543,7 @@ function replaySnap(){
                f:flat?1:0,u:flat&&flatPos?flatPos.u:0,
                fy:flat&&flatPos?flatPos.y:0,v:view,h:hs});
   while(repBuf.length>1&&repT-repBuf[0].t>REP_KEEP)repBuf.shift();
+  repSfxTrim();          // the tape is trimmed on the film's own horizon
 }
 function replayTick(dtReal){
   if(!B||app!=="play"||rep)return;
@@ -656,8 +718,13 @@ function replayStart(mode,who,line,at){
      on a death the player is re-derived every frame by replayPose(), so the
      film reads their drawn position at the moment instead and this is null. */
   var ashAt=(mode==="kill"&&who)?{x:who.x,y:who.y,z:who.z}:null;
+  /* Where the tape is cued to. Everything before `t0` is off the front of the
+     film and must not be heard; `si` walks forward from there and never back,
+     which is also what stops one event playing twice on a frame boundary. */
+  var si=0;
+  while(si<repSfxBuf.length&&repSfxBuf[si].t<repBuf[i0].t)si++;
   rep={mode:mode,i:i0,t0:repBuf[i0].t,t1:t1,ms:0,fold:0,foldMs:0,view:want,
-       who:who||null,line:line||null,ashAt:ashAt,
+       who:who||null,line:line||null,ashAt:ashAt,si:si,
        vat:viewAngleTarget,angle:viewAngleTarget+swing,
        saved:{x:player.x,y:player.y,z:player.z,flat:flat,
               fu:flatPos?flatPos.u:0,fy:flatPos?flatPos.y:0,view:view,
@@ -773,6 +840,11 @@ function replayFrame(dtReal){
     var t=rep.t0+rep.ms;
     while(rep.i<repBuf.length-1&&repBuf[rep.i+1].t<=t)rep.i++;
     replayPose(repBuf[rep.i]);
+    /* AND THE TAPE, on the same clock as the pictures. Event times are in the
+       ring's own units, so this is a straight comparison - the film runs at
+       REP_RATE and the sounds simply spread out with it, which is what a
+       slow-motion replay of your own moves should sound like. */
+    repSfxAt(t);
     return;
   }
   replayPose(repBuf[repBuf.length-1]);
@@ -1405,7 +1477,7 @@ function trialReset(){
   shieldMs=0;deathPending=false;slowMoMs=0;
   rep=null;bossPendingAdvance=false;bossPendingDeath=false;replayClear();
   document.body.classList.remove("replaying");
-  bossStingHide();killCamHide();
+  bossStingHide();killCamHide();repSfxInstall();
   if(typeof ashClear==="function")ashClear();
   if(TR)lives=BOSS_LIVES;
 }

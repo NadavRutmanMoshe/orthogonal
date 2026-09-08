@@ -181,16 +181,41 @@ named). Undoing one of these needs the paragraph.
   DEATH` 1300ms against `KC_HOLD_KILL` 620ms. A death is news and needs a
   moment on the board it happened on before the spectacle starts; a kill is
   not news, and holding a cleared arena is dead air.
-- **A kill is scored and a death is silent** — owner's call, and it survives a
-  re-read of the code as an accident. `SFX.cheer()` on the beat of the hit,
-  `SFX.rec()` when the viewfinder lands, `SFX.relive()` on the film's closing
-  fold (the game's own fold, then its own strike `REP_FOLD_MS` later, at half
+- **A kill is scored and a death is silent under the snow** — owner's call,
+  and it survives a re-read of the code as an accident. `SFX.cheer()` on the
+  beat of the hit, `SFX.rec()` when the viewfinder lands, `SFX.relive()` on
+  the film's closing fold (the game's own strike, `REP_FOLD_MS` later, at half
   gain), latched one-shot by `rep.fx` because that branch runs every frame of
-  the fold. A death plays `SFX.die()` and nothing else: the groan that used to
-  sit under the snow was a bandpassed noise bed swept down to 155Hz, and on a
-  phone speaker under television snow it was indistinguishable from the snow
-  having a soundtrack. Applause carries the crowd now, not the bed — it is the
-  one crowd sound nothing else here could be mistaken for.
+  the fold. A death's *wind-up* plays `SFX.die()` and nothing else: the groan
+  that used to sit under the snow was a bandpassed noise bed swept down to
+  155Hz, and on a phone speaker under television snow it was indistinguishable
+  from the snow having a soundtrack. Applause carries the crowd now, not the
+  bed — it is the one crowd sound nothing else here could be mistaken for.
+- **The film has a soundtrack, and it is recorded by listening.** `repSfx*`
+  (`12-play.js`) wraps the named entries of `SFX` **once** and pushes
+  `{t,n}` onto a tape whenever the fight is live; `replayFrame()` walks
+  `rep.si` forward and re-fires them through the saved originals. Wrapping
+  beats scattering a `repSfxMark()` call beside every sound: it cannot
+  disagree with the game, because it observes what the game actually played,
+  and a sound added later is on the tape for free. The clock is the frame
+  ring's own (`repT+repAcc`), so event times compare directly with
+  `repBuf[i].t` and the film's `REP_RATE` slow-motion spreads the sounds out
+  with the pictures. **`strike` is deliberately off the tape** — it fires on
+  the last instant of the recorded window and the stylised closing fold takes
+  another half second, so recorded it would land before its own picture;
+  `SFX.relive()` plays it on the fold instead, and for the same reason no
+  longer plays the fold itself (the player's real one is on the tape).
+- **Things that die come apart** (`ash*` in `10-render.js`, called from
+  `12-play.js` on every kill and death, and again on the film's closing fold).
+  The stagger is the whole effect: each speck's release delay comes from how
+  high up the body it started, so the piece crumbles top-down and a speck that
+  has not been released yet is still sitting where it started. Released
+  together it is a firework, which is something that happens *to* a thing.
+  Two traps, both paid for: **`THREE.Points` does not render in this vendored
+  three.js** (r128, trimmed — an enormous plain Points on top of a hunter drew
+  nothing), so it is cubes in one `BufferGeometry`; and the cloud must start
+  at **`huntMeshes[i].position`, not the logical cell**, because the mesh eases
+  toward the square and a hunter mid-step is a third of a square behind it.
 - **The film is held, not delayed.** `rep` is set the instant the hit lands -
   that is what freezes the fight and saves the pose - and only the playback
   waits, on `rep.leadUntil`. It is a **wall-clock deadline**, because the four
