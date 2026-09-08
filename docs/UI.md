@@ -86,6 +86,7 @@ buttons at the end of its builder.
 | Ghost hand + label | `#ghost`, `#ghostSay` | `tutGhost`, `ghostRestart`, `cue()` | `90-tutorial` | `tutorial` |
 | Guided-lock dim | `body.tutlock` | `tutEngage`, `tutUnlock` | `90-tutorial` | `tutorial --wait 4000` |
 | Phase note on a boss | `#phaseNote` | `phaseNote()` (`12-play.js`) | `90-tutorial` | `phase` |
+| What killed you, over the kill cam | `#deathSay` | `deathSayShow()` / `deathSayTick()` (`12-play.js`), from `L.primer.why` | `90-tutorial` | `level:15 --eval "press('up')"` |
 | Replay chrome | `#replayUI` | `replayStart` / `replayEnd` | `65-replay` | (use `--eval`) |
 | Toast / spoken cue | `#toast` | `flash()`, `flashCue()` | `50-layout-cues` | `toast` |
 | The sting | `#splash` | `20-splash.js` | `60-splash` | `splash` |
@@ -142,12 +143,20 @@ named). Undoing one of these needs the paragraph.
   row. **It is not the retired "brief"** — that was a full-bleed card
   explaining a fight, dropped for saying what the board already said, and the
   word is still spoken for in `cardOwner`.
-- **A death is explained against `primerLast`, not the live board.** The
-  `.pwhy` line under the checklist names the step the player missed. It reads
+- **What killed you is said in the middle of the screen, not in the list.**
+  `.deathsay` is one short line at `top:38%` — the phase note's position and
+  family, one layer above the replay chrome, because it is a caption ON the
+  kill cam. It appears the instant the life is lost, holds for as long as the
+  film runs (`deathSayTick` counts only while `rep` is null), and goes on the
+  next committed move (`pushHistory()`). A four-line list at the top of the
+  screen is not what anybody reads in the second after dying.
+- **A death is explained against `primerLast`, not the live board.** It reads
   the state from a frame *before* the hit, because the charge stands the
   hunter on your square before `bossHurt()` runs — explained live, every death
-  would congratulate you on being perfectly lined up. It is cleared by the
-  next committed move (`pushHistory()`).
+  would congratulate you on being perfectly lined up. For the same reason
+  `primerMarks()` **freezes while the replay runs**: the film writes the
+  recorded pose into live state, so an unfrozen list would tick "face its
+  direction" under a line saying you did not turn.
 - **The lives bar sits under the level text, split to the two sides**: your
   hearts left (over your own piece), the opposition's row right. `top` is
   measured off `.hud` in `syncBossBar()` because the hint's height moves. It

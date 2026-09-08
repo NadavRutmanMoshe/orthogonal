@@ -218,9 +218,11 @@ is the rule.
   one), and it is **not** the retired `brief`, which was a card and whose name
   is still taken. Each step is a predicate over `killState()`, never a step
   index; `syncPrimer()` writes the markup and `primerMarks()` re-marks it
-  every frame from the render loop - the third thing re-judged there. Its
-  `why` lines explain a death from `primerLast`, the state a frame *before*
-  the hit, because the charge stands the hunter on you first. It renders
+  every frame from the render loop (the third thing re-judged there) and
+  freezes while the kill cam runs. Its `why` lines are said by `deathSayShow()`
+  in the middle of the screen over that kill cam, not in the list, and they
+  read `primerLast` - the state a frame *before* the hit, because the charge
+  stands the hunter on you first. It renders
   through `tutWords()` so it names the player's own controls, and it is filled
   before `syncBossBar()` measures `.hud`.
 - `.hud` chrome follows `paperIsLight()`, not the verb.

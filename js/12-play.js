@@ -976,9 +976,53 @@ function killState(cause){
    you are perfectly aligned, perfectly facing, and the note would congratulate
    you for it. */
 var primerLast=null;
-/* Which of the level's `why` lines fits what just happened. Set on the way
-   into a death and cleared by the next move; syncPrimer() prints it. */
-var primerWhy=null;
+/* ============================================================
+   WHAT KILLED YOU - one line, in the middle of the screen
+
+   The checklist at the top says which boxes are not ticked, and in the second
+   after losing a life that is the wrong place for it twice over: the player
+   is watching the kill cam in the middle of the screen, and four lines is not
+   what anybody reads while their piece is being replayed dying. So the
+   sentence goes to them, where the film is, in the beat where they are
+   already asking the question.
+
+   IT HOLDS THROUGH THE FILM AND FOR A BEAT AFTER IT. The hold is counted only
+   while no replay is running (deathSayTick), so the line is a caption on the
+   kill cam rather than something that expires behind it - and what the player
+   gets after the film ends is the same sentence over the board they are about
+   to try again on. The next move they commit takes it down (pushHistory).
+   ============================================================ */
+/* Two numbers, because two deaths. A charge gets a kill cam and the line is a
+   caption on it, so what matters there is the beat AFTER the film - the same
+   sentence over the board they are about to try again on. A fall gets no film
+   at all, so its whole life is this one number. */
+var DEATH_SAY_MS=2600;    // no film: how long it stays
+var DEATH_SAY_TAIL=1500;  // after a film: the beat that follows it
+var deathSayMs=0;
+function deathSayShow(txt){
+  var el=$("deathSay");if(!el)return;
+  // Through tutWords for the same reason every other sentence in this game
+  // is: it names the verb the way the button in front of the player names it.
+  el.innerHTML=(typeof tutWords==="function")?tutWords(txt):txt;
+  el.classList.remove("on");
+  void el.offsetWidth;                 // restart the entrance, never extend it
+  el.classList.add("on");
+  deathSayMs=DEATH_SAY_MS;
+}
+function deathSayHide(){
+  var el=$("deathSay");if(el)el.classList.remove("on");
+  deathSayMs=0;
+}
+function deathSayTick(dt){
+  if(deathSayMs<=0)return;
+  // The film is playing: the line waits, and what it will have left when the
+  // film ends is set here rather than counted down through it.
+  if(rep){deathSayMs=DEATH_SAY_TAIL;return;}
+  deathSayMs-=dt;
+  if(deathSayMs<=0)deathSayHide();
+}
+/* Which of the level's `why` lines fits what just happened. Called on the way
+   into a death, before anything moves. */
 function primerNote(cause){
   if(!L||!L.primer||!L.primer.why)return;
   var k=primerLast||killState(cause);
@@ -986,11 +1030,7 @@ function primerNote(cause){
      won:k.won,cause:cause||null};
   var w=L.primer.why;
   for(var i=0;i<w.length;i++)
-    if(w[i].when(k)){primerWhy=w[i].say;syncHud();return;}
-}
-function primerClear(){
-  if(primerWhy===null)return;
-  primerWhy=null;syncHud();
+    if(w[i].when(k)){deathSayShow(w[i].say);return;}
 }
 // True when folding right now would kill at least one of them - what turns
 // the GO 2D button green. foldKills() already refuses a column with a pillar

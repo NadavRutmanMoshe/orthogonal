@@ -3944,6 +3944,9 @@ function animate(now){
   if(bossFlash>0)bossFlash=Math.max(0,bossFlash-.055);
   bossFrame(dtMs);trialFrame(dtMs);
   if(typeof replayTick==="function")replayTick(dtMs);
+  // The death line holds while the film runs, so it is counted down here,
+  // beside the film. See deathSayTick().
+  if(typeof deathSayTick==="function")deathSayTick(dtMs);
   amb.intensity=.45+.55*flatT;
   dir1.intensity=.85*(1-flatT);
   dir2.intensity=.35*(1-flatT);

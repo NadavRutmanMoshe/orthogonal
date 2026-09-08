@@ -374,8 +374,9 @@ function syncHud(){
    which is how every other thing in this game is taught — and the words are
    only there to name what they are watching happen.
 
-   And when it kills them, the same list says which line they missed
-   (`why` in the level data, chosen in primerNote()).
+   And when it kills them, the level's `why` line says which step they missed -
+   not here, but in the middle of the screen over the kill cam, which is where
+   they are looking in that second. See deathSayShow() in 12-play.js.
 
    NOT the retired "brief". That was a full-bleed card that opened a trial or
    a boss, and it went because a card explaining what the board already shows
@@ -407,16 +408,8 @@ function syncPrimer(){
     primerShown=key;primerMarked="";
     var out="<i>"+tutWords(L.primer.lead||"")+"</i><ol>";
     for(var i=0;i<st.length;i++)out+="<li><span>"+tutWords(st[i].say)+"</span></li>";
-    // The note the level leaves after a death. Its own element, so saying
-    // something does not rewrite the list above it.
-    el.innerHTML=out+"</ol><em class='pwhy'></em>";
+    el.innerHTML=out+"</ol>";
     primerRows=el.querySelectorAll("li");
-  }
-  var why=el.querySelector(".pwhy");
-  if(why){
-    var w=(typeof primerWhy==="string")?primerWhy:null;
-    why.innerHTML=w?tutWords(w):"";
-    why.classList.toggle("on",!!w);
   }
   primerMarks();
 }
@@ -426,6 +419,13 @@ function syncPrimer(){
 function primerMarks(){
   var st=primerSteps();
   if(!st||!primerRows||primerRows.length!==st.length)return;
+  /* FROZEN WHILE THE KILL CAM RUNS. The replay writes the recorded pose into
+     the live state, so a list marked off it would tick "face its direction"
+     during the film of the charge - the hunter is standing on you in that
+     last frame - directly under a line that says you did not turn. What the
+     player should see beside "you didn't turn to face it" is the list as it
+     was when that was true, which is what holding still gives them. */
+  if(rep)return;
   var k=killState(null);
   if(typeof primerLast!=="undefined")primerLast=k;
   var sig="",i,done,hot;

@@ -62,6 +62,7 @@ All three end in ` · N lives left` (or `1 life left`).
 | `caught by the sweep · …` | a trial's plane caught you in the volume | `12-play.js:1058` |
 | `flat in the slice · …` | it caught you folded | `12-play.js:1058` |
 | `N lives left` / `1 life left` | any other hit on a clock | `12-play.js:76` |
+| `you didn't turn to face it` / `you didn't GO 2D in time` / `you walked off the edge` | the level's own `why` line, in the middle of the screen over the kill cam — SPARRING only | `deathSayShow()`, from `L.primer.why` |
 
 ### Hints, stars, skips
 

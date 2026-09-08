@@ -241,9 +241,9 @@ function snapState(){
 function pushHistory(){
   /* THE ONE PLACE THAT MEANS "A MOVE WAS COMMITTED", which is exactly when a
      death note stops being about what is on the board. All five verbs come
-     through here; primerClear() lives in 12-play.js, which loads later, so it
-     is asked for rather than assumed. */
-  if(typeof primerClear==="function")primerClear();
+     through here; deathSayHide() lives in 12-play.js, which loads later, so
+     it is asked for rather than assumed. */
+  if(typeof deathSayHide==="function")deathSayHide();
   moveHistory.push(snapState());
   if(moveHistory.length>400)moveHistory.shift();
 }

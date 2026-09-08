@@ -390,28 +390,23 @@ var LEVELS=[
         primerLast, which is a frame old on purpose: the charge moves the
         hunter onto you before bossHurt runs, so the live board at the moment
         of death says you were perfectly lined up, every time. First match
-        wins, most specific first. */
+        wins, most specific first.
+
+        ONE SHORT SENTENCE EACH, and no instruction. These land in the middle
+        of the screen over the kill cam (deathSayShow), a second after the
+        player lost a life, which is the least patient moment in the game -
+        the checklist is still up at the top of the screen saying what to do
+        about it, and the box this sentence names is the one still unticked.
+        {to2} rather than a control, because it is naming the step. */
      why:[
        {when:function(k){return k.cause==="fall";},
-        say:"You walked off the edge. Nothing here asks you to leave the floor."},
-       /* The tokens matter more here than anywhere: this is the sentence a
-          player reads right after losing a life, so it is the last one that
-          can afford to name a control that is not on their screen. "It turns
-          green" rather than "the button turns green" for the same reason -
-          the hunter goes green too, and it is there in every layout. */
+        say:"you walked off the edge"},
        {when:function(k){return k.facing;},
-        say:"You had it \u2014 same column, right axis. It was simply faster. "+
-            "{do:2d} the moment it turns green."},
-       /* "Turn", not {do:turnr}: that token renders as a text glyph the mono
-          face does not have, and the turn is the one control this level can
-          name in words - it was taught nine levels ago and both layouts call
-          it the same thing. The token that has to be right is {do:2d}, and
-          it starts its own sentence so "Press" / "Double-tap" reads. */
+        say:"you didn't {to2} in time"},
        {when:function(k){return k.aligned;},
-        say:"You were in its line and still looking across it. Turn so that "+
-            "row runs into the screen. {do:2d}."},
+        say:"you didn't turn to face it"},
        {when:function(k){return true;},
-        say:"Its row is its weapon. Step onto it only when you can answer."}]},
+        say:"you stood in its line"}]},
    boss:{teach:true,floorStep:700,creepEvery:9000,
      phases:[{at:[[6,1,1]],still:true,step:1400,aim:2200,
               say:"one of them, and it cannot follow you"}]},

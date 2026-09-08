@@ -1199,8 +1199,20 @@ by reading. The fourth line has no predicate at all: being fast is not a state
 you are in, so it goes red for exactly as long as the ray is live and ticks
 when the fight is won.
 
-The half of that which needed care is the **death note**. The list says which
-line you missed — *you had it, it was simply faster*, or *you were in its line
+**And the death note is not in the list.** It was, for one playtest: an amber
+line under the four boxes saying what to do about it. The owner's note was
+"in the middle of the screen a little bit higher, on top of the kill cam even
+and a bit after", and that is right for a reason worth writing down — in the
+second after losing a life the player is watching the replay in the middle of
+the screen, and the top-left corner is not where anyone looks, nor is a
+paragraph what anyone reads. So it is one short sentence, at the phase note's
+position, one layer above the replay chrome, held for as long as the film runs
+and a beat after it. Six words beat two lines of advice: *you didn't turn to
+face it*. The checklist is still up at the top saying what to do about it, and
+the box the sentence names is the one still unticked.
+
+The half of that which needed care is **which state the note describes**. It
+says which line you missed — *you had it, it was simply faster*, or *you were in its line
 and still looking across it* — and the first version read the live board,
 which is wrong on the only death that matters: the charge stands the hunter on
 your square *before* `bossHurt()` runs, so at that instant you are perfectly
@@ -1208,7 +1220,10 @@ aligned and perfectly facing, and the note congratulates you on the thing that
 just killed you. It reads `primerLast` instead, refreshed by `primerMarks()`
 from the render loop before `bossFrame()` — the board as it was when the
 checklist in front of the player was last drawn, which is the only state a
-death can honestly be explained against.
+death can honestly be explained against. The checklist itself freezes while
+the film plays, for the same reason turned around: the replay writes the
+recorded pose into live state, so the boxes would tick along with the footage
+and show *face its direction* satisfied under a caption saying it was not.
 
 **And the telegraph got a width.** The pane a planted hunter draws along the
 row it is about to charge down was `.06` of a cell thick — visible broadside,

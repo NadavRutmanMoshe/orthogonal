@@ -99,15 +99,9 @@
        global, so a later file's animation is usable here; the load order the
        cascade depends on does not apply to them. */
     animation:perilblink 1.15s ease-in-out infinite}
-  /* WHAT THE LIST SAYS WENT WRONG. Set on a death, cleared by the next move
-     (pushHistory). Amber rather than red: the hit has already been said in
-     the player's own colour by the toast and the lives row, and this is the
-     part that is meant to be read rather than felt. */
-  .primer .pwhy{display:none;font-style:normal;margin-top:7px;
-    padding-left:19px;text-indent:-19px;color:#e0b25c;line-height:1.55}
-  .primer .pwhy.on{display:block}
-  .primer .pwhy::before{content:"\2192";display:inline-block;width:19px;
-    text-indent:0;opacity:.8}
+  /* What the list says went wrong is NOT written here. It goes in the middle
+     of the screen over the kill cam, where the player is looking in the
+     second after a death - `.deathsay` in css/90-tutorial.css. */
   .primer b{color:var(--fg);font-weight:500}
   .axis{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;
     letter-spacing:.13em;text-align:right;color:var(--fg-dim);line-height:1.7;

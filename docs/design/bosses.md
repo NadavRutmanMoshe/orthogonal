@@ -167,14 +167,22 @@ they are already watching happen. The fourth line has no predicate at all,
 because being fast is not a state you are in: it goes red for exactly as long
 as the ray is live, and ticks when the fight is won.
 
-**And when it kills you, the same list says which line you missed.** `why` in
-the level data, first match wins: *you had it — same column, right axis, it
-was simply faster*, or *you were in its line and still looking across it —
-turn*, or *its row is its weapon*. It is read off `primerLast`, the state a
-frame **before** the hit, and that is not an optimisation — the charge stands
-the hunter on your square before `bossHurt()` runs, so the live board says you
-were perfectly aligned at the moment you died, every single time. The note
-clears on the next committed move.
+**And when it kills you, it says which line you missed — in the middle of the
+screen, over the kill cam.** One short sentence: *you didn't turn to face it*,
+*you didn't GO 2D in time*, *you walked off the edge*. Not in the list, which
+is the wrong place twice over in that second: the player is watching the
+replay in the middle of the screen, and four lines is not what anybody reads
+having just lost a life. It is `.deathsay`, at the phase note's position and
+one layer above the replay chrome, held for as long as the film runs and a
+beat after it, and taken down by the next committed move.
+
+**It is read off `primerLast`, the state a frame *before* the hit**, and that
+is not an optimisation — the charge stands the hunter on your square before
+`bossHurt()` runs, so the live board says you were perfectly aligned at the
+moment you died, every single time. `primerMarks()` freezes during the replay
+for the same reason: the film writes the recorded pose into live state, so an
+unfrozen checklist would tick *face its direction* underneath a line saying
+you did not turn.
 
 **THREE VERSIONS, AND THE THIRD IS THE ONE** (`docs/HISTORY.md` has the
 whole search). It opened on a **dummy** that could not act at all, which
