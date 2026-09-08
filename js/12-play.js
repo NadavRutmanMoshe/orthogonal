@@ -325,6 +325,15 @@ function bossHolding(){return bossPause>0||!!rep;}
    device, and the sting never appeared at all: found exactly that way, on the
    headless renderer, which draws this scene at a handful of frames a second.
    Same shape as flash() one file down, and for the same reason. */
+/* HOW MANY WENT DOWN IN ONE FOLD, as the word. One is the ordinary case and
+   says so plainly; two is the thing a player sets up on purpose, because depth
+   is the only reason two hunters are ever in one square, and it gets the word
+   that sounds like it was earned. Past three the count says more than any
+   adjective would. */
+function killWord(n){
+  if(n>=4)return n+" IN ONE";
+  return n===1?"ONE DOWN":(n===2?"DOUBLE CRUSH":"TRIPLE CRUSH");
+}
 var stingTimer=null;
 function bossSting(kind,word,sub){
   var el=$("bossSting");if(!el)return;
@@ -1073,8 +1082,11 @@ function bossFoldCrush(){
     if(!twinAligned())return;
     bossHp--;bossHitFlash=1;
     SFX.strike();shakeT=1;slowMo();
-    bossSting("kill",bossHp<=0?"BOSS DOWN":"CORE DOWN",
-      bossHp<=0?"both halves in one square":
+    /* The twin counts cores, not hunters, so it keeps its own word - "one
+       down" would be a lie about a thing that has two halves and three
+       hearts. The news is under it, like everywhere else. */
+    bossSting("kill","CORE DOWN",
+      bossHp<=0?"the census is closed":
         (bossHp+(bossHp===1?" core left":" cores left")));
     if(bossHp<=0){hunters=[];buildGrid();win();return;}
     /* A core goes, and the centre moves. Leaving it where it was would mean
@@ -1098,16 +1110,20 @@ function bossFoldCrush(){
   for(var d=doomed.length-1;d>=0;d--)hunters.splice(doomed[d],1);
   bossHitFlash=1;
   SFX.strike();shakeT=1;slowMo();
-  /* WHICH WORD, and it is the only place the fight names its own stakes. The
-     last hunter of the last phase is the fight ending; the last of any other
-     phase is a shelf clearing; anything else is one of several going down and
-     must NOT claim more than that, or the sting is louder than the news. */
-  var lastOne=(hunters.length===doomed.length);
-  bossSting("kill",
-    lastOne?((bossPhase>=B.phases.length-1)?"BOSS DOWN":"PHASE CLEAR"):"CRUSHED",
-    doomed.length>1?(doomed.length+" in one square"):
-      (lastOne?"the last of them":
-        ((hunters.length-doomed.length)+" left")));
+  /* THE WORD COUNTS THE KILL; THE LINE UNDER IT CARRIES THE NEWS.
+
+     It used to be the other way round - the word was PHASE CLEAR or BOSS DOWN
+     and the count was underneath - and it was wrong twice. Wrong in fact,
+     because `hunters` has ALREADY been spliced three lines up, so the old
+     `hunters.length===doomed.length` compared survivors against kills and came
+     out true for one of two; killing a single hunter announced BOSS DOWN, and
+     that is what the owner saw. And wrong in kind, because what the player
+     just did is the kill, and how many they got is the part that varies from
+     fold to fold. The stakes go under it, where they still read. */
+  var left=hunters.length, n=doomed.length;   // survivors, then kills
+  bossSting("kill",killWord(n),
+    left?(left+" left"):
+      ((bossPhase>=B.phases.length-1)?"the census is closed":"phase clear"));
   /* What the survivors get for surviving. A fold that kills nothing is now
      worse than free, and a fold that kills one of three leaves the other two
      angrier - so the fight accelerates toward its own end rather than
@@ -1275,10 +1291,11 @@ function bossHurt(why,who,line){
           h:who?{x:who.x,y:who.y,z:who.z}:null};        // asserted here as well as at the call site
   lives--;
   SFX.die();shakeT=1;slowMo();
-  /* FLATTENED, because that is literally what happened and it is the game's
-     own verb turned around: the thing you have spent the whole fight doing to
-     them has just been done to you. */
-  bossSting("death","FLATTENED",
+  /* SMASHED. It was FLATTENED, which was the game's own verb turned around
+     and read as clever rather than as bad news - and "flat" is a state this
+     game puts you in on purpose, several times a minute, by pressing a
+     button. The word for losing a life must not be a word for a move. */
+  bossSting("death","SMASHED",
     lives<=0?"no lives left":(lives+(lives===1?" life left":" lives left")));
   bossGraceMs=B.grace;
   shieldMs=SHIELD_MS;
@@ -1326,7 +1343,8 @@ function bossTakeCrate(idx){
   hunters.splice(idx,1);
   bossHitFlash=1;
   SFX.strike();shakeT=1;
-  bossSting("kill",hunters.length?"CRUSHED":"PHASE CLEAR","under the crate");
+  bossSting("kill","ONE DOWN",
+    hunters.length?(hunters.length+" left · under the crate"):"phase clear");
   if(!hunters.length){bossAdvance();return true;}
   flash("crushed under the crate · "+hunters.length+" left");
   syncHud();
