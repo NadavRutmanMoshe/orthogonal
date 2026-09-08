@@ -204,16 +204,25 @@ function slowMo(){ slowMoMs=SLOWMO_MS; }
    to end; this is the wall-clock timer that takes the element back down after
    it, and the two have to move together. See bossSting() in js/12-play.js. */
 var STING_MS=940;
-/* THE KILL CAM'S WIND-UP, beat by beat. The sting is watched, then the
-   picture drops to snow, then a camcorder is raised and pushed through the
-   screen; the film starts on the other side of its lens. The sum is how long
+/* THE KILL CAM'S WIND-UP, beat by beat. The board is held, then the picture
+   drops to snow, then a camcorder is raised and pushed through the screen;
+   the film starts on the other side of its lens. The sum is how long
    replayFrame() holds the first frame - see rep.leadUntil in js/12-play.js -
-   killCamStart() sets one class per beat off exactly these three numbers, so
-   moving one here moves the animation with it. */
-var KC_STING_MS=520;           // the strike sting is watched, board frozen
+   and killCamStart() sets one class per beat off exactly these numbers, so
+   moving one here moves the animation with it.
+
+   THE FIRST BEAT IS NOT THE SAME ON BOTH, and that is the only asymmetry in
+   the sequence. A death is news, and news needs a moment on the board it
+   happened on before anything else is allowed to start; the first version cut
+   to snow at 520ms and the spectacle arrived on top of the death rather than
+   after it. A kill is not news - you did it on purpose - so holding a cleared
+   arena there is just dead air. Owner's call, from playing it. */
+var KC_HOLD_DEATH=1300;        // the death is watched, board frozen
+var KC_HOLD_KILL=620;          // you already know; get on with it
 var KC_SNOW_MS=470;            // no signal
 var KC_CAM_MS=820;             // raised, held against the glass, pushed in
-var KC_LEAD_MS=KC_STING_MS+KC_SNOW_MS+KC_CAM_MS;
+function kcHold(mode){return mode==="death"?KC_HOLD_DEATH:KC_HOLD_KILL;}
+function kcLead(mode){return kcHold(mode)+KC_SNOW_MS+KC_CAM_MS;}
 var REP_HZ=20;                 // one sample every 50ms
 var REP_KEEP=6000;             // how much history the ring holds
 var REP_DEATH_MS=1900, REP_KILL_MS=1500;   // how much of it each mode shows

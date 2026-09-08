@@ -403,20 +403,28 @@ function killCamStart(mode){
   kcClear();
   el.className="killcam on";
   kcStamp(0);
-  // The room reacts on the beat of the hit, not when the film starts: it is
-  // reacting to what happened, and by the time the camera is up it is over.
-  if(typeof SFX!=="undefined"&&SFX.crowd)SFX.crowd(mode==="kill");
+  /* THE ROOM ONLY CHEERS. It reacts on the beat of the hit rather than when
+     the film starts - it is reacting to what happened, and by the time the
+     camera is up it is over - but only on a kill.
+
+     The groan is gone, and the reason is worth keeping: it was a bandpassed
+     noise bed swept DOWN to 155Hz, which is a fair drawing of a crowd going
+     "ohhh" and, on a phone speaker under a screenful of television snow, is
+     indistinguishable from the snow having a soundtrack. Reported exactly
+     that way. A death now plays the visual and nothing under it, which is
+     also the better beat: the room going silent is what a room does. */
+  if(mode==="kill"&&typeof SFX!=="undefined"&&SFX.crowd)SFX.crowd(true);
+  var hold=kcHold(mode);
   kcT.push(setTimeout(function(){
     kcNoiseStart();el.classList.add("snow");
-  },KC_STING_MS));
-  kcT.push(setTimeout(function(){el.classList.add("cam");},
-    KC_STING_MS+KC_SNOW_MS));
+  },hold));
+  kcT.push(setTimeout(function(){el.classList.add("cam");},hold+KC_SNOW_MS));
   /* The viewfinder comes up a beat BEFORE the push-in finishes, so the
      bracket and the record light are already there when the lens clears the
      edges of the screen rather than appearing on top of an empty picture. */
   kcT.push(setTimeout(function(){
     el.classList.add("vf");kcNoiseStop();
-  },KC_STING_MS+KC_SNOW_MS+KC_CAM_MS-200));
+  },hold+KC_SNOW_MS+KC_CAM_MS-200));
   /* AND THE END POSITION, STATED. The snow and the camera are cleared by CSS
      animations, and an animation only lands if frames are drawn - hitch
      through the push-in and the snow stays sitting over the film at whatever
@@ -424,7 +432,7 @@ function killCamStart(mode){
      them to have got there, and it lands on the same beat the film starts. */
   kcT.push(setTimeout(function(){
     el.classList.add("live");
-  },KC_STING_MS+KC_SNOW_MS+KC_CAM_MS));
+  },hold+KC_SNOW_MS+KC_CAM_MS));
 }
 /* The film is over: the bracket fades, then the layer goes. Two steps because
    `display:none` cannot be transitioned out of. */
@@ -648,7 +656,7 @@ function replayStart(mode,who,line,at){
      long - and the frame right after a level loads is the longest one the
      game has. Measured that way it ate 1250ms of a 1810ms lead in 400ms of
      real time, and the film started while the camera was still in the air. */
-  rep.leadUntil=Date.now()+KC_LEAD_MS;
+  rep.leadUntil=Date.now()+kcLead(mode);
   killCamStart(mode);
   return true;
 }
