@@ -211,14 +211,18 @@ var STING_MS=940;
    and killCamStart() sets one class per beat off exactly these numbers, so
    moving one here moves the animation with it.
 
-   THE FIRST BEAT IS NOT THE SAME ON BOTH, and that is the only asymmetry in
-   the sequence. A death is news, and news needs a moment on the board it
-   happened on before anything else is allowed to start; the first version cut
-   to snow at 520ms and the spectacle arrived on top of the death rather than
-   after it. A kill is not news - you did it on purpose - so holding a cleared
-   arena there is just dead air. Owner's call, from playing it. */
-var KC_HOLD_DEATH=1300;        // the death is watched, board frozen
-var KC_HOLD_KILL=620;          // you already know; get on with it
+   THE FIRST BEAT IS LONGER THAN IT LOOKS, and it is the one number here that
+   has been raised twice from playing it. The sting's own animation is 940ms
+   end to end, so anything under a second cuts the word off mid-read and the
+   snow arrives on top of the news rather than after it - the first version
+   cut at 520ms and did exactly that. What it is buying is ONE THING AT A
+   TIME: the word lands, it is read, the board it happened on is seen, and
+   only then does the picture drop. A death gets a little more than a kill,
+   because losing a life is the one that has to be understood rather than
+   enjoyed. Both are long enough that skipping has to be possible - see
+   replaySkip(). Owner's call, twice. */
+var KC_HOLD_DEATH=1750;        // the death is watched, board frozen
+var KC_HOLD_KILL=1550;         // and so is the word over the kill
 var KC_SNOW_MS=470;            // no signal
 var KC_CAM_MS=820;             // raised, held against the glass, pushed in
 function kcHold(mode){return mode==="death"?KC_HOLD_DEATH:KC_HOLD_KILL;}
