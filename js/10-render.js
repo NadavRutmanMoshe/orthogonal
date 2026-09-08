@@ -2002,6 +2002,18 @@ function trailClear(){
 function addMesh(x,y,z,kind){
   var k=K(x,y,z);
   if(meshes[k])return;
+  var m=makeBlockMesh(kind);
+  m.position.set(x,y,z);
+  m.userData.base=[x,y,z];
+  scene.add(m);meshes[k]=m;
+}
+/* ONE BLOCK, BUILT AND HANDED BACK, standing at the origin and in nobody's
+   scene. addMesh() positions it and puts it in the world; pieceShot() below
+   photographs it for the editor's tool chips, which is the whole reason this
+   is a function rather than the body of addMesh(). The chips used to be
+   hand-drawn SVG approximations of these, and an approximation of a thing the
+   player is looking at on the same screen is just a wrong picture. */
+function makeBlockMesh(kind){
   var glass=kind===1, anchor=kind===2, spike=kind===4;
   var mat=glass
     /* Water reads through a warm section, which is where it is taught, so it
@@ -2017,8 +2029,6 @@ function addMesh(x,y,z,kind){
      full cells with a surface plate, so they are told apart in silhouette
      before a single colour is read. */
   var m=new THREE.Mesh(glass?waterGeo:(spike?fireGeo:boxGeo),mat);
-  m.position.set(x,y,z);
-  m.userData.base=[x,y,z];
   m.userData.glass=glass;
   m.userData.anchor=anchor;
   m.userData.kind=kind||0;
@@ -2071,7 +2081,182 @@ function addMesh(x,y,z,kind){
     m.userData.tips=tips;
     m.add(tips);
   }
-  scene.add(m);meshes[k]=m;
+  return m;
+}
+/* ============================================================
+   PIECE PORTRAITS — the real mesh, photographed small
+
+   The editor's tool chips are pictures of the pieces they place. They were
+   drawn by hand in SVG first, twice: once off the legend's flat swatch
+   colours and once off the renderer's constants. Both were approximations,
+   and an approximation is a *wrong picture* of a thing the player is looking
+   at on the same screen - the grass block on the board has a surface, the
+   crate has violet fire in its cracks, fire has flames that flicker. No
+   amount of hand-drawing catches up with that, and every section retextures
+   the stone anyway.
+
+   So the chip is a photograph. This builds the actual mesh - the same
+   makeBlockMesh() the world is made of, the same buildPlayerMesh() that is
+   standing on the board, the same wireframe box the goal is - lights it with
+   the scene's own three lamps, points the game's camera angle at it and
+   renders one frame into an offscreen target, then hands back a data URL.
+
+   IT USES THE GAME'S OWN RENDERER, and that is the whole design constraint.
+   A second WebGLRenderer is a second context, and this game has already paid
+   for that lesson twice (the wardrobe's display case, homeCase()). Rendering
+   into a WebGLRenderTarget costs no context at all; the render target and
+   the readback buffer are made once and reused, and every piece of renderer
+   state this borrows - target, clear colour, clear alpha - is put back
+   before it returns.
+
+   Cached on what the picture actually depends on: the piece, the section's
+   surface (a stone block is grass in II and basalt in the hell section) and
+   the equipped skin, which is what START is a portrait of.
+   ============================================================ */
+var SHOT_PX=144;
+var shotScene=null, shotCam=null, shotRT=null, shotBuf=null, shotCache={};
+function shotRig(){
+  if(shotScene)return;
+  shotScene=new THREE.Scene();
+  // The scene's own rig, copied rather than shared: a light belongs to one
+  // scene, and moving the world's lamps into this one would unlight the game.
+  shotScene.add(new THREE.AmbientLight(0xffffff,.45));
+  var d1=new THREE.DirectionalLight(0xfff0e0,.85);
+  d1.position.set(6,10,8);shotScene.add(d1);
+  var d2=new THREE.DirectionalLight(0x88aaff,.35);
+  d2.position.set(-7,4,-6);shotScene.add(d2);
+  /* The game's own angle: the main camera sits at (0, CAM_TILT*34, 40) with
+     the view unturned, so a block in a chip is lit and foreshortened exactly
+     as the same block is on the board. Orthographic, like the world. */
+  shotCam=new THREE.OrthographicCamera(-1,1,1,-1,-200,200);
+  shotCam.position.set(0,CAM_TILT*34,40);
+  shotCam.up.set(0,1,0);shotCam.lookAt(0,0,0);
+  shotCam.updateMatrixWorld();
+  shotRT=new THREE.WebGLRenderTarget(SHOT_PX,SHOT_PX);
+  shotBuf=new Uint8Array(SHOT_PX*SHOT_PX*4);
+}
+/* Frame whatever was handed in. Measured rather than assumed, because the
+   things being photographed are not one size: a block is a cell, fire stands
+   flames off the top of it, the anchor floats its octahedron above, and the
+   player is whatever shape the wardrobe is wearing. The eight corners of the
+   bounding box are pushed into camera space and the frustum takes the
+   largest of them, which is the only way to fit an orthographic view without
+   guessing. */
+function shotFit(obj){
+  obj.updateMatrixWorld(true);
+  var box=new THREE.Box3().setFromObject(obj);
+  if(box.isEmpty())return;
+  /* CENTRED FIRST. Fire stands its flames above the cell and the anchor
+     floats its octahedron there, so those two are not centred on the origin
+     the way a plain block is - and fitting a lopsided thing around the origin
+     wastes half the chip on the empty side of it. Move the piece so its own
+     middle is what the camera is pointed at, then measure. */
+  var c=box.getCenter(new THREE.Vector3());
+  obj.position.sub(c);
+  obj.updateMatrixWorld(true);
+  box.translate(c.negate());
+  var inv=new THREE.Matrix4().copy(shotCam.matrixWorld).invert();
+  var v=new THREE.Vector3(), h=0;
+  for(var i=0;i<8;i++){
+    v.set((i&1)?box.max.x:box.min.x,(i&2)?box.max.y:box.min.y,
+          (i&4)?box.max.z:box.min.z).applyMatrix4(inv);
+    h=Math.max(h,Math.abs(v.x),Math.abs(v.y));
+  }
+  h*=1.08;                       // a little air, so nothing touches the edge
+  shotCam.left=-h;shotCam.right=h;shotCam.top=h;shotCam.bottom=-h;
+  shotCam.updateProjectionMatrix();
+}
+// What each chip is a portrait of. Block kinds are the level format's own
+// numbers; the two that are not blocks are named.
+function shotPiece(kind){
+  if(kind==="start")
+    return (typeof buildPlayerMesh==="function")?buildPlayerMesh():null;
+  if(kind==="goal"){
+    /* The goal tumbles in the world (rotation.y and .x both advance every
+       frame), so an axis-aligned still of it is a square with an X in it and
+       reads as nothing. Caught mid-turn instead, at the attitude it spends
+       most of its time near. */
+    var gm=new THREE.Mesh(new THREE.BoxGeometry(.5,.5,.5),
+      new THREE.MeshBasicMaterial({color:0x35c2a5,wireframe:true}));
+    gm.rotation.set(.42,.62,0);
+    return gm;
+  }
+  if(kind===3)return makeCrateMesh();
+  var m=makeBlockMesh(kind);
+  /* Fire's flames are placed by the frame loop, so a block built and never
+     drawn has four of them stacked at the origin. One call puts them where
+     they stand in the volume; their quaternion has to be re-aimed at THIS
+     camera, since fireFlames() faces them at the world's. */
+  if(m.userData.tips&&typeof fireFlames==="function"){
+    fireFlames(m.userData.tips,0,1,0);
+    m.userData.tips.children.forEach(function(c){
+      c.quaternion.copy(shotCam.quaternion);
+    });
+  }
+  return m;
+}
+function shotKey(kind){
+  var th=(curTheme&&(curTheme.surface||curTheme.scene))||"night";
+  return kind+"|"+th+"|"+
+    ((typeof wardrobe!=="undefined")?wardrobe.shape+"|"+wardrobe.color:"");
+}
+function pieceShot(kind){
+  if(!renderer||!boxGeo||!TEX)return null;
+  var key=shotKey(kind);
+  if(shotCache[key])return shotCache[key];
+  shotRig();
+  var obj=null;
+  try{ obj=shotPiece(kind); }catch(e){ obj=null; }
+  if(!obj)return null;
+  shotScene.add(obj);
+  shotFit(obj);
+
+  var wasRT=renderer.getRenderTarget();
+  var wasCol=new THREE.Color(); renderer.getClearColor(wasCol);
+  var wasAlpha=renderer.getClearAlpha();
+  renderer.setRenderTarget(shotRT);
+  renderer.setClearColor(0x000000,0);
+  renderer.clear(true,true,true);
+  renderer.render(shotScene,shotCam);
+  renderer.readRenderTargetPixels(shotRT,0,0,SHOT_PX,SHOT_PX,shotBuf);
+  renderer.setRenderTarget(wasRT);
+  renderer.setClearColor(wasCol,wasAlpha);
+  shotScene.remove(obj);
+  /* MATERIALS ONLY. Every builder above makes its materials fresh, so they
+     are this function's to release; the GEOMETRY is usually one of the
+     world's singletons - boxGeo, waterGeo, fireGeo, edgeGeo, flameGeo - and
+     disposing one of those would empty the board. The few a portrait does
+     own (the goal's little box, an assembled player shape) are small and are
+     left to the collector rather than risking the wrong dispose. */
+  obj.traverse(function(n){ if(n.material&&n.material.dispose)n.material.dispose(); });
+
+  var c=document.createElement("canvas");
+  c.width=c.height=SHOT_PX;
+  var g=c.getContext("2d"), img=g.createImageData(SHOT_PX,SHOT_PX), d=img.data;
+  /* GL reads bottom-up, canvas writes top-down, so the rows are reversed on
+     the way across. The colour is un-premultiplied at the same time: blending
+     into a transparent target leaves rgb already multiplied by alpha, and
+     putImageData wants it straight - without this the water block, which is
+     the one piece drawn at .78, comes out a fifth too dark. */
+  for(var y=0;y<SHOT_PX;y++){
+    var src=(SHOT_PX-1-y)*SHOT_PX*4, dst=y*SHOT_PX*4;
+    for(var x=0;x<SHOT_PX*4;x+=4){
+      var a=shotBuf[src+x+3];
+      if(a===0||a===255){
+        d[dst+x]=shotBuf[src+x];d[dst+x+1]=shotBuf[src+x+1];
+        d[dst+x+2]=shotBuf[src+x+2];
+      }else{
+        var f=255/a;
+        d[dst+x]  =Math.min(255,shotBuf[src+x]*f);
+        d[dst+x+1]=Math.min(255,shotBuf[src+x+1]*f);
+        d[dst+x+2]=Math.min(255,shotBuf[src+x+2]*f);
+      }
+      d[dst+x+3]=a;
+    }
+  }
+  g.putImageData(img,0,0);
+  shotCache[key]=c.toDataURL();
+  return shotCache[key];
 }
 function removeMesh(x,y,z){
   var k=K(x,y,z),m=meshes[k];
@@ -2135,22 +2320,28 @@ function buildTrialMarks(){
     scene.add(m);trialMarks.push(m);
   }
 }
+/* A crate, at the origin, in nobody's scene - same split and same reason as
+   makeBlockMesh() above. */
+function makeCrateMesh(){
+  var m=new THREE.Mesh(boxGeo,
+    new THREE.MeshLambertMaterial({color:colCrate.clone(),vertexColors:true,
+      /* Obsidian, and deliberately NOT the section's surface: a crate is a
+         thing you brought, not a piece of the ground you stand on. The
+         same texture goes on emissiveMap so the violet in the cracks LIGHTS
+         the block - the body is near-black, and a multiply alone would
+         leave the veins as dark as everything else. */
+      map:TEX?TEX.obsidian:null,
+      emissiveMap:TEX?TEX.obsidian:null,
+      emissive:new THREE.Color(0x2a1046)}));
+  m.add(new THREE.LineSegments(edgeGeo,
+    new THREE.LineBasicMaterial({color:0xe0d4ff,transparent:true,opacity:.8})));
+  // no mark: obsidian says crate on its own - see addMesh
+  return m;
+}
 function buildDynamic(){
   clearDynamic();
   for(var i=0;i<gCrates.length;i++){
-    var m=new THREE.Mesh(boxGeo,
-      new THREE.MeshLambertMaterial({color:colCrate.clone(),vertexColors:true,
-        /* Obsidian, and deliberately NOT the section's surface: a crate is a
-           thing you brought, not a piece of the ground you stand on. The
-           same texture goes on emissiveMap so the violet in the cracks LIGHTS
-           the block - the body is near-black, and a multiply alone would
-           leave the veins as dark as everything else. */
-        map:TEX?TEX.obsidian:null,
-        emissiveMap:TEX?TEX.obsidian:null,
-        emissive:new THREE.Color(0x2a1046)}));
-    m.add(new THREE.LineSegments(edgeGeo,
-      new THREE.LineBasicMaterial({color:0xe0d4ff,transparent:true,opacity:.8})));
-    // no mark: obsidian says crate on its own - see addMesh
+    var m=makeCrateMesh();
     scene.add(m);crateMeshes.push(m);
     m.position.set(gCrates[i][0],gCrates[i][1],gCrates[i][2]);
   }

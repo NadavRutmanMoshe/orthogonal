@@ -26,6 +26,11 @@
     --lip:color-mix(in srgb,var(--c) 22%,#04070d)}
   .chip i{font-style:normal;line-height:1}
   .chip .cu{width:23px;height:23px;display:block;flex-shrink:0}
+  /* A PHOTOGRAPH OF THE PIECE (pieceShot(), js/10-render.js). Slightly bigger
+     than the drawings it replaces, because a render has air around it where a
+     hand-drawn path fills its own box, and rendered rather than sharpened -
+     it is a picture of a lit object, not an icon. */
+  .chip img.shot{width:27px;height:27px;object-fit:contain;margin:-2px 0}
   /* Three faces off one hue, lit the way the renderer lights a block: the
      top catches the light, the right face is the hue, the left turns away. */
   .chip .ft{fill:color-mix(in srgb,var(--c) 76%,#fff)}

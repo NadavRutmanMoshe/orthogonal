@@ -215,17 +215,22 @@ named). Undoing one of these needs the paragraph.
   solver cannot finish and shows it as a **draft** everywhere a score is
   printed. `VERIFY` is still advice, and its own SAVE routes through the
   same function.
-- **A piece chip is the piece as the renderer draws it**, not as the legend
-  swatches it. `toolArt()` / `drawToolChips()` (`js/14-editor.js`) read the
-  same constants `addMesh()` and `buildDynamic()` use: stone's rim frame,
-  water's surface plate and cyan edge, amber's floating octahedron, the
-  crate's obsidian body with violet cracks, fire's lava crust with the flames
-  standing off the top, the goal's teal wireframe box (diagonals and all —
-  it is a wireframe of a *triangulated* cube). **START is your own piece**:
-  it reads `wardrobe.shape` through `shapeGlyph()` and is in `--player`, so
-  it is redrawn on every `syncTools()`. `--c` per chip drives the rim, the
-  lip and the lit state; the bodies that are not that colour (crate, fire)
-  say so with a class.
+- **A piece chip is a photograph of the piece.** `pieceShot()`
+  (`js/10-render.js`) builds the real mesh — `makeBlockMesh()`,
+  `makeCrateMesh()`, `buildPlayerMesh()`, the goal's wireframe box — lights it
+  with the scene's own three lamps, points the game's camera angle
+  (`0, CAM_TILT*34, 40`, orthographic) at it and renders **one frame into a
+  `WebGLRenderTarget` using the game's own renderer**, then hands back a data
+  URL. No second WebGL context, and target / clear colour / clear alpha are
+  all restored. So SOLID is the section's actual surface (grass in I, basalt
+  in II), CRATE has the violet in its cracks, FIRE has its flames, and START
+  is the shape *and* colour you are wearing. Cached on piece + surface + skin
+  (`shotKey()`); `drawToolChips()` re-reads on every `syncTools()` and a miss
+  simply shoots again. Two things fall back to the hand-drawn SVG in
+  `toolArt()`: **ERASE**, which is not a piece and is meant to look like a
+  diagram, and a renderer that is not up yet. Hand-drawn chips were tried
+  twice — off the legend's swatches, then off the renderer's constants — and
+  both were wrong pictures of something on screen beside them.
 - **The editor only offers pieces the campaign has shown you**
   (`seenTools()` / `syncTools()` in `14-editor.js`, off `mapReach()`); a
   chip you have not met is not drawn, rather than drawn disabled. The

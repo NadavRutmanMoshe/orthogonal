@@ -230,16 +230,44 @@ function toolArt(k){
 /* Drawn once and then left alone, because the chips are static markup in
    index.html that syncTools() only ever shows and hides - except START,
    which is whatever piece you are wearing and so is rebuilt every time. */
+/* WHICH PIECE EACH CHIP IS A PORTRAIT OF. The block kinds are the level
+   format's own numbers ([x,y,z,k] in js/02-levels.js); the two that are not
+   blocks are named. ERASE has no entry because there is no such piece in the
+   world - it keeps the wire cube, which is a diagram and is meant to be. */
+var TOOL_PIECE={add:0,glass:1,anchor:2,crate:3,spike:4,start:"start",goal:"goal"};
+/* THE CHIP IS A PHOTOGRAPH OF THE PIECE, and the SVG above is what it falls
+   back to.
+
+   pieceShot() (js/10-render.js) builds the real mesh and renders one frame of
+   it into an offscreen target - so SOLID is the section's actual surface,
+   CRATE has the violet in its cracks, FIRE has its flames and START is the
+   shape and colour you are wearing. The drawings stay for the two cases the
+   camera cannot serve: ERASE, which is not a piece, and a renderer that is
+   not up yet (the editor can be reached before the first frame on a slow
+   start, and a chip with nothing in it is worse than a diagram of one). */
+function chipArt(k){
+  if(TOOL_PIECE.hasOwnProperty(k)&&typeof pieceShot==="function"){
+    var url=pieceShot(TOOL_PIECE[k]);
+    if(url)return "<img class='cu shot' src='"+url+"' alt='' aria-hidden='true'>";
+  }
+  return toolArt(k);
+}
+/* Drawn once and then left alone - the chips are static markup in index.html
+   that syncTools() only ever shows and hides - except START, which is a
+   portrait of whatever piece you are wearing and so is taken again on every
+   visit. The rest are re-taken when the ground changes, because pieceShot()
+   keys its cache on the section's surface and a miss simply shoots again. */
 function drawToolChips(){
   for(var k in TOOL_IDS){
     var el=$(TOOL_IDS[k]);
     if(!el)continue;
-    if(el.getAttribute("data-art")&&k!=="start")continue;
     var a=TOOL_ART[k]||{}, label=el.getAttribute("data-label");
     if(!label){label=el.textContent.trim();el.setAttribute("data-label",label);}
-    el.setAttribute("data-art","1");
+    var art=chipArt(k);
+    if(el.getAttribute("data-art")===art)continue;
+    el.setAttribute("data-art",art);
     if(a.c)el.style.setProperty("--c",a.c);
-    el.innerHTML=toolArt(k)+"<i>"+label+"</i>";
+    el.innerHTML=art+"<i>"+label+"</i>";
   }
 }
 function setTool(t){
