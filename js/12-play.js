@@ -331,9 +331,16 @@ function bossHolding(){return bossPause>0||!!rep;}
    is the only reason two hunters are ever in one square, and it gets the word
    that sounds like it was earned. Past three the count says more than any
    adjective would. */
-function killWord(n){
+function killWord(n,last){
   if(n>=4)return n+" IN ONE";
-  return n===1?"ONE DOWN":(n===2?"DOUBLE CRUSH":"TRIPLE CRUSH");
+  if(n===2)return "DOUBLE CRUSH";
+  if(n===3)return "TRIPLE CRUSH";
+  /* One kill, and the word turns on whether it was the LAST one. "One down"
+     is a tally - it means there are others - and on a board with nothing left
+     on it that is the wrong sentence; SPARRING has a single hunter, so
+     killing it announced "one down" over an empty arena. The last one is
+     CRUSHED, which is an ending. */
+  return last?"CRUSHED":"ONE DOWN";
 }
 var stingTimer=null;
 function bossSting(kind,word,sub){
@@ -1221,7 +1228,7 @@ function bossFoldCrush(){
      just did is the kill, and how many they got is the part that varies from
      fold to fold. The stakes go under it, where they still read. */
   var left=hunters.length, n=doomed.length;   // survivors, then kills
-  bossSting("kill",killWord(n),
+  bossSting("kill",killWord(n,!left),
     left?(left+" left"):
       ((bossPhase>=B.phases.length-1)?"the census is closed":"phase clear"));
   /* What the survivors get for surviving. A fold that kills nothing is now
@@ -1454,7 +1461,7 @@ function bossTakeCrate(idx){
   hunters.splice(idx,1);
   bossHitFlash=1;
   SFX.strike();shakeT=1;
-  bossSting("kill","ONE DOWN",
+  bossSting("kill",killWord(1,!hunters.length),
     hunters.length?(hunters.length+" left · under the crate"):"phase clear");
   if(!hunters.length){bossAdvance();return true;}
   flash("crushed under the crate · "+hunters.length+" left");
