@@ -24,7 +24,7 @@ rather than guessing the file.
 | `40-panels.css` | `.panel` shell (the 44vh sheet), `.srow` sliders, `.lrow` level rows, `.tabs`, the wardrobe (`.wbody .wcase .wglass .wfloor .wcanvas .wact .item .grid`), `.secbar`, `.chap`, `.leg`, `button.mini` |
 | `50-layout-cues.css` | control layouts `body.ui-compact / ui-none / norot / tut`, `.coach`, `.crow` + `.seg`, `cuePulse` / `button.cue`, `.toast` and `.toast.cuesay` |
 | `60-splash.css` | the sting (`.splash .sstage .scube .srule .sprompt`) |
-| `65-replay.css` | the kill cam end to end: the strike sting (`.bsting .bsflash .bsray .bsring .bsword`), the wind-up (`.killcam` + `.snow .cam .vf .live`, `.kcsnow .kcroll .kcvhs`, the camcorder `.kcrig .kccam .kcbody .kchandle .kcmic .kcvf .kcbarrel .kclens .kcglass .kctally`, the viewfinder `.kcframe .kcb .kcrec .kctc`), then `.replayui`, `.rbar`, `.rlabel`, `body.replaying` |
+| `65-replay.css` | the kill cam end to end: the strike sting (`.bsting .bsflash .bsray .bsring .bsword`), the skip catcher (`.rskip`), the wind-up (`.killcam` + `.snow .cam .vf .live`, `.kcsnow .kcroll .kcvhs`, the camcorder `.kcrig .kccam .kcbody .kchandle .kcmic .kcvf .kcbarrel .kclens .kcglass .kctally`, the viewfinder `.kcframe .kcb .kcrec .kctc`), then `.replayui`, `.rbar`, `.rlabel`, `body.replaying` |
 | `70-cards.css` | the full-bleed cards: `.won` (win card, intro card), `.bigstars`, `.wonmast .wonlock .wonstory`, `.tutcard`, `#bRetry` |
 | `75-bossbar.css` | `.boss` lives/cores bar, `.startotal`, `.flystar`, `.sg` |
 | `80-panel-tall.css` | full-height panel furniture shared by menu, wardrobe, chooser and map: `.panel.tall .phead .pbody .pcard .prow2 .pgo .psub .pdanger .pfoot`, the range slider skin |
@@ -63,7 +63,7 @@ knows what state the game is in.
 turn), `tut` / `tutgest` / `tutsoft` (a tutorial; gesture lesson; light dim),
 `tutlock` (guided lock armed, `15-tutorial.js`), `athome` (home screen up),
 `mapopen` (any panel up; hides the star total), `carded` (a full-bleed card
-up), `splashing`, `replaying`, `bosshold`.
+up), `splashing`, `replaying` (also arms the `.rskip` catcher), `bosshold`.
 
 ## Screens, one row each
 
@@ -177,10 +177,26 @@ named). Undoing one of these needs the paragraph.
   noise and a repeating gradient is a texture. **REC and the timecode live in
   the top bar**, not under it - under it they land on the level's name and
   hint, the same collision the REPLAY label was moved out of.
-- **The first beat is the only asymmetric one**, and deliberately: `KC_HOLD_
-  DEATH` 1300ms against `KC_HOLD_KILL` 620ms. A death is news and needs a
-  moment on the board it happened on before the spectacle starts; a kill is
-  not news, and holding a cleared arena is dead air.
+- **The first beat is long, and it has been raised twice from playing it**:
+  `KC_HOLD_DEATH` 1750ms, `KC_HOLD_KILL` 1550ms. The sting's own animation is
+  940ms, so anything under a second cuts the word off mid-read and the snow
+  arrives on top of the news. What it buys is *one thing at a time*: the word
+  lands, it is read, the board it happened on is seen, then the picture drops.
+- **`Menu > Kill cam` is FULL or PLAIN** (`settings.killcam`, whitelisted in
+  `loadSettings`, reset by RESET SETTINGS). PLAIN keeps the sting and the film
+  and cuts the television out of the middle — `kcFull()` gates both
+  `killCamStart()`'s beats and the `kcLead()` the film waits on, so PLAIN is
+  genuinely shorter and not just hidden. It is a real open question about how
+  much ceremony a death deserves, not a debug switch; both halves ship.
+- **The whole screen is a skip while a film is up.** `#repSkip` (`.rskip`,
+  z-index 17) is a full-bleed catcher that is `pointer-events:auto` only under
+  `body.replaying`; it is the deliberate exception to `.replayui` and
+  `.killcam` both being `pointer-events:none`. Bound through `tap()`, so the
+  press that skips cannot also reach the board — where a double tap is the
+  fold. `replaySkip()` goes **through `replayEnd()`**, never round it: that is
+  the one place that restores the board, the camera and the player's mesh and
+  then runs whatever was waiting behind the film (the phase advance, or the
+  last death).
 - **A kill is scored and a death is silent under the snow** — owner's call,
   and it survives a re-read of the code as an accident. `SFX.cheer()` on the
   beat of the hit, `SFX.rec()` when the viewfinder lands, `SFX.relive()` on

@@ -436,6 +436,11 @@ function killCamStart(mode){
   var isKill=(mode==="kill");
   if(isKill&&typeof SFX!=="undefined"&&SFX.cheer)SFX.cheer();
   var hold=kcHold(mode);
+  /* PLAIN STOPS HERE. The sting has already played and the film still runs
+     behind the ordinary replay chrome - bars, wash and label - which is
+     exactly what this screen was before the television arrived, and is the
+     thing the full version has to earn its two seconds against. */
+  if(!kcFull())return;
   kcT.push(setTimeout(function(){
     kcNoiseStart();el.classList.add("snow");
   },hold));

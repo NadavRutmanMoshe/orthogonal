@@ -226,7 +226,17 @@ var KC_HOLD_KILL=1550;         // and so is the word over the kill
 var KC_SNOW_MS=470;            // no signal
 var KC_CAM_MS=820;             // raised, held against the glass, pushed in
 function kcHold(mode){return mode==="death"?KC_HOLD_DEATH:KC_HOLD_KILL;}
-function kcLead(mode){return kcHold(mode)+KC_SNOW_MS+KC_CAM_MS;}
+/* IS THE OLD TELEVISION IN OR OUT. `Menu > Kill cam` picks, and it is a real
+   question rather than a debug switch: the snow and the camcorder are two
+   extra seconds of ceremony on every death, and whether that reads as a kill
+   cam or as a wait is not something you can settle by reading the code. Both
+   halves keep the sting and the film; "plain" simply cuts the middle out. */
+function kcFull(){
+  return typeof settings==="undefined"||settings.killcam!=="plain";
+}
+function kcLead(mode){
+  return kcHold(mode)+(kcFull()?KC_SNOW_MS+KC_CAM_MS:0);
+}
 var REP_HZ=20;                 // one sample every 50ms
 var REP_KEEP=6000;             // how much history the ring holds
 var REP_DEATH_MS=1900, REP_KILL_MS=1500;   // how much of it each mode shows

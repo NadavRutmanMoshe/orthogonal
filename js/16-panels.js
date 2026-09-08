@@ -471,6 +471,17 @@ function menuPanel(){
           seg("mUi","full","FULL",settings.ui)+
           seg("mUi","compact","COMPACT",settings.ui)+
           seg("mUi","none","HIDDEN",settings.ui)+"</span></div></div>"+
+      /* THE KILL CAM, AS A ROW, because it is a genuine question about how
+         much ceremony a death deserves and the only way to answer it is to
+         play both. FULL is the television: the signal drops to snow, a
+         camcorder is pushed through the screen, and the film plays behind its
+         lens. PLAIN keeps the sting and the film and cuts that out of the
+         middle. It is on this card rather than under More because it is a
+         preference about what the game does, not a tool. */
+      "<div class='pcard'><h4>Kill cam</h4>"+
+        "<div class='crow bare'><span class='seg'>"+
+          seg("mKcam","full","FULL",settings.killcam)+
+          seg("mKcam","plain","PLAIN",settings.killcam)+"</span></div></div>"+
       /* WHAT THE PIECES DO IS OFF THE PANEL, on the owner's call. The pieces
          are taught where they are first met - the tutorial cards and the
          level briefs - and a reference list under More was a fourth row that
@@ -520,12 +531,17 @@ function menuPanel(){
       settings.ui=m;applyUI();saveSettings();syncHud();onResize();menuPanel();
     });
   });
+  ["full","plain"].forEach(function(m){
+    bind("mKcam_"+m,function(){
+      settings.killcam=m;saveSettings();menuPanel();
+    });
+  });
   bind("mTut",function(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
   });
   bind("mReset",function(){
     settings.volume=defaultVolume();settings.volTouched=false;
-    settings.brightness=1;settings.ui=UI_DEFAULT;
+    settings.brightness=1;settings.ui=UI_DEFAULT;settings.killcam="full";
 
     // including "stop suggesting things": a reset is a reset
     settings.noSlowOffer=false;settings.landHints=0;

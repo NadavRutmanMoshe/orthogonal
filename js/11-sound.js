@@ -66,7 +66,16 @@ var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false
               /* pace is retired and pinned at 1; see paceScale() below. */
               pace:1,
               noSlowOffer:false,landHints:0,
-              starAsked:false};
+              starAsked:false,
+              /* HOW MUCH KILL CAM. "full" is the whole conceit - the signal
+                 drops to television snow, a camcorder is walked up to the
+                 screen and pushed through it, and the film plays behind its
+                 lens. "plain" keeps the sting and the film and cuts the
+                 wind-up out of the middle, which is the version to compare it
+                 against; the two are a genuine question about how much
+                 ceremony a death deserves, and it is the owner's to answer by
+                 playing both rather than mine to answer by picking one. */
+              killcam:"full"};
 /* How many times the landing rule is spelled out in words. The rings keep
    drawing forever - they are free and they answer the question faster than a
    sentence does - but a line of text on every fold would be nagging. */
