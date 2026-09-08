@@ -864,6 +864,59 @@ function noiseRise(c,at,dur,vol){
   src.connect(bp);bp.connect(g);g.connect(out(c));
   src.start(at);src.stop(at+dur+.18);
 }
+/* THE CROWD — the room the fight is being watched in
+
+   A boss is the only thing in this game with an audience implied by its
+   shape: three phases, a clock, lives, a replay. The kill cam finally puts
+   that room on the soundtrack — a cheer over a kill, a groan over a death —
+   and it is the one voice here that is a bed rather than an event, so it is
+   built rather than blipped.
+
+   WHAT MAKES NOISE SOUND LIKE PEOPLE is not the filter, it is the envelope.
+   Flat noise through a bandpass is wind; the same noise with a slow random
+   walk multiplied into it is a room, because a crowd is hundreds of voices
+   whose sum wanders. So the walk is baked into the buffer sample by sample
+   and the filter only decides which room it is: up and bright for a cheer,
+   down and closed for a groan. The sweep direction is doing the emotional
+   work — rising is approval in every culture that has recorded a crowd.
+
+   Deliberately quiet (.034 against a blip's .05). It fires on the same beat
+   as SFX.strike() or SFX.die() and it must sit UNDER them: the hit is the
+   event, this is the room reacting to it a moment later. */
+function crowdBed(c,at,dur,vol,cheer){
+  var len=Math.floor(c.sampleRate*(dur+.3));
+  var buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);
+  var env=0;
+  for(var i=0;i<len;i++){
+    env+=(Math.random()-.5)*.055;
+    if(env>1)env=1; else if(env<-1)env=-1;
+    d[i]=(Math.random()*2-1)*(.5+.5*Math.abs(env));
+  }
+  var src=c.createBufferSource();src.buffer=buf;
+  var bp=c.createBiquadFilter();bp.type="bandpass";bp.Q.value=cheer?.85:1.4;
+  bp.frequency.setValueAtTime(cheer?520:340,at);
+  bp.frequency.exponentialRampToValueAtTime(cheer?1450:190,at+dur*.5);
+  bp.frequency.exponentialRampToValueAtTime(cheer?820:155,at+dur);
+  var g=c.createGain();
+  g.gain.setValueAtTime(.0001,at);
+  g.gain.exponentialRampToValueAtTime(vol,at+(cheer?.18:.34));
+  g.gain.setValueAtTime(vol,at+dur*.52);
+  g.gain.exponentialRampToValueAtTime(.0001,at+dur+.22);
+  src.connect(bp);bp.connect(g);g.connect(out(c));
+  src.start(at);src.stop(at+dur+.28);
+}
+/* One pair of hands. Scattered rather than metrical, because applause that
+   lands on a grid is a drum machine. */
+function crowdClap(c,at,vol){
+  var len=Math.floor(c.sampleRate*.09);
+  var buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);
+  for(var i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,7);
+  var src=c.createBufferSource();src.buffer=buf;
+  var hp=c.createBiquadFilter();hp.type="highpass";hp.frequency.value=1500;
+  var g=c.createGain();g.gain.value=vol;
+  src.connect(hp);hp.connect(g);g.connect(out(c));
+  src.start(at);src.stop(at+.12);
+}
 /* HAPTICS - the same event, felt.
 
    The fold is the game's one verb and on a phone it is a tap on glass with
@@ -948,6 +1001,22 @@ var SFX={
   strike:function(){
     blip(150,.22,"square",.055,70);
     blip(900,.3,"sine",.04,1400);
+  },
+  /* THE CROWD, on the two beats that have one: a core going down, or one of
+     yours. `cheer` picks which room. A cheer gets a scatter of hands over the
+     bed; a groan gets two low voices sagging under it, which is what a boo
+     actually is - a vowel, falling. */
+  crowd:function(cheer){
+    var c=audio();if(!c)return;
+    var t=c.currentTime;
+    crowdBed(c,t,cheer?2.4:2.0,.034,!!cheer);
+    if(cheer){
+      for(var i=0;i<11;i++)
+        crowdClap(c,t+.10+Math.random()*1.15,.010+Math.random()*.008);
+    }else{
+      blip(168,1.1,"sawtooth",.016,118);
+      setTimeout(function(){blip(132,1.0,"triangle",.014,96);},140);
+    }
   },
   // One per star landing on the counter, climbing as they arrive, so three
   // stars resolve upward instead of repeating the same note three times.

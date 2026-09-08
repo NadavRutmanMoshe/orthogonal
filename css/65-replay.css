@@ -145,3 +145,184 @@
   /* The controls are inert while it plays, and they should look it. */
   body.replaying #playBar,body.replaying .hud{opacity:.32;
     transition:opacity .28s ease}
+
+/* ============================================================
+   THE KILL CAM'S WIND-UP — snow, then a camcorder, then the film
+
+   A replay that begins the instant you die is the game showing you a thing;
+   a replay that begins with the signal dropping out and a camera being
+   walked up to the screen is the game handing the moment over to somebody
+   else, which is what a kill cam is for. Three beats, one class each, set by
+   killCamStart() in js/12-play.js:
+
+     .snow   the picture goes - white noise, the old no-connection screen
+     .cam    a camcorder is raised, held against the glass, and pushed through
+     .vf     the viewfinder fades up, over the last of the push-in
+     .live   the film starts, and the snow and the camera are GONE
+
+   The last of those is not decoration, it is the guarantee. Everything the
+   first three do is a CSS animation with `forwards` on it, and an animation
+   only finishes if frames are drawn - a device that hitches through the
+   push-in leaves the snow sitting at whatever opacity it reached, over the
+   film. `.live` states the end position outright rather than trusting the
+   animation to have arrived at it.
+
+   EVERYTHING ON THE CAMCORDER IS OPAQUE EXCEPT THE GLASS, which is the whole
+   trick: the push-in scales about the lens's own centre, so the body, the
+   handle and the barrel all sweep off the edges of the screen and the last
+   thing over the picture is a hole. The transform-origin is a pair of pixel
+   values rather than a percentage for exactly that reason - it is the middle
+   of the lens, not the middle of the camera, and the two are 84px apart.
+
+   The snow is a canvas, not a CSS pattern. Television snow is noise; a
+   repeating gradient is a texture, and at this size the eye tells them apart
+   immediately. 96x160 random pixels blown up with image-rendering:pixelated
+   costs nothing and is the real thing. It cross-fades away under the lens as
+   the camera comes through, which reads as the signal locking back in.
+   ============================================================ */
+  .killcam{position:fixed;inset:0;z-index:18;pointer-events:none;
+    display:none;overflow:hidden}
+  .killcam.on{display:block}
+
+  /* --- the snow ------------------------------------------------------ */
+  .kcsnow{position:absolute;inset:0;opacity:0;background:#0a0c12}
+  .killcam.snow .kcsnow{animation:kcsnowIn .16s linear forwards}
+  @keyframes kcsnowIn{from{opacity:0}to{opacity:1}}
+  .kcsnow canvas{position:absolute;inset:0;width:100%;height:100%;
+    image-rendering:pixelated;opacity:.92}
+  /* The horizontal hold going: one bright band walking down the picture. */
+  .kcroll{position:absolute;left:0;right:0;height:13%;
+    background:linear-gradient(transparent,rgba(255,255,255,.20) 42%,
+      rgba(255,255,255,.05) 62%,transparent);
+    animation:kcroll 1.15s linear infinite}
+  @keyframes kcroll{from{top:-16%}to{top:104%}}
+  /* And the tube's own scanlines over the top of it, so the noise sits on a
+     screen rather than on the page. */
+  .kcvhs{position:absolute;inset:0;
+    background:repeating-linear-gradient(rgba(0,0,0,.34) 0 1px,
+      transparent 1px 3px)}
+
+  /* --- the camcorder -------------------------------------------------- */
+  .kcrig{position:absolute;inset:0;opacity:0}
+  .killcam.cam .kcrig{opacity:1}
+  /* Pinned by the LENS, not by the camera: margin-left/-top place the lens's
+     centre on the middle of the screen, and transform-origin keeps it there
+     through the whole push-in. */
+  .kccam{position:absolute;left:50%;top:50%;width:220px;height:130px;
+    margin-left:-194px;margin-top:-70px;transform-origin:194px 70px}
+  .killcam.cam .kccam{animation:kcfly .82s cubic-bezier(.4,.03,.22,1) forwards}
+  .killcam.cam .kcsnow{animation:kcsnowOut .82s linear forwards}
+  @keyframes kcsnowOut{0%{opacity:1}46%{opacity:.9}100%{opacity:0}}
+  @keyframes kcfly{
+    0%{opacity:0;transform:translate(6px,86px) scale(.13) rotate(-15deg)}
+    14%{opacity:1}
+    /* raised */
+    40%{transform:translate(0,14px) scale(.62) rotate(-5deg)}
+    /* held against the glass */
+    58%{transform:translate(0,0) scale(1.02) rotate(0deg)}
+    100%{opacity:1;transform:translate(0,0) scale(13) rotate(0deg)}}
+  .kccam>i{position:absolute;display:block}
+  .kcbody{left:0;top:22px;width:152px;height:96px;border-radius:11px;
+    background:linear-gradient(158deg,#3b4256,#171b28 62%,#0d1018);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 10px 26px rgba(0,0,0,.6)}
+  .kchandle{left:30px;top:0;width:86px;height:24px;border-radius:7px 7px 2px 2px;
+    background:linear-gradient(#394054,#1b2030)}
+  .kcmic{left:6px;top:4px;width:24px;height:15px;border-radius:4px;
+    background:#252b3c;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+  /* The eyepiece, hanging off the back - it is what says camcorder rather
+     than photograph at a glance. */
+  .kcvf{left:-26px;top:36px;width:36px;height:30px;border-radius:5px;
+    background:linear-gradient(#2c3346,#121622)}
+  .kcbarrel{left:116px;top:36px;width:82px;height:70px;border-radius:8px;
+    background:linear-gradient(#4a536b,#1d2230 70%)}
+  /* THE RING. Its border is the metal; the shadows are the two inner steps
+     down into the barrel. */
+  /* NOTHING THAT DARKENS THE MIDDLE LIVES ON THE RING, only metal. An
+     `inset` shadow paints over a transparent background, and at the end of
+     the push-in this element is thirteen times its drawn size - so a 26px
+     inner vignette becomes a 340px one across the film. The barrel's shade
+     is on the glass instead, which fades. */
+  .kclens{left:150px;top:26px;width:88px;height:88px;border-radius:50%;
+    border:10px solid #262c3d;background:transparent;
+    box-shadow:0 0 0 3px #12161f,inset 0 0 0 5px #171c28}
+  /* The glass is transparent in the middle on purpose: it is the hole the
+     film is behind. What is drawn is only the coating and one specular. */
+  .kcglass{left:165px;top:41px;width:58px;height:58px;border-radius:50%;
+    background:
+      radial-gradient(circle at 33% 27%,rgba(255,255,255,.34),
+        transparent 17%),
+      radial-gradient(circle at 68% 76%,rgba(120,190,255,.16),transparent 30%),
+      radial-gradient(circle,transparent 54%,rgba(90,150,255,.14) 80%,
+        rgba(10,14,24,.46));
+    box-shadow:inset 0 0 22px rgba(0,0,0,.8)}
+  /* AND IT HAS TO GO as the lens arrives. The coating and its specular are
+     drawn at 58px; at the end of the push-in they are 13 times that, and a
+     highlight the size of half the screen is not glass, it is a white blob
+     over the film. So the glass fades out under the ring while the ring is
+     still growing: what is left is the hole. */
+  .killcam.cam .kcglass{animation:kcglassOut .82s linear forwards}
+  @keyframes kcglassOut{0%{opacity:1}48%{opacity:.8}100%{opacity:0}}
+  /* THE RECORD LIGHT, on the camera itself and in its top right corner,
+     which is where a camcorder has always put it. The viewfinder gets its
+     own once the camera is through. */
+  /* Its blink is on colour and glow rather than on opacity, because opacity
+     is spoken for: kcbodyOut below owns it, and two animations on one
+     property is the last one winning rather than both playing. */
+  .kctally{left:120px;top:26px;width:10px;height:10px;border-radius:50%;
+    background:#ff4d5e;box-shadow:0 0 9px #ff4d5e;
+    animation:kctally 1s ease-in-out infinite}
+  @keyframes kctally{
+    0%,100%{background:#ff4d5e;box-shadow:0 0 9px #ff4d5e}
+    50%{background:#7a2530;box-shadow:0 0 2px rgba(255,77,94,.3)}}
+  /* AND THE CAMERA ITSELF DISSOLVES ONCE IT IS AGAINST THE GLASS. Everything
+     but the ring is opaque, and everything but the ring is still in front of
+     the middle of the screen at the end of the push-in - the barrel alone
+     covers half of it. So the body goes as the lens arrives, and the last
+     thing over the picture is a hole with a rim. */
+  .killcam.cam .kcbody,.killcam.cam .kchandle,.killcam.cam .kcmic,
+  .killcam.cam .kcvf,.killcam.cam .kcbarrel{
+    animation:kcbodyOut .82s linear forwards}
+  .killcam.cam .kctally{
+    animation:kctally 1s ease-in-out infinite,
+              kcbodyOut .82s linear forwards}
+  @keyframes kcbodyOut{0%{opacity:1}54%{opacity:1}74%{opacity:0}100%{opacity:0}}
+
+  /* The end position, asserted. See `.live` above. */
+  .killcam.live .kcsnow,.killcam.live .kcrig{animation:none;opacity:0}
+
+  /* --- the viewfinder ------------------------------------------------- */
+  .kcframe{position:absolute;inset:0;opacity:0;
+    transition:opacity .22s ease;
+    background:radial-gradient(ellipse at 50% 50%,transparent 52%,
+      rgba(4,7,14,.55))}
+  .killcam.vf .kcframe{opacity:1}
+  .kcb{position:absolute;width:26px;height:26px;
+    border:2px solid rgba(232,238,252,.72)}
+  .kcb.tl{left:14px;top:calc(8.5vh + 14px);border-right:0;border-bottom:0}
+  .kcb.tr{right:14px;top:calc(8.5vh + 14px);border-left:0;border-bottom:0}
+  .kcb.bl{left:14px;bottom:calc(8.5vh + 14px);border-right:0;border-top:0}
+  .kcb.br{right:14px;bottom:calc(8.5vh + 14px);border-left:0;border-top:0}
+  /* REC AND THE TIMECODE LIVE IN THE TOP BAR, not under it. Under it they
+     land on the level's own name and hint - the two lines that say which
+     fight this is - which is the same collision the REPLAY label was moved
+     out of, one screen down. The bar is 8.5vh of empty black and it is
+     exactly what a camera puts its own furniture on. */
+  .kcrec{position:absolute;right:16px;top:0;height:8.5vh;
+    display:flex;align-items:center;gap:7px;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:12px;letter-spacing:.24em;color:#ff6b7a}
+  .kcrec b{font-weight:600}
+  .kcrec s{width:9px;height:9px;border-radius:50%;background:#ff4d5e;
+    text-decoration:none;box-shadow:0 0 10px #ff4d5e;
+    animation:rdot 1s ease-in-out infinite}
+  .kctc{position:absolute;left:16px;top:0;height:8.5vh;
+    display:flex;align-items:center;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:11.5px;letter-spacing:.14em;color:rgba(232,238,252,.62)}
+
+  @media (prefers-reduced-motion: reduce){
+    .kcroll,.kctally,.kcrec s{animation:none}
+    .killcam.cam .kccam{animation:none;opacity:0}
+    .killcam.cam .kcsnow{animation:none;opacity:0}
+  }

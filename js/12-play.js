@@ -122,7 +122,7 @@ function bossReset(){
   shieldMs=0;deathPending=false;slowMoMs=0;
   rep=null;bossPendingAdvance=false;bossPendingDeath=false;replayClear();
   document.body.classList.remove("replaying");
-  bossStingHide();
+  bossStingHide();killCamHide();
   hunters=[];twinCore=0;twinAt=null;bossPhase=0;
   if(B&&B.twin)twinSpawn(0);
   else if(B){bossRestoreArena();bossEnterPhase(false);}
@@ -343,6 +343,103 @@ function bossStingHide(){
   var el=$("bossSting");if(el)el.className="bsting";
 }
 /* ============================================================
+   THE KILL CAM'S WIND-UP — snow, a camcorder, then the film
+
+   The replay itself is unchanged; what is new is the second and a half in
+   front of it. The picture drops to white noise, a camcorder is walked up to
+   the screen and pushed through it, and the film plays behind its lens with
+   the record light on. Three beats, one class each on #killCam, and the CSS
+   in css/65-replay.css does all of the drawing.
+
+   IT HOLDS THE FILM RATHER THAN DELAYING IT. `rep` is set the moment the hit
+   lands - which is what freezes the fight, saves the pose and stops every
+   verb - and only the PLAYBACK waits, on `rep.leadUntil` checked in
+   replayFrame(). Doing it the other way round (a setTimeout that calls
+   replayStart later) would have left the fight running under the snow for a
+   second and a half, with the pack walking off the pose the film is about.
+
+   The timers are wall-clock, like the sting's, because the beats have to
+   line up with CSS animations and those run in real seconds. Every one of
+   them is cleared by killCamHide(), which every reset path calls.
+   ============================================================ */
+var kcT=[], kcNoiseTimer=null;
+function kcClear(){for(var i=0;i<kcT.length;i++)clearTimeout(kcT[i]);kcT=[];}
+/* Television snow, drawn rather than approximated: 96x160 random pixels a
+   frame, blown up by the browser with image-rendering:pixelated. A repeating
+   CSS gradient is a texture and the eye tells the two apart instantly. */
+function kcNoiseStart(){
+  var cv=$("kcNoise");if(!cv)return;
+  var ctx=cv.getContext("2d");if(!ctx)return;
+  var w=cv.width,h=cv.height, img=ctx.createImageData(w,h);
+  kcNoiseStop();
+  kcNoiseTimer=setInterval(function(){
+    var d=img.data;
+    for(var i=0;i<d.length;i+=4){
+      var v=Math.random()*255|0;
+      d[i]=d[i+1]=d[i+2]=v;d[i+3]=255;
+    }
+    ctx.putImageData(img,0,0);
+  },34);
+}
+function kcNoiseStop(){
+  if(kcNoiseTimer){clearInterval(kcNoiseTimer);kcNoiseTimer=null;}
+}
+/* The running timecode in the viewfinder's top left. Frames at 24, because
+   what it is pretending to be is footage.
+
+   NOT called kcTime, though that is what it writes: `#kcTime` is an element
+   id, and an element id is already a window property. Same rule as
+   `moveHistory` in the layout notes - a top-level name here must not be one
+   the document has already claimed. */
+function kcStamp(ms){
+  var el=$("kcTime");if(!el)return;
+  var t=Math.max(0,ms|0);
+  var ss=Math.floor(t/1000), ff=Math.floor((t%1000)/1000*24);
+  var p=function(n){return (n<10?"0":"")+n;};
+  el.textContent="00:"+p(ss%60)+":"+p(ff);
+}
+function killCamStart(mode){
+  var el=$("killCam");if(!el)return;
+  kcClear();
+  el.className="killcam on";
+  kcStamp(0);
+  // The room reacts on the beat of the hit, not when the film starts: it is
+  // reacting to what happened, and by the time the camera is up it is over.
+  if(typeof SFX!=="undefined"&&SFX.crowd)SFX.crowd(mode==="kill");
+  kcT.push(setTimeout(function(){
+    kcNoiseStart();el.classList.add("snow");
+  },KC_STING_MS));
+  kcT.push(setTimeout(function(){el.classList.add("cam");},
+    KC_STING_MS+KC_SNOW_MS));
+  /* The viewfinder comes up a beat BEFORE the push-in finishes, so the
+     bracket and the record light are already there when the lens clears the
+     edges of the screen rather than appearing on top of an empty picture. */
+  kcT.push(setTimeout(function(){
+    el.classList.add("vf");kcNoiseStop();
+  },KC_STING_MS+KC_SNOW_MS+KC_CAM_MS-200));
+  /* AND THE END POSITION, STATED. The snow and the camera are cleared by CSS
+     animations, and an animation only lands if frames are drawn - hitch
+     through the push-in and the snow stays sitting over the film at whatever
+     opacity it got to. `.live` says where they end up rather than trusting
+     them to have got there, and it lands on the same beat the film starts. */
+  kcT.push(setTimeout(function(){
+    el.classList.add("live");
+  },KC_STING_MS+KC_SNOW_MS+KC_CAM_MS));
+}
+/* The film is over: the bracket fades, then the layer goes. Two steps because
+   `display:none` cannot be transitioned out of. */
+function killCamEnd(){
+  var el=$("killCam");if(!el)return;
+  kcClear();kcNoiseStop();
+  el.classList.remove("vf");
+  kcT.push(setTimeout(function(){el.className="killcam";},260));
+}
+/* And the hard stop, for every path that takes the board away underneath it. */
+function killCamHide(){
+  var el=$("killCam");if(el)el.className="killcam";
+  kcClear();kcNoiseStop();
+}
+/* ============================================================
    THE REPLAY - recorder and control. See 05-state.js for the design.
    ============================================================ */
 function replayClear(){repBuf=[];repT=0;repAcc=0;}
@@ -541,6 +638,18 @@ function replayStart(mode,who,line,at){
   var lab=$("replayNote");
   if(lab)lab.textContent=mode==="death"?"the line it came down"
                                        :"the fold that cleared it";
+  /* The wind-up, and the film held behind it. Set here rather than at the
+     call sites because every one of them wants it and none of them should
+     have to know how long it is.
+
+     ON THE CLOCK, NOT ON FRAME TIME, and it has to be: the three beats of the
+     wind-up are setTimeouts driving CSS animations, so a lead counted by
+     summing the render loop's dt drifts against them the moment a frame runs
+     long - and the frame right after a level loads is the longest one the
+     game has. Measured that way it ate 1250ms of a 1810ms lead in 400ms of
+     real time, and the film started while the camera was still in the air. */
+  rep.leadUntil=Date.now()+KC_LEAD_MS;
+  killCamStart(mode);
   return true;
 }
 /* Write a recorded frame over the live state. Safe because the fight is
@@ -613,6 +722,7 @@ function replayEnd(){
   for(var i=0;i<sv.h.length;i++)hunters.push(sv.h[i]);
   rep=null;
   document.body.classList.remove("replaying");
+  killCamEnd();
   buildGrid();syncHud();
   /* Whatever was waiting for the film happens now. The last death is checked
      first: if the run is over there is no phase to advance into. */
@@ -623,6 +733,11 @@ function replayEnd(){
    exactly the things the replay plays over. */
 function replayFrame(dtReal){
   if(!rep)return;
+  /* THE WIND-UP. The fight is already frozen - `rep` did that the instant the
+     hit landed - so all that waits here is the playback, behind the snow and
+     the camera. On the wall clock, in step with the beats; see replayStart(). */
+  if(rep.leadUntil&&Date.now()<rep.leadUntil)return;
+  kcStamp(rep.ms/REP_RATE);
   if(rep.ms<rep.t1-rep.t0){
     rep.ms=Math.min(rep.t1-rep.t0,rep.ms+dtReal*REP_RATE);
     var t=rep.t0+rep.ms;
@@ -1204,7 +1319,7 @@ function trialReset(){
   shieldMs=0;deathPending=false;slowMoMs=0;
   rep=null;bossPendingAdvance=false;bossPendingDeath=false;replayClear();
   document.body.classList.remove("replaying");
-  bossStingHide();
+  bossStingHide();killCamHide();
   if(TR)lives=BOSS_LIVES;
 }
 function trialFrame(dt){

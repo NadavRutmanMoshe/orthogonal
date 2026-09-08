@@ -235,6 +235,34 @@
      the game behaving oddly, so it gets the two things film has used for the
      same job forever: bars top and bottom, and a label saying what it is.
      Everything here is inert - the fight is frozen underneath. -->
+<!-- THE KILL CAM'S WIND-UP. Between the hit and the film: the signal drops
+     (white noise, the old no-connection screen), a camcorder is walked up to
+     the screen and pushed through it, and what is on the other side of its
+     lens is the replay, with the record light on. Driven entirely by
+     killCamStart() in js/12-play.js, which sets one class per beat; see
+     .killcam in css/65-replay.css. The static is painted into #kcNoise -
+     random pixels in a 96x160 buffer, blown up - because a CSS approximation
+     of television snow is a texture and this has to be noise. -->
+<div class="killcam" id="killCam" aria-hidden="true">
+  <div class="kcsnow"><canvas id="kcNoise" width="96" height="160"></canvas>
+    <i class="kcroll"></i><i class="kcvhs"></i></div>
+  <!-- The camcorder. Everything but the lens glass is opaque, so when it is
+       pushed into the screen the glass is the last thing left and the film is
+       what is behind it. -->
+  <div class="kcrig"><div class="kccam">
+    <i class="kcbody"></i><i class="kchandle"></i><i class="kcmic"></i>
+    <i class="kcvf"></i><i class="kcbarrel"></i><i class="kclens"></i>
+    <i class="kcglass"></i><i class="kctally"></i>
+  </div></div>
+  <!-- The viewfinder, which is what is left once the camera is through: the
+       bracket, the record light in the top right, and a running timecode. -->
+  <div class="kcframe">
+    <i class="kcb tl"></i><i class="kcb tr"></i><i class="kcb bl"></i><i class="kcb br"></i>
+    <div class="kcrec"><b>REC</b><s></s></div>
+    <div class="kctc" id="kcTime">00:00:00</div>
+  </div>
+</div>
+
 <div class="replayui" id="replayUI" aria-hidden="true">
   <div class="rdim"></div>
   <div class="rbar top"></div>

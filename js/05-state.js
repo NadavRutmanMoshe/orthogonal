@@ -204,6 +204,16 @@ function slowMo(){ slowMoMs=SLOWMO_MS; }
    to end; this is the wall-clock timer that takes the element back down after
    it, and the two have to move together. See bossSting() in js/12-play.js. */
 var STING_MS=940;
+/* THE KILL CAM'S WIND-UP, beat by beat. The sting is watched, then the
+   picture drops to snow, then a camcorder is raised and pushed through the
+   screen; the film starts on the other side of its lens. The sum is how long
+   replayFrame() holds the first frame - see rep.leadUntil in js/12-play.js -
+   killCamStart() sets one class per beat off exactly these three numbers, so
+   moving one here moves the animation with it. */
+var KC_STING_MS=520;           // the strike sting is watched, board frozen
+var KC_SNOW_MS=470;            // no signal
+var KC_CAM_MS=820;             // raised, held against the glass, pushed in
+var KC_LEAD_MS=KC_STING_MS+KC_SNOW_MS+KC_CAM_MS;
 var REP_HZ=20;                 // one sample every 50ms
 var REP_KEEP=6000;             // how much history the ring holds
 var REP_DEATH_MS=1900, REP_KILL_MS=1500;   // how much of it each mode shows

@@ -24,7 +24,7 @@ rather than guessing the file.
 | `40-panels.css` | `.panel` shell (the 44vh sheet), `.srow` sliders, `.lrow` level rows, `.tabs`, the wardrobe (`.wbody .wcase .wglass .wfloor .wcanvas .wact .item .grid`), `.secbar`, `.chap`, `.leg`, `button.mini` |
 | `50-layout-cues.css` | control layouts `body.ui-compact / ui-none / norot / tut`, `.coach`, `.crow` + `.seg`, `cuePulse` / `button.cue`, `.toast` and `.toast.cuesay` |
 | `60-splash.css` | the sting (`.splash .sstage .scube .srule .sprompt`) |
-| `65-replay.css` | the kill cam end to end: the strike sting (`.bsting .bsflash .bsray .bsring .bsword`), then `.replayui`, `.rbar`, `.rlabel`, `body.replaying` |
+| `65-replay.css` | the kill cam end to end: the strike sting (`.bsting .bsflash .bsray .bsring .bsword`), the wind-up (`.killcam` + `.snow .cam .vf .live`, `.kcsnow .kcroll .kcvhs`, the camcorder `.kcrig .kccam .kcbody .kchandle .kcmic .kcvf .kcbarrel .kclens .kcglass .kctally`, the viewfinder `.kcframe .kcb .kcrec .kctc`), then `.replayui`, `.rbar`, `.rlabel`, `body.replaying` |
 | `70-cards.css` | the full-bleed cards: `.won` (win card, intro card), `.bigstars`, `.wonmast .wonlock .wonstory`, `.tutcard`, `#bRetry` |
 | `75-bossbar.css` | `.boss` lives/cores bar, `.startotal`, `.flystar`, `.sg` |
 | `80-panel-tall.css` | full-height panel furniture shared by menu, wardrobe, chooser and map: `.panel.tall .phead .pbody .pcard .prow2 .pgo .psub .pdanger .pfoot`, the range slider skin |
@@ -88,6 +88,7 @@ buttons at the end of its builder.
 | Phase note on a boss | `#phaseNote` | `phaseNote()` (`12-play.js`) | `90-tutorial` | `phase` |
 | What killed you, over the kill cam | `#deathSay` | `deathSayShow()` / `deathSayTick()` (`12-play.js`), from `L.primer.why` | `90-tutorial` | `level:15 --eval "press('up')"` |
 | The strike sting: a core down, or a life gone | `#bossSting` (static) | `bossSting()` / `bossStingHide()` (`12-play.js`) | `65-replay` | (use `--eval`) |
+| The kill cam's wind-up: snow, camcorder, viewfinder | `#killCam` (static) | `killCamStart()` / `killCamEnd()` / `killCamHide()` (`12-play.js`), timecode by `kcStamp()` | `65-replay` | (use `--eval`) |
 | Replay chrome | `#replayUI` | `replayStart` / `replayEnd` | `65-replay` | (use `--eval`) |
 | Toast / spoken cue | `#toast` | `flash()`, `flashCue()` | `50-layout-cues` | `toast` |
 | The sting | `#splash` | `20-splash.js` | `60-splash` | `splash` |
@@ -156,6 +157,33 @@ named). Undoing one of these needs the paragraph.
   the sting IS the CSS animation and has to expire when the animation does, in
   real seconds; counted off the render loop's `dt` it expired in two frames on
   a slow device and never appeared at all.
+- **The kill cam winds up before it plays**, in four beats set as four
+  classes on `#killCam` by `killCamStart()`: `.snow` (the picture drops to
+  television snow), `.cam` (a camcorder is raised, held against the glass and
+  pushed through it), `.vf` (its viewfinder fades up over the last of the
+  push), `.live` (the film starts). **Everything on the camcorder is opaque
+  except the lens glass**, and the push-in scales about the *lens's* centre
+  rather than the camera's - so the body, the barrel and the handle sweep off
+  the edges and the last thing over the picture is a hole. The body and the
+  glass dissolve at 54-74% of the fly: at the end they are thirteen times
+  their drawn size, and a specular that size is a white blob over the film,
+  not glass. Nothing that darkens the middle may live on `.kclens`, because an
+  `inset` shadow paints over a transparent background and scales with it.
+  **`.live` states the end position rather than trusting the animations to
+  have arrived at it** - they only land if frames are drawn, and a device that
+  hitches through the push-in would otherwise leave the snow over the film.
+  The snow is a **canvas** (`#kcNoise`, 96x160 random pixels a frame, blown up
+  with `image-rendering:pixelated`), never a CSS gradient: television snow is
+  noise and a repeating gradient is a texture. **REC and the timecode live in
+  the top bar**, not under it - under it they land on the level's name and
+  hint, the same collision the REPLAY label was moved out of.
+- **The film is held, not delayed.** `rep` is set the instant the hit lands -
+  that is what freezes the fight and saves the pose - and only the playback
+  waits, on `rep.leadUntil`. It is a **wall-clock deadline**, because the four
+  beats are `setTimeout`s driving CSS animations; counted by summing the
+  render loop's `dt` it lost 1250ms of a 1810ms lead to the one long frame
+  after a level loads, and the film started while the camera was still in the
+  air.
 - **What killed you is said in the middle of the screen, not in the list.**
   `.deathsay` is one short line at `top:38%` — the phase note's position and
   family, one layer above the replay chrome, because it is a caption ON the
@@ -304,7 +332,7 @@ named). Undoing one of these needs the paragraph.
 
 canvas 0 · `.hud` 10 · `.bar` 10 · `.boss` 11 · `.coach` 11 · `.home` 11 ·
 `.corner` 12 · `.panel` 12 · `.replayui` 14 · `.toast` 15 · `.phasenote` 16 ·
-`.bsting` 19 · `.won` cards 20 · `.startotal` 30 · `.flystar` 40 ·
+`.killcam` 18 · `.bsting` 19 · `.won` cards 20 · `.startotal` 30 · `.flystar` 40 ·
 `.splash` 60.
 
 ## Screenshots
