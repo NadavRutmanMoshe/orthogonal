@@ -734,10 +734,16 @@ function homeGo(){
    So the list is the primitive and the gate is derived from it. Everything
    that draws the lock reads the same list, which means the map can name the
    fight and put the player in front of it. */
+/* A TEACHING FIGHT IS NOT ONE OF THEM. SPARRING carries `boss` because it is
+   one - a phase, a pack of one, the same kill - but V - EXTRA is what beating
+   the four LANDMARKS is for, and a lesson standing between the player and the
+   shelf would be a gate nobody agreed to. `tutorial` is already the flag for
+   "this level does not mark you"; this is the same sentence about unlocking. */
 function bossesLeft(){
   var out=[];
   for(var i=0;i<LEVELS.length;i++)
-    if(LEVELS[i].boss&&progress[LEVELS[i].name]===undefined)out.push(i);
+    if(LEVELS[i].boss&&!LEVELS[i].tutorial&&
+       progress[LEVELS[i].name]===undefined)out.push(i);
   return out;
 }
 // "BOSS II" - the numeral is what a player looks for on the map, and the
@@ -1359,7 +1365,12 @@ function mapShape(k){
    counts. Single digits rather than `01`, so a glance never confuses a
    prologue node with a Fundamentals one. */
 function mapNumeral(l,ord){
-  if(l.tutorial)return String(ord);
+  /* The ordinal is for the prologue's three unnumbered levels, so a LANDMARK
+     is not given one even when it teaches: SPARRING is a hexagon sitting next
+     to BOSS I's hexagon, and numbering it by position would print a campaign
+     number on the one node in the section that deliberately has none. It
+     falls through to the dot at the foot of this function. */
+  if(l.tutorial&&!l.boss&&!l.trial)return String(ord);
   var m=l.name.match(/^(\d+)/); if(m)return m[1];
   var r=l.name.match(/^(?:TRIAL|BOSS)\s+([IVX]+)/); if(r)return r[1];
   return "·";
@@ -1742,7 +1753,11 @@ function mapDraw(spans){
        finished prologue was three identical ticks with no order left in it. */
     if(st==="solved"){
       var sh="";
-      if(k==="tut")sh="<u>✓</u>";
+      /* Asked of the LEVEL, not of the node's shape. SPARRING is drawn as the
+         fight it is - a hexagon, next to BOSS I's - and scored as the lesson
+         it is, which is not at all; a row of stars under it would be three
+         the player can never have. */
+      if(l.tutorial)sh="<u>✓</u>";
       else{
         var got=masteryPreview()&&mast?3:starsForRecord(l,progress[l.name]);
         for(var s2=0;s2<3;s2++)sh+="<u class='"+(s2<got?"":"off")+"'>★</u>";

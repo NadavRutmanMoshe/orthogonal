@@ -322,6 +322,47 @@ var LEVELS=[
      [2,1,-5],[2,1,-4],[2,1,-3],[3,2,-6],[3,2,-5],[3,2,-4],
      [4,3,-6],[4,3,-5],[1,3,-5]],
    start:[0,1,0],goal:[1,4,-5],rotate:true},
+{name:"SPARRING — Standing Target",
+   won:"That one was standing still. The next one is not.",
+   hint:"It will not move. Nothing else is different.",
+   /* THE FIGHT, TAUGHT ON A DUMMY. Players were reaching BOSS I without
+      knowing what the fight *asks* - they could see a thing walking at them
+      and no way to answer it - so the four rules are said here in words, over
+      a board where each one is a single press and nothing is chasing anybody.
+
+      Three by seven, the tutorials' own scale rather than a boss arena's, and
+      bare: this is the first phase of every fight in the game with the clock
+      taken out of it. The target stands at the far end (`still:true`, see
+      bossPhases) and the player starts one row off its line, which is what
+      makes the primer's first three lines three separate moves rather than one:
+
+        1. ALIGN - one step toward the camera, onto its row.
+        2. LOOK   - one turn, so the row runs into the screen and the two of
+                    you share a silhouette column. The GO 2D button turns
+                    green the instant that is true, which is the lesson
+                    answering back.
+        3. GO 2D  - and it is crushed.
+
+      The fourth line cannot be taught by a dummy - being faster than it is
+      only means anything once it moves - so it is said, and BOSS I is where
+      it is charged for.
+
+      `teach:true` exempts the arena from two of bossArena()'s quality gates:
+      a bare floor has no lethal columns and three rows are too flat to fold
+      for profit. Both are true, and both are the point - see bossArena. */
+   primer:["To kill an opponent:",
+           "Align with it.",
+           "Face its direction.",
+           "{do:2d}.",
+           "Be faster than it is."],
+   boss:{teach:true,
+     /* step and aim are what it WOULD move and aim at, kept honest so this
+        reads as a hunter with the walking switched off rather than as a
+        different animal. Nothing reads them while `still` is set. */
+     phases:[{at:[[6,1,1]],still:true,step:1100,aim:1300,
+              say:"one of them, and it is not moving"}]},
+   blocks:box(0,6,0,0,0,2,[]),
+   start:[0,1,0],rotate:true,tutorial:true},
 {name:"BOSS I — Catch Me If You Can!",
    won:"Something in the plane has seen you. It will not be the only one.",
    hint:"A game of catch: whoever shifts the other into their own square first wins.",
@@ -1001,7 +1042,7 @@ var SECTIONS=[
           stars:{n:46, col:0xdfe9ff, seed:19},
           air:{col:0xcfe08e, n:18, rise:-.10, drift:.16, size:.085,
                kind:"leaf"}}},
-  {at:16, name:"II · FIRE", sub:"fire is solid, and it burns you", col:"#e0455f",
+  {at:17, name:"II · FIRE", sub:"fire is solid, and it burns you", col:"#e0455f",
    story:"Some of what is down there did not survive being flattened.",
    /* HELL, and it is DARK hell rather than bright. This section teaches
       fire, and a glowing orange world swallows a fire block whole - that was
@@ -1012,7 +1053,7 @@ var SECTIONS=[
    theme:{sky:[0x1a0a10,0x3a0f0a], block:0xc8c8c8, surface:"basalt",
           scene:"hell", flare:17000, ink:0x24100e, amb:"fire",
           air:{col:0xff9a4a, n:24, rise:.20, drift:.07, size:.07}}},
-  {at:25, name:"III · WATER", sub:"stand on water — it leaves nothing in 2D", col:"#7fb2ff",
+  {at:26, name:"III · WATER", sub:"stand on water — it leaves nothing in 2D", col:"#7fb2ff",
    story:"Water casts nothing, so the plane holds no record of it.",
    /* THE SEA, AT SUNSET, and the sunset is not decoration. This section
       teaches water, and a blue world swallows a cyan water block whole -
@@ -1044,7 +1085,7 @@ var SECTIONS=[
      which made it the odd one out on a screen that shows all four side by
      side. What it teaches is still said underneath, in `sub`, which is where
      the other three say theirs too. */
-  {at:35, name:"IV · DESERT", sub:"shove a crate and the 2D world changes", col:"#d9bd83",
+  {at:36, name:"IV · DESERT", sub:"shove a crate and the 2D world changes", col:"#d9bd83",
    story:"You can edit what they see. That is the one thing they cannot do.",
    /* THE DESERT AT NOON. Grains blowing sideways rather than rising, which
       is both what sand does and what this section is about - pushing things
@@ -1053,7 +1094,7 @@ var SECTIONS=[
    theme:{sky:[0x3d3a52,0x7a5c33], block:0x9a8a68, scene:"desert",
           ink:0x2a2114, amb:"wind",
           air:{col:0xf0dcae, n:26, rise:.02, drift:.34, size:.055}}},
-  {at:47, name:"V · EXTRA", sub:"the long ones, for when you want more", col:"#3fc4d4", locked:true,
+  {at:48, name:"V · EXTRA", sub:"the long ones, for when you want more", col:"#3fc4d4", locked:true,
    story:"The parts of the world that were never counted.",
    /* NOCTURNE. Almost nothing moves out here, which is the point - it is
       the shelf past the last warden, where the counting stopped. */

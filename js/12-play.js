@@ -734,6 +734,13 @@ function bossFrame(dt){
   var ph=B.phases[bossPhase];
   for(var i=0;i<hunters.length;i++){
     var h=hunters[i];
+    /* A STANDING TARGET does not walk, does not plant a line and never
+       charges - it is the pack with the clock taken out, so the kill can be
+       taught without the fight running underneath it. It is still solid to
+       every other rule: bossContact() still charges you for walking into it,
+       and the doom pass at the foot of this function still lights the GO 2D
+       button when you have lined it up. See `still` in bossPhases(). */
+    if(ph.still){h.line=null;h.lock=0;continue;}
     /* Planted. It does not walk while a lock is held, so the line you are
        shown is the line that fires - a telegraph that drifts is not a
        telegraph - and stepping off the line is what breaks it. That is the
@@ -1612,6 +1619,11 @@ function win(){
       (lastTut?"  \u00b7  from here on, tap the bulb for a hint":"");
     $("bNextT").textContent="NEXT LEVEL";
     $("bRetry").style.display="none";
+    // A teaching level may carry a story line too - SPARRING's is the sentence
+    // that hands the player to BOSS I. Same idiom, and the same reason it is
+    // innerHTML: see the boss branch below.
+    if(L.won)$("wonSub").innerHTML=esc($("wonSub").textContent)+
+      "<em class='wonstory'>"+esc(L.won)+"</em>";
   } else if(B||TR){
     // Scored on lives, so hints cost nothing here and moves are not the point.
     var stb=Math.max(0,Math.min(3,lives));wonStars=stb;

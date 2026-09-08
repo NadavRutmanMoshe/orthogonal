@@ -117,6 +117,13 @@
   <div>
     <div class="title" id="lvName">—</div>
     <div class="hint" id="lvHint"></div>
+    <!-- THE PRIMER: a level's rules, said in a list rather than in a hint.
+         One level uses it (SPARRING), and it is at the top of the screen
+         because it is what the player is meant to read before they touch
+         anything. Filled by syncHud() from L.primer; see css/00-base.css.
+         NOT the retired "brief", which was a full-bleed card - that word is
+         still taken, in cardOwner; see js/15-tutorial.js. -->
+    <div class="primer" id="lvPrimer" hidden></div>
   </div>
   <!-- The stars are their own element and NOT part of moveLabel: syncHud
        rewrites the count on every redraw, and a row rebuilt under a running

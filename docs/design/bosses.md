@@ -127,6 +127,68 @@ of the fight sag. Three phases now, and the fourth is recoverable.
   one since you committed — the player is crushed by the reward for the kill
   they just made. This is the twin's old bug in a new place; see below.
 
+### The fight, taught first — SPARRING
+
+**The fight was never explained, and it does not explain itself.** Every other
+verb in this game teaches by being pressed: the coach names a control, you
+press it, and what happened is the lesson. The kill cannot be taught that way,
+because it is a *conjunction* — be on its line, AND be looking down that line,
+AND fold, AND do all of it before it does the same to you — and there is no
+single press that demonstrates a conjunction. Players reached BOSS I able to
+see a thing walking toward them with no account of what they were supposed to
+do about it, which is the report this level answers.
+
+So it is said, in words, over a board where saying it is enough.
+`SPARRING — Standing Target` sits immediately before BOSS I: three by seven,
+bare, the tutorials' scale rather than an arena's, with **one hunter that does
+not move** at the far end and the four rules listed at the top of the screen.
+The player starts one row off its line, and that is the whole of the level
+design — it makes the first three lines of the primer three separate presses:
+
+| | |
+|---|---|
+| **1 · align** | one step toward the camera, onto its row |
+| **2 · look** | one turn, so that row runs into the screen and you share a silhouette column |
+| **3 · GO 2D** | and it is crushed |
+
+**The button answers back.** `doom` is recomputed for every hunter at the foot
+of `bossFrame()` whatever else is going on, so the moment the turn lands the
+`GO 2D` button goes green — the player is told they have it right by the same
+code that tells them in a real fight, before they commit. That is worth more
+than the list: the list is read once, the green is a rule they can check.
+
+**The fourth line cannot be taught here and is still said.** "Be faster than
+it is" means nothing against something standing still; it is printed so that
+BOSS I is charging for something the player has already been told, rather than
+for something they have to infer from dying.
+
+**`still` is a phase flag, not a level one** (`bossPhases()`). A still hunter
+spawns, can be crushed, and does nothing else — no step, no line, no charge —
+and `bossFrame()` skips it before any of that. Everything else still sees an
+ordinary hunter: `bossContact()` charges you for walking into it, the doom
+pass lights the button, the kill cam plays. It is a phase flag because a later
+fight could reasonably open on one and then wake it up, and because that is
+where `cunning` already lives.
+
+**`teach:true` turns off two of `bossArena()`'s checks and only two.** A board
+like this has no lethal columns (nothing stands on it) and three rows of depth
+(nothing to fold through), so the two gates that ask *is this a fight worth
+having* both fail it — correctly, and beside the point. Everything structural
+is still asked, because those break a lesson exactly as hard as they break a
+fight: a spawn inside a block, a spawn the pack cannot walk to you from, a
+spawn beside the start square, a start square you cannot fold from. The
+simulator is told about `still` for the same reason — playing a walking hunter
+against a board authored with a standing one measures a fiction, which is what
+`bosssim.js` exists to prevent.
+
+**It is a boss on the map and a tutorial everywhere else.** `mapKind()` still
+reads `boss`, so it draws as a violet hexagon next to BOSS I's — a fight, not
+a puzzle — but it carries no numeral (`mapNumeral()` gives the ordinal to the
+prologue's unnumbered levels, not to landmarks), it earns a tick rather than
+stars, it is not scored, and `bossesLeft()` skips it so it cannot stand
+between the player and `V · EXTRA`. Money and ads buy progress, never score,
+and a lesson gates nothing.
+
 ### The twin — retired, and recoverable
 
 `BOSS I` used to be one creature with two mirrored bodies. Playtesting called
@@ -509,6 +571,8 @@ of a move sequence. Two checks stand in.
   ones can. The one check not applied per phase is the *lower* bound on lethal
   columns: an opening phase with a bare floor has none by design, and that is
   what it is for, so only the finished arena is asked for somewhere to fight.
+  **A `teach:true` arena is exempt from that bound and from the depth count**,
+  and from nothing else — see SPARRING above.
 - **`tools/bosssim.js`**, run by `verify.js` — it plays each fight twice, all
   the way through its phases, raising each phase's blocks as it reaches them.
   An IDLE policy that never moves and takes every free kill must **lose**; a

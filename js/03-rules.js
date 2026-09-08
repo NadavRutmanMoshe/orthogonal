@@ -185,6 +185,15 @@ function bossPhases(b){
             step:p.step||b.step||620,   // ms between hunter steps
             aim:p.aim||b.aim||700,      // ms it plants on your line before it charges
             cunning:!!p.cunning,
+            /* A STANDING TARGET. It spawns, it can be crushed, and it does
+               nothing else: no step, no line, no charge. There is exactly one
+               thing this is for - teaching the kill on a board where the
+               clock is not also being taught (SPARRING, in 02-levels.js) - and
+               it is a phase flag rather than a level one so a later fight
+               could open on one and then wake it up. Everything that reads the
+               pack still sees an ordinary hunter, `doom` included, so the
+               GO 2D button goes green off the same code the real fights use. */
+            still:!!p.still,
             /* How many times a cunning hunter refuses a line you could fold
                on before it takes it anyway. The same patience valve the twin
                uses, and it is here for the same reason: an opponent that will
@@ -232,6 +241,10 @@ function makeBoss(level){
   var ps=bossPhases(b);
   return {
     phases:ps,
+    /* This arena is a lesson, not a stage. See bossArena(): it turns off the
+       two checks that ask whether the fight is worth having, and nothing
+       else. */
+    teach:!!b.teach,
     hp:ps.length,             // the phases are the health bar
     at:ps[0].at,              // the opening spawns, for anything that only wants those
     /* Two escalations, both there to stop the fight becoming a kite. `rage`
@@ -637,7 +650,17 @@ function bossArena(level){
     var last=B.phases.length-1;
     for(var pi=0;pi<B.phases.length;pi++){
       var lvP={start:level.start,blocks:bossBlocksAt(level,pi)};
-      var f=arenaFail(lvP,B.phases[pi].at,pi===last);
+      /* A TEACHING BOARD IS EXEMPT FROM THE QUALITY GATES, AND ONLY THOSE.
+         `requireLethal` here and the depth count below are the two checks
+         that ask "is this a fight worth having" - they want pillars to fight
+         over and depth to fold through. A board whose whole job is to show
+         the kill once, on a target that does not move, deliberately has
+         neither: it is the opening phase of every fight in the game with
+         nothing else on it. Everything structural is still asked - a spawn
+         inside a block, a spawn the pack cannot walk to you from, a spawn
+         beside the start square, a start square that cannot be folded from -
+         because those break a lesson exactly as hard as they break a fight. */
+      var f=arenaFail(lvP,B.phases[pi].at,pi===last&&!B.teach);
       for(var fi=0;fi<f.length;fi++)fail.push("phase "+(pi+1)+": "+f[fi]);
       /* A block may not rise onto a cell something is standing on when the
          phase begins. The game lifts the player out rather than burying them,
@@ -663,7 +686,7 @@ function bossArena(level){
     var depths={},nd=0;
     for(var q2=0;q2<lvL.blocks.length;q2++)
       if(!depths[lvL.blocks[q2][2]]){depths[lvL.blocks[q2][2]]=1;nd++;}
-    if(nd<4)fail.push("too flat for folding to buy anything");
+    if(nd<4&&!B.teach)fail.push("too flat for folding to buy anything");
     var crates=0;
     for(var c2=0;c2<lvL.blocks.length;c2++)if(isCrate(lvL.blocks[c2]))crates++;
     return {ok:!fail.length,fail:fail,

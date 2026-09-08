@@ -47,6 +47,34 @@
   .hint{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;
     letter-spacing:.03em;color:var(--fg-dim);margin-top:4px;max-width:54vw;
     line-height:1.5;transition:color .5s ease}
+  /* THE PRIMER — a level's rules, listed, under its hint.
+
+     Not the retired "brief", which was a full-bleed card explaining a fight
+     and was dropped for explaining what the board already showed; that word
+     is still spoken for (`cardOwner`, js/15-tutorial.js).
+
+     It is the same mono as the hint and a step smaller, because it is longer
+     and because it must not compete with the level's name. Wider than the
+     hint's 54vw: these are short numbered lines and wrapping a four-word step
+     onto a second row costs more legibility than the extra column costs the
+     move counter, which is two characters wide on the levels that use this.
+
+     The numbers are drawn rather than left to a marker: `list-style` puts
+     them outside the box, where they either hang off the left edge of the
+     screen or need a padding lane, and a counter in ::before keeps the list
+     flush with the hint above it. Green, because the numbers are the order
+     to do things in and green is "do this" everywhere else in this game. */
+  .primer{margin:7px 0 0;padding:0;list-style:none;max-width:64vw;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;
+    letter-spacing:.03em;line-height:1.65;color:var(--fg);
+    transition:color .5s ease}
+  .primer i{display:block;font-style:normal;color:var(--fg-dim);
+    letter-spacing:.06em;margin-bottom:3px}
+  .primer ol{margin:0;padding:0;list-style:none;counter-reset:primer}
+  .primer li{counter-increment:primer;position:relative;padding-left:19px}
+  .primer li::before{content:counter(primer) ".";position:absolute;left:0;
+    color:var(--goal)}
+  .primer b{color:var(--fg);font-weight:500}
   .axis{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;
     letter-spacing:.13em;text-align:right;color:var(--fg-dim);line-height:1.7;
     transition:color .5s ease;white-space:nowrap}

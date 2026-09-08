@@ -273,6 +273,9 @@ function syncHud(){
   $("starTotal").classList.toggle("on",inPlay&&levelDone);
   syncHintN();
   syncStarTotal();
+  /* Before the bar, not after it: syncBossBar() measures .hud's height to
+     decide where the lives row sits, and the primer is inside .hud. */
+  syncPrimer();
   syncBossBar();
 
   if(app==="edit"){
@@ -352,6 +355,47 @@ function syncHud(){
   tutSync();
 }
 
+/* ============================================================
+   THE PRIMER — the rules of a level, listed under its hint
+
+   Almost every level in this game teaches by being played: the coach cues a
+   control and pressing it is the explanation. A fight cannot open that way,
+   because the thing it has to say is a conjunction - line up AND look down
+   that line AND fold, and do all of it before the other one does - and there
+   is no single press that demonstrates a conjunction. So SPARRING says it, in
+   a numbered list, above a board where each line is one move.
+
+   It goes through tutWords() for the same reason the coach's prose does: the
+   verb has one player-facing name and the controls have two sets of names,
+   so `{do:2d}` is "Press GO 2D" under buttons and "Double-tap the world"
+   under gestures. A lesson that names a control that is not on the player's
+   screen is the bug that function exists to prevent.
+
+   NOT the retired "brief". That was a full-bleed card that opened a trial or
+   a boss, and it went because a card explaining what the board already shows
+   is read once and dismissed unread (js/15-tutorial.js, where the word is
+   still spoken for). This is the opposite trade: it says the one thing the
+   board cannot show, it is never in the way, and it does not have to be
+   dismissed.
+
+   Rebuilt only when the level or the control layout changes. syncHud() runs
+   on every redraw and this is five lines of markup; more to the point,
+   rewriting it would restart anything animated inside it - the same rule the
+   live star row is its own element for.
+   ============================================================ */
+var primerShown=null;
+function syncPrimer(){
+  var el=$("lvPrimer");if(!el)return;
+  var b=(app==="play"&&L&&L.primer)||null;
+  el.hidden=!b;
+  if(!b)return;
+  var key=L.name+"|"+((typeof tutGestures==="function"&&tutGestures())?"g":"b");
+  if(key===primerShown)return;
+  primerShown=key;
+  var out="<i>"+tutWords(b[0])+"</i><ol>";
+  for(var i=1;i<b.length;i++)out+="<li>"+tutWords(b[i])+"</li>";
+  el.innerHTML=out+"</ol>";
+}
 /* ============================================================
    THE STAR TOTAL, AND STARS IN FLIGHT
 

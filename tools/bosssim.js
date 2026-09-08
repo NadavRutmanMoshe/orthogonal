@@ -132,6 +132,12 @@ function sim(lv,policy,ms){
     let hit=null;
     for(let i=0;i<hs.length;i++){
       const h=hs[i];
+      // A standing target: no step, no line, no charge. Modelled here so the
+      // two policies are played against the fight the game actually runs -
+      // simulating a walking hunter on a board authored with a still one
+      // measures a fiction, which is the mistake this whole file exists to
+      // avoid. See `still` in bossPhases().
+      if(ph().still)continue;
       if(h.lock>0){
         if(!lineOn(h)){h.lock=0;continue;}       // the line broke: it walks
         h.lock-=TICK;

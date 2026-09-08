@@ -50,14 +50,25 @@ five levels in, each section is interrupted by a **trial**:
 
 | | | |
 |---|---|---|
-| I · FUNDAMENTALS | 12 + trial + boss | the owner's own opening: the fold, then peril, then the turn |
+| I · FUNDAMENTALS | 12 + trial + sparring + boss | the owner's own opening: the fold, then peril, then the turn |
 | II · FIRE | 7 + trial + boss | fire before water — a hazard reads faster than an absence |
 | III · WATER | 8 + trial + boss | ends on water + fire |
 | IV · DESERT | 10 + trial + boss | ends on crate + glass + spikes |
 | V · EXTRA | 27, locked | opens when every boss is down; anchors and amber live here |
 
+**And the section ends on two fights, not one.** `SPARRING — Standing Target`
+sits between `12` and `BOSS I`: a teaching level that happens to be a boss, on
+a three-by-seven board with one hunter that does not move. It is there because
+players were arriving at BOSS I able to see a thing walking at them and unable
+to say what the fight was *asking*; the four rules of the kill are printed at
+the top of the screen (`primer`, see `docs/UI.md`) over a board where the first
+three of them are one press each. It is `tutorial:true`, so it is not scored,
+it takes no stars off the section's total, and it is not one of the bosses
+`V · EXTRA` waits on. The design is in `docs/design/bosses.md`.
+
 `SECTIONS[].at` holds array indices, so inserting a level means shifting every
-marker after it. A section with `locked:true` stays shut until
+marker after it — SPARRING going in cost four one-line edits, and `verify.js`
+is what says whether they were made. A section with `locked:true` stays shut until
 `sectionsUnlocked()` — which checks the **bosses only**, not every level,
 because gating a bonus on 100% turns a reward into a chore.
 

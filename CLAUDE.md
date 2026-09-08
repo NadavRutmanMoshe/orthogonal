@@ -124,6 +124,13 @@ Block format `[x,y,z,k]`: 0 stone, 1 water (code says `glass`), 2 anchor,
 - Progress is keyed by level **name**. `progress[name]` holds a move count
   on an ordinary level and lives kept on a clock level, so reads go through
   `starsForRecord()` and writes through `betterRecord()`.
+- **A fight is taught before it is fought.** `SPARRING — Standing Target` sits
+  before `BOSS I`: a `tutorial:true` level carrying `boss` data, one hunter
+  with `still:true` (spawns, can be crushed, never moves), and the kill's four
+  rules printed at the top of the screen from `L.primer`. `teach:true` on the
+  boss exempts the arena from `bossArena()`'s two quality gates - lethal
+  columns and depth - and from nothing else. It is a hexagon on the map, earns
+  a tick rather than stars, and `bossesLeft()` skips it, so it gates nothing.
 - **`LEVELS` opens `sectionPicker()`, not the map.** One section per visit;
   the map has no tab strip and the way to another section is out and back in.
   PROLOGUE has no tile and no map (`secPickable()`) — it is the tutorial, and
@@ -178,6 +185,9 @@ is the rule.
 - `folding()` refuses the verb while the fold tween runs; it is a stamp
   taken at commit, not a read of `foldP`.
 - Undo does not touch a fight.
+- A phase may carry `still:true`: that hunter never steps, never plants a line
+  and never charges, and everything else still treats it as one. `bosssim.js`
+  knows about it too, or it would be simulating a fight nobody authored.
 
 **Solver and tutorial** (`tutorial.md`, `levels.md`)
 - Tutorial steps are predicates over counters and state; never a step index.
@@ -195,6 +205,11 @@ is the rule.
   clock (`.strike`/`.peril`) and the eye (`lookCue()`).
 - Anything animated inside markup that `syncHud()` rewrites restarts on
   every redraw. The live star row is its own element for that reason.
+- `L.primer` is the list of rules under a level's hint (`syncPrimer()`, one
+  level uses it), and it is **not** the retired `brief`, which was a card and
+  whose name is still taken. It renders through `tutWords()` so it names the
+  player's own controls, and it is filled before `syncBossBar()` measures
+  `.hud`.
 - `.hud` chrome follows `paperIsLight()`, not the verb.
 - **Class names collide silently**: `.boss` (HUD bar, `pointer-events:none`)
   vs `.mboss` (map node); `.home` (overlay) vs `body.athome`; `.st` (star
