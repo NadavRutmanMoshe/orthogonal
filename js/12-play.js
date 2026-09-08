@@ -124,7 +124,6 @@ function bossReset(){
   document.body.classList.remove("replaying");
   bossStingHide();killCamHide();repSfxInstall();
   if(typeof ashClear==="function")ashClear();
-  if(typeof playerMesh!=="undefined"&&playerMesh)playerMesh.visible=true;
   hunters=[];twinCore=0;twinAt=null;bossPhase=0;
   if(B&&B.twin)twinSpawn(0);
   else if(B){bossRestoreArena();bossEnterPhase(false);}
@@ -816,11 +815,9 @@ function replayPose(f){
 }
 function replayEnd(){
   if(!rep)return;
-  /* Unconditionally, for the same reason the camera angle below is restored
-     unconditionally: replayGone() hides the player's mesh on a death film and
-     there is exactly one place that puts it back. Missing it once means an
-     invisible player for the rest of the run. */
-  if(typeof playerMesh!=="undefined"&&playerMesh)playerMesh.visible=true;
+  /* Nothing to un-hide here any more: the render loop derives the player's
+     visibility from `rep.gone` every frame, so clearing `rep` below is what
+     puts them back. One owner, one line. */
   var sv=rep.saved;
   player.x=sv.x;player.y=sv.y;player.z=sv.z;
   flat=sv.flat;flatTarget=sv.flat?1:0;
@@ -852,6 +849,9 @@ function replayFrame(dtReal){
      hit landed - so all that waits here is the playback, behind the snow and
      the camera. On the wall clock, in step with the beats; see replayStart(). */
   if(rep.leadUntil&&Date.now()<rep.leadUntil)return;
+  // The film is genuinely playing now, which is what lets the camera swing to
+  // the angle it was filmed from. See the `rep.rolling` block in 10-render.js.
+  rep.rolling=true;
   kcStamp(rep.ms/REP_RATE);
   if(rep.ms<rep.t1-rep.t0){
     rep.ms=Math.min(rep.t1-rep.t0,rep.ms+dtReal*REP_RATE);
@@ -932,14 +932,17 @@ function replaySkip(){
    be - see the call site. */
 function replayGone(){
   if(!rep)return;
-  if(rep.mode==="kill"){
-    var a=rep.ashAt;if(!a)return;
-    for(var i=hunters.length-1;i>=0;i--)
-      if(hunters[i].x===a.x&&hunters[i].y===a.y&&hunters[i].z===a.z)
-        hunters.splice(i,1);
-  }else if(typeof playerMesh!=="undefined"&&playerMesh){
-    playerMesh.visible=false;
-  }
+  rep.gone=true;
+  /* Only the hunter is taken off HERE. The player is taken off by the render
+     loop, which rewrites playerMesh.visible from the shield and trial-blink
+     rule every single frame - a write from this file lost the race every time
+     and the player stood in their own dust. The flag above is what that line
+     reads; see js/10-render.js. */
+  if(rep.mode!=="kill")return;
+  var a=rep.ashAt;if(!a)return;
+  for(var i=hunters.length-1;i>=0;i--)
+    if(hunters[i].x===a.x&&hunters[i].y===a.y&&hunters[i].z===a.z)
+      hunters.splice(i,1);
 }
 function phaseNote(text){
   var el=$("phaseNote");if(!el)return;
@@ -1540,7 +1543,6 @@ function trialReset(){
   document.body.classList.remove("replaying");
   bossStingHide();killCamHide();repSfxInstall();
   if(typeof ashClear==="function")ashClear();
-  if(typeof playerMesh!=="undefined"&&playerMesh)playerMesh.visible=true;
   if(TR)lives=BOSS_LIVES;
 }
 function trialFrame(dt){

@@ -3669,9 +3669,18 @@ function animate(now){
      uses, so the fold at the end costs the board nothing. */
   if(typeof replayFrame==="function")replayFrame(dtMs);
   if(rep){
-    viewAngleTarget=rep.angle;
-    if(rep.fold>0)ftWant=Math.max(ftWant,rep.fold);
-    repFade=1;
+    /* THE CAMERA WAITS FOR THE FILM. `rep` is set the instant the hit lands -
+       that is what freezes the fight - but the film does not start for
+       another second and a half, and swinging the camera to the replay's
+       angle straight away meant the board tilted away underneath the word
+       still being read. The sting is about the board it happened on, so the
+       board has to stay the one the player was looking at; `rolling` is set
+       by replayFrame() on the first frame it actually plays. */
+    if(rep.rolling){
+      viewAngleTarget=rep.angle;
+      if(rep.fold>0)ftWant=Math.max(ftWant,rep.fold);
+      repFade=1;
+    }
   } else if(repFade>0){
     // the fold unwinds after the film ends rather than snapping back
     repFade=Math.max(0,repFade-dtMs/420);
@@ -4048,8 +4057,16 @@ function animate(now){
      both meant a bubble around a player flickering in and out of existence,
      which reads as a rendering fault rather than as protection. When the
      bubble goes, the blink is still there for the rest of the beat. */
-  playerMesh.visible=shieldMs>0||
-    !(trialGrace>0&&Math.floor(Date.now()/85)%2===0);
+  /* AND A DEATH FILM TAKES THE PLAYER OFF THE PICTURE ONCE THEY HAVE GONE TO
+     ASH. It has to be part of THIS expression rather than a write from
+     12-play.js, and that is the whole lesson: this line owns the channel and
+     runs every frame, so replayGone()'s `playerMesh.visible=false` was
+     overwritten before it was ever drawn and the player sat there inside
+     their own dust cloud. Reported with a screenshot. Same rule as the block
+     loop owning material.color. */
+  playerMesh.visible=!(rep&&rep.gone&&rep.mode==="death")&&
+    (shieldMs>0||
+     !(trialGrace>0&&Math.floor(Date.now()/85)%2===0));
 
   // A boss arena has no goal square - the target is the boss itself, which
   // draws itself in drawBoss() - so the marker is simply hidden there.
