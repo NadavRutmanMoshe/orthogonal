@@ -132,3 +132,51 @@
      its own, so "this is the thing you are inside" reads the same on all of
      them. One property, and the fill, the rim and the lip follow. */
   button.rnd.on{--c:var(--player)}
+
+  /* ============================================================
+     SAVE, in the corner the editor leaves empty.
+
+     Not `.rnd`: a circle would make it one more glyph among five, and the
+     one thing this button must not be is a glyph you have to recognise. It
+     is a pill, it is the goal's green - the colour every confirm in this
+     game wears - and it says the word next to the disk. Same cap language as
+     everything else (fill, rim, lip, press), just wider and louder.
+
+     Only the editor puts it up; syncSave() in js/18-ui.js owns that, and
+     also takes it down under a panel, because .panel.tall covers this corner
+     and a button glowing through frosted glass reads as a fault. */
+  .corner .esave{position:relative;display:none;align-items:center;gap:9px;
+    height:42px;padding:0 16px 0 13px;border-radius:21px;
+    --c:var(--goal);color:var(--c);
+    font-size:12px;font-weight:700;letter-spacing:.14em;
+    border:1.5px solid color-mix(in srgb,var(--c) 58%,transparent);
+    --lip:color-mix(in srgb,var(--c) 40%,#04070d);
+    background:
+      radial-gradient(120% 130% at 50% -10%,
+        color-mix(in srgb,var(--c) 30%,transparent), transparent 72%),
+      color-mix(in srgb,var(--c) 13%,var(--panel));
+    box-shadow:0 3px 0 var(--lip),
+      0 0 18px color-mix(in srgb,var(--c) 20%,transparent);
+    backdrop-filter:blur(5px)}
+  .corner .esave.on{display:flex}
+  .corner .esave:active{transform:translateY(3px);box-shadow:0 0 0 var(--lip)}
+  .corner .esave svg{width:19px;height:19px;fill:currentColor;flex:none}
+  /* THERE ARE EDITS THE LIBRARY HAS NOT BEEN TOLD ABOUT. An amber dot - the
+     colour this game already gives a state rather than a fault, as on the
+     DRAFT tag - and a slow breath under the pill, so it catches the eye of
+     somebody looking at the board rather than at the corner. A breath and
+     not a pulse: this is a reminder, not an alarm. */
+  .corner .esave .sdot{display:none;position:absolute;top:-3px;right:-3px;
+    width:11px;height:11px;border-radius:50%;background:#e0b25c;
+    border:2px solid var(--void)}
+  .corner .esave.dirty .sdot{display:block}
+  .corner .esave.dirty{animation:savebreath 2.4s ease-in-out infinite}
+  @keyframes savebreath{
+    0%,100%{box-shadow:0 3px 0 var(--lip),
+      0 0 18px color-mix(in srgb,var(--c) 20%,transparent)}
+    50%{box-shadow:0 3px 0 var(--lip),
+      0 0 26px color-mix(in srgb,var(--c) 52%,transparent)}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .corner .esave.dirty{animation:none}
+  }

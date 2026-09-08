@@ -2344,6 +2344,8 @@ function loadIntoEditor(lv){
   custom.rotate=lv.rotate!==false;
   custom.theme=(lv.theme==null?null:lv.theme);
   editingId=lv.id;
+  // Freshly loaded is freshly saved: the board and the library entry agree.
+  editDirty=false;
   ghosted.clear();
   enterEditor();
 }
