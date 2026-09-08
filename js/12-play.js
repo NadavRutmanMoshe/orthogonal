@@ -124,6 +124,7 @@ function bossReset(){
   document.body.classList.remove("replaying");
   bossStingHide();killCamHide();repSfxInstall();
   if(typeof ashClear==="function")ashClear();
+  if(typeof ashPrime==="function")ashPrime();
   hunters=[];twinCore=0;twinAt=null;bossPhase=0;
   if(B&&B.twin)twinSpawn(0);
   else if(B){bossRestoreArena();bossEnterPhase(false);}
@@ -435,6 +436,11 @@ function killCamStart(mode){
   var isKill=(mode==="kill");
   if(isKill&&typeof SFX!=="undefined"&&SFX.cheer)SFX.cheer();
   var hold=kcHold(mode);
+  /* SPENT. kcLead() in replayStart() read it a line earlier and this is the
+     second and last reader, so it is cleared here rather than at the end of
+     the film - a kill that does not earn a replay (one of three going down)
+     would otherwise leave 700ms sitting there for whatever happened next. */
+  kcBonus=0;
   /* PLAIN STOPS HERE. The sting has already played and the film still runs
      behind the ordinary replay chrome - bars, wash and label - which is
      exactly what this screen was before the television arrived, and is the
@@ -472,6 +478,7 @@ function killCamEnd(){
 }
 /* And the hard stop, for every path that takes the board away underneath it. */
 function killCamHide(){
+  kcBonus=0;
   var el=$("killCam");if(el)el.className="killcam";
   kcClear();kcNoiseStop();
 }
@@ -1285,6 +1292,13 @@ function bossFoldCrush(){
      just did is the kill, and how many they got is the part that varies from
      fold to fold. The stakes go under it, where they still read. */
   var left=hunters.length, n=doomed.length;   // survivors, then kills
+  /* Two or more in one square is the rarest sentence this fight has and it
+     was going by too fast to read. The extra beat is spent by the wind-up. */
+  kcBonus=(n>=2)?700:0;
+  /* And the world slows for longer, so the moment itself is watchable rather
+     than just the word over it. slowMo() is the ordinary 620ms; a multi-kill
+     doubles it. */
+  if(n>=2)slowMoMs=SLOWMO_MS*2;
   bossSting("kill",killWord(n,!left),
     left?(left+" left"):
       ((bossPhase>=B.phases.length-1)?"the census is closed":"phase clear"));
@@ -1454,6 +1468,7 @@ function bossHurt(why,who,line){
           u:flatPos?flatPos.u:0,fy:flatPos?flatPos.y:0,
           h:who?{x:who.x,y:who.y,z:who.z}:null};        // asserted here as well as at the call site
   lives--;
+  kcBonus=0;                  // a death is never a multi-kill; see kcHold()
   SFX.die();shakeT=1;slowMo();
   /* AND YOU COME APART TOO. Taken from `at` rather than from `player`,
      because a flat death is standing somewhere else by the time this runs -
@@ -1543,6 +1558,7 @@ function trialReset(){
   document.body.classList.remove("replaying");
   bossStingHide();killCamHide();repSfxInstall();
   if(typeof ashClear==="function")ashClear();
+  if(typeof ashPrime==="function")ashPrime();
   if(TR)lives=BOSS_LIVES;
 }
 function trialFrame(dt){

@@ -2627,6 +2627,32 @@ function ashClear(){
     ashPool[k].userData.live=false;ashPool[k].visible=false;
   }
 }
+/* BUILT BEFORE IT IS NEEDED, on the owner's report that a double kill
+   stuttered hard enough to eat the word.
+
+   The pool was built lazily, which put four BufferGeometry allocations, four
+   index arrays and four first-time GPU buffer uploads on the exact frame the
+   game can least afford them - the frame that also runs a hit, a shake, a
+   slow-mo, a sting and the start of a kill cam, and on a double kill needs
+   TWO clouds at once. Building them at level load costs nothing anybody is
+   looking at.
+
+   renderer.compile() is the second half: it walks the scene and builds the
+   shader programs, so the first burst does not pay for a program link either.
+   Guarded because it is the kind of call that changes shape between three.js
+   versions and a throw here would take the level load with it. */
+function ashPrime(){
+  if(typeof THREE==="undefined"||!scene)return;
+  var k;
+  while(ashPool.length<4)ashMake();
+  /* Shown for the compile and hidden straight after: compile() walks the
+     scene with traverseVisible, so a pool that is hidden - which is its
+     resting state - is exactly the pool it would skip. It initialises
+     materials without drawing anything, so this is invisible to the player. */
+  for(k=0;k<ashPool.length;k++)ashPool[k].visible=true;
+  try{ if(renderer&&renderer.compile)renderer.compile(scene,camera); }catch(e){}
+  for(k=0;k<ashPool.length;k++)ashPool[k].visible=false;
+}
 /* The telegraph. A charge you cannot see coming is not a fight, so a planted
    hunter draws the line it is about to come down, brightening as the beat
    closes. It is drawn in the volume rather than folded with the world,

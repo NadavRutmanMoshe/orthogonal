@@ -225,7 +225,18 @@ var KC_HOLD_DEATH=1750;        // the death is watched, board frozen
 var KC_HOLD_KILL=1550;         // and so is the word over the kill
 var KC_SNOW_MS=470;            // no signal
 var KC_CAM_MS=820;             // raised, held against the glass, pushed in
-function kcHold(mode){return mode==="death"?KC_HOLD_DEATH:KC_HOLD_KILL;}
+/* A KILL THAT TOOK MORE THAN ONE GETS LONGER TO BE READ. "DOUBLE CRUSH" is
+   the rarest thing this fight can say - two hunters are only ever in one
+   square because the player put them there - and it was going by too fast to
+   read. Set by bossFoldCrush() at the moment it knows the count, spent by the
+   next kcHold(), and cleared with the film; it is one number rather than a
+   parameter threaded through replayStart() and killCamStart() because every
+   one of those already takes `mode` and none of them should have to know
+   about kill counts. */
+var kcBonus=0;
+function kcHold(mode){
+  return (mode==="death"?KC_HOLD_DEATH:KC_HOLD_KILL)+kcBonus;
+}
 /* IS THE OLD TELEVISION IN OR OUT. `Menu > Kill cam` picks, and it is a real
    question rather than a debug switch: the snow and the camcorder are two
    extra seconds of ceremony on every death, and whether that reads as a kill
