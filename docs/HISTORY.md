@@ -1234,3 +1234,61 @@ you" disappeared at the moment the player had done the thing it exists to
 reward. `RAY_W` is `.46` now, one number in `10-render.js`, and the pane is
 still a pane: far longer than it is wide, and still flattening onto the floor
 as the charge lands.
+
+## The SAVE button's three lives, and the crate the ray went through
+
+The editor's SAVE started as a `.tiny` cap at the right end of the bar's top
+row — the smallest, quietest button on a screen whose bottom third is fifteen
+other buttons, and the one that decided whether an evening's building still
+existed tomorrow. Reported as forgettable, and it was. So it was made loud: a
+green pill in the top-right corner, in the space the five round buttons leave
+empty while the editor is open, saying the word as well as drawing the disk,
+and carrying an amber dot with a slow breath under it whenever the library was
+behind the board.
+
+That was the right diagnosis of the wrong problem. A control nobody remembers
+to press, whose *timing the machine already knows exactly*, does not need to
+be louder; it needs not to exist. `snapshot()` was already the one funnel every
+board change goes through — it is what pushes the undo entry, which is why the
+dot could be `editDirty` and a single flag — so it was already the one place
+that could ask for a write. It asks now, and the button, its CSS, its owner
+`syncSave()` and the dot are gone.
+
+The only real design question was **the solver**. A save was one operation:
+write the board, and take the numbers with `statsFor()`, which is two BFS runs
+capped at 400k states. That is fine once, on a button press; it is not fine
+between two taps of a block. So the save is two timers on different clocks —
+the board at 140ms, which coalesces somebody dragging out a wall into one
+write, and the numbers 1.1 seconds after the hand stops. In between the entry
+carries a null score, which is exactly what a draft already looks like
+everywhere a score is printed. A level is therefore never unsaved; at worst it
+is briefly unscored, and that is a state the screen already had a word for.
+
+Two things had to be told the board could change under them. `loadIntoEditor()`
+calls `saveCancel()`, because the `snapshot()` at the top of it has already
+scheduled a write of the board you are *leaving*, and 140ms later `editingId`
+belongs to the level you are arriving at. And a pasted or composed level clears
+`editingId` — that rule already existed for the paste, with the reasoning that
+keeping the id would make the next SAVE quietly overwrite a level you never
+touched, and it simply had not been applied to the composer, where nothing had
+gone wrong yet only because the press was still manual. Autosave turns "would
+overwrite if you pressed SAVE" into "overwrites".
+
+**The crate in the same pass.** A crate could be placed and then never removed.
+`onCanvasTap()` raycasts against `meshes`, the static table `syncMeshes()`
+keeps by cell — and a crate is deliberately not in it: it is the one piece with
+state, it moves when it is shoved, so `buildDynamic()` draws it into
+`crateMeshes` instead. The ray went straight through every crate on the board.
+Not just erase: you could not build on one, and you could not stand the start
+on one, because all three arms of that function begin with the same hit. The
+fix is the tap list plus `crateMeshes` and a `hitCell()` that reads
+`userData.base` (a block) or `userData.cell` (a crate, written the way a key
+mesh already carried its own).
+
+The same blind spot had a second half further down. `validate()` asked
+`R.solid()` whether the start was standing on anything, and `makeRules()`
+leaves crates out of its block set on purpose — every world query takes the
+live crate list as a fourth argument, and this one was not passing it. A start
+on a crate was "standing on nothing", so the level could never be scored and
+sat as a permanent draft. That had been true the whole time and nobody had hit
+it, because until the ray could hit a crate you could not put the start on one.

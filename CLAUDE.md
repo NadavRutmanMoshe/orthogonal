@@ -152,7 +152,22 @@ Block format `[x,y,z,k]`: 0 stone, 1 water (code says `glass`), 2 anchor,
   for the name and the ground and writes the library entry at once;
   `editingId` says which entry the editor is on, and `saveCurrent()` keeps
   whatever is on the board, solvable or not. Only `VERIFY` still asks the
-  solver.
+  solver on demand.
+- **There is no SAVE button: every edit writes.** `snapshot()` — already the
+  one funnel every board change goes through — calls `autosave()`, which
+  writes the board 140ms later and re-runs the solver 1.1s after the hand
+  stops (a null score is a draft, so a level is never unsaved, only briefly
+  unscored). `saveCurrent()` is still the one writer; `loadIntoEditor()` calls
+  `saveCancel()` so the outgoing board is not written into the incoming
+  level's entry, and a pasted or composed level clears `editingId` and so
+  saves as a new entry.
+- **The editor raycasts crates too.** They are drawn by `buildDynamic()`, not
+  by `syncMeshes()`, so a tap list of `meshes` alone went straight through
+  them: a placed crate could not be erased or built on. `onCanvasTap()` adds
+  `crateMeshes` and reads the cell through `hitCell()` (`userData.base` for a
+  block, `userData.cell` for a crate). `validate()` passes the crate set to
+  `R.solid()` for the same reason — a start standing on a crate is standing on
+  something.
 - **You build with what the campaign has shown you.** `seenTools()` hides
   piece chips you have not met and `seenSections()` the grounds; both read
   `mapReach()`, so they cannot disagree with the map. A custom level's

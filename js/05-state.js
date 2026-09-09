@@ -315,12 +315,13 @@ function undoMove(){
 var library=[];              // saved levels, persisted
 /* WHICH SAVED LEVEL THE EDITOR IS EDITING, or null for scratch work.
 
-   MY LEVELS creates the entry first and opens the editor on it, so SAVE has
-   somewhere to go without asking a second time - and so a level that is not
-   solvable yet is still a level you own rather than something the editor is
-   holding for you. Cleared by NEW and by deleting the entry being edited,
-   because a save into an id that is no longer in the library would silently
-   resurrect it. */
+   MY LEVELS creates the entry first and opens the editor on it, so the
+   autosave has somewhere to go without asking anybody anything - and so a
+   level that is not solvable yet is still a level you own rather than
+   something the editor is holding for you. Cleared by a pasted or composed
+   level, which is a different level and gets its own entry, and by deleting
+   the entry being edited, because a write into an id that is no longer in
+   the library would silently resurrect it. */
 var editingId=null;
 var playSource="builtin";    // "builtin" | "library" | "test"
 var libIndex=0;

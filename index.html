@@ -74,26 +74,14 @@
       6.9 9.9-5.4 9.9-6.9-3.8-6.9-9.9-6.9Zm0 3.3a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0
       0 0 0-7.2Z"/>
     <circle class="lite" cx="13.6" cy="10.5" r="1.15"/></svg></button>
-  <!-- SAVE, AND IT LIVES UP HERE RATHER THAN IN THE EDITOR BAR.
-
-       It was a `.tiny` at the right end of the bar's top row: the smallest,
-       quietest cap on a screen whose bottom third is fifteen other buttons,
-       and it is the one control that decides whether an hour of building
-       still exists tomorrow. Reported as forgettable, and it was.
-
-       The five round corner buttons are hidden outside play (syncHud), so
-       this corner is empty for the whole time the editor is open - which
-       makes it the one place on the screen with nothing to compete with. It
-       wears the goal's green like every other confirm in the game, it says
-       the word as well as drawing the disk, and it carries a dot while there
-       are edits the library has not been told about (syncSave, js/18-ui.js).
-       Still #eLib, which is what 19-bindings.js binds; the id is older than
-       MY LEVELS and renaming it buys nothing. -->
-  <button class="esave" id="eLib" aria-label="Save this level">
-    <svg viewBox="0 0 24 24" fill-rule="evenodd"><path d="M4.6 3.4h11.6L20.6
-      7.8v11.8a1.2 1.2 0 0 1-1.2 1.2H4.6a1.2 1.2 0 0 1-1.2-1.2V4.6a1.2 1.2 0
-      0 1 1.2-1.2ZM8 4.9h6.6v4.4H8ZM7 13.4h10v6.4H7ZM8.6 15h6.8v1.15H8.6ZM8.6
-      17.3h4.6v1.15H8.6Z"/></svg><span>SAVE</span><i class="sdot"></i></button>
+  <!-- THERE IS NO SAVE BUTTON. It was a green pill in this corner - the one
+       the five round buttons leave empty while the editor is open - carrying
+       an amber dot whenever the library was behind the board. It was moved
+       here from the editor bar because it was being forgotten there, which
+       was the right diagnosis of the wrong problem: the fix for a control
+       nobody remembers to press, when the machine knows perfectly well when
+       to press it, is not to make it louder. The editor writes every edit
+       into MY LEVELS as you make it (autosave(), js/14-editor.js). -->
 </div>
 <!-- Deliberately outside .corner: stars land here from the win screen, which
      is a full-bleed overlay above it, so this needs its own stacking context
@@ -313,8 +301,9 @@
 
 <div class="bar" id="editBarWrap">
   <div id="editBar">
-    <!-- The level's own row: out to the list of your levels, and the one
-         button that keeps this one. SAVE takes a draft; see saveCurrent(). -->
+    <!-- The level's own row: out to the list of your levels. Nothing here
+         keeps the level, because nothing has to - every edit writes it; see
+         autosave() and saveCurrent() in js/14-editor.js. -->
     <div class="row rowTop">
       <button class="tiny" id="eLevels">&#8592; MY LEVELS</button>
       <span class="spacer"></span>

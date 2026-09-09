@@ -135,27 +135,11 @@ function syncCorners(){
   var m=$("bMenu"), w=$("bWard");
   if(m)m.classList.toggle("on",panelKind==="menu");
   if(w)w.classList.toggle("on",panelKind==="wardrobe");
-  syncSave();
   syncMapChrome();
 }
-/* SAVE'S ONE OWNER. Called from syncHud() like every other button class, and
-   from syncCorners() as well - a panel opening or closing does not run a HUD
-   pass, and `.panel.tall` covers this corner, so without the second caller
-   the pill sat glowing through the frosted glass of the ⋯ sheet.
-
-   The dot is `editDirty` (js/14-editor.js) and nothing else: not "has this
-   level ever been saved", which would leave a level you saved a second ago
-   still asking to be saved. */
-function syncSave(){
-  var b=$("eLib");
-  if(!b)return;
-  var show=(typeof app!=="undefined"&&app==="edit")&&
-           !(typeof homeUp==="function"&&homeUp())&&
-           !panelOpen()&&!screenUp();
-  b.classList.toggle("on",show);
-  b.classList.toggle("dirty",
-    show&&typeof editDirty!=="undefined"&&!!editDirty);
-}
+/* syncSave() is gone with the SAVE button it owned. The editor saves on
+   every edit now (autosave(), js/14-editor.js), so there is no pill to show
+   and no dot to keep in step with the board. */
 function toggleMenu(){
   if(panelKind==="menu"){hidePanel();return;}
   menuPanel();
@@ -260,9 +244,6 @@ function syncHud(){
   ["bHint","bLook","bMenu","bWard","bRestart"].forEach(function(id){
     var el=$(id); if(el)el.style.display=inPlay?"flex":"none";
   });
-  // SAVE is the one corner button that belongs to the editor rather than to
-  // play, so it is asked separately - and asked again by syncCorners().
-  syncSave();
   /* THE BANK IS NOT SHOWN INSIDE A LEVEL. How many stars you have collected
      across the whole game cannot change while you are playing one, and it is
      not what you are thinking about - the row under the move count is. It

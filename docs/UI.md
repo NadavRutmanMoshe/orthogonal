@@ -81,7 +81,6 @@ buttons at the end of its builder.
 | Running star total | `#starTotal` | `syncStarTotal`, `starPop`, `flyStars` | `75-bossbar` | `win:2` |
 | Control bar: d-pad, turn, GO 2D | `#playBarWrap` | `syncHud` (classes), `applyUI` (layout) | `10-buttons`, `20-hud`, `50-layout-cues` | `level:2 --ui full` |
 | Editor / composer bars | `#editBarWrap`, `#composeBarWrap` | `14-editor.js`, `17-composer.js` | `30-editor` | `editor` |
-| SAVE (editor only) | `#eLib` in `.corner.tr` (`index.html`) | `syncSave()` (`18-ui.js`), off `editDirty` | `10-buttons` (`.esave`) | `editor` |
 | Coach line (hidden by default) | `#coach` | `tutSync` | `50-layout-cues` | `tutorial` |
 | Ghost hand + label | `#ghost`, `#ghostSay` | `tutGhost`, `ghostRestart`, `cue()` | `90-tutorial` | `tutorial` |
 | Guided-lock dim | `body.tutlock` | `tutEngage`, `tutUnlock` | `90-tutorial` | `tutorial --wait 4000` |
@@ -350,14 +349,28 @@ named). Undoing one of these needs the paragraph.
   **`libraryPanel()` has no button any more** (the owner cut `MORE TOOLS`);
   it, `projectPanel()` and the composer are intact and one `bind` away, the
   same way `legendPanel()` is.
-- **A level exists before it works.** `ADD LEVEL` asks for a name and a
-  ground and writes the entry immediately; the editor's `SAVE` — the green
-  pill in the **top-right corner**, which the editor leaves empty because
-  `syncHud()` hides the five round buttons outside play, and which carries an
-  amber dot while `editDirty` — calls `saveCurrent()`, which keeps a level the
-  solver cannot finish and shows it as a **draft** everywhere a score is
-  printed. `VERIFY` is still advice, and its own SAVE routes through the
-  same function.
+- **A level exists before it works, and there is no SAVE button.** `ADD
+  LEVEL` asks for a name and a ground and writes the entry immediately; from
+  then on **every edit writes it**. `snapshot()` — the funnel every board
+  change already went through, because it is what pushes the undo entry —
+  calls `autosave()`, which runs two timers: the board goes to storage after
+  `SAVE_MS` (140ms, enough to coalesce a dragged-out wall into one write) and
+  the solver runs `SCORE_MS` (1.1s) after the hand stops, because `statsFor()`
+  is two BFS runs and is not something to do between two taps. Until it lands
+  the entry carries a null score, which is what a **draft** looks like
+  everywhere a score is printed — so a level is never unsaved, only briefly
+  unscored. `saveCurrent()` is still the one writer; `opt.stats:false` is the
+  cheap write and `opt.quiet` keeps the toast off (it is said **once per visit
+  to the editor**: "saved — this level keeps itself"). `loadIntoEditor()`
+  calls `saveCancel()`, which is what stops the outgoing board being written
+  into the incoming level's entry. A pasted (`ioPanel()`) or composed
+  (`buildComposed()`) level clears `editingId` and so autosaves as a **new**
+  entry rather than overwriting whatever was open. `VERIFY` is still advice
+  and has no SAVE of its own any more.
+  The green pill that used to be in the **top-right corner** — `#eLib`,
+  `syncSave()`, `.esave`, the amber `editDirty` dot — is gone, markup, CSS
+  and owner. It had been moved there from the editor bar because it was being
+  forgotten, which was the right diagnosis of the wrong problem.
 - **A piece chip is a photograph of the piece.** `pieceShot()`
   (`js/10-render.js`) builds the real mesh — `makeBlockMesh()`,
   `makeCrateMesh()`, `buildPlayerMesh()`, the goal's wireframe box — lights it
@@ -374,6 +387,20 @@ named). Undoing one of these needs the paragraph.
   diagram, and a renderer that is not up yet. Hand-drawn chips were tried
   twice — off the legend's swatches, then off the renderer's constants — and
   both were wrong pictures of something on screen beside them.
+- **A tap has to be able to hit a crate.** `onCanvasTap()` raycasts against
+  `meshes` — the static block table `syncMeshes()` keeps — and a crate is not
+  in it: it is the one piece with state, so it moves in play and is drawn by
+  `buildDynamic()` into `crateMeshes` instead. The ray therefore went straight
+  through every crate on the board, and a crate could be placed and then never
+  erased, built on, or stood on. The tap list is `meshes` **plus**
+  `crateMeshes`, and `hitCell()` reads the cell off `userData.base` (a block,
+  set by `addMesh()`) or `userData.cell` (a crate, set by `buildDynamic()`
+  the way a key mesh already carried its own). `userData.cell` goes stale as
+  soon as a crate is shoved, which is safe because nothing but the editor
+  reads it and the editor rebuilds these on every edit. Same family:
+  `validate()` hands the crate set to `R.solid()`, since `makeRules()` leaves
+  crates out of its block set on purpose — without it a start or goal placed
+  on a crate was "standing on nothing" and the level could never score.
 - **The editor only offers pieces the campaign has shown you**
   (`seenTools()` / `syncTools()` in `14-editor.js`, off `mapReach()`); a
   chip you have not met is not drawn, rather than drawn disabled. The

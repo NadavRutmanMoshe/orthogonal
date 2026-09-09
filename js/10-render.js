@@ -2344,6 +2344,12 @@ function buildDynamic(){
     var m=makeCrateMesh();
     scene.add(m);crateMeshes.push(m);
     m.position.set(gCrates[i][0],gCrates[i][1],gCrates[i][2]);
+    // The cell it stands in, the way a key mesh carries its own: the editor
+    // raycasts against these too, and a hit has to name a square (hitCell(),
+    // js/14-editor.js). In play the animation loop moves the mesh and this
+    // goes stale - which is why nothing but the editor reads it, and why the
+    // editor rebuilds these on every edit (initDynamic).
+    m.userData.cell=gCrates[i];
   }
   var keys=(L.keys||[]);
   for(var j=0;j<keys.length;j++){

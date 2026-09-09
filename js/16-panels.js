@@ -2120,8 +2120,9 @@ function legendPanel(){
    Three rules hold the whole screen up:
 
    - A LEVEL EXISTS BEFORE IT WORKS. The entry is created when you name it,
-     and SAVE writes whatever is on the board - unsolvable, half-built, one
-     block. Solvability is what VERIFY is for, and it stays advice.
+     and every edit writes whatever is on the board - unsolvable, half-built,
+     one block (autosave(), js/14-editor.js; there is no SAVE button any
+     more). Solvability is what VERIFY is for, and it stays advice.
    - YOU BUILD WITH WHAT YOU HAVE BEEN SHOWN. The piece chips and the ground
      choices are filtered by how far the campaign has actually taken you
      (seenTools(), seenSections()), so the editor teaches in the same order
@@ -2246,8 +2247,8 @@ function myLevelsPanel(){
         "<path class='fl' d='M3.4 8.3 12 13.2v7.4L3.4 15.7Z'/>"+
         "<path class='fr' d='M20.6 8.3 12 13.2v7.4l8.6-4.9Z'/></svg>"+
       "<b>No levels yet</b>"+
-      "<span>ADD LEVEL asks for a name and opens the editor on it; "+
-      "SAVE keeps whatever you have built, finished or not.</span></div>";
+      "<span>ADD LEVEL asks for a name and opens the editor on it. "+
+      "It keeps itself as you build — finished or not.</span></div>";
   } else {
     /* ONE LEVEL, ONE LINE, and the line is as wide as the buttons above it.
        The name takes whatever the row's five verbs leave and ellipsises;
@@ -2378,8 +2379,12 @@ function loadIntoEditor(lv){
   custom.rotate=lv.rotate!==false;
   custom.theme=(lv.theme==null?null:lv.theme);
   editingId=lv.id;
-  // Freshly loaded is freshly saved: the board and the library entry agree.
-  editDirty=false;
+  /* Freshly loaded is freshly saved: the board and the library entry agree.
+     saveCancel() rather than a flag, because the snapshot() at the top of
+     this function has already scheduled a write of the board that was here
+     a moment ago - and that board belongs to the level we are leaving, not
+     to this one. */
+  saveCancel();
   ghosted.clear();
   enterEditor();
 }
@@ -2653,12 +2658,14 @@ function ioPanel(){
       custom.rotate=o.rotate!==false;
       custom.theme=(typeof o.theme==="number"&&SECTIONS[o.theme])?o.theme:null;
       /* Pasted-in text is a DIFFERENT level, so it is not still the saved one
-         the editor had open: keeping the id would make the next SAVE quietly
-         overwrite a level you never touched. It saves as a new entry, under
-         the name that came in with it. */
+         the editor had open: keeping the id would make the next write quietly
+         overwrite a level you never touched. It becomes a new entry, under
+         the name that came in with it - and it becomes one at once, because
+         the autosave() below is what a paste is now instead of a SAVE. */
       editingId=null;
       if(typeof applyTheme==="function")applyTheme(levelTheme(custom));
-      ghosted.clear();R=makeRules(custom);initDynamic();syncMeshes();hidePanel();flash("loaded");
+      ghosted.clear();R=makeRules(custom);initDynamic();syncMeshes();hidePanel();
+      autosave();flash("loaded");
     }catch(err){flash("that isn't valid level data");}
   });
   bind("pBack",myLevelsPanel);
@@ -2680,6 +2687,8 @@ function enterEditor(){
   if(typeof homeUp==="function"&&homeUp())homeHide();
   if(typeof panelOpen==="function"&&panelOpen())hidePanel();
   app="edit";fromEditor=false;
+  // One visit, one telling that the level keeps itself (saveCurrent()).
+  saidSaved=false;
   L=custom;R=makeRules(custom);
   /* THE GROUND THE LEVEL WAS BUILT ON, put back every time the editor opens.
      A custom level carries a section index rather than a surface name, so it
