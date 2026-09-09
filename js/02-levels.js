@@ -718,26 +718,41 @@ var LEVELS=[
        {at:[[8,1,5],[7,1,6]],step:640,aim:760,say:"same ground — two of them"}]},
    blocks:box(0,9,0,0,0,6,[]),
    start:[1,1,1]},
-{name:"28 — Shove",
-   hint:"Walk into the violet block and it moves.",
-   blocks:[[-1,0,3],[-2,0,-1],[-1,0,-1],[0,0,-1],[0,0,0],[-1,1,-1,3]],
-   start:[0,1,0],goal:[-1,1,3],rotate:true},
+/* THE SECTION OPENS ON THREE OF THE OWNER'S OWN LEVELS, pasted out of the
+   editor, with two of the old run kept and interleaved. What they teach, in
+   the order they teach it: a crate in your silhouette column has to be moved
+   out of it (28), a crate can be put where you will need it (29), a crate
+   you have shoved is also a step you can stand on (30) - and then the same
+   board twice, with the tower on the other side (31), which is where the
+   shove stops being a habit and starts being a decision. */
+{name:"28 — Out of the Way",
+   hint:"The crate is in the column you want. Push it out.",
+   blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[1,0,1],
+           [2,0,-1],[2,0,0],[2,0,1],[1,1,0,3],[4,0,0]],
+   start:[0,1,0],goal:[4,1,0],rotate:true},
 {name:"29 — Make a Bridge",
    hint:"Put it where you will need it, then go 2D.",
    blocks:[[-2,0,5],[-1,1,-2],[-1,1,-1],[-1,1,0],[0,0,0],[-1,2,-1,3]],
    start:[0,1,0],goal:[-2,1,5],rotate:true},
-{name:"30 — Shove and Turn",
-   hint:"The crate only helps from one of the four views.",
-   blocks:[[-2,0,0],[-1,0,0],[0,0,0],[1,2,1],[-1,1,0,3],[1,2,-2,3]],
-   start:[0,1,0],goal:[1,3,1],rotate:true},
-{name:"31 — Shove It Clear",
+{name:"30 — Stand On It",
+   hint:"Shove it, then climb it.",
+   blocks:[[0,0,0],[0,0,1],[0,1,0,3],[0,0,-1],[2,0,-2],[2,1,-2],[2,2,-2]],
+   start:[0,1,1],goal:[2,3,-2],rotate:true},
+{name:"31 — The Other Side",
+   /* THE SAME BOARD AS 30, MIRRORED IN DEPTH, and that is the whole level.
+      Same ground, same crate, same tower - the tower is simply on the far
+      side of you rather than the near one, so the landing rule points the
+      other way and the three moves that solved 30 do not solve this. It
+      takes ten and two folds. A pair like this is worth more than two
+      unrelated levels: the player already knows the board, so what they are
+      being asked about is the rule and nothing else. */
+   hint:"The same board, the other way round.",
+   blocks:[[0,0,0],[0,0,1],[0,0,-1],[0,1,0,3],[2,0,2],[2,1,2],[2,2,2]],
+   start:[0,1,1],goal:[2,3,2],rotate:true},
+{name:"32 — Shove It Clear",
    hint:"Move the block, or it will crush you in 2D.",
    blocks:[[0,0,0],[-3,0,1,4],[-2,0,1],[-1,1,-3],[-1,1,-2],[-1,1,-1],[-1,1,0],[4,0,6,4],[-1,2,-2,3]],
    start:[0,1,0],goal:[-2,1,1],rotate:true},
-{name:"32 — There and Back",
-   hint:"Go 2D, land, move it, go again.",
-   blocks:[[4,2,1],[1,0,4],[2,0,4],[3,0,4],[0,0,0],[2,1,4,3]],
-   start:[0,1,0],goal:[4,3,1],rotate:true},
 {name:"TRIAL IV — Every Slice",
    hint:"Three lives, three places to visit. They come from every side.",
    trial:{period:2000,fire:320,
@@ -761,40 +776,101 @@ var LEVELS=[
      box(6,7,0,0,4,4,b);box(6,7,0,0,6,6,b);
      return b;})(),
    start:[0,1,0],goal:[7,1,4],rotate:true},
-{name:"33 — Push Through Nothing",
-   hint:"The crate builds, the water takes away.",
-   blocks:[[0,0,0],[1,2,-3,1],[3,2,-3],[4,0,-5],[4,0,-4],[4,0,-3],[1,1,1],[2,1,1,1],[4,1,-4,3]],
-   start:[0,1,0],goal:[4,1,-4],rotate:true},
-{name:"34 — Reshape",
-   hint:"One shove between two folds changes everything.",
-   blocks:[[5,1,-3],[-1,1,-4],[-1,1,-3],[-1,1,-2],[-1,1,-1],[0,0,0],[-1,2,-3,3]],
-   start:[0,1,0],goal:[5,2,-3],rotate:true},
-{name:"35 — All Three",
-   hint:"All three pieces. Use the eye before you commit.",
-   blocks:[[0,0,0],[4,1,2,1],[4,1,3],[4,1,5,1],[2,0,0],[2,0,1],[2,0,2,4],[2,1,1,3]],
-   start:[0,1,0],goal:[4,2,3],rotate:true},
-{name:"36 — Turn, Shove, Fold",
-   hint:"Face the right way first, then shove.",
-   blocks:[[0,0,0],[-3,0,-3,4],[-3,0,-2],[-3,0,-1],[-3,0,0,1],[5,1,-4],[-3,2,-4,1],[-3,1,-2,3]],
-   start:[0,1,0],goal:[5,2,-4],rotate:true},
-{name:"37 — Twice Pushed",
-   hint:"It takes two shoves to get it home.",
-   blocks:[[1,1,1],[1,1,2],[1,1,3],[1,1,4],[2,2,5],[0,0,0],[1,2,2,3],[1,3,2,3]],
-   start:[0,1,0],goal:[2,3,5],rotate:true},
+/* CRATE, FIRE AND WATER TOGETHER - the whole vocabulary, and the last four
+   ordinary levels in the game. Each one is one pairing:
+
+     33  crate + fire   a shove that would fall out of the world is caught by
+                        the lava, which is the only floor down there
+     34  crate + water  water casts nothing, so a crate resting on it is the
+                        only thing in that column the plane can see
+     35  crate + plane  a crate is a WALL in 2D, and a wall you can move: shove
+                        it off its ledge and it falls out of the row it blocked
+     36  all of it      two folds, a shove between them, and a landing on water
+
+   The shove is what makes crates worth a section: it is the one verb that
+   edits the silhouette, so every one of these is really the same question -
+   what do you want the plane to look like when you fold? */
+{name:"33 — Something Catches It",
+   hint:"Shove it and it falls. There is a floor down there you would not walk on.",
+   /* Take the lava out and the shove is refused outright - `push()` will not
+      lose a crate out of the world - so the fire is not decoration here, it is
+      the only thing at that depth holding anything up. Then the crate is a
+      step, because `deadly3()` asks what is directly under your feet and the
+      answer is the crate, not what the crate is standing on. */
+   blocks:[[0,0,0],[1,0,0],[2,0,0,4],[1,1,0,3],[3,1,-4],[4,1,-4],[4,1,-7,1]],
+   start:[0,1,0],goal:[4,2,-7],rotate:true},
+{name:"34 — Fill the Hole",
+   hint:"Water leaves nothing in 2D. Put something there that does.",
+   /* The crate rests on water, so in the plane the crate is the whole of that
+      column - and the fire four squares behind poisons the fold you would
+      take from on top of it, which is what makes the turn cost something
+      rather than being a choice between two equal roads. */
+   blocks:[[0,0,0],[1,0,0],[2,0,0,1],[1,1,0,3],[2,1,-6,4],
+           [3,1,-6],[4,1,-6],[5,1,1],[5,1,2],[5,1,3],[5,1,4]],
+   start:[0,1,0],goal:[5,2,4],rotate:true},
+{name:"35 — Move the Wall",
+   hint:"That wall is a crate. Shove it and it drops.",
+   /* A crate casts, so in the plane it is a wall at your own height with
+      stone stacked on top of it - unclimbable, and the one wall in this game
+      you can push. Shoved off its ledge it falls a storey, which takes it out
+      of the row it was blocking and leaves it as floor instead. The lava is
+      what it lands on; without it the shove is refused and the road stays
+      shut. */
+   blocks:[[0,1,0],[1,1,0],[2,1,0],[3,0,0,4],
+           [2,2,0,3],[2,3,-5],
+           [1,1,-5],[2,1,-5],[3,1,-5],[4,1,-5],[4,1,-8,1]],
+   start:[0,2,0],goal:[4,2,-8],rotate:true},
+{name:"36 — Two Folds and a Shove",
+   hint:"Shove, fold, land on the water, and fold again.",
+   /* The last ordinary level in the game, so it asks for all of it in one
+      run: the lava catches the crate, the crate is the step, the first fold
+      lands you on water - which casts nothing, so the column you are standing
+      in is empty when you fold out of it a second time. */
+   blocks:[[0,0,0],[1,0,0],[2,0,0,4],[1,1,0,3],
+           [3,1,-7],[3,1,-4,1],[6,1,-5],[6,1,-6]],
+   start:[0,1,0],goal:[6,2,-6],rotate:true},
 {name:"BOSS IV — The Census",
    won:"The count is closed, and you are not in it.",
-   hint:"A game of catch: whoever shifts the other into their own square first wins. Shove a crate to change what they see.",
+   hint:"Whoever shifts the other into their own square first wins. Shove a crate to change what they see — and the floor is sweeping.",
    /* The finale, so phase two brings the whole game at once - stone, spike,
       glass and the crates. The crates in particular can only ever arrive in
       one phase: rebuilding the crate list is what puts them on the board, and
       doing it a second time would snap any crate you had already shoved back
       to where it started. */
+   /* AND THE ARENA ATTACKS, which is the one thing no other fight does. The
+      trial's lethal plane is here as well as the pack, and it tightens with
+      the phases: two slices at a walk, three quicker, four quicker again.
+
+      This is not the boss that was dropped. Designs 1 and 2 (docs/HISTORY.md)
+      were the sweep INSTEAD of an opponent, and what killed them was that an
+      objective on a clock is not a fight. There is still a pack here; the
+      sweep is the floor being taken away from underneath it.
+
+      The reason it belongs on THIS fight and not on a harder version of any
+      of the others: your only weapon is the fold, and a sweep down the axis
+      you are looking along cannot be dodged in the plane at all - flattened,
+      you are every depth at once, so you are standing in every slice of that
+      axis. So the sweep taxes the one verb the fight is about. Lining up a
+      kill now means asking which axis, whether this is the moment, and
+      whether the plane you are about to step into is the one that is charging
+      - which is every question this game has, at once, in the last fight.
+
+      The slices are the middle of the floor, never its edges: the arena is
+      x 0..10 by z 0..7, and every `at` here leaves a step out of the slice in
+      both directions on every phase's board. bossSafety() asserts that. */
    boss:{creepEvery:6500,
      phases:[
-       {at:[[9,1,6]],step:720,aim:850,say:"the widest floor in the game"},
+       {at:[[9,1,6]],step:720,aim:850,say:"the widest floor in the game — and it moves",
+        sweep:{period:2600,fire:340,beats:[{axis:"x",at:5},{axis:"z",at:4}]}},
        {at:[[9,1,6]],step:650,aim:760,say:"everything at once — and two crates to shove",
-        add:[[3,1,2],[7,1,2],[5,1,5],[3,1,5,4],[8,1,3,1],[7,1,5,3],[5,1,2,3]]},
-       {at:[[9,1,6],[8,1,7]],step:570,aim:660,say:"same ground — two of them"}]},
+        add:[[3,1,2],[7,1,2],[5,1,5],[3,1,5,4],[8,1,3,1],[7,1,5,3],[5,1,2,3]],
+        sweep:{period:2250,fire:330,
+               beats:[{axis:"x",at:4},{axis:"z",at:3},{axis:"x",at:6},
+                      {axis:"z",at:1}]}},
+       {at:[[9,1,6],[8,1,7]],step:570,aim:660,say:"same ground — two of them",
+        sweep:{period:1950,fire:320,
+               beats:[{axis:"z",at:2},{axis:"x",at:5},{axis:"z",at:5},
+                      {axis:"x",at:8},{axis:"x",at:1}]}}]},
    blocks:box(0,10,0,0,0,7,[]),
    start:[1,1,1]},
 /* THE OPENING RUN, AND WHY IT IS ALL NAIVE. 01, 02a, 02b, 02 and 04 run
@@ -1127,7 +1203,47 @@ var LEVELS=[
 {name:"88 — Two Dangers",
    hint:"Water under your feet, fire in your way.",
    blocks:[[0,0,0],[3,1,0,1],[3,1,1],[3,1,-1],[4,1,-1,4],[5,3,-4,1]],
-   start:[0,1,0],goal:[3,2,-1],rotate:true}
+   start:[0,1,0],goal:[3,2,-1],rotate:true},
+
+/* SECTION IV WAS RE-CUT THE SAME WAY SECTION III WAS, and these eight are
+   what came out of it: three of the owner's levels took the front of the
+   section and four crate-fire-water levels took the run after the trial.
+   Nothing here is broken - `32 — There and Back` and `37 — Twice Pushed` in
+   particular are two of the best crate levels in the game. They are pure
+   crate, and what the finale wanted was the three pieces in one board.
+   Renumbered into 89..96; the boards are untouched. */
+{name:"89 — Shove",
+   hint:"Walk into the violet block and it moves.",
+   blocks:[[-1,0,3],[-2,0,-1],[-1,0,-1],[0,0,-1],[0,0,0],[-1,1,-1,3]],
+   start:[0,1,0],goal:[-1,1,3],rotate:true},
+{name:"90 — Shove and Turn",
+   hint:"The crate only helps from one of the four views.",
+   blocks:[[-2,0,0],[-1,0,0],[0,0,0],[1,2,1],[-1,1,0,3],[1,2,-2,3]],
+   start:[0,1,0],goal:[1,3,1],rotate:true},
+{name:"91 — There and Back",
+   hint:"Go 2D, land, move it, go again.",
+   blocks:[[4,2,1],[1,0,4],[2,0,4],[3,0,4],[0,0,0],[2,1,4,3]],
+   start:[0,1,0],goal:[4,3,1],rotate:true},
+{name:"92 — Push Through Nothing",
+   hint:"The crate builds, the water takes away.",
+   blocks:[[0,0,0],[1,2,-3,1],[3,2,-3],[4,0,-5],[4,0,-4],[4,0,-3],[1,1,1],[2,1,1,1],[4,1,-4,3]],
+   start:[0,1,0],goal:[4,1,-4],rotate:true},
+{name:"93 — Reshape",
+   hint:"One shove between two folds changes everything.",
+   blocks:[[5,1,-3],[-1,1,-4],[-1,1,-3],[-1,1,-2],[-1,1,-1],[0,0,0],[-1,2,-3,3]],
+   start:[0,1,0],goal:[5,2,-3],rotate:true},
+{name:"94 — All Three",
+   hint:"All three pieces. Use the eye before you commit.",
+   blocks:[[0,0,0],[4,1,2,1],[4,1,3],[4,1,5,1],[2,0,0],[2,0,1],[2,0,2,4],[2,1,1,3]],
+   start:[0,1,0],goal:[4,2,3],rotate:true},
+{name:"95 — Turn, Shove, Fold",
+   hint:"Face the right way first, then shove.",
+   blocks:[[0,0,0],[-3,0,-3,4],[-3,0,-2],[-3,0,-1],[-3,0,0,1],[5,1,-4],[-3,2,-4,1],[-3,1,-2,3]],
+   start:[0,1,0],goal:[5,2,-4],rotate:true},
+{name:"96 — Twice Pushed",
+   hint:"It takes two shoves to get it home.",
+   blocks:[[1,1,1],[1,1,2],[1,1,3],[1,1,4],[2,2,5],[0,0,0],[1,2,2,3],[1,3,2,3]],
+   start:[0,1,0],goal:[2,3,5],rotate:true}
 
 
 
@@ -1254,7 +1370,7 @@ var SECTIONS=[
    theme:{sky:[0x3d3a52,0x7a5c33], block:0x9a8a68, scene:"desert",
           ink:0x2a2114, amb:"wind",
           air:{col:0xf0dcae, n:26, rise:.02, drift:.34, size:.055}}},
-  {at:48, name:"V · EXTRA", sub:"the long ones, for when you want more", col:"#3fc4d4", locked:true,
+  {at:47, name:"V · EXTRA", sub:"the long ones, for when you want more", col:"#3fc4d4", locked:true,
    story:"The parts of the world that were never counted.",
    /* NOCTURNE. Almost nothing moves out here, which is the point - it is
       the shelf past the last warden, where the counting stopped. */
@@ -1277,7 +1393,7 @@ var LEVEL_RENAMES={
      that was live until today. */
   "24 — Invisible Architecture":"85 — Mostly Missing",
   "26 — Long Division":"87 — Both Sides",
-  "35 — Confluence":"35 — All Three",
+  "35 — Confluence":"94 — All Three",
   "79 — Sharp":"79 — Around the Fire",
   "81 — Poisoned Column":"81 — One Bad Line",
   "42 — The Whole Language":"42 — All You Know",
@@ -1384,9 +1500,9 @@ var LEVEL_RENAMES={
  "16 — Down and Around": "86 — Down and Around",
  "17 — Long Division": "87 — Both Sides",
  "21 — Two Dangers": "88 — Two Dangers",
- "39 — Confluence": "35 — All Three",
- "40 — Turn, Shove, Fold": "36 — Turn, Shove, Fold",
- "42 — Twice Pushed": "37 — Twice Pushed",
+ "39 — Confluence": "94 — All Three",
+ "40 — Turn, Shove, Fold": "95 — Turn, Shove, Fold",
+ "42 — Twice Pushed": "96 — Twice Pushed",
  "45 — Up and Over": "38 — Up and Over",
  "43 — Down and Through": "39 — Down and Through",
  "44 — Reach Across": "40 — Reach Across",
@@ -1429,16 +1545,16 @@ var LEVEL_RENAMES={
  "23 — Down and Around": "86 — Down and Around",
  "24 — Long Division": "87 — Both Sides",
  "25 — Two Dangers": "88 — Two Dangers",
- "26 — Shove": "28 — Shove",
+ "26 — Shove": "89 — Shove",
  "27 — Make a Bridge": "29 — Make a Bridge",
- "28 — Shove and Turn": "30 — Shove and Turn",
- "29 — Shove It Clear": "31 — Shove It Clear",
- "30 — There and Back": "32 — There and Back",
- "31 — Push Through Nothing": "33 — Push Through Nothing",
- "32 — Reshape": "34 — Reshape",
- "33 — Confluence": "35 — All Three",
- "34 — Turn, Shove, Fold": "36 — Turn, Shove, Fold",
- "35 — Twice Pushed": "37 — Twice Pushed",
+ "28 — Shove and Turn": "90 — Shove and Turn",
+ "29 — Shove It Clear": "32 — Shove It Clear",
+ "30 — There and Back": "91 — There and Back",
+ "31 — Push Through Nothing": "92 — Push Through Nothing",
+ "32 — Reshape": "93 — Reshape",
+ "33 — Confluence": "94 — All Three",
+ "34 — Turn, Shove, Fold": "95 — Turn, Shove, Fold",
+ "35 — Twice Pushed": "96 — Twice Pushed",
  "36 — Up and Over": "38 — Up and Over",
  "37 — Down and Through": "39 — Down and Through",
  "38 — Reach Across": "40 — Reach Across",
@@ -1484,13 +1600,13 @@ var LEVEL_RENAMES={
  "20 — Check Behind": "16 — Check Behind",
  "21 — Two Threats": "17 — Two Threats",
  "22 — Narrow Safety": "18 — Narrow Safety",
- "24 — Shove": "28 — Shove",
+ "24 — Shove": "89 — Shove",
  "25 — Make a Bridge": "29 — Make a Bridge",
- "26 — Shove and Turn": "30 — Shove and Turn",
- "40 — Shove It Clear": "31 — Shove It Clear",
- "27 — There and Back": "32 — There and Back",
- "39 — Push Through Nothing": "33 — Push Through Nothing",
- "28 — Reshape": "34 — Reshape",
+ "26 — Shove and Turn": "90 — Shove and Turn",
+ "40 — Shove It Clear": "32 — Shove It Clear",
+ "27 — There and Back": "91 — There and Back",
+ "39 — Push Through Nothing": "92 — Push Through Nothing",
+ "28 — Reshape": "93 — Reshape",
  "31 — The Middle One": "43 — The Middle One",
  "32 — Claimed": "44 — Claimed",
  "33 — Walk First": "45 — Walk First",
@@ -1498,10 +1614,10 @@ var LEVEL_RENAMES={
  "35 — Past the Landing": "47 — Past the Landing",
  "36 — Deeper In": "48 — Deeper In",
  "37 — Both Inside": "49 — Both Inside",
- "41 — Confluence": "35 — All Three",
- "42 — Turn, Shove, Fold": "36 — Turn, Shove, Fold",
+ "41 — Confluence": "94 — All Three",
+ "42 — Turn, Shove, Fold": "95 — Turn, Shove, Fold",
  "23 — Thread It": "19 — Thread It",
- "29 — Twice Pushed": "37 — Twice Pushed",
+ "29 — Twice Pushed": "96 — Twice Pushed",
  "30 — Up and Over": "38 — Up and Over",
  "60 — Twice Up": "61 — Twice Up",
  "61 — The Far Shore": "62 — The Far Shore",
@@ -1533,16 +1649,16 @@ var LEVEL_RENAMES={
  "22 — Down and Around": "86 — Down and Around",
  "23 — Long Division": "87 — Both Sides",
  "24 — Two Dangers": "88 — Two Dangers",
- "25 — Shove": "28 — Shove",
+ "25 — Shove": "89 — Shove",
  "26 — Make a Bridge": "29 — Make a Bridge",
- "27 — Shove and Turn": "30 — Shove and Turn",
- "28 — Shove It Clear": "31 — Shove It Clear",
- "29 — There and Back": "32 — There and Back",
- "30 — Push Through Nothing": "33 — Push Through Nothing",
- "31 — Reshape": "34 — Reshape",
- "32 — Confluence": "35 — All Three",
- "33 — Turn, Shove, Fold": "36 — Turn, Shove, Fold",
- "34 — Twice Pushed": "37 — Twice Pushed",
+ "27 — Shove and Turn": "90 — Shove and Turn",
+ "28 — Shove It Clear": "32 — Shove It Clear",
+ "29 — There and Back": "91 — There and Back",
+ "30 — Push Through Nothing": "92 — Push Through Nothing",
+ "31 — Reshape": "93 — Reshape",
+ "32 — Confluence": "94 — All Three",
+ "33 — Turn, Shove, Fold": "95 — Turn, Shove, Fold",
+ "34 — Twice Pushed": "96 — Twice Pushed",
  "35 — Up and Over": "38 — Up and Over",
  "36 — Down and Through": "39 — Down and Through",
  "37 — Reach Across": "40 — Reach Across",
@@ -1594,16 +1710,16 @@ var LEVEL_RENAMES={
  "26 — Down and Around": "86 — Down and Around",
  "27 — Long Division": "87 — Both Sides",
  "28 — Two Dangers": "88 — Two Dangers",
- "29 — Shove": "28 — Shove",
+ "29 — Shove": "89 — Shove",
  "30 — Make a Bridge": "29 — Make a Bridge",
- "31 — Shove and Turn": "30 — Shove and Turn",
- "32 — Shove It Clear": "31 — Shove It Clear",
- "33 — There and Back": "32 — There and Back",
- "34 — Push Through Nothing": "33 — Push Through Nothing",
- "35 — Reshape": "34 — Reshape",
- "36 — Confluence": "35 — All Three",
- "37 — Turn, Shove, Fold": "36 — Turn, Shove, Fold",
- "38 — Twice Pushed": "37 — Twice Pushed",
+ "31 — Shove and Turn": "90 — Shove and Turn",
+ "32 — Shove It Clear": "32 — Shove It Clear",
+ "33 — There and Back": "91 — There and Back",
+ "34 — Push Through Nothing": "92 — Push Through Nothing",
+ "35 — Reshape": "93 — Reshape",
+ "36 — Confluence": "94 — All Three",
+ "37 — Turn, Shove, Fold": "95 — Turn, Shove, Fold",
+ "38 — Twice Pushed": "96 — Twice Pushed",
  "39 — Up and Over": "38 — Up and Over",
  "40 — Down and Through": "39 — Down and Through",
  "41 — Reach Across": "40 — Reach Across",
@@ -1658,5 +1774,22 @@ var LEVEL_RENAMES={
  "24 — Mostly Missing": "85 — Mostly Missing",
  "25 — Down and Around": "86 — Down and Around",
  "26 — Both Sides": "87 — Both Sides",
- "27 — Two Dangers": "88 — Two Dangers"
+ "27 — Two Dangers": "88 — Two Dangers",
+
+ /* AND SECTION IV, THE SAME WAY. Three of the owner's levels took the front
+    of it and four crate-fire-water levels took the run after the trial;
+    `Make a Bridge` kept both its place and its number, `Shove It Clear` kept
+    its place in the run and moved from 31 to 32, and the eight that were
+    displaced went to the shelf as 89..96 with their boards untouched. One
+    pass, composed: the old names become keys in the same edit that re-points
+    every value that used to name one of them. */
+ "28 — Shove": "89 — Shove",
+ "30 — Shove and Turn": "90 — Shove and Turn",
+ "31 — Shove It Clear": "32 — Shove It Clear",
+ "32 — There and Back": "91 — There and Back",
+ "33 — Push Through Nothing": "92 — Push Through Nothing",
+ "34 — Reshape": "93 — Reshape",
+ "35 — All Three": "94 — All Three",
+ "36 — Turn, Shove, Fold": "95 — Turn, Shove, Fold",
+ "37 — Twice Pushed": "96 — Twice Pushed"
 };

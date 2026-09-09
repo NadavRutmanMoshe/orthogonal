@@ -75,7 +75,9 @@ function spendLife(){
     return;
   }
   lives--;
-  if(lives<=0){die(TR?"trial":"boss");return;}
+  // The fight wins the naming: BOSS IV carries a sweep, so TR is set on it too
+  // and asking TR first would show the trial's loss card at the end of a boss.
+  if(lives<=0){die(B?"boss":"trial");return;}
   flash(lives+" "+(lives===1?"life":"lives")+" left");
   if(TR)trialGrace=TR.period;
   if(B)bossGraceMs=B.grace;
@@ -128,7 +130,9 @@ function bossReset(){
   hunters=[];twinCore=0;twinAt=null;bossPhase=0;
   if(B&&B.twin)twinSpawn(0);
   else if(B){bossRestoreArena();bossEnterPhase(false);}
-  lives=B?BOSS_LIVES:0;
+  // `B||TR` rather than `B`, because this now runs AFTER trialReset() (see
+  // enterPlay) and a trial's three lives must survive it.
+  lives=(B||TR)?BOSS_LIVES:0;
 }
 // Does this fight raise anything mid-way? A boss whose phases all have empty
 // `add` never touches L.blocks at all, so it runs the code it always ran.
@@ -204,6 +208,14 @@ function bossEnterPhase(announce){
                   step:ph.step,doom:false,lock:0,line:null,shy:0});
   }
   bossCreepMs=0;
+  /* THE PHASE'S OWN SWEEP, armed here and nowhere else. A phase without one
+     sets TR to null, so a fight can drop the plane again as easily as it
+     raises a pillar; the clock restarts at zero so the new pattern opens on
+     its first beat rather than halfway through somebody else's. Everything
+     downstream - the hit test, the charge ramp the renderer draws, the red
+     GO 2D cue - reads TR and does not care which kind of level armed it. */
+  TR=makeSweep(ph.sweep);
+  trialMs=0;trialBeat=-1;trialTicked=-1;trialFlash=0;trialGrace=0;
   if(announce){
     // A beat of grace, because a phase that begins by walking a fresh hunter
     // into you is a hit you were given no way to read.
@@ -1599,14 +1611,29 @@ function trialFrame(dt){
   // Clamped against a backgrounded tab's one enormous frame, then scaled by
   // the pace setting - see paceScale() in 11-sound.js for why it is one
   // multiplication here rather than a slower `period` and `fire`.
+  /* AND EVERYTHING THAT STOPS THE FIGHT STOPS THE SWEEP, on a boss that has
+     one. bossFrame() already returns for the phase card and for the kill cam,
+     for a reason that applies here word for word: the board on screen during
+     a replay is not the board the player is acting on, and a slice landing on
+     them while they watch a piece of film is a life taken for a move they
+     were not allowed to make. bossGraceMs is the same argument one step
+     smaller - it is the beat you are given after a phase change or a hit, and
+     a sweep inside it would spend it for you. */
+  if(B&&(bossPause>0||rep||bossGraceMs>0))return;
   dt=Math.min(dt,90)*paceScale();
-  if(slowMoMs>0){slowMoMs=Math.max(0,slowMoMs-dt);dt*=SLOWMO_RATE;}
+  if(slowMoMs>0){
+    // Counted down by whichever clock owns it - both frames run on a boss
+    // that sweeps, and decrementing it twice would halve every slow-motion in
+    // the fight. Same for the shield below.
+    if(!B)slowMoMs=Math.max(0,slowMoMs-dt);
+    dt*=SLOWMO_RATE;
+  }
   if(trialFlash>0)trialFlash=Math.max(0,trialFlash-dt/300);
   if(trialGrace>0)trialGrace=Math.max(0,trialGrace-dt);
   // On the fight's own clock, like every other window here, so the pace
   // setting scales it and it does not run while the fight is paused - nor
   // while a death is already committed and only waiting to be drawn.
-  if(shieldMs>0&&!deathPending)shieldMs=Math.max(0,shieldMs-dt);
+  if(!B&&shieldMs>0&&!deathPending)shieldMs=Math.max(0,shieldMs-dt);
   var was=TR.live(trialMs);
   trialMs+=dt;
   var live=TR.live(trialMs);
@@ -1644,7 +1671,9 @@ function trialHurt(){
   shieldMs=SHIELD_MS;
   var bar=$("bossBar");
   if(bar){bar.classList.remove("hurt");void bar.offsetWidth;bar.classList.add("hurt");}
-  if(lives<=0){die("trial");return;}
+  // See spendLife(): on a boss that sweeps, TR is set and B is what names the
+  // death, so the fight's own loss card is the one that comes up.
+  if(lives<=0){die(B?"boss":"trial");return;}
   flash((flat?"flat in the slice":"caught by the sweep")+" · "+
         lives+" "+(lives===1?"life":"lives")+" left");
   if(flat){
@@ -2597,8 +2626,14 @@ function loadLevel(level,idx){
   player={x:L.start[0],y:L.start[1],z:L.start[2]};
   flat=false;flatTarget=0;flatT=0;view=0;viewAngle=0;viewAngleTarget=0;
   moveHistory=[];moveCount=0;hintsUsed=0;dying=null;levelDone=false;tutReset();
-  B=makeBoss(L);bossReset();
+  /* THE TRIAL FIRST, THEN THE FIGHT, and the order is load-bearing now that a
+     boss phase can install a sweep of its own: bossReset() ends in
+     bossEnterPhase(), which writes TR from the phase it is entering, so
+     assigning TR after it would wipe the sweep the fight had just armed.
+     A level is never both a trial and a boss, so on every other level this
+     is the same two lines in the other order. */
   TR=makeTrial(L);trialReset();
+  B=makeBoss(L);bossReset();
   playerMesh.scale.set(1,1,1);
   initDynamic();
   levelKey=L.name;

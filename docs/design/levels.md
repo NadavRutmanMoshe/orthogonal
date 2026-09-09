@@ -53,8 +53,8 @@ five levels in, each section is interrupted by a **trial**:
 | I · FUNDAMENTALS | 12 + trial + sparring + boss | the owner's own opening: the fold, then peril, then the turn |
 | II · FIRE | 7 + trial + boss | fire before water — a hazard reads faster than an absence |
 | III · WATER | 8 + trial + boss | ends on water + fire |
-| IV · DESERT | 10 + trial + boss | ends on crate + glass + spikes |
-| V · EXTRA | 51, locked | opens when every boss is down; anchors and amber live here |
+| IV · DESERT | 9 + trial + boss | ends on crate + fire + water, then the sweeping fight |
+| V · EXTRA | 59, locked | opens when every boss is down; anchors and amber live here |
 
 **Section III was re-cut around the owner's own levels.** The four that used to
 open it are now three of the owner's, pasted out of the editor, saying the
@@ -81,6 +81,31 @@ moves with the fire and without it.
 The seven levels that came out are on the shelf as `82..88`, boards untouched.
 None of them was removed for being wrong — three were the section's hardest —
 and `LEVEL_RENAMES` carries every save.
+
+**Section IV was re-cut the same way**, and it is worth reading the two
+together because the shape is now deliberate: *the owner's own levels open a
+section, and the run after the trial is where the section's piece meets the
+ones already taught.* Three of the owner's levels take the front (`28`, `30`,
+`31`), with `29 — Make a Bridge` and `Shove It Clear` kept and interleaved —
+Make a Bridge held both its place and its number, Shove It Clear moved from 31
+to 32. The pair worth pointing at is `30` and `31`: **the same board, mirrored
+in depth.** Same ground, same crate, same tower, the tower simply on the far
+side of you — and 30 goes in three moves where 31 takes ten and two folds,
+because the landing rule points the other way. A player who already knows the
+board is being asked about the rule and nothing else, which is worth more than
+two unrelated levels.
+
+The four after the trial each pair the crate with one other thing: the lava
+catches a shove that would otherwise be refused (`33` — `push()` will not lose
+a crate out of the world, so the fire is the only floor at that depth); a crate
+resting on water is the only thing in that column the plane can see (`34`); a
+crate is a **wall** in 2D and the one wall you can move, so shoving it off its
+ledge drops it out of the row it blocked (`35`); and `36` runs all of it.
+
+The eight displaced levels are on the shelf as `89..96`. `91 — There and Back`
+and `96 — Twice Pushed` in particular are two of the best crate levels in the
+game; they are *pure* crate, and what the finale wanted was three pieces on one
+board.
 
 **And the section ends on two fights, not one.** `SPARRING — One of Them`
 sits between `12` and `BOSS I`: a teaching level that happens to be a boss, on

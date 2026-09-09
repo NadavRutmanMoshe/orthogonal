@@ -100,7 +100,9 @@ LEVELS.forEach((lv,i)=>{
        checkable is the stage: that it can reach you, that there are enough
        crates you can actually swing, and that no sweep ever corners you. */
     const a=bossArena(lv), safe=bossSafety(lv);
-    const why=(a.fail||[]).concat(safe.ok?[]:[safe.trapped.length+" cells cornered by a sweep"]);
+    const why=(a.fail||[]).concat(safe.ok?[]:
+      [].concat(safe.trapped.length?[safe.trapped.length+" cells cornered by a sweep"]:[],
+                safe.born?["you respawn inside the first beat"]:[]));
     if(why.length){
       bad++;
       console.log("  ARENA ["+i+"] "+lv.name+"  ->  "+why.join("; "));

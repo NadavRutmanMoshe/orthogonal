@@ -32,7 +32,7 @@ const ctx=vm.createContext({console,Set,Map,Math,JSON});
 ["01-coords.js","02-levels.js","03-rules.js"].forEach(f=>
   vm.runInContext(fs.readFileSync(path.join(ROOT,f),"utf8"),ctx,{filename:f}));
 const {LEVELS,makeRules,makeBoss,bossNext,bossLine,crushedBy,foldKills,
-       resolveStep,FELL,crateSet,crateKeys,AX,K,bossBlocksAt}=ctx;
+       resolveStep,FELL,crateSet,crateKeys,AX,K,bossBlocksAt,makeSweep}=ctx;
 
 const TICK=50;      // ms per simulated frame
 const ACT=200;      // ms between the player's inputs - a fast but human rate
@@ -58,6 +58,15 @@ function sim(lv,policy,ms){
   let p={x:lv.start[0],y:lv.start[1],z:lv.start[2]};
   let v=0, lives=3, grace=0, creep=0, actMs=0, flat=null;
   let folds=0, moves=0, kills=0, t=0;
+  /* THE ARENA'S OWN ATTACK, on the phases that have one. Without this the
+     simulator would be playing a fight nobody authored - the same argument
+     that made it learn `still:true`. It matters in both directions: the idle
+     run must lose, and a sweep only makes that more certain, but the duelling
+     run must WIN, and a policy that walks its winning line straight through a
+     live slice is claiming a fight is beatable when it may not be.
+     bossSafety() proves nobody is ever cornered; this is what says the fight
+     can still be won while dodging. */
+  let sw=makeSweep(ph().sweep), swMs=0, swept=0;
   /* Scratch for the policy, one per fight. The duellist keeps its patience
      counter here; it is cleared whenever the player is moved by something
      other than its own choice, because after that the distance it was
@@ -78,9 +87,11 @@ function sim(lv,policy,ms){
     if(flat){while(R.siloSolid(v,flat.u,flat.y,cr)&&guard++<8)flat.y++;p.y=flat.y;}
     else while(R.solid(p.x,p.y,p.z,cr)&&guard++<8)p.y++;
     hs=spawn();grace=Math.max(grace,B.grace);creep=0;clearMem();
+    // The new phase's sweep, from its first beat - bossEnterPhase() in the game.
+    sw=makeSweep(ph().sweep);swMs=0;
     return false;
   };
-  const done=(o)=>Object.assign({secs:+(t/1000).toFixed(1),
+  const done=(o)=>Object.assign({secs:+(t/1000).toFixed(1),swept:swept,
                                  reached:Math.min(phase+1,B.phases.length)},o);
   const uOf=(vv,x,z)=>x*AX[vv].r[0]+z*AX[vv].r[2];
 
@@ -123,6 +134,24 @@ function sim(lv,policy,ms){
     creep+=TICK;
     if(creep>=B.creepEvery){creep=0;
       hs.forEach(h=>{h.step=Math.max(B.floorStep,h.step*B.creep);});}
+    /* The slice lands once per beat, checked on the edge where it goes live -
+       which is the same one-hit-per-beat the game's trialFrame() enforces with
+       trialBeat. Flat, `hits` is asked in the plane, where a sweep down the
+       view axis catches you at every depth at once. */
+    if(sw){
+      const wasLive=sw.live(swMs);
+      swMs+=TICK;
+      if(sw.live(swMs)&&!wasLive&&grace<=0){
+        const beat=sw.beatAt(swMs);
+        const caught=flat ? sw.hits(beat,v,"2",flat.u,flat.y,0)
+                          : sw.hits(beat,v,"3",p.x,p.y,p.z);
+        if(caught){
+          swept++;lives--;grace=B.grace;flat=null;clearMem();
+          if(lives<=0)return done({win:false,lives,kills,folds,moves,swept,
+                                   why:"caught by the sweep"});
+        }
+      }
+    }
 
     // A line on the player: the same relation the fold uses, which is the
     // point - it is one line and whoever acts on it first wins it.
@@ -347,7 +376,8 @@ function run(){
     const r=sim(lv,duellist,150000);
     if(!r.win)bad++;
     console.log("  "+lv.name.padEnd(24)+(r.win
-      ? "cleared in "+r.secs+"s with "+r.lives+"/3 lives, "+r.folds+" folds, "+r.moves+" moves"
+      ? "cleared in "+r.secs+"s with "+r.lives+"/3 lives, "+r.folds+" folds, "+
+        r.moves+" moves"+(r.swept?" ("+r.swept+" to the sweep)":"")
       : "FAILED - "+r.why+", stuck in phase "+r.reached+"/"+
         makeBoss(lv).phases.length+" after "+r.secs+"s"));
   });

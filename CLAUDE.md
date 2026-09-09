@@ -198,6 +198,16 @@ is the rule.
 - `saveSession()` refuses to write while `dying`; `respawn()` and
   `trialHurt()` write afterwards. The trial's cores and lives are in the
   session; a boss resumes fresh.
+- **A boss phase may carry a `sweep`** — the trial's lethal plane, installed as
+  `TR` by `bossEnterPhase()`. BOSS IV is the level. So **`TR` means "a sweep is
+  running", not "this is a trial"**: `B` names a death (`die(B?"boss":"trial")`)
+  and `B` decides which frame ticks the shared `shieldMs`/`slowMoMs`, or both
+  frames spend them twice. `TR=makeTrial(L)` is assigned **before**
+  `bossReset()` in `enterPlay()`, or it wipes the sweep the phase just armed;
+  `bossReset()` reads `(B||TR)` for lives for the same reason. The sweep stops
+  for the phase card, the kill cam and `bossGraceMs`. `bossSafety()` is no
+  longer a no-op — it holds every sweeping phase to `trialSafety`'s property
+  (`bosses.md`).
 - Boss arena blocks edit `L.blocks`; the pristine list is captured **once**
   in `L.arenaBase`. Crush verdicts are taken *before* `bossFoldCrush()`
   raises the next phase. A phase clear waits for its replay

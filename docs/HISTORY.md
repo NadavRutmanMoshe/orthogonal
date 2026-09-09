@@ -31,6 +31,13 @@ wearing a boss costume: there was nothing to fight, only somewhere to be.
 *This design is not dead. It is the trial now, where being an objective on a
 clock is exactly the right thing to be.*
 
+> **The sweep came back to a boss, and it is not this.** `BOSS IV` sweeps as
+> well as fielding a pack. What was wrong with 1 and 2 was the sweep *instead
+> of* an opponent; as a hazard *alongside* one it is the only thing in the game
+> that can tax the fold itself, because a sweep down the axis you are looking
+> along is unsurvivable in the plane. `bossSafety()`, which these two designs
+> left behind as a no-op, is real again for it. See `docs/design/bosses.md`.
+
 **3. Crush it on a static line.** A real attack at last, but the
 vulnerability was a property of the *floor* — stand in the right place, wait,
 fold — so the fight became manipulating the floor rather than the opponent.

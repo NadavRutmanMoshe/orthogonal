@@ -655,3 +655,52 @@ worth running to tune a number the owner is about to feel out anyway.
 
 ---
 
+
+## The last fight sweeps
+
+`BOSS IV — The Census` is the only fight where the arena attacks as well as the
+pack. Each of its phases carries a `sweep` — `{period,fire,beats}`, the trial's
+own data shape — and the plane tightens as the phases rise: two slices at a
+walk, then four, then five and faster.
+
+**This is not the boss design that was dropped.** Designs 1 and 2 in
+`docs/HISTORY.md` were the sweep *instead of* an opponent, and what killed them
+was that an objective on a clock is not a fight. There is still a pack here.
+The sweep is the floor being taken away from underneath it.
+
+**Why it belongs on this fight and not as a harder version of any of them.**
+Your only weapon is the fold, and a sweep down the axis you are *looking along*
+cannot be dodged in the plane at all — flattened, you are every depth at once,
+so you stand in every slice of that axis simultaneously. So the sweep taxes the
+one verb the fight is about. Lining up a kill now means asking which axis,
+whether this is the moment, and whether the plane you are about to step into is
+the one that is charging. That is every question this game has, asked at once,
+in the last fight. No pillar and no hunter can do that, because they are
+obstacles in the volume and the fold is the thing that leaves the volume.
+
+**What it does and does not touch.** The sweep is the arena's, not the pack's:
+it does not kill hunters. It spends a life like any other hit, the shield
+covers it (`shielded()` is still the single predicate), and it is stopped by
+everything that stops the fight — the phase card, the kill cam, and the grace
+beat after a phase change or a hit. That last one matters: `bossGraceMs` is the
+beat you are *given*, and a slice landing inside it would spend it for you.
+
+**How it is wired.** `bossPhases()` carries `sweep` through; `bossEnterPhase()`
+builds it with `makeSweep()` and assigns it to `TR`, restarting the sweep clock
+so the new pattern opens on its first beat. Everything downstream — the hit
+test, the charge ramp the renderer draws, the red `GO 2D` cue — already read
+`TR` and do not care which kind of level armed it. The consequences of that are
+in `CLAUDE.md`, and the one that bites is that **`TR` now means "a sweep is
+running", not "this is a trial"**: `B` is what names a death and what decides
+which frame ticks the shared windows.
+
+**What is proved and what is played.** `bossSafety()` was a no-op and is real
+again: it holds every sweeping phase to the trial's own fairness property — for
+every square you can stand on and every beat, either that square is safe or a
+square one step away is, and the start square is never inside a phase's *first*
+beat, because a phase change puts you back on it. `bosssim` knows about the
+sweep too, for the reason it knows about `still:true`: without it the duelling
+run would be claiming a fight is winnable while walking its line straight
+through a live slice. Neither says whether the fight is *good* at this pace —
+the periods and the slice positions are numbers to feel out, per the working
+agreement, not numbers to tune against the simulator.

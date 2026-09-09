@@ -184,6 +184,21 @@ function bossPhases(b){
             say:p.say||"",              // what the banner says when it begins
             step:p.step||b.step||620,   // ms between hunter steps
             aim:p.aim||b.aim||700,      // ms it plants on your line before it charges
+            /* THE ARENA ATTACKS TOO. A phase may carry the trial's lethal
+               plane - {period,fire,beats} - and the fight installs it when the
+               phase begins, so the sweep tightens with the pack rather than
+               being one dial for the whole fight.
+
+               This is not the boss design that was dropped (see HISTORY: 1 and
+               2 were the sweep INSTEAD of an opponent, which is an objective
+               wearing a boss costume). Here there is still a pack to fight and
+               the sweep is the ground being taken away underneath it. What
+               makes it the right hazard for the LAST fight rather than a
+               harder version of any of them: the fold is your only weapon, and
+               a sweep down the axis you are looking along cannot be dodged in
+               the plane at all. So the sweep taxes the one verb the fight is
+               about, which no pillar and no hunter can do. */
+            sweep:p.sweep||null,
             cunning:!!p.cunning,
             /* IT CANNOT WALK. Its feet are taken away and nothing else is:
                it still plants a line the moment you share its row or column,
@@ -397,10 +412,31 @@ function foldKills(R,v,p,h,cr){
   return h.y===p.y&&R.uOf(v,h.x,h.z)===R.uOf(v,p.x,p.z)&&
          !crushedBy(R,v,p.x,p.y,p.z,cr);
 }
-// The boss's own sweeps are gone: the projectile is its ranged attack now.
-// Kept as a no-op so any boss data still carrying `beats` loads without
-// special-casing. Sweeps themselves live on, in the trials below.
-function bossSafety(level){return {ok:true};}
+/* A fight may sweep, and if it does the sweep is held to the trial's own
+   fairness property: for every square you can stand on and every beat that
+   phase has, either that square is safe or a square one step away is. The
+   arena never corners you.
+
+   Per phase, because a phase is a different board AND a different sweep: the
+   pillars that rise for phase two can turn a slice you used to step out of
+   into a pocket with a wall on the far side, and that is precisely the thing
+   this catches. The start square is checked against the first beat of every
+   phase too, because a phase change puts you back on it.
+
+   This used to be a no-op - the boss's own sweeps were removed in the
+   redesign and only trials kept them. They are back on BOSS IV, as the
+   arena's own attack alongside the pack rather than instead of it. */
+function bossSafety(level){
+  var B=makeBoss(level); if(!B||!B.phases)return {ok:true};
+  var bad=[], born=false;
+  for(var pi=0;pi<B.phases.length;pi++){
+    var T=makeSweep(B.phases[pi].sweep); if(!T)continue;
+    var r=sweepSafety({start:level.start,blocks:bossBlocksAt(level,pi)},T);
+    if(r.trapped)bad=bad.concat(r.trapped);
+    if(r.born)born=true;
+  }
+  return {ok:!bad.length&&!born,trapped:bad,born:born};
+}
 
 /* ============================================================
    TRIALS — a clock, and somewhere to be
@@ -429,20 +465,17 @@ function bossSafety(level){return {ok:true};}
    question is the one the whole game asks - which axis, and is this the
    moment - only now it is asked with a metronome running.
    ============================================================ */
-function makeTrial(level){
-  if(!level.trial)return null;
-  var t=level.trial;
+/* THE SWEEP, ON ITS OWN. Split out of makeTrial() because a trial is no
+   longer the only thing that has one: BOSS IV's phases each carry a `sweep`
+   and the fight installs it as `TR` when the phase begins, so every reader of
+   a sweep - the hit test, the renderer, the GO 2D peril cue - is the same
+   code whether the clock belongs to a trial or to a fight. A trial is this
+   plus `cores`, which is the only part of it a boss has no use for. */
+function makeSweep(t){
+  if(!t||!t.beats||!t.beats.length)return null;
   var beats=t.beats, period=t.period||2300, fire=t.fire||320;
   return {
-    /* Three targets in sequence, not one. A trial where the first arrival
-       ends it is over before its second beat, and the clock never gets to be
-       the level - you cross once, on the rhythm you happened to arrive on.
-       Three crossings is what makes it a rhythm you have to learn: the first
-       teaches the beat, the second is a return trip you now have to time,
-       and the third is under a clock that has been running long enough to
-       have sped you up. `level.goal` is cores[0] so the solver, the picker
-       and the renderer all still have one square to talk about. */
-    cores:t.cores||null,
+    cores:null,                    // filled in by makeTrial; a boss has none
     beats:beats, period:period, fire:fire,
     cycle:period*beats.length,
     // which slice is charging right now, how far through its beat it is, and
@@ -464,6 +497,21 @@ function makeTrial(level){
     }
   };
 }
+function makeTrial(level){
+  if(!level.trial)return null;
+  var T=makeSweep(level.trial);
+  if(!T)return null;
+  /* Three targets in sequence, not one. A trial where the first arrival ends
+     it is over before its second beat, and the clock never gets to be the
+     level - you cross once, on the rhythm you happened to arrive on. Three
+     crossings is what makes it a rhythm you have to learn: the first teaches
+     the beat, the second is a return trip you now have to time, and the third
+     is under a clock that has been running long enough to have sped you up.
+     `level.goal` is cores[0] so the solver, the picker and the renderer all
+     still have one square to talk about. */
+  T.cores=level.trial.cores||null;
+  return T;
+}
 /* The fairness property, and the reason `solve()` is still allowed to have an
    opinion about a trial.
 
@@ -483,8 +531,13 @@ function makeTrial(level){
    Deliberately a check on the volume only. The plane is where a sweep down
    the view axis is unsurvivable, and that is the mechanic, not a bug: it is
    the reason folding is a decision here rather than a free verb. */
-function trialSafety(level){
-  var T=makeTrial(level); if(!T)return {ok:true};
+/* The check itself, over one board and one sweep pattern. Factored out of
+   trialSafety() so BOSS IV's phases can be held to exactly the same standard:
+   each phase is a different board with a different sweep, and "the arena never
+   corners you" has to be true of every one of them. `level` here is any
+   {blocks,start} - bossArena() already builds one per phase. */
+function sweepSafety(level,T){
+  if(!T)return {ok:true};
   var R=makeRules(level), cr=crateSet(crateKeys(level));
   var stand=[], seen={};
   for(var i=0;i<level.blocks.length;i++){
@@ -515,6 +568,9 @@ function trialSafety(level){
   }
   var s=level.start, born=T.hits(T.beats[0],0,"3",s[0],s[1],s[2]);
   return {ok:!bad.length&&!born,trapped:bad,born:born};
+}
+function trialSafety(level){
+  return sweepSafety(level,makeTrial(level));
 }
 
 /* Every cell you could ever stand on, walking out from the start. Shared by
