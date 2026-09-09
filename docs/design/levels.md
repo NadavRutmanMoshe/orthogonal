@@ -54,7 +54,7 @@ five levels in, each section is interrupted by a **trial**:
 | II · FIRE | 7 + trial + boss | fire before water — a hazard reads faster than an absence |
 | III · WATER | 8 + trial + boss | ends on water + fire |
 | IV · DESERT | 9 + trial + boss | ends on crate + fire + water, then the sweeping fight |
-| V · EXTRA | 59, locked | opens when every boss is down; anchors and amber live here |
+| V · EXTRA | 60, locked | opens when every boss is down; anchors and amber live here |
 
 **Section III was re-cut around the owner's own levels.** The four that used to
 open it are now three of the owner's, pasted out of the editor, saying the
@@ -86,9 +86,8 @@ and `LEVEL_RENAMES` carries every save.
 together because the shape is now deliberate: *the owner's own levels open a
 section, and the run after the trial is where the section's piece meets the
 ones already taught.* Three of the owner's levels take the front (`28`, `30`,
-`31`), with `29 — Make a Bridge` and `Shove It Clear` kept and interleaved —
-Make a Bridge held both its place and its number, Shove It Clear moved from 31
-to 32. The pair worth pointing at is `30` and `31`: **the same board, mirrored
+`31`), with `29 — Make a Bridge` kept and interleaved — it held both its place
+and its number. The pair worth pointing at is `30` and `31`: **the same board, mirrored
 in depth.** Same ground, same crate, same tower, the tower simply on the far
 side of you — and 30 goes in three moves where 31 takes ten and two folds,
 because the landing rule points the other way. A player who already knows the
@@ -101,6 +100,21 @@ a crate out of the world, so the fire is the only floor at that depth); a crate
 resting on water is the only thing in that column the plane can see (`34`); a
 crate is a **wall** in 2D and the one wall you can move, so shoving it off its
 ledge drops it out of the row it blocked (`35`); and `36` runs all of it.
+
+**`32 — One Will Not Move` replaced `Shove It Clear` one playtest later**, and
+the reason generalises: Shove It Clear's lesson is *get the crate out of the
+column that would crush you*, which is `28 — Out of the Way`'s lesson, four
+levels in front of it. It read as a repeat rather than as a test, and the slot
+immediately before a trial is the one place a section can least afford that —
+a section's last level before its clock should be a summary, not a fifth
+variation. What went in is the one thing the run had not said: **two crates
+that behave differently**, because `push()` refuses a shove that cannot land.
+The first has a wall behind it, so it will not move and the only thing to do
+with it is climb it; the second has somewhere to fall, so it moves — one storey
+down, into the column the plane road needs a floor in. One crate is a step and
+the other is a shove, and which is which is a fact about what is *behind* them.
+The landing rule then takes the last two moves. Shove It Clear is on the shelf
+as `97`.
 
 The eight displaced levels are on the shelf as `89..96`. `91 — There and Back`
 and `96 — Twice Pushed` in particular are two of the best crate levels in the

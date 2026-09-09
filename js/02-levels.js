@@ -749,10 +749,28 @@ var LEVELS=[
    hint:"The same board, the other way round.",
    blocks:[[0,0,0],[0,0,1],[0,0,-1],[0,1,0,3],[2,0,2],[2,1,2],[2,2,2]],
    start:[0,1,1],goal:[2,3,2],rotate:true},
-{name:"32 — Shove It Clear",
-   hint:"Move the block, or it will crush you in 2D.",
-   blocks:[[0,0,0],[-3,0,1,4],[-2,0,1],[-1,1,-3],[-1,1,-2],[-1,1,-1],[-1,1,0],[4,0,6,4],[-1,2,-2,3]],
-   start:[0,1,0],goal:[-2,1,1],rotate:true},
+{name:"32 — One Will Not Move",
+   hint:"One of them is wedged. Stand on that one.",
+   /* `Shove It Clear` used to close this run and was moved to the shelf (97):
+      its lesson - get the crate out of the column that would crush you - is
+      28's lesson, and having it again four levels later read as a repeat
+      rather than as a test. That was reported from play, and it is the right
+      call: a section's last level before its trial should be a summary, not a
+      fifth variation.
+
+      This is the one thing the run had not said. There are TWO crates and
+      they behave differently, because `push()` refuses a shove that cannot
+      land: the first has a wall behind it, so it will not move and the only
+      thing left to do with it is climb it; the second has somewhere to fall,
+      so it moves - one storey down, into the column the plane road needs a
+      floor in. One crate is a step and the other is a shove, and which is
+      which is a fact about what is behind them rather than about the crates.
+      Then the landing rule takes the last two moves: the near block in that
+      column is the wrong one, so the fold has to be taken from the other
+      side. */
+   blocks:[[0,0,0],[1,0,0],[1,1,0,3],[2,1,0],[2,2,0],
+           [3,2,0],[3,3,0,3],[4,0,0],[5,2,-5],[5,2,-2]],
+   start:[0,1,0],goal:[5,3,-5],rotate:true},
 {name:"TRIAL IV — Every Slice",
    hint:"Three lives, three places to visit. They come from every side.",
    trial:{period:2000,fire:320,
@@ -1243,7 +1261,16 @@ var LEVELS=[
 {name:"96 — Twice Pushed",
    hint:"It takes two shoves to get it home.",
    blocks:[[1,1,1],[1,1,2],[1,1,3],[1,1,4],[2,2,5],[0,0,0],[1,2,2,3],[1,3,2,3]],
-   start:[0,1,0],goal:[2,3,5],rotate:true}
+   start:[0,1,0],goal:[2,3,5],rotate:true},
+/* Off the campaign one playtest after the re-cut, and not for being a bad
+   level - it is the same lesson as `28 — Out of the Way`, which is four
+   levels in front of it. Two levels teaching "get the crate out of the column
+   that would crush you" read as a repeat rather than as a test, and the slot
+   before a trial is the one place a section can least afford that. */
+{name:"97 — Shove It Clear",
+   hint:"Move the block, or it will crush you in 2D.",
+   blocks:[[0,0,0],[-3,0,1,4],[-2,0,1],[-1,1,-3],[-1,1,-2],[-1,1,-1],[-1,1,0],[4,0,6,4],[-1,2,-2,3]],
+   start:[0,1,0],goal:[-2,1,1],rotate:true}
 
 
 
@@ -1548,7 +1575,7 @@ var LEVEL_RENAMES={
  "26 — Shove": "89 — Shove",
  "27 — Make a Bridge": "29 — Make a Bridge",
  "28 — Shove and Turn": "90 — Shove and Turn",
- "29 — Shove It Clear": "32 — Shove It Clear",
+ "29 — Shove It Clear": "97 — Shove It Clear",
  "30 — There and Back": "91 — There and Back",
  "31 — Push Through Nothing": "92 — Push Through Nothing",
  "32 — Reshape": "93 — Reshape",
@@ -1603,7 +1630,7 @@ var LEVEL_RENAMES={
  "24 — Shove": "89 — Shove",
  "25 — Make a Bridge": "29 — Make a Bridge",
  "26 — Shove and Turn": "90 — Shove and Turn",
- "40 — Shove It Clear": "32 — Shove It Clear",
+ "40 — Shove It Clear": "97 — Shove It Clear",
  "27 — There and Back": "91 — There and Back",
  "39 — Push Through Nothing": "92 — Push Through Nothing",
  "28 — Reshape": "93 — Reshape",
@@ -1652,7 +1679,7 @@ var LEVEL_RENAMES={
  "25 — Shove": "89 — Shove",
  "26 — Make a Bridge": "29 — Make a Bridge",
  "27 — Shove and Turn": "90 — Shove and Turn",
- "28 — Shove It Clear": "32 — Shove It Clear",
+ "28 — Shove It Clear": "97 — Shove It Clear",
  "29 — There and Back": "91 — There and Back",
  "30 — Push Through Nothing": "92 — Push Through Nothing",
  "31 — Reshape": "93 — Reshape",
@@ -1713,7 +1740,7 @@ var LEVEL_RENAMES={
  "29 — Shove": "89 — Shove",
  "30 — Make a Bridge": "29 — Make a Bridge",
  "31 — Shove and Turn": "90 — Shove and Turn",
- "32 — Shove It Clear": "32 — Shove It Clear",
+ "32 — Shove It Clear": "97 — Shove It Clear",
  "33 — There and Back": "91 — There and Back",
  "34 — Push Through Nothing": "92 — Push Through Nothing",
  "35 — Reshape": "93 — Reshape",
@@ -1785,7 +1812,7 @@ var LEVEL_RENAMES={
     every value that used to name one of them. */
  "28 — Shove": "89 — Shove",
  "30 — Shove and Turn": "90 — Shove and Turn",
- "31 — Shove It Clear": "32 — Shove It Clear",
+ "31 — Shove It Clear": "97 — Shove It Clear",
  "32 — There and Back": "91 — There and Back",
  "33 — Push Through Nothing": "92 — Push Through Nothing",
  "34 — Reshape": "93 — Reshape",
