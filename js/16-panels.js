@@ -2129,9 +2129,12 @@ function legendPanel(){
      (seenTools(), seenSections()), so the editor teaches in the same order
      the game does rather than opening with five pieces nobody has met.
    - SHARE IS TEXT. There is no server here and there is not going to be one,
-     so a shared level is a block of JSON you copy, and LOAD A LEVEL is the
-     same block pasted back in. It is the project file's format, one level at
-     a time, so the two can read each other. */
+     so a shared level is a short code you copy - `OL1...~Name`, one line -
+     and LOAD A LEVEL is that code pasted back in. It was the project file's
+     JSON for one level, which is the same thing in about five times the
+     characters; JSON is still read on the way in, because every level
+     shared before the code exists as JSON in somebody's chat history. See
+     the share code above shareCode(). */
 
 /* The sections whose ground a custom level may be built on: the ones the
    campaign has actually walked you through. Same seenIndex() the piece chips
@@ -2439,10 +2442,12 @@ function deletePanel(id){
   });
 }
 
-/* SHARING IS TEXT, and it is the same shape the project file uses for one of
-   its levels, so anything that can read one can read the other. Selected on
-   open, because the whole point is to copy it and a textarea you have to
-   drag-select on a phone is not a share button. */
+/* SHARING IS TEXT, and it is now ONE LINE of it - see the share code below.
+   It used to be the project file's JSON for a single level, which is the
+   same thing said in about five times the characters; the code is what a
+   person can actually paste into a message. Selected on open, because the
+   whole point is to copy it and a textarea you have to drag-select on a
+   phone is not a share button. */
 function sharePanel(id){
   var lv=findLevel(id);
   if(!lv)return;
@@ -2450,10 +2455,10 @@ function sharePanel(id){
     mlHero(lv)+
     "<div class='note'>Copy this and send it. Whoever gets it pastes it into "+
     "LOAD A LEVEL.</div>"+
-    "<textarea id='shTxt'></textarea>"+
+    "<textarea id='shTxt' class='shcode'></textarea>"+
     "<button class='mlbtn pgo' id='shCopy'>COPY</button>",
     mlFoot("shBack","← MY LEVELS"));
-  $("shTxt").value=JSON.stringify(shareData(lv));
+  $("shTxt").value=shareCode(lv);
   $("shTxt").focus();$("shTxt").select();
   bind("mlClose",hidePanel);
   bind("shBack",myLevelsPanel);
@@ -2479,11 +2484,157 @@ function shareData(lv){
           rotate:lv.rotate!==false,theme:lv.theme==null?null:lv.theme};
 }
 
-/* The other end of SHARE. It takes one shared level, a bare level object, or
-   a whole project file, because those are the three things somebody will
-   actually paste in here - and it never replaces what you have: this button
-   adds. Replacing is still on the project file's own panel, where it says so
-   in the button. */
+/* ============================================================
+   THE SHARE CODE — the same level, short enough to send
+
+   WHAT A LEVEL COSTS AS JSON is about fourteen characters per block, and
+   almost all of it is punctuation: `[3,0,-4],` is nine characters carrying
+   three small numbers. A thirty-block level came out around 600 characters
+   of brackets and commas, which is four screens on a phone, wraps in every
+   chat app, and looks like something has gone wrong rather than like a
+   thing you send a friend. The same level is about 130 characters here.
+
+   IT IS NOT A SECRET AND IT IS NOT TRYING TO BE. There is nothing to
+   protect - it is the player's own level, and the receiver is the person
+   they sent it to - so this is a packing, not a cipher: anyone who wants to
+   read it can read this function. What it buys is length.
+
+   HOW IT PACKS. Every number in a level is small and most are tiny, so each
+   one is zigzagged (so -1 costs what 1 costs) and written little-endian in
+   five-bit groups, one character each, with the sixth bit set while more
+   groups follow. Anything in -16..15 is therefore ONE character, which is
+   every coordinate any hand-built level has ever had. The alphabet is 64
+   URL-safe characters, so the whole code survives a link, a QR, an SMS and
+   a chat app that thinks it knows what a quote mark is.
+
+   THE NAME RIDES AT THE END, after a `~`, in plain text. Two reasons: the
+   payload is pure alphabet so `~` can never appear inside it and the split
+   is unambiguous, and a name is the one part a human should be able to read
+   before pasting a stranger's code into their game.
+
+   VERSIONED BY ITS PREFIX. `OL1` is this shape; a later shape gets `OL2`
+   and this decoder keeps working for every code already sent. JSON is still
+   read on the way in - project files are JSON, every code shared before
+   today is JSON, and a format nobody can paste back is not a format.
+   ============================================================ */
+var SHARE_ALPHA="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
+var SHARE_TAG="OL1";
+function shareEnc(nums){
+  var out="";
+  for(var i=0;i<nums.length;i++){
+    // Zigzag: interleave negatives with positives so a small negative stays
+    // a small number. Rounded, because a corrupt board must not encode as
+    // something that decodes to a different corrupt board.
+    var n=Math.round(nums[i]), u=n<0?(-n*2-1):(n*2);
+    do{
+      var g=u&31; u=Math.floor(u/32);
+      out+=SHARE_ALPHA.charAt(g+(u>0?32:0));
+    }while(u>0);
+  }
+  return out;
+}
+function shareDec(s){
+  var out=[],u=0,sh=1,got=false;
+  for(var i=0;i<s.length;i++){
+    var v=SHARE_ALPHA.indexOf(s.charAt(i));
+    if(v<0)throw 0;                      // not our alphabet: not our code
+    u+=(v&31)*sh; sh*=32; got=true;
+    if(!(v&32)){out.push(u&1?-((u+1)/2):u/2);u=0;sh=1;got=false;}
+  }
+  if(got)throw 0;                        // truncated: the last group ran on
+  return out;
+}
+function shareCode(lv){
+  var d=shareData(lv), n=[];
+  // Flags first, so the reader knows whether a theme follows before it has
+  // to guess. Bit 0 rotate, bit 1 "a theme is written".
+  n.push((d.rotate?1:0)|(d.theme==null?0:2));
+  if(d.theme!=null)n.push(d.theme);
+  n.push(d.start[0],d.start[1],d.start[2]);
+  n.push(d.goal[0],d.goal[1],d.goal[2]);
+  n.push(d.blocks.length);
+  for(var i=0;i<d.blocks.length;i++){
+    var b=d.blocks[i];
+    n.push(b[0],b[1],b[2],b[3]||0);
+  }
+  n.push(d.keys.length);
+  for(var j=0;j<d.keys.length;j++)n.push(d.keys[j][0],d.keys[j][1],d.keys[j][2]);
+  // The name is trimmed of newlines only: it is about to sit at the end of a
+  // line that a chat app may wrap, and a name with a newline in it would cut
+  // the code in half on the way back.
+  return SHARE_TAG+shareEnc(n)+"~"+String(d.name||"Untitled").replace(/[\r\n]+/g," ");
+}
+/* Returns a level object, or null if this is not a share code at all - the
+   caller then tries JSON, which is what every older code and every project
+   file is. Throws nothing: a mangled code is simply not a level. */
+function shareParse(txt){
+  var s=String(txt||"").trim();
+  if(s.slice(0,SHARE_TAG.length)!==SHARE_TAG)return null;
+  var cut=s.indexOf("~"), name=cut<0?"":s.slice(cut+1).trim();
+  var body=(cut<0?s.slice(SHARE_TAG.length):s.slice(SHARE_TAG.length,cut))
+    /* Whitespace anywhere is forgiven, because a code that has been through
+       an email client has been through a line-wrapper. It cannot be
+       ambiguous: no whitespace character is in the alphabet. */
+    .replace(/\s+/g,"");
+  try{
+    var n=shareDec(body),p=0,i;
+    var flags=n[p++];
+    var o={format:"orthogonal-level-1",name:name||"Untitled",
+           rotate:(flags&1)!==0,theme:(flags&2)?n[p++]:null,
+           blocks:[],keys:[]};
+    o.start=[n[p++],n[p++],n[p++]];
+    o.goal=[n[p++],n[p++],n[p++]];
+    var nb=n[p++];
+    if(!(nb>=0&&nb<20000))return null;
+    for(i=0;i<nb;i++){
+      var k=n[p+3];
+      o.blocks.push(k?[n[p],n[p+1],n[p+2],k]:[n[p],n[p+1],n[p+2]]);
+      p+=4;
+    }
+    var nk=n[p++]||0;
+    for(i=0;i<nk;i++){o.keys.push([n[p],n[p+1],n[p+2]]);p+=3;}
+    // Every number must have been there: a short code decodes to undefined
+    // coordinates, and a level made of undefined is worse than a rejection.
+    if(p>n.length)return null;
+    for(i=0;i<3;i++)if(typeof o.start[i]!=="number"||typeof o.goal[i]!=="number")return null;
+    if(!o.blocks.length)return null;
+    return o;
+  }catch(e){return null;}
+}
+/* One paste, however many codes are in it. Both of the shapes a paste
+   actually arrives in have to work and they pull in opposite directions:
+   ONE code that a mail client has wrapped across three lines (whitespace
+   inside a code is forgiven, so that one is already handled), and SEVERAL
+   codes pasted one per line. Splitting on the tag serves the second and
+   would ruin the first if it ever guessed wrong - so the split only stands
+   if EVERY piece of it is a level. A level called "OL1 something" cannot
+   quietly cost the player the rest of their paste. */
+function shareParseAll(txt){
+  var s=String(txt||"").trim();
+  if(s.slice(0,SHARE_TAG.length)!==SHARE_TAG)return null;
+  var parts=s.split(new RegExp("\\s+(?="+SHARE_TAG+")")),out=[],i;
+  if(parts.length>1){
+    for(i=0;i<parts.length;i++){
+      var one=shareParse(parts[i]);
+      if(!one){out=null;break;}
+      out.push(one);
+    }
+    if(out&&out.length)return out;
+  }
+  var whole=shareParse(s);
+  return whole?[whole]:null;
+}
+
+/* The other end of SHARE. It takes a share code, one shared level as JSON, a
+   bare level object, or a whole project file, because those are the four
+   things somebody will actually paste in here - and it never replaces what
+   you have: this button adds. Replacing is still on the project file's own
+   panel, where it says so in the button.
+
+   THE CODE IS TRIED FIRST AND JSON IS NEVER DROPPED. Every level shared
+   before the code existed is JSON and is still out there in somebody's chat
+   history; the project file is JSON by definition. A new format that
+   invalidates what people already sent each other is not a better format. */
 function loadLevelPanel(){
   mlScreen("Load A Level","PASTE ONE SOMEBODY SHARED",
     "<div class='note'>It is added to your levels; nothing you have is "+
@@ -2494,8 +2645,8 @@ function loadLevelPanel(){
   bind("mlClose",hidePanel);
   bind("ldBack",myLevelsPanel);
   bind("ldGo",function(){
-    var list;
-    try{
+    var list=shareParseAll($("ldTxt").value);
+    if(!list)try{
       var o=JSON.parse($("ldTxt").value);
       list=o.levels||(o.length?o:[o]);
       for(var i=0;i<list.length;i++)

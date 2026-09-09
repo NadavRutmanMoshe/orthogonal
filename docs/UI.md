@@ -410,11 +410,18 @@ named). Undoing one of these needs the paragraph.
   wears its section's colour and emblem, the same pair the chooser tile and
   the MY LEVELS card wear; `.grow` is a 3-column grid so a fourth ground does
   not stretch to the panel's full width.
-- **Sharing is text.** `sharePanel()` prints one level as
-  `orthogonal-level-1` JSON, selected and with a COPY button; `LOAD A
-  LEVEL` takes that, a bare level, or a whole project file, and always
-  *adds* — replacing is on the project file's own panel, where the button
-  says so.
+- **Sharing is text, and the text is one line.** `sharePanel()` prints
+  `shareCode()` — `OL1<packed numbers>~Name`, about a fifth of the JSON it
+  replaced (measured over the campaign: 3.2×, longest level 181 characters)
+  — selected and with a COPY button, in a `.shcode` box sized for a code
+  rather than for a page. `LOAD A LEVEL` takes a code, several codes one per
+  line, `orthogonal-level-1` JSON, a bare level, or a whole project file, and
+  always *adds* — replacing is on the project file's own panel, where the
+  button says so. The packing is zigzag varints in a 64-character URL-safe
+  alphabet, documented above `shareCode()` in `js/16-panels.js`; it is a
+  packing and not a cipher, because a player's own level is not a secret.
+  **JSON is never dropped on the way in**: every level shared before the
+  code exists as JSON in somebody's chat history.
 - **Win card**: `.wonmast` is the section-finished pill and `.wonwear` under
   it names the shape that finished section just paid out (`grantShape()`);
   `won` story line is `esc()`d innerHTML; only newly gained stars fly; `NEXT LEVEL` becomes `WHAT'S LEFT` when the next level is
