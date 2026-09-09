@@ -410,18 +410,27 @@ named). Undoing one of these needs the paragraph.
   wears its section's colour and emblem, the same pair the chooser tile and
   the MY LEVELS card wear; `.grow` is a 3-column grid so a fourth ground does
   not stretch to the panel's full width.
-- **Sharing is text, and the text is one line.** `sharePanel()` prints
-  `shareCode()` — `OL1<packed numbers>~Name`, about a fifth of the JSON it
-  replaced (measured over the campaign: 3.2×, longest level 181 characters)
-  — selected and with a COPY button, in a `.shcode` box sized for a code
-  rather than for a page. `LOAD A LEVEL` takes a code, several codes one per
-  line, `orthogonal-level-1` JSON, a bare level, or a whole project file, and
-  always *adds* — replacing is on the project file's own panel, where the
-  button says so. The packing is zigzag varints in a 64-character URL-safe
-  alphabet, documented above `shareCode()` in `js/16-panels.js`; it is a
-  packing and not a cipher, because a player's own level is not a secret.
-  **JSON is never dropped on the way in**: every level shared before the
-  code exists as JSON in somebody's chat history.
+- **Sharing is text, one line, and always the same length.** `sharePanel()`
+  prints `shareCode()` — `OL2` + **exactly 64 characters** + `~Name` — in a
+  `.shcode` box sized for a code rather than for a page. It is not a hash and
+  cannot be: a hash is one-way and there is no server to look an id up in, so
+  the whole level is inside the string; what is fixed is the *width*. Two
+  packings are built per level and the shorter is sent (a flag bit says
+  which): blocks as a **list**, four characters each, or as a **bitmap** of
+  their bounding box, one bit per cell. Neither wins everywhere — the
+  campaign's densest level is 154 characters as a list and 125 as a bitmap,
+  a sparse 12-block level is 57 as a list and 125 as a bitmap — and
+  best-of-two puts the worst level in the game at 57, which is what makes 64
+  affordable. Median is 29, so most codes are more than half padding. The
+  last character checks the other 63 and the length checks itself, so a
+  truncated or mistyped code is refused rather than decoded into a smaller,
+  wrong level (99% of single-character typos). A level too big for 64 rounds
+  up to 128 rather than failing. `LOAD A LEVEL` takes a code, several codes
+  one per line, an older variable-length `OL1` code, `orthogonal-level-1`
+  JSON, a bare level, or a whole project file, and always *adds* — replacing
+  is on the project file's own panel, where the button says so. **Nothing
+  that could read before stops reading**: an OL1 code and a JSON level are
+  both still in somebody's chat history.
 - **Win card**: `.wonmast` is the section-finished pill and `.wonwear` under
   it names the shape that finished section just paid out (`grantShape()`);
   `won` story line is `esc()`d innerHTML; only newly gained stars fly; `NEXT LEVEL` becomes `WHAT'S LEFT` when the next level is

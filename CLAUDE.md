@@ -178,9 +178,14 @@ Block format `[x,y,z,k]`: 0 stone, 1 water (code says `glass`), 2 anchor,
   piece chips you have not met and `seenSections()` the grounds; both read
   `mapReach()`, so they cannot disagree with the map. A custom level's
   ground is a `SECTIONS` index in `theme`, applied by `levelTheme()`.
-- **A shared level is `orthogonal-level-1` JSON**, copied out of
-  `sharePanel()` and back in through `LOAD A LEVEL`, which always adds and
-  re-scores what it takes.
+- **A shared level is one fixed-length code**: `OL2` + 64 characters +
+  `~Name`, out of `sharePanel()` and back in through `LOAD A LEVEL`, which
+  always adds and re-scores what it takes. The width is fixed, not the
+  content - blocks are packed as a list or as a bitmap of their bounding
+  box, whichever is shorter, then padded, and the last character checks the
+  rest. It is not a hash and cannot be one: nothing here can look an id up.
+  `LOAD A LEVEL` still reads `OL1` codes, `orthogonal-level-1` JSON, a bare
+  level and a whole project file (`shareCode()`, `js/16-panels.js`).
 
 ## Invariants that bite
 

@@ -2129,12 +2129,12 @@ function legendPanel(){
      (seenTools(), seenSections()), so the editor teaches in the same order
      the game does rather than opening with five pieces nobody has met.
    - SHARE IS TEXT. There is no server here and there is not going to be one,
-     so a shared level is a short code you copy - `OL1...~Name`, one line -
-     and LOAD A LEVEL is that code pasted back in. It was the project file's
-     JSON for one level, which is the same thing in about five times the
-     characters; JSON is still read on the way in, because every level
-     shared before the code exists as JSON in somebody's chat history. See
-     the share code above shareCode(). */
+     so a shared level is a short code you copy - `OL2<64 characters>~Name`,
+     one line, the same length for every level - and LOAD A LEVEL is that
+     code pasted back in. It was the project file's JSON for one level,
+     which is the same thing in five to ten times the characters; JSON and
+     the older `OL1` codes are both still read on the way in. See the share
+     code above shareCode(). */
 
 /* The sections whose ground a custom level may be built on: the ones the
    campaign has actually walked you through. Same seenIndex() the piece chips
@@ -2485,119 +2485,289 @@ function shareData(lv){
 }
 
 /* ============================================================
-   THE SHARE CODE — the same level, short enough to send
+   THE SHARE CODE — one level, one code, always the same length
 
    WHAT A LEVEL COSTS AS JSON is about fourteen characters per block, and
    almost all of it is punctuation: `[3,0,-4],` is nine characters carrying
    three small numbers. A thirty-block level came out around 600 characters
    of brackets and commas, which is four screens on a phone, wraps in every
    chat app, and looks like something has gone wrong rather than like a
-   thing you send a friend. The same level is about 130 characters here.
+   thing you send a friend.
 
-   IT IS NOT A SECRET AND IT IS NOT TRYING TO BE. There is nothing to
-   protect - it is the player's own level, and the receiver is the person
-   they sent it to - so this is a packing, not a cipher: anyone who wants to
-   read it can read this function. What it buys is length.
+   IT IS NOT A SECRET AND IT IS NOT TRYING TO BE, and it is NOT A HASH -
+   it cannot be. A hash is one way: you can check a thing against one, you
+   can never get the thing back out. The whole level has to be inside this
+   string, because there is no server anywhere in this game to look an id up
+   in and there is not going to be one. So what a code can be is FIXED
+   WIDTH: every level padded out to the same length, whatever is in it.
+   That is what SHARE_WIDTH is, and everything below exists to make the
+   width small enough to be worth fixing.
 
-   HOW IT PACKS. Every number in a level is small and most are tiny, so each
-   one is zigzagged (so -1 costs what 1 costs) and written little-endian in
-   five-bit groups, one character each, with the sixth bit set while more
-   groups follow. Anything in -16..15 is therefore ONE character, which is
-   every coordinate any hand-built level has ever had. The alphabet is 64
-   URL-safe characters, so the whole code survives a link, a QR, an SMS and
-   a chat app that thinks it knows what a quote mark is.
+   HOW IT PACKS. Every number is zigzagged (so -1 costs what 1 costs) and
+   written little-endian in five-bit groups, one character each, with the
+   sixth bit set while more groups follow - so anything in -16..15 is ONE
+   character, which is every coordinate a hand-built level has ever had.
+   The alphabet is 64 URL-safe characters, so a code survives a link, a QR,
+   an SMS and a chat app that thinks it knows what a quote mark is.
 
-   THE NAME RIDES AT THE END, after a `~`, in plain text. Two reasons: the
-   payload is pure alphabet so `~` can never appear inside it and the split
-   is unambiguous, and a name is the one part a human should be able to read
-   before pasting a stranger's code into their game.
+   AND THE BLOCKS ARE PACKED TWO WAYS, THE SHORTER ONE WINNING. As a LIST
+   they cost four characters each, which is cheap when a level is a handful
+   of blocks scattered wide. As a BITMAP - the bounding box, then one bit
+   per cell in it - they cost one sixth of a character per cell no matter
+   how many are filled, which is far cheaper the moment a level is dense.
+   Neither wins everywhere: the campaign's worst level is 154 characters as
+   a list and 125 as a bitmap, but the sparse ones invert that (12 blocks
+   spread over a 660-cell box: 57 as a list, 125 as a bitmap). So both are
+   built and the shorter is sent, with one flag bit saying which - and the
+   worst level in the whole campaign lands at 57 characters instead of 154,
+   which is what makes a fixed 64 affordable. Kinds ride separately, three
+   bits per filled cell, and only when a level has anything but stone in it.
 
-   VERSIONED BY ITS PREFIX. `OL1` is this shape; a later shape gets `OL2`
-   and this decoder keeps working for every code already sent. JSON is still
-   read on the way in - project files are JSON, every code shared before
-   today is JSON, and a format nobody can paste back is not a format.
+   WHY 64. Measured over every campaign level: median 29 characters, worst
+   57. 64 is the next power of two above the worst case and leaves seven
+   characters of slack, so every level a person is likely to build is one
+   code of exactly 64 characters. A level too big for that does not fail -
+   the code rounds up to the next multiple (128, and so on), which is the
+   honest thing for a format to do rather than refusing to carry a level
+   somebody made. Padding is the alphabet's zero, and the reader stops when
+   it has read what the header said, so the padding is never looked at.
+
+   THE NAME RIDES AT THE END, after a `~`, in plain text. The payload is
+   pure alphabet so a `~` can never appear inside it and the split is
+   unambiguous, and a name is the one part a human should be able to read
+   before pasting a stranger's code into their game. That is also the one
+   part that is not fixed width, deliberately: the CODE is a fixed length,
+   the label on it is as long as the person's own words.
+
+   VERSIONED BY ITS PREFIX. `OL2` is this shape; `OL1` was the variable
+   length first one and is still read, because a format that invalidates
+   what people have already sent each other is not a better format. JSON is
+   read on the way in for the same reason, and because a project file is
+   JSON by definition.
    ============================================================ */
 var SHARE_ALPHA="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
-var SHARE_TAG="OL1";
-function shareEnc(nums){
-  var out="";
-  for(var i=0;i<nums.length;i++){
-    // Zigzag: interleave negatives with positives so a small negative stays
-    // a small number. Rounded, because a corrupt board must not encode as
-    // something that decodes to a different corrupt board.
-    var n=Math.round(nums[i]), u=n<0?(-n*2-1):(n*2);
-    do{
-      var g=u&31; u=Math.floor(u/32);
-      out+=SHARE_ALPHA.charAt(g+(u>0?32:0));
-    }while(u>0);
-  }
-  return out;
+var SHARE_TAG="OL2";        // this shape: fixed width, two block packings
+var SHARE_TAG1="OL1";       // the first shape: variable length, list only
+var SHARE_WIDTH=64;         // every code is this many characters, or a multiple
+
+/* The writer. Numbers first, bits last, and that order is a rule rather
+   than a habit: a bit is six-to-a-character and a number is a whole one, so
+   a number written after a partial character would have to flush it and
+   waste up to five bits. Every layout below writes its header as numbers
+   and then runs the bitmap to the end. */
+function shareW(){
+  var w={s:"",acc:0,n:0};
+  w.num=function(v){
+    var u=Math.round(v),g;
+    u=u<0?(-u*2-1):(u*2);
+    do{g=u&31;u=Math.floor(u/32);w.s+=SHARE_ALPHA.charAt(g+(u>0?32:0));}while(u>0);
+  };
+  w.bit=function(b){
+    w.acc=w.acc*2+(b?1:0);
+    if(++w.n===6){w.s+=SHARE_ALPHA.charAt(w.acc);w.acc=0;w.n=0;}
+  };
+  w.bits=function(v,n){for(var i=n-1;i>=0;i--)w.bit((v>>i)&1);};
+  w.end=function(){while(w.n)w.bit(0);return w.s;};   // pad the last character
+  return w;
 }
-function shareDec(s){
-  var out=[],u=0,sh=1,got=false;
-  for(var i=0;i<s.length;i++){
-    var v=SHARE_ALPHA.indexOf(s.charAt(i));
-    if(v<0)throw 0;                      // not our alphabet: not our code
-    u+=(v&31)*sh; sh*=32; got=true;
-    if(!(v&32)){out.push(u&1?-((u+1)/2):u/2);u=0;sh=1;got=false;}
+/* The reader, and it THROWS rather than returning a sentinel: every caller
+   is inside one try, and a code that has run out of characters is not a
+   level in any of the dozen places that would otherwise have to check. */
+function shareR(s){
+  var r={s:s,i:0,acc:0,n:0};
+  r.chr=function(){
+    if(r.i>=r.s.length)throw 0;
+    var v=SHARE_ALPHA.indexOf(r.s.charAt(r.i++));
+    if(v<0)throw 0;                       // not our alphabet: not our code
+    return v;
+  };
+  r.num=function(){
+    var u=0,sh=1,v;
+    for(;;){v=r.chr();u+=(v&31)*sh;sh*=32;if(!(v&32))break;}
+    return u&1?-((u+1)/2):u/2;
+  };
+  r.bit=function(){
+    if(!r.n){r.acc=r.chr();r.n=6;}
+    return (r.acc>>(--r.n))&1;
+  };
+  r.bits=function(n){var v=0;while(n--)v=v*2+r.bit();return v;};
+  return r;
+}
+/* One level, packed one of the two ways. Returns null when this packing
+   cannot carry this level at all, so the caller simply takes the other. */
+function shareBody(d,bmp){
+  var blocks=d.blocks||[],n=blocks.length,i,b,special=false;
+  for(i=0;i<n;i++){
+    b=blocks[i];
+    if(b[3])special=true;
+    // Three bits per cell is what the bitmap has room for. Nothing in the
+    // game is above 4, but a pasted-in level is not the game.
+    if(bmp&&((b[3]||0)<0||(b[3]||0)>7))return null;
   }
-  if(got)throw 0;                        // truncated: the last group ran on
-  return out;
+  var box=null;
+  if(bmp){
+    if(!n)return null;
+    var x0=blocks[0][0],x1=x0,y0=blocks[0][1],y1=y0,z0=blocks[0][2],z1=z0;
+    for(i=1;i<n;i++){
+      b=blocks[i];
+      if(b[0]<x0)x0=b[0]; if(b[0]>x1)x1=b[0];
+      if(b[1]<y0)y0=b[1]; if(b[1]>y1)y1=b[1];
+      if(b[2]<z0)z0=b[2]; if(b[2]>z1)z1=b[2];
+    }
+    box={x:x0,y:y0,z:z0,w:x1-x0+1,h:y1-y0+1,d:z1-z0+1};
+    if(box.w*box.h*box.d>200000)return null;      // a box nobody should send
+  }
+  var w=shareW();
+  w.num((d.rotate?1:0)|(d.theme==null?0:2)|(bmp?4:0)|(special?8:0));
+  if(d.theme!=null)w.num(d.theme);
+  w.num(d.start[0]);w.num(d.start[1]);w.num(d.start[2]);
+  w.num(d.goal[0]);w.num(d.goal[1]);w.num(d.goal[2]);
+  /* Keys come before the blocks here, where in OL1 they came after. They
+     are numbers and the bitmap is bits, and bits have to be last. */
+  var keys=d.keys||[];
+  w.num(keys.length);
+  for(i=0;i<keys.length;i++){w.num(keys[i][0]);w.num(keys[i][1]);w.num(keys[i][2]);}
+  if(!bmp){
+    w.num(n);
+    for(i=0;i<n;i++){b=blocks[i];w.num(b[0]);w.num(b[1]);w.num(b[2]);w.num(b[3]||0);}
+    return w.end();
+  }
+  w.num(box.x);w.num(box.y);w.num(box.z);
+  w.num(box.w);w.num(box.h);w.num(box.d);
+  var at={},kinds=[],x,y,z,k;
+  for(i=0;i<n;i++){b=blocks[i];at[K(b[0],b[1],b[2])]=b[3]||0;}
+  for(x=0;x<box.w;x++)for(y=0;y<box.h;y++)for(z=0;z<box.d;z++){
+    k=at[K(box.x+x,box.y+y,box.z+z)];
+    w.bit(k===undefined?0:1);
+    if(k!==undefined)kinds.push(k);
+  }
+  if(special)for(i=0;i<kinds.length;i++)w.bits(kinds[i],3);
+  return w.end();
 }
 function shareCode(lv){
-  var d=shareData(lv), n=[];
-  // Flags first, so the reader knows whether a theme follows before it has
-  // to guess. Bit 0 rotate, bit 1 "a theme is written".
-  n.push((d.rotate?1:0)|(d.theme==null?0:2));
-  if(d.theme!=null)n.push(d.theme);
-  n.push(d.start[0],d.start[1],d.start[2]);
-  n.push(d.goal[0],d.goal[1],d.goal[2]);
-  n.push(d.blocks.length);
-  for(var i=0;i<d.blocks.length;i++){
-    var b=d.blocks[i];
-    n.push(b[0],b[1],b[2],b[3]||0);
+  var d=shareData(lv);
+  var list=shareBody(d,false),bmp=shareBody(d,true),body=list;
+  if(bmp&&(!list||bmp.length<list.length))body=bmp;
+  if(!body)body="";
+  // Out to the fixed width, or to the next multiple of it for a level too
+  // big to fit one, and the last character of it checks the rest.
+  var want=Math.max(SHARE_WIDTH,Math.ceil((body.length+1)/SHARE_WIDTH)*SHARE_WIDTH);
+  body=sharePad(body,want-1);
+  body+=shareSum(body);
+  // The name is trimmed of newlines only: it sits at the end of a line a
+  // chat app may wrap, and a name with a newline in it would cut the code
+  // in half on the way back.
+  return SHARE_TAG+body+"~"+String(d.name||"Untitled").replace(/[\r\n]+/g," ");
+}
+/* THE PADDING IS NOISE, NOT ZEROS, and that is a legibility decision rather
+   than a technical one. The reader stops when the header says it has
+   everything, so the tail could be anything - and a nine-block level padded
+   with the alphabet's zero came out as `OL2A0202268000046C_003320` followed
+   by forty `0`s, which looks like a bug in front of a player who has no
+   reason to know what padding is. Seeded from the body itself, so it is
+   deterministic: the same level always makes the same code, which is what
+   makes a code comparable at all. Nothing reads it. */
+function sharePad(s,n){
+  var h=0,i;
+  for(i=0;i<s.length;i++)h=(h*31+SHARE_ALPHA.indexOf(s.charAt(i)))%2147483647;
+  var out=s;
+  while(out.length<n){
+    h=(h*1103515245+12345)%2147483647;
+    out+=SHARE_ALPHA.charAt((h>>9)&63);
   }
-  n.push(d.keys.length);
-  for(var j=0;j<d.keys.length;j++)n.push(d.keys[j][0],d.keys[j][1],d.keys[j][2]);
-  // The name is trimmed of newlines only: it is about to sit at the end of a
-  // line that a chat app may wrap, and a name with a newline in it would cut
-  // the code in half on the way back.
-  return SHARE_TAG+shareEnc(n)+"~"+String(d.name||"Untitled").replace(/[\r\n]+/g," ");
+  return out;
+}
+/* THE LAST CHARACTER OF AN OL2 BODY CHECKS THE REST OF IT, and the fixed
+   width checks itself: a body whose length is not a multiple of SHARE_WIDTH
+   has lost or gained characters. Together they are what a variable-length
+   code could not have. A short code used to decode happily into a SMALLER
+   level - drop the tail of a 64-character code and the header inside it is
+   still a complete, wrong level - and silently handing somebody a level
+   that is not the one they were sent is worse than refusing the paste.
+   It is position-weighted, so a transposition moves it as well as a
+   substitution does. Measured over 145,152 single-character changes across
+   40 levels' codes: 99.05% refused. Not a guarantee - it is one character -
+   but it is the difference between "that isn't a level" and a level with a
+   hole in it, for one of the seven characters the width had spare. */
+function shareSum(s){
+  var t=0;
+  for(var i=0;i<s.length;i++)t=(t+SHARE_ALPHA.indexOf(s.charAt(i))*(i%7+1))%64;
+  return SHARE_ALPHA.charAt(t);
+}
+/* OL2. Reads exactly what the header says is there and stops, so the
+   padding after it is never looked at. */
+function shareRead2(body){
+  var r=shareR(body),i,o={format:"orthogonal-level-1",blocks:[],keys:[]};
+  var f=r.num();
+  o.rotate=(f&1)!==0;
+  o.theme=(f&2)?r.num():null;
+  o.start=[r.num(),r.num(),r.num()];
+  o.goal=[r.num(),r.num(),r.num()];
+  var nk=r.num();
+  if(!(nk>=0&&nk<4096))return null;
+  for(i=0;i<nk;i++)o.keys.push([r.num(),r.num(),r.num()]);
+  if(f&4){
+    var bx=r.num(),by=r.num(),bz=r.num(),w=r.num(),h=r.num(),d=r.num();
+    if(!(w>0&&h>0&&d>0)||w*h*d>200000)return null;
+    var x,y,z;
+    for(x=0;x<w;x++)for(y=0;y<h;y++)for(z=0;z<d;z++)
+      if(r.bit())o.blocks.push([bx+x,by+y,bz+z]);
+    if(f&8)for(i=0;i<o.blocks.length;i++){
+      var k=r.bits(3);
+      if(k)o.blocks[i].push(k);
+    }
+  } else {
+    var nb=r.num();
+    if(!(nb>0&&nb<20000))return null;
+    for(i=0;i<nb;i++){
+      var b=[r.num(),r.num(),r.num()],bk=r.num();
+      if(bk)b.push(bk);
+      o.blocks.push(b);
+    }
+  }
+  return o.blocks.length?o:null;
+}
+/* OL1, the first shape - variable length, list only, keys after the blocks.
+   Kept because codes in this shape have been sent. */
+function shareRead1(body){
+  var r=shareR(body),i,o={format:"orthogonal-level-1",blocks:[],keys:[]};
+  var f=r.num();
+  o.rotate=(f&1)!==0;
+  o.theme=(f&2)?r.num():null;
+  o.start=[r.num(),r.num(),r.num()];
+  o.goal=[r.num(),r.num(),r.num()];
+  var nb=r.num();
+  if(!(nb>0&&nb<20000))return null;
+  for(i=0;i<nb;i++){
+    var b=[r.num(),r.num(),r.num()],k=r.num();
+    if(k)b.push(k);
+    o.blocks.push(b);
+  }
+  var nk=r.num();
+  if(!(nk>=0&&nk<4096))return null;
+  for(i=0;i<nk;i++)o.keys.push([r.num(),r.num(),r.num()]);
+  return o.blocks.length?o:null;
 }
 /* Returns a level object, or null if this is not a share code at all - the
-   caller then tries JSON, which is what every older code and every project
-   file is. Throws nothing: a mangled code is simply not a level. */
+   caller then tries JSON, which is what every project file is. Throws
+   nothing: a mangled code is simply not a level. */
 function shareParse(txt){
   var s=String(txt||"").trim();
-  if(s.slice(0,SHARE_TAG.length)!==SHARE_TAG)return null;
+  var tag=s.slice(0,3)===SHARE_TAG?SHARE_TAG:(s.slice(0,3)===SHARE_TAG1?SHARE_TAG1:null);
+  if(!tag)return null;
   var cut=s.indexOf("~"), name=cut<0?"":s.slice(cut+1).trim();
-  var body=(cut<0?s.slice(SHARE_TAG.length):s.slice(SHARE_TAG.length,cut))
+  var body=(cut<0?s.slice(3):s.slice(3,cut))
     /* Whitespace anywhere is forgiven, because a code that has been through
        an email client has been through a line-wrapper. It cannot be
        ambiguous: no whitespace character is in the alphabet. */
     .replace(/\s+/g,"");
+  if(tag===SHARE_TAG&&
+     (!body.length||body.length%SHARE_WIDTH||
+      shareSum(body.slice(0,-1))!==body.charAt(body.length-1)))return null;
   try{
-    var n=shareDec(body),p=0,i;
-    var flags=n[p++];
-    var o={format:"orthogonal-level-1",name:name||"Untitled",
-           rotate:(flags&1)!==0,theme:(flags&2)?n[p++]:null,
-           blocks:[],keys:[]};
-    o.start=[n[p++],n[p++],n[p++]];
-    o.goal=[n[p++],n[p++],n[p++]];
-    var nb=n[p++];
-    if(!(nb>=0&&nb<20000))return null;
-    for(i=0;i<nb;i++){
-      var k=n[p+3];
-      o.blocks.push(k?[n[p],n[p+1],n[p+2],k]:[n[p],n[p+1],n[p+2]]);
-      p+=4;
-    }
-    var nk=n[p++]||0;
-    for(i=0;i<nk;i++){o.keys.push([n[p],n[p+1],n[p+2]]);p+=3;}
-    // Every number must have been there: a short code decodes to undefined
-    // coordinates, and a level made of undefined is worse than a rejection.
-    if(p>n.length)return null;
-    for(i=0;i<3;i++)if(typeof o.start[i]!=="number"||typeof o.goal[i]!=="number")return null;
-    if(!o.blocks.length)return null;
+    var o=(tag===SHARE_TAG?shareRead2:shareRead1)(body);
+    if(!o)return null;
+    o.name=name||"Untitled";
     return o;
   }catch(e){return null;}
 }
@@ -2607,12 +2777,12 @@ function shareParse(txt){
    inside a code is forgiven, so that one is already handled), and SEVERAL
    codes pasted one per line. Splitting on the tag serves the second and
    would ruin the first if it ever guessed wrong - so the split only stands
-   if EVERY piece of it is a level. A level called "OL1 something" cannot
+   if EVERY piece of it is a level. A level called "OL2 something" cannot
    quietly cost the player the rest of their paste. */
 function shareParseAll(txt){
   var s=String(txt||"").trim();
-  if(s.slice(0,SHARE_TAG.length)!==SHARE_TAG)return null;
-  var parts=s.split(new RegExp("\\s+(?="+SHARE_TAG+")")),out=[],i;
+  if(s.slice(0,3)!==SHARE_TAG&&s.slice(0,3)!==SHARE_TAG1)return null;
+  var parts=s.split(new RegExp("\\s+(?="+SHARE_TAG+"|"+SHARE_TAG1+")")),out=[],i;
   if(parts.length>1){
     for(i=0;i<parts.length;i++){
       var one=shareParse(parts[i]);
@@ -2624,7 +2794,6 @@ function shareParseAll(txt){
   var whole=shareParse(s);
   return whole?[whole]:null;
 }
-
 /* The other end of SHARE. It takes a share code, one shared level as JSON, a
    bare level object, or a whole project file, because those are the four
    things somebody will actually paste in here - and it never replaces what
