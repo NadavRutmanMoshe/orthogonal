@@ -473,8 +473,12 @@
   <h2 id="wonTitle">Solved</h2>
   <p id="wonSub"></p>
   <div class="wonrow">
+    <!-- The label is a span for the same reason NEXT's is: a teaching level
+         rewrites it (STILL LEARNING), and textContent on the button would
+         take the arrow with it. -->
     <button id="bRetry"><svg viewBox="0 0 24 24">
-      <path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/></svg>TRY AGAIN</button>
+      <path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/></svg><span
+      id="bRetryT">TRY AGAIN</span></button>
     <!-- The label is a span because win() rewrites it six ways (NEXT LEVEL,
          PLAY AGAIN, WHAT'S LEFT, DONE, BACK TO EDITOR); textContent on the
          button itself would take the arrow with it. -->

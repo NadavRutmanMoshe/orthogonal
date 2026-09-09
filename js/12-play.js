@@ -2215,6 +2215,11 @@ function win(){
     starsGained=Math.max(0,starsAfter-starsBefore);
   }
   var last=lvIndex>=LEVELS.length-1;
+  /* TRY AGAIN is the label everywhere except a teaching level, so it is set
+     once here and overridden there rather than in all five branches. Same
+     reason bRetry's text lives in a span: the glyph beside it is not part of
+     the sentence. */
+  $("bRetryT").textContent="TRY AGAIN";
   if(fromEditor){
     $("wonTitle").textContent="Your level works";
     $("wonSub").textContent=custom.name;
@@ -2234,11 +2239,26 @@ function win(){
        so a card put up now would open behind the one the player is reading.
        loadLevel() fires it on the way into whatever they pick next, which is
        also what makes it survive LEVELS as well as NEXT LEVEL. */
-    $("wonTitle").textContent="Got it";
+    /* "Got it" said the same thing the button below now says, and the two of
+       them together made the card insist. The title states what happened,
+       the buttons ask the question. */
+    $("wonTitle").textContent="That was the lesson";
     $("wonSub").textContent=moveCount+" moves  \u00b7  not scored"+
       (lastTut?"  \u00b7  from here on, tap the bulb for a hint":"");
-    $("bNextT").textContent="NEXT LEVEL";
-    $("bRetry").style.display="none";
+    /* A TEACHING LEVEL IS NOT SCORED, SO NEITHER BUTTON IS ABOUT SCORE.
+       Everywhere else the pair is "you did it in N, do better" against "go
+       on"; here there is no par to beat, so NEXT LEVEL was asking the player
+       to leave a lesson without ever saying they had understood it, and the
+       retry was hidden outright - which meant a player who got there by
+       following the hand had no way back through it except the map.
+
+       So the two buttons ask the only question a lesson can ask. UNDERSTOOD
+       goes on; STILL LEARNING replays the same level, hand and all. Retry is
+       shown here rather than hidden for exactly that reason - it is the one
+       place in the game where playing again is not about a better number. */
+    $("bNextT").textContent="UNDERSTOOD";
+    $("bRetryT").textContent="STILL LEARNING";
+    $("bRetry").style.display="flex";
     // A teaching level may carry a story line too - SPARRING's is the sentence
     // that hands the player to BOSS I. Same idiom, and the same reason it is
     // innerHTML: see the boss branch below.

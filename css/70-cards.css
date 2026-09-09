@@ -44,8 +44,12 @@
   }
   .won h2{font-family:'Space Grotesk',system-ui,sans-serif;font-size:24px;
     margin:0;color:var(--fg);font-weight:700;letter-spacing:-.02em}
+  /* Capped for the same reason the row is: the longest subtitle in the game
+     is the last tutorial's ("N moves · not scored · from here on, tap the
+     bulb for a hint"), and uncapped it ran off both edges of a 327px phone. */
   .won p{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12.5px;
-    color:var(--fg-dim);margin:0;letter-spacing:.05em}
+    color:var(--fg-dim);margin:0;letter-spacing:.05em;
+    max-width:min(88vw,46ch);text-align:center}
   /* Said once, on the run that finishes a section. The map is where the
      reward lives afterwards; this is the sentence. */
   .wonmast{display:block;font-style:normal;margin-top:9px;
@@ -106,9 +110,14 @@
   .tutcard p b{color:var(--goal);font-weight:500}
   .tutcard button{min-width:120px}
   /* Capped and centred: on the owner's narrow phone the pair used to run off
-     both edges, and a button whose rim is off-screen reads as broken. */
-  .wonrow{display:flex;gap:8px;align-items:center;justify-content:center;
-    max-width:94vw}
+     both edges, and a button whose rim is off-screen reads as broken.
+     AND IT WRAPS, because one label is not fixed: a teaching level's card
+     says STILL LEARNING · UNDERSTOOD, and that pair is ~45px wider than a
+     327px phone. Wrapping never fires on any other card - every other pair
+     fits - so it costs nothing where it is not needed and stacks the two
+     buttons where it is, in the order they already read in. */
+  .wonrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+    justify-content:center;max-width:94vw}
   .won button{height:46px;padding:0 clamp(13px,4.4vw,24px);font-weight:600;
     --c:var(--goal);color:var(--c);
     border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent);

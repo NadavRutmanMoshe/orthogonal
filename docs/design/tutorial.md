@@ -164,6 +164,22 @@ opts out with `lock:false`.
   on that section instead, where the lock now names the fight holding it. The
   label changes with it (`WHAT'S LEFT`), because a button reading NEXT LEVEL
   that goes to the map is the dishonesty this rule exists to forbid.
+- **A TEACHING LEVEL'S WIN CARD ASKS WHETHER YOU UNDERSTOOD, NOT HOW YOU
+  SCORED.** Everywhere else the two buttons are a score argument: `TRY AGAIN`
+  against `NEXT LEVEL`, and the retry is hidden once you have three stars
+  because there is nothing left to beat. A tutorial has no par and no stars,
+  so that pair had nothing to say — it read `NEXT LEVEL` and hid the retry
+  outright, which meant a player who had been walked through the level by the
+  ghost hand and had understood none of it had no way back through it except
+  the map. So on `L.tutorial` the pair becomes **`UNDERSTOOD`** and **`STILL
+  LEARNING`**, the retry is *shown* rather than hidden, and the title above
+  them says `That was the lesson` rather than `Got it` — which was the button
+  saying the same word twice. Replaying a lesson is the one place in the game
+  where playing again is not about a better number. `#bRetry`'s label is a
+  span (`bRetryT`) for the same reason `#bNext`'s is: the glyph beside it is
+  not part of the sentence. `.wonrow` wraps for it — that pair is about 45px
+  wider than the owner's 327px phone and no other pair on the card is.
+
 - **The highlight is `.tutlive`, not `.cue`.** A cue is a 3.2-second pulse and
   the lock lasts as long as the step, so keying the highlight off the pulse
   dims the whole bar the moment it expires — including the button being asked
