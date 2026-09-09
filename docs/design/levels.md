@@ -156,6 +156,15 @@ of those put the player in front of it in one tap.
 section would renumber every level after it and cost a `LEVEL_RENAMES` entry
 each. A landmark must not be able to break a save.
 
+**`I · FUNDAMENTALS` IS `I · NATURE`.** Every other section is named for the
+place you are standing in — `FIRE`, `WATER`, `DESERT`, the shelf — and this one
+was named for its syllabus, which made it the odd one out on a chooser that
+shows all five side by side. It is also what `groundName()` derives the
+editor's ground list from, so a player building a level was being offered a
+ground called FUNDAMENTALS. The section's look never changed: it has been
+grass, trees, birds and falling leaves since the themes went in, so the new
+name is the one it was already wearing.
+
 **SECTION I IS THE OWNER'S OWN, AND IT IS THE ANSWER TO "ARE THESE AI MADE?"**
 The opening was re-cut around eleven hand-authored levels, and two more
 went in at `04` and `05` later. It runs

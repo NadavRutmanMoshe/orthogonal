@@ -1362,9 +1362,16 @@ var SECTIONS=[
    story:"Nothing has noticed you yet.",
    theme:{sky:[0x141a2e,0x0a0e1a], block:0x5a6d94, ink:0x14172a,
           air:{col:0x8fa4cc, n:14, rise:.06, drift:.05, size:.10}}},
-  {at:2, name:"I · FUNDAMENTALS", sub:"go 2D, cross the gap, come back", col:"#35c2a5",
+  {at:2, name:"I · NATURE", sub:"go 2D, cross the gap, come back", col:"#35c2a5",
    story:"Every fold is a visit. The plane keeps count.",
-   /* NATURE, and the element the section wears. Olive rather than a true
+   /* NATURE, and the section is NAMED for it now rather than for what it
+      teaches - it was `I · FUNDAMENTALS`, which was the odd one out on a
+      screen showing all five side by side: every other section is named for
+      the place you stand in, and this one was named for the syllabus. It is
+      also what `groundName()` reads, so the editor's ground chooser stopped
+      offering a ground called FUNDAMENTALS in the same edit.
+
+      The element the section wears. Olive rather than a true
       green, which is the same don't-camouflage rule one level up: the goal
       is a saturated teal-green wireframe and it appears in EVERY section,
       so no section may sit on its hue.

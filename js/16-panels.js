@@ -1379,7 +1379,7 @@ function mapShape(k){
    whose order you could not see, while every other section spells it out.
    The name stays untouched, because a name is a save key; only the label
    counts. Single digits rather than `01`, so a glance never confuses a
-   prologue node with a Fundamentals one. */
+   prologue node with a Nature one. */
 function mapNumeral(l,ord){
   /* The ordinal is for the prologue's three unnumbered levels, so a LANDMARK
      is not given one even when it teaches: SPARRING is a hexagon sitting next
@@ -1559,8 +1559,9 @@ function secGridDraw(){
        (n===here&&!lk?" here":"")+(wide?" wide":"")+
        "' data-sec='"+n+"' style=\"--tabc:"+(sec.col||"#c3cde4")+"\">"+
        /* The numeral rides with the emblem and the word gets the tile's full
-          width to itself. Kept on one line beside it, FUNDAMENTALS is wider
-          than a column on a 327px phone and broke mid-word. */
+          width to itself. Kept on one line beside it, the longest name at the
+          time - FUNDAMENTALS, since renamed to NATURE - was wider than a
+          column on a 327px phone and broke mid-word. */
        "<span class='sectop'>"+secEmblem(sec)+
        (num?"<span class='secnum'>"+esc(num)+"</span>":"")+"</span>"+
        "<span class='secname'>"+esc(ttl)+"</span>"+
@@ -1639,7 +1640,7 @@ function levelPicker(n){
   var h="<canvas class='mbg' id='mBg' aria-hidden='true'></canvas>"+
         "<div class='mhead'>"+
         /* The section's name WITHOUT its numeral. The card directly below
-           carries "I \u00b7 FUNDAMENTALS" in full; up here, beside a star
+           carries "I \u00b7 NATURE" in full; up here, beside a star
            pill and two round buttons, the numeral is what pushes the word off
            the end of a 327px phone.
 
