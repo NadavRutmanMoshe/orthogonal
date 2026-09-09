@@ -97,7 +97,7 @@ teaching crates was wearing the colour of its own piece. Sand is kept pale
 and low in chroma so it does not collide with the trial's saturated amber
 either; the node shapes are what actually tell those apart.
 
-The same rule one level up put `I · FUNDAMENTALS` on olive rather than a true
+The same rule one level up put `I · NATURE` on olive rather than a true
 green: the goal is a saturated teal-green wireframe and it appears in *every*
 section.
 

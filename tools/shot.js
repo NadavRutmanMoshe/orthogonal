@@ -71,17 +71,17 @@ const SCREENS={
   "level:N":{what:"playing level N (index into LEVELS; 2 is '01 — On Your Own', the safe one)", js:"lv(N);"},
   "flat:N": {what:"level N, folded to 2D", js:"lv(N);setTimeout(doFlatten,50);", wait:1500},
   "win:N":  {what:"level N's win card", js:"lv(N);setTimeout(function(){moveCount=statsCached(L).moves||0;win();},50);", wait:2200},
-  boss:     {what:"BOSS I, a second in", js:"lv(15);", wait:1200},
-  trial:    {what:"TRIAL I, a second in", js:"lv(8);", wait:1200},
+  boss:     {what:"BOSS I, a second in", js:"lv(18);", wait:1200},
+  trial:    {what:"TRIAL I, a second in", js:"lv(10);", wait:1200},
   tutorial: {what:"00 — First Steps with the ghost hand", js:"lv(0);", wait:2500},
   editor:   {what:"the level editor", js:"enterEditor();"},
   hintoffer:{what:"the card that explains the bulb", js:"lv(2);settings.hintAsked=false;setTimeout(hintOffer,50);"},
-  starsoffer:{what:"the card that explains stars", js:"lv(12);settings.starAsked=false;setTimeout(starsOffer,50);"},
+  starsoffer:{what:"the card that explains stars", js:"lv(14);settings.starAsked=false;setTimeout(starsOffer,50);"},
   refill:   {what:"the out-of-hints card", js:"lv(2);setTimeout(hintRefillOffer,50);"},
-  struggle: {what:"the skip offer after repeated losses", js:"lv(15);settings.noSlowOffer=false;setTimeout(struggleOffer,600);", wait:1400},
+  struggle: {what:"the skip offer after repeated losses", js:"lv(18);settings.noSlowOffer=false;setTimeout(struggleOffer,600);", wait:1400},
   tutcard:  {what:"a full-bleed explanation card", js:"lv(2);cardPut('A heading','Two lines of body text, with {to2} named the way the button names it.','brief');"},
   toast:    {what:"a toast and a spoken cue", js:"lv(2);flash('a toast');flashCue('go right','hint · 2 left');", wait:400},
-  phase:    {what:"the between-phases note on a boss", js:"lv(15);setTimeout(function(){phaseNote('the ground rises');},300);", wait:1200},
+  phase:    {what:"the between-phases note on a boss", js:"lv(18);setTimeout(function(){phaseNote('the ground rises');},300);", wait:1200},
 };
 
 function parseArgs(argv){

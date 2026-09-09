@@ -340,6 +340,13 @@ function buildComposed(){
       custom.blocks=r.level.blocks.map(function(v){return v.slice();});
       custom.start=r.level.start.slice();custom.goal=r.level.goal.slice();
       custom.rotate=true;custom.name="Composed "+script.length;
+      /* A COMPOSED LEVEL IS A NEW LEVEL, the same way a pasted one is
+         (ioPanel, js/16-panels.js). Every edit writes into `editingId` now,
+         so leaving it pointing at whatever was open in the editor before
+         COMPOSE would overwrite that level with this one without asking.
+         The autosave() the snapshot() above scheduled lands on a null id and
+         so creates the entry, named for the sequence it was forced from. */
+      editingId=null;
       var st=statsFor(custom);
       html+="<span class='ok'>Forced.</span> "+custom.blocks.length+
             " blocks, "+st.moves+" moves, <b>"+tierOf(st.score)+"</b>."+

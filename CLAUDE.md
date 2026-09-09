@@ -110,6 +110,12 @@ Block format `[x,y,z,k]`: 0 stone, 1 water (code says `glass`), 2 anchor,
   crate. A crate is the only piece with state; every world query takes the
   live crate list. Fire kills underfoot and poisons the whole silhouette
   column it folds into. Keys exist in code and the editor, unused.
+- **Fire only costs moves when the way round it is a turn.** Walking one
+  square further before folding is free - the plane and the volume both
+  charge one move per square of `u` - so a spike that merely postpones the
+  fold is invisible to `statsFor()` and to the minimizer, however lethal it
+  looks. Poison something whose detour is a rotation or a walk through depth
+  (`levels.md`).
 - **`SECTIONS[].at` are array indices.** Inserting a level shifts every
   later marker; `verify.js` asserts they still line up.
 - **`LEVEL_RENAMES` is composed, never rewritten.** Renaming a level means
@@ -118,12 +124,21 @@ Block format `[x,y,z,k]`: 0 stone, 1 water (code says `glass`), 2 anchor,
   both. Bosses and trials carry a numeral and no number so a landmark can
   never renumber a section.
 - Rotation is locked (`rotate:false`) from the tutorials through `TRIAL I`
-  and unlocked at `07 — The Rotation`, then never taken back. On a locked
+  and unlocked at `09 — The Rotation`, then never taken back. On a locked
   level the turn buttons are **not drawn** (`body.norot`).
 - `tutorial:true` means no par, no stars, and the solver is not asked.
 - Progress is keyed by level **name**. `progress[name]` holds a move count
   on an ordinary level and lives kept on a clock level, so reads go through
   `starsForRecord()` and writes through `betterRecord()`.
+- **A fight is taught before it is fought.** `SPARRING — One of Them` sits
+  before `BOSS I`: a `tutorial:true` level carrying `boss` data - BOSS I's
+  phase one on the smallest arena it fits on, with a hunter that cannot walk -
+  and the kill's four rules at the top of the screen as a live checklist
+  (`L.primer`) that ticks itself and says what you missed when it kills you.
+  `teach:true` on the boss exempts the arena from `bossArena()`'s two quality
+  gates - lethal columns and depth - and from nothing else. It is a hexagon on
+  the map, earns a tick rather than stars, and `bossesLeft()` skips it, so it
+  gates nothing.
 - **`LEVELS` opens `sectionPicker()`, not the map.** One section per visit;
   the map has no tab strip and the way to another section is out and back in.
   PROLOGUE has no tile and no map (`secPickable()`) — it is the tutorial, and
@@ -143,14 +158,34 @@ Block format `[x,y,z,k]`: 0 stone, 1 water (code says `glass`), 2 anchor,
   for the name and the ground and writes the library entry at once;
   `editingId` says which entry the editor is on, and `saveCurrent()` keeps
   whatever is on the board, solvable or not. Only `VERIFY` still asks the
-  solver.
+  solver on demand.
+- **There is no SAVE button: every edit writes.** `snapshot()` — already the
+  one funnel every board change goes through — calls `autosave()`, which
+  writes the board 140ms later and re-runs the solver 1.1s after the hand
+  stops (a null score is a draft, so a level is never unsaved, only briefly
+  unscored). `saveCurrent()` is still the one writer; `loadIntoEditor()` calls
+  `saveCancel()` so the outgoing board is not written into the incoming
+  level's entry, and a pasted or composed level clears `editingId` and so
+  saves as a new entry.
+- **The editor raycasts crates too.** They are drawn by `buildDynamic()`, not
+  by `syncMeshes()`, so a tap list of `meshes` alone went straight through
+  them: a placed crate could not be erased or built on. `onCanvasTap()` adds
+  `crateMeshes` and reads the cell through `hitCell()` (`userData.base` for a
+  block, `userData.cell` for a crate). `validate()` passes the crate set to
+  `R.solid()` for the same reason — a start standing on a crate is standing on
+  something.
 - **You build with what the campaign has shown you.** `seenTools()` hides
   piece chips you have not met and `seenSections()` the grounds; both read
   `mapReach()`, so they cannot disagree with the map. A custom level's
   ground is a `SECTIONS` index in `theme`, applied by `levelTheme()`.
-- **A shared level is `orthogonal-level-1` JSON**, copied out of
-  `sharePanel()` and back in through `LOAD A LEVEL`, which always adds and
-  re-scores what it takes.
+- **A shared level is one fixed-length code**: `OL2` + 64 characters +
+  `~Name`, out of `sharePanel()` and back in through `LOAD A LEVEL`, which
+  always adds and re-scores what it takes. The width is fixed, not the
+  content - blocks are packed as a list or as a bitmap of their bounding
+  box, whichever is shorter, then padded, and the last character checks the
+  rest. It is not a hash and cannot be one: nothing here can look an id up.
+  `LOAD A LEVEL` still reads `OL1` codes, `orthogonal-level-1` JSON, a bare
+  level and a whole project file (`shareCode()`, `js/16-panels.js`).
 
 ## Invariants that bite
 
@@ -168,6 +203,16 @@ is the rule.
 - `saveSession()` refuses to write while `dying`; `respawn()` and
   `trialHurt()` write afterwards. The trial's cores and lives are in the
   session; a boss resumes fresh.
+- **A boss phase may carry a `sweep`** — the trial's lethal plane, installed as
+  `TR` by `bossEnterPhase()`. BOSS IV is the level. So **`TR` means "a sweep is
+  running", not "this is a trial"**: `B` names a death (`die(B?"boss":"trial")`)
+  and `B` decides which frame ticks the shared `shieldMs`/`slowMoMs`, or both
+  frames spend them twice. `TR=makeTrial(L)` is assigned **before**
+  `bossReset()` in `enterPlay()`, or it wipes the sweep the phase just armed;
+  `bossReset()` reads `(B||TR)` for lives for the same reason. The sweep stops
+  for the phase card, the kill cam and `bossGraceMs`. `bossSafety()` is no
+  longer a no-op — it holds every sweeping phase to `trialSafety`'s property
+  (`bosses.md`).
 - Boss arena blocks edit `L.blocks`; the pristine list is captured **once**
   in `L.arenaBase`. Crush verdicts are taken *before* `bossFoldCrush()`
   raises the next phase. A phase clear waits for its replay
@@ -178,6 +223,15 @@ is the rule.
 - `folding()` refuses the verb while the fold tween runs; it is a stamp
   taken at commit, not a read of `foldP`.
 - Undo does not touch a fight.
+- **A hunter is solid to your step and your own move never kills you by
+  contact**: walking into one is refused like a wall (`hunterHere()`,
+  `hunterInColumn()`), no life and no move. Being able to stand on one would
+  make every fight "walk onto it, fold". Their step and their charge still
+  kill.
+- A phase may carry `still:true`: that hunter cannot walk and can do
+  everything else - it plants a line the moment you share its row and the
+  charge still kills you. SPARRING is the level. `bosssim.js` knows about it
+  too, or it would be simulating a fight nobody authored.
 
 **Solver and tutorial** (`tutorial.md`, `levels.md`)
 - Tutorial steps are predicates over counters and state; never a step index.
@@ -190,11 +244,23 @@ is the rule.
   green, the lock, the hand and `tutPoke` all read it.
 
 **HUD and chrome** (`docs/UI.md`, `chrome.md`)
-- `syncHud()` owns every body class and button class, with two exceptions
+- `syncHud()` owns every body class and button class, with three exceptions
   that are re-judged per frame in the render loop: the `GO 2D` button on a
-  clock (`.strike`/`.peril`) and the eye (`lookCue()`).
+  clock (`.strike`/`.peril`), the eye (`lookCue()`) and the primer's
+  checklist (`primerMarks()`).
 - Anything animated inside markup that `syncHud()` rewrites restarts on
   every redraw. The live star row is its own element for that reason.
+- `L.primer` is the **checklist** of rules under a level's hint (one level has
+  one), and it is **not** the retired `brief`, which was a card and whose name
+  is still taken. Each step is a predicate over `killState()`, never a step
+  index; `syncPrimer()` writes the markup and `primerMarks()` re-marks it
+  every frame from the render loop (the third thing re-judged there) and
+  freezes while the kill cam runs. Its `why` lines are said by `deathSayShow()`
+  in the middle of the screen over that kill cam, not in the list, and they
+  read `primerLast` - the state a frame *before* the hit, because the charge
+  stands the hunter on you first. It renders
+  through `tutWords()` so it names the player's own controls, and it is filled
+  before `syncBossBar()` measures `.hud`.
 - `.hud` chrome follows `paperIsLight()`, not the verb.
 - **Class names collide silently**: `.boss` (HUD bar, `pointer-events:none`)
   vs `.mboss` (map node); `.home` (overlay) vs `body.athome`; `.st` (star
@@ -219,6 +285,9 @@ is the rule.
 - `loadSettings()` is a **whitelist**. A key not read there does not exist
   after reload; a key whose feature is removed comes out of the list.
 - `noSlowOffer` keeps its name though nothing slow is left; it is persisted.
+- The buttons default is `UI_DEFAULT` (`js/11-sound.js`, `"none"`). The fresh
+  `settings` object and `RESET SETTINGS` both read it, so a reset cannot drift
+  away from a first run; any other default belongs next to it, not inlined.
 - A stored volume only wins once `volTouched`. Volume is applied *after* the
   limiter (`outGain`); changing `MIX` or `POST` means re-measuring the
   stacked worst case.
@@ -252,6 +321,9 @@ is the rule.
   at that section's fire and water.
 - `applyTheme()` runs once per level and drops block meshes when the surface
   changes; `syncMeshes` reuses meshes by cell otherwise.
+- `RAY_W` .46 is the width of the charge telegraph across its own row. It was
+  a .06 pane, invisible end-on - which is the view you are in when you are
+  lined up, and the one the fold is taken from.
 - `INK_SETTLE` .18 and `PAPER_LIFT` .20 are the whole 2D look; both have
   been raised and reverted. The paper is derived from the sky.
 - `DEPTH_STEP` .34 charges the first cell of depth outright; `CAM_TILT` .62

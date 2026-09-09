@@ -31,6 +31,13 @@ wearing a boss costume: there was nothing to fight, only somewhere to be.
 *This design is not dead. It is the trial now, where being an objective on a
 clock is exactly the right thing to be.*
 
+> **The sweep came back to a boss, and it is not this.** `BOSS IV` sweeps as
+> well as fielding a pack. What was wrong with 1 and 2 was the sweep *instead
+> of* an opponent; as a hazard *alongside* one it is the only thing in the game
+> that can tax the fold itself, because a sweep down the axis you are looking
+> along is unsurvivable in the plane. `bossSafety()`, which these two designs
+> left behind as a no-op, is real again for it. See `docs/design/bosses.md`.
+
 **3. Crush it on a static line.** A real attack at last, but the
 vulnerability was a property of the *floor* — stand in the right place, wait,
 fold — so the fight became manipulating the floor rather than the opponent.
@@ -1091,3 +1098,204 @@ was: **a comment edit in a stylesheet can delete the rule after it**, and
 nothing in the browser will say so. Checking that every `/*` in `css/` has
 exactly one `*/` is a three-line script and now worth running whenever a
 whole family of things loses its colour at once.
+
+## The live star row remembered the wrong level
+
+Reported as "it shows one star instead of 3 when I get into a level". The row
+under the move count opened a fresh, unplayed level already down a star or
+two, and stayed wrong for the whole level: `09 — No Bridge 2` was solved in
+three moves, the win card said *Perfect · 3 moves (optimal)*, and the HUD
+behind it still showed one gold star.
+
+`syncStars()` writes no DOM when the count it is handed matches the count it
+believes is on screen. That early return is not an optimisation, it is the fix
+for a real bug — the row is redrawn by `syncHud()` on every move, and
+re-creating the falling star each time restarted its animation, so holding a
+direction down left it flickering in place instead of falling off. So
+`starsLive` has to be a claim about *what is drawn*, and the hiding path broke
+that claim: a tutorial, a boss, a trial or the editor calls `syncStars(null)`,
+which hid the row and set `starsLive=3` — a level's worth of golds it had
+never written. `TRIAL I` sits between `06 — Limited` and `07 — The Rotation`,
+so the sequence is ordinary play: lose two stars on 06, cross the trial, and
+every level after it opens on three, is told three, sees `3===3`, and returns
+without touching a row that is still showing one.
+
+It self-healed only by getting *worse*: the first move that actually cost a
+star made the counts disagree again and redrew the row correctly. Solve
+cleanly and the stale row survived to the win card, which is exactly the case
+where the two numbers contradict each other in the same screenshot.
+
+The fix is one sentinel: hiding sets `starsLive=-1`, "I do not know what is on
+screen". It matches no count, so the first call after a hide always redraws,
+and `lost` is false against it, so nothing falls or plays the losing sound on
+the way back in. The general lesson is the one the comment now carries: **a
+cache of "what is on screen" may only be written where the screen is**, and
+any path that skips the drawing has to invalidate it rather than guess at it.
+
+---
+
+## SPARRING: three opponents, a checklist, and a death with nothing in front of it
+
+SPARRING was built to answer a report: players reached BOSS I able to see a
+thing walking at them and with no account of what the fight wanted from them.
+The first version put a hunter that **could not move** at the far end of a
+small bare board (`still:true` on the phase, machinery still in
+`bossPhases()`), on the reasoning that the kill is a conjunction — line up,
+look down that line, fold, and be first — and a conjunction cannot be taught
+by pressing one button, so it should be said in words over a board with
+nothing else happening on it.
+
+It lasted one playtest. The owner's note was "make it so it can kill me like
+in the boss phase 1", and it is right for a reason the level itself was
+printing at the top of the screen: the fourth rule is *be faster than it is*,
+and a target that never moves does not merely fail to teach that, it
+contradicts it. The three rules a dummy can teach are the three the player
+would have worked out anyway; the one that needs teaching is the only one it
+cannot show. A lesson with no stakes teaches the moves and not the fight.
+
+**So it became BOSS I's phase-one hunter outright, and that was wrong in the
+other direction.** It walked, it closed, and the level stopped being about the
+kill: a hunter coming at you makes the *board* the subject — where to stand,
+when to run, how much floor is behind you — and the board is exactly what
+BOSS I is for. The lesson was now competing with the thing it was supposed to
+prepare you for, on a board a third the size.
+
+**The third version is the one, and it is one word: `still` means it cannot
+walk, not that it cannot act.** It plants a line the moment you share its row
+or column, the ray comes down that row, and it kills you if you are still
+standing there when the beat closes — the whole of rule four, learnable by
+losing to it once. What it cannot do is follow you, and that is what makes the
+danger *opt-in*: the start square is one row off its line, so nothing happens
+until the player steps onto it, and the four rules can be read in complete
+safety. `aim` (2200) is the dial that matters — the window a first-timer has
+to turn and fold in — and `step` is now only the beat it re-reads its line on.
+
+The general shape of the mistake is worth keeping: **a teaching level's
+opponent should be missing the ability that makes the real fight hard, not the
+ability the lesson is about.** The dummy removed the lesson; the full hunter
+removed nothing; taking away its feet removes the pressure to *move* and keeps
+the pressure to *act*, which is the one the four rules describe.
+
+**The second half of the same note was the more interesting one.** "There is
+an insta kill if you go into an opponent, it shouldn't happen — only time
+under the same axis should kill." Walking into a hunter cost a life, and the
+comment defending that had been written from the pack's side: *they are not
+solid, because a body you cannot pass is a body that can trap you against a
+wall, and walking into one simply costs the same as being walked into*. Both
+halves are true and the conclusion was still wrong, because the two events are
+not the same from the player's chair. Being walked into is the end of a
+sequence you watched happen. Walking into one is your own move, and this fight
+is built on the promise that nothing kills you without a telegraph first — so
+the one death with nothing in front of it was the one the player caused.
+
+The fix is not "make it harmless". If the player can stand on a hunter's
+square they share its silhouette column in every view at once, so folding
+kills it for free, and every fight in the game collapses to *walk onto it,
+fold* for two moves. So a hunter is **solid to your step**: the move is
+refused the way a wall refuses one — no life, no move spent, `it is in the
+way`. The old objection stands and is accepted; being cornered is a cost, and
+the answer to it is the verb the game is about. Nothing changed on their side.
+
+**And the list became a checklist.** Four sentences of static text at the top
+of the screen are a card on the wall: read once, then furniture — and the
+owner asked for the obvious better thing, which is that the list answer back.
+Every line is a predicate over the kill state now (`killState()`), exactly as
+a tutorial step is a predicate over counters, so the boxes tick and untick as
+the player moves and turns and the rule can be *found* by moving rather than
+by reading. The fourth line has no predicate at all: being fast is not a state
+you are in, so it goes red for exactly as long as the ray is live and ticks
+when the fight is won.
+
+**And the death note is not in the list.** It was, for one playtest: an amber
+line under the four boxes saying what to do about it. The owner's note was
+"in the middle of the screen a little bit higher, on top of the kill cam even
+and a bit after", and that is right for a reason worth writing down — in the
+second after losing a life the player is watching the replay in the middle of
+the screen, and the top-left corner is not where anyone looks, nor is a
+paragraph what anyone reads. So it is one short sentence, at the phase note's
+position, one layer above the replay chrome, held for as long as the film runs
+and a beat after it. Six words beat two lines of advice: *you didn't turn to
+face it*. The checklist is still up at the top saying what to do about it, and
+the box the sentence names is the one still unticked.
+
+The half of that which needed care is **which state the note describes**. It
+says which line you missed — *you had it, it was simply faster*, or *you were in its line
+and still looking across it* — and the first version read the live board,
+which is wrong on the only death that matters: the charge stands the hunter on
+your square *before* `bossHurt()` runs, so at that instant you are perfectly
+aligned and perfectly facing, and the note congratulates you on the thing that
+just killed you. It reads `primerLast` instead, refreshed by `primerMarks()`
+from the render loop before `bossFrame()` — the board as it was when the
+checklist in front of the player was last drawn, which is the only state a
+death can honestly be explained against. The checklist itself freezes while
+the film plays, for the same reason turned around: the replay writes the
+recorded pose into live state, so the boxes would tick along with the footage
+and show *face its direction* satisfied under a caption saying it was not.
+
+**And the telegraph got a width.** The pane a planted hunter draws along the
+row it is about to charge down was `.06` of a cell thick — visible broadside,
+and two pixels of red seen end-on. End-on is exactly the view that matters:
+looking straight down the line *is* being aligned, and it is the view the fold
+is taken from, so the drawing that says "this row is about to be folded onto
+you" disappeared at the moment the player had done the thing it exists to
+reward. `RAY_W` is `.46` now, one number in `10-render.js`, and the pane is
+still a pane: far longer than it is wide, and still flattening onto the floor
+as the charge lands.
+
+## The SAVE button's three lives, and the crate the ray went through
+
+The editor's SAVE started as a `.tiny` cap at the right end of the bar's top
+row — the smallest, quietest button on a screen whose bottom third is fifteen
+other buttons, and the one that decided whether an evening's building still
+existed tomorrow. Reported as forgettable, and it was. So it was made loud: a
+green pill in the top-right corner, in the space the five round buttons leave
+empty while the editor is open, saying the word as well as drawing the disk,
+and carrying an amber dot with a slow breath under it whenever the library was
+behind the board.
+
+That was the right diagnosis of the wrong problem. A control nobody remembers
+to press, whose *timing the machine already knows exactly*, does not need to
+be louder; it needs not to exist. `snapshot()` was already the one funnel every
+board change goes through — it is what pushes the undo entry, which is why the
+dot could be `editDirty` and a single flag — so it was already the one place
+that could ask for a write. It asks now, and the button, its CSS, its owner
+`syncSave()` and the dot are gone.
+
+The only real design question was **the solver**. A save was one operation:
+write the board, and take the numbers with `statsFor()`, which is two BFS runs
+capped at 400k states. That is fine once, on a button press; it is not fine
+between two taps of a block. So the save is two timers on different clocks —
+the board at 140ms, which coalesces somebody dragging out a wall into one
+write, and the numbers 1.1 seconds after the hand stops. In between the entry
+carries a null score, which is exactly what a draft already looks like
+everywhere a score is printed. A level is therefore never unsaved; at worst it
+is briefly unscored, and that is a state the screen already had a word for.
+
+Two things had to be told the board could change under them. `loadIntoEditor()`
+calls `saveCancel()`, because the `snapshot()` at the top of it has already
+scheduled a write of the board you are *leaving*, and 140ms later `editingId`
+belongs to the level you are arriving at. And a pasted or composed level clears
+`editingId` — that rule already existed for the paste, with the reasoning that
+keeping the id would make the next SAVE quietly overwrite a level you never
+touched, and it simply had not been applied to the composer, where nothing had
+gone wrong yet only because the press was still manual. Autosave turns "would
+overwrite if you pressed SAVE" into "overwrites".
+
+**The crate in the same pass.** A crate could be placed and then never removed.
+`onCanvasTap()` raycasts against `meshes`, the static table `syncMeshes()`
+keeps by cell — and a crate is deliberately not in it: it is the one piece with
+state, it moves when it is shoved, so `buildDynamic()` draws it into
+`crateMeshes` instead. The ray went straight through every crate on the board.
+Not just erase: you could not build on one, and you could not stand the start
+on one, because all three arms of that function begin with the same hit. The
+fix is the tap list plus `crateMeshes` and a `hitCell()` that reads
+`userData.base` (a block) or `userData.cell` (a crate, written the way a key
+mesh already carried its own).
+
+The same blind spot had a second half further down. `validate()` asked
+`R.solid()` whether the start was standing on anything, and `makeRules()`
+leaves crates out of its block set on purpose — every world query takes the
+live crate list as a fourth argument, and this one was not passing it. A start
+on a crate was "standing on nothing", so the level could never be scored and
+sat as a permanent draft. That had been true the whole time and nobody had hit
+it, because until the ray could hit a crate you could not put the start on one.

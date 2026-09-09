@@ -127,6 +127,106 @@ of the fight sag. Three phases now, and the fourth is recoverable.
   one since you committed — the player is crushed by the reward for the kill
   they just made. This is the twin's old bug in a new place; see below.
 
+### The fight, taught first — SPARRING
+
+**The fight was never explained, and it does not explain itself.** Every other
+verb in this game teaches by being pressed: the coach names a control, you
+press it, and what happened is the lesson. The kill cannot be taught that way,
+because it is a *conjunction* — be on its line, AND be looking down that line,
+AND fold, AND do all of it before it does the same to you — and there is no
+single press that demonstrates a conjunction. Players reached BOSS I able to
+see a thing walking toward them with no account of what they were supposed to
+do about it, which is the report this level answers.
+
+So it is said, over the smallest board a real fight fits on.
+`SPARRING — One of Them` sits immediately before BOSS I: three by seven, bare,
+the tutorials' scale rather than an arena's, with **one hunter that cannot
+walk** at the far end and the four rules at the top of the screen as a
+**checklist** (`L.primer` — deliberately not the retired *brief*, which was a
+card). The player starts one row off its line, and that is the whole of the
+level design — it makes the first three lines three separate presses:
+
+| | |
+|---|---|
+| **1 · align** | one step onto its row |
+| **2 · look** | one turn, so that row runs into the screen and you share a silhouette column |
+| **3 · GO 2D** | and it is crushed |
+
+**The button answers back.** `doom` is recomputed for every hunter at the foot
+of `bossFrame()` whatever else is going on, so the moment the turn lands the
+`GO 2D` button goes green — the player is told they have it right by the same
+code that tells them in a real fight, before they commit.
+
+**And so does the list, which is why it is a checklist and not a list.** Four
+sentences of static text are a card on the wall: read once, then furniture.
+Every line is a predicate over `killState()` instead — box one ticks when you
+step onto its row, box two when you turn and the two of you share a silhouette
+column, box three when you fold — so the player can *find* the rule by moving,
+which is how everything else in this game is taught. The words only name what
+they are already watching happen. The fourth line has no predicate at all,
+because being fast is not a state you are in: it goes red for exactly as long
+as the ray is live, and ticks when the fight is won.
+
+**And when it kills you, it says which line you missed — in the middle of the
+screen, over the kill cam.** One short sentence: *you didn't turn to face it*,
+*you didn't GO 2D in time*, *you walked off the edge*. Not in the list, which
+is the wrong place twice over in that second: the player is watching the
+replay in the middle of the screen, and four lines is not what anybody reads
+having just lost a life. It is `.deathsay`, at the phase note's position and
+one layer above the replay chrome, held for as long as the film runs and a
+beat after it, and taken down by the next committed move.
+
+**It is read off `primerLast`, the state a frame *before* the hit**, and that
+is not an optimisation — the charge stands the hunter on your square before
+`bossHurt()` runs, so the live board says you were perfectly aligned at the
+moment you died, every single time. `primerMarks()` freezes during the replay
+for the same reason: the film writes the recorded pose into live state, so an
+unfrozen checklist would tick *face its direction* underneath a line saying
+you did not turn.
+
+**THREE VERSIONS, AND THE THIRD IS THE ONE** (`docs/HISTORY.md` has the
+whole search). It opened on a **dummy** that could not act at all, which
+taught three rules and contradicted the fourth — "be faster than it is" cannot
+be shown by something with no clock. Then it was **BOSS I's phase-one hunter
+outright**, walking, and that turned the lesson into a fight: a hunter that
+closes on you makes the *board* the subject — where to stand, when to run —
+and the board is what BOSS I is for.
+
+**So `still:true` is a hunter with its feet taken away, not its teeth.** It
+plants a line the moment you share its row or its column, the ray comes down
+that row exactly as it does in every fight, and it kills you if you are still
+standing there when the beat closes. That is the whole of rule four, and it
+can only be learned by losing to it once. `bossFrame()` skips the walk and the
+touch check for it and nothing else; everything else sees an ordinary hunter,
+the doom pass, the telegraph and the kill cam included.
+
+**What that buys is a danger the player opts into.** The start square is one
+row *off* its line, so nothing can happen at all until they choose to step
+onto it: the four rules are read in complete safety, and the clock starts when
+they say so. `aim` (2200 here) is the real dial — it is the window a first
+timer has to turn and fold in — and `step` is now only the beat it re-reads
+its line on. Both `bosssim` policies agree about the shape: a player who never
+moves is never even shot at, and a duellist clears it in 1.4s.
+
+**`teach:true` turns off two of `bossArena()`'s checks and only two.** A board
+like this has no lethal columns (nothing stands on it) and three rows of depth
+(nothing to fold through), so the two gates that ask *is this a fight worth
+having* both fail it — correctly, and beside the point. Everything structural
+is still asked, because those break a lesson exactly as hard as they break a
+fight: a spawn inside a block, a spawn the pack cannot walk to you from, a
+spawn beside the start square, a start square you cannot fold from. The
+simulator is told about `still` for the same reason — playing a walking hunter
+against a board authored with a standing one measures a fiction, which is what
+`bosssim.js` exists to prevent.
+
+**It is a boss on the map and a tutorial everywhere else.** `mapKind()` still
+reads `boss`, so it draws as a violet hexagon next to BOSS I's — a fight, not
+a puzzle — but it carries no numeral (`mapNumeral()` gives the ordinal to the
+prologue's unnumbered levels, not to landmarks), it earns a tick rather than
+stars, it is not scored, and `bossesLeft()` skips it so it cannot stand
+between the player and `V · EXTRA`. Money and ads buy progress, never score,
+and a lesson gates nothing.
+
 ### The twin — retired, and recoverable
 
 `BOSS I` used to be one creature with two mirrored bodies. Playtesting called
@@ -146,6 +246,19 @@ walk into a wall.
 
 ### Details that are load-bearing
 
+- **A HUNTER IS SOLID TO YOUR STEP, and your own move never kills you by
+  contact.** Walking into one used to cost a life — the note read "walking
+  into one simply costs the same as being walked into" — and played as an
+  instant death with nothing in front of it, which is the one thing this
+  fight promises not to do. It is refused now, the way a wall is: no life, no
+  move spent, `it is in the way`. That is the *only* version of "it does not
+  kill me" the fight survives — if you could stand on one you would share its
+  silhouette column in every view at once, and every fight in the game would
+  be "walk onto it, then fold" for two moves. The old note's objection stands
+  and is accepted: a body you cannot pass is a body that can corner you. The
+  answer to being cornered is the verb this game is about. Nothing here
+  constrains *them* — a hunter still steps onto you and still charges down
+  its line, and both still cost a life.
 - **A charge needs the same height, not just the same row.** `bossLine()`
   used to check only x and z, so a hunter standing on a pillar had a line on
   a player on the floor below it and charged straight through the block it
@@ -184,6 +297,15 @@ walk into a wall.
   the one verb the player already owns. It works because the attack was
   already that shape — a hunter on your row *is* a hunter in your silhouette
   column the moment you face along that row, which is why folding answers it.
+  **And the pane has a width** (`RAY_W`, `10-render.js`). It was .06 of a
+  cell, which is a pane you can only see from the side — and the side is the
+  wrong place, because the view that matters is the one looking straight
+  *down* the line. That is what being aligned means, it is the view the fold
+  is taken from, and edge-on a .06 pane was two pixels of red. So the one
+  drawing that says "this row is about to be folded onto you" vanished
+  exactly when the player had done the thing it exists to reward. At .46 it
+  is a bar end-on and still a plane broadside, because it stays far longer
+  than it is wide and still flattens onto the floor as the charge lands.
   The Census was already saying it too: they live in the plane. A hunter that
   can genuinely fold is a sixth design and a different question; see
   `docs/HISTORY.md`.
@@ -290,9 +412,10 @@ walk into a wall.
   entirely. `replayMark()` takes it on the first line of `bossHurt`, before
   anything moves.
 - **MOST DEATHS ARRIVE WITH NO LINE AT ALL, and that is what kept the camera
-  broken through three fixes.** Three of `bossHurt`'s four callers pass none
-  — *it closed on you*, *it reached you*, *you walked into it* — and only the
-  charge passes one. **A flat kill is always one of the three**: waiting in
+  broken through three fixes.** Two of `bossHurt`'s three callers pass none
+  — *it closed on you*, *it reached you* — and only the charge passes one.
+  (There were four: *you walked into it* went when hunters became solid to
+  your step.) **A flat kill is always one of the three**: waiting in
   the plane means a hunter walks into your silhouette column and
   `hunterTouching()` fires. The derivation below was guarded on a line object
   *with zeroes in it*, which is what `huntLine()` returns while flat but not
@@ -509,6 +632,8 @@ of a move sequence. Two checks stand in.
   ones can. The one check not applied per phase is the *lower* bound on lethal
   columns: an opening phase with a bare floor has none by design, and that is
   what it is for, so only the finished arena is asked for somewhere to fight.
+  **A `teach:true` arena is exempt from that bound and from the depth count**,
+  and from nothing else — see SPARRING above.
 - **`tools/bosssim.js`**, run by `verify.js` — it plays each fight twice, all
   the way through its phases, raising each phase's blocks as it reaches them.
   An IDLE policy that never moves and takes every free kill must **lose**; a
@@ -530,3 +655,52 @@ worth running to tune a number the owner is about to feel out anyway.
 
 ---
 
+
+## The last fight sweeps
+
+`BOSS IV — The Census` is the only fight where the arena attacks as well as the
+pack. Each of its phases carries a `sweep` — `{period,fire,beats}`, the trial's
+own data shape — and the plane tightens as the phases rise: two slices at a
+walk, then four, then five and faster.
+
+**This is not the boss design that was dropped.** Designs 1 and 2 in
+`docs/HISTORY.md` were the sweep *instead of* an opponent, and what killed them
+was that an objective on a clock is not a fight. There is still a pack here.
+The sweep is the floor being taken away from underneath it.
+
+**Why it belongs on this fight and not as a harder version of any of them.**
+Your only weapon is the fold, and a sweep down the axis you are *looking along*
+cannot be dodged in the plane at all — flattened, you are every depth at once,
+so you stand in every slice of that axis simultaneously. So the sweep taxes the
+one verb the fight is about. Lining up a kill now means asking which axis,
+whether this is the moment, and whether the plane you are about to step into is
+the one that is charging. That is every question this game has, asked at once,
+in the last fight. No pillar and no hunter can do that, because they are
+obstacles in the volume and the fold is the thing that leaves the volume.
+
+**What it does and does not touch.** The sweep is the arena's, not the pack's:
+it does not kill hunters. It spends a life like any other hit, the shield
+covers it (`shielded()` is still the single predicate), and it is stopped by
+everything that stops the fight — the phase card, the kill cam, and the grace
+beat after a phase change or a hit. That last one matters: `bossGraceMs` is the
+beat you are *given*, and a slice landing inside it would spend it for you.
+
+**How it is wired.** `bossPhases()` carries `sweep` through; `bossEnterPhase()`
+builds it with `makeSweep()` and assigns it to `TR`, restarting the sweep clock
+so the new pattern opens on its first beat. Everything downstream — the hit
+test, the charge ramp the renderer draws, the red `GO 2D` cue — already read
+`TR` and do not care which kind of level armed it. The consequences of that are
+in `CLAUDE.md`, and the one that bites is that **`TR` now means "a sweep is
+running", not "this is a trial"**: `B` is what names a death and what decides
+which frame ticks the shared windows.
+
+**What is proved and what is played.** `bossSafety()` was a no-op and is real
+again: it holds every sweeping phase to the trial's own fairness property — for
+every square you can stand on and every beat, either that square is safe or a
+square one step away is, and the start square is never inside a phase's *first*
+beat, because a phase change puts you back on it. `bosssim` knows about the
+sweep too, for the reason it knows about `still:true`: without it the duelling
+run would be claiming a fight is winnable while walking its line straight
+through a live slice. Neither says whether the fight is *good* at this pace —
+the periods and the slice positions are numbers to feel out, per the working
+agreement, not numbers to tune against the simulator.

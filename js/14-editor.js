@@ -9,20 +9,27 @@
    ============================================================ */
 var ray=new THREE.Raycaster(),ndc=new THREE.Vector2();
 
-/* ARE THERE EDITS THE LIBRARY HAS NOT BEEN TOLD ABOUT?
+/* THERE IS NO SAVE BUTTON. THE BOARD IS THE SAVE.
+
+   It was a green pill in the top-right corner with an amber dot on it while
+   there were edits the library had not been told about, and that is a
+   reminder to do something a computer can do by itself - the one control on
+   the screen that decides whether an hour of building still exists tomorrow,
+   left to somebody who is thinking about a puzzle. Every edit now writes.
 
    snapshot() is the one funnel every board change goes through - it is what
-   pushes the undo entry - so it is also the one place that can answer this
-   without a flag at every call site. undo() counts too: putting a block back
-   is still a board that no longer matches what was saved.
+   pushes the undo entry - so it is the one place that has to ask for a save,
+   and undo() counts too: putting a block back is still a change to keep.
 
-   Read by syncSave() (js/18-ui.js), which is what puts the dot on SAVE. */
+   `editDirty` is what is left of the dot: not a badge any more, just "there
+   is a write owed", read by flushSave() and cleared by the write. */
 var editDirty=false;
 function snapshot(){
   editDirty=true;
   undoStack.push({b:custom.blocks.map(function(v){return v.slice();}),
                   s:custom.start.slice(),g:custom.goal.slice()});
   if(undoStack.length>60)undoStack.shift();
+  autosave();
 }
 function undo(){
   if(!undoStack.length){flash("nothing to undo");return;}
@@ -30,9 +37,73 @@ function undo(){
   var s=undoStack.pop();
   custom.blocks=s.b;custom.start=s.s;custom.goal=s.g;
   R=makeRules(custom);syncMeshes();
+  autosave();
+}
+
+/* TWO TIMERS, BECAUSE THE TWO HALVES OF A SAVE COST DIFFERENT THINGS.
+
+   Writing the board is a JSON string into storage: cheap, so it happens
+   almost at once (SAVE_MS), just late enough to coalesce the taps of somebody
+   dragging out a wall into one write.
+
+   The numbers are not cheap. statsFor() runs the solver twice - with rotation
+   and without - and the cap is 400k states, so it is not something to do
+   between two taps of a block. It runs when the hand stops (SCORE_MS), and
+   until it does the entry carries a null score, which is what a draft looks
+   like everywhere that reads one. So a level is never unsaved; it is at worst
+   briefly unscored.
+
+   Both timers read the state as it settles rather than as it was scheduled,
+   which is what makes the funnel safe: loadIntoEditor() swaps the board out
+   from under a pending write, and saveCancel() there is what stops the
+   outgoing board being written into the incoming level's entry. */
+var SAVE_MS=140, SCORE_MS=1100;
+var saveHold=null, scoreHold=null, saidSaved=false;
+function autosave(){
+  if(saveHold)clearTimeout(saveHold);
+  if(scoreHold)clearTimeout(scoreHold);
+  saveHold=setTimeout(flushSave,SAVE_MS);
+  scoreHold=setTimeout(rescore,SCORE_MS);
+}
+function saveCancel(){
+  if(saveHold)clearTimeout(saveHold);
+  if(scoreHold)clearTimeout(scoreHold);
+  saveHold=scoreHold=null;editDirty=false;
+}
+function flushSave(){
+  saveHold=null;
+  if(!editDirty)return;
+  saveCurrent({stats:false});
+}
+/* WRITE THE OWED EDIT NOW. 140ms is nothing to a player and everything to a
+   screen about to be drawn from the library, or a tab about to close: MY
+   LEVELS would list a level one block behind, and a phone put in a pocket
+   would keep the last tap in a timer that never fires. Called on the way out
+   of the editor and on pagehide. Cheap and idempotent - editDirty is false
+   when there is nothing owed. */
+function saveNow(){
+  if(saveHold){clearTimeout(saveHold);saveHold=null;}
+  flushSave();
+}
+/* The solver, once the hand has stopped. It writes through the same one
+   writer, so a re-score is an ordinary save that happens to know the
+   numbers - there is still nothing else that touches the library entry. */
+function rescore(){
+  scoreHold=null;
+  if(custom.blocks.length)saveCurrent();
 }
 function kindOf(t){
   return t==="glass"?1:t==="anchor"?2:t==="crate"?3:t==="spike"?4:0;
+}
+/* WHICH CELL A TAPPED MESH IS. A static block carries `base` (addMesh), a
+   crate carries `cell` (buildDynamic); the position is the last resort and
+   is right for anything standing on its own cell. */
+function hitCell(o){
+  var u=o.userData||{};
+  if(u.base)return u.base;
+  if(u.cell)return u.cell;
+  return [Math.round(o.position.x),Math.round(o.position.y),
+          Math.round(o.position.z)];
 }
 function hasBlock(x,y,z){
   for(var i=0;i<custom.blocks.length;i++){
@@ -51,11 +122,23 @@ function onCanvasTap(e){
   ndc.y=-((e.clientY-rect.top)/rect.height)*2+1;
   ray.setFromCamera(ndc,camera);
 
+  /* A CRATE IS A BLOCK YOU CAN TAP. It is drawn by buildDynamic() rather
+     than by syncMeshes() - it is the one piece with state, so in play it
+     moves and the static `meshes` table cannot hold it - and this list was
+     `meshes` alone. So the ray went straight through every crate on the
+     board: you could not erase one, you could not stand the start on one,
+     and you could not put a block on top of one. Placed and then permanent.
+
+     crateMeshes is that list, in gCrates order, and buildDynamic() writes
+     each one's cell into userData.cell (the same way it does for a key), so
+     hitCell() has an answer for both kinds without the editor having to know
+     which table the mesh came out of. */
   var list=[];for(var k in meshes)list.push(meshes[k]);
+  if(typeof crateMeshes!=="undefined")list=list.concat(crateMeshes);
   var hits=ray.intersectObjects(list,false);
 
   if(hits.length){
-    var h=hits[0],b=h.object.userData.base;
+    var h=hits[0],b=hitCell(h.object);
     if(tool==="erase"){
       snapshot();
       var ky=-1,kl=custom.keys||[];
@@ -320,15 +403,30 @@ function syncTools(){
   if(!seen[tool])setTool("add");
 }
 
-function validate(){
+/* IS THIS WELL-FORMED ENOUGH TO BE WORTH THE SOLVER? `rules` defaults to R,
+   which in the editor is custom's own - but a save can now be asked for from
+   outside the editor (rescore() lands after a composed build, or after TEST
+   has started playing the board), and there R belongs to whatever is being
+   played. makeRules() is a pass over the block list, so a caller that cannot
+   be sure hands one in rather than trusting the ambient one. */
+function validate(rules){
+  var rr=rules||R;
   if(!custom.blocks.length)return "Place some blocks first.";
-  if(!R.solid(custom.start[0],custom.start[1]-1,custom.start[2]))
+  /* A CRATE IS SOMETHING TO STAND ON. makeRules() leaves crates out of its
+     block set on purpose - they are the one piece with state, so every world
+     query takes the live crate list as its fourth argument - and this asked
+     without one, so a start or a goal placed on a crate was reported as
+     standing on nothing and the level was a draft that could not be scored.
+     The crates as the level stores them are the right list here: an unplayed
+     board is one where nothing has been shoved yet. */
+  var cr=crateSet(crateKeys(custom));
+  if(!rr.solid(custom.start[0],custom.start[1]-1,custom.start[2],cr))
     return "The start isn't standing on anything.";
-  if(R.solid(custom.start[0],custom.start[1],custom.start[2]))
+  if(rr.solid(custom.start[0],custom.start[1],custom.start[2],cr))
     return "The start is inside a block.";
-  if(!R.solid(custom.goal[0],custom.goal[1]-1,custom.goal[2]))
+  if(!rr.solid(custom.goal[0],custom.goal[1]-1,custom.goal[2],cr))
     return "The goal isn't standing on anything.";
-  if(R.solid(custom.goal[0],custom.goal[1],custom.goal[2]))
+  if(rr.solid(custom.goal[0],custom.goal[1],custom.goal[2],cr))
     return "The goal is inside a block.";
   if(custom.start.join()===custom.goal.join())
     return "The start and the goal are the same square.";
@@ -362,13 +460,13 @@ function runVerify(){
     if(st.moves<=3)
       html+="<span class='warn'>Solvable in "+st.moves+
             " moves \u2014 the depth-collapse is skipping your puzzle.</span>";
+    // No SAVE here any more: the board has been in the library since you
+    // laid it. VERIFY is advice, and this is what it advises.
     html+="<div class='prow'>"+
       "<button id='pMin'>MINIMIZE</button>"+
-      "<button id='pSave'>SAVE</button>"+
       "<button id='pClose'>CLOSE</button></div>";
     showPanel(html);
     bind("pMin",runMinimize);
-    bind("pSave",saveDialog);
     bind("pClose",hidePanel);
   },30);
 }
@@ -404,22 +502,26 @@ function runMinimize(){
   },30);
 }
 
-/* SAVE KEEPS WHAT IS ON THE BOARD, solvable or not.
+/* THE ONE WRITER INTO THE LIBRARY, and it keeps what is on the board,
+   solvable or not.
 
    The only way to save used to be VERIFY then SAVE, and VERIFY refuses
    anything the solver cannot finish - so a half-built level could not be
-   kept at all, and closing the game threw the evening away. A level is now
-   created named (see newLevelPanel()) and this writes into that entry, which
-   is why it does not ask for a name: the name is what the row on MY LEVELS
-   already is.
+   kept at all, and closing the game threw the evening away. Then it was a
+   corner button, which kept the drafts but still asked to be pressed. A
+   level is created named (see newLevelPanel()) and every edit writes into
+   that entry, which is why nothing here asks for a name: the name is what
+   the row on MY LEVELS already is.
 
-   The numbers are still taken when they can be. statsFor() runs the solver,
-   so it is asked only once the level is at least well-formed - validate()
-   first, and a null score is what a draft looks like everywhere that reads
-   one. */
-function saveCurrent(){
-  if(!custom.blocks.length){flash("place some blocks first");return;}
-  var st=validate()?{ok:false}:statsFor(custom);
+   `opt.stats` false is the cheap write - the board, none of the numbers -
+   which is what an edit gets; rescore() comes back with the solver a moment
+   later. Nothing here says so out loud: a toast on every tap is not
+   reassurance, it is weather. */
+function saveCurrent(opt){
+  opt=opt||{};
+  if(!custom.blocks.length)return;      // an empty board is not a level yet
+  var st=(opt.stats===false)?{ok:false}
+        :(validate(makeRules(custom))?{ok:false}:statsFor(custom));
   var e=findLevel(editingId);
   if(!e){
     e={id:"l"+Date.now(),name:custom.name||"Untitled"};
@@ -433,31 +535,15 @@ function saveCurrent(){
   e.theme=(custom.theme==null?null:custom.theme);
   e.score=st.ok?st.score:null;e.moves=st.ok?st.moves:null;
   e.needsRot=!!st.needsRot;e.flattens=st.flattens||0;
+  editDirty=false;
   libSave().then(function(){
-    editDirty=false;
-    if(typeof syncSave==="function")syncSave();
-    flash(st.ok?"saved \u2014 solves in "+st.moves+" moves":"saved \u2014 draft");
+    /* SAID ONCE PER VISIT TO THE EDITOR. Somebody who has used the game
+       before is looking for the button they remember; being told, at the
+       moment the first block lands, that they will not need it is the whole
+       of what has to be explained. Saying it again on the second block would
+       be nagging about good news. */
+    if(!saidSaved){saidSaved=true;flash("saved \u2014 this level keeps itself");}
   });
-}
-
-/* VERIFY's own SAVE. It asks for a name only when the level does not have
-   one yet - work started from the composer or pasted in over the editor -
-   and then hands over to saveCurrent(), so there is one writer into the
-   library and not two with different rules about what may be saved. */
-function saveDialog(){
-  if(editingId&&findLevel(editingId)){saveCurrent();hidePanel();return;}
-  showPanel("<h3>SAVE TO MY LEVELS</h3>"+
-    "<input id='nm' placeholder='level name' />"+
-    "<div class='prow'><button id='pDo'>SAVE</button>"+
-    "<button id='pClose3'>CANCEL</button></div>");
-  $("nm").value=custom.name==="Untitled"?"":custom.name;
-  bind("pDo",function(){
-    var nm=($("nm").value||"").trim();
-    if(!nm){flash("give it a name first");return;}
-    custom.name=nm;editingId=null;
-    saveCurrent();hidePanel();
-  });
-  bind("pClose3",hidePanel);
 }
 
 // A hint solved from the start is useless once you've moved. This solves from
