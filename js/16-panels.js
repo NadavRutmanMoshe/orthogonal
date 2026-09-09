@@ -471,6 +471,17 @@ function menuPanel(){
           seg("mUi","full","FULL",settings.ui)+
           seg("mUi","compact","COMPACT",settings.ui)+
           seg("mUi","none","HIDDEN",settings.ui)+"</span></div></div>"+
+      /* THE KILL CAM, AS A ROW, because it is a genuine question about how
+         much ceremony a death deserves and the only way to answer it is to
+         play both. FULL is the television: the signal drops to snow, a
+         camcorder is pushed through the screen, and the film plays behind its
+         lens. PLAIN keeps the sting and the film and cuts that out of the
+         middle. It is on this card rather than under More because it is a
+         preference about what the game does, not a tool. */
+      "<div class='pcard'><h4>Kill cam</h4>"+
+        "<div class='crow bare'><span class='seg'>"+
+          seg("mKcam","full","FULL",settings.killcam)+
+          seg("mKcam","plain","PLAIN",settings.killcam)+"</span></div></div>"+
       /* WHAT THE PIECES DO IS OFF THE PANEL, on the owner's call. The pieces
          are taught where they are first met - the tutorial cards and the
          level briefs - and a reference list under More was a fourth row that
@@ -520,19 +531,27 @@ function menuPanel(){
       settings.ui=m;applyUI();saveSettings();syncHud();onResize();menuPanel();
     });
   });
+  ["full","plain"].forEach(function(m){
+    bind("mKcam_"+m,function(){
+      settings.killcam=m;saveSettings();menuPanel();
+    });
+  });
   bind("mTut",function(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
   });
   bind("mReset",function(){
     settings.volume=defaultVolume();settings.volTouched=false;
-    settings.brightness=1;settings.ui="full";
+    settings.brightness=1;settings.ui=UI_DEFAULT;settings.killcam="full";
 
     // including "stop suggesting things": a reset is a reset
     settings.noSlowOffer=false;settings.landHints=0;
     settings.starAsked=false;
     muted=false;
     applyVolume();
-    applyBrightness();applyUI();saveSettings();syncHud();
+    /* onResize() as well, exactly as the FULL/COMPACT/HIDDEN segment does:
+       putting the buttons back changes how much screen the arena has, and
+       fitViewSize() only re-runs from here. */
+    applyBrightness();applyUI();saveSettings();syncHud();onResize();
     flash("settings reset");menuPanel();
   });
   bind("mHome",function(){hidePanel();homeShow();});
@@ -731,10 +750,16 @@ function homeGo(){
    So the list is the primitive and the gate is derived from it. Everything
    that draws the lock reads the same list, which means the map can name the
    fight and put the player in front of it. */
+/* A TEACHING FIGHT IS NOT ONE OF THEM. SPARRING carries `boss` because it is
+   one - a phase, a pack of one, the same kill - but V - EXTRA is what beating
+   the four LANDMARKS is for, and a lesson standing between the player and the
+   shelf would be a gate nobody agreed to. `tutorial` is already the flag for
+   "this level does not mark you"; this is the same sentence about unlocking. */
 function bossesLeft(){
   var out=[];
   for(var i=0;i<LEVELS.length;i++)
-    if(LEVELS[i].boss&&progress[LEVELS[i].name]===undefined)out.push(i);
+    if(LEVELS[i].boss&&!LEVELS[i].tutorial&&
+       progress[LEVELS[i].name]===undefined)out.push(i);
   return out;
 }
 // "BOSS II" - the numeral is what a player looks for on the map, and the
@@ -1356,7 +1381,12 @@ function mapShape(k){
    counts. Single digits rather than `01`, so a glance never confuses a
    prologue node with a Fundamentals one. */
 function mapNumeral(l,ord){
-  if(l.tutorial)return String(ord);
+  /* The ordinal is for the prologue's three unnumbered levels, so a LANDMARK
+     is not given one even when it teaches: SPARRING is a hexagon sitting next
+     to BOSS I's hexagon, and numbering it by position would print a campaign
+     number on the one node in the section that deliberately has none. It
+     falls through to the dot at the foot of this function. */
+  if(l.tutorial&&!l.boss&&!l.trial)return String(ord);
   var m=l.name.match(/^(\d+)/); if(m)return m[1];
   var r=l.name.match(/^(?:TRIAL|BOSS)\s+([IVX]+)/); if(r)return r[1];
   return "·";
@@ -1739,7 +1769,11 @@ function mapDraw(spans){
        finished prologue was three identical ticks with no order left in it. */
     if(st==="solved"){
       var sh="";
-      if(k==="tut")sh="<u>✓</u>";
+      /* Asked of the LEVEL, not of the node's shape. SPARRING is drawn as the
+         fight it is - a hexagon, next to BOSS I's - and scored as the lesson
+         it is, which is not at all; a row of stars under it would be three
+         the player can never have. */
+      if(l.tutorial)sh="<u>✓</u>";
       else{
         var got=masteryPreview()&&mast?3:starsForRecord(l,progress[l.name]);
         for(var s2=0;s2<3;s2++)sh+="<u class='"+(s2<got?"":"off")+"'>★</u>";
@@ -2086,8 +2120,9 @@ function legendPanel(){
    Three rules hold the whole screen up:
 
    - A LEVEL EXISTS BEFORE IT WORKS. The entry is created when you name it,
-     and SAVE writes whatever is on the board - unsolvable, half-built, one
-     block. Solvability is what VERIFY is for, and it stays advice.
+     and every edit writes whatever is on the board - unsolvable, half-built,
+     one block (autosave(), js/14-editor.js; there is no SAVE button any
+     more). Solvability is what VERIFY is for, and it stays advice.
    - YOU BUILD WITH WHAT YOU HAVE BEEN SHOWN. The piece chips and the ground
      choices are filtered by how far the campaign has actually taken you
      (seenTools(), seenSections()), so the editor teaches in the same order
@@ -2212,8 +2247,8 @@ function myLevelsPanel(){
         "<path class='fl' d='M3.4 8.3 12 13.2v7.4L3.4 15.7Z'/>"+
         "<path class='fr' d='M20.6 8.3 12 13.2v7.4l8.6-4.9Z'/></svg>"+
       "<b>No levels yet</b>"+
-      "<span>ADD LEVEL asks for a name and opens the editor on it; "+
-      "SAVE keeps whatever you have built, finished or not.</span></div>";
+      "<span>ADD LEVEL asks for a name and opens the editor on it. "+
+      "It keeps itself as you build — finished or not.</span></div>";
   } else {
     /* ONE LEVEL, ONE LINE, and the line is as wide as the buttons above it.
        The name takes whatever the row's five verbs leave and ellipsises;
@@ -2344,8 +2379,12 @@ function loadIntoEditor(lv){
   custom.rotate=lv.rotate!==false;
   custom.theme=(lv.theme==null?null:lv.theme);
   editingId=lv.id;
-  // Freshly loaded is freshly saved: the board and the library entry agree.
-  editDirty=false;
+  /* Freshly loaded is freshly saved: the board and the library entry agree.
+     saveCancel() rather than a flag, because the snapshot() at the top of
+     this function has already scheduled a write of the board that was here
+     a moment ago - and that board belongs to the level we are leaving, not
+     to this one. */
+  saveCancel();
   ghosted.clear();
   enterEditor();
 }
@@ -2619,12 +2658,14 @@ function ioPanel(){
       custom.rotate=o.rotate!==false;
       custom.theme=(typeof o.theme==="number"&&SECTIONS[o.theme])?o.theme:null;
       /* Pasted-in text is a DIFFERENT level, so it is not still the saved one
-         the editor had open: keeping the id would make the next SAVE quietly
-         overwrite a level you never touched. It saves as a new entry, under
-         the name that came in with it. */
+         the editor had open: keeping the id would make the next write quietly
+         overwrite a level you never touched. It becomes a new entry, under
+         the name that came in with it - and it becomes one at once, because
+         the autosave() below is what a paste is now instead of a SAVE. */
       editingId=null;
       if(typeof applyTheme==="function")applyTheme(levelTheme(custom));
-      ghosted.clear();R=makeRules(custom);initDynamic();syncMeshes();hidePanel();flash("loaded");
+      ghosted.clear();R=makeRules(custom);initDynamic();syncMeshes();hidePanel();
+      autosave();flash("loaded");
     }catch(err){flash("that isn't valid level data");}
   });
   bind("pBack",myLevelsPanel);
@@ -2646,6 +2687,8 @@ function enterEditor(){
   if(typeof homeUp==="function"&&homeUp())homeHide();
   if(typeof panelOpen==="function"&&panelOpen())hidePanel();
   app="edit";fromEditor=false;
+  // One visit, one telling that the level keeps itself (saveCurrent()).
+  saidSaved=false;
   L=custom;R=makeRules(custom);
   /* THE GROUND THE LEVEL WAS BUILT ON, put back every time the editor opens.
      A custom level carries a section index rather than a surface name, so it

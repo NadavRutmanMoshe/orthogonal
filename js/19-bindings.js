@@ -30,6 +30,17 @@ bind("hContinue",homeGo);
 bind("hLevels",function(){audio();sectionPicker();});
 bind("hWard",function(){audio();wardrobePanel("shape");});
 bind("hMine",function(){audio();myLevelsPanel();});
+/* Shut, and it says so rather than doing nothing. A toast is what this game
+   says a one-line aside with, and it is the only chrome that survives
+   `body.athome` - the HUD, the bar and the star total are all taken down
+   there, and the toast is not. */
+bind("hMulti",function(){audio();flash("multiplayer \u00b7 coming soon");});
+/* THE FILM'S OWN WAY OUT. Through tap() like every other control, which is
+   what gives it preventDefault and stopPropagation - the press that skips
+   must not also reach the board underneath, where a double tap is the fold.
+   The catcher only accepts presses while `body.replaying` is set (see .rskip
+   in css/65-replay.css), so this can never fire outside a film. */
+bind("repSkip",function(){replaySkip();});
 bind("hMenu",function(){audio();menuPanel();});
 bind("bSkipTo",function(){
   $("intro").classList.add("gone");
@@ -137,14 +148,14 @@ bind("cRotL",function(){pushMove("rot-");});
 bind("cRotR",function(){pushMove("rot+");});
 bind("cFlat",function(){pushMove("FLAT");});
 bind("cPop",function(){pushMove("POP");});
-/* THE EDITOR'S TOP ROW IS THE LEVEL'S OWN ROW: the way back to the list of
-   your levels, and the way to keep this one. It used to be a way back into
+/* THE EDITOR'S TOP ROW IS THE LEVEL'S OWN ROW, and it is one button wide:
+   the way back to the list of your levels. It used to be a way back into
    the campaign (which the home screen already is, and which threw away
    whatever was on the board) beside a LIBRARY button that was the only way
    to save at all - and that save refused anything the solver could not
-   finish. */
-bind("eLevels",function(){myLevelsPanel();});
-bind("eLib",function(){saveCurrent();});
+   finish. Keeping the level is not a button at all any more: every edit
+   writes it (autosave(), js/14-editor.js). */
+bind("eLevels",function(){saveNow();myLevelsPanel();});
 
 bind("cDel",popMove);
 bind("cBuild",buildComposed);
@@ -167,8 +178,17 @@ bind("eFile",ioPanel);
 bind("eTest",function(){
   var bad=validate();
   if(bad){showPanel("<h3>CAN'T TEST</h3><span class='bad'>"+bad+"</span>");return;}
+  saveNow();
   playSource="test";
   enterPlay(custom,undefined,true);
+});
+/* THE TAB CLOSING, OR THE PHONE GOING IN A POCKET. pagehide fires on both,
+   including the bfcache path Safari takes where unload does not; the write
+   underneath is a synchronous localStorage set (js/00-storage.js), so it
+   lands. Without it the last tap before backgrounding sits in a timer that
+   never gets its turn. */
+window.addEventListener("pagehide",function(){
+  if(typeof saveNow==="function")saveNow();
 });
 
 window.addEventListener("keyup",function(e){

@@ -47,6 +47,62 @@
   .hint{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;
     letter-spacing:.03em;color:var(--fg-dim);margin-top:4px;max-width:54vw;
     line-height:1.5;transition:color .5s ease}
+  /* THE PRIMER — a level's rules, listed, under its hint.
+
+     Not the retired "brief", which was a full-bleed card explaining a fight
+     and was dropped for explaining what the board already showed; that word
+     is still spoken for (`cardOwner`, js/15-tutorial.js).
+
+     It is the same mono as the hint and a step smaller, because it is longer
+     and because it must not compete with the level's name. Wider than the
+     hint's 54vw: these are short numbered lines and wrapping a four-word step
+     onto a second row costs more legibility than the extra column costs the
+     move counter, which is two characters wide on the levels that use this.
+
+     The numbers are drawn rather than left to a marker: `list-style` puts
+     them outside the box, where they either hang off the left edge of the
+     screen or need a padding lane, and a counter in ::before keeps the list
+     flush with the hint above it. Green, because the numbers are the order
+     to do things in and green is "do this" everywhere else in this game. */
+  .primer{margin:7px 0 0;padding:0;list-style:none;max-width:64vw;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;
+    letter-spacing:.03em;line-height:1.65;color:var(--fg);
+    transition:color .5s ease}
+  .primer i{display:block;font-style:normal;color:var(--fg-dim);
+    letter-spacing:.06em;margin-bottom:3px}
+  .primer ol{margin:0;padding:0;list-style:none}
+  .primer li{position:relative;padding-left:19px;
+    transition:color .25s ease,opacity .25s ease}
+  /* THE BOX IS DRAWN, NOT TYPED. A ballot-box glyph is not in this game's
+     mono face and comes out of whatever the browser substitutes, at whatever
+     size that face thinks is right; a bordered square is the same 11px on
+     every device. The tick is a glyph because ✓ is one of the few that every
+     face has, and it is the same one the map puts under a finished tutorial. */
+  .primer li::before{content:"";position:absolute;left:0;top:.34em;
+    width:11px;height:11px;box-sizing:border-box;border-radius:2px;
+    border:1px solid var(--rule);
+    font-size:9px;line-height:10px;text-align:center;
+    transition:border-color .2s ease,background .2s ease,color .2s ease}
+  /* Done: ticked, and the line steps back. A checklist you have finished with
+     should stop competing with the one you have not. */
+  .primer li.on{color:var(--fg-dim)}
+  .primer li.on::before{content:"\2713";color:var(--goal);
+    border-color:var(--goal);
+    background:color-mix(in srgb,var(--goal) 20%,transparent)}
+  /* HOT is not "next", it is "now, and running out". Only the fourth line
+     uses it and only while the ray is live, so it is the peril colour and it
+     breathes at the same rate the GO 2D button does. */
+  .primer li.hot{color:#ff9aa2}
+  .primer li.hot::before{content:"!";color:#ff4d5e;border-color:#ff4d5e;
+    background:rgba(255,77,94,.2);
+    /* perilblink is declared in 20-hud.css. @keyframes names are document-
+       global, so a later file's animation is usable here; the load order the
+       cascade depends on does not apply to them. */
+    animation:perilblink 1.15s ease-in-out infinite}
+  /* What the list says went wrong is NOT written here. It goes in the middle
+     of the screen over the kill cam, where the player is looking in the
+     second after a death - `.deathsay` in css/90-tutorial.css. */
+  .primer b{color:var(--fg);font-weight:500}
   .axis{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;
     letter-spacing:.13em;text-align:right;color:var(--fg-dim);line-height:1.7;
     transition:color .5s ease;white-space:nowrap}

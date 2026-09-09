@@ -87,6 +87,38 @@ body.tutlock .coach{z-index:11}
 .phasenote i{display:block;font-style:normal;font-size:20px;font-weight:700;
   letter-spacing:-.01em;color:var(--fg);margin-top:8px;line-height:1.25}
 @keyframes phaseIn{from{transform:translateY(14px) scale(.96)}to{transform:none}}
+/* ============================================================
+   WHAT KILLED YOU — one line, over the kill cam
+
+   The checklist at the top of the screen already says which boxes are not
+   ticked, and after a death that is the wrong place for it twice over: the
+   player is watching the replay in the middle of the screen, and a list of
+   four lines is not what anybody reads in the second after losing a life.
+   So the sentence comes to them - "you didn't turn to face it" - where the
+   film is, in the beat where they are already asking the question.
+
+   Same position and the same family as the phase note above: this game has
+   one place where it says a whole sentence to you mid-fight, and both of
+   these are it. Above the replay chrome (z-index 14) rather than under it,
+   because it is a caption ON the film. Amber, not the hazard red: the hit
+   itself has already been said in red by the toast, the lives row and the
+   flash, and this is the part that is meant to be READ. The shadow is not
+   decoration - it sits over a moving picture of the thing that just killed
+   you, which is the worst background text ever gets in this game.
+   ============================================================ */
+.deathsay{position:fixed;left:22px;right:22px;top:38%;z-index:17;
+  pointer-events:none;text-align:center;opacity:0;
+  font-family:'Space Grotesk',system-ui,sans-serif;
+  font-size:21px;font-weight:700;letter-spacing:-.01em;line-height:1.3;
+  color:#f0c274;text-shadow:0 2px 18px rgba(4,7,16,.9),0 1px 3px rgba(4,7,16,.8);
+  transition:opacity .3s ease}
+.deathsay.on{opacity:1;animation:phaseIn .45s cubic-bezier(.2,.9,.3,1)}
+/* Named the way the checklist names it, and only where it is the control's
+   own name - the verb, never a glyph. See tutWords(). */
+.deathsay b{font-weight:700;color:var(--player)}
+/* On the paper the amber is a wash; the ink colour is what reads there. */
+body.flat .deathsay{color:#8a5a12;
+  text-shadow:0 2px 16px rgba(230,225,211,.9),0 1px 3px rgba(230,225,211,.8)}
 body.bosshold::before{content:"";position:fixed;inset:0;z-index:6;
   background:rgba(4,7,16,.5);pointer-events:none;animation:tutdim .4s ease both}
 body.flat.bosshold::before{background:rgba(90,84,68,.34)}

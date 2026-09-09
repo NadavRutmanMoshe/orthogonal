@@ -2344,6 +2344,12 @@ function buildDynamic(){
     var m=makeCrateMesh();
     scene.add(m);crateMeshes.push(m);
     m.position.set(gCrates[i][0],gCrates[i][1],gCrates[i][2]);
+    // The cell it stands in, the way a key mesh carries its own: the editor
+    // raycasts against these too, and a hit has to name a square (hitCell(),
+    // js/14-editor.js). In play the animation loop moves the mesh and this
+    // goes stale - which is why nothing but the editor reads it, and why the
+    // editor rebuilds these on every edit (initDynamic).
+    m.userData.cell=gCrates[i];
   }
   var keys=(L.keys||[]);
   for(var j=0;j<keys.length;j++){
@@ -2460,6 +2466,199 @@ function huntMesh(){
   scene.add(g);
   return g;
 }
+/* ============================================================
+   GOING TO ASH — the only death animation in the game
+
+   Until now nothing actually died on screen. A hunter you killed was spliced
+   out of the array and its mesh simply stopped being drawn; the player losing
+   a life was teleported home between two frames. The sting said what had
+   happened and the board never showed it, which is the one thing a kill cam
+   exists to be about.
+
+   So a piece that dies comes apart: it breaks into a cloud of specks that
+   lift, drift and thin out to nothing.
+
+   WHAT MAKES IT READ AS COMING APART RATHER THAN AS AN EXPLOSION is the
+   staggered release. Every speck carries a delay taken from how high up the
+   body it started, so the top of the piece leaves first and the bottom is
+   still solid a third of a second later; until its delay is up a speck sits
+   exactly where it started, which is to say it is still part of the piece.
+   Released all at once this is a firework, and a firework is something that
+   happens TO a thing rather than something the thing does.
+
+   IT IS CUBES IN ONE GEOMETRY, NOT `THREE.Points`. Points were the obvious
+   answer - one vertex per speck, one buffer write, no index - and they do not
+   draw at all in the three.js this game vendors (r128, a trimmed build): a
+   deliberately enormous plain-coloured Points placed on top of a hunter
+   rendered nothing, so the Points path is simply not in the bundle. Do not
+   reach for it again without testing it first.
+
+   What is here instead is the thing this game is already made of: little
+   cubes. One BufferGeometry holds all of them, 8 vertices and 36 indices
+   each, and a burst moves whole cubes by writing their 8 vertices - so it is
+   still one mesh and one draw call, which is what matters at the most
+   expensive instant the game has (a hit, a shake, a slow-mo and a kill cam
+   winding up, with up to four clouds overlapping on a double kill). It is
+   also the better picture: a world of cubes should come apart into cubes.
+
+   The colour is per-vertex, each speck mixed some way from the piece's own
+   colour toward a pale ash, so the cloud reads as a thing turning to dust
+   rather than as coloured confetti. Opacity is per-cloud rather than per
+   speck - the stagger already supplies the texture that would have bought. */
+var ashPool=[], ASH_N=110, ASH_MS=1400, ASH_SPREAD=.9, ASH_SIZE=.05;
+// The eight corners of a unit cube, and the six faces over them. Built once.
+var ASH_CORNER=[[-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],
+                [-1,-1, 1],[1,-1, 1],[1,1, 1],[-1,1, 1]];
+var ASH_FACE=[4,5,6, 4,6,7,  1,0,3, 1,3,2,  5,1,2, 5,2,6,
+              0,4,7, 0,7,3,  7,6,2, 7,2,3,  0,1,5, 0,5,4];
+function ashMake(){
+  var g=new THREE.BufferGeometry(), V=ASH_N*8;
+  g.setAttribute("position",new THREE.BufferAttribute(new Float32Array(V*3),3));
+  g.setAttribute("color",new THREE.BufferAttribute(new Float32Array(V*3),3));
+  var idx=new Uint16Array(ASH_N*36);
+  for(var i=0;i<ASH_N;i++)
+    for(var f=0;f<36;f++)idx[i*36+f]=i*8+ASH_FACE[f];
+  g.setIndex(new THREE.BufferAttribute(idx,1));
+  var p=new THREE.Mesh(g,new THREE.MeshBasicMaterial({
+    vertexColors:true,transparent:true,opacity:1,depthWrite:false,
+    side:THREE.DoubleSide}));
+  /* Never culled: the bounding sphere is computed once from an empty buffer
+     and the cloud then travels outside it, so three.js would drop the whole
+     cloud mid-burst on some camera angles. */
+  p.frustumCulled=false;p.renderOrder=880;p.visible=false;
+  p.userData={ms:0,live:false,
+    st:new Float32Array(ASH_N*3),vel:new Float32Array(ASH_N*3),
+    dly:new Float32Array(ASH_N)};
+  scene.add(p);ashPool.push(p);
+  return p;
+}
+var ASH_COL=new THREE.Color(0xd8d2c6);
+// Write one speck's cube: its 8 corners around (x,y,z).
+function ashPut(pos,i,x,y,z){
+  for(var v=0;v<8;v++){
+    var o=(i*8+v)*3, c=ASH_CORNER[v];
+    pos[o]=x+c[0]*ASH_SIZE;
+    pos[o+1]=y+c[1]*ASH_SIZE;
+    pos[o+2]=z+c[2]*ASH_SIZE;
+  }
+}
+function ashBurst(x,y,z,hex){
+  if(typeof THREE==="undefined"||!scene)return;
+  var p=null,i,v;
+  for(i=0;i<ashPool.length;i++)if(!ashPool[i].userData.live){p=ashPool[i];break;}
+  // Four at once is a double kill plus the player; past that the oldest is
+  // taken over, because a fifth cloud nobody can pick out is not worth a
+  // fifth buffer.
+  if(!p)p=(ashPool.length>=4)?ashPool[0]:ashMake();
+  var u=p.userData, base=new THREE.Color(hex===undefined?0xff4d5e:hex);
+  var pos=p.geometry.attributes.position.array;
+  var col=p.geometry.attributes.color.array;
+  var tmpc=new THREE.Color();
+  for(i=0;i<ASH_N;i++){
+    var ox=(Math.random()-.5)*ASH_SPREAD,
+        oy=(Math.random()-.5)*ASH_SPREAD,
+        oz=(Math.random()-.5)*ASH_SPREAD;
+    u.st[i*3]=x+ox; u.st[i*3+1]=y+oy; u.st[i*3+2]=z+oz;
+    ashPut(pos,i,x+ox,y+oy,z+oz);
+    // Top first. The random factor keeps the edge of the crumble ragged;
+    // a clean sweep down the body reads as a wipe, not as a collapse.
+    u.dly[i]=(.5-oy/ASH_SPREAD)*.34*(.55+Math.random()*.8);
+    // Outward from the middle, and up. The upward bias is what says the
+    // pieces are being taken rather than thrown.
+    var sp=1.35+Math.random()*1.15;
+    u.vel[i*3]=ox*sp+(Math.random()-.5)*.3;
+    u.vel[i*3+1]=.8+Math.random()*1.15;
+    u.vel[i*3+2]=oz*sp+(Math.random()-.5)*.3;
+    tmpc.copy(base).lerp(ASH_COL,Math.random()*.8);
+    for(v=0;v<8;v++){
+      var o=(i*8+v)*3;
+      col[o]=tmpc.r;col[o+1]=tmpc.g;col[o+2]=tmpc.b;
+    }
+  }
+  p.geometry.attributes.position.needsUpdate=true;
+  p.geometry.attributes.color.needsUpdate=true;
+  p.material.opacity=1;
+  u.ms=0;u.live=true;p.visible=true;
+}
+/* The two things that die, in the colours they are drawn in. The renderer
+   owns this rather than the caller: what a piece looks like is its business.
+
+   AND WHERE IT IS DRAWN, WHICH IS NOT WHERE IT IS. `huntMeshes[i].position`
+   eases toward the logical cell (`lerp` .35 a frame in drawBoss), so a hunter
+   that is mid-step is a third of a square behind `h.x/h.z` - and the cloud
+   came off empty air beside it, which is exactly what the first version did.
+   Pass the hunter's index and the ash starts on the thing the player can see;
+   the cell is the fallback, and the only caller without an index is the
+   replay, where the mesh has been re-posed to the recorded square anyway. */
+function ashHunter(x,y,z,idx){
+  var m=(idx!==undefined&&huntMeshes&&huntMeshes[idx]);
+  if(m&&m.visible)ashBurst(m.position.x,m.position.y,m.position.z,0xff4d5e);
+  else ashBurst(x,y,z,0xff4d5e);
+}
+function ashPlayer(x,y,z){
+  var hex=0xd6336c;
+  try{ hex=findBy(SKIN_COLORS,wardrobe.color).hex; }catch(e){}
+  // Same argument as ashHunter: the player's mesh is where the player looks
+  // to be, and on the frame a charge lands it is still arriving.
+  if(playerMesh&&playerMesh.visible)
+    ashBurst(playerMesh.position.x,playerMesh.position.y,playerMesh.position.z,hex);
+  else ashBurst(x,y,z,hex);
+}
+/* Real time, not fight time: a cloud must keep drifting through the slow-mo
+   and through the frozen board a kill cam holds, exactly like the film does. */
+function ashFrame(dt){
+  for(var k=0;k<ashPool.length;k++){
+    var p=ashPool[k],u=p.userData;
+    if(!u.live)continue;
+    u.ms+=dt;
+    var a=u.ms/1000, pos=p.geometry.attributes.position.array;
+    for(var i=0;i<ASH_N;i++){
+      var t=a-u.dly[i];
+      if(t<=0)continue;                    // still part of the body
+      // Drifting, not flying: the quadratic term is drag, so the cloud slows
+      // as it thins instead of leaving the screen at speed.
+      var d=t-.3*t*t;
+      ashPut(pos,i,u.st[i*3]  +u.vel[i*3]  *d,
+                   u.st[i*3+1]+u.vel[i*3+1]*d,
+                   u.st[i*3+2]+u.vel[i*3+2]*d);
+    }
+    p.geometry.attributes.position.needsUpdate=true;
+    var f=u.ms/ASH_MS;
+    p.material.opacity=f<.18?1:Math.max(0,1-(f-.18)/.82);
+    if(u.ms>=ASH_MS){u.live=false;p.visible=false;}
+  }
+}
+function ashClear(){
+  for(var k=0;k<ashPool.length;k++){
+    ashPool[k].userData.live=false;ashPool[k].visible=false;
+  }
+}
+/* BUILT BEFORE IT IS NEEDED, on the owner's report that a double kill
+   stuttered hard enough to eat the word.
+
+   The pool was built lazily, which put four BufferGeometry allocations, four
+   index arrays and four first-time GPU buffer uploads on the exact frame the
+   game can least afford them - the frame that also runs a hit, a shake, a
+   slow-mo, a sting and the start of a kill cam, and on a double kill needs
+   TWO clouds at once. Building them at level load costs nothing anybody is
+   looking at.
+
+   renderer.compile() is the second half: it walks the scene and builds the
+   shader programs, so the first burst does not pay for a program link either.
+   Guarded because it is the kind of call that changes shape between three.js
+   versions and a throw here would take the level load with it. */
+function ashPrime(){
+  if(typeof THREE==="undefined"||!scene)return;
+  var k;
+  while(ashPool.length<4)ashMake();
+  /* Shown for the compile and hidden straight after: compile() walks the
+     scene with traverseVisible, so a pool that is hidden - which is its
+     resting state - is exactly the pool it would skip. It initialises
+     materials without drawing anything, so this is invisible to the player. */
+  for(k=0;k<ashPool.length;k++)ashPool[k].visible=true;
+  try{ if(renderer&&renderer.compile)renderer.compile(scene,camera); }catch(e){}
+  for(k=0;k<ashPool.length;k++)ashPool[k].visible=false;
+}
 /* The telegraph. A charge you cannot see coming is not a fight, so a planted
    hunter draws the line it is about to come down, brightening as the beat
    closes. It is drawn in the volume rather than folded with the world,
@@ -2486,12 +2685,37 @@ function huntMesh(){
    happens along that row whichever way you are looking, and the whole tension
    is that the axis you must fold along to answer it may not be the one you
    are facing. */
+/* HOW WIDE THE PANE IS ACROSS ITS OWN LINE, and it is the whole of this
+   drawing's answer to "am I lined up with it".
+
+   It was .06 of a cell, which is a pane you can only see from the side. The
+   side is the wrong place: the view a player is in when the line matters most
+   is the one looking straight DOWN it - that is what being aligned means, and
+   it is the view the fold is taken from - and edge-on a .06 pane is two
+   pixels of red. So the one drawing that says "this row is about to be
+   folded onto you" disappeared exactly when the player had done the thing it
+   was there to reward.
+
+   Nothing else changed: it is the same pane, the same collapse, the same
+   beat. It simply has a width now, so end-on it is a bar you can see, and it
+   still reads as a plane rather than a beam because it is far longer than it
+   is wide and it flattens onto the floor as the charge lands.
+
+   .46 is measured rather than felt: at .25 it was still thin against a
+   1-wide hunter at the far end of BOSS IV's floor, and at .7 it starts
+   reading as a block standing in the row rather than as a plane through it. */
+var RAY_W=.46;
 function lineMesh(){
-  var g=new THREE.Mesh(new THREE.BoxGeometry(1,1,.06),
+  /* A unit box, scaled on all three axes by drawLines(): length along the
+     line, height falling with the beat, and RAY_W across. The width used to
+     be baked into the geometry, which is why it could not be changed in one
+     place - and the rim is a child, so it takes the same scale and cannot
+     drift out of register with the pane it outlines. */
+  var g=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),
     new THREE.MeshBasicMaterial({color:0xff4d5e,transparent:true,opacity:.5,
       depthWrite:false,side:THREE.DoubleSide}));
   var e=new THREE.LineSegments(
-    new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,.06)),
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,1)),
     new THREE.LineBasicMaterial({color:0xff8a94,transparent:true,opacity:.7}));
   g.add(e);g.userData.edge=e;
   g.renderOrder=880;
@@ -2516,15 +2740,16 @@ function drawLines(){
     /* The pane stands along the line and comes down onto it. Height falls
        with the beat, so what the player watches is the row being flattened -
        and it lands as a bar at floor level exactly when the charge fires.
-       The box is 1x1x.06, so the thin axis has to be turned to lie along the
-       line: scaled on x it is a pane facing down z, and a line running in z
-       needs it turned a quarter turn. */
+       The box is a unit cube, so the narrow axis has to be turned to lie
+       along the line: scaled on x it is a pane facing down z, and a line
+       running in z needs it turned a quarter turn. RAY_W is the width across
+       it, and it is what makes the pane visible end-on - see above. */
     var run=1-Math.min(1,h.lock/bossAim());
     var hgt=Math.max(.07,1.15*(1-run*run));
     if(Math.abs(tz-h.z)>Math.abs(tx-h.x)){
-      m.rotation.y=Math.PI/2; m.scale.set(lz,hgt,1);
+      m.rotation.y=Math.PI/2; m.scale.set(lz,hgt,RAY_W);
     } else {
-      m.rotation.y=0;         m.scale.set(lx,hgt,1);
+      m.rotation.y=0;         m.scale.set(lx,hgt,RAY_W);
     }
     m.position.set(mx,h.y-.5+hgt/2,mz);
     // full bright as the beat closes: this is the last thing you see before
@@ -3476,9 +3701,18 @@ function animate(now){
      uses, so the fold at the end costs the board nothing. */
   if(typeof replayFrame==="function")replayFrame(dtMs);
   if(rep){
-    viewAngleTarget=rep.angle;
-    if(rep.fold>0)ftWant=Math.max(ftWant,rep.fold);
-    repFade=1;
+    /* THE CAMERA WAITS FOR THE FILM. `rep` is set the instant the hit lands -
+       that is what freezes the fight - but the film does not start for
+       another second and a half, and swinging the camera to the replay's
+       angle straight away meant the board tilted away underneath the word
+       still being read. The sting is about the board it happened on, so the
+       board has to stay the one the player was looking at; `rolling` is set
+       by replayFrame() on the first frame it actually plays. */
+    if(rep.rolling){
+      viewAngleTarget=rep.angle;
+      if(rep.fold>0)ftWant=Math.max(ftWant,rep.fold);
+      repFade=1;
+    }
   } else if(repFade>0){
     // the fold unwinds after the film ends rather than snapping back
     repFade=Math.max(0,repFade-dtMs/420);
@@ -3855,8 +4089,16 @@ function animate(now){
      both meant a bubble around a player flickering in and out of existence,
      which reads as a rendering fault rather than as protection. When the
      bubble goes, the blink is still there for the rest of the beat. */
-  playerMesh.visible=shieldMs>0||
-    !(trialGrace>0&&Math.floor(Date.now()/85)%2===0);
+  /* AND A DEATH FILM TAKES THE PLAYER OFF THE PICTURE ONCE THEY HAVE GONE TO
+     ASH. It has to be part of THIS expression rather than a write from
+     12-play.js, and that is the whole lesson: this line owns the channel and
+     runs every frame, so replayGone()'s `playerMesh.visible=false` was
+     overwritten before it was ever drawn and the player sat there inside
+     their own dust cloud. Reported with a screenshot. Same rule as the block
+     loop owning material.color. */
+  playerMesh.visible=!(rep&&rep.gone&&rep.mode==="death")&&
+    (shieldMs>0||
+     !(trialGrace>0&&Math.floor(Date.now()/85)%2===0));
 
   // A boss arena has no goal square - the target is the boss itself, which
   // draws itself in drawBoss() - so the marker is simply hidden there.
@@ -3906,10 +4148,21 @@ function animate(now){
     $("bFlat").classList.toggle("peril",pk);
     $("bFlat").classList.toggle("strike",!!hit&&!pk);
   }
+  /* And the checklist, for the same reason and with the same discipline: what
+     it describes changes without the player touching anything - a hunter
+     plants its line on its own clock - so the marks are re-judged here rather
+     than at the last keypress. It only toggles classes, and only when they
+     have actually changed. BEFORE bossFrame, deliberately: primerLast is what
+     a death is explained against, and it has to be the board the player was
+     last shown rather than the one the charge has already landed on. */
+  if(typeof primerMarks==="function")primerMarks();
 
   if(bossFlash>0)bossFlash=Math.max(0,bossFlash-.055);
   bossFrame(dtMs);trialFrame(dtMs);
   if(typeof replayTick==="function")replayTick(dtMs);
+  // The death line holds while the film runs, so it is counted down here,
+  // beside the film. See deathSayTick().
+  if(typeof deathSayTick==="function")deathSayTick(dtMs);
   amb.intensity=.45+.55*flatT;
   dir1.intensity=.85*(1-flatT);
   dir2.intensity=.35*(1-flatT);
@@ -3926,6 +4179,9 @@ function animate(now){
      overlay across a meadow was the one thing left that looked like a
      diagram rather than a place. Raise the second term to bring it back. */
   if(gridLines) gridLines.material.opacity=(app==="edit"?.09+.16*flatT:0);
+
+  // The ash drifts on real time, like the film it plays under. See ashFrame().
+  ashFrame(dtMs);
 
   renderer.render(scene,camera);
 }

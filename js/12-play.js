@@ -24,6 +24,9 @@
 function die(kind){
   if(dying)return;
   dying=kind;dyingT=0;
+  // A fall or a burn is a death the checklist can also speak to; running out
+  // of lives is the level ending, and the note goes with it.
+  if(kind!=="boss"&&kind!=="trial")primerNote(kind);
   // It has landed, so `dying` is the guard from here - both clocks stop dead
   // while it plays out, which is what deathPending was standing in for.
   deathPending=false;
@@ -72,7 +75,9 @@ function spendLife(){
     return;
   }
   lives--;
-  if(lives<=0){die(TR?"trial":"boss");return;}
+  // The fight wins the naming: BOSS IV carries a sweep, so TR is set on it too
+  // and asking TR first would show the trial's loss card at the end of a boss.
+  if(lives<=0){die(B?"boss":"trial");return;}
   flash(lives+" "+(lives===1?"life":"lives")+" left");
   if(TR)trialGrace=TR.period;
   if(B)bossGraceMs=B.grace;
@@ -119,10 +124,15 @@ function bossReset(){
   shieldMs=0;deathPending=false;slowMoMs=0;
   rep=null;bossPendingAdvance=false;bossPendingDeath=false;replayClear();
   document.body.classList.remove("replaying");
+  bossStingHide();killCamHide();repSfxInstall();
+  if(typeof ashClear==="function")ashClear();
+  if(typeof ashPrime==="function")ashPrime();
   hunters=[];twinCore=0;twinAt=null;bossPhase=0;
   if(B&&B.twin)twinSpawn(0);
   else if(B){bossRestoreArena();bossEnterPhase(false);}
-  lives=B?BOSS_LIVES:0;
+  // `B||TR` rather than `B`, because this now runs AFTER trialReset() (see
+  // enterPlay) and a trial's three lives must survive it.
+  lives=(B||TR)?BOSS_LIVES:0;
 }
 // Does this fight raise anything mid-way? A boss whose phases all have empty
 // `add` never touches L.blocks at all, so it runs the code it always ran.
@@ -198,6 +208,14 @@ function bossEnterPhase(announce){
                   step:ph.step,doom:false,lock:0,line:null,shy:0});
   }
   bossCreepMs=0;
+  /* THE PHASE'S OWN SWEEP, armed here and nowhere else. A phase without one
+     sets TR to null, so a fight can drop the plane again as easily as it
+     raises a pillar; the clock restarts at zero so the new pattern opens on
+     its first beat rather than halfway through somebody else's. Everything
+     downstream - the hit test, the charge ramp the renderer draws, the red
+     GO 2D cue - reads TR and does not care which kind of level armed it. */
+  TR=makeSweep(ph.sweep);
+  trialMs=0;trialBeat=-1;trialTicked=-1;trialFlash=0;trialGrace=0;
   if(announce){
     // A beat of grace, because a phase that begins by walking a fresh hunter
     // into you is a hit you were given no way to read.
@@ -293,9 +311,254 @@ function bossAdvance(){
    phase boundary, or a kill cam replaying the charge that just landed. */
 function bossHolding(){return bossPause>0||!!rep;}
 /* ============================================================
+   THE STRIKE STING — the big, loud beat
+
+   A hit used to be a shake, a two-tone blip and a toast, and the toast said
+   the important part. That is the correct weight for everything else this
+   fight does and the wrong weight for the two events the fight is actually
+   made of: one of them going down, or one of you going. So both now get a
+   full-screen sting — a bloom, speed lines, two rings and one word — and the
+   toast stays underneath as the bookkeeping it always was.
+
+   It is one call, it writes two strings and one class, and everything else
+   is in the CSS (`.bsting`, css/65-replay.css). Two reasons it is built this
+   way rather than as an animation in the scene: it has to be free at the
+   most expensive instant in the game, and it has to be re-triggerable
+   instantly — a second kill 400ms after the first must restart it, not queue
+   behind it. `void el.offsetWidth` is what restarts a CSS animation, and it
+   is the same trick deathSayShow() uses one screen down for the same reason.
+
+   `kind` is "kill" or "death" and it picks the colour: the goal's teal, which
+   is what a doomed hunter already turns, or the pack's red, which is what a
+   hunter already is. So the sting is legible before the word is read. */
+/* ON WALL-CLOCK TIME, not on the render loop's dt, and that is the whole
+   reason this is a setTimeout rather than a tick beside deathSayTick(). The
+   sting IS a CSS animation - the timer only takes the element back down when
+   the animation has finished - so it has to expire when the animation does,
+   in real seconds. Counted off frame time it expired in two frames on a slow
+   device, and the sting never appeared at all: found exactly that way, on the
+   headless renderer, which draws this scene at a handful of frames a second.
+   Same shape as flash() one file down, and for the same reason. */
+/* HOW MANY WENT DOWN IN ONE FOLD, as the word. One is the ordinary case and
+   says so plainly; two is the thing a player sets up on purpose, because depth
+   is the only reason two hunters are ever in one square, and it gets the word
+   that sounds like it was earned. Past three the count says more than any
+   adjective would. */
+function killWord(n,last){
+  if(n>=4)return n+" IN ONE";
+  if(n===2)return "DOUBLE CRUSH";
+  if(n===3)return "TRIPLE CRUSH";
+  /* One kill, and the word turns on whether it was the LAST one. "One down"
+     is a tally - it means there are others - and on a board with nothing left
+     on it that is the wrong sentence; SPARRING has a single hunter, so
+     killing it announced "one down" over an empty arena. The last one is
+     CRUSHED, which is an ending. */
+  return last?"CRUSHED":"ONE DOWN";
+}
+var stingTimer=null;
+function bossSting(kind,word,sub){
+  var el=$("bossSting");if(!el)return;
+  var w=$("bossStingWord"), b=$("bossStingSub");
+  if(w)w.textContent=word||"";
+  if(b)b.textContent=sub||"";
+  el.className="bsting "+(kind==="death"?"death":"kill");
+  void el.offsetWidth;                 // restart the animation, never extend it
+  el.classList.add("on");
+  clearTimeout(stingTimer);
+  stingTimer=setTimeout(function(){el.className="bsting";},STING_MS);
+  haptic(kind==="death"?[18,40,26]:[26,30,14]);
+}
+function bossStingHide(){
+  clearTimeout(stingTimer);
+  var el=$("bossSting");if(el)el.className="bsting";
+}
+/* ============================================================
+   THE KILL CAM'S WIND-UP — snow, a camcorder, then the film
+
+   The replay itself is unchanged; what is new is the second and a half in
+   front of it. The picture drops to white noise, a camcorder is walked up to
+   the screen and pushed through it, and the film plays behind its lens with
+   the record light on. Three beats, one class each on #killCam, and the CSS
+   in css/65-replay.css does all of the drawing.
+
+   IT HOLDS THE FILM RATHER THAN DELAYING IT. `rep` is set the moment the hit
+   lands - which is what freezes the fight, saves the pose and stops every
+   verb - and only the PLAYBACK waits, on `rep.leadUntil` checked in
+   replayFrame(). Doing it the other way round (a setTimeout that calls
+   replayStart later) would have left the fight running under the snow for a
+   second and a half, with the pack walking off the pose the film is about.
+
+   The timers are wall-clock, like the sting's, because the beats have to
+   line up with CSS animations and those run in real seconds. Every one of
+   them is cleared by killCamHide(), which every reset path calls.
+   ============================================================ */
+var kcT=[], kcNoiseTimer=null;
+function kcClear(){for(var i=0;i<kcT.length;i++)clearTimeout(kcT[i]);kcT=[];}
+/* Television snow, drawn rather than approximated: 96x160 random pixels a
+   frame, blown up by the browser with image-rendering:pixelated. A repeating
+   CSS gradient is a texture and the eye tells the two apart instantly. */
+function kcNoiseStart(){
+  var cv=$("kcNoise");if(!cv)return;
+  var ctx=cv.getContext("2d");if(!ctx)return;
+  var w=cv.width,h=cv.height, img=ctx.createImageData(w,h);
+  kcNoiseStop();
+  kcNoiseTimer=setInterval(function(){
+    var d=img.data;
+    for(var i=0;i<d.length;i+=4){
+      var v=Math.random()*255|0;
+      d[i]=d[i+1]=d[i+2]=v;d[i+3]=255;
+    }
+    ctx.putImageData(img,0,0);
+  },34);
+}
+function kcNoiseStop(){
+  if(kcNoiseTimer){clearInterval(kcNoiseTimer);kcNoiseTimer=null;}
+}
+/* The running timecode in the viewfinder's top left. Frames at 24, because
+   what it is pretending to be is footage.
+
+   NOT called kcTime, though that is what it writes: `#kcTime` is an element
+   id, and an element id is already a window property. Same rule as
+   `moveHistory` in the layout notes - a top-level name here must not be one
+   the document has already claimed. */
+function kcStamp(ms){
+  var el=$("kcTime");if(!el)return;
+  var t=Math.max(0,ms|0);
+  var ss=Math.floor(t/1000), ff=Math.floor((t%1000)/1000*24);
+  var p=function(n){return (n<10?"0":"")+n;};
+  el.textContent="00:"+p(ss%60)+":"+p(ff);
+}
+function killCamStart(mode){
+  var el=$("killCam");if(!el)return;
+  kcClear();
+  el.className="killcam on";
+  kcStamp(0);
+  /* THE ROOM ONLY CHEERS. It reacts on the beat of the hit rather than when
+     the film starts - it is reacting to what happened, and by the time the
+     camera is up it is over - but only on a kill.
+
+     The groan is gone, and the reason is worth keeping: it was a bandpassed
+     noise bed swept DOWN to 155Hz, which is a fair drawing of a crowd going
+     "ohhh" and, on a phone speaker under a screenful of television snow, is
+     indistinguishable from the snow having a soundtrack. Reported exactly
+     that way. A death now plays the visual and nothing under it, which is
+     also the better beat: the room going silent is what a room does. */
+  /* `isKill`, not `win`: win() is a function in this file and a local of that
+     name would shadow it inside this one. Same rule as `moveHistory`. */
+  var isKill=(mode==="kill");
+  if(isKill&&typeof SFX!=="undefined"&&SFX.cheer)SFX.cheer();
+  var hold=kcHold(mode);
+  /* SPENT. kcLead() in replayStart() read it a line earlier and this is the
+     second and last reader, so it is cleared here rather than at the end of
+     the film - a kill that does not earn a replay (one of three going down)
+     would otherwise leave 700ms sitting there for whatever happened next. */
+  kcBonus=0;
+  /* PLAIN STOPS HERE. The sting has already played and the film still runs
+     behind the ordinary replay chrome - bars, wash and label - which is
+     exactly what this screen was before the television arrived, and is the
+     thing the full version has to earn its two seconds against. */
+  if(!kcFull())return;
+  kcT.push(setTimeout(function(){
+    kcNoiseStart();el.classList.add("snow");
+  },hold));
+  kcT.push(setTimeout(function(){el.classList.add("cam");},hold+KC_SNOW_MS));
+  /* The viewfinder comes up a beat BEFORE the push-in finishes, so the
+     bracket and the record light are already there when the lens clears the
+     edges of the screen rather than appearing on top of an empty picture. */
+  kcT.push(setTimeout(function(){
+    el.classList.add("vf");kcNoiseStop();
+    // The record light and the chirp on the same beat, so the picture and
+    // the sound say the same thing. A kill only: a death is watched silent.
+    if(isKill&&typeof SFX!=="undefined"&&SFX.rec)SFX.rec();
+  },hold+KC_SNOW_MS+KC_CAM_MS-200));
+  /* AND THE END POSITION, STATED. The snow and the camera are cleared by CSS
+     animations, and an animation only lands if frames are drawn - hitch
+     through the push-in and the snow stays sitting over the film at whatever
+     opacity it got to. `.live` says where they end up rather than trusting
+     them to have got there, and it lands on the same beat the film starts. */
+  kcT.push(setTimeout(function(){
+    el.classList.add("live");
+  },hold+KC_SNOW_MS+KC_CAM_MS));
+}
+/* The film is over: the bracket fades, then the layer goes. Two steps because
+   `display:none` cannot be transitioned out of. */
+function killCamEnd(){
+  var el=$("killCam");if(!el)return;
+  kcClear();kcNoiseStop();
+  el.classList.remove("vf");
+  kcT.push(setTimeout(function(){el.className="killcam";},260));
+}
+/* And the hard stop, for every path that takes the board away underneath it. */
+function killCamHide(){
+  kcBonus=0;
+  var el=$("killCam");if(el)el.className="killcam";
+  kcClear();kcNoiseStop();
+}
+/* ============================================================
    THE REPLAY - recorder and control. See 05-state.js for the design.
    ============================================================ */
-function replayClear(){repBuf=[];repT=0;repAcc=0;}
+/* ============================================================
+   THE SOUNDTRACK — what was heard, recorded by listening
+
+   The film had the pictures and none of the noise, which is the difference
+   between watching footage of a thing and reliving it. Every step, bump,
+   fold, turn, shove and shot the player made in the recorded seconds is now
+   on the tape and plays back in the film at the moment it happened.
+
+   IT IS RECORDED BY WRAPPING SFX ONCE, not by scattering a `repSfxMark()`
+   call beside every SFX call in the game. The scattered version has to be
+   kept in step with the four verbs, the fight, the crates and everything
+   added later, and it is wrong the first time somebody adds a sound and
+   forgets. This cannot disagree with the game because it literally observes
+   what the game played: if you can hear it, it is on the tape.
+
+   The clock is the frame ring's own (`repT+repAcc`), so an event's time is
+   directly comparable with `repBuf[i].t` and needs no conversion at
+   playback. The ring is trimmed on the same horizon, so the tape can never
+   outgrow the film it belongs to.
+
+   `strike` is deliberately NOT on the list. It only ever fires on the kill
+   itself, which is the last instant of the recorded window, and the film
+   ends with a stylised closing fold that takes another half second - so the
+   recorded strike would land before the picture it belongs to. It is played
+   by the fold beat in replayFrame() instead, where it lands with the crush.
+   ============================================================ */
+var repSfxBuf=[], repSfxRaw={};
+var REP_SFX=["step","bump","fold","unfold","turn","shove","spill","shot",
+             "sweep","key","die"];
+function repSfxInstall(){
+  if(typeof SFX==="undefined"||SFX.taped)return;
+  SFX.taped=true;
+  REP_SFX.forEach(function(n){
+    var f=SFX[n];
+    if(typeof f!=="function")return;
+    repSfxRaw[n]=f;
+    SFX[n]=function(){
+      /* Recorded only while a fight is genuinely running in front of the
+         player - the same question replayTick() asks - and never while the
+         film is playing, or the tape would record itself. */
+      if(B&&app==="play"&&!rep&&!dying&&!levelDone&&!bossPause)
+        repSfxBuf.push({t:repT+repAcc,n:n});
+      return f.apply(SFX,arguments);
+    };
+  });
+}
+function repSfxTrim(){
+  while(repSfxBuf.length&&repT-repSfxBuf[0].t>REP_KEEP)repSfxBuf.shift();
+}
+/* Play everything on the tape up to recorded-time `t`. Through the ORIGINALS
+   rather than through SFX, so a sound the film plays can never find its way
+   back onto the tape - the recorder's own `!rep` guard already refuses, and
+   two locks on that door is the right number for a thing that would otherwise
+   grow without limit and be very hard to see. */
+function repSfxAt(t){
+  if(!rep)return;
+  while(rep.si<repSfxBuf.length&&repSfxBuf[rep.si].t<=t){
+    var f=repSfxRaw[repSfxBuf[rep.si++].n];
+    if(f)f.call(SFX);
+  }
+}
+function replayClear(){repBuf=[];repT=0;repAcc=0;repSfxBuf=[];}
 /* Sampled off the render loop's real frame time, and only while the fight is
    genuinely in front of the player - the same question bossFrame asks - so a
    paused board does not fill the ring with copies of one moment. */
@@ -311,6 +574,7 @@ function replaySnap(){
                f:flat?1:0,u:flat&&flatPos?flatPos.u:0,
                fy:flat&&flatPos?flatPos.y:0,v:view,h:hs});
   while(repBuf.length>1&&repT-repBuf[0].t>REP_KEEP)repBuf.shift();
+  repSfxTrim();          // the tape is trimmed on the film's own horizon
 }
 function replayTick(dtReal){
   if(!B||app!=="play"||rep)return;
@@ -339,7 +603,7 @@ function replayMark(){
    it has to be passed, because bossHurt resets all of it before the film
    starts; on a kill nothing has moved yet, so the live state is the moment
    and `at` is built from it. */
-function replayStart(mode,who,line,at){
+function replayStart(mode,who,line,at,dead){
   if(!at)at={x:player.x,y:player.y,z:player.z,flat:flat,view:view,
              u:flatPos?flatPos.u:0,fy:flatPos?flatPos.y:0,h:who||null};
   if(!B||rep||repBuf.length<2)return false;
@@ -479,8 +743,34 @@ function replayStart(mode,who,line,at){
     if(d===3)d=-1;
     swing=d*90;
   }
+  /* WHO DIED, AS CELLS - AND IT IS A LIST, because a fold can take more than
+     one. That is the entire point of a double crush: two hunters share a
+     silhouette column, which means they differ ONLY in depth, so they are at
+     two DIFFERENT squares that the fold drops into one. The first version
+     kept a single cell, so the film burst one cloud and left the second
+     hunter standing in the replay - reported with a screenshot of exactly
+     that.
+
+     Copied rather than referenced: `who` and its siblings are live hunter
+     objects that have already been spliced off the board, and the film
+     re-poses `hunters` from the recorded frames on every pass.
+
+     On a death the list is empty: the player is re-derived every frame by
+     replayPose(), so the film reads their drawn position at the moment. */
+  var deadAt=null;
+  if(mode==="kill"){
+    var src=(dead&&dead.length)?dead:(who?[who]:[]);
+    deadAt=[];
+    for(var q=0;q<src.length;q++)
+      deadAt.push({x:src[q].x,y:src[q].y,z:src[q].z});
+  }
+  /* Where the tape is cued to. Everything before `t0` is off the front of the
+     film and must not be heard; `si` walks forward from there and never back,
+     which is also what stops one event playing twice on a frame boundary. */
+  var si=0;
+  while(si<repSfxBuf.length&&repSfxBuf[si].t<repBuf[i0].t)si++;
   rep={mode:mode,i:i0,t0:repBuf[i0].t,t1:t1,ms:0,fold:0,foldMs:0,view:want,
-       who:who||null,line:line||null,
+       who:who||null,line:line||null,dead:deadAt,si:si,
        vat:viewAngleTarget,angle:viewAngleTarget+swing,
        saved:{x:player.x,y:player.y,z:player.z,flat:flat,
               fu:flatPos?flatPos.u:0,fy:flatPos?flatPos.y:0,view:view,
@@ -491,6 +781,18 @@ function replayStart(mode,who,line,at){
   var lab=$("replayNote");
   if(lab)lab.textContent=mode==="death"?"the line it came down"
                                        :"the fold that cleared it";
+  /* The wind-up, and the film held behind it. Set here rather than at the
+     call sites because every one of them wants it and none of them should
+     have to know how long it is.
+
+     ON THE CLOCK, NOT ON FRAME TIME, and it has to be: the three beats of the
+     wind-up are setTimeouts driving CSS animations, so a lead counted by
+     summing the render loop's dt drifts against them the moment a frame runs
+     long - and the frame right after a level loads is the longest one the
+     game has. Measured that way it ate 1250ms of a 1810ms lead in 400ms of
+     real time, and the film started while the camera was still in the air. */
+  rep.leadUntil=Date.now()+kcLead(mode);
+  killCamStart(mode);
   return true;
 }
 /* Write a recorded frame over the live state. Safe because the fight is
@@ -547,6 +849,9 @@ function replayPose(f){
 }
 function replayEnd(){
   if(!rep)return;
+  /* Nothing to un-hide here any more: the render loop derives the player's
+     visibility from `rep.gone` every frame, so clearing `rep` below is what
+     puts them back. One owner, one line. */
   var sv=rep.saved;
   player.x=sv.x;player.y=sv.y;player.z=sv.z;
   flat=sv.flat;flatTarget=sv.flat?1:0;
@@ -563,6 +868,7 @@ function replayEnd(){
   for(var i=0;i<sv.h.length;i++)hunters.push(sv.h[i]);
   rep=null;
   document.body.classList.remove("replaying");
+  killCamEnd();
   buildGrid();syncHud();
   /* Whatever was waiting for the film happens now. The last death is checked
      first: if the run is over there is no phase to advance into. */
@@ -573,21 +879,109 @@ function replayEnd(){
    exactly the things the replay plays over. */
 function replayFrame(dtReal){
   if(!rep)return;
+  /* THE WIND-UP. The fight is already frozen - `rep` did that the instant the
+     hit landed - so all that waits here is the playback, behind the snow and
+     the camera. On the wall clock, in step with the beats; see replayStart(). */
+  if(rep.leadUntil&&Date.now()<rep.leadUntil)return;
+  // The film is genuinely playing now, which is what lets the camera swing to
+  // the angle it was filmed from. See the `rep.rolling` block in 10-render.js.
+  rep.rolling=true;
+  kcStamp(rep.ms/REP_RATE);
   if(rep.ms<rep.t1-rep.t0){
     rep.ms=Math.min(rep.t1-rep.t0,rep.ms+dtReal*REP_RATE);
     var t=rep.t0+rep.ms;
     while(rep.i<repBuf.length-1&&repBuf[rep.i+1].t<=t)rep.i++;
     replayPose(repBuf[rep.i]);
+    /* AND THE TAPE, on the same clock as the pictures. Event times are in the
+       ring's own units, so this is a straight comparison - the film runs at
+       REP_RATE and the sounds simply spread out with it, which is what a
+       slow-motion replay of your own moves should sound like. */
+    repSfxAt(t);
     return;
   }
   replayPose(repBuf[repBuf.length-1]);
   /* And the last beat: the world folds onto the player. On a death that is
      the hunter's own verb being used on them; on a kill it is the fold they
      actually made, replayed. */
+  /* AND ON A KILL IT IS SCORED, once, on the frame the fold starts. The film
+     was silent, which is what made it feel like footage of nothing: the one
+     thing a replay of your best move has to do is let you hear it land. So
+     the game's own fold plays, and its own strike lands REP_FOLD_MS later,
+     which is exactly when the fold on screen closes.
+
+     `repFx` is the one-shot latch. replayFrame runs every frame and this
+     branch runs for the whole of the fold and the hold after it, so without
+     it the strike would be re-queued sixty times a second. A death stays
+     silent on purpose - see killCamStart(). */
+  if(!rep.fx){
+    rep.fx=true;
+    if(rep.mode==="kill"&&typeof SFX!=="undefined"&&SFX.relive)
+      SFX.relive(REP_FOLD_MS);
+    /* AND THEY COME APART AGAIN, which is the half of the film that was
+       missing: the replay showed them arriving in one square and then simply
+       stopped. One cloud per cell, so a double crush replays as the two
+       deaths it was. On a death `player` is holding the posed position this
+       very frame, which is the square the film has just walked them into. */
+    if(rep.mode==="kill"){
+      var dd=rep.dead||[];
+      for(var q=0;q<dd.length;q++)
+        if(typeof ashHunter==="function")ashHunter(dd[q].x,dd[q].y,dd[q].z);
+    }else if(typeof ashPlayer==="function"){
+      ashPlayer(player.x,player.y,player.z);
+    }
+  }
+  /* AND THE ONES THAT DIED ARE GONE FROM HERE ON, which the first version of
+     this forgot: the ash went up and the pieces it came off carried on being
+     drawn underneath it, standing in their own dust. Reported twice - once
+     for the player, and once for the second hunter of a double crush.
+
+     It has to be re-applied every frame rather than done once beside the
+     burst, because replayPose() above rebuilds `hunters` from the recorded
+     frame on every pass and would put them straight back. They are found by
+     cell rather than by index - the recorded array is rebuilt from a snapshot
+     and its indices are not the live board's. */
+  replayGone();
   rep.foldMs+=dtReal;
   var k=Math.min(1,rep.foldMs/REP_FOLD_MS);
   rep.fold=k*k*(3-2*k);
   if(rep.foldMs>REP_FOLD_MS+REP_HOLD_MS)replayEnd();
+}
+/* THE WAY OUT OF THE FILM, at any point in it - including the wind-up, which
+   is where a player who wants out is most likely to be pressing.
+
+   It goes through replayEnd() rather than round it, because replayEnd is the
+   one place that restores the board, the camera and the player's mesh and
+   then runs whatever was waiting behind the film: the phase advance, or the
+   last death. Skipping past that would leave the fight holding a pose that
+   nothing is going to take it out of. The kill cam is hard-cleared after,
+   rather than faded, because a skip should be immediate - the fade is for a
+   film that ended on its own terms. */
+function replaySkip(){
+  if(!rep)return;
+  replayEnd();
+  killCamHide();
+  bossStingHide();
+}
+/* Take the dead off the board for the rest of the film. On a kill that is
+   every hunter the fold caught - one cell each, and there can be several,
+   because two hunters in one silhouette column are at two different squares.
+   On a death it is the player. Cheap enough to run every frame, which is what
+   it has to be; see the call site. */
+function replayGone(){
+  if(!rep)return;
+  rep.gone=true;
+  /* Only the hunter is taken off HERE. The player is taken off by the render
+     loop, which rewrites playerMesh.visible from the shield and trial-blink
+     rule every single frame - a write from this file lost the race every time
+     and the player stood in their own dust. The flag above is what that line
+     reads; see js/10-render.js. */
+  if(rep.mode!=="kill")return;
+  var dd=rep.dead;if(!dd||!dd.length)return;
+  for(var i=hunters.length-1;i>=0;i--)
+    for(var j=0;j<dd.length;j++)
+      if(hunters[i].x===dd[j].x&&hunters[i].y===dd[j].y&&hunters[i].z===dd[j].z){
+        hunters.splice(i,1);break;
+      }
 }
 function phaseNote(text){
   var el=$("phaseNote");if(!el)return;
@@ -757,27 +1151,33 @@ function bossFrame(dt){
     h.ms+=dt;
     if(h.ms<h.step)continue;
     h.ms=0;
-    var goal=huntGoal(h);
-    /* Three grades of square, not two - see bossNext. A cunning hunter rates
-       a line you cannot answer above a line you can, which is the whole of
-       phase three: "it is lined up" stops meaning "I can eat it", because the
-       line it chose is the one your current view cannot fold on and the
-       answer is a rotation you have to spend a beat on.
+    /* A STILL HUNTER SKIPS THE WALK AND NOTHING ELSE - see `still` in
+       bossPhases(). It re-reads its line on this same beat and plants on it
+       exactly as the others do, so the only thing it cannot do is follow you.
+       The touch check goes with the walk: it cannot have arrived anywhere. */
+    if(!ph.still){
+      var goal=huntGoal(h);
+      /* Three grades of square, not two - see bossNext. A cunning hunter
+         rates a line you cannot answer above a line you can, which is the
+         whole of phase three: "it is lined up" stops meaning "I can eat it",
+         because the line it chose is the one your current view cannot fold on
+         and the answer is a rotation you have to spend a beat on.
 
-       Graded only while you are standing up. Flat, every hunter sharing your
-       silhouette column already has a line and you cannot fold again anyway,
-       so there is nothing for it to prefer. */
-    var nx=bossNext(R,h,goal,cr,function(c){
-      var has=flat?(R.uOf(view,c.x,c.z)===flatPos.u&&c.y===flatPos.y)
-                  :!!bossLine(R,c,goal,cr);
-      if(!has)return 0;
-      if(flat)return 1;
-      return doomedCell(c.x,c.y,c.z,cr)?1:2;
-    });
-    // Never onto another hunter's square: two of them in one cell reads as
-    // one of them, and the pack should look like a pack.
-    if(nx&&!hunterAt(nx.x,nx.y,nx.z,i)){h.x=nx.x;h.y=nx.y;h.z=nx.z;}
-    if(hunterTouching(h)){bossHurt("it reached you",h);return;}
+         Graded only while you are standing up. Flat, every hunter sharing
+         your silhouette column already has a line and you cannot fold again
+         anyway, so there is nothing for it to prefer. */
+      var nx=bossNext(R,h,goal,cr,function(c){
+        var has=flat?(R.uOf(view,c.x,c.z)===flatPos.u&&c.y===flatPos.y)
+                    :!!bossLine(R,c,goal,cr);
+        if(!has)return 0;
+        if(flat)return 1;
+        return doomedCell(c.x,c.y,c.z,cr)?1:2;
+      });
+      // Never onto another hunter's square: two of them in one cell reads as
+      // one of them, and the pack should look like a pack.
+      if(nx&&!hunterAt(nx.x,nx.y,nx.z,i)){h.x=nx.x;h.y=nx.y;h.z=nx.z;}
+      if(hunterTouching(h)){bossHurt("it reached you",h);return;}
+    }
     // Lined up, so it plants. The beat that follows is the whole fight.
     h.line=huntLine(h,cr);
     if(h.line){
@@ -819,15 +1219,40 @@ function hunterAt(x,y,z,skip){
     if(i!==skip&&hunters[i].x===x&&hunters[i].y===y&&hunters[i].z===z)return true;
   return false;
 }
-// Called after any move you make. They are not solid - you can walk through
-// the square one is standing in - because a body you cannot pass is a body
-// that can trap you against a wall, and the fight is about position, not
-// about being cornered. Walking into one simply costs the same as being
-// walked into.
-function bossContact(){
-  if(!B||dying||levelDone)return false;
-  for(var i=0;i<hunters.length;i++)
-    if(hunterTouching(hunters[i])){bossHurt("you walked into it",hunters[i]);return true;}
+/* YOUR OWN MOVE NEVER KILLS YOU BY CONTACT, and that is the owner's call
+   after playtesting. Walking into one used to cost a life - "walking into one
+   simply costs the same as being walked into" - and it played as an instant
+   death with no telegraph in front of it, which is the one thing this fight
+   promises not to do. The kill is the line: theirs down it, yours across it.
+
+   So a hunter is now SOLID TO YOUR STEP. The move is refused the way a wall
+   refuses one - no life, no move spent - and the square stays theirs. That is
+   the only version of "it does not kill me" the fight survives: if you could
+   stand on one, you would share its silhouette column in every view at once,
+   and every fight in the game would be "walk onto it, fold" for two moves.
+   The old note's objection stands and is accepted - a body you cannot pass is
+   a body that can corner you - and the answer to being cornered is the verb
+   this game is about.
+
+   Nothing here constrains THEM. A hunter still steps onto you and still
+   charges down its line, both of which still cost a life; see bossFrame. */
+function hunterHere(x,y,z){
+  if(!B)return false;
+  for(var i=0;i<hunters.length;i++){
+    var h=hunters[i];
+    if(h.x===x&&h.y===y&&h.z===z)return true;
+  }
+  return false;
+}
+/* The same question asked of a silhouette column, for a step taken in the
+   plane: flattened, "the square one is standing in" is a column, and walking
+   into that column is walking into it. */
+function hunterInColumn(u,y){
+  if(!B)return false;
+  for(var i=0;i<hunters.length;i++){
+    var h=hunters[i];
+    if(h.y===y&&R.uOf(view,h.x,h.z)===u)return true;
+  }
   return false;
 }
 function hunterTouching(h){
@@ -848,6 +1273,16 @@ function bossFoldCrush(){
     if(!twinAligned())return;
     bossHp--;bossHitFlash=1;
     SFX.strike();shakeT=1;slowMo();
+    // Both halves go: a core is the pair, and killing it is killing both.
+    if(typeof ashHunter==="function")
+      for(var th=0;th<hunters.length;th++)
+        ashHunter(hunters[th].x,hunters[th].y,hunters[th].z,th);
+    /* The twin counts cores, not hunters, so it keeps its own word - "one
+       down" would be a lie about a thing that has two halves and three
+       hearts. The news is under it, like everywhere else. */
+    bossSting("kill","CORE DOWN",
+      bossHp<=0?"the census is closed":
+        (bossHp+(bossHp===1?" core left":" cores left")));
     if(bossHp<=0){hunters=[];buildGrid();win();return;}
     /* A core goes, and the centre moves. Leaving it where it was would mean
        the answer is in the same place three times running, and the second
@@ -867,9 +1302,45 @@ function bossFoldCrush(){
      has been removed from the board. */
   replayMark();
   var victim=hunters[doomed[0]];
+  /* EVERY ONE OF THEM COMES APART, and it has to happen before the splice -
+     a spliced hunter has no square left to come apart at. Each doomed cell
+     gets its own cloud, so a double kill is visibly two things dying rather
+     than one bigger puff.
+
+     The cells are kept as well as burst. The film needs all of them, not just
+     the one `victim` points at: two hunters in one silhouette column are at
+     two DIFFERENT squares, so a single remembered cell left the second one
+     standing in the replay. */
+  var deadCells=[];
+  for(var a=0;a<doomed.length;a++){
+    var dh=hunters[doomed[a]];
+    deadCells.push({x:dh.x,y:dh.y,z:dh.z});
+    if(typeof ashHunter==="function")ashHunter(dh.x,dh.y,dh.z,doomed[a]);
+  }
   for(var d=doomed.length-1;d>=0;d--)hunters.splice(doomed[d],1);
   bossHitFlash=1;
   SFX.strike();shakeT=1;slowMo();
+  /* THE WORD COUNTS THE KILL; THE LINE UNDER IT CARRIES THE NEWS.
+
+     It used to be the other way round - the word was PHASE CLEAR or BOSS DOWN
+     and the count was underneath - and it was wrong twice. Wrong in fact,
+     because `hunters` has ALREADY been spliced three lines up, so the old
+     `hunters.length===doomed.length` compared survivors against kills and came
+     out true for one of two; killing a single hunter announced BOSS DOWN, and
+     that is what the owner saw. And wrong in kind, because what the player
+     just did is the kill, and how many they got is the part that varies from
+     fold to fold. The stakes go under it, where they still read. */
+  var left=hunters.length, n=doomed.length;   // survivors, then kills
+  /* Two or more in one square is the rarest sentence this fight has and it
+     was going by too fast to read. The extra beat is spent by the wind-up. */
+  kcBonus=(n>=2)?700:0;
+  /* And the world slows for longer, so the moment itself is watchable rather
+     than just the word over it. slowMo() is the ordinary 620ms; a multi-kill
+     doubles it. */
+  if(n>=2)slowMoMs=SLOWMO_MS*2;
+  bossSting("kill",killWord(n,!left),
+    left?(left+" left"):
+      ((bossPhase>=B.phases.length-1)?"the census is closed":"phase clear"));
   /* What the survivors get for surviving. A fold that kills nothing is now
      worse than free, and a fold that kills one of three leaves the other two
      angrier - so the fight accelerates toward its own end rather than
@@ -888,12 +1359,117 @@ function bossFoldCrush(){
        skipped: bossAdvance() goes straight to win() there, so the film was
        cut off by the card the moment it was earned. The advance - phase or
        win - waits behind the replay either way. */
-    if(replayStart("kill",victim)){bossPendingAdvance=true;syncHud();return;}
+    if(replayStart("kill",victim,null,null,deadCells)){
+      bossPendingAdvance=true;syncHud();return;
+    }
     bossAdvance();return;
   }
   flash(doomed.length>1?(doomed.length+" in one square · "+hunters.length+" left"):
         ("folded onto it · "+hunters.length+" left"));
   syncHud();
+}
+/* ============================================================
+   THE KILL STATE - what the checklist reads
+
+   One object, computed from the live board, answering the four questions
+   SPARRING's primer asks (`L.primer`, drawn by syncPrimer() and re-marked
+   every frame by primerMarks()). It is deliberately not a set of counters:
+   like a tutorial step, every line of the checklist is a predicate over the
+   board as it stands, so undo, a death, a rotation or a player doing things
+   in the wrong order all just re-evaluate, and the list can never claim
+   something that is not true in front of them.
+
+   `facing` is foldKills() without the crush test, computed here rather than
+   read off `h.doom`, because doom is written at the foot of bossFrame and
+   bossFrame returns early for a paused board, a card, a replay - all the
+   moments when the player is most likely to be reading the list.
+   ============================================================ */
+function killState(cause){
+  var k={aligned:false,facing:false,folded:!!flat,aimed:false,
+         won:!!levelDone,cause:cause||null};
+  if(!B)return k;
+  for(var i=0;i<hunters.length;i++){
+    var h=hunters[i];
+    if(h.lock>0)k.aimed=true;
+    if(flat){
+      // In the plane you are a whole column, so lining up and facing are the
+      // same question and it has already been answered by the fold.
+      if(flatPos&&h.y===flatPos.y&&R.uOf(view,h.x,h.z)===flatPos.u){
+        k.aligned=true;k.facing=true;
+      }
+      continue;
+    }
+    if(h.y===player.y&&(h.x===player.x||h.z===player.z))k.aligned=true;
+    if(h.y===player.y&&
+       R.uOf(view,h.x,h.z)===R.uOf(view,player.x,player.z))k.facing=true;
+  }
+  return k;
+}
+/* The state the player was last SHOWN, kept a frame behind on purpose.
+
+   primerMarks() runs from the render loop before bossFrame, so this holds the
+   board as it was when the checklist in front of them was last drawn - which
+   is what a death has to be explained against. Explaining against the live
+   board would be wrong every time on the one death that matters: the charge
+   moves the hunter onto your square before bossHurt runs, so at that instant
+   you are perfectly aligned, perfectly facing, and the note would congratulate
+   you for it. */
+var primerLast=null;
+/* ============================================================
+   WHAT KILLED YOU - one line, in the middle of the screen
+
+   The checklist at the top says which boxes are not ticked, and in the second
+   after losing a life that is the wrong place for it twice over: the player
+   is watching the kill cam in the middle of the screen, and four lines is not
+   what anybody reads while their piece is being replayed dying. So the
+   sentence goes to them, where the film is, in the beat where they are
+   already asking the question.
+
+   IT HOLDS THROUGH THE FILM AND FOR A BEAT AFTER IT. The hold is counted only
+   while no replay is running (deathSayTick), so the line is a caption on the
+   kill cam rather than something that expires behind it - and what the player
+   gets after the film ends is the same sentence over the board they are about
+   to try again on. The next move they commit takes it down (pushHistory).
+   ============================================================ */
+/* Two numbers, because two deaths. A charge gets a kill cam and the line is a
+   caption on it, so what matters there is the beat AFTER the film - the same
+   sentence over the board they are about to try again on. A fall gets no film
+   at all, so its whole life is this one number. */
+var DEATH_SAY_MS=2600;    // no film: how long it stays
+var DEATH_SAY_TAIL=1500;  // after a film: the beat that follows it
+var deathSayMs=0;
+function deathSayShow(txt){
+  var el=$("deathSay");if(!el)return;
+  // Through tutWords for the same reason every other sentence in this game
+  // is: it names the verb the way the button in front of the player names it.
+  el.innerHTML=(typeof tutWords==="function")?tutWords(txt):txt;
+  el.classList.remove("on");
+  void el.offsetWidth;                 // restart the entrance, never extend it
+  el.classList.add("on");
+  deathSayMs=DEATH_SAY_MS;
+}
+function deathSayHide(){
+  var el=$("deathSay");if(el)el.classList.remove("on");
+  deathSayMs=0;
+}
+function deathSayTick(dt){
+  if(deathSayMs<=0)return;
+  // The film is playing: the line waits, and what it will have left when the
+  // film ends is set here rather than counted down through it.
+  if(rep){deathSayMs=DEATH_SAY_TAIL;return;}
+  deathSayMs-=dt;
+  if(deathSayMs<=0)deathSayHide();
+}
+/* Which of the level's `why` lines fits what just happened. Called on the way
+   into a death, before anything moves. */
+function primerNote(cause){
+  if(!L||!L.primer||!L.primer.why)return;
+  var k=primerLast||killState(cause);
+  k={aligned:k.aligned,facing:k.facing,folded:k.folded,aimed:k.aimed,
+     won:k.won,cause:cause||null};
+  var w=L.primer.why;
+  for(var i=0;i<w.length;i++)
+    if(w[i].when(k)){deathSayShow(w[i].say);return;}
 }
 // True when folding right now would kill at least one of them - what turns
 // the GO 2D button green. foldKills() already refuses a column with a pillar
@@ -914,6 +1490,9 @@ function bossCrushable(){
 }
 function bossHurt(why,who,line){
   if(shielded())return;
+  // What the checklist says went wrong, taken here: everything below moves
+  // the board off the moment being explained. See primerNote().
+  primerNote(why);
   replayMark();               // the kill pose, before the board moves off it
   /* AND A COPY OF THE MOMENT, taken here for the same reason.
 
@@ -930,7 +1509,22 @@ function bossHurt(why,who,line){
           u:flatPos?flatPos.u:0,fy:flatPos?flatPos.y:0,
           h:who?{x:who.x,y:who.y,z:who.z}:null};        // asserted here as well as at the call site
   lives--;
+  kcBonus=0;                  // a death is never a multi-kill; see kcHold()
   SFX.die();shakeT=1;slowMo();
+  /* AND YOU COME APART TOO. Taken from `at` rather than from `player`,
+     because a flat death is standing somewhere else by the time this runs -
+     `at.h` is the hunter's cell and it is where the two of you met, which is
+     where the ash belongs. Standing, the two are the same square anyway. */
+  if(typeof ashPlayer==="function"){
+    var az=at.h||at;
+    ashPlayer(az.x,az.y,az.z);
+  }
+  /* SMASHED. It was FLATTENED, which was the game's own verb turned around
+     and read as clever rather than as bad news - and "flat" is a state this
+     game puts you in on purpose, several times a minute, by pressing a
+     button. The word for losing a life must not be a word for a move. */
+  bossSting("death","SMASHED",
+    lives<=0?"no lives left":(lives+(lives===1?" life left":" lives left")));
   bossGraceMs=B.grace;
   shieldMs=SHIELD_MS;
   var bar=$("bossBar");
@@ -974,9 +1568,14 @@ function bossHurt(why,who,line){
 // move rather than a fold. It stays because it is the one attack that works
 // while the geometry is against you.
 function bossTakeCrate(idx){
+  if(typeof ashHunter==="function"){
+    var ch=hunters[idx];ashHunter(ch.x,ch.y,ch.z,idx);  // before the splice
+  }
   hunters.splice(idx,1);
   bossHitFlash=1;
   SFX.strike();shakeT=1;
+  bossSting("kill",killWord(1,!hunters.length),
+    hunters.length?(hunters.length+" left · under the crate"):"phase clear");
   if(!hunters.length){bossAdvance();return true;}
   flash("crushed under the crate · "+hunters.length+" left");
   syncHud();
@@ -998,6 +1597,9 @@ function trialReset(){
   shieldMs=0;deathPending=false;slowMoMs=0;
   rep=null;bossPendingAdvance=false;bossPendingDeath=false;replayClear();
   document.body.classList.remove("replaying");
+  bossStingHide();killCamHide();repSfxInstall();
+  if(typeof ashClear==="function")ashClear();
+  if(typeof ashPrime==="function")ashPrime();
   if(TR)lives=BOSS_LIVES;
 }
 function trialFrame(dt){
@@ -1009,14 +1611,29 @@ function trialFrame(dt){
   // Clamped against a backgrounded tab's one enormous frame, then scaled by
   // the pace setting - see paceScale() in 11-sound.js for why it is one
   // multiplication here rather than a slower `period` and `fire`.
+  /* AND EVERYTHING THAT STOPS THE FIGHT STOPS THE SWEEP, on a boss that has
+     one. bossFrame() already returns for the phase card and for the kill cam,
+     for a reason that applies here word for word: the board on screen during
+     a replay is not the board the player is acting on, and a slice landing on
+     them while they watch a piece of film is a life taken for a move they
+     were not allowed to make. bossGraceMs is the same argument one step
+     smaller - it is the beat you are given after a phase change or a hit, and
+     a sweep inside it would spend it for you. */
+  if(B&&(bossPause>0||rep||bossGraceMs>0))return;
   dt=Math.min(dt,90)*paceScale();
-  if(slowMoMs>0){slowMoMs=Math.max(0,slowMoMs-dt);dt*=SLOWMO_RATE;}
+  if(slowMoMs>0){
+    // Counted down by whichever clock owns it - both frames run on a boss
+    // that sweeps, and decrementing it twice would halve every slow-motion in
+    // the fight. Same for the shield below.
+    if(!B)slowMoMs=Math.max(0,slowMoMs-dt);
+    dt*=SLOWMO_RATE;
+  }
   if(trialFlash>0)trialFlash=Math.max(0,trialFlash-dt/300);
   if(trialGrace>0)trialGrace=Math.max(0,trialGrace-dt);
   // On the fight's own clock, like every other window here, so the pace
   // setting scales it and it does not run while the fight is paused - nor
   // while a death is already committed and only waiting to be drawn.
-  if(shieldMs>0&&!deathPending)shieldMs=Math.max(0,shieldMs-dt);
+  if(!B&&shieldMs>0&&!deathPending)shieldMs=Math.max(0,shieldMs-dt);
   var was=TR.live(trialMs);
   trialMs+=dt;
   var live=TR.live(trialMs);
@@ -1054,7 +1671,9 @@ function trialHurt(){
   shieldMs=SHIELD_MS;
   var bar=$("bossBar");
   if(bar){bar.classList.remove("hurt");void bar.offsetWidth;bar.classList.add("hurt");}
-  if(lives<=0){die("trial");return;}
+  // See spendLife(): on a boss that sweeps, TR is set and B is what names the
+  // death, so the fight's own loss card is the one that comes up.
+  if(lives<=0){die(B?"boss":"trial");return;}
   flash((flat?"flat in the slice":"caught by the sweep")+" · "+
         lives+" "+(lives===1?"life":"lives")+" left");
   if(flat){
@@ -1185,6 +1804,9 @@ function move3(dx,dz,dir){
   var ny=resolveStep(function(h){return R.solid(nx,h,nz,cr);},player.y,
                      function(h){return R.solid(here.x,h,here.z,cr);});
   if(ny===null){flash("blocked");SFX.bump();return;}
+  // And one of them is a wall while it is standing there. Refused before the
+  // move is spent, so a bump costs nothing at all. See hunterHere().
+  if(hunterHere(nx,ny,nz)){flash("it is in the way");SFX.bump();return;}
   pushHistory();moveCount++;
   if(moved){
     gCrates[moved.i]=[moved.to.x,moved.to.y,moved.to.z];SFX.shove();
@@ -1199,7 +1821,6 @@ function move3(dx,dz,dir){
   if(!moved)SFX.step();
   trailHere();
   if(tutC){tutC.m3++;if(dir)tutC.d[dir]++;if(ny>oldY)tutC.climb++;}
-  if(bossContact())return;
   syncHud();saveSession();checkWin();
 }
 function move2(du){
@@ -1210,6 +1831,9 @@ function move2(du){
   var ny=resolveStep(function(h){return R.siloSolid(view,nu,h,cr2);},flatPos.y,
                      function(h){return R.siloSolid(view,hu,h,cr2);});
   if(ny===null){flash("blocked");SFX.bump();return;}
+  // Same rule in the plane, where their square is a whole column: walking
+  // into it is refused rather than fatal.
+  if(hunterInColumn(nu,ny)){flash("it is in the way");SFX.bump();return;}
   pushHistory();moveCount++;
   if(ny===FELL){flatPos.u=nu;die("fall");return;}
   flatPos.u=nu;flatPos.y=ny;
@@ -1217,7 +1841,6 @@ function move2(du){
   SFX.step();collectHere();
   trailFlatStep();
   if(tutC)tutC.m2++;
-  if(bossContact())return;
   syncHud();saveSession();
 }
 /* What would folding from right here do to you, and which blocks are to blame?
@@ -1451,7 +2074,11 @@ function doUnflatten(){
   }
   if(tutC)tutC.unflat++;
   if(R.deadly3(player.x,player.y,player.z)){die("spike");return;}
-  if(bossContact())return;         // you came back down on top of one
+  /* Standing up onto one is no longer a death either - your own move never
+     kills you by contact. It is not a state you can hold: a hunter sharing
+     your square is touching you, and the next beat of its own clock is
+     "it reached you". Getting there at all needs it to enter your column
+     while you are flat, which is already its kill. */
   syncHud();saveSession();
   checkWin();
 }
@@ -1612,6 +2239,11 @@ function win(){
       (lastTut?"  \u00b7  from here on, tap the bulb for a hint":"");
     $("bNextT").textContent="NEXT LEVEL";
     $("bRetry").style.display="none";
+    // A teaching level may carry a story line too - SPARRING's is the sentence
+    // that hands the player to BOSS I. Same idiom, and the same reason it is
+    // innerHTML: see the boss branch below.
+    if(L.won)$("wonSub").innerHTML=esc($("wonSub").textContent)+
+      "<em class='wonstory'>"+esc(L.won)+"</em>";
   } else if(B||TR){
     // Scored on lives, so hints cost nothing here and moves are not the point.
     var stb=Math.max(0,Math.min(3,lives));wonStars=stb;
@@ -1994,8 +2626,14 @@ function loadLevel(level,idx){
   player={x:L.start[0],y:L.start[1],z:L.start[2]};
   flat=false;flatTarget=0;flatT=0;view=0;viewAngle=0;viewAngleTarget=0;
   moveHistory=[];moveCount=0;hintsUsed=0;dying=null;levelDone=false;tutReset();
-  B=makeBoss(L);bossReset();
+  /* THE TRIAL FIRST, THEN THE FIGHT, and the order is load-bearing now that a
+     boss phase can install a sweep of its own: bossReset() ends in
+     bossEnterPhase(), which writes TR from the phase it is entering, so
+     assigning TR after it would wipe the sweep the fight had just armed.
+     A level is never both a trial and a boss, so on every other level this
+     is the same two lines in the other order. */
   TR=makeTrial(L);trialReset();
+  B=makeBoss(L);bossReset();
   playerMesh.scale.set(1,1,1);
   initDynamic();
   levelKey=L.name;

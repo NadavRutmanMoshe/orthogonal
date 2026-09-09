@@ -200,6 +200,54 @@ function slowMo(){ slowMoMs=SLOWMO_MS; }
      - KILL: only on the fold that CLEARS a phase, from your own side. Killing
        one of a pair is not the end of anything and a replay there would
        interrupt a fight that is still running. */
+/* How long the strike sting holds the screen. The CSS animation is .92s end
+   to end; this is the wall-clock timer that takes the element back down after
+   it, and the two have to move together. See bossSting() in js/12-play.js. */
+var STING_MS=940;
+/* THE KILL CAM'S WIND-UP, beat by beat. The board is held, then the picture
+   drops to snow, then a camcorder is raised and pushed through the screen;
+   the film starts on the other side of its lens. The sum is how long
+   replayFrame() holds the first frame - see rep.leadUntil in js/12-play.js -
+   and killCamStart() sets one class per beat off exactly these numbers, so
+   moving one here moves the animation with it.
+
+   THE FIRST BEAT IS LONGER THAN IT LOOKS, and it is the one number here that
+   has been raised twice from playing it. The sting's own animation is 940ms
+   end to end, so anything under a second cuts the word off mid-read and the
+   snow arrives on top of the news rather than after it - the first version
+   cut at 520ms and did exactly that. What it is buying is ONE THING AT A
+   TIME: the word lands, it is read, the board it happened on is seen, and
+   only then does the picture drop. A death gets a little more than a kill,
+   because losing a life is the one that has to be understood rather than
+   enjoyed. Both are long enough that skipping has to be possible - see
+   replaySkip(). Owner's call, twice. */
+var KC_HOLD_DEATH=1750;        // the death is watched, board frozen
+var KC_HOLD_KILL=1550;         // and so is the word over the kill
+var KC_SNOW_MS=470;            // no signal
+var KC_CAM_MS=820;             // raised, held against the glass, pushed in
+/* A KILL THAT TOOK MORE THAN ONE GETS LONGER TO BE READ. "DOUBLE CRUSH" is
+   the rarest thing this fight can say - two hunters are only ever in one
+   square because the player put them there - and it was going by too fast to
+   read. Set by bossFoldCrush() at the moment it knows the count, spent by the
+   next kcHold(), and cleared with the film; it is one number rather than a
+   parameter threaded through replayStart() and killCamStart() because every
+   one of those already takes `mode` and none of them should have to know
+   about kill counts. */
+var kcBonus=0;
+function kcHold(mode){
+  return (mode==="death"?KC_HOLD_DEATH:KC_HOLD_KILL)+kcBonus;
+}
+/* IS THE OLD TELEVISION IN OR OUT. `Menu > Kill cam` picks, and it is a real
+   question rather than a debug switch: the snow and the camcorder are two
+   extra seconds of ceremony on every death, and whether that reads as a kill
+   cam or as a wait is not something you can settle by reading the code. Both
+   halves keep the sting and the film; "plain" simply cuts the middle out. */
+function kcFull(){
+  return typeof settings==="undefined"||settings.killcam!=="plain";
+}
+function kcLead(mode){
+  return kcHold(mode)+(kcFull()?KC_SNOW_MS+KC_CAM_MS:0);
+}
 var REP_HZ=20;                 // one sample every 50ms
 var REP_KEEP=6000;             // how much history the ring holds
 var REP_DEATH_MS=1900, REP_KILL_MS=1500;   // how much of it each mode shows
@@ -239,6 +287,11 @@ function snapState(){
           cr:gCrates.map(function(c){return c.slice();}),keys:gKeys};
 }
 function pushHistory(){
+  /* THE ONE PLACE THAT MEANS "A MOVE WAS COMMITTED", which is exactly when a
+     death note stops being about what is on the board. All five verbs come
+     through here; deathSayHide() lives in 12-play.js, which loads later, so
+     it is asked for rather than assumed. */
+  if(typeof deathSayHide==="function")deathSayHide();
   moveHistory.push(snapState());
   if(moveHistory.length>400)moveHistory.shift();
 }
@@ -262,12 +315,13 @@ function undoMove(){
 var library=[];              // saved levels, persisted
 /* WHICH SAVED LEVEL THE EDITOR IS EDITING, or null for scratch work.
 
-   MY LEVELS creates the entry first and opens the editor on it, so SAVE has
-   somewhere to go without asking a second time - and so a level that is not
-   solvable yet is still a level you own rather than something the editor is
-   holding for you. Cleared by NEW and by deleting the entry being edited,
-   because a save into an id that is no longer in the library would silently
-   resurrect it. */
+   MY LEVELS creates the entry first and opens the editor on it, so the
+   autosave has somewhere to go without asking anybody anything - and so a
+   level that is not solvable yet is still a level you own rather than
+   something the editor is holding for you. Cleared by a pasted or composed
+   level, which is a different level and gets its own entry, and by deleting
+   the entry being edited, because a write into an id that is no longer in
+   the library would silently resurrect it. */
 var editingId=null;
 var playSource="builtin";    // "builtin" | "library" | "test"
 var libIndex=0;
