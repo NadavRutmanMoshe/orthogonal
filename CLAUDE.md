@@ -124,7 +124,7 @@ Block format `[x,y,z,k]`: 0 stone, 1 water (code says `glass`), 2 anchor,
   both. Bosses and trials carry a numeral and no number so a landmark can
   never renumber a section.
 - Rotation is locked (`rotate:false`) from the tutorials through `TRIAL I`
-  and unlocked at `07 — The Rotation`, then never taken back. On a locked
+  and unlocked at `09 — The Rotation`, then never taken back. On a locked
   level the turn buttons are **not drawn** (`body.norot`).
 - `tutorial:true` means no par, no stars, and the solver is not asked.
 - Progress is keyed by level **name**. `progress[name]` holds a move count

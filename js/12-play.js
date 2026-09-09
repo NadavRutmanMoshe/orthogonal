@@ -2474,9 +2474,9 @@ function bindNever(){
    at it: a level is beaten or it is not, the three glyphs in the corner move
    silently, and a player who walks every level and never folds a shortcut is
    never told they missed anything. So it is said once, in words, on the
-   first level carrying `stars:true` - which is `09 — Four Across`, where par
+   first level carrying `stars:true` - which is `12 — Simple Walk`, where par
    is exactly what walking costs. The player is told to aim for three, gets
-   them for free, and then meets `10 — Five Across`, which looks identical
+   them for free, and then meets `13 — Not a Simple Walk`, which looks identical
    and where walking is one move too many. The card is the setup; the second
    level is the punchline.
 

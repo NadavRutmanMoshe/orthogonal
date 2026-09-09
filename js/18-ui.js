@@ -309,9 +309,9 @@ function syncHud(){
      behaviour and it is right for the *flat* case - there the buttons come
      back the moment you stand up, so greying them says "not now". A level
      with `rotate:false` is a different sentence: the turn does not exist yet.
-     The opening eight levels are all locked, so the buttons arriving on
-     `05 — No Way From Here` is the reveal that level is built around, and a
-     pair of dead controls sitting in the bar for eight levels would spend it
+     The opening ten levels are all locked, so the buttons arriving on
+     `09 — The Rotation` is the reveal that level is built around, and a
+     pair of dead controls sitting in the bar for ten levels would spend it
      in advance. Deliberately not keyed off `noRot`, which includes flat. */
   document.body.classList.toggle("norot",
     app==="play"&&!!L&&L.rotate===false);

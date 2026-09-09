@@ -234,7 +234,7 @@ level in `js/02-levels.js`.
 3. `Depth is gone, so that strip far behind you is simply next to you now. Walk across.`
 4. `{do:3d} to stand up.<br>Three blocks share that column, and you come back on the one at **the front** — nearest you. The green square is one step behind it.`
 
-**`07 — The Rotation`** (`02-levels.js:243`)
+**`09 — The Rotation`** (`02-levels.js:243`)
 1. `Something is over there. {do:2d} and see how far it gets you.`
 2. `Nothing to cross to. The bridge you need does not exist along this axis.<br>{do:3d} to stand back up.`
 3. `So look down a different one. {do:turnr} — the world turns, and what lines up turns with it.`

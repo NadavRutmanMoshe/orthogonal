@@ -50,7 +50,7 @@ five levels in, each section is interrupted by a **trial**:
 
 | | | |
 |---|---|---|
-| I · FUNDAMENTALS | 12 + trial + sparring + boss | the owner's own opening: the fold, then peril, then the turn |
+| I · NATURE | 14 + trial + sparring + boss | the owner's own opening: the fold, then peril, then distance, then the turn |
 | II · FIRE | 7 + trial + boss | fire before water — a hazard reads faster than an absence |
 | III · WATER | 8 + trial + boss | ends on water + fire |
 | IV · DESERT | 9 + trial + boss | ends on crate + fire + water, then the sweeping fight |
@@ -157,9 +157,10 @@ section would renumber every level after it and cost a `LEVEL_RENAMES` entry
 each. A landmark must not be able to break a save.
 
 **SECTION I IS THE OWNER'S OWN, AND IT IS THE ANSWER TO "ARE THESE AI MADE?"**
-The opening was re-cut around eleven hand-authored levels. It runs
-`00 — First Steps, 00 — First Fold` (the tutorial), then `01 … 06,
-TRIAL I, 07, 08, 09, 10, 11, 12` and the boss. Each one is a sentence, and no
+The opening was re-cut around eleven hand-authored levels, and two more
+went in at `04` and `05` later. It runs
+`00 — First Steps, 00 — First Fold` (the tutorial), then `01 … 08,
+TRIAL I, 09, 10, 11, 12, 13, 14` and the boss. Each one is a sentence, and no
 two sentences are the same:
 
 | | |
@@ -169,19 +170,21 @@ two sentences are the same:
 | `01 — On Your Own` | the tutorial's own shape one step longer, and the only level in the opening where nothing can kill you. The rest the section did not have. |
 | `02 — Beware of Walls` | some squares are lethal to fold from. 4 of 9, including the start square. |
 | `03 — A Real Challenge` | the same, hardened: 6 of 8, and the only safe square is one you step *down* onto. |
-| `04 — The Illusion` | the plane is a shortcut, not a delivery — pop partway and walk the rest. |
-| `05 — The Block` | the plane has no preferred direction; the goal is behind you and above you. |
-| `06 — Limited` | the peril lesson at its limit: 8 of 9 squares are lethal to fold from, and the survivor is one you have to *climb* to. |
-| `07 — The Rotation` | **impossible without rotating**, proved by `solve()` both ways — and taught, so the player proves it too. |
-| `08 / 09 — No Bridge / No Bridge 2` | the same three moves conjugated: `rot+` and `rot-`. |
-| `10 — Simple Walk` | walking *is* par. The control half of the scoring pair. |
-| `11 — Not a Simple Walk` | one column wider, so walking is one move over and the fold is the shortcut. The star is the only thing that says you missed it. |
-| `12 — The Silence Before the Storm` | everything at once, into the boss. |
+| `04 — The Shortcut` | the fold as **distance**, not as a bridge. The first level whose gap runs into the screen rather than across it: the walkway is left in, so seven moves of walking and four moves of `FLAT POP right up` both work and the player is the one who notices. |
+| `05 — The Only Way` | the same board with `z=3` and `z=4` taken out of the floor, so the walk that solved the level before it now walks you off the world. Learn it for free, then need it. |
+| `06 — The Illusion` | the plane is a shortcut, not a delivery — pop partway and walk the rest. |
+| `07 — The Block` | the plane has no preferred direction; the goal is behind you and above you. |
+| `08 — Limited` | the peril lesson at its limit: 8 of 9 squares are lethal to fold from, and the survivor is one you have to *climb* to. |
+| `09 — The Rotation` | **impossible without rotating**, proved by `solve()` both ways — and taught, so the player proves it too. |
+| `10 / 11 — No Bridge / No Bridge 2` | the same three moves conjugated: `rot+` and `rot-`. |
+| `12 — Simple Walk` | walking *is* par. The control half of the scoring pair. |
+| `13 — Not a Simple Walk` | one column wider, so walking is one move over and the fold is the shortcut. The star is the only thing that says you missed it. |
+| `14 — The Silence Before the Storm` | everything at once, into the boss. |
 
-- **ROTATION DOES NOT EXIST UNTIL `07`, AND IT IS NEVER TAKEN BACK.** The
+- **ROTATION DOES NOT EXIST UNTIL `09`, AND IT IS NEVER TAKEN BACK.** The
   locked run is contiguous and ends at the level that teaches the turn: the
-  two tutorials, `01`…`06` and `TRIAL I` carry `rotate:false`, and nothing
-  after `07 — The Rotation` does. **`13 — Fire Wall` used to**, six levels
+  two tutorials, `01`…`08` and `TRIAL I` carry `rotate:false`, and nothing
+  after `09 — The Rotation` does. **`15 — Fire Wall` used to**, six levels
   and a boss later, at the top of a new section — so the buttons vanished
   from a bar that had had them all through Section I and came back on the
   next level. That is indistinguishable from a bug and was reported as one:
@@ -190,10 +193,10 @@ two sentences are the same:
 - **The lock is a lesson, not a load-bearing constraint, and that is worth
   knowing before defending it.** It used to be true that four early levels
   collapsed to `rot+ FLAT POP` without it; the opening was re-cut around the
-  owner's own levels since, and re-measured today **every one of the ten
+  owner's own levels since, and re-measured today **every one of the eleven
   locked levels has the same optimal route with rotation as without** —
-  including `13`, which is 5 moves either way. So what the lock buys now is
-  purely the reveal at `07`, and that is the only thing to weigh if it is
+  including `15`, which is 5 moves either way. So what the lock buys now is
+  purely the reveal at `09`, and that is the only thing to weigh if it is
   ever questioned again.
 - **AND THE TURN BUTTONS ARE NOT DRAWN ON A LOCKED LEVEL.** Disabled was the
   old behaviour and it is still right for the *flat* case, where they come
@@ -318,6 +321,26 @@ a key** that points somewhere else, or a chain half-applies depending on
 enumeration order. An entry that ends up mapping a name to *itself* is fine
 and will happen: numbers come back round, and a save under that name is
 already correct.
+
+**THE WHOLE CAMPAIGN WAS RENUMBERED ONCE, AND IT COST NINETY-THREE ENTRIES.**
+Two of the owner's levels went in at `04` and `05`, which moved everything
+after them up by two — and while every level in the run was being renamed
+anyway, the shelf was put right. `V · EXTRA` had been carrying `78..81`, then
+`65..77`, then `38..64`, then `82..97`, *in that order*, because levels had
+been moved onto it four separate times and each move kept the numbers the
+levels arrived with. A player reading the map saw the count go up, jump back,
+and jump forward again. It now runs `39..98`, straight on from the campaign's
+`38`, so the number on a node counts up by one from the first level to the
+last — which is the only thing that number has ever claimed to do.
+
+Done as one pass in the way the table demands: every value that named a
+renamed level was re-pointed at its new name, and one new key was added per
+rename. Nothing was dropped, nothing chains, and `verify.js` asserts both.
+The cost is worth stating plainly, because it is the argument for numbering
+being the *last* thing you decide: 93 entries of permanent save-migration
+baggage to move two levels into the middle of a section. The alternative —
+levels named without numbers — was never on the table, because the number is
+what a player uses to say where they are stuck.
 
 Every special piece is verified load-bearing; every anchor level is verified
 **impossible** without its anchor; every crate is verified to be shoved in the
