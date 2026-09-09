@@ -110,6 +110,12 @@ Block format `[x,y,z,k]`: 0 stone, 1 water (code says `glass`), 2 anchor,
   crate. A crate is the only piece with state; every world query takes the
   live crate list. Fire kills underfoot and poisons the whole silhouette
   column it folds into. Keys exist in code and the editor, unused.
+- **Fire only costs moves when the way round it is a turn.** Walking one
+  square further before folding is free - the plane and the volume both
+  charge one move per square of `u` - so a spike that merely postpones the
+  fold is invisible to `statsFor()` and to the minimizer, however lethal it
+  looks. Poison something whose detour is a rotation or a walk through depth
+  (`levels.md`).
 - **`SECTIONS[].at` are array indices.** Inserting a level shifts every
   later marker; `verify.js` asserts they still line up.
 - **`LEVEL_RENAMES` is composed, never rewritten.** Renaming a level means

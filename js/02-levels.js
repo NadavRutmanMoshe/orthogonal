@@ -581,28 +581,44 @@ var LEVELS=[
        {at:[[8,1,5],[7,1,6]],step:720,aim:850,say:"same ground — two of them"}]},
    blocks:box(0,9,0,0,0,6,[]),
    start:[1,1,1]},
-{name:"20 — Clear Ground",
+/* THE SECTION OPENS ON THE OWNER'S OWN LEVELS, pasted out of the editor.
+   The three that used to stand here are on the shelf now (82..84). These
+   three say the section's one fact three times, in the order a player meets
+   it: water is a wall you can fold *into*, water is a step you can climb,
+   water is ground you can walk out onto - and none of it reaches the plane.
+   Clear Ground, which used to open the section, now closes the run into the
+   trial, where its two folds belong. */
+{name:"20 — Straight Through",
+   hint:"A wall you cannot climb. Turn, and fold into it.",
+   /* The wall is three high and there is no way over it. Turning puts the
+      whole corridor into one silhouette column, and the fold is survivable
+      only because the wall is water: stone at your own height fills your
+      square in the plane and rule 4 crushes you. Make it stone and the
+      level has no answer at all - which is the cleanest possible statement
+      of what this section is about. */
+   blocks:[[0,0,0],[0,0,1],[1,0,1],[1,0,0],[0,0,-1],[1,0,-1],
+           [2,0,1],[2,0,0],[2,0,-1],[4,0,1],[4,0,0],[4,0,-1],
+           [3,0,-1,1],[3,0,0,1],[3,0,1,1],[3,1,1,1],[3,1,0,1],[3,1,-1,1],
+           [3,2,-1,1],[3,2,0,1],[3,2,1,1]],
+   start:[0,1,0],goal:[4,1,0],rotate:true},
+{name:"21 — Climb the Water",
+   hint:"Step up onto it first. Then turn.",
+   blocks:[[0,0,0],[0,0,1],[0,0,-1],[1,0,-1],[1,0,0],[1,0,1],
+           [2,0,-1],[2,0,0],[2,0,1],[4,0,-1],[4,0,0],[4,0,1],
+           [1,1,0,1],[4,1,-1],[4,2,-1]],
+   start:[0,1,0],goal:[4,3,-1],rotate:true},
+{name:"22 — Out Onto It",
+   hint:"It holds you up. Walk out before you fold.",
+   /* The shortest statement of the rule there is: from the bank the plane
+      has a hole you fall through, and two steps out onto the water that
+      hole is behind you. Nothing here is scenery - drop either water block
+      and the level is impossible. */
+   blocks:[[0,0,0],[1,0,0,1],[2,0,0,1],[3,0,-3],[4,0,-3]],
+   start:[0,1,0],goal:[4,1,-3],rotate:true},
+{name:"23 — Clear Ground",
    hint:"Water holds you up, but leaves nothing in 2D.",
    blocks:[[0,0,0],[0,1,-1,1],[-1,2,-5],[-1,2,-3],[0,2,-3,1],[0,2,-4,1],[1,2,-4,1],[1,2,-5,1]],
    start:[0,1,0],goal:[1,3,-5],rotate:true},
-{name:"21 — Nothing Underfoot",
-   /* Second block moved from z=2 to z=7, for the reason Six Across was moved:
-      one across and two back draws within a twentieth of a cell of one across
-      and one *down*, so the first press of the level read as a step you could
-      take and was a fall out of the world. Reported from play, and
-      tools/legible.js had it flagged from the start square. Checked at
-      z=2,3,5,6,7,9 - same route, same move count, same score. */
-   hint:"A long walk in 2D, with a piece missing.",
-   blocks:[[0,0,0],[-1,0,7],[-2,1,6],[-3,1,5],[-4,1,4],[-5,2,-4],[-6,3,-4],[-6,3,-2],[-6,3,-3,1],[-6,4,-4,1]],
-   start:[0,1,0],goal:[-6,5,-4],rotate:true},
-{name:"22 — Twice Transparent",
-   hint:"What got you here will not be there in 2D.",
-   blocks:[[0,0,0],[-1,0,2],[-1,0,3],[-1,1,2,1],[0,2,8],[0,2,11,1],[0,3,12,1]],
-   start:[0,1,0],goal:[0,4,12],rotate:true},
-{name:"23 — Look Through It",
-   hint:"Turn first. Every side hides a different hole.",
-   blocks:[[0,0,0],[-2,0,1],[-3,0,1],[-2,1,1,1],[-8,2,0],[-11,2,0,1]],
-   start:[0,1,0],goal:[-11,3,0],rotate:true},
 {name:"TRIAL III — The Depth Slice",
    hint:"Three lives, three places to visit. In 2D you cannot dodge.",
    trial:{period:2100,fire:300,
@@ -619,22 +635,74 @@ var LEVELS=[
      b.push([3,0,0,1]);b.push([3,0,1,1]);b.push([3,0,2,1]);
      b.push([4,0,9]);box(5,7,0,0,4,6,b);return b;})(),
    start:[0,1,0],goal:[7,1,4],rotate:true},
-{name:"24 — Mostly Missing",
-   hint:"Most of this never reaches 2D.",
-   blocks:[[0,0,0],[0,0,-1,1],[3,0,-2],[-5,0,-3],[-3,0,-3],[-4,1,-3,1],[-8,2,-2],[-10,2,-1],[-9,2,-1,1]],
-   start:[0,1,0],goal:[-9,3,-1],rotate:true},
-{name:"25 — Down and Around",
-   hint:"Go down before you turn. The amber waits either way.",
-   blocks:[[0,0,0],[-3,1,-1],[-4,1,-1],[-3,1,0,1],[-2,1,0,1],[-1,1,-6],[0,1,-5],[0,1,-4]],
-   start:[0,1,0],goal:[0,2,-4],rotate:true},
-{name:"26 — Both Sides",
-   hint:"A long walk on each side of the turn.",
-   blocks:[[0,0,0],[-1,0,0,1],[-2,0,3],[-2,0,6],[-2,0,7],[-1,1,7,1],[3,2,8],[5,2,9],[2,3,10],[2,3,11],[-1,3,11]],
-   start:[0,1,0],goal:[-1,4,11],rotate:true},
-{name:"27 — Two Dangers",
-   hint:"Water under your feet, fire in your way.",
-   blocks:[[0,0,0],[3,1,0,1],[3,1,1],[3,1,-1],[4,1,-1,4],[5,3,-4,1]],
-   start:[0,1,0],goal:[3,2,-1],rotate:true},
+/* WATER AND FIRE TOGETHER, which is the pair this section ends on, and they
+   are exact opposites in the plane. Water is solid ground that casts
+   nothing, so the plane shows you LESS than the volume does. Fire casts like
+   stone and then poisons the whole silhouette column it lands in, so the
+   plane shows you MORE - a square that is safe to stand on down here is
+   lethal once depth is thrown away. All four of these ask the same question
+   once each: what is in the column you are about to fold into, and which of
+   the two is it?
+
+   The fire in each is load-bearing rather than dressing, and it is worth
+   saying how, because it is not obvious: a spike only costs the player moves
+   when the way round it is a TURN. Walking one square further before folding
+   is free - the plane and the volume both charge one move per square of u -
+   so a spike that merely delays the fold changes nothing the solver can see.
+   Every one of these poisons something that has no equal-cost detour. */
+{name:"24 — Over the Lava",
+   hint:"The flat road runs over fire. Cross on the water instead.",
+   /* The stones five squares back are the road, and they are the reason the
+      trench is a puzzle rather than a picture: fold on the near bank and the
+      plane offers you a floor the whole way across. It is just poisoned, all
+      three squares of it. Take those stones out and the trench is only a gap
+      you would have fallen into anyway. */
+   blocks:[[0,0,0],[1,0,0,4],[2,0,0,4],[3,0,0,4],
+           [1,1,0,1],[2,1,0,1],[3,1,0,1],[4,0,0],
+           [1,0,-5],[2,0,-5],[3,0,-5],[4,0,-5],[5,0,-5],[6,0,-5]],
+   start:[0,1,0],goal:[6,1,-5],rotate:true},
+{name:"25 — One Bad Row",
+   hint:"There is fire in the wall. Not in every row.",
+   /* Straight Through again, with one block of the wall swapped. The three
+      moves that solved that level now start in the row the fire is in, and a
+      spike anywhere in your silhouette column kills you from any depth - so
+      the answer is one step sideways first, and then the same three moves
+      into a lane that is all water.
+
+      THE WALL'S BOTTOM ROW IS ONE BLOCK, and that is the whole reason: with
+      water at all three depths down there the fire sat in the middle lane
+      with two water blocks in front of it and was invisible from the only
+      view the level opens on. A hint that says look at the wall has to be
+      answerable by looking at the wall. Removing the two costs nothing -
+      neither is a landing candidate and neither casts - so the puzzle is the
+      same one, seen. */
+   blocks:(function(){var b=box(0,2,0,0,-1,1,[]);box(4,5,0,0,-1,1,b);
+     for(var y=1;y<=2;y++)for(var z=-1;z<=1;z++)b.push([3,y,z,1]);
+     b.push([3,0,0,4]);b.push([6,0,0]);b.push([7,0,0,1]);return b;})(),
+   start:[0,1,0],goal:[7,1,0],rotate:true},
+{name:"26 — Turn Away",
+   hint:"Fire shares your column. Fold along the other axis.",
+   /* Nowhere to walk: every neighbour of the start square is a fall, so the
+      only verb left is the fold, and the fold you would take first is fatal
+      from four squares away. The turn is the whole level, and the reward for
+      taking it is a landing on water halfway - which is then the platform
+      the second fold is taken from. */
+   blocks:[[0,0,0],[0,0,4,4],[1,0,-6],[2,0,-6],[2,0,-2,1],
+           [5,0,-1],[5,0,-2],[3,0,-8]],
+   start:[0,1,0],goal:[3,1,-8],rotate:true},
+{name:"27 — Aside, Then Through",
+   hint:"Out of the fire's row, through the water, then fold again.",
+   /* The section's whole vocabulary in one level: step out of the poisoned
+      lane, turn, fold into a wall that is not there, land, turn back, and
+      fold a second time onto a goal that is standing on water. Two folds and
+      two turns, and the fire is what makes the first one-move answer - which
+      does exist, and is what 20 taught - kill you instead. */
+   blocks:(function(){var b=box(0,2,0,0,-1,1,[]);box(4,5,0,0,-1,1,b);
+     for(var y=1;y<=2;y++)for(var z=-1;z<=1;z++)b.push([3,y,z,1]);
+     b.push([3,0,0,4]);
+     b.push([6,0,-4]);b.push([7,0,-4]);b.push([8,0,-4]);b.push([8,0,0,1]);
+     return b;})(),
+   start:[0,1,0],goal:[8,1,0],rotate:true},
 {name:"BOSS III — The Search",
    won:"They can only count what casts a shadow. This world is larger than their record of it.",
    hint:"A game of catch: whoever shifts the other into their own square first wins. Water hides nothing — fold right through it.",
@@ -1016,7 +1084,50 @@ var LEVELS=[
 {name:"64 — Everything at Once",
    hint:"Three folds, three anchors, water throughout. Good luck.",
    blocks:[[0,0,0],[0,1,-1],[-5,1,-2],[2,1,-2],[1,1,-2,1],[1,1,-3,1],[4,2,-4],[6,3,-5],[-3,3,-5],[-4,3,-10],[-4,3,-8]],
-   start:[0,1,0],goal:[-4,4,-8],rotate:true}
+   start:[0,1,0],goal:[-4,4,-8],rotate:true},
+
+/* SECTION III WAS RE-CUT AROUND THE OWNER'S OWN LEVELS, and the seven that
+   used to make up most of it are here rather than deleted. They are good
+   levels - three of them were the section's hardest - and none of them was
+   removed for being wrong. The section wanted a different shape: three of
+   the owner's levels at the front, and a run of water-and-fire levels after
+   the trial that these did not cover. Renumbered into the 82..88 the shelf
+   had free; the boards are untouched, so a save that beat one of them still
+   does. */
+{name:"82 — Nothing Underfoot",
+   /* Second block moved from z=2 to z=7, for the reason Six Across was moved:
+      one across and two back draws within a twentieth of a cell of one across
+      and one *down*, so the first press of the level read as a step you could
+      take and was a fall out of the world. Reported from play, and
+      tools/legible.js had it flagged from the start square. Checked at
+      z=2,3,5,6,7,9 - same route, same move count, same score. */
+   hint:"A long walk in 2D, with a piece missing.",
+   blocks:[[0,0,0],[-1,0,7],[-2,1,6],[-3,1,5],[-4,1,4],[-5,2,-4],[-6,3,-4],[-6,3,-2],[-6,3,-3,1],[-6,4,-4,1]],
+   start:[0,1,0],goal:[-6,5,-4],rotate:true},
+{name:"83 — Twice Transparent",
+   hint:"What got you here will not be there in 2D.",
+   blocks:[[0,0,0],[-1,0,2],[-1,0,3],[-1,1,2,1],[0,2,8],[0,2,11,1],[0,3,12,1]],
+   start:[0,1,0],goal:[0,4,12],rotate:true},
+{name:"84 — Look Through It",
+   hint:"Turn first. Every side hides a different hole.",
+   blocks:[[0,0,0],[-2,0,1],[-3,0,1],[-2,1,1,1],[-8,2,0],[-11,2,0,1]],
+   start:[0,1,0],goal:[-11,3,0],rotate:true},
+{name:"85 — Mostly Missing",
+   hint:"Most of this never reaches 2D.",
+   blocks:[[0,0,0],[0,0,-1,1],[3,0,-2],[-5,0,-3],[-3,0,-3],[-4,1,-3,1],[-8,2,-2],[-10,2,-1],[-9,2,-1,1]],
+   start:[0,1,0],goal:[-9,3,-1],rotate:true},
+{name:"86 — Down and Around",
+   hint:"Go down before you turn. The amber waits either way.",
+   blocks:[[0,0,0],[-3,1,-1],[-4,1,-1],[-3,1,0,1],[-2,1,0,1],[-1,1,-6],[0,1,-5],[0,1,-4]],
+   start:[0,1,0],goal:[0,2,-4],rotate:true},
+{name:"87 — Both Sides",
+   hint:"A long walk on each side of the turn.",
+   blocks:[[0,0,0],[-1,0,0,1],[-2,0,3],[-2,0,6],[-2,0,7],[-1,1,7,1],[3,2,8],[5,2,9],[2,3,10],[2,3,11],[-1,3,11]],
+   start:[0,1,0],goal:[-1,4,11],rotate:true},
+{name:"88 — Two Dangers",
+   hint:"Water under your feet, fire in your way.",
+   blocks:[[0,0,0],[3,1,0,1],[3,1,1],[3,1,-1],[4,1,-1,4],[5,3,-4,1]],
+   start:[0,1,0],goal:[3,2,-1],rotate:true}
 
 
 
@@ -1164,8 +1275,8 @@ var LEVEL_RENAMES={
      the note above. Composed, not rewritten: any key that already pointed
      at one of these has been re-pointed above, and these carry the name
      that was live until today. */
-  "24 — Invisible Architecture":"24 — Mostly Missing",
-  "26 — Long Division":"26 — Both Sides",
+  "24 — Invisible Architecture":"85 — Mostly Missing",
+  "26 — Long Division":"87 — Both Sides",
   "35 — Confluence":"35 — All Three",
   "79 — Sharp":"79 — Around the Fire",
   "81 — Poisoned Column":"81 — One Bad Line",
@@ -1265,14 +1376,14 @@ var LEVEL_RENAMES={
  "23 — Two Threats": "17 — Two Threats",
  "24 — Narrow Safety": "18 — Narrow Safety",
  "41 — Thread It": "19 — Thread It",
- "11 — Clear Ground": "20 — Clear Ground",
- "12 — Nothing Underfoot": "21 — Nothing Underfoot",
- "13 — Twice Transparent": "22 — Twice Transparent",
- "14 — Look Through It": "23 — Look Through It",
- "15 — Invisible Architecture": "24 — Mostly Missing",
- "16 — Down and Around": "25 — Down and Around",
- "17 — Long Division": "26 — Both Sides",
- "21 — Two Dangers": "27 — Two Dangers",
+ "11 — Clear Ground": "23 — Clear Ground",
+ "12 — Nothing Underfoot": "82 — Nothing Underfoot",
+ "13 — Twice Transparent": "83 — Twice Transparent",
+ "14 — Look Through It": "84 — Look Through It",
+ "15 — Invisible Architecture": "85 — Mostly Missing",
+ "16 — Down and Around": "86 — Down and Around",
+ "17 — Long Division": "87 — Both Sides",
+ "21 — Two Dangers": "88 — Two Dangers",
  "39 — Confluence": "35 — All Three",
  "40 — Turn, Shove, Fold": "36 — Turn, Shove, Fold",
  "42 — Twice Pushed": "37 — Twice Pushed",
@@ -1310,14 +1421,14 @@ var LEVEL_RENAMES={
  "15 — Two Threats": "17 — Two Threats",
  "16 — Narrow Safety": "18 — Narrow Safety",
  "17 — Thread It": "19 — Thread It",
- "18 — Clear Ground": "20 — Clear Ground",
- "19 — Nothing Underfoot": "21 — Nothing Underfoot",
- "20 — Twice Transparent": "22 — Twice Transparent",
- "21 — Look Through It": "23 — Look Through It",
- "22 — Invisible Architecture": "24 — Mostly Missing",
- "23 — Down and Around": "25 — Down and Around",
- "24 — Long Division": "26 — Both Sides",
- "25 — Two Dangers": "27 — Two Dangers",
+ "18 — Clear Ground": "23 — Clear Ground",
+ "19 — Nothing Underfoot": "82 — Nothing Underfoot",
+ "20 — Twice Transparent": "83 — Twice Transparent",
+ "21 — Look Through It": "84 — Look Through It",
+ "22 — Invisible Architecture": "85 — Mostly Missing",
+ "23 — Down and Around": "86 — Down and Around",
+ "24 — Long Division": "87 — Both Sides",
+ "25 — Two Dangers": "88 — Two Dangers",
  "26 — Shove": "28 — Shove",
  "27 — Make a Bridge": "29 — Make a Bridge",
  "28 — Shove and Turn": "30 — Shove and Turn",
@@ -1359,17 +1470,17 @@ var LEVEL_RENAMES={
  "09 — The Last Step": "73 — The Last Step",
  "10 — Far Side": "76 — Far Side",
  "11 — Three Folds": "77 — Three Folds",
- "12 — Clear Ground": "20 — Clear Ground",
- "13 — Nothing Underfoot": "21 — Nothing Underfoot",
- "14 — Twice Transparent": "22 — Twice Transparent",
- "15 — Look Through It": "23 — Look Through It",
- "16 — Invisible Architecture": "24 — Mostly Missing",
- "58 — Down and Around": "25 — Down and Around",
- "59 — Long Division": "26 — Both Sides",
+ "12 — Clear Ground": "23 — Clear Ground",
+ "13 — Nothing Underfoot": "82 — Nothing Underfoot",
+ "14 — Twice Transparent": "83 — Twice Transparent",
+ "15 — Look Through It": "84 — Look Through It",
+ "16 — Invisible Architecture": "85 — Mostly Missing",
+ "58 — Down and Around": "86 — Down and Around",
+ "59 — Long Division": "87 — Both Sides",
  "17 — Sharp": "79 — Around the Fire",
  "18 — Cast a Shadow": "80 — Cast a Shadow",
  "19 — Poisoned Column": "81 — One Bad Line",
- "38 — Two Dangers": "27 — Two Dangers",
+ "38 — Two Dangers": "88 — Two Dangers",
  "20 — Check Behind": "16 — Check Behind",
  "21 — Two Threats": "17 — Two Threats",
  "22 — Narrow Safety": "18 — Narrow Safety",
@@ -1414,14 +1525,14 @@ var LEVEL_RENAMES={
  "14 — Two Threats": "17 — Two Threats",
  "15 — Narrow Safety": "18 — Narrow Safety",
  "16 — Thread It": "19 — Thread It",
- "17 — Clear Ground": "20 — Clear Ground",
- "18 — Nothing Underfoot": "21 — Nothing Underfoot",
- "19 — Twice Transparent": "22 — Twice Transparent",
- "20 — Look Through It": "23 — Look Through It",
- "21 — Invisible Architecture": "24 — Mostly Missing",
- "22 — Down and Around": "25 — Down and Around",
- "23 — Long Division": "26 — Both Sides",
- "24 — Two Dangers": "27 — Two Dangers",
+ "17 — Clear Ground": "23 — Clear Ground",
+ "18 — Nothing Underfoot": "82 — Nothing Underfoot",
+ "19 — Twice Transparent": "83 — Twice Transparent",
+ "20 — Look Through It": "84 — Look Through It",
+ "21 — Invisible Architecture": "85 — Mostly Missing",
+ "22 — Down and Around": "86 — Down and Around",
+ "23 — Long Division": "87 — Both Sides",
+ "24 — Two Dangers": "88 — Two Dangers",
  "25 — Shove": "28 — Shove",
  "26 — Make a Bridge": "29 — Make a Bridge",
  "27 — Shove and Turn": "30 — Shove and Turn",
@@ -1475,14 +1586,14 @@ var LEVEL_RENAMES={
  "18 — Two Threats": "17 — Two Threats",
  "19 — Narrow Safety": "18 — Narrow Safety",
  "20 — Thread It": "19 — Thread It",
- "21 — Clear Ground": "20 — Clear Ground",
- "22 — Nothing Underfoot": "21 — Nothing Underfoot",
- "23 — Twice Transparent": "22 — Twice Transparent",
- "24 — Look Through It": "23 — Look Through It",
- "25 — Invisible Architecture": "24 — Mostly Missing",
- "26 — Down and Around": "25 — Down and Around",
- "27 — Long Division": "26 — Both Sides",
- "28 — Two Dangers": "27 — Two Dangers",
+ "21 — Clear Ground": "23 — Clear Ground",
+ "22 — Nothing Underfoot": "82 — Nothing Underfoot",
+ "23 — Twice Transparent": "83 — Twice Transparent",
+ "24 — Look Through It": "84 — Look Through It",
+ "25 — Invisible Architecture": "85 — Mostly Missing",
+ "26 — Down and Around": "86 — Down and Around",
+ "27 — Long Division": "87 — Both Sides",
+ "28 — Two Dangers": "88 — Two Dangers",
  "29 — Shove": "28 — Shove",
  "30 — Make a Bridge": "29 — Make a Bridge",
  "31 — Shove and Turn": "30 — Shove and Turn",
@@ -1530,5 +1641,22 @@ var LEVEL_RENAMES={
  /* SPARRING stood still for exactly one playtest. The level is the same
     level - same board, same spawn, same lesson - with an opponent that can
     now kill you, so a save that beat the dummy has beaten this. */
- "SPARRING — Standing Target": "SPARRING — One of Them"
+ "SPARRING — Standing Target": "SPARRING — One of Them",
+
+ /* SECTION III WAS RE-CUT. Three of the owner's levels took the front of it,
+    a run of water-and-fire levels took the four slots after the trial, and
+    the seven that were displaced went to the shelf as 82..88 with their
+    boards untouched. Clear Ground stayed in the section and moved from 20 to
+    23. Composed as always, and in one pass: every value above that pointed
+    at one of these eight old names has been re-pointed at its new one in the
+    same edit that makes the old names keys, which is what keeps no value
+    from also being a key. */
+ "20 — Clear Ground": "23 — Clear Ground",
+ "21 — Nothing Underfoot": "82 — Nothing Underfoot",
+ "22 — Twice Transparent": "83 — Twice Transparent",
+ "23 — Look Through It": "84 — Look Through It",
+ "24 — Mostly Missing": "85 — Mostly Missing",
+ "25 — Down and Around": "86 — Down and Around",
+ "26 — Both Sides": "87 — Both Sides",
+ "27 — Two Dangers": "88 — Two Dangers"
 };

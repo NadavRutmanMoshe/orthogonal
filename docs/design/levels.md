@@ -54,7 +54,33 @@ five levels in, each section is interrupted by a **trial**:
 | II · FIRE | 7 + trial + boss | fire before water — a hazard reads faster than an absence |
 | III · WATER | 8 + trial + boss | ends on water + fire |
 | IV · DESERT | 10 + trial + boss | ends on crate + glass + spikes |
-| V · EXTRA | 27, locked | opens when every boss is down; anchors and amber live here |
+| V · EXTRA | 51, locked | opens when every boss is down; anchors and amber live here |
+
+**Section III was re-cut around the owner's own levels.** The four that used to
+open it are now three of the owner's, pasted out of the editor, saying the
+section's one fact three times in the order a player meets it — water is a wall
+you can fold *into* (`20 — Straight Through`), water is a step you can climb
+(`21`), water is ground you can walk out onto (`22`) — with `Clear Ground`
+moved down to `23` so the run into the trial ends on the section's first
+two-fold level. The four after the trial are new and every one of them puts
+**water and fire in the same board**, because they are exact opposites in the
+plane: water is solid ground that casts nothing, so the plane shows you *less*
+than the volume does, and fire casts like stone and then poisons the whole
+silhouette column it lands in, so the plane shows you *more*.
+
+The thing worth knowing before writing another one: **a spike only costs the
+player moves when the way round it is a turn.** Walking one square further
+before folding is free — the plane and the volume both charge one move per
+square of `u` — so a spike that merely delays the fold is invisible to
+`statsFor()` and to the minimiser, however lethal it looks. Every fire block in
+`24..27` poisons something whose detour is a *rotation* or a walk through
+depth, and that is why deleting one changes the answer. Three drafts that did
+not do this were thrown away first; they solved in exactly the same number of
+moves with the fire and without it.
+
+The seven levels that came out are on the shelf as `82..88`, boards untouched.
+None of them was removed for being wrong — three were the section's hardest —
+and `LEVEL_RENAMES` carries every save.
 
 **And the section ends on two fights, not one.** `SPARRING — One of Them`
 sits between `12` and `BOSS I`: a teaching level that happens to be a boss, on
