@@ -87,7 +87,7 @@ const SCREENS={
      enough to the pose a beat holds - so `story1:14` is the frame just after
      the fold that takes the parents. The beat numbers are the array indices
      in STORY.open.beats / STORY.end.beats in js/22-story.js. */
-  "story1:N":{what:"the opening cutscene at beat N (0 the house … 18 the last line)",
+  "story1:N":{what:"the opening cutscene at beat N (0 the house, 14 the fold, 19 the last line)",
               js:"storyShot();storyPlay('open');storySeek(N);", wait:700},
   "story2:N":{what:"the ending cutscene at beat N (2 is the press it asks for)",
               js:"storyShot();storyPlay('end');storySeek(N);", wait:700},

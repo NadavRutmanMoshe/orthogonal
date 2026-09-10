@@ -493,11 +493,16 @@ function menuPanel(){
         /* AND THE WAY BACK TO THE STORY, beside the way back to the lesson,
            because they are the same kind of thing: something that plays once
            and is then gone, filed where a player would go looking for it.
-           It plays the opening; the ending is offered only once it has been
-           reached, or the button would be a spoiler with a button on it. */
-        "<button id='mStory'>REPLAY STORY</button>"+
-        ((typeof storySeen==="function"&&storySeen("end"))
-          ?"<button id='mStoryEnd'>REPLAY ENDING</button>":"")+
+
+           BOTH SCENES ARE ALWAYS OFFERED, on the owner's call. The ending
+           used to appear only once it had been reached, on the reasoning
+           that a button naming it is a spoiler - and that is true, but the
+           owner wants to be able to watch it, and a door that is there only
+           after you no longer need it is not a door. It is under More, next
+           to RESET SETTINGS, which is about as far from an accident as a
+           button gets. */
+        "<button id='mStory'>WATCH THE OPENING</button>"+
+        "<button id='mStoryEnd'>WATCH THE ENDING</button>"+
         /* LEVEL EDITOR MOVED TO THE HOME SCREEN as MY LEVELS. It is not a
            setting - it is a place you go, like LEVELS and the wardrobe are -
            and filing it under More next to RESET SETTINGS is what made it
@@ -547,13 +552,17 @@ function menuPanel(){
   bind("mTut",function(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
   });
+  /* `true` is the replay flag: watching a scene from here does not count as
+     having reached it, so somebody who looks at the ending early still gets
+     FIND THEM on BOSS IV's card - and it hands back to whatever screen this
+     panel was opened over rather than to the scene's own destination. */
   bind("mStory",function(){
     hidePanel();
-    if(typeof storyPlay==="function")storyPlay("open");
+    if(typeof storyPlay==="function")storyPlay("open",true);
   });
   bind("mStoryEnd",function(){
     hidePanel();
-    if(typeof storyPlay==="function")storyPlay("end");
+    if(typeof storyPlay==="function")storyPlay("end",true);
   });
   bind("mReset",function(){
     settings.volume=defaultVolume();settings.volTouched=false;

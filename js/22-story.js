@@ -166,10 +166,21 @@ function stHex(id){
        z 4..5   the strip in front of them, where the children meet
        z 6..9   the path up to our door, coming toward the camera
 
-   The houses are three-walled and roofless - back and sides at two blocks,
-   the front open. A voxel house with four walls is a box with a lid, and
-   nobody can be inside it and looked at; a cutaway is the convention, and it
-   is also the honest one here, because the camera is already looking down.
+   A HOUSE IS A ROOF, and the second version is where that was learned. The
+   first was a three-walled box with a beam over the opening, and it was
+   reported as not looking like a house - correctly. Everything in this world
+   is grass-topped stone, walls and ground alike, so a rectangle of it is
+   terrain until something about its SHAPE says otherwise, and the one shape
+   nothing natural has is a pitched roof. So the walls came down to two
+   blocks, a doorway was cut into the face, and the top is a three-step
+   pyramid: five wide, three wide, one. The silhouette does the work.
+
+   The near side stays open, and the roof deliberately stops one row short of
+   it. A voxel house with four walls is a box with a lid and nobody can be
+   inside it and be looked at; a cutaway is the convention. The row the roof
+   does not cover is why the family is visible at all - screen height here is
+   `0.885y - 0.465z`, so the roof's near edge sits about 1.05 above the floor
+   it covers, and anyone standing under it is behind it.
 
    THE IMPORTANT GEOMETRY IS THE COLUMN AT x=3. The door is at x=3, the path
    is x=3, and when the fold comes everyone on that line - mother in the
@@ -177,30 +188,86 @@ function stHex(id){
    square. The son is at x=6 by then, and there is nothing else anywhere in
    this world at x=6 above the ground. That is why he lives, and it is on
    screen before it is in words. */
+/* THE ONE THING THAT MADE IT A HOUSE AND NOT A HILL: `L.tint`.
+
+   Shape alone was not enough, and three versions proved it. Everything in
+   this world is the same grass-topped stone, walls and ground alike, so a
+   pitched roof over a wall with windows in it is still a green mound made of
+   the material the lawn is made of - photographed three times, reported
+   twice.
+
+   `L.tint` is already in the engine for `00 - First Landing`: a list of
+   `[x,y,z,hex]` painting named cells a fixed colour for as long as the level
+   is loaded. It multiplies exactly where the section's block colour did, so
+   it inherits the depth fade and the settle toward ink for free, and it is
+   deliberately NOT a block kind - it changes no rule and carries no meaning.
+   Which is exactly right here: plaster walls and a tiled roof are decoration,
+   and this is the one place in the game entitled to some.
+
+   The hues are chosen against the meadow they stand on, and against the two
+   colours that are never free: nothing here may drift toward the boss's
+   violet or the trial's amber. Warm cream and burnt terracotta are as far
+   from both as a building can get. */
+/* THE WALL COLOUR HAS TO BEAT THE GRASS, and the first one did not. These
+   multiply the surface texture, and the grass surface carries a bright green
+   band on every face - so a pale cream wall came out olive and the houses
+   were still green. A saturated warm tan takes that band down to brown,
+   which is what a multiply can do and a pale tint cannot. */
+var ST_WALL=0xd08b52, ST_ROOF=0xb2503c;
 function stHouseBoard(){
-  var b=[],x,z;
+  var b=[],tint=[],x,z;
   function floor(x0,x1,z0,z1){
     for(var i=x0;i<=x1;i++)for(var j=z0;j<=z1;j++)b.push([i,0,j]);
   }
-  /* THREE BLOCKS HIGH WITH A LINTEL, because two blocks high is a garden
-     wall. A stone box the same height as the family standing in it reads as
-     terrain - the ground is grass-topped stone and so are the walls, and at
-     this camera angle the only thing telling them apart is shape. Height and
-     a beam across the opening are the shape: a doorway two high and three
-     wide, with a solid line over it, is a building at a glance. */
-  function walls(x0,x1){
-    var i,y;
-    for(i=x0;i<=x1;i++)for(y=1;y<=3;y++)b.push([i,y,0]);              // back
-    for(i=1;i<=3;i++)for(y=1;y<=3;y++){b.push([x0,y,i]);b.push([x1,y,i]);} // sides
-    for(i=x0+1;i<x1;i++)b.push([i,3,3]);                              // the lintel
+  // Everything a house is built of is painted; the ground it stands on is not.
+  function put(x,y,z,hex){b.push([x,y,z]);tint.push([x,y,z,hex]);}
+  /* A face with a door in it, and a pitched roof over it. `x0+2` is the
+     middle of the five, which is the door, the ridge's peak, and - not by
+     accident - the column the census folds. */
+  function house(x0,x1){
+    var i,y,j,mid=x0+2;
+    /* THE FACE, WITH A DOOR AND TWO WINDOWS CUT OUT OF IT. The holes matter
+       as much as the roof does: a blank rectangle of grass-topped stone is a
+       cliff, and holes in a regular pattern are the other thing nothing
+       natural has. The door is two blocks tall in the middle - which is also
+       the column the census folds - and the windows are single blocks either
+       side of it along the top course. */
+    for(i=x0;i<=x1;i++)for(y=1;y<=3;y++){
+      if(i===mid&&y<=2)continue;                       // the door
+      if(y===3&&(i===x0+1||i===x0+3))continue;         // the two windows
+      put(i,y,0,ST_WALL);
+    }
+    // Two side walls, leaving the near side open to look through.
+    for(j=1;j<=2;j++)for(y=1;y<=3;y++){put(x0,y,j,ST_WALL);put(x1,y,j,ST_WALL);}
+    /* THE ROOF IS THE GABLE END, AND IT IS ONE ROW DEEP.
+
+       Two things were learned putting this on. TWO COURSES, NOT THREE:
+       5 wide, 3, 1 over a short wall is a cone on a stump, and in this
+       section's green it read as a fir tree. A tall box with a small hat is
+       a house; a short box with a big hat is scenery.
+
+       And it lives at z=0 ONLY. Run back over the interior it becomes an
+       overhang, and an overhang in this projection is drawn in FRONT of the
+       face it belongs to - screen height is `0.885y - 0.465z`, so a roof
+       block two rows nearer the camera lands almost exactly on top of the
+       wall course it is supposed to be sitting above. Photographed, the
+       house had a roof and no windows, because the roof was covering them.
+       At z=0 it is the gable end of a house seen end-on, which is the view
+       we are in, and the face underneath it is left alone.
+
+       The chimney is one block, and it is worth its one block: after the
+       pitch, it is the single thing that says building rather than hill. */
+    for(i=x0;i<=x1;i++)put(i,4,0,ST_ROOF);
+    for(i=x0+1;i<x1;i++)put(i,5,0,ST_ROOF);
+    put(x0+3,6,0,ST_ROOF);
   }
   floor(1,5,0,3);      // our house
   floor(8,12,0,3);     // theirs
   floor(0,13,4,5);     // the strip across the front of both
   for(z=6;z<=9;z++)b.push([3,0,z]);                                   // the path
-  walls(1,5);
-  walls(8,12);
-  return b;
+  house(1,5);
+  house(8,12);
+  return {blocks:b, tint:tint};
 }
 /* THE PLANE.
 
@@ -213,7 +280,7 @@ function stHouseBoard(){
 function stPlaneBoard(){
   var b=[],x,z;
   for(x=0;x<=8;x++)for(z=0;z<=3;z++)b.push([x,0,z]);
-  return b;
+  return {blocks:b, tint:[]};
 }
 
 var STORY={
@@ -221,18 +288,34 @@ var STORY={
     to:"prologue",
     level:{name:"I'm Just A Cube", hint:"", theme:1, tutorial:true, rotate:false,
            start:[3,1,2], goal:[3,1,2], blocks:null},
+    /* BIGGER THAN THEY WERE. The parents were 1.18 against the son's 1.0 and
+       were reported as barely seen - a black cube in a dark doorway at
+       fourteen squares of arena width is a smudge. 1.4 is a third again as
+       big as their son, which is also the honest reading of "the parents are
+       bigger", and it is what makes the black one legible at all. */
     cast:[
-      {id:"dad",  col:"black", size:1.18, at:[2,1,1]},
-      {id:"mum",  col:"pink",  size:1.18, at:[4,1,1]},
-      {id:"nDad", col:"white", size:1.18, at:[9,1,5]},
-      {id:"nMum", col:"white", size:1.18, at:[11,1,5]},
+      {id:"dad",  col:"black", size:1.4,  at:[2,1,1]},
+      {id:"mum",  col:"pink",  size:1.4,  at:[4,1,1]},
+      {id:"nDad", col:"white", size:1.4,  at:[9,1,5]},
+      {id:"nMum", col:"white", size:1.4,  at:[11,1,5]},
       {id:"nKid", col:"white", size:1.0,  at:[10,1,4]},
-      {id:"copA", body:ST_COP_BODY, rim:ST_COP_RIM, size:1.26, at:[3,1,9], hidden:true},
-      {id:"copB", body:ST_COP_BODY, rim:ST_COP_RIM, size:1.26, at:[3,1,9], hidden:true}
+      {id:"copA", body:ST_COP_BODY, rim:ST_COP_RIM, size:1.34, at:[3,1,9], hidden:true},
+      {id:"copB", body:ST_COP_BODY, rim:ST_COP_RIM, size:1.34, at:[3,1,9], hidden:true}
     ],
     beats:[
-      // The room, and the three of them in it. Long enough to count.
-      {ms:1500},
+      /* THE THREE OF THEM, NAMED AND COUNTED, BEFORE ANYTHING HAPPENS.
+
+         This beat and the two under it are here because the parents were
+         reported as never really seen: they had no moment of their own -
+         the son left in the second beat and they were furniture until the
+         officers arrived. So the scene now opens on the household, says how
+         many live in it, and spends four seconds on him saying goodbye to
+         each of them in turn. The line is what makes the viewer count the
+         cubes, which is the whole trick: three is a number the ending can
+         take two away from. */
+      {ms:1900, say:"Three of them lived here."},
+      {ms:1150, at:function(){stHop("son");stHop("dad",300);}},
+      {ms:1250, at:function(){stHop("son");stHop("mum",300);}, say:null},
       // Out through the door and down onto the strip.
       {ms:1060, at:function(){stWalk("son",[[3,3],[3,4],[3,5]]);}},
       // And along the front, toward the neighbours.
@@ -332,7 +415,17 @@ function storyAsking(){return ST?ST.await:null;}
    cannot walk off the platform while doing it. */
 function storyHolds(verb){return !!ST&&ST.await!==verb;}
 
-function storyPlay(id){
+/* `replay` is the settings panel's two buttons rather than the campaign.
+
+   IT CHANGES TWO THINGS, AND BOTH MATTER. A replay does not mark the scene
+   as seen - so somebody who watches the ending early out of curiosity still
+   gets FIND THEM on BOSS IV's win card and still gets the scene at the
+   moment it is worth something; watching it is not the same as having
+   reached it. And a replay goes back where it came from rather than to the
+   scene's own destination: the opening ends in the first tutorial, which is
+   right the first time and is somebody being thrown out of their level the
+   second. */
+function storyPlay(id,replay){
   var def=STORY[id];
   if(!def)return;
   storyStop();
@@ -341,11 +434,15 @@ function storyPlay(id){
      win card on BOSS IV - so playSource and lvIndex have to be restored or
      the next thing to ask "which level am I on" gets the cutscene. */
   stWas={src:(typeof playSource!=="undefined"?playSource:"builtin"),
-         idx:(typeof lvIndex==="number"?lvIndex:0)};
+         idx:(typeof lvIndex==="number"?lvIndex:0),
+         home:(typeof homeUp==="function"&&homeUp())};
   var lv={};
   for(var k in def.level)lv[k]=def.level[k];
-  lv.blocks=(id==="open"?stHouseBoard():stPlaneBoard());
-  ST={id:id, def:def, i:-1, t:0, actors:[], await:null, over:false};
+  var built=(id==="open"?stHouseBoard():stPlaneBoard());
+  lv.blocks=built.blocks;
+  lv.tint=built.tint;
+  ST={id:id, def:def, i:-1, t:0, actors:[], await:null, over:false,
+      replay:!!replay};
   playSource="story";
   enterPlay(lv,undefined,false);
   /* The one mark loadLevel leaves: trailHere() puts a footprint on the start
@@ -392,14 +489,22 @@ function storyStop(){
    for the one who does. */
 function storySkip(){
   if(!ST)return;
-  storyLeave(ST.id,ST.def.to,220);
+  storyLeave(ST.id,stDest(),220);
+}
+/* Where this scene should hand back to. A replay owes the player the screen
+   they pressed the button on; a first run owes them the scene's own next
+   thing. */
+function stDest(){
+  if(!ST)return "prologue";
+  return ST.replay?"back":ST.def.to;
 }
 /* THE ONE WAY OUT, and every path uses it: SKIP, the last beat of the
    opening, and the end card's button. Fade the scene down, swap the world
    behind the black, then bring it back up - which is why storyStop() leaves
    the overlay standing and stCurtain() is what finally takes it away. */
 function storyLeave(id,to,ms){
-  storyMark(id);
+  var replay=!!(ST&&ST.replay);
+  if(!replay)storyMark(id);
   stFadeTo(1,ms);
   setTimeout(function(){
     storyStop();
@@ -419,14 +524,19 @@ function stCurtain(){
 
 /* Where a finished cutscene puts you. The opening opens onto the first
    tutorial, which is what BEGIN always did; the ending opens onto the
-   section chooser, one tap from the shelf it has just unlocked. */
+   section chooser, one tap from the shelf it has just unlocked; and a replay
+   out of the settings panel goes back to whatever it interrupted. */
 function storyGo(to){
+  var idx=stWas?stWas.idx:0;
   playSource="builtin";
   if(to==="prologue"){
     if(typeof enterPlay==="function")enterPlay(LEVELS[0],0,false);
+  }else if(to==="back"){
+    if(typeof enterPlay==="function")enterPlay(LEVELS[idx],idx,false);
+    // A player who opened settings from the home screen is put back on it.
+    if(stWas&&stWas.home&&typeof homeShow==="function")homeShow();
   }else{
-    if(typeof enterPlay==="function")enterPlay(LEVELS[stWas?stWas.idx:0],
-      stWas?stWas.idx:0,false);
+    if(typeof enterPlay==="function")enterPlay(LEVELS[idx],idx,false);
     if(typeof sectionPicker==="function")sectionPicker();
   }
   stWas=null;
@@ -599,7 +709,7 @@ function storyEndCard(){
 }
 function storyEndOk(){
   var el=$("storyend");if(el)el.classList.remove("on");
-  storyLeave("end","sections",260);
+  storyLeave("end",stDest(),260);
 }
 
 /* ============================================================
@@ -632,9 +742,9 @@ function storyDid(verb){
 }
 function storyFinish(){
   if(!ST)return;
-  var id=ST.id, to=ST.def.to;
+  var id=ST.id, to=stDest();
   ST.over=true;
-  storyMark(id);
+  if(!ST.replay)storyMark(id);
   /* The ending does not leave on its own - it stops on the last card, and
      that card's button is the way out. The opening fades straight into the
      first tutorial. */
@@ -751,12 +861,17 @@ function storyFrame(dtMs,rx,rz,tdvx,tdvz,ft){
       /* The officers keep their red rim; everybody else takes the adaptive
          one the player takes, so a white neighbour is still visible against
          paper and a black father against the void. */
+      /* AND THE RIM IS LOUDER THAN THE PLAYER'S. The player wears .5 because
+         they are the thing you are looking at anyway; an actor is one of
+         eight cubes on a wide board, and the black one is drawn against a
+         night meadow. The adaptive rim is the only thing separating him from
+         it, so here it is nearly solid. */
       if(a.rim!==undefined){
         a.mesh.userData.outlines.forEach(function(e){
-          e.material.color.setHex(a.rim);e.material.opacity=.8*a.op;});
+          e.material.color.setHex(a.rim);e.material.opacity=.92*a.op;});
       }else if(typeof outlineFor==="function"&&scene){
         outlineFor(a.mesh,scene.background);
-        a.mesh.userData.outlines.forEach(function(e){e.material.opacity=.5*a.op;});
+        a.mesh.userData.outlines.forEach(function(e){e.material.opacity=.85*a.op;});
       }
     }
   }

@@ -1325,6 +1325,26 @@ grass-topped stone as the ground, read as terrain rather than as a building:
 at this angle the only thing separating a wall from a hill is shape. Three
 high with a beam across the opening is a doorway, and it reads at a glance.
 
+**A house made of the ground is a hill.** The house went through four shapes
+before it read. A three-walled box with a beam over the opening was terrain.
+A pitched roof on it was a fir tree — a cone in that section's green is a
+conifer, and the game draws a treeline behind the scene to prove it. Cutting
+a door and two windows into the face helped and still left a green mound,
+because every block in the world wears the same grass-topped stone and the
+holes were the only thing distinguishing wall from lawn. Worse, the roof ran
+back over the interior and, in this projection, an overhang is drawn *in
+front of* the face it belongs to — screen height is `0.885y − 0.465z`, so the
+roof's near rows landed on the windows and hid them.
+
+What finished it was a mechanism that already existed for something else:
+`L.tint`, the per-cell colour list written for `00 — First Landing` so two
+identical grey blocks could be told apart through a half turn. Painting the
+walls warm tan and the roof terracotta made the houses buildings in one edit.
+The first tint was a pale cream and did nothing, which is worth remembering:
+these values *multiply* the surface texture, the grass surface carries a
+bright green band on every face, and a multiply can only darken — a pale tint
+over green stays green. Saturated or not at all.
+
 **Two instructions on one screen.** The ending hands `GO 2D` back to the
 player, and the first version forced the control bar up to carry it *whatever
 the player's control layout was* — copying `body.tut.ui-none #playBar.on`,

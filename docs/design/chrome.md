@@ -583,6 +583,17 @@ nothing else in that world above the ground at `x=6`. It is on screen before
 it is in words, which is the standing rule here: **a story beat that does not
 explain a mechanic does not go in**, and these two are the mechanic.
 
+**The parents get a beat of their own, and they are bigger.** They were 1.18
+against the son's 1.0, and the scene left in its second beat — so they were
+furniture until the officers arrived, and were reported as never really seen.
+They are 1.4 now, their rim is nearly solid where the player's is half (an
+actor is one of eight cubes on a wide board, and the black one is drawn
+against a night meadow), and the scene opens on the household with a line
+that says how many live in it before spending four seconds on him saying
+goodbye to each of them. "Three of them lived here" is what makes the viewer
+count the cubes, which is the trick: three is a number the ending can take
+two away from.
+
 **The son is the player, not an actor.** He is `playerMesh`, walked by
 writing `player.x/z` and letting the render loop's own lerp carry him — so he
 moves the way the game moves and wears whatever skin is equipped. The cube in
@@ -608,10 +619,29 @@ was the first version, and it put two different instructions on one screen.
 a lawn but a *wall* of grass — every row of depth draws a little higher than
 the one in front of it, and eleven of them stack into a cliff with the houses
 buried in it. The game's own levels never show this because they are one or
-two blocks deep. Two floors, a strip and a path, and it reads as a place. The
-houses are three blocks high with a beam over the opening for the same
-reason: a stone box the height of the family standing in it is terrain, and
-at this camera angle only shape tells a wall from a hill.
+two blocks deep. Two floors, a strip and a path, and it reads as a place.
+
+**A house is a roof, windows, and a colour that is not the ground's.** Shape
+alone was not enough and three versions proved it. A three-walled box with a
+beam over the opening read as terrain; a pitched roof over it read as a fir
+tree, because a cone in this section's green is a conifer; cutting a door and
+two windows into the face helped and still left a green mound. What finished
+it was `L.tint` — the per-cell colour list already in the engine for
+`00 — First Landing` — painting walls a warm tan and the roof and chimney
+terracotta. It multiplies the surface texture where the section's block
+colour did, so it inherits the depth fade and the settle toward ink for free,
+and it is deliberately not a block kind: it changes no rule and means
+nothing. Plaster and tile are decoration, and this is the one place in the
+game entitled to some. The tint has to be *saturated* — a pale cream over the
+grass surface's bright green band comes out olive, and a multiply can only
+darken.
+
+**And the roof lives at z=0 only.** Run back over the interior it becomes an
+overhang, and an overhang in this projection is drawn in front of the face it
+belongs to: screen height is `0.885y − 0.465z`, so a roof block two rows
+nearer the camera lands almost exactly on the wall course it is meant to sit
+above. Photographed, the house had a roof and no windows, because the roof
+was covering them.
 
 **Seen once, and the flag is in the settings whitelist.** `seenStory1` and
 `seenStory2` go through `settings`, which means they must be read back in
@@ -620,8 +650,18 @@ opening plays on every launch, which is the worst version of a cutscene there
 is. Skipping counts as seeing. `RESET SETTINGS` deliberately does not clear
 them: it puts preferences back, and whether you have watched the opening is
 not a preference. `REPLAY STORY` in the settings panel is the way back, and
-`REPLAY ENDING` appears beside it only once the ending has been reached, or
-the button would be a spoiler with a button on it.
+`WATCH THE ENDING` sits beside it — always, on the owner's call. It is a
+spoiler with a button on it, and that was the argument for hiding it until
+the ending had been reached; a door that appears only once you no longer need
+it is not a door, and it is under More next to `RESET SETTINGS`, about as far
+from an accident as a button gets. **A replay is not a first watch**, and
+`storyPlay(id, replay)` is what keeps that true: it does not mark the scene
+seen, so somebody who looks at the ending early still gets `FIND THEM` on
+BOSS IV's card and still gets the scene at the moment it is worth something;
+and it hands back to the screen the panel was opened over rather than to the
+scene's own destination, because the opening ending in the first tutorial is
+right the first time and is somebody being thrown out of their level the
+second.
 
 ## The sting
 

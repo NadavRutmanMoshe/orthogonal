@@ -306,7 +306,13 @@ is the rule.
 - **`seenStory1` / `seenStory2` must stay in `loadSettings()`'s whitelist** or
   the opening plays on every launch. `RESET SETTINGS` deliberately leaves them.
 - **Ground only where somebody stands.** A filled lawn is a wall of grass at
-  this camera angle; see `chrome.md`.
+  this camera angle. A house needs a roof, windows AND `L.tint` - shape alone
+  reads as terrain, and the roof must sit at `z=0` or it overhangs its own
+  face. Screen height is `0.885y - 0.465z` (`chrome.md`).
+- **`WATCH THE OPENING` / `WATCH THE ENDING` are always in the menu**, and a
+  replay is not a first watch: `storyPlay(id,replay)` does not mark the scene
+  seen and hands back where it came from, so looking at the ending early does
+  not consume `FIND THEM` on BOSS IV.
 
 **Settings and saves** (`systems.md`)
 - `loadSettings()` is a **whitelist**. A key not read there does not exist
