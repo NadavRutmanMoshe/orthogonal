@@ -1,5 +1,5 @@
 "use strict";
-/* Orthogonal — 02-levels.js
+/* I'm Just A Cube — 02-levels.js
    The campaign: four sections and a locked shelf, each section a run of
    levels around a trial and closed by a boss, plus the tutorial scripts.
    Loaded as a classic script: everything here shares one global scope,
@@ -882,6 +882,13 @@ var LEVELS=[
    start:[0,1,0],goal:[6,2,-6],rotate:true},
 {name:"BOSS IV — The Census",
    won:"The count is closed, and you are not in it.",
+   /* AND THE STORY ENDS HERE. `ending:true` is what storyEndDue() reads to
+      turn this fight's win card into the way into the second cutscene - a
+      field rather than a name match in 22-story.js, because levels get
+      renamed (that is what LEVEL_RENAMES is for) and a cutscene that
+      silently stopped firing because a boss was retitled would be a
+      miserable thing to track down. Nothing else reads it. */
+   ending:true,
    hint:"Whoever shifts the other into their own square first wins. Shove a crate to change what they see — and the floor is sweeping.",
    /* The finale, so phase two brings the whole game at once - stone, spike,
       glass and the crates. The crates in particular can only ever arrive in

@@ -1,5 +1,5 @@
 "use strict";
-/* Orthogonal — 03-rules.js
+/* I'm Just A Cube — 03-rules.js
    Movement, block kinds, and the solid/silhouette/landing lookups.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */

@@ -1,5 +1,5 @@
 "use strict";
-/* Orthogonal — 12-play.js
+/* I'm Just A Cube — 12-play.js
    The verbs: move, shove, collapse, restore, die, win.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
@@ -1983,6 +1983,13 @@ function folding(){
 }
 function doFlatten(){
   if(typeof peekUnlatch==="function")peekUnlatch();
+  /* A CUTSCENE HOLDS THE VERBS, NOT THE BUTTONS. Beside bossHolding() and
+     for the same reason the tutorial's gate lives here: buttons, keys and
+     gestures all funnel through these four functions, so a gate written here
+     cannot be walked around. It is asked with the verb's own name, so a beat
+     can open exactly one door - which is what the ending does with the fold
+     and nothing else. */
+  if(typeof storyHolds==="function"&&storyHolds("fold"))return;
   if(bossHolding())return;
   if(folding())return;
   if(tutBlocks("bFlat"))return;
@@ -2034,9 +2041,15 @@ function doFlatten(){
      move is committed, so lengthening this costs the player nothing. */
   if(wall||crush){deathPending=true;slowMo();setTimeout(function(){die("crush");},620);}
   else if(spiked){deathPending=true;slowMo();setTimeout(function(){die("spike");},620);}
+  /* THE ONE PRESS A CUTSCENE ASKS FOR. The ending hands the fold back to the
+     player rather than playing it at them, so the beat that is waiting has to
+     hear about it - and it hears about it HERE, at the bottom of the real
+     verb, not from the button. A gesture and a key reach this line too. */
+  if(typeof storyDid==="function")storyDid("fold");
 }
 function doUnflatten(){
   if(typeof peekUnlatch==="function")peekUnlatch();
+  if(typeof storyHolds==="function"&&storyHolds("fold"))return;
   if(bossHolding())return;
   if(folding())return;
   if(tutBlocks("bFlat"))return;
@@ -2084,6 +2097,7 @@ function doUnflatten(){
 }
 function press(dir){
   if(app!=="play"||levelOver())return;
+  if(typeof storyHolds==="function"&&storyHolds("move"))return;
   if(typeof peekUnlatch==="function")peekUnlatch();
   // A tutorial step that names a control accepts only that control - but only
   // once the guide is actually up. Until then everything works and every input
@@ -2364,6 +2378,16 @@ function win(){
         " needs "+esc(lockSay)+"</em>";
     }
   }
+  /* AND AFTER THE LAST FIGHT, THE BUTTON IS NOT NEXT LEVEL.
+
+     BOSS IV carries `ending:true`, so beating it the first time turns the
+     card's one live button into the way into the second cutscene. It is
+     written last so it beats WHAT'S LEFT above: that line still says which
+     shelf is shut and why - the lock is real - but the thing the player
+     presses is the end of the story, not a locked door. The button's action
+     is re-routed in the same breath, on bNext in 19-bindings.js. */
+  if(typeof storyEndDue==="function"&&storyEndDue())
+    $("bNextT").textContent="FIND THEM";
   /* The picker only lists the campaign, so offering it after a library level
      or an editor test would land you somewhere you did not come from. */
   if(fromEditor||playSource!=="builtin"){
@@ -2401,6 +2425,7 @@ function win(){
 }
 function rotateView(dir){
   if(flat||dying||levelOver())return;
+  if(typeof storyHolds==="function"&&storyHolds("turn"))return;
   if(bossHolding())return;
   if(tutBlocks(dir>0?"bRotR":"bRotL"))return;
   tutPoke(dir>0?"bRotR":"bRotL");

@@ -1,5 +1,5 @@
 "use strict";
-/* Orthogonal — 15-tutorial.js
+/* I'm Just A Cube — 15-tutorial.js
    Control cues, the tutorial coach, the gesture lesson's ghost hand,
    and the hint button.
    Loaded as a classic script: everything here shares one global scope,

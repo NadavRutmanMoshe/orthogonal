@@ -1,5 +1,5 @@
 "use strict";
-/* Orthogonal — 19-bindings.js
+/* I'm Just A Cube — 19-bindings.js
    Every button and key binding.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
@@ -21,7 +21,21 @@ bind("bRestart",function(){
 bind("bBegin",function(){
   $("intro").classList.add("gone");
   audio();applyBrightness();     // first gesture unlocks sound
+  /* AND THEN THE HOUSE. The opening cutscene sits between BEGIN and the
+     first tutorial, which is the one place it can go: the card above it is
+     the only explanation of the verb a new player gets, so the scene plays
+     to somebody who has just read what a fold is - and it plays after they
+     have agreed to start, rather than in front of a player who has not yet
+     said they want to. */
+  if(typeof storyIntroDue==="function"&&storyIntroDue()){
+    storyPlay("open");
+    return;
+  }
 });
+/* The cutscenes' two buttons. SKIP is live for the whole of a scene; the end
+   card's is the only way off it. */
+bind("storySkip",function(){if(typeof storySkip==="function")storySkip();});
+bind("bStoryEnd",function(){if(typeof storyEndOk==="function")storyEndOk();});
 /* The explanation card's one way out. Nothing else on the card is live, and
    nothing behind it is: it answers screenUp(), so the four verbs, both
    clocks and the game keys are all held off while it is being read. */
@@ -99,6 +113,12 @@ bind("bLevels",function(){
 });
 bind("bNext",function(){
   if(fromEditor){enterEditor();return;}
+  /* THE LAST FIGHT DOES NOT HAVE A NEXT LEVEL, IT HAS AN ENDING. Beating
+     BOSS IV for the first time re-labels this button FIND THEM in win() and
+     re-routes it here; both halves read storyEndDue(), so they cannot
+     disagree about which the player is looking at. Afterwards it is an
+     ordinary NEXT LEVEL again. */
+  if(typeof storyEndDue==="function"&&storyEndDue()){storyPlay("end");return;}
   if(playSource==="library"){
     var s=sortedLibrary();
     libIndex++;
@@ -210,6 +230,16 @@ window.addEventListener("keydown",function(e){
      hand already resting on the keyboard is on. It cannot fold the world from
      here in any case, because the card is itself part of screenUp(). */
   if((k==="enter"||k===" ")&&tutCardUp()){tutCardOk();e.preventDefault();return;}
+  /* A CUTSCENE IS NOT A LEVEL, and three of the game keys act on the board
+     rather than through the four verbs - so storyHolds() never sees them.
+     Restart would put the son back in the house mid-scene, hint would ask
+     the solver about a lawn, undo has nothing to undo. Escape is the way
+     out, which here means SKIP: it is the key the reflex reaches for, and a
+     settings panel over a cutscene is not what it is reaching for. */
+  if(typeof storyOn==="function"&&storyOn()){
+    if(k==="escape"){storySkip();e.preventDefault();return;}
+    if(k==="r"||k==="u"||k==="z"||k==="h"){e.preventDefault();return;}
+  }
   if(GAME_KEYS[k]&&screenUp())return;
   if(k==="arrowleft"||k==="a"){press("left");e.preventDefault();}
   else if(k==="arrowright"||k==="d"){press("right");e.preventDefault();}

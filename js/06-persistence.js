@@ -1,5 +1,5 @@
 "use strict";
-/* Orthogonal — 06-persistence.js
+/* I'm Just A Cube — 06-persistence.js
    Progress, settings, session, library and wardrobe storage.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
@@ -103,6 +103,16 @@ function loadSettings(){
            may still carry it; it is ignored rather than migrated, because
            nothing is left that would ask. */
         if(o.starAsked===true)settings.starAsked=true;
+        /* THE TWO CUTSCENES, and they are on this list for exactly the
+           reason the note above gives. The opening plays once, between the
+           intro card's BEGIN and the first tutorial; the ending plays once,
+           off the win card of BOSS IV. A key written by saveSettings() and
+           not read here is silently forgotten on every reload - so without
+           these two lines the opening would play every single launch, which
+           is the worst version of a cutscene there is. Skipping counts as
+           seeing; REPLAY STORY in the settings panel is the way back. */
+        if(o.seenStory1===true)settings.seenStory1=true;
+        if(o.seenStory2===true)settings.seenStory2=true;
         if(typeof o.landHints==="number"&&o.landHints>=0)
           settings.landHints=Math.min(99,o.landHints|0);
         // o.verbs may exist in settings saved before the wording was settled.

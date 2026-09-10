@@ -1,5 +1,5 @@
 "use strict";
-/* Orthogonal — 05-state.js
+/* I'm Just A Cube — 05-state.js
    Mutable game state and the undo stack.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */

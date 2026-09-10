@@ -1,5 +1,5 @@
 "use strict";
-/* Orthogonal — 20-splash.js
+/* I'm Just A Cube — 20-splash.js
    The studio sting, and the gesture that unlocks the sound.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. This file only declares; 21-boot.js

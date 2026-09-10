@@ -1,5 +1,5 @@
 "use strict";
-/* Orthogonal — 04-solver.js
+/* I'm Just A Cube — 04-solver.js
    Breadth-first search over game states. Shared with the game.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */

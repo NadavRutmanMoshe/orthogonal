@@ -1,5 +1,5 @@
 "use strict";
-/* Orthogonal — 16-panels.js
+/* I'm Just A Cube — 16-panels.js
    Chapters and every slide-up panel: menu, levels, wardrobe, library.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
@@ -490,6 +490,14 @@ function menuPanel(){
          `legendPanel()` is untouched and still one bind away. */
       "<div class='pcard'><h4>More</h4><div class='psub'>"+
         "<button id='mTut'>REPLAY TUTORIAL</button>"+
+        /* AND THE WAY BACK TO THE STORY, beside the way back to the lesson,
+           because they are the same kind of thing: something that plays once
+           and is then gone, filed where a player would go looking for it.
+           It plays the opening; the ending is offered only once it has been
+           reached, or the button would be a spoiler with a button on it. */
+        "<button id='mStory'>REPLAY STORY</button>"+
+        ((typeof storySeen==="function"&&storySeen("end"))
+          ?"<button id='mStoryEnd'>REPLAY ENDING</button>":"")+
         /* LEVEL EDITOR MOVED TO THE HOME SCREEN as MY LEVELS. It is not a
            setting - it is a place you go, like LEVELS and the wardrobe are -
            and filing it under More next to RESET SETTINGS is what made it
@@ -538,6 +546,14 @@ function menuPanel(){
   });
   bind("mTut",function(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
+  });
+  bind("mStory",function(){
+    hidePanel();
+    if(typeof storyPlay==="function")storyPlay("open");
+  });
+  bind("mStoryEnd",function(){
+    hidePanel();
+    if(typeof storyPlay==="function")storyPlay("end");
   });
   bind("mReset",function(){
     settings.volume=defaultVolume();settings.volTouched=false;
@@ -1510,7 +1526,7 @@ function sectionPicker(){
     if(mapTouched(i))cleared++;
   }
   var h="<canvas class='mbg' id='mBg' aria-hidden='true'></canvas>"+
-    "<div class='mhead'><div class='mt'><b>Orthogonal</b>"+
+    "<div class='mhead'><div class='mt'><b>I'm Just A Cube</b>"+
     "<span>"+cleared+" / "+total+" CLEARED</span></div>"+
     /* NO ? HERE. It opened mapHelp(), which explains the shapes of the map's
        nodes - a disc, a hexagon, a diamond - and there is not one of those on

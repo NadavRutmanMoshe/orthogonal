@@ -1,5 +1,5 @@
 "use strict";
-/* Orthogonal — 08-minimizer.js
+/* I'm Just A Cube — 08-minimizer.js
    Which blocks in a level are load-bearing.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */

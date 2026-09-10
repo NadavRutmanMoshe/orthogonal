@@ -1,5 +1,5 @@
 "use strict";
-/* Orthogonal — 17-composer.js
+/* I'm Just A Cube — 17-composer.js
    Solution-first level generation.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */

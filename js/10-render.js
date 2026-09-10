@@ -1,5 +1,5 @@
 "use strict";
-/* Orthogonal — 10-render.js
+/* I'm Just A Cube — 10-render.js
    three.js scene, meshes, depth shading, the animation loop.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
@@ -4079,6 +4079,16 @@ function animate(now){
     playerMesh.scale.set(1+squash*.55,1-squash,1+squash*.55);
   }
   playerMesh.rotation.y=a;
+  /* THE CUTSCENE'S CAST, placed with the camera basis this loop has already
+     worked out. It goes HERE rather than earlier because the son is not an
+     actor - he is playerMesh, which the block above has just moved - and a
+     cutscene that wants him to hop or shake has to write that on top of the
+     position the game gave him.
+
+     flatT is handed over rather than read. Nothing outside this file reads
+     flatT, which is what lets peek and the replay borrow it, and one
+     cutscene is not a reason to make that untrue. */
+  if(typeof storyFrame==="function")storyFrame(dtMs,rx,rz,tdvx,tdvz,flatT);
   /* Blinking through the beat of grace after a trial hit. Invulnerability
      you cannot see is invulnerability you will not use.
 
@@ -4102,7 +4112,12 @@ function animate(now){
 
   // A boss arena has no goal square - the target is the boss itself, which
   // draws itself in drawBoss() - so the marker is simply hidden there.
-  goalMesh.visible=goalGhost.visible=!B;
+  /* A cutscene has no goal either, and for a stronger reason than a boss
+     does: its board is a house or a night platform, and a green wireframe
+     standing in the doorway is the game's HUD leaking into a scene that is
+     trying to be a place. */
+  goalMesh.visible=goalGhost.visible=
+    !B&&!(typeof storyOn==="function"&&storyOn());
   var g=((typeof liveGoal==="function"&&L.goal)?liveGoal():L.goal)||[0,0,0];
   var gu=g[0]*rx+g[2]*rz, gd=g[0]*tdvx+g[2]*tdvz;
   var gx=gu*rx+gd*.012*tdvx, gz=gu*rz+gd*.012*tdvz;

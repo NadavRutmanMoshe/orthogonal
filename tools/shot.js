@@ -82,6 +82,21 @@ const SCREENS={
   tutcard:  {what:"a full-bleed explanation card", js:"lv(2);cardPut('A heading','Two lines of body text, with {to2} named the way the button names it.','brief');"},
   toast:    {what:"a toast and a spoken cue", js:"lv(2);flash('a toast');flashCue('go right','hint · 2 left');", wait:400},
   phase:    {what:"the between-phases note on a boss", js:"lv(18);setTimeout(function(){phaseNote('the ground rises');},300);", wait:1200},
+  /* THE CUTSCENES, seekable by beat. storySeek() runs every beat up to the
+     one asked for and snaps the walks to their last cell, which is near
+     enough to the pose a beat holds - so `story1:14` is the frame just after
+     the fold that takes the parents. The beat numbers are the array indices
+     in STORY.open.beats / STORY.end.beats in js/22-story.js. */
+  "story1:N":{what:"the opening cutscene at beat N (0 the house … 18 the last line)",
+              js:"storyShot();storyPlay('open');storySeek(N);", wait:700},
+  "story2:N":{what:"the ending cutscene at beat N (2 is the press it asks for)",
+              js:"storyShot();storyPlay('end');storySeek(N);", wait:700},
+  /* And the one frame seeking cannot reach, because it is on the far side of
+     a real fold: the player presses GO 2D and she is standing in the plane. */
+  reunion:  {what:"the ending, after the player's own fold",
+             js:"storyShot();storyPlay('end');storySeek(2);setTimeout(doFlatten,400);", wait:3200},
+  storyend: {what:"the last card, after the last fold",
+             js:"storyShot();storyPlay('end');storySeek(6);setTimeout(storyEndCard,200);", wait:1400},
 };
 
 function parseArgs(argv){
@@ -97,7 +112,7 @@ function parseArgs(argv){
     else if(a==="--w")o.w=+next();
     else if(a==="--h")o.h=+next();
     else if(a==="--dpr")o.dpr=+next();
-    else if(a==="--wait")o.wait=+next();
+    else if(a==="--wait"){o.wait=+next();o.waitSet=true;}
     else if(a==="--save")o.save=next();
     else if(a==="--ui")o.ui=next();
     else if(a==="--eval")o.evalJs=next();
@@ -111,7 +126,9 @@ function parseArgs(argv){
 /* Resolve "flat:12" against the "flat:N" template. */
 function resolve(name){
   if(SCREENS[name])return {key:name,def:SCREENS[name],n:null};
-  const m=/^([a-z]+):(\d+)$/.exec(name);
+  // Digits are allowed inside the name as well as after the colon, or
+  // `story1:14` reads as an unknown screen rather than as beat 14 of it.
+  const m=/^([a-z][a-z0-9]*):(\d+)$/.exec(name);
   if(m&&SCREENS[m[1]+":N"])return {key:m[1]+":N",def:SCREENS[m[1]+":N"],n:+m[2]};
   return null;
 }
@@ -197,13 +214,24 @@ async function main(){
           hidePanel();
           enterPlay(LEVELS[i],i,false);
         };
+        // The same clearing a cutscene needs, minus the level: storyPlay()
+        // loads its own board.
+        window.storyShot=function(){
+          if(typeof homeHide==="function"&&homeUp())homeHide();
+          $("intro").classList.add("gone");
+          hidePanel();
+        };
       });
       await page.waitForTimeout(500);   // SPLASH_OUT
       const js=job.def.js.replace(/\bN\b/g,String(job.n));
       if(js)await page.evaluate(js);
       if(o.evalJs)await page.evaluate(o.evalJs);
     }
-    await page.waitForTimeout(job.def.wait||o.wait);
+    /* An explicit --wait wins over the screen's own default. It used to
+       lose to it, so `--wait 27000` on a screen declaring `wait:700` took the
+       shot at 700ms and looked exactly like a cutscene that had frozen -
+       which cost an hour of hunting a bug that was not there. */
+    await page.waitForTimeout(o.waitSet?o.wait:(job.def.wait||o.wait));
     const file=path.join(ROOT,o.out,job.name.replace(/:/g,"-")+(o.tag?"."+o.tag:"")+".png");
     await page.screenshot({path:file});
     const bad=errors.filter(e=>!/ERR_FAILED|ERR_CONNECTION|net::/.test(e));

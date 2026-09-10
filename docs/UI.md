@@ -31,6 +31,7 @@ rather than guessing the file.
 | `85-map.css` | `--vio --amb` tokens, the section chooser (`.secgrid .sectile .secem .secnum .secname .secsub .secpb .secf .seccap .secchain .seclock .secad`), `.panel.map .mhead .mcard .mbar #mtrail .mfill .mnode` (+ `.mboss .mtrial .solved .here .locked .skipped .mst`), `.mstars .mcap .msheet .mlegend`, the offer-card buttons `.ma .go .ad .qt .mn`, `.adicon`, the global reduced-motion rule |
 | `90-tutorial.css` | the guided lock (`body.tutlock`, `.tutlive`, `.tutsoft`), `.phasenote`, the ghost hand (`.ghost .gfinger .ghand .gtrack .gsay`) |
 | `95-home.css` | `.home` overlay, `.hcont` (CONTINUE, `--sec`), `.hshop`, `.hward` / `.hward.hmine` (WARDROBE, MY LEVELS), `.tiny` (SETTINGS) and `.tiny.hmulti` + `.hlock` (the locked MULTIPLAYER under it), `body.athome` |
+| `98-story.css` | the two cutscenes: `.story` overlay, `.sfade`, `.scap` (+ `--say`), `.sskip`, `body.instory` / `body.storyask`, `.storyend` |
 
 ## Tokens
 
@@ -63,7 +64,11 @@ knows what state the game is in.
 turn), `tut` / `tutgest` / `tutsoft` (a tutorial; gesture lesson; light dim),
 `tutlock` (guided lock armed, `15-tutorial.js`), `athome` (home screen up),
 `mapopen` (any panel up; hides the star total), `carded` (a full-bleed card
-up), `splashing`, `replaying` (also arms the `.rskip` catcher), `bosshold`.
+up), `splashing`, `replaying` (also arms the `.rskip` catcher), `bosshold`,
+`instory` (a cutscene is running - takes the HUD, bar, coach and star total
+off, the same list `athome` takes), `storyask` (the one beat that hands a
+verb back; brings the bar up carrying only `GO 2D`, and only on a button
+layout).
 
 ## Screens, one row each
 
@@ -94,6 +99,8 @@ buttons at the end of its builder.
 | Intro card | `#intro` (static) | `nothingBehind()` decides it shows | `70-cards` | `intro` |
 | Tutorial / explanation card | `#tutcard` | `cardPut(h,p,owner)` | `70-cards` | `tutcard` |
 | Win card | `#won` | `win()` (`12-play.js`): title, `.bigstars`, `#wonSub`, mastery/lock/story lines, buttons | `70-cards` | `win:2` |
+| Cutscene caption / skip / fade | `#story` (static) | `stSay()`, `stFadeTo()`, `storySkip()` (`22-story.js`); the scene itself is a level in the game's own renderer, placed by `storyFrame()` | `98-story` | `story1:0`, `story1:12`, `story2:2`, `reunion` |
+| The last card, after the last fold | `#storyend` (static) | `storyEndCard()` / `storyEndOk()` (`22-story.js`); answers `screenUp()` | `98-story`, `70-cards` (`.won`) | `storyend` |
 | Home screen | `#home` (static shell) | `homeShow`, `homeSync`, `homeCase` | `95-home` | `home` |
 | Menu | `#panel` | `menuPanel()` (`16-panels.js`); rows via `seg()` | `80-panel-tall`, `40-panels` (`.srow`), `50-layout-cues` (`.crow .seg`) | `menu` |
 | Wardrobe | `#panel.ward` | `wardrobePanel(tab)` (`shape` / `color` / `deal`), `wardRefresh`, `wardMeta` | `40-panels`, `80-panel-tall` | `wardrobe`, `wardrobe:color` |

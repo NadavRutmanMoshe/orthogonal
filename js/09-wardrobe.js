@@ -1,5 +1,5 @@
 "use strict";
-/* Orthogonal — 09-wardrobe.js
+/* I'm Just A Cube — 09-wardrobe.js
    Skins, palettes and the star economy.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */

@@ -1,4 +1,4 @@
-# Orthogonal — design history
+# I'm Just A Cube — design history
 
 Every version of a mechanic that was tried and dropped, and what it cost to
 find out. `CLAUDE.md` is the memory of how the game works *now*; this is the
@@ -1299,3 +1299,47 @@ live crate list as a fourth argument, and this one was not passing it. A start
 on a crate was "standing on nothing", so the level could never be scored and
 sat as a permanent draft. That had been true the whole time and nobody had hit
 it, because until the ray could hit a crate you could not put the start on one.
+
+
+---
+
+## The two cutscenes, and three things they cost
+
+The story got a beginning and an end — the house the census came to, and the
+fold that finds the mother in the plane. The reasoning lives in
+`docs/design/chrome.md`; this is what was tried first and thrown away.
+
+**A filled lawn is a wall of grass.** The house scene was first laid on a solid
+14×11 rectangle of ground, which is how a garden is shaped and not how this
+game draws one. The camera is orthographic and sits about 28° above the
+horizon, so every row of depth is drawn a little higher up the screen than the
+row in front of it — eleven of them stack into a green cliff with the two
+houses buried somewhere inside it. Nothing in the campaign had ever shown this
+because a level is one or two blocks deep. The fix is to build a cutscene the
+way a level is built: ground only where somebody stands, which here is two
+floors, a strip across the front and a one-square path. The path being one
+square wide is not only composition — it is the column the census folds.
+
+Height had the same cause. Walls two blocks high, made of the same
+grass-topped stone as the ground, read as terrain rather than as a building:
+at this angle the only thing separating a wall from a hill is shape. Three
+high with a beam across the opening is a doorway, and it reads at a glance.
+
+**Two instructions on one screen.** The ending hands `GO 2D` back to the
+player, and the first version forced the control bar up to carry it *whatever
+the player's control layout was* — copying `body.tut.ui-none #playBar.on`,
+which the tutorial uses for exactly that. But the caption is written `{do:2d}`
+and rendered through `tutWords()`, so on the default layout it already said
+"Double-tap the world" — with a button underneath it saying `GO 2D`. Two
+different instructions for one press. The bar is now brought back only on the
+layouts that have one, and the caption follows the layout, so they cannot
+disagree.
+
+**A screenshot tool that could not be told to wait.** `tools/shot.js` took
+`--wait MS`, and then used `job.def.wait||o.wait` — so a screen declaring its
+own settle time always won and the flag was silently ignored. Photographing a
+24-second cutscene with `--wait 27000` produced the frame at 700ms, over and
+over, which looks exactly like a cutscene frozen on its first beat. An hour
+went into a bug that was not in the cutscene at all. An explicit `--wait` now
+beats the screen's default; the screens' own defaults still apply when it is
+not given.

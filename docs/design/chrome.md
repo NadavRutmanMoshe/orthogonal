@@ -485,8 +485,8 @@ in.**
 
 **Eleven sentences, and never one that blocks play.** The game's voice is
 `Poisoned Column` and `Absent Floor` — spare, technical, and it does not
-narrate. So there are no cutscenes and no journal; the fiction lives in four
-places and each holds one line:
+narrate. So the fiction lives in six places now and each holds one line or
+one scene:
 
 | Where | What | Lives in |
 |---|---|---|
@@ -494,6 +494,29 @@ places and each holds one line:
 | section card on the map | one line per section | `SECTIONS[].story` → `mapDraw` |
 | boss win card | one line per fight | `LEVELS[].won` → `win()` |
 | boss names | the four stages of being counted | `LEVELS[].name` |
+| the opening cutscene | the house, and who the census took | `STORY.open` in `js/22-story.js` |
+| the closing cutscene | the plane, and who is still in it | `STORY.end` in `js/22-story.js` |
+
+**THIS ROW USED TO SAY "there are no cutscenes and no journal", AND THAT IS
+REVERSED, on the owner's call.** Worth being precise about what changed,
+because the reasoning behind the old line is still good. It was never an
+argument that cutscenes are bad; it was an argument that a story slice with
+no subject should be small enough to delete in one edit. What the two scenes
+add is the subject. The census was always coming to count you; now you have
+watched it count two people, and every line already in the table above means
+something it did not mean before — the intro card's "Everything this world
+has ever flattened is still in there" is a fact about nobody until you have
+seen who was flattened, and it is the last caption of the opening scene for
+exactly that reason.
+
+**And the game is called `I'm Just A Cube`, for the same reason.** It was
+`Orthogonal`, which names the mechanic. This one names the character, which
+is what the story is now about. Four player-visible strings carry it — the
+`<title>`, the home screen's `.htitle`, the intro card's `<h2>`, the map's
+header — and two things that look like the name are not it and must not be
+renamed: the `orthogonal:*` localStorage keys, which are every existing
+player's save, and `dist/orthogonal.html`, which is the file the published
+artifact link points at.
 
 - **`story` is a second field beside `sub`, not an extension of it.** `sub`
   says what the section teaches and is what a player needs to choose one; the
@@ -527,6 +550,78 @@ reads as a second skin rather than a second place, nothing in the world says
 you are being counted while you are counted, and the wardrobe has no part in
 it. Those are the UI half, and they are worth doing only if the premise makes
 the fights feel different when played.
+
+## The two cutscenes
+
+**A cutscene is a level, played by nobody.** `storyPlay()` builds an ordinary
+level object — blocks, a start, a `theme` index — marks it `tutorial:true`
+and hands it to `enterPlay()`. The sky, the grass, the birds, the depth
+shading, the outline, the fold tween and the camera are all the game's, and
+none of them know a cutscene exists. On top of the board sit actors: cubes
+from `buildPlayerMesh()`, the same call the wardrobe's display case uses, so
+the family is made of the piece the player is. `storyFrame()` is handed the
+camera basis by the render loop and projects them with exactly the maths the
+player is projected with, which is why they fold when the world does.
+
+**Three approaches were on the table and this one wins on one argument.** A
+second three.js scene (the wardrobe-case pattern) buys a free camera; CSS-3D
+(the sting's technique) buys cheapness. Neither can do the ending: "they were
+in the 2D dimension" is not something this engine has to depict, it is
+something it can *perform*. The player presses `GO 2D` and his mother is
+standing in the silhouette beside him, because she is an actor whose opacity
+rides `flatT` and whose `u` is one square from his. Any other renderer fakes
+the one moment the whole game has been building the vocabulary for.
+
+**The abduction is the fold, and that is the rule, not a flourish.** The
+census does not take the parents away in a puff of light. Mother, father and
+two officers are standing on `x=3` — the door, the step, and the path, which
+is one square wide for this reason — and the world folds. Four things in one
+silhouette column is rule 4, and it is the boss kill rule, and it is the only
+way anything in this game dies at somebody else's hand. The son lives because
+he had stepped outside to say hello, so his column was empty; there is
+nothing else in that world above the ground at `x=6`. It is on screen before
+it is in words, which is the standing rule here: **a story beat that does not
+explain a mechanic does not go in**, and these two are the mechanic.
+
+**The son is the player, not an actor.** He is `playerMesh`, walked by
+writing `player.x/z` and letting the render loop's own lerp carry him — so he
+moves the way the game moves and wears whatever skin is equipped. The cube in
+the house is the cube you have been playing.
+
+**The verbs are held, not the buttons.** `storyHolds()` sits at the top of
+`press` / `rotateView` / `doFlatten` / `doUnflatten` beside `bossHolding()`,
+which is the tutorial's reasoning exactly: buttons, keys and gestures all
+funnel through those four, so a gate written there cannot be walked around.
+It takes the name of the verb the current beat is waiting for, which is how
+the ending hands back `GO 2D` and nothing else. Three game keys act on the
+board rather than through a verb — restart, hint, undo — and are held in the
+key handler instead; Escape skips.
+
+**The scene decides nothing about the controls; the caption follows them.**
+The ask beat writes `{do:2d}` and renders through `tutWords()`, so a gesture
+player is told to double-tap and a button player is told to press. The bar is
+brought back for the button layouts only. Forcing it up on `ui-none` as well
+was the first version, and it put two different instructions on one screen.
+
+**Ground is only where somebody stands.** The first house scene laid a solid
+14×11 lawn, which in an orthographic view tilted 28° above the horizon is not
+a lawn but a *wall* of grass — every row of depth draws a little higher than
+the one in front of it, and eleven of them stack into a cliff with the houses
+buried in it. The game's own levels never show this because they are one or
+two blocks deep. Two floors, a strip and a path, and it reads as a place. The
+houses are three blocks high with a beam over the opening for the same
+reason: a stone box the height of the family standing in it is terrain, and
+at this camera angle only shape tells a wall from a hill.
+
+**Seen once, and the flag is in the settings whitelist.** `seenStory1` and
+`seenStory2` go through `settings`, which means they must be read back in
+`loadSettings()` or they do not survive a reload — without those two lines the
+opening plays on every launch, which is the worst version of a cutscene there
+is. Skipping counts as seeing. `RESET SETTINGS` deliberately does not clear
+them: it puts preferences back, and whether you have watched the opening is
+not a preference. `REPLAY STORY` in the settings panel is the way back, and
+`REPLAY ENDING` appears beside it only once the ending has been reached, or
+the button would be a spoiler with a button on it.
 
 ## The sting
 

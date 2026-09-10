@@ -1,4 +1,4 @@
-# Orthogonal
+# I'm Just A Cube
 
 Read this before changing anything. It is the short memory of how the game
 works **now**: the rules, the invariants, and where everything lives. It is
@@ -10,7 +10,7 @@ default:
 | Read this | when you are touching |
 |---|---|
 | `docs/UI.md` | **anything a player looks at** — screens, panels, cards, buttons, the map, the HUD. The screen-to-file map, the tokens, the class collisions, and the screenshot loop. Start here for UI work. |
-| `docs/design/chrome.md` | why the buttons, the map, the home screen, the sting and the story are shaped the way they are |
+| `docs/design/chrome.md` | why the buttons, the map, the home screen, the sting, the story and the two cutscenes are shaped the way they are |
 | `docs/design/levels.md` | the campaign, `SECTIONS`, `LEVEL_RENAMES`, what each level teaches |
 | `docs/design/trials.md` | the sweep, the falling blocks, lives, the shield |
 | `docs/design/bosses.md` | the hunters, phases, the replay, the telegraph |
@@ -30,6 +30,12 @@ it will bite the next session, a line here.**
 ---
 
 ## What the game is
+
+**The game is called `I'm Just A Cube`.** It was `Orthogonal`; the name is
+four player-visible strings (`<title>`, `.htitle`, the intro card's `<h2>`,
+the map header). The `orthogonal:*` localStorage keys and `dist/orthogonal.html`
+are **not** the name and must never be renamed - they are every player's save
+and the published artifact's URL.
 
 A grid puzzle about projection. The player is a cube in a voxel world with
 one special verb: **collapse the world to 2D** along the current camera axis
@@ -68,7 +74,7 @@ listed in `index.html`. `21-boot.js` is the only file that *runs* anything.
 
 | File | What it holds |
 |---|---|
-| `index.html` | all static markup: corners, HUD, boss bar, coach, ghost hand, bars, splash, home, `#panel`, `#toast`, the three full-bleed cards (`#intro`, `#tutcard`, `#won`) |
+| `index.html` | all static markup: corners, HUD, boss bar, coach, ghost hand, bars, splash, home, `#panel`, `#toast`, the cutscene overlay (`#story`), and the four full-bleed cards (`#intro`, `#tutcard`, `#won`, `#storyend`) |
 | `css/*.css` | **one stylesheet per screen**, linked in numeric order; the cascade depends on that order. `docs/UI.md` maps each screen to its file. |
 | `js/00-storage.js` | `window.storage` over `localStorage`; in-memory fallback when storage is denied |
 | `js/01-coords.js` | `AX[]`, the four camera views (`r` screen-right, `d` depth toward camera); `K()`, `box()` |
@@ -92,8 +98,9 @@ listed in `index.html`. `21-boot.js` is the only file that *runs* anything.
 | `js/19-bindings.js` | every button and key binding |
 | `js/20-splash.js` | the studio sting; the tap that unlocks audio |
 | `js/21-boot.js` | startup order; runs last |
+| `js/22-story.js` | the two cutscenes: `STORY`, `storyPlay()`, `storyFrame()`, `storyHolds()`. Loaded *after* boot; every call into it is `typeof`-guarded |
 | `tools/verify.js` | every level machine-checked: BFS, `trialSafety()`, `bossArena()`, `bosssim`, the `SECTIONS`/`LEVEL_RENAMES` invariants |
-| `tools/shot.js` | **headless screenshots of any screen** (`node tools/shot.js --list`). The eyes for UI work. |
+| `tools/shot.js` | **headless screenshots of any screen** (`node tools/shot.js --list`). The eyes for UI work. A cutscene is seekable by beat (`story1:12`), and an explicit `--wait` now beats the screen's own default. |
 | `tools/build-single.js` | inlines everything into one file for itch.io / the artifact |
 | `tools/curve.js`, `tools/legible.js` | the difficulty curve; squares that draw where ground is not |
 
@@ -280,6 +287,26 @@ is the rule.
 - `nothingBehind()` decides intro-card versus home screen and START versus
   CONTINUE; `NEXT LEVEL` is always the next level, except into a locked shelf
   where it becomes `WHAT'S LEFT` and opens the map.
+
+**The story** (`chrome.md`)
+- **There are two cutscenes**, and this reverses `chrome.md`'s old "there are
+  no cutscenes" on the owner's call. The opening is between the intro card's
+  BEGIN and the first tutorial; the ending is off BOSS IV's win card, which
+  carries `ending:true` and re-labels its button `FIND THEM`.
+- **A cutscene is a level, played by nobody**: `storyPlay()` hands an ordinary
+  `tutorial:true` level to `enterPlay()`, and `storyFrame()` (called from
+  `animate`, handed the camera basis) places the cast with the player's own
+  projection maths, so they fold with the world.
+- **The abduction and the reunion are both the fold** - four cubes in one
+  silhouette column is rule 4, and the ending gives `GO 2D` back to the player
+  for one press. A beat that does not explain a mechanic does not go in.
+- **The son is `playerMesh`**, not an actor, so he wears the equipped skin.
+- **The verbs are held at the verbs** (`storyHolds()` beside `bossHolding()`);
+  restart, hint and undo are held in the key handler, and Escape skips.
+- **`seenStory1` / `seenStory2` must stay in `loadSettings()`'s whitelist** or
+  the opening plays on every launch. `RESET SETTINGS` deliberately leaves them.
+- **Ground only where somebody stands.** A filled lawn is a wall of grass at
+  this camera angle; see `chrome.md`.
 
 **Settings and saves** (`systems.md`)
 - `loadSettings()` is a **whitelist**. A key not read there does not exist

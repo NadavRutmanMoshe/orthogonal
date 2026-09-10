@@ -1,5 +1,5 @@
 "use strict";
-/* Orthogonal — 13-gestures.js
+/* I'm Just A Cube — 13-gestures.js
    Swipe / tap / two-finger drag on the world.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */

@@ -1,5 +1,5 @@
 "use strict";
-/* Orthogonal — 18-ui.js
+/* I'm Just A Cube — 18-ui.js
    Toasts, panel plumbing, and syncHud.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
@@ -127,8 +127,15 @@ function panelOpen(){return $("panel").classList.contains("on");}
    and the two clocks would carry on regardless. It is also what makes
    tutPlayable() false while a card is being read, so time spent reading one
    is not counted as hesitation. */
+/* The story's last card is in here for the same reasons the tutorial's is:
+   it covers the world, and a keyboard does not care what is on top of it.
+   A running cutscene is deliberately NOT in here - it holds the four verbs
+   at the verbs (storyHolds), which is finer-grained than this test can be:
+   the ending hands GO 2D back for one beat, and a screen that swallowed
+   every game key would swallow the space bar that presses it. */
 function screenUp(){
   return homeUp()||!$("intro").classList.contains("gone")||
+         $("storyend").classList.contains("on")||
          (typeof tutCardUp==="function"&&tutCardUp());
 }
 function syncCorners(){
@@ -240,7 +247,20 @@ function syncHud(){
      it did, handing the whole document `display:none`. See the note in
      css/95-home.css. */
   document.body.classList.toggle("athome",homeUp());
-  var inPlay=app==="play"&&!homeUp();
+  /* A CUTSCENE IS A SCREEN TOO, and the same rule applies: the chrome
+     answers to it exactly as it answers to a panel, and this is the one
+     place that decides. `instory` takes the HUD, the bar, the coach and the
+     star total off (css/98-story.css, the same list body.athome takes);
+     `storyask` is the one beat that hands a verb back and needs the bar for
+     the length of one press. */
+  var inStory=typeof storyOn==="function"&&storyOn();
+  document.body.classList.toggle("instory",inStory);
+  document.body.classList.toggle("storyask",
+    inStory&&typeof storyAsking==="function"&&!!storyAsking());
+  /* The corner buttons cannot be done in CSS: their display is set inline
+     just below, and an inline style beats any stylesheet. So a cutscene is
+     simply not "in play" as far as the chrome is concerned. */
+  var inPlay=app==="play"&&!homeUp()&&!inStory;
   ["bHint","bLook","bMenu","bWard","bRestart"].forEach(function(id){
     var el=$(id); if(el)el.style.display=inPlay?"flex":"none";
   });

@@ -3,7 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Orthogonal</title>
+<!-- THE GAME'S NAME IS "I'm Just A Cube". It was Orthogonal, which named the
+     mechanic; this one names the character, and the story is now about him.
+     The rename is four player-visible strings - here, the home screen's
+     .htitle, the intro card's h2 and the menu's header - plus the docs.
+     TWO THINGS IT MUST NOT TOUCH, and both would be silent: the
+     `orthogonal:*` localStorage keys in js/06-persistence.js, which are
+     every player's save, and dist/orthogonal.html, which is the artifact the
+     published link points at. Neither is player-visible; both are load-bearing. -->
+<title>I'm Just A Cube</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Fonts are a progressive enhancement: the game falls back to
@@ -25,6 +33,7 @@
 <link rel="stylesheet" href="css/85-map.css">
 <link rel="stylesheet" href="css/90-tutorial.css">
 <link rel="stylesheet" href="css/95-home.css">
+<link rel="stylesheet" href="css/98-story.css">
 </head>
 <body>
 
@@ -370,7 +379,7 @@
      code that builds the display case. -->
 <div class="home" id="home">
   <div class="hwrap">
-    <div class="htitle">Orthogonal</div>
+    <div class="htitle">I'm Just A Cube</div>
     <div class="hsub">a cube, a world, one verb</div>
     <!-- The plinth wears the same frame the wardrobe's case does (.wglass in
          css/40-panels.css); the floor strip is the light spilling out of the
@@ -442,7 +451,7 @@
 <div class="toast" id="toast"></div>
 
 <div class="won" id="intro">
-  <h2 style="font-size:30px;letter-spacing:-.03em">Orthogonal</h2>
+  <h2 style="font-size:30px;letter-spacing:-.03em">I'm Just A Cube</h2>
   <!-- THE PREMISE IS BOLTED ON, NOT WOVEN IN. The two lines above the rule
        are the only explanation of the verb a new player ever gets, so they
        are untouched; the Census is a third line under a divider, which is
@@ -467,6 +476,31 @@
   <h2 id="tutcardH"></h2>
   <p id="tutcardP"></p>
   <button id="bTutOk">OK</button>
+</div>
+
+<!-- THE CUTSCENES' ONLY MARKUP. Everything a cutscene shows is the game
+     itself - the scene is a level being played by nobody, see js/22-story.js
+     - so all that is needed on top of it is a line, a way out, and something
+     to fade with. The three of them sit in one overlay that is `display:none`
+     until a scene runs, and only the skip takes pointer events. -->
+<div class="story" id="story" aria-hidden="true">
+  <div class="sfade" id="storyFade"></div>
+  <p class="scap" id="storyCap"></p>
+  <button class="sskip" id="storySkip">SKIP</button>
+</div>
+
+<!-- The last card, after the last fold. It wears .won's full-bleed dim like
+     the tutorial's explanation card does, because it is the same kind of
+     object; it answers screenUp() for the same reason. -->
+<div class="won storyend" id="storyend">
+  <h2>I'm Just A Cube</h2>
+  <p class="sub">the end</p>
+  <!-- NOT A REPEAT OF HER LAST LINE, which is what this said first time and
+       put two sentences about the same thing on one screen. It points at
+       II · FIRE instead: a place in this game that the player has already
+       walked through, and now has a reason to think about. -->
+  <p class="introstory">The fire is a place in this world.</p>
+  <button id="bStoryEnd">CONTINUE</button>
 </div>
 
 <div class="won" id="won">
@@ -540,5 +574,12 @@
 <script src="js/19-bindings.js"></script>
 <!-- 20-splash.js is loaded at the top of this block, before three.js. -->
 <script src="js/21-boot.js"></script>
+<!-- AFTER BOOT, AND THAT IS DELIBERATE. 22-story.js only declares; every
+     call into it - the render loop, the four verbs, syncHud, BEGIN, the win
+     card's next button - is guarded with `typeof storyX==="function"`, the
+     same idiom the primer and the replay use. Boot therefore gets its first
+     frame up without waiting for it, and the file keeps a number that says
+     where it sits. -->
+<script src="js/22-story.js"></script>
 </body>
 </html>

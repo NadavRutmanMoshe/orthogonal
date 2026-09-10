@@ -1,0 +1,115 @@
+/* I'm Just A Cube — css/98-story.css
+   The two cutscenes: the caption, the skip, the fade, and the last card.
+   Loaded in the order listed in index.html; see docs/UI.md for the map of
+   screens to files. */
+/* ============================================================
+   A CUTSCENE IS THE GAME WITH THE CHROME TAKEN OFF
+
+   There is no separate renderer and no video: the scene is a level being
+   played by nobody, so all this file does is take away everything that says
+   "you are playing" and put back one caption.
+
+   z-index 12 is deliberate and sits in the same ladder every other overlay
+   is in: over the world, the HUD and the bar (10), over the home screen
+   (11), and UNDER the panels (12 shares with them but no panel can be open
+   here) and under the full-bleed cards (20) - which is what lets the ending
+   stop on #storyend without the caption showing through it. The sting (60)
+   still covers everything, as it must.
+   ============================================================ */
+  .story{position:fixed;inset:0;z-index:12;display:none;pointer-events:none}
+  .story.on{display:block}
+
+  /* THE FADE IS ITS OWN ELEMENT, not an opacity on the overlay. The caption
+     and the skip live inside this overlay and must not fade with it: a
+     cutscene fades to black on the way OUT, and a skip button that dims with
+     the picture is a skip button that stops working exactly when somebody is
+     reaching for it. Colour is the void, not #000, so the fade is the same
+     dark the world sits in - and it follows a wardrobe palette for free. */
+  .sfade{position:absolute;inset:0;background:var(--void);opacity:0}
+
+  /* THE CAPTION.
+
+     Low, centred, and one line at a time. Violet by default because violet
+     is the story's colour everywhere else in this game - the intro card's
+     line, the win card's line, and the hunters themselves - and `--say` is
+     overwritten per line when somebody is actually speaking, so the mother's
+     lines come out the pink she is wearing. Same trick as `--sec` on the
+     win card's mastery pill.
+
+     Monospace, at the size the win card says things at: this is the voice
+     that says `Poisoned Column`, not a film subtitle. */
+  .scap{position:absolute;left:0;right:0;bottom:58px;margin:0 auto;
+    padding:0 22px;max-width:min(90vw,44ch);
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:12.5px;line-height:1.7;letter-spacing:.05em;text-align:center;
+    color:color-mix(in srgb,var(--say,#a274ff) 78%,var(--fg));
+    text-shadow:0 2px 14px rgba(0,0,0,.55);
+    opacity:0}
+  .scap.on{animation:scapin .5s ease both}
+  .scap b{color:var(--fg);font-weight:600}
+  @keyframes scapin{0%{opacity:0;transform:translateY(5px)}100%{opacity:1;transform:none}}
+  @media (prefers-reduced-motion: reduce){
+    .scap.on{animation:scapfade .3s ease both}
+    @keyframes scapfade{from{opacity:0}to{opacity:1}}
+  }
+
+  /* SKIP. It is the only live thing on the overlay, so it is the only thing
+     that takes pointer events. Small, in the corner opposite the caption's
+     eye line, and styled like the game's other `tiny` buttons rather than
+     like a control - it is a way out, not a verb. */
+  .sskip{position:absolute;top:calc(env(safe-area-inset-top,0px) + 16px);right:16px;
+    pointer-events:auto;height:30px;padding:0 14px;border-radius:99px;
+    border:1px solid var(--rule);background:rgba(15,20,36,.5);
+    color:var(--fg-dim);font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:10.5px;letter-spacing:.18em;cursor:pointer}
+  .sskip:active{transform:scale(.96)}
+  /* Nothing left to skip past: the last card is the end of the scene, and
+     its own button is the only way on. */
+  .story.done .sskip{display:none}
+
+  /* ============================================================
+     WHAT A CUTSCENE TAKES AWAY
+
+     The same list body.athome takes away, and for the same reason: this is a
+     screen, not a panel, so the chrome has to answer to it exactly as it
+     answers to one. The corner buttons are NOT in here - syncHud() sets
+     their display inline, so an inline style would beat any rule written
+     here; `inPlay` is asked of storyOn() instead, which is the one owner
+     rule this file must not break.
+     ============================================================ */
+  body.instory .hud,body.instory .bar,body.instory .coach,
+  body.instory .boss,body.instory .startotal{display:none}
+
+  /* EXCEPT WHEN THE SCENE ASKS FOR A PRESS.
+
+     The ending hands the fold back to the player, so the bar comes up
+     carrying exactly one button: the verb it is asking for, and nothing to
+     walk or turn with.
+
+     IT DOES NOT OVERRIDE `ui-none`, and that is the difference between this
+     and the tutorial's `body.tut.ui-none #playBar.on`. The caption is
+     written as {do:2d} and rendered through tutWords(), so on a gesture
+     layout it already says "Double-tap the world" - forcing a button up
+     underneath that sentence puts two different instructions on screen at
+     once, which is what it did the first time it was photographed. The
+     layout decides, the caption follows it, and they agree by construction. */
+  body.instory.storyask .bar{display:block}
+  body.instory.storyask #playBar{display:flex;justify-content:flex-end}
+  body.instory.storyask .dpad,body.instory.storyask .rot{display:none}
+  /* And the line moves up out of the bar's way when there is a bar. */
+  body.instory.storyask .scap{bottom:122px}
+  /* Lit, the way the tutorial lights the control it is asking for. */
+  body.instory.storyask .flatbtn{
+    box-shadow:0 0 0 2px color-mix(in srgb,#35c2a5 60%,transparent),
+               0 0 26px color-mix(in srgb,#35c2a5 40%,transparent)}
+
+  /* ============================================================
+     THE LAST CARD
+     Borrowed from .won, like the tutorial's explanation card, because it is
+     the same kind of object. The title is the game's, said once, at the only
+     moment it is the answer to something.
+     ============================================================ */
+  .storyend h2{font-size:30px;letter-spacing:-.03em}
+  .storyend .sub{font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:10.5px;letter-spacing:.3em;text-transform:uppercase;
+    color:var(--fg-dim);margin:0}
