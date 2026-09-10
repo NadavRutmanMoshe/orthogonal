@@ -98,7 +98,8 @@ listed in `index.html`. `21-boot.js` is the only file that *runs* anything.
 | `js/19-bindings.js` | every button and key binding |
 | `js/20-splash.js` | the studio sting; the tap that unlocks audio |
 | `js/21-boot.js` | startup order; runs last |
-| `js/22-story.js` | the two cutscenes: `STORY`, `storyPlay()`, `storyFrame()`, `storyHolds()`. Loaded *after* boot; every call into it is `typeof`-guarded |
+| `js/22-story.js` | the three cutscenes: `STORY`, `storyPlay()`, `storyFrame()`, `storyHolds()`. Loaded *after* boot; every call into it is `typeof`-guarded |
+| `js/23-guide.js` | the neighbour who stands in PROLOGUE and I · NATURE levels and gives tips. **Pure decoration** - no rule, no solver, never solid. Also loaded after boot and `typeof`-guarded |
 | `tools/verify.js` | every level machine-checked: BFS, `trialSafety()`, `bossArena()`, `bosssim`, the `SECTIONS`/`LEVEL_RENAMES` invariants |
 | `tools/shot.js` | **headless screenshots of any screen** (`node tools/shot.js --list`). The eyes for UI work. A cutscene is seekable by beat (`story1:12`), and an explicit `--wait` now beats the screen's own default. |
 | `tools/build-single.js` | inlines everything into one file for itch.io / the artifact |
@@ -300,6 +301,9 @@ is the rule.
   begins on the arena you just won, folds it flat, fades, swaps the board
   behind the black and fades up. `ST_ARRIVE` is those five beats and
   `stArrive()` is the swap; a menu replay skips them.
+- **The pack wears the officers' look.** `huntMesh()` is the same near-black
+  cube with the same red rim the census wears in the opening. Nothing says
+  they are the same thing; the shape says it.
 - **A cutscene is a level, played by nobody**: `storyPlay()` hands an ordinary
   `tutorial:true` level to `enterPlay()`, and `storyFrame()` (called from
   `animate`, handed the camera basis) places the cast with the player's own
@@ -327,6 +331,23 @@ is the rule.
   replay is not a first watch: `storyPlay(id,replay)` does not mark the scene
   seen and hands back where it came from, so looking at the ending early does
   not consume `FIND THEM` on BOSS IV.
+
+**The neighbour** (`chrome.md`)
+- **He is decoration, and that is forced.** Nothing in `resolveStep()`,
+  `makeRules()` or `solve()` knows he exists; he cannot be stood on, walked
+  into, folded into or crushed. A friendly obstacle would be a piece, a piece
+  is a rule, and a rule the solver has not been told about is a level whose
+  par is a lie.
+- **`guideSpot()` places him**, deterministically and with no per-level field:
+  any block with air above it, never the start's or goal's square, three or
+  more away from both, tie-broken lowest and leftmost. Fifteen of the sixteen
+  eligible levels have one; the sixteenth simply has no neighbour.
+- **He is pressed on a DEFERRED single tap** (`guideArm()` / `guideCancel()`,
+  called from `13-gestures.js`). A double tap is the fold in every layout, so
+  the fold always wins the race.
+- His tips render through `tutWords()`, his cheer goes on the **win card**
+  (`guideWinLine()`, every third level), and ten losses opens his one
+  unprompted line, which is a button into `struggleOffer()`.
 
 **Settings and saves** (`systems.md`)
 - `loadSettings()` is a **whitelist**. A key not read there does not exist
@@ -358,10 +379,10 @@ is the rule.
   is `true`: the ambient beds are built but muted, on the owner's call.
 
 **Rendering** (`look.md`, `controls.md`)
-- **`outlineFor()` reads the PIECE first and the background second.** A pale
-  piece takes a dark rim, a near-black one a light rim, and only the middle of
-  the range falls back to the old background rule - otherwise a white skin on
-  the void had a white rim and no visible facets at all.
+- **`outlineFor()` reads the PIECE, not the background: white lines on
+  everything, black lines on anything too pale to take them** (one threshold,
+  `OUTLINE_PALE`). The old background rule gave a white skin a white rim on
+  the void and it had no visible facets at all.
 - One merged block geometry, per-face brightness in a vertex-colour
   attribute, `material.color` rewritten every frame by the block loop. Reach
   for `map`/vertex colours, never for the one channel the loop owns.

@@ -2378,6 +2378,22 @@ function win(){
         " needs "+esc(lockSay)+"</em>";
     }
   }
+  /* AND THE NEIGHBOUR, ON THE LEVELS HE IS ON AND ONLY EVERY THIRD ONE.
+
+     On the card rather than in his speech bubble, because by the time a
+     level is solved the card is what the player is looking at and a bubble
+     behind it is a line delivered to nobody. `wonSub` may already hold
+     elements (the mastery pill, the story line), so this appends through
+     innerHTML on the same terms they do - and it is escaped, because
+     everything written into that node is. */
+  if(typeof guideWinLine==="function"){
+    var gline=guideWinLine();
+    if(gline){
+      var gsub=$("wonSub");
+      gsub.innerHTML=(gsub.children.length?gsub.innerHTML:esc(gsub.textContent))+
+        "<em class='wonguide'>"+esc(gline)+"</em>";
+    }
+  }
   /* The picker only lists the campaign, so offering it after a library level
      or an editor test would land you somewhere you did not come from. */
   if(fromEditor||playSource!=="builtin"){
@@ -2711,4 +2727,8 @@ function loadLevel(level,idx){
   // offer uses, and for the same reason: it is a door standing in front of
   // something, so the something has to be there.
   if(starsOfferDue())setTimeout(starsOffer,520);
+  /* The neighbour, if this is one of his levels. Last, because he is placed
+     from L.blocks and from the start and the goal, all of which this
+     function has just settled. */
+  if(typeof guideSync==="function")guideSync();
 }

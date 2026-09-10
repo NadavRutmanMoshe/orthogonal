@@ -34,6 +34,7 @@
 <link rel="stylesheet" href="css/90-tutorial.css">
 <link rel="stylesheet" href="css/95-home.css">
 <link rel="stylesheet" href="css/98-story.css">
+<link rel="stylesheet" href="css/99-guide.css">
 </head>
 <body>
 
@@ -483,6 +484,11 @@
      - so all that is needed on top of it is a line, a way out, and something
      to fade with. The three of them sit in one overlay that is `display:none`
      until a scene runs, and only the skip takes pointer events. -->
+<!-- The neighbour's speech bubble. One element, moved every frame by
+     guideFrame() to sit over whichever cube he is standing on; the CUBE is
+     what you press, not this. See js/23-guide.js. -->
+<div class="gbub" id="guideBub" aria-live="polite"></div>
+
 <div class="story" id="story" aria-hidden="true">
   <div class="sfade" id="storyFade"></div>
   <p class="scap" id="storyCap"></p>
@@ -495,11 +501,12 @@
 <div class="won storyend" id="storyend">
   <h2>I'm Just A Cube</h2>
   <p class="sub">the end</p>
-  <!-- NOT A REPEAT OF HER LAST LINE, which is what this said first time and
-       put two sentences about the same thing on one screen. It points at
-       II · FIRE instead: a place in this game that the player has already
-       walked through, and now has a reason to think about. -->
-  <p class="introstory">The fire is a place in this world.</p>
+  <!-- NO THIRD LINE. It has had two and lost both: a repeat of her last
+       line, and then a hint pointing at II · FIRE. The second went on the
+       owner's call and the reasoning generalises - by the time this card is
+       up, the player has been told where his father went by somebody who
+       knows, and a caption underneath adding a fact is the game explaining
+       its own ending. The title and THE END are the whole card. -->
   <button id="bStoryEnd">CONTINUE</button>
 </div>
 
@@ -581,5 +588,6 @@
      frame up without waiting for it, and the file keeps a number that says
      where it sits. -->
 <script src="js/22-story.js"></script>
+<script src="js/23-guide.js"></script>
 </body>
 </html>

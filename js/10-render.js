@@ -2452,14 +2452,33 @@ function fitViewSize(){
    you are one button from will crush it. The player's own peril highlight
    uses the same red the blocks do, so the board reads as one sentence: green
    is what you do to them, red is what the world does to you. */
+/* A HUNTER IS THE OFFICER THAT CAME TO THE DOOR.
+
+   It was an octahedron - a spiky, abstract thing that did not belong to
+   anybody. It is now the same near-black cube with the same red rim that the
+   census wears in the opening cutscene, at the same values (`ST_COP_BODY`
+   and `ST_COP_RIM` in js/22-story.js are the pair; these are the numbers,
+   duplicated deliberately rather than reached for across a file that loads
+   after this one). Nothing says the pack and the officers are the same
+   thing; the shape says it, every fight, from the first one.
+
+   IT IS STILL A CUBE THAT TURNS, and the turn is still information: planted
+   it barely moves, doomed it spins hard (see drawBoss). A cube reads that
+   rotation better than an octahedron did, because its silhouette actually
+   changes as it goes round.
+
+   The parts keep their names. `core` sits inside an opaque shell and is
+   never seen - it was never seen on the octahedron either - and `cage` is
+   the rim, which is the piece that carries the state: red normally, the
+   goal's green when the fold would kill it. */
 function huntMesh(){
   var g=new THREE.Group();
-  var shell=new THREE.Mesh(new THREE.OctahedronGeometry(.46),
-    new THREE.MeshLambertMaterial({color:0x24141c}));
-  var core=new THREE.Mesh(new THREE.OctahedronGeometry(.22),
+  var shell=new THREE.Mesh(new THREE.BoxGeometry(.72,.72,.72),
+    new THREE.MeshLambertMaterial({color:0x241820}));
+  var core=new THREE.Mesh(new THREE.OctahedronGeometry(.2),
     new THREE.MeshBasicMaterial({color:0xff4d5e}));
   var cage=new THREE.LineSegments(
-    new THREE.EdgesGeometry(new THREE.OctahedronGeometry(.5)),
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(.78,.78,.78)),
     new THREE.LineBasicMaterial({color:0xff6b7a,transparent:true,opacity:.85}));
   g.add(shell);g.add(core);g.add(cage);
   g.userData.core=core;g.userData.cage=cage;
@@ -4089,6 +4108,11 @@ function animate(now){
      flatT, which is what lets peek and the replay borrow it, and one
      cutscene is not a reason to make that untrue. */
   if(typeof storyFrame==="function")storyFrame(dtMs,rx,rz,tdvx,tdvz,flatT);
+  /* And the neighbour, placed the same way and for the same reason: he folds
+     with the world because he is drawn with the maths the player is drawn
+     with. He is scenery - nothing in the rules or the solver knows he is
+     there - so this is the only place in the game that touches him. */
+  if(typeof guideFrame==="function")guideFrame(dtMs,rx,rz,tdvx,tdvz,flatT);
   /* Blinking through the beat of grace after a trial hit. Invulnerability
      you cannot see is invulnerability you will not use.
 

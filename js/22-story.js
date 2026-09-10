@@ -131,19 +131,27 @@ function storyEndDue(){return storyAfterLevel()==="end";}
    the other side of the fold. Nothing says so; the colour says it.
    ============================================================ */
 var ST_COP_BODY=0x241820, ST_COP_RIM=0xff6b7a;
-/* THE SON'S OWN COLOUR, IN THE OPENING ONLY, AND IT IS THE ONE PIECE OF
-   CHARACTERISATION IN THIS GAME THAT IS NEVER SAID OUT LOUD.
+/* THE FAMILY'S COLOURS, AND THE ONE PIECE OF CHARACTERISATION IN THIS GAME
+   THAT IS NEVER SAID OUT LOUD.
 
-   Halfway between his mother's Pink and the neighbours' White. Nothing
-   anywhere states what that means and nothing ever will; it is there for
-   whoever puts the two houses side by side and looks at the three colours.
+   The son is ROSE - not a colour invented for him, but the exact colour
+   every player starts the game in, read out of SKIN_COLORS so it cannot
+   drift from the default. That is worth more than a bespoke hue: the cube in
+   the house is the cube you are handed, so the child leaving home and the
+   piece you are about to play are the same object.
 
-   It is why the opening's son is an ACTOR and the ending's son is
-   playerMesh. In the house he is a child, before the player has chosen
-   anything - so he is this colour, fixed. At the end he is whatever the
-   player has made of him, which is the arc, and it is what his mother
-   remarks on when she sees him (stSkinLine). */
-var ST_SON=0xf9b2d4;
+   The mother is a DEEPER rose, so the son reads as her colour lightened.
+   This is the way round it ended up on the owner's call, and it is the
+   better one: the first version kept her at the catalogue's Pink and made
+   the son a pale mix, which put the player's own cube at a colour the game
+   never gives out. Now she is the one who moves.
+
+   The neighbours are White. Nothing states what the three colours in that
+   first house add up to and nothing ever will; it is there for whoever puts
+   the two houses side by side and looks. */
+var ST_MUM=0x9e2148;
+function stSonHex(){return stHex("rose");}
+
 var ST_STEP_MS=250;      // one cell of walking, close to the game's own pace
 var ST_DEPTH=1.0;        // how far in front of the paper an actor is drawn
                          // when flat; the player uses 1.2, so it stays in front
@@ -288,6 +296,58 @@ function stHouseBoard(){
   for(z=6;z<=9;z++)b.push([3,0,z]);                                   // the path
   house(1,5);
   house(8,12);
+  /* ============================================================
+     AND THE REST OF THE WORLD, WHICH IS WHAT MAKES IT A PLACE RATHER THAN A
+     SET. Two houses on a strip is a diagram of a street; the strip having a
+     pond at the front of it and dunes behind it is somewhere people live.
+
+     Both are made of pieces the game already has, which is the rule
+     everything in these scenes follows. The pond is WATER - kind 1, the
+     piece III · WATER teaches - so it ripples and it is see-through because
+     every water block is. The dunes are ordinary stone under a sand tint,
+     which is the same trick the houses use: `L.tint` is a hue on a piece of
+     stone and changes no rule.
+
+     A PLAYER MEETS BOTH OF THESE HERE BEFORE THE GAME TEACHES THEM, and
+     that is deliberate rather than sloppy. They are scenery in a cutscene
+     that holds every verb - nothing can be stepped on, folded or drowned
+     in - so all a first-time player takes from it is that this world has
+     water in it and sand beyond it. Two sections later that turns out to
+     have been true.
+     ============================================================ */
+  // The pond, in front of the strip, off to one side of the path.
+  for(x=5;x<=9;x++)for(z=7;z<=8;z++)b.push([x,0,z,1]);
+  for(x=6;x<=8;x++)b.push([x,0,9,1]);
+  // A lip of ground round it, so it is a pond and not a hole in the world.
+  for(x=4;x<=10;x++)b.push([x,0,6]);
+  b.push([4,0,7]);b.push([4,0,8]);b.push([10,0,7]);b.push([10,0,8]);
+  /* THE DUNES, behind the houses and stepping UP away from the camera -
+     which is the one direction depth is free in here. They are further off
+     than anything anybody touches and they rise as they go, so they read as
+     distance rather than as a second lawn.
+
+     THE TINT HAS TO BEAT THE GRASS AND SAND ALMOST CANNOT. These values
+     multiply the surface, the grass texture carries a bright green band on
+     every face, and a multiply only darkens - so for the result to come out
+     warmer than it is green the tint needs roughly half again as much red as
+     green. A believable sand (0xd9bd83) has nearly equal amounts and came
+     out olive: photographed, the dunes were more lawn. This is an ochre, and
+     over green it lands on the brown a dune is at night.
+
+     Kept to the strip's own width. The first version ran them four squares
+     wider on each side, which stretched the arena, shrank the houses and
+     framed the scene in two green wings.
+
+     And DARK, two steps under the walls. At the walls' own tan they were the
+     same warm brown as the houses and the top half of the picture read as
+     one mass; the second version of a background has to recede, which on a
+     night board means darker rather than merely different. */
+  var ST_SAND=0x7d4a2c;
+  for(x=0;x<=13;x++){
+    put(x,0,-2,ST_SAND);
+    put(x,0,-3,ST_SAND);
+    if(((x+3)%4)<2)put(x,1,-3,ST_SAND);
+  }
   return {blocks:b, tint:tint};
 }
 /* THE PLANE.
@@ -348,8 +408,8 @@ var STORY={
     to:"prologue",
     /* The child in the house is not the player's skin. `son` repaints
        playerMesh for the length of this scene only; storyStop() puts the
-       equipped one back with applySkin(). See ST_SON. */
-    son:ST_SON,
+       equipped one back with applySkin(). See ST_MUM above. */
+    son:"rose",
     level:{name:"I'm Just A Cube", hint:"", theme:1, tutorial:true, rotate:false,
            start:[3,1,2], goal:[3,1,2], blocks:null},
     /* BIGGER THAN THEY WERE. The parents were 1.18 against the son's 1.0 and
@@ -359,7 +419,7 @@ var STORY={
        bigger", and it is what makes the black one legible at all. */
     cast:[
       {id:"dad",  col:"black", size:1.4,  at:[2,1,1]},
-      {id:"mum",  col:"pink",  size:1.4,  at:[4,1,1]},
+      {id:"mum",  body:ST_MUM, size:1.4,  at:[4,1,1]},
       {id:"nDad", col:"white", size:1.4,  at:[9,1,5]},
       {id:"nMum", col:"white", size:1.4,  at:[11,1,5]},
       {id:"nKid", col:"white", size:1.0,  at:[10,1,4]},
@@ -477,7 +537,7 @@ var STORY={
        square right of the player's x=4, so the fold lands her beside him: in
        the plane the only coordinate left is u, and u is x. */
     cast:[
-      {id:"mum", col:"pink", size:1.4, at:[5,1,0], plane:true}
+      {id:"mum", body:ST_MUM, size:1.4, at:[5,1,0], plane:true}
     ],
     pre:ST_ARRIVE,
     beats:[
@@ -572,7 +632,7 @@ function stArrive(){
   /* THE CHILD IS NOT THE PLAYER'S SKIN. Only the opening asks for this, and
      only for as long as it runs: storyStop() calls applySkin(), which is the
      function whose whole job is putting the equipped piece back. */
-  if(def.son!==undefined)stSonSkin(def.son);
+  if(def.son!==undefined)stSonSkin(stHex(def.son));
   stBuildCast(def.cast);
   if(typeof syncHud==="function")syncHud();
 }

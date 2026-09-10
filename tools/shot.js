@@ -81,6 +81,10 @@ const SCREENS={
   struggle: {what:"the skip offer after repeated losses", js:"lv(18);settings.noSlowOffer=false;setTimeout(struggleOffer,600);", wait:1400},
   tutcard:  {what:"a full-bleed explanation card", js:"lv(2);cardPut('A heading','Two lines of body text, with {to2} named the way the button names it.','brief');"},
   toast:    {what:"a toast and a spoken cue", js:"lv(2);flash('a toast');flashCue('go right','hint · 2 left');", wait:400},
+  guide:    {what:"the neighbour standing in a level, mid-sentence",
+             js:"lv(6);setTimeout(function(){guideSay(guideTip());},400);", wait:1400},
+  guidestuck:{what:"his line after ten losses on the same level",
+             js:"lv(6);setTimeout(function(){guideSay(GUIDE_STUCK,true);},400);", wait:1400},
   phase:    {what:"the between-phases note on a boss", js:"lv(18);setTimeout(function(){phaseNote('the ground rises');},300);", wait:1200},
   /* THE CUTSCENES, seekable by beat. storySeek() runs every beat up to the
      one asked for and snaps the walks to their last cell, which is near

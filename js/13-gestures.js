@@ -156,9 +156,18 @@ function bindGestures(el){
       if(now-tapT<DBL_MS&&Math.abs(g.x-tapX)<DBL_PX&&Math.abs(g.y-tapY)<DBL_PX){
         // consumed, so a third tap opens a fresh pair rather than firing again
         tapT=0;
+        /* THE FOLD ALWAYS WINS THE RACE. A first tap that landed on the
+           neighbour has armed a speech bubble for DBL_MS; the second tap
+           cancels it before it can fire. That is the right way round - the
+           fold is the game and he is a conversation - and it is why he is
+           pressed on a DEFERRED single tap rather than on a plain one. */
+        if(typeof guideCancel==="function")guideCancel();
         flat?doUnflatten():doFlatten();fired=true;
       } else {
         tapT=now;tapX=g.x;tapY=g.y;
+        // A single tap does nothing anywhere else in this game, which is
+        // exactly why there was room for this one.
+        if(typeof guideArm==="function")guideArm(g.x,g.y);
       }
     }
     if(count()<2)turnDragging=false;

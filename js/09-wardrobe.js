@@ -677,27 +677,31 @@ function previewShow(shape,colorId,w3,w2,plane){
   outlineFor(item,new THREE.Color(bg));
   root.add(item);
 }
-/* THE RIM IS PICKED OFF THE PIECE FIRST, AND OFF THE BACKGROUND ONLY WHEN
-   THE PIECE HAS NOTHING TO SAY.
+/* THE RIM IS LIGHT BY DEFAULT, AND DARK ONLY ON A PIECE TOO PALE FOR A
+   LIGHT ONE TO SHOW.
 
-   It used to read the background alone: light rim on a dark ground, dark rim
-   on a light one. That is the right rule for a SILHOUETTE - it is what keeps
-   the black cube visible against the void and the white one visible against
-   paper - and it is the wrong rule for the edges INSIDE the silhouette,
-   which are what make a cube look like a cube. A white piece on the void got
-   a white rim, so its faces had no edges at all and it read as a flat
-   rectangle. Reported on the white family in the opening cutscene, and it
-   was true of the White skin everywhere in the game, the wardrobe's display
-   case included.
+   It read the BACKGROUND once: light rim on a dark ground, dark rim on a
+   light one. That is the right rule for a SILHOUETTE - it is what keeps a
+   black cube visible against the void - and the wrong rule for the edges
+   INSIDE the silhouette, which are what make a cube look like a cube. A
+   white piece on the void got a white rim, so its faces had no edges at all
+   and it drew as a flat rectangle. Reported on the white family in the
+   opening, and it had been true of the White skin everywhere in the game,
+   the wardrobe's display case included.
 
-   So the piece decides: a light piece takes a dark rim, a dark piece takes a
-   light one, and the edges always show. The background is the tiebreaker for
-   the middle of the range, where either would do and the silhouette is worth
-   a little more than the facets. Nothing is lost at the ends - the cube's own
-   colour is what separates it from the ground, and it is at its most
-   different from the ground exactly when this rule is most decided. */
+   Then it read the piece with the background as a tiebreaker in the middle
+   of the range, which was fussier than it needed to be and made a mid-tone
+   piece change its rim depending where it stood. On the owner's call it is
+   now the simplest rule that fixes the bug: WHITE LINES ON EVERYTHING,
+   BLACK LINES ON ANYTHING TOO PALE TO TAKE THEM. One threshold, no
+   background, and the rim on a given skin is the same everywhere it is
+   drawn - in play, in the plane, on the plinth and in the case.
+
+   `bg` is still taken, because the shield shell borrows the colour this
+   picks (js/10-render.js) and because a future rule may want it again. */
 var outlineCol=new THREE.Color();
 var outlineOwn=new THREE.Color();
+var OUTLINE_PALE=.62;
 function pieceLum(obj){
   var lum=-1;
   obj.traverse(function(c){
@@ -709,13 +713,7 @@ function pieceLum(obj){
 }
 function outlineFor(obj,bg){
   if(!obj||!obj.userData.outlines)return;
-  var pl=pieceLum(obj), dark;
-  if(pl>=0&&pl>.62)      dark=true;    // a pale piece: ink its edges
-  else if(pl>=0&&pl<.28) dark=false;   // a near-black piece: light its edges
-  else{
-    var lum=bg.r*.299+bg.g*.587+bg.b*.114;
-    dark=lum>.5;
-  }
+  var dark=pieceLum(obj)>OUTLINE_PALE;
   outlineCol.setRGB(dark?.06:.94,dark?.07:.95,dark?.09:1);
   obj.userData.outlines.forEach(function(e){e.material.color.copy(outlineCol);});
 }

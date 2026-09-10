@@ -1382,8 +1382,36 @@ White skin had been that way in play and in the wardrobe's display case since
 the day it was added, and nobody had looked at one against the void long
 enough to notice.
 
-The rule now asks the piece first — pale piece, dark rim; near-black piece,
-light rim — and only falls back to the background in the middle of the range,
-where either would do and the silhouette is worth more than the facets.
-Nothing is lost at the ends, because a piece is at its most different from the
-ground exactly when this rule is most decided.
+The first fix asked the piece and kept the background as a tiebreaker in the
+middle of the range, which was fussier than it needed to be and made a
+mid-tone piece change its rim depending where it stood. On the owner's call it
+is now the simplest rule that fixes the bug: **white lines on everything,
+black lines on anything too pale to take them.** One threshold, no
+background, and a given skin's rim is the same everywhere it is drawn — in
+play, in the plane, on the plinth and in the case.
+
+
+---
+
+## Four attempts at a house, and the one that worked was a colour
+
+Recorded in `docs/design/chrome.md` in full; the short version, because it is
+the kind of thing that will look solvable by shape again next time. A
+three-walled box read as terrain. A pitched roof on it read as a fir tree. A
+door and two windows cut into the face read as a green mound with holes. Every
+one of those was a shape fix for a problem that was not about shape: in this
+world the walls and the lawn are made of the same grass-topped stone, and
+nothing about a silhouette can separate two things drawn in the same
+material.
+
+`L.tint` — the per-cell colour list already in the engine for
+`00 — First Landing` — fixed it in one edit. Warm tan walls, terracotta roof,
+one-block chimney, and the houses were buildings.
+
+The trap inside the fix is worth more than the fix. These values **multiply**
+the surface texture, the grass surface carries a bright green band on every
+face, and a multiply can only darken — so a pale, believable sand or plaster
+comes out olive and changes nothing. To land warmer than green, a tint needs
+roughly half again as much red as green. The first wall tint was a pale cream
+and did nothing at all; the first dune tint was a proper sand (`0xd9bd83`,
+almost equal red and green) and the dunes came out as more lawn.

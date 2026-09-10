@@ -708,6 +708,67 @@ scene's own destination, because the opening ending in the first tutorial is
 right the first time and is somebody being thrown out of their level the
 second.
 
+## The neighbour
+
+**He is the white father from the house next door** — the one who walks over
+to the boy at the end of the opening — and he is standing on the board through
+the tutorial and the whole of I · NATURE. Pressing him gets a piece of advice
+about the game. He is not on a trial or a boss: a bystander in an arena is a
+piece the player has to work out is *not* a threat, at the exact moment the
+game is teaching them what a threat looks like. And he is gone after section
+one, which costs the fiction nothing — the neighbours took the boy in, so of
+course they are around at the start and gone by the time he is in the fire.
+
+**He is decoration, and that is forced rather than chosen.** Nothing in
+`resolveStep()`, `makeRules()` or `solve()` knows he exists. `CLAUDE.md`:
+*"Death is solver-equivalent to a blocked move. resolveStep() is shared by the
+game and the solver, so they can never disagree; keep it that way."* A friendly
+obstacle standing on a board would be a piece, a piece is a rule, and a rule
+the solver has not been told about is a level whose par is a lie. So he cannot
+be stood on, walked into, folded into or crushed, and `node tools/verify.js`
+has nothing to say about him because there is nothing to say.
+
+**Nowhere is placed by hand.** `guideSpot()` scores every block with air above
+it on how far it is from *both* the start and the goal, skips those two
+squares outright, and takes the best at three or more, tie-broken lowest and
+leftmost. Deterministic, so a level looks the same every time it is opened;
+no per-level field; and the levels too tight to hold him simply do not have
+him — fifteen of the sixteen eligible ones do, which is what "almost every
+level" means and a better answer than a white cube in the way on the
+sixteenth.
+
+**He is pressed on a deferred single tap.** Tapping the world is already spoken
+for — a double tap is the fold, in every layout — so a first tap that lands on
+him arms a bubble for `DBL_MS` and the second tap cancels it (`guideArm()` and
+`guideCancel()`, called from `13-gestures.js`). The fold always wins the race,
+which is the right way round: the fold is the game and he is a conversation.
+A single tap did nothing anywhere else in this game, which is exactly why
+there was room for this one.
+
+**Three ways he speaks, and each is where the player is looking.** The tip is
+a bubble over his head, projected from his world position every frame so it
+follows him through a turn and a fold. The cheer is a line on the **win
+card**, because by the time a level is solved the card is what is on screen
+and a bubble behind it is a line delivered to nobody — every third level, so
+he turns up rather than being wallpaper. And the one line he says unprompted
+is after ten losses: the game has already offered a skip twice by then
+(`struggleOffer()` fires on every third), so this is not a third offer, it is
+somebody saying out loud that taking it is allowed. That bubble is a button —
+pressing him again opens the card.
+
+Every line renders through `tutWords()`, so he names the player's own
+controls like the coach and the primer do.
+
+## The pack are the officers
+
+`huntMesh()` was an octahedron: spiky, abstract, belonging to nobody. It is
+the same near-black cube with the same red rim the census wears in the opening
+cutscene, at the same values. Nothing says the hunters and the officers are
+the same thing; the shape says it, from the first fight. A cube also reads the
+spin better than an octahedron did — the spin is information (planted it
+barely moves, doomed it turns hard) and a cube's silhouette actually changes
+as it goes round.
+
 ## The sting
 
 **The logo is a fold.** `nadaz` starts as a cloud of cubes strewn through
