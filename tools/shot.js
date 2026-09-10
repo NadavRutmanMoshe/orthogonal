@@ -85,6 +85,8 @@ const SCREENS={
              js:"lv(6);setTimeout(function(){guideSay(guideTip());},400);", wait:1400},
   guidestuck:{what:"his line after ten losses on the same level",
              js:"lv(6);setTimeout(function(){guideSay(GUIDE_STUCK,true);},400);", wait:1400},
+  glimpse:  {what:"the father, half a second in the back of a fire level",
+             js:"lv(20);setTimeout(function(){ghostShow();},700);", wait:1000},
   phase:    {what:"the between-phases note on a boss", js:"lv(18);setTimeout(function(){phaseNote('the ground rises');},300);", wait:1200},
   /* THE CUTSCENES, seekable by beat. storySeek() runs every beat up to the
      one asked for and snaps the walks to their last cell, which is near

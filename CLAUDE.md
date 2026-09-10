@@ -301,9 +301,16 @@ is the rule.
   begins on the arena you just won, folds it flat, fades, swaps the board
   behind the black and fades up. `ST_ARRIVE` is those five beats and
   `stArrive()` is the swap; a menu replay skips them.
-- **The pack wears the officers' look.** `huntMesh()` is the same near-black
-  cube with the same red rim the census wears in the opening. Nothing says
-  they are the same thing; the shape says it.
+- **The pack wears the officers' look and does not spin.** `huntMesh()` is the
+  same near-black cube with the same red rim the census wears in the opening,
+  squared to the camera. The state was never carried by the spin (the cage
+  colours, the telegraph draws, the scale swells) and a person does not
+  rotate on the spot.
+- **The father is glimpsed in II · FIRE**: every 20s, a 50% coin, 600ms,
+  one time in ten as the Shard he came back as (`ghostFrame()` in
+  `js/23-guide.js`). Behind and just over the board and INSIDE the frame -
+  `fitViewSize()` frames the arena only, so an offset of a whole board-width
+  puts him off screen.
 - **A cutscene is a level, played by nobody**: `storyPlay()` hands an ordinary
   `tutorial:true` level to `enterPlay()`, and `storyFrame()` (called from
   `animate`, handed the camera basis) places the cast with the player's own
@@ -338,10 +345,13 @@ is the rule.
   into, folded into or crushed. A friendly obstacle would be a piece, a piece
   is a rule, and a rule the solver has not been told about is a level whose
   par is a lie.
-- **`guideSpot()` places him**, deterministically and with no per-level field:
-  any block with air above it, never the start's or goal's square, three or
-  more away from both, tie-broken lowest and leftmost. Fifteen of the sixteen
-  eligible levels have one; the sixteenth simply has no neighbour.
+- **He stands on his OWN square, off the board**: a plinth two clear squares
+  past the right-hand end of the level, drawn as a mesh rather than added as
+  a block (`guidePlinth()`). `recomputeBounds()` adds `guidePoint()` to the
+  extents it frames - the one line in the renderer that knows he exists - or
+  the camera would leave him past the edge of the screen.
+- **Not in PROLOGUE.** He offered the fold to somebody the tutorial had not
+  taught it to yet. He starts where the teaching stops.
 - **He is pressed on a DEFERRED single tap** (`guideArm()` / `guideCancel()`,
   called from `13-gestures.js`). A double tap is the fold in every layout, so
   the fold always wins the race.

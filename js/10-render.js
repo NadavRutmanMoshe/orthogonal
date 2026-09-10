@@ -2397,6 +2397,16 @@ function recomputeBounds(){
     arenaLo=[0,0,0];arenaHi=[0,0,0];return;}
   var a=[1e9,1e9,1e9],b=[-1e9,-1e9,-1e9];
   var pts=L.blocks.concat(L.keys||[]);
+  /* AND THE NEIGHBOUR'S OWN SQUARE, if he has one. He stands on a plinth
+     two clear squares off the side of the board (js/23-guide.js) - which is
+     outside `L.blocks` by construction, because he must never be part of the
+     level - so without this the camera frames the board and leaves him past
+     the edge of the screen. It is the one place the framing knows about him,
+     and it costs the board a little size on the levels he is on. */
+  if(typeof guidePoint==="function"){
+    var gp=guidePoint();
+    if(gp)pts=pts.concat([gp]);
+  }
   for(var i=0;i<pts.length;i++)for(var j=0;j<3;j++){
     a[j]=Math.min(a[j],pts[i][j]);b[j]=Math.max(b[j],pts[i][j]);
   }
@@ -2462,10 +2472,12 @@ function fitViewSize(){
    after this one). Nothing says the pack and the officers are the same
    thing; the shape says it, every fight, from the first one.
 
-   IT IS STILL A CUBE THAT TURNS, and the turn is still information: planted
-   it barely moves, doomed it spins hard (see drawBoss). A cube reads that
-   rotation better than an octahedron did, because its silhouette actually
-   changes as it goes round.
+   AND IT DOES NOT TURN. The octahedron span - slowly while hunting, hard
+   when doomed - and the cube inherited it for one build before it went on
+   the owner's call. Nothing is lost: the state was never carried by the spin
+   alone (the cage colours, the telegraph draws, the scale swells), and a
+   thing that is now recognisably a PERSON must not rotate on the spot. It is
+   squared to the camera like the player, so it is always seen face-on.
 
    The parts keep their names. `core` sits inside an opaque shell and is
    never seen - it was never seen on the octahedron either - and `cage` is
@@ -2876,9 +2888,16 @@ function drawBoss(rx,rz,tdvx,tdvz){
     // Snapped rather than eased when it is a long way off: a hunter thrown
     // back to its spawn should arrive there, not glide across the arena.
     m.position.lerp(tmp, m.position.distanceTo(tmp)>2.5?1:.35);
-    // Planted, so it stops turning: the stillness is the tell, before the
-    // line has even brightened.
-    m.rotation.y+=h.lock>0?.004:(h.doom?.09:.035);
+    /* THEY DO NOT TURN. They used to - slowly while hunting, hard when
+       doomed, almost still when planted - and the spin was doing a job: it
+       was a second tell for the state. It is gone on the owner's call and
+       nothing is lost, because the state was never carried by the spin
+       alone: the cage is red or the goal's green, the telegraph draws the
+       line before a charge, and the scale still swells. What the spin cost
+       was the thing these are now FOR - an officer standing in your level
+       is a person, and a person does not rotate on the spot. Squared to the
+       camera like the player is, so they are always seen face-on. */
+    m.rotation.y=Math.atan2(tdvx,tdvz);
     m.userData.core.material.color.setHex(h.doom?0x35c2a5:0xff4d5e);
     m.userData.cage.material.color.setHex(h.doom?0x35c2a5:0xff6b7a);
     m.userData.cage.material.opacity=h.doom?(.7+perilPulse*.3):(.5+bossFlash*.4);
@@ -4113,6 +4132,8 @@ function animate(now){
      with. He is scenery - nothing in the rules or the solver knows he is
      there - so this is the only place in the game that touches him. */
   if(typeof guideFrame==="function")guideFrame(dtMs,rx,rz,tdvx,tdvz,flatT);
+  // And the father, once in a while, behind a fire level. See ghostHere().
+  if(typeof ghostFrame==="function")ghostFrame(dtMs);
   /* Blinking through the beat of grace after a trial hit. Invulnerability
      you cannot see is invulnerability you will not use.
 

@@ -101,6 +101,7 @@ buttons at the end of its builder.
 | Tutorial / explanation card | `#tutcard` | `cardPut(h,p,owner)` | `70-cards` | `tutcard` |
 | Win card | `#won` | `win()` (`12-play.js`): title, `.bigstars`, `#wonSub`, mastery/lock/story lines, buttons | `70-cards` | `win:2` |
 | Cutscene caption / skip / fade | `#story` (static) | `stSay()`, `stFadeTo()`, `storySkip()` (`22-story.js`); the scene itself is a level in the game's own renderer, placed by `storyFrame()` | `98-story` | `story1:0`, `story1:14`, `story3:3`, `story2:1`, `reunion` |
+| The father, glimpsed behind a fire level | (no markup — a mesh) | `ghostShow()` / `ghostFrame()` (`23-guide.js`) | — | `glimpse` |
 | The neighbour's speech bubble | `#guideBub` (static) | `guideSay()` / `guideHide()` (`23-guide.js`); moved every frame by `guideFrame()` to sit over the cube it belongs to. The CUBE is the button, not the bubble | `99-guide` | `guide`, `guidestuck` |
 | The last card, after the last fold | `#storyend` (static) | `storyEndCard()` / `storyEndOk()` (`22-story.js`); answers `screenUp()` | `98-story`, `70-cards` (`.won`) | `storyend` |
 | Home screen | `#home` (static shell) | `homeShow`, `homeSync`, `homeCase` | `95-home` | `home` |

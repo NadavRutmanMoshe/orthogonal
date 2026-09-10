@@ -1,6 +1,7 @@
 "use strict";
 /* I'm Just A Cube — 23-guide.js
-   The neighbour, standing in your levels, with something to say.
+   The two people who stand in your levels: the neighbour, who helps, and
+   the father, who does not.
 
    Loaded after 21-boot.js like 22-story.js, and for the same reason: this
    file only declares, and every call into it is `typeof`-guarded.
@@ -34,14 +35,21 @@
    built so that question never has to be asked.
 
    ============================================================
-   WHERE HE STANDS
+   WHERE HE STANDS: OFF THE BOARD, ON HIS OWN SQUARE
 
-   Nowhere by hand. `guideSpot()` picks a square deterministically: any block
-   with clear air above it, never the start's or the goal's, scored on how
-   far it is from BOTH of them and tie-broken on the lowest and leftmost. So
-   he ends up in a corner of the board out of the working area, the same
-   square every time you come back to that level, and he never has to be
-   placed by a person or checked by a test.
+   He used to stand on one of the level's own blocks - the one furthest from
+   the start and the goal. It was safe (nothing knew he was there) and it
+   still read wrong: a white cube sitting on a square of the puzzle is a
+   square the player has to look at and rule out, and on the tighter boards
+   he was inside the working area whatever the scoring said.
+
+   So he has a plinth of his own, two clear squares off the right-hand end of
+   the board, at its lowest level. The plinth is NOT a block - it is a mesh
+   this file draws, like he is - so the level is untouched and there is
+   visibly nothing between him and the puzzle. `guidePoint()` is how the
+   camera finds out he is there: recomputeBounds() adds that one point to the
+   extents it frames, which is the only line in the renderer that knows he
+   exists.
 
    ============================================================
    HOW HE IS PRESSED
@@ -121,69 +129,72 @@ function guideOn(){return !!GD;}
    moment the game is teaching them what a threat looks like. */
 function guideHere(idx){
   if(typeof idx!=="number"||idx<0)return false;
-  if(typeof playSource!=="undefined"&&playSource!=="builtin")return false;
+  if(typeof playSource==="undefined"||playSource!=="builtin")return false;
   if(typeof storyOn==="function"&&storyOn())return false;
-  if(app!=="play")return false;
+  if(typeof app==="undefined"||app!=="play")return false;
   if(!L||L.boss||L.trial)return false;
-  if(typeof SECTIONS==="undefined"||typeof mapSecOf!=="function")return idx<=18;
-  var sec=mapSecOf(idx);
-  return sec===0||sec===1;
+  /* NOT IN THE TUTORIAL, and this is the one placement rule that came from
+     playing it. He turned up in PROLOGUE offering "double-tap to drop the
+     world flat" to somebody who had not been taught the fold yet - advice
+     about a verb the game is three screens away from introducing, delivered
+     over the top of the lesson that introduces it. The tutorial has a coach,
+     a ghost hand and a guided lock; it does not need a fourth voice. He
+     starts where the teaching stops. */
+  if(typeof SECTIONS==="undefined"||typeof mapSecOf!=="function")
+    return idx>=2&&idx<=18;
+  return mapSecOf(idx)===1;
 }
-/* THE SQUARE HE STANDS ON, decided rather than authored. Deterministic, so a
-   level looks the same every time it is opened, and no two levels need a
-   field adding to them. */
-function guideSpot(){
-  if(!L||!L.blocks)return null;
-  var occ={},i,b;
-  for(i=0;i<L.blocks.length;i++){
-    b=L.blocks[i];occ[K(b[0],b[1],b[2])]=1;
-  }
-  var st=L.start||[0,0,0], gl=L.goal||st, best=null, bs=-1;
-  function d(a,x,y,z){
-    return Math.abs(a[0]-x)+Math.abs(a[1]-y)+Math.abs(a[2]-z);
-  }
+/* HIS SQUARE, AND HIS PLINTH'S, DERIVED FROM THE BOARD.
+
+   Two clear squares past the right-hand end of the level, at the level's own
+   floor, halfway along its depth. Pure: it reads L and nothing else, so
+   recomputeBounds() can ask for it before any mesh exists and guideSync()
+   can ask for it again afterwards, and neither has to run first.
+
+   `guidePoint()` answers with the PLINTH's cell rather than his, because
+   that is the lowest thing the camera has to keep on screen. */
+function guidePlinth(){
+  if(!guideHere(typeof lvIndex==="number"?lvIndex:-1))return null;
+  if(!L||!L.blocks||!L.blocks.length)return null;
+  var mx=-1e9,my=1e9,z0=1e9,z1=-1e9,i,b;
   for(i=0;i<L.blocks.length;i++){
     b=L.blocks[i];
-    // Stone only, and only where there is air to stand in.
-    if(b[3]&&b[3]!==0)continue;
-    var x=b[0],y=b[1]+1,z=b[2];
-    if(occ[K(x,y,z)])continue;
-    if(x===st[0]&&y===st[1]&&z===st[2])continue;
-    if(x===gl[0]&&y===gl[1]&&z===gl[2])continue;
-    var s=Math.min(d(st,x,y,z),d(gl,x,y,z));
-    /* Tie-broken low and to the left, so the answer cannot depend on the
-       order blocks happen to be listed in. */
-    if(s>bs||(s===bs&&best&&(y<best[1]||(y===best[1]&&x<best[0])))){
-      bs=s;best=[x,y,z];
-    }
+    if(b[0]>mx)mx=b[0];
+    if(b[1]<my)my=b[1];
+    if(b[2]<z0)z0=b[2];
+    if(b[2]>z1)z1=b[2];
   }
-  /* THREE SQUARES CLEAR OF BOTH, or he does not appear at all. Two put him
-     inside the working area of the tighter boards, where a white cube on a
-     block the player is trying to read is worse than no neighbour. At three
-     he is on fifteen of the sixteen levels he is eligible for, which is what
-     "almost every level" means and is a better answer than a bystander in
-     the way on the sixteenth. */
-  return bs>=3?best:null;
+  return [mx+2,my,Math.round((z0+z1)/2)];
 }
+function guidePoint(){return guidePlinth();}
 /* Built, moved or taken away - called once per level load, from loadLevel. */
 function guideSync(){
-  var spot=guideHere(typeof lvIndex==="number"?lvIndex:-1)?guideSpot():null;
-  if(!spot){guideDrop();return;}
+  var p=guidePlinth();
+  if(!p){guideDrop();return;}
   if(!GD){
     if(typeof THREE==="undefined"||typeof scene==="undefined"||!scene)return;
-    /* Slightly see-through, which is the one concession his being scenery
-       gets: he stands on a real block on a real board, and a solid cube
-       would be able to hide the thing a player is trying to look at. */
-    var mat=new THREE.MeshBasicMaterial({color:GUIDE_COL,transparent:true,
-      opacity:.93});
+    var mat=new THREE.MeshBasicMaterial({color:GUIDE_COL});
     var m=buildPlayerMesh("cube",GUIDE_COL,mat);
     m.scale.setScalar(GUIDE_SIZE);
     scene.add(m);
-    GD={mesh:m,mat:mat,x:0,y:0,z:0,said:0,bob:Math.random()*6.283};
+    /* THE PLINTH IS A SLAB, NOT A BLOCK, and it is drawn half a block high
+       for exactly that reason: a full cube out there would look like a piece
+       of the level that had come loose, and somebody would try to fold onto
+       it. Half height, its own colour, no grain - it is furniture. */
+    var slab=new THREE.Mesh(new THREE.BoxGeometry(.92,.5,.92),
+      new THREE.MeshLambertMaterial({color:0x77809a}));
+    var edge=new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.BoxGeometry(.92,.5,.92)),
+      new THREE.LineBasicMaterial({color:0xaab4cc,transparent:true,opacity:.5}));
+    slab.add(edge);
+    scene.add(slab);
+    GD={mesh:m,mat:mat,slab:slab,x:0,y:0,z:0,said:0,bob:Math.random()*6.283};
   }
-  GD.x=spot[0];GD.y=spot[1];GD.z=spot[2];
+  GD.x=p[0];GD.y=p[1]+1;GD.z=p[2];
   GD.mesh.visible=true;
+  GD.slab.visible=true;
   GD.mesh.position.set(GD.x,GD.y,GD.z);
+  GD.slab.position.set(GD.x,GD.y-.75,GD.z);
   guideHide();
   /* AND IF THIS LEVEL HAS BEATEN YOU TEN TIMES, HE SPEAKS FIRST. The game
      has already offered a skip twice by then (struggleOffer fires on every
@@ -196,8 +207,12 @@ function guideSync(){
 }
 function guideDrop(){
   if(!GD)return;
-  if(GD.mesh&&typeof scene!=="undefined"&&scene)scene.remove(GD.mesh);
+  if(typeof scene!=="undefined"&&scene){
+    if(GD.mesh)scene.remove(GD.mesh);
+    if(GD.slab)scene.remove(GD.slab);
+  }
   if(GD.mesh&&GD.mesh.geometry&&GD.mesh.geometry.dispose)GD.mesh.geometry.dispose();
+  if(GD.slab&&GD.slab.geometry&&GD.slab.geometry.dispose)GD.slab.geometry.dispose();
   GD=null;
   guideHide();
 }
@@ -296,6 +311,13 @@ function guideFrame(dtMs,rx,rz,tdvx,tdvz,ft){
   gdTmp.set(GD.x+(fx-GD.x)*ft, GD.y+Math.sin(GD.bob)*.035, GD.z+(fz-GD.z)*ft);
   GD.mesh.position.lerp(gdTmp,.3);
   GD.mesh.rotation.y=Math.atan2(tdvx,tdvz);
+  // The plinth folds with him, one step lower and without the bob.
+  if(GD.slab){
+    var su=GD.x*rx+GD.z*rz;
+    var sx=su*rx+1.0*tdvx, sz=su*rz+1.0*tdvz;
+    GD.slab.position.set(GD.x+(sx-GD.x)*ft, GD.y-.75, GD.z+(sz-GD.z)*ft);
+    GD.slab.rotation.y=GD.mesh.rotation.y;
+  }
   if(typeof outlineFor==="function"&&scene)outlineFor(GD.mesh,scene.background);
   /* THE BUBBLE FOLLOWS HIM. Projected every frame rather than placed once,
      because the camera turns and the world folds underneath him and a line
@@ -312,4 +334,100 @@ function guideFrame(dtMs,rx,rz,tdvx,tdvz,ft){
       el.style.top=Math.round((-gdTmp.y*.5+.5)*h)+"px";
     }
   }
+}
+
+
+/* ============================================================
+   THE GLIMPSE — the father, in the back of II · FIRE
+
+   Every twenty seconds on a fire level the game tosses a coin, and on heads
+   something dark stands behind the board for six tenths of a second and is
+   gone. One time in ten it is the Shard he came back as; the other nine it
+   is the cube he left as.
+
+   THE ODDS ARE THE POINT AND THEY ARE THE OWNER'S. Nine times out of ten you
+   see a shape you already know, which reads as your father and is therefore
+   not evidence of anything; the tenth is the shape the fire scene will later
+   show you, before you have any way to know what it means. A player who
+   never notices loses nothing. A player who does gets to be right about it
+   two sections later, which is the only kind of foreshadowing worth putting
+   in a game nobody is obliged to look at.
+
+   He is BEHIND and ABOVE the board, against the sky, and he does not fold:
+   a glimpse of somebody who is not in this world should not obey its verb.
+   He is not solid, not tappable, and nothing in the rules knows about him -
+   the same contract the neighbour has, for the same reason.
+   ============================================================ */
+var GHOST_EVERY=20000;     // one coin toss every twenty seconds
+var GHOST_CHANCE=.5;       // and it comes up heads half the time
+var GHOST_SHARD=.10;       // one appearance in ten is the shape he is now
+var GHOST_MS=600;          // how long he is there. Long enough to doubt.
+var GH=null, ghClock=0;
+
+function ghostHere(){
+  if(typeof playSource==="undefined"||playSource!=="builtin")return false;
+  if(typeof storyOn==="function"&&storyOn())return false;
+  if(typeof app==="undefined"||app!=="play")return false;
+  if(!L||typeof lvIndex!=="number")return false;
+  if(typeof mapSecOf!=="function")return false;
+  return mapSecOf(lvIndex)===2;
+}
+/* Rebuilt on the shape rather than pooled per shape: he appears about once a
+   minute, and one THREE build a minute is not worth a second mesh kept alive
+   for the nine times in ten it is not wanted. */
+function ghostShow(){
+  if(typeof THREE==="undefined"||typeof scene==="undefined"||!scene)return;
+  var shard=Math.random()<GHOST_SHARD;
+  if(GH&&GH.shard!==shard){scene.remove(GH.mesh);GH=null;}
+  if(!GH){
+    var mat=new THREE.MeshBasicMaterial({color:0x2b2f3a,transparent:true,
+      opacity:0});
+    var m=buildPlayerMesh(shard?"star":"cube",0x2b2f3a,mat);
+    m.scale.setScalar(1.3);
+    scene.add(m);
+    GH={mesh:m,mat:mat,shard:shard,t:0};
+  }
+  GH.t=GHOST_MS;
+  /* Behind the board and a little over it, so he is against the sky rather
+     than lost in the basalt - and off to a side rather than centred, because
+     a figure dead behind the puzzle reads as part of it.
+
+     EVERY ONE OF THESE OFFSETS IS INSIDE THE FRAME, and the first version's
+     were not. `fitViewSize()` frames the ARENA and nothing else: the camera
+     half-width is about `arenaSW/2 + 1`, so putting him a whole board-width
+     plus two off to the side put him past the edge of the screen every time.
+     Photographed, the glimpse was perfect and invisible. He is offset by a
+     FRACTION of the half-width now, and lifted and pushed back by a couple
+     of cells rather than by six. */
+  var lo=(typeof arenaLo!=="undefined")?arenaLo:[0,0,0];
+  var hi=(typeof arenaHi!=="undefined")?arenaHi:[0,0,0];
+  var side=Math.random()<.5?-1:1;
+  var halfW=Math.max(2,(hi[0]-lo[0])/2);
+  GH.mesh.position.set(
+    (lo[0]+hi[0])/2 + side*halfW*(.35+Math.random()*.5),
+    hi[1]+.2+Math.random()*.8,
+    lo[2]-3-Math.random()*2);
+  GH.mesh.visible=true;
+}
+function ghostFrame(dtMs){
+  if(!ghostHere()){
+    if(GH){GH.t=0;GH.mesh.visible=false;}
+    ghClock=0;return;
+  }
+  ghClock+=dtMs;
+  if(ghClock>=GHOST_EVERY){
+    ghClock-=GHOST_EVERY;
+    if(Math.random()<GHOST_CHANCE)ghostShow();
+  }
+  if(!GH||GH.t<=0)return;
+  GH.t-=dtMs;
+  if(GH.t<=0){GH.mesh.visible=false;GH.mat.opacity=0;return;}
+  /* In fast, out slow, and never all the way solid. He is a thing you are
+     not certain you saw. */
+  var p=1-GH.t/GHOST_MS;
+  GH.mat.opacity=.62*Math.min(1,p/.18)*Math.min(1,(1-p)/.45);
+  if(GH.mesh.userData.outlines)
+    GH.mesh.userData.outlines.forEach(function(e){
+      e.material.opacity=GH.mat.opacity*.8;});
+  GH.mesh.rotation.y+=dtMs*.0004;
 }

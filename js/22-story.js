@@ -478,8 +478,16 @@ var STORY={
       {ms:1050, at:function(){stFold();}},
       {ms:820,  at:function(){stTake(["mum","dad","copA","copB"]);}},
       {ms:900,  at:function(){stUnfold();}},
-      {ms:1700, say:"He had stepped out of the column.",
-       at:function(){stSob("son",3000);}},
+      /* HIS LINE, NOT THE NARRATOR'S. This was "He had stepped out of the
+         column" - true, mechanical, and reported as not selling it, which is
+         the right reading: the sentence explains the rule at the exact
+         moment the player does not want a rule explained. The boy speaks
+         first, in his own colour, and the mechanical line follows a beat
+         later when there is room for it. Both are still said; the order is
+         what changed. */
+      {ms:1500, say:"My parents!", who:"son",
+       at:function(){stSob("son",4200);stHop("son");}},
+      {ms:2000, say:"He was not standing on their line."},
       // The neighbours close the distance. Nobody says anything, because
       // there is nothing to say and the walk is the sentence.
       {ms:1500, at:function(){
@@ -540,20 +548,34 @@ var STORY={
       {id:"mum", body:ST_MUM, size:1.4, at:[5,1,0], plane:true}
     ],
     pre:ST_ARRIVE,
+    /* LONGER THAN IT WAS, ALL THE WAY THROUGH. Every line here was timed by
+       somebody who already knew what it said; played cold they went past
+       before they were finished. Roughly half again on each, and the last
+       one - the one about the fire - gets four seconds, because it is the
+       sentence the whole ending is for and it is also the one the player has
+       to carry out of the game.
+
+       AND IT MOVES. The hop is the opening's own gesture, the one he said
+       hello to the neighbours with and goodbye to his parents with, and it
+       is the only body language a cube has. Using it here is what makes the
+       reunion a reunion rather than two rectangles and some captions. */
     beats:[
-      {ms:2000, say:"Everything this world has ever flattened is still in there."},
+      {ms:2600, say:"Everything this world has ever flattened is still in there."},
       /* AND HERE THE GAME HANDS THE VERB BACK. One press, the one it has
          spent the whole campaign teaching, and it is the player who finds
          her rather than a camera that shows him finding her. */
       {ms:0, await:"fold", say:"{do:2d}"},
-      {ms:1250, at:function(){stSay(null);}},
-      {ms:1700, say:"You found me.", who:"mum"},
+      {ms:1400, at:function(){stSay(null);}},
+      // She sees him, and then he sees her: her hop first, his a beat after.
+      {ms:2600, say:"You found me.", who:"mum",
+       at:function(){stHop("mum");stHop("son",420);}},
       /* WHAT SHE SAYS NEXT DEPENDS ON WHAT YOU ARE WEARING. `say` may be a
          function, evaluated when the beat starts - see stEnter(). */
-      {ms:2600, say:stSkinLine, who:"mum"},
-      {ms:2600, say:"I have been in the silhouette since they came to the door.", who:"mum"},
-      {ms:3000, say:"Your father is not here. He went into the fire world.", who:"mum"},
-      {ms:1400, at:function(){storyEndCard();}}
+      {ms:3600, say:stSkinLine, who:"mum",
+       at:function(){stHop("mum",300);}},
+      {ms:3800, say:"I have been in the silhouette since they came to the door.", who:"mum"},
+      {ms:4200, say:"Your father is not here. He went into the fire world.", who:"mum"},
+      {ms:2000, at:function(){storyEndCard();}}
     ]
   }
 };
@@ -915,7 +937,11 @@ function stSay(text,who){
   var s=(typeof tutWords==="function")?tutWords(text):text;
   el.innerHTML=s;
   var col=null;
-  if(who){
+  /* THE SON IS NOT AN ACTOR - he is playerMesh - so `who:"son"` has nothing
+     to look up. He is the one speaker whose colour is a constant, and it is
+     the same Rose the scene repaints him in. */
+  if(who==="son")col="#"+stSonHex().toString(16).padStart(6,"0");
+  else if(who){
     var a=stFind(who);
     if(a){
       /* A SPEAKER TOO DARK TO SET TYPE IN GETS A NEUTRAL. The line is drawn

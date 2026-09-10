@@ -728,14 +728,30 @@ the solver has not been told about is a level whose par is a lie. So he cannot
 be stood on, walked into, folded into or crushed, and `node tools/verify.js`
 has nothing to say about him because there is nothing to say.
 
-**Nowhere is placed by hand.** `guideSpot()` scores every block with air above
-it on how far it is from *both* the start and the goal, skips those two
-squares outright, and takes the best at three or more, tie-broken lowest and
-leftmost. Deterministic, so a level looks the same every time it is opened;
-no per-level field; and the levels too tight to hold him simply do not have
-him — fifteen of the sixteen eligible ones do, which is what "almost every
-level" means and a better answer than a white cube in the way on the
-sixteenth.
+**He stands on his own square, off the board.** The first version put him on
+one of the level's own blocks — the one furthest from the start and the goal.
+It was safe, because nothing knew he was there, and it still read wrong: a
+white cube sitting on a square of the puzzle is a square the player has to
+look at and rule out, and on the tighter boards he was inside the working
+area whatever the scoring said. He has a plinth now, two clear squares past
+the right-hand end of the level at its own floor level, and the plinth is a
+mesh this code draws rather than a block added to `L.blocks` — so the level
+is untouched and there is visibly nothing between him and the puzzle. The
+slab is drawn half a block high on purpose: a full cube out there would look
+like a piece of the level that had come loose and somebody would try to fold
+onto it.
+
+`recomputeBounds()` adds `guidePoint()` to the extents it frames. That is the
+only line in the renderer that knows he exists, and without it the camera
+frames the board and leaves him past the edge of the screen; the cost is that
+the board is a little smaller on the levels he is on.
+
+**And he is not in the tutorial.** He turned up in PROLOGUE offering
+"double-tap to drop the world flat" to somebody the game had not taught the
+fold to yet — advice about a verb three screens before it is introduced,
+delivered over the top of the lesson that introduces it. PROLOGUE has a
+coach, a ghost hand and a guided lock; it does not need a fourth voice. He
+starts where the teaching stops.
 
 **He is pressed on a deferred single tap.** Tapping the world is already spoken
 for — a double tap is the fold, in every layout — so a first tap that lands on
@@ -759,15 +775,41 @@ pressing him again opens the card.
 Every line renders through `tutWords()`, so he names the player's own
 controls like the coach and the primer do.
 
+## The father, glimpsed
+
+**Every twenty seconds on a fire level the game tosses a coin**, and on heads
+something dark stands behind the board for six tenths of a second and is
+gone. One time in ten it is the Shard he came back as; the other nine it is
+the cube he left as.
+
+**The odds are the point.** Nine times out of ten you see a shape you already
+know, which reads as your father and is therefore not evidence of anything;
+the tenth is the shape the fire scene will later show you, before you have
+any way to know what it means. A player who never notices loses nothing. A
+player who does gets to be right about it two sections later, which is the
+only kind of foreshadowing worth putting in a game nobody is obliged to look
+at.
+
+He is behind and just over the board, against the sky, and he does not fold —
+a glimpse of somebody who is not in this world should not obey its verb. Not
+solid, not tappable, unknown to the rules: the neighbour's contract, for the
+neighbour's reason. **Every offset is inside the frame**, and the first
+version's were not: `fitViewSize()` frames the arena and nothing else, so an
+offset of a whole board-width put him off the edge of the screen every time.
+Photographed, the glimpse was perfect and invisible.
+
 ## The pack are the officers
 
 `huntMesh()` was an octahedron: spiky, abstract, belonging to nobody. It is
 the same near-black cube with the same red rim the census wears in the opening
 cutscene, at the same values. Nothing says the hunters and the officers are
-the same thing; the shape says it, from the first fight. A cube also reads the
-spin better than an octahedron did — the spin is information (planted it
-barely moves, doomed it turns hard) and a cube's silhouette actually changes
-as it goes round.
+the same thing; the shape says it, from the first fight. **And it does not turn.** The octahedron span, and the cube inherited the spin
+for one build before it went. Nothing is lost: the state was never carried by
+the spin alone — the cage is red or the goal's green, the telegraph draws the
+line before a charge, the scale still swells. What the spin cost was the
+thing these are now *for*. An officer standing in your level is a person, and
+a person does not rotate on the spot. They are squared to the camera like the
+player, so they are always seen face-on.
 
 ## The sting
 
