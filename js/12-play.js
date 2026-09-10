@@ -2378,22 +2378,32 @@ function win(){
         " needs "+esc(lockSay)+"</em>";
     }
   }
-  /* AND AFTER THE LAST FIGHT, THE BUTTON IS NOT NEXT LEVEL.
-
-     BOSS IV carries `ending:true`, so beating it the first time turns the
-     card's one live button into the way into the second cutscene. It is
-     written last so it beats WHAT'S LEFT above: that line still says which
-     shelf is shut and why - the lock is real - but the thing the player
-     presses is the end of the story, not a locked door. The button's action
-     is re-routed in the same breath, on bNext in 19-bindings.js. */
-  if(typeof storyEndDue==="function"&&storyEndDue())
-    $("bNextT").textContent="FIND THEM";
   /* The picker only lists the campaign, so offering it after a library level
      or an editor test would land you somewhere you did not come from. */
   if(fromEditor||playSource!=="builtin"){
     $("bRetry").style.display="none";$("bLevels").style.display="none";
   } else $("bLevels").style.display="flex";
-  setTimeout(function(){$("won").classList.add("on");},380);
+  /* AND ON THE TWO FIGHTS THAT OWE YOU A SCENE, THERE IS NO CARD.
+
+     BOSS II and BOSS IV each carry a cutscene (`interlude` and `ending` in
+     02-levels.js), and the scene starts on the arena you have just won and
+     folds its way out of it - so a win card in front of it is a door in
+     front of a door, and it would also have to be dismissed before the
+     camera could move. Everything else win() does above this line still
+     happens: the record is written, the stars are counted, the section is
+     paid out. Only the card is skipped, and only the first time; replay the
+     fight afterwards and it behaves like any other.
+
+     Guarded on the function existing, so if 22-story.js ever fails to load
+     the card comes back rather than the player being left on a board with
+     nothing on it. */
+  var storyDue=(typeof storyAfterLevel==="function")?storyAfterLevel():null;
+  if(storyDue){
+    setTimeout(function(){
+      if(typeof storyOn==="function"&&storyOn())return;
+      storyPlay(storyDue);
+    },900);
+  } else setTimeout(function(){$("won").classList.add("on");},380);
   /* THE STARS FALL, AND EACH ONE IS HEARD LANDING. The CSS drops them off
      `.won.on` at .06/.20/.34 with a .38s fall, so these three land on the
      same beats; only the ones actually earned make a sound, which is what

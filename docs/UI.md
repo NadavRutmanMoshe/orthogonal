@@ -99,7 +99,7 @@ buttons at the end of its builder.
 | Intro card | `#intro` (static) | `nothingBehind()` decides it shows | `70-cards` | `intro` |
 | Tutorial / explanation card | `#tutcard` | `cardPut(h,p,owner)` | `70-cards` | `tutcard` |
 | Win card | `#won` | `win()` (`12-play.js`): title, `.bigstars`, `#wonSub`, mastery/lock/story lines, buttons | `70-cards` | `win:2` |
-| Cutscene caption / skip / fade | `#story` (static) | `stSay()`, `stFadeTo()`, `storySkip()` (`22-story.js`); the scene itself is a level in the game's own renderer, placed by `storyFrame()` | `98-story` | `story1:0`, `story1:12`, `story2:2`, `reunion` |
+| Cutscene caption / skip / fade | `#story` (static) | `stSay()`, `stFadeTo()`, `storySkip()` (`22-story.js`); the scene itself is a level in the game's own renderer, placed by `storyFrame()` | `98-story` | `story1:0`, `story1:14`, `story3:3`, `story2:1`, `reunion` |
 | The last card, after the last fold | `#storyend` (static) | `storyEndCard()` / `storyEndOk()` (`22-story.js`); answers `screenUp()` | `98-story`, `70-cards` (`.won`) | `storyend` |
 | Home screen | `#home` (static shell) | `homeShow`, `homeSync`, `homeCase` | `95-home` | `home` |
 | Menu | `#panel` | `menuPanel()` (`16-panels.js`); rows via `seg()` | `80-panel-tall`, `40-panels` (`.srow`), `50-layout-cues` (`.crow .seg`) | `menu` |
@@ -124,6 +124,12 @@ toggle `#panel.on` by hand. `syncMapChrome()` adds `.map` and `.tall`.
 One line each; the paragraph is in `docs/design/chrome.md` (or the doc
 named). Undoing one of these needs the paragraph.
 
+- **The player's rim (`outlineFor`) is picked off the piece, not the ground.**
+  A pale piece takes a dark rim and a near-black one a light rim; only the
+  middle of the range falls back to reading the background. The old
+  background-only rule gave a white skin a white rim on the void, so it had no
+  visible edges at all — in play, in the wardrobe's case, and on the white
+  family in the opening. `docs/design/chrome.md`.
 - **Buttons** are lit caps: fill + `0 3px 0 var(--lip)` + press. A disabled
   button keeps a visible background. Any `box-shadow` keyframe must carry
   the lip or the cap flattens while it pulses (`cuePulse`, `tutlive`).

@@ -677,13 +677,46 @@ function previewShow(shape,colorId,w3,w2,plane){
   outlineFor(item,new THREE.Color(bg));
   root.add(item);
 }
-// Pick the rim colour that separates a silhouette from its background: light
-// on a dark ground, dark on a light one.
+/* THE RIM IS PICKED OFF THE PIECE FIRST, AND OFF THE BACKGROUND ONLY WHEN
+   THE PIECE HAS NOTHING TO SAY.
+
+   It used to read the background alone: light rim on a dark ground, dark rim
+   on a light one. That is the right rule for a SILHOUETTE - it is what keeps
+   the black cube visible against the void and the white one visible against
+   paper - and it is the wrong rule for the edges INSIDE the silhouette,
+   which are what make a cube look like a cube. A white piece on the void got
+   a white rim, so its faces had no edges at all and it read as a flat
+   rectangle. Reported on the white family in the opening cutscene, and it
+   was true of the White skin everywhere in the game, the wardrobe's display
+   case included.
+
+   So the piece decides: a light piece takes a dark rim, a dark piece takes a
+   light one, and the edges always show. The background is the tiebreaker for
+   the middle of the range, where either would do and the silhouette is worth
+   a little more than the facets. Nothing is lost at the ends - the cube's own
+   colour is what separates it from the ground, and it is at its most
+   different from the ground exactly when this rule is most decided. */
 var outlineCol=new THREE.Color();
+var outlineOwn=new THREE.Color();
+function pieceLum(obj){
+  var lum=-1;
+  obj.traverse(function(c){
+    if(lum>=0||!c.isMesh||!c.material||!c.material.color)return;
+    outlineOwn.copy(c.material.color);
+    lum=outlineOwn.r*.299+outlineOwn.g*.587+outlineOwn.b*.114;
+  });
+  return lum;
+}
 function outlineFor(obj,bg){
   if(!obj||!obj.userData.outlines)return;
-  var lum=bg.r*.299+bg.g*.587+bg.b*.114;
-  outlineCol.setRGB(lum>.5?.06:.94,lum>.5?.07:.95,lum>.5?.09:1);
+  var pl=pieceLum(obj), dark;
+  if(pl>=0&&pl>.62)      dark=true;    // a pale piece: ink its edges
+  else if(pl>=0&&pl<.28) dark=false;   // a near-black piece: light its edges
+  else{
+    var lum=bg.r*.299+bg.g*.587+bg.b*.114;
+    dark=lum>.5;
+  }
+  outlineCol.setRGB(dark?.06:.94,dark?.07:.95,dark?.09:1);
   obj.userData.outlines.forEach(function(e){e.material.color.copy(outlineCol);});
 }
 

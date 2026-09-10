@@ -502,6 +502,7 @@ function menuPanel(){
            to RESET SETTINGS, which is about as far from an accident as a
            button gets. */
         "<button id='mStory'>WATCH THE OPENING</button>"+
+        "<button id='mStoryFire'>WATCH THE FIRE</button>"+
         "<button id='mStoryEnd'>WATCH THE ENDING</button>"+
         /* LEVEL EDITOR MOVED TO THE HOME SCREEN as MY LEVELS. It is not a
            setting - it is a place you go, like LEVELS and the wardrobe are -
@@ -559,6 +560,10 @@ function menuPanel(){
   bind("mStory",function(){
     hidePanel();
     if(typeof storyPlay==="function")storyPlay("open",true);
+  });
+  bind("mStoryFire",function(){
+    hidePanel();
+    if(typeof storyPlay==="function")storyPlay("fire",true);
   });
   bind("mStoryEnd",function(){
     hidePanel();

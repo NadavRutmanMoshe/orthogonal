@@ -89,14 +89,16 @@ const SCREENS={
      in STORY.open.beats / STORY.end.beats in js/22-story.js. */
   "story1:N":{what:"the opening cutscene at beat N (0 the house, 14 the fold, 19 the last line)",
               js:"storyShot();storyPlay('open');storySeek(N);", wait:700},
-  "story2:N":{what:"the ending cutscene at beat N (2 is the press it asks for)",
-              js:"storyShot();storyPlay('end');storySeek(N);", wait:700},
+  "story2:N":{what:"the ending cutscene at beat N; a replay, so it skips the arrival (1 is the press it asks for)",
+              js:"storyShot();storyPlay('end',true);storySeek(N);", wait:700},
+  "story3:N":{what:"the fire scene at beat N (his lines are 1..3)",
+              js:"storyShot();storyPlay('fire',true);storySeek(N);", wait:700},
   /* And the one frame seeking cannot reach, because it is on the far side of
      a real fold: the player presses GO 2D and she is standing in the plane. */
   reunion:  {what:"the ending, after the player's own fold",
-             js:"storyShot();storyPlay('end');storySeek(2);setTimeout(doFlatten,400);", wait:3200},
+             js:"storyShot();storyPlay('end',true);storySeek(1);setTimeout(doFlatten,400);", wait:3200},
   storyend: {what:"the last card, after the last fold",
-             js:"storyShot();storyPlay('end');storySeek(6);setTimeout(storyEndCard,200);", wait:1400},
+             js:"storyShot();storyPlay('end',true);storySeek(6);setTimeout(storyEndCard,200);", wait:1400},
 };
 
 function parseArgs(argv){

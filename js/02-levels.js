@@ -601,6 +601,13 @@ var LEVELS=[
    blocks:[[0,0,0],[-2,0,-5],[-1,0,-5],[0,0,-5,4],[-1,1,1]],
    start:[0,1,0],goal:[-1,1,-5],rotate:true},
 {name:"BOSS II — The Record",
+   /* AND II · FIRE'S LAST FIGHT OWES YOU A SCENE. `interlude` names it in
+      STORY (js/22-story.js); win() reads it through storyAfterLevel() and
+      plays the scene instead of showing this card, once. A field rather than
+      a name match, for the same reason BOSS IV's `ending` is one: levels get
+      renamed and a cutscene that silently stopped firing would be a
+      miserable thing to find. */
+   interlude:"fire",
    won:"You are on the list now. It is a short list.",
    hint:"A game of catch: whoever shifts the other into their own square first wins. Fire hides them, and it burns you.",
    /* Cover and spikes together in phase two, so the section's piece is part

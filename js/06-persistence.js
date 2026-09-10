@@ -113,6 +113,7 @@ function loadSettings(){
            seeing; REPLAY STORY in the settings panel is the way back. */
         if(o.seenStory1===true)settings.seenStory1=true;
         if(o.seenStory2===true)settings.seenStory2=true;
+        if(o.seenStory3===true)settings.seenStory3=true;
         if(typeof o.landHints==="number"&&o.landHints>=0)
           settings.landHints=Math.min(99,o.landHints|0);
         // o.verbs may exist in settings saved before the wording was settled.

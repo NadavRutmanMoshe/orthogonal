@@ -86,7 +86,7 @@
    06-persistence.js, next to the counters, or the opening would play on
    every launch of the game forever.
    ============================================================ */
-var STORY_KEYS={open:"seenStory1", end:"seenStory2"};
+var STORY_KEYS={open:"seenStory1", end:"seenStory2", fire:"seenStory3"};
 function storySeen(id){return !!(typeof settings!=="undefined"&&settings[STORY_KEYS[id]]);}
 function storyMark(id){
   if(typeof settings==="undefined")return;
@@ -98,15 +98,23 @@ function storyMark(id){
    (nothingBehind()), so in practice this is belt and braces - and it is what
    makes REPLAY STORY able to force it. */
 function storyIntroDue(){return !storySeen("open");}
-/* And the ending is due on the way out of the last fight. `ending:true` is a
-   field on BOSS IV in 02-levels.js rather than a name match here, because
-   levels get renamed - that is what LEVEL_RENAMES exists for - and a
-   cutscene that silently stops firing because a boss was retitled is the
-   worst kind of bug to find. */
-function storyEndDue(){
-  return typeof playSource!=="undefined"&&playSource==="builtin"&&
-         L&&L.ending&&!storySeen("end");
+/* WHICH SCENE, IF ANY, THIS LEVEL OWES YOU ON THE WAY OUT. Two levels carry
+   one: BOSS II is `interlude:"fire"` and BOSS IV is `ending:true`. They are
+   fields on the levels in 02-levels.js rather than name matches here, because
+   levels get renamed - that is what LEVEL_RENAMES exists for - and a cutscene
+   that silently stops firing because a boss was retitled is the worst kind of
+   bug to find.
+
+   win() asks this INSTEAD of showing its card. The scene is the reward for
+   the fight, and a card in front of it is a door in front of a door. */
+function storyAfterLevel(){
+  if(typeof playSource==="undefined"||playSource!=="builtin"||!L)return null;
+  if(L.ending&&!storySeen("end"))return "end";
+  if(L.interlude&&STORY_KEYS[L.interlude]&&!storySeen(L.interlude))return L.interlude;
+  return null;
 }
+// Kept for the older call sites, and it is the same question.
+function storyEndDue(){return storyAfterLevel()==="end";}
 
 /* ============================================================
    THE CAST
@@ -123,6 +131,19 @@ function storyEndDue(){
    the other side of the fold. Nothing says so; the colour says it.
    ============================================================ */
 var ST_COP_BODY=0x241820, ST_COP_RIM=0xff6b7a;
+/* THE SON'S OWN COLOUR, IN THE OPENING ONLY, AND IT IS THE ONE PIECE OF
+   CHARACTERISATION IN THIS GAME THAT IS NEVER SAID OUT LOUD.
+
+   Halfway between his mother's Pink and the neighbours' White. Nothing
+   anywhere states what that means and nothing ever will; it is there for
+   whoever puts the two houses side by side and looks at the three colours.
+
+   It is why the opening's son is an ACTOR and the ending's son is
+   playerMesh. In the house he is a child, before the player has chosen
+   anything - so he is this colour, fixed. At the end he is whatever the
+   player has made of him, which is the arc, and it is what his mother
+   remarks on when she sees him (stSkinLine). */
+var ST_SON=0xf9b2d4;
 var ST_STEP_MS=250;      // one cell of walking, close to the game's own pace
 var ST_DEPTH=1.0;        // how far in front of the paper an actor is drawn
                          // when flat; the player uses 1.2, so it stays in front
@@ -282,10 +303,53 @@ function stPlaneBoard(){
   for(x=0;x<=8;x++)for(z=0;z<=3;z++)b.push([x,0,z]);
   return {blocks:b, tint:[]};
 }
+/* THE FIRE. A basalt shelf with a wall of fire along the back of it and a
+   gap in the middle of that wall, which is where he is standing.
+
+   The fire is real fire - kind 4, the piece the section teaches - not a
+   decoration that looks like it. It flickers because every fire block in the
+   game flickers, it is lethal because every fire block is, and nobody steps
+   on it because nobody in a cutscene steps anywhere they are not told to.
+   Using the real piece is the same discipline as using the real fold: the
+   scene is made of the game. */
+function stFireBoard(){
+  var b=[],x,z;
+  for(x=0;x<=8;x++)for(z=0;z<=3;z++)b.push([x,0,z]);
+  // The back wall of it, with him in the gap at x=4.
+  for(x=0;x<=8;x++)if(x!==4)b.push([x,1,0,4]);
+  return {blocks:b, tint:[]};
+}
+
+/* ============================================================
+   THE ARRIVAL — how a scene that follows a fight gets there.
+
+   The two scenes that come off a boss do not cut to their board, they TRAVEL
+   to it: you stand a moment on the arena you have just won, that arena folds
+   flat under you, the screen goes dark, the board is swapped behind the dark,
+   and somewhere else fades up. The move between the two places is the game's
+   own verb, which is the same argument the abduction and the reunion are
+   built on.
+
+   These five beats are shared by both scenes as `pre`, and they are only in
+   the timeline when there is something to leave: a replay out of the settings
+   panel has no arena it just won, so storyPlay() drops them and calls
+   stArrive() outright.
+   ============================================================ */
+var ST_ARRIVE=[
+  {ms:1500, say:"The count is closed."},
+  {ms:1250, at:function(){stFold();}},
+  {ms:750,  at:function(){stFadeTo(1,700);stSay(null);}},
+  {ms:300,  at:function(){stArrive();}},
+  {ms:900,  at:function(){stFadeTo(0,850);}}
+];
 
 var STORY={
   open:{
     to:"prologue",
+    /* The child in the house is not the player's skin. `son` repaints
+       playerMesh for the length of this scene only; storyStop() puts the
+       equipped one back with applySkin(). See ST_SON. */
+    son:ST_SON,
     level:{name:"I'm Just A Cube", hint:"", theme:1, tutorial:true, rotate:false,
            start:[3,1,2], goal:[3,1,2], blocks:null},
     /* BIGGER THAN THEY WERE. The parents were 1.18 against the son's 1.0 and
@@ -367,8 +431,44 @@ var STORY={
     ]
   },
 
+  /* ============================================================
+     THE FIRE — after BOSS II, which is the fight II · FIRE ends on.
+
+     `from:"here"` is what makes this and the ending arrive rather than cut.
+     The scene begins on the arena you have just won, folds it flat, fades,
+     swaps the board behind the black and fades back up somewhere else - so
+     the move between the two places is the game's own verb again, and the
+     player watches the arena they were standing on collapse.
+
+     He is a SHARD, in his own black, and that is the line delivered before
+     it is spoken. Shapes are the wardrobe: the player has spent the whole
+     game looking at a catalogue of them and choosing one. A father who left
+     as a cube and is standing there as a shard has said "the plane changed
+     me" before he opens his mouth.
+     ============================================================ */
+  fire:{
+    to:"next", from:"here",
+    /* The player stands one square off his line. Directly in front of him
+       was the first placement and it is a better picture and a worse shot:
+       the son is drawn over his father and neither reads. */
+    level:{name:"I'm Just A Cube", hint:"", theme:2, tutorial:true, rotate:false,
+           start:[3,1,2], goal:[3,1,2], blocks:null},
+    cast:[
+      {id:"dad", col:"black", shape:"star", size:1.4, at:[4,1,0]}
+    ],
+    pre:ST_ARRIVE,
+    beats:[
+      {ms:1900, say:"Something was standing in the fire."},
+      {ms:2500, say:"You came further than I did.", who:"dad"},
+      {ms:3000, say:"The plane keeps a little of everything it flattens.", who:"dad"},
+      {ms:3000, say:"I did not come back the same shape.", who:"dad"},
+      {ms:1700, at:function(){stTake(["dad"],true);}, say:null},
+      {ms:2400, say:"Everything this world has ever flattened is still in there."}
+    ]
+  },
+
   end:{
-    to:"sections",
+    to:"sections", from:"here",
     level:{name:"I'm Just A Cube", hint:"", theme:5, tutorial:true, rotate:false,
            start:[4,1,2], goal:[4,1,2], blocks:null},
     /* SHE IS `plane:true`, WHICH IS THE WHOLE SCENE. A plane actor is drawn
@@ -377,21 +477,22 @@ var STORY={
        square right of the player's x=4, so the fold lands her beside him: in
        the plane the only coordinate left is u, and u is x. */
     cast:[
-      {id:"mum", col:"pink", size:1.18, at:[5,1,0], plane:true}
+      {id:"mum", col:"pink", size:1.4, at:[5,1,0], plane:true}
     ],
-    // start is [4,1,2] - see `level` above; she is one square right of him
-    // in u, and three squares away in the depth that the fold throws out.
+    pre:ST_ARRIVE,
     beats:[
-      {ms:1900, say:"The count is closed."},
-      {ms:2400, say:"Everything this world has ever flattened is still in there."},
+      {ms:2000, say:"Everything this world has ever flattened is still in there."},
       /* AND HERE THE GAME HANDS THE VERB BACK. One press, the one it has
          spent the whole campaign teaching, and it is the player who finds
          her rather than a camera that shows him finding her. */
       {ms:0, await:"fold", say:"{do:2d}"},
       {ms:1250, at:function(){stSay(null);}},
       {ms:1700, say:"You found me.", who:"mum"},
+      /* WHAT SHE SAYS NEXT DEPENDS ON WHAT YOU ARE WEARING. `say` may be a
+         function, evaluated when the beat starts - see stEnter(). */
+      {ms:2600, say:stSkinLine, who:"mum"},
       {ms:2600, say:"I have been in the silhouette since they came to the door.", who:"mum"},
-      {ms:2900, say:"Your father is not here. He went into the fire.", who:"mum"},
+      {ms:3000, say:"Your father is not here. He went into the fire world.", who:"mum"},
       {ms:1400, at:function(){storyEndCard();}}
     ]
   }
@@ -430,30 +531,88 @@ function storyPlay(id,replay){
   if(!def)return;
   storyStop();
   /* WHAT WE ARE STANDING ON IS PUT BACK AFTERWARDS. A cutscene loads a level
-     over whatever was there, and the ending in particular is entered from a
-     win card on BOSS IV - so playSource and lvIndex have to be restored or
-     the next thing to ask "which level am I on" gets the cutscene. */
+     over whatever was there, and the two that follow a boss are entered from
+     the fight itself - so playSource and lvIndex have to be restored or the
+     next thing to ask "which level am I on" gets the cutscene. */
   stWas={src:(typeof playSource!=="undefined"?playSource:"builtin"),
          idx:(typeof lvIndex==="number"?lvIndex:0),
          home:(typeof homeUp==="function"&&homeUp())};
+  /* TRAVEL, OR CUT. A scene with `from:"here"` begins on the board that is
+     already loaded and folds its way out of it; the board it is really
+     about is swapped in four beats later by stArrive(). A replay has no
+     arena it just won, so it skips the journey and starts on arrival. */
+  var travels=def.from==="here"&&!replay;
+  ST={id:id, def:def, list:(travels?def.pre:[]).concat(def.beats),
+      i:-1, t:0, actors:[], await:null, over:false, replay:!!replay,
+      arrived:false};
+  var el=$("story");if(el)el.classList.add("on");
+  stSay(null);
+  stFadeTo(0,420);
+  if(!travels)stArrive();
+  if(typeof syncHud==="function")syncHud();   // owns body.instory
+  stEnter(0);
+}
+/* The board this scene is actually about, loaded. Called immediately for a
+   scene that cuts, and from inside the journey - behind the black - for one
+   that travels. */
+function stArrive(){
+  if(!ST||ST.arrived)return;
+  var def=ST.def, id=ST.id;
+  ST.arrived=true;
   var lv={};
   for(var k in def.level)lv[k]=def.level[k];
-  var built=(id==="open"?stHouseBoard():stPlaneBoard());
+  var built=id==="open"?stHouseBoard():id==="fire"?stFireBoard():stPlaneBoard();
   lv.blocks=built.blocks;
   lv.tint=built.tint;
-  ST={id:id, def:def, i:-1, t:0, actors:[], await:null, over:false,
-      replay:!!replay};
   playSource="story";
   enterPlay(lv,undefined,false);
   /* The one mark loadLevel leaves: trailHere() puts a footprint on the start
      square. A cutscene has not been walked, so it is swept. */
   if(typeof trailClear==="function")trailClear();
+  /* THE CHILD IS NOT THE PLAYER'S SKIN. Only the opening asks for this, and
+     only for as long as it runs: storyStop() calls applySkin(), which is the
+     function whose whole job is putting the equipped piece back. */
+  if(def.son!==undefined)stSonSkin(def.son);
   stBuildCast(def.cast);
-  var el=$("story");if(el)el.classList.add("on");
-  stSay(null);
-  stFadeTo(0,420);
-  if(typeof syncHud==="function")syncHud();   // owns body.instory
-  stEnter(0);
+  if(typeof syncHud==="function")syncHud();
+}
+/* Repaint playerMesh for the length of one scene. Same three lines
+   applySkin() uses, with the colour and the shape given rather than read. */
+function stSonSkin(hex){
+  if(typeof playerMesh==="undefined"||!playerMesh||
+     typeof buildPlayerMesh!=="function"||typeof THREE==="undefined")return;
+  var pos=playerMesh.position.clone();
+  scene.remove(playerMesh);
+  playerMesh=buildPlayerMesh("cube",hex,
+    new THREE.MeshBasicMaterial({color:hex}));
+  playerMesh.position.copy(pos);
+  scene.add(playerMesh);
+}
+/* ============================================================
+   WHAT SHE SAYS WHEN SHE SEES YOU
+
+   The one line in the game that reads the wardrobe. A player arrives at the
+   ending wearing something they chose over four sections, and the scene is
+   about a mother looking at a child she last saw as a small pink cube - so
+   she remarks on what is in front of her.
+
+   Three answers, in priority order, and the priority is the point. A REWARD
+   shape cannot be bought: it is one per numbered section, granted for taking
+   every star in it, so wearing one is the only thing in this catalogue that
+   is evidence of what you did rather than of what you liked. Anything else
+   off the default is a choice, which is a different sentence. And arriving
+   in the cube you started in is the third, which is not a lesser ending -
+   it is the one where the only thing that changed is you.
+   ============================================================ */
+function stSkinLine(){
+  var shape=(typeof wardrobe!=="undefined"&&wardrobe.shape)||"cube";
+  var col=(typeof wardrobe!=="undefined"&&wardrobe.color)||"rose";
+  var it=(typeof findBy==="function"&&typeof SKIN_SHAPES!=="undefined")
+    ? findBy(SKIN_SHAPES,shape) : null;
+  if(it&&it.reward)return "You came back stronger than you left.";
+  if(shape!=="cube"||col!=="rose")
+    return "You have changed. I would know you anywhere.";
+  return "Look how you have grown.";
 }
 
 /* Everything the scene put on the screen, taken back off it. Called on the
@@ -467,7 +626,13 @@ function storyStop(){
     if(a.mesh&&typeof scene!=="undefined"&&scene)scene.remove(a.mesh);
     if(a.mesh&&a.mesh.geometry&&a.mesh.geometry.dispose)a.mesh.geometry.dispose();
   }
+  var repaint=ST.def&&ST.def.son!==undefined;
   ST=null;
+  /* AND THE EQUIPPED PIECE GOES BACK ON. Only the opening repaints
+     playerMesh (see stSonSkin), and applySkin() is the function whose whole
+     job is putting back what the wardrobe says - so the restore is one call
+     and it cannot drift from what a wardrobe change would have done. */
+  if(repaint&&typeof applySkin==="function")applySkin();
   /* THE OVERLAY IS DELIBERATELY LEFT UP. It is carrying the black the scene
      just faded to, and taking it down here would cut from black straight to
      the next level with no fade back in - the curtain would be pulled at the
@@ -531,6 +696,17 @@ function storyGo(to){
   playSource="builtin";
   if(to==="prologue"){
     if(typeof enterPlay==="function")enterPlay(LEVELS[0],0,false);
+  }else if(to==="next"){
+    /* THE SCENE STOOD IN FOR A WIN CARD, so it owes the player what that
+       card's button would have done: the next level. The lock check is
+       bNext's, for the same reason bNext has one - the next level can be
+       behind a shelf that is not open yet, and walking through it silently
+       is worse than saying so. */
+    var nx=idx>=LEVELS.length-1?0:idx+1;
+    if(typeof mapLocked==="function"&&mapLocked(nx)){
+      if(typeof enterPlay==="function")enterPlay(LEVELS[idx],idx,false);
+      if(typeof levelPicker==="function")levelPicker(mapSecOf(nx));
+    }else if(typeof enterPlay==="function")enterPlay(LEVELS[nx],nx,false);
   }else if(to==="back"){
     if(typeof enterPlay==="function")enterPlay(LEVELS[idx],idx,false);
     // A player who opened settings from the home screen is put back on it.
@@ -555,7 +731,10 @@ function stBuildCast(list){
        fades in with the fold and a taken one fades out. buildPlayerMesh
        would otherwise hand back a shared opaque MeshBasicMaterial. */
     var mat=new THREE.MeshBasicMaterial({color:hex,transparent:true,opacity:1});
-    var m=buildPlayerMesh("cube",hex,mat);
+    /* A shape, if the part calls for one. Only the father in the fire does:
+       he left as a cube and is standing there as a Shard, which is the line
+       he is about to say, said first. */
+    var m=buildPlayerMesh(d.shape||"cube",hex,mat);
     m.scale.setScalar(d.size||1);
     m.position.set(d.at[0],d.at[1],d.at[2]);
     m.visible=!d.hidden;
@@ -620,16 +799,20 @@ function stSob(id,ms){
    the mesh's CURRENT position rather than at the actor's cell - because the
    world is folded when this fires and the cell is not where the cube is
    being drawn. Same reason the replay's camera reads playerMesh. */
-function stTake(ids){
+/* `quiet` is somebody LEAVING rather than being taken: no ash, no death
+   sound, just a fade. The father in the fire steps back into the plane; he
+   is not killed in front of you, and a kill cloud would say he was. */
+function stTake(ids,quiet){
   for(var i=0;i<ids.length;i++){
     var a=stFind(ids[i]);
     if(!a)continue;
-    if(typeof ashBurst==="function")
+    if(!quiet&&typeof ashBurst==="function")
       ashBurst(a.mesh.position.x,a.mesh.position.y,a.mesh.position.z,
                a.mat.color.getHex());
     a.going=1;
   }
-  if(typeof SFX!=="undefined"&&SFX.die)SFX.die();
+  if(!quiet&&typeof SFX!=="undefined"&&SFX.die)SFX.die();
+  if(quiet&&typeof SFX!=="undefined"&&SFX.fold)SFX.fold();
 }
 
 /* ============================================================
@@ -674,7 +857,17 @@ function stSay(text,who){
   var col=null;
   if(who){
     var a=stFind(who);
-    if(a)col="#"+a.mat.color.getHex().toString(16).padStart(6,"0");
+    if(a){
+      /* A SPEAKER TOO DARK TO SET TYPE IN GETS A NEUTRAL. The line is drawn
+         in the speaker's own colour, which is the point of `who` - and the
+         father is Black, which as body text on a night ground is a line
+         nobody can read. Anything under a third of the way up the range
+         falls back to the caption's ordinary light grey; the colour is a
+         nice touch and legibility is not. */
+      var c=a.mat.color;
+      var lum=c.r*.299+c.g*.587+c.b*.114;
+      col=lum<.34?null:"#"+c.getHex().toString(16).padStart(6,"0");
+    }
   }
   el.style.setProperty("--say",col||"#a274ff");
   /* Restarted rather than left running: the element carries an entrance
@@ -718,10 +911,12 @@ function storyEndOk(){
 function stEnter(i){
   if(!ST)return;
   ST.i=i;ST.t=0;
-  var b=ST.def.beats[i];
+  var b=ST.list[i];
   if(!b){storyFinish();return;}
   if(b.at)b.at();
-  if(b.say!==undefined)stSay(b.say,b.who);
+  /* `say` may be a function, evaluated now rather than when the table was
+     written - which is what lets the ending read the wardrobe (stSkinLine). */
+  if(b.say!==undefined)stSay(typeof b.say==="function"?b.say():b.say,b.who);
   if(b.await)stAsk(b.await);
 }
 /* Handing one verb back. On a button layout the bar comes up carrying only
@@ -757,17 +952,17 @@ function storyFinish(){
    cell, which is near enough to the pose the beat holds. */
 function storySeek(n){
   if(!ST)return;
-  for(var i=0;i<=n&&i<ST.def.beats.length;i++){
-    var b=ST.def.beats[i];
+  for(var i=0;i<=n&&i<ST.list.length;i++){
+    var b=ST.list[i];
     if(b.at)b.at();
-    if(b.say!==undefined)stSay(b.say,b.who);
+    if(b.say!==undefined)stSay(typeof b.say==="function"?b.say():b.say,b.who);
     /* Only the beat actually being seeked TO may arm its wait. An
        intermediate one would stop the timeline on a press nothing is going
        to make, and the seek would never arrive. */
     if(b.await&&i===n)stAsk(b.await);
     stSettle();
   }
-  ST.i=Math.min(n,ST.def.beats.length-1);ST.t=0;
+  ST.i=Math.min(n,ST.list.length-1);ST.t=0;
 }
 function stSettle(){
   if(!ST)return;
@@ -890,7 +1085,7 @@ function storyFrame(dtMs,rx,rz,tdvx,tdvz,ft){
 
   // And the clock. Held while a beat is waiting on the player.
   if(ST.await||ST.over)return;
-  var b=ST.def.beats[ST.i];
+  var b=ST.list[ST.i];
   if(!b)return;
   ST.t+=dt;
   if(ST.t>=b.ms)stEnter(ST.i+1);

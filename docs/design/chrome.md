@@ -495,7 +495,8 @@ one scene:
 | boss win card | one line per fight | `LEVELS[].won` → `win()` |
 | boss names | the four stages of being counted | `LEVELS[].name` |
 | the opening cutscene | the house, and who the census took | `STORY.open` in `js/22-story.js` |
-| the closing cutscene | the plane, and who is still in it | `STORY.end` in `js/22-story.js` |
+| the fire, after BOSS II | the father, and what the plane did to him | `STORY.fire` |
+| the closing cutscene | the plane, and who is still in it | `STORY.end` |
 
 **THIS ROW USED TO SAY "there are no cutscenes and no journal", AND THAT IS
 REVERSED, on the owner's call.** Worth being precise about what changed,
@@ -643,8 +644,52 @@ nearer the camera lands almost exactly on the wall course it is meant to sit
 above. Photographed, the house had a roof and no windows, because the roof
 was covering them.
 
-**Seen once, and the flag is in the settings whitelist.** `seenStory1` and
-`seenStory2` go through `settings`, which means they must be read back in
+**A scene replaces a win card; it does not follow one.** BOSS II and BOSS IV
+each carry a scene (`interlude:"fire"` and `ending:true`), and `win()` asks
+`storyAfterLevel()` *instead of* showing its card. Everything else `win()`
+does still happens — the record, the stars, the section payout — and only the
+card is skipped, and only the first time. Two reasons. A card in front of a
+scene is a door in front of a door; and the scene begins on the arena you are
+standing on, so a full-bleed overlay would have to be dismissed before the
+camera could move.
+
+**And it travels to its board rather than cutting to it.** `from:"here"` puts
+five shared beats (`ST_ARRIVE`) in front of the scene: you hold a moment on
+the arena you won, it folds flat under you, the screen goes dark, `stArrive()`
+swaps the board behind the dark, and somewhere else fades up. The move between
+the two places is the game's own verb, which is the argument the abduction and
+the reunion are already built on. A replay out of the settings panel has no
+arena it just won, so it drops the five beats and arrives outright.
+
+**The father is a Shard, and that is his line delivered before he says it.**
+Shapes are the wardrobe: the player has spent four sections looking at a
+catalogue of them and picking one. A father who left as a cube and is standing
+in the fire as a Shard has said "the plane changed me" before he opens his
+mouth — and it sets up the ending, where his mother says the same thing about
+the player. He is drawn among real fire blocks, kind 4, the piece that section
+teaches, for the same reason the fold is the real fold.
+
+**The son is his mother's colour, lightened toward the neighbours'.** `ST_SON`
+is halfway between Pink and White. Nothing anywhere says what that means and
+nothing ever will; it is there for whoever puts the two houses side by side
+and looks at the three colours in the first one. It is also why the opening's
+son is a repaint of `playerMesh` rather than the equipped skin: in the house
+he is a child, before the player has chosen anything, and `storyStop()` calls
+`applySkin()` to put back whatever they are actually wearing.
+
+**And at the ending his mother remarks on what he came back as.**
+`stSkinLine()` is the one line in the game that reads the wardrobe, and its
+priority order is the content of it. A `reward:true` shape cannot be bought —
+one per numbered section, granted for every star in it — so wearing one is the
+only thing in the catalogue that is evidence of what you *did* rather than of
+what you liked: *"You came back stronger than you left."* Anything else off
+the default cube-and-Rose is a choice, which is a different sentence:
+*"You have changed. I would know you anywhere."* And arriving in the cube you
+started in is the third, which is not a lesser ending — it is the one where
+the only thing that changed is you: *"Look how you have grown."*
+
+**Seen once, and the flag is in the settings whitelist.** `seenStory1`, `2` and `3`
+go through `settings`, which means they must be read back in
 `loadSettings()` or they do not survive a reload — without those two lines the
 opening plays on every launch, which is the worst version of a cutscene there
 is. Skipping counts as seeing. `RESET SETTINGS` deliberately does not clear

@@ -113,12 +113,6 @@ bind("bLevels",function(){
 });
 bind("bNext",function(){
   if(fromEditor){enterEditor();return;}
-  /* THE LAST FIGHT DOES NOT HAVE A NEXT LEVEL, IT HAS AN ENDING. Beating
-     BOSS IV for the first time re-labels this button FIND THEM in win() and
-     re-routes it here; both halves read storyEndDue(), so they cannot
-     disagree about which the player is looking at. Afterwards it is an
-     ordinary NEXT LEVEL again. */
-  if(typeof storyEndDue==="function"&&storyEndDue()){storyPlay("end");return;}
   if(playSource==="library"){
     var s=sortedLibrary();
     libIndex++;

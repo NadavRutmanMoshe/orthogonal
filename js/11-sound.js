@@ -67,12 +67,12 @@ var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false
               pace:1,
               noSlowOffer:false,landHints:0,
               starAsked:false,
-              /* The two cutscenes, each played once. Declared here so the
+              /* The three cutscenes, each played once. Declared here so the
                  shape of a fresh settings object is the whole truth, and
                  deliberately NOT reset by RESET SETTINGS: that button puts
                  preferences back, and whether you have watched the opening
                  is not a preference. REPLAY STORY is how you ask for it. */
-              seenStory1:false, seenStory2:false,
+              seenStory1:false, seenStory2:false, seenStory3:false,
               /* HOW MUCH KILL CAM. "full" is the whole conceit - the signal
                  drops to television snow, a camcorder is walked up to the
                  screen and pushed through it, and the film plays behind its

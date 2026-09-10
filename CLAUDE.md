@@ -289,10 +289,17 @@ is the rule.
   where it becomes `WHAT'S LEFT` and opens the map.
 
 **The story** (`chrome.md`)
-- **There are two cutscenes**, and this reverses `chrome.md`'s old "there are
-  no cutscenes" on the owner's call. The opening is between the intro card's
-  BEGIN and the first tutorial; the ending is off BOSS IV's win card, which
-  carries `ending:true` and re-labels its button `FIND THEM`.
+- **There are three cutscenes**, and this reverses `chrome.md`'s old "there
+  are no cutscenes" on the owner's call. The opening is between the intro
+  card's BEGIN and the first tutorial; the other two REPLACE a win card,
+  on the two fights that carry one (`interlude:"fire"` on BOSS II,
+  `ending:true` on BOSS IV). `win()` asks `storyAfterLevel()` and plays the
+  scene instead of showing its card, once - everything else it does, the
+  record and the stars and the section payout, still happens.
+- **A scene that follows a fight travels to its board** (`from:"here"`): it
+  begins on the arena you just won, folds it flat, fades, swaps the board
+  behind the black and fades up. `ST_ARRIVE` is those five beats and
+  `stArrive()` is the swap; a menu replay skips them.
 - **A cutscene is a level, played by nobody**: `storyPlay()` hands an ordinary
   `tutorial:true` level to `enterPlay()`, and `storyFrame()` (called from
   `animate`, handed the camera basis) places the cast with the player's own
@@ -300,16 +307,23 @@ is the rule.
 - **The abduction and the reunion are both the fold** - four cubes in one
   silhouette column is rule 4, and the ending gives `GO 2D` back to the player
   for one press. A beat that does not explain a mechanic does not go in.
-- **The son is `playerMesh`**, not an actor, so he wears the equipped skin.
+- **The son is `playerMesh`**, and in the OPENING ONLY he is repainted
+  `ST_SON` - halfway between his mother's Pink and the neighbours' White,
+  said nowhere. `storyStop()` calls `applySkin()` to put the equipped piece
+  back. At the ending he is whatever the player made him, and `stSkinLine()`
+  is his mother remarking on it: a `reward:true` shape gets one line, any
+  other departure from the default cube-and-Rose another, the default a third.
+- **A beat's `say` may be a function**, evaluated when the beat starts. That
+  is what lets the ending read the wardrobe.
 - **The verbs are held at the verbs** (`storyHolds()` beside `bossHolding()`);
   restart, hint and undo are held in the key handler, and Escape skips.
-- **`seenStory1` / `seenStory2` must stay in `loadSettings()`'s whitelist** or
+- **`seenStory1` / `2` / `3` must stay in `loadSettings()`'s whitelist** or
   the opening plays on every launch. `RESET SETTINGS` deliberately leaves them.
 - **Ground only where somebody stands.** A filled lawn is a wall of grass at
   this camera angle. A house needs a roof, windows AND `L.tint` - shape alone
   reads as terrain, and the roof must sit at `z=0` or it overhangs its own
   face. Screen height is `0.885y - 0.465z` (`chrome.md`).
-- **`WATCH THE OPENING` / `WATCH THE ENDING` are always in the menu**, and a
+- **`WATCH THE OPENING` / `THE FIRE` / `THE ENDING` are always in the menu**, and a
   replay is not a first watch: `storyPlay(id,replay)` does not mark the scene
   seen and hands back where it came from, so looking at the ending early does
   not consume `FIND THEM` on BOSS IV.
@@ -344,6 +358,10 @@ is the rule.
   is `true`: the ambient beds are built but muted, on the owner's call.
 
 **Rendering** (`look.md`, `controls.md`)
+- **`outlineFor()` reads the PIECE first and the background second.** A pale
+  piece takes a dark rim, a near-black one a light rim, and only the middle of
+  the range falls back to the old background rule - otherwise a white skin on
+  the void had a white rim and no visible facets at all.
 - One merged block geometry, per-face brightness in a vertex-colour
   attribute, `material.color` rewritten every frame by the block loop. Reach
   for `map`/vertex colours, never for the one channel the loop owns.

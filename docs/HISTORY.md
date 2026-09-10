@@ -1363,3 +1363,27 @@ over, which looks exactly like a cutscene frozen on its first beat. An hour
 went into a bug that was not in the cutscene at all. An explicit `--wait` now
 beats the screen's default; the screens' own defaults still apply when it is
 not given.
+
+
+---
+
+## The white skin had no edges, and had not since it shipped
+
+`outlineFor()` picked the rim off the BACKGROUND: light on a dark ground, dark
+on a light one. That is exactly right for a *silhouette* — it is what keeps
+the Black skin visible against the void and the White one visible against
+paper — and it is exactly wrong for the edges *inside* the silhouette, which
+are the only thing making a cube look like a cube rather than a rectangle. A
+white piece on the void got a white rim and lost every facet.
+
+Reported on the white neighbours in the opening cutscene, where three of them
+stand together and the flatness is obvious. It was never a cutscene bug: the
+White skin had been that way in play and in the wardrobe's display case since
+the day it was added, and nobody had looked at one against the void long
+enough to notice.
+
+The rule now asks the piece first — pale piece, dark rim; near-black piece,
+light rim — and only falls back to the background in the middle of the range,
+where either would do and the silhouette is worth more than the facets.
+Nothing is lost at the ends, because a piece is at its most different from the
+ground exactly when this rule is most decided.
