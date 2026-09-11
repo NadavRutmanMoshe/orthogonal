@@ -159,13 +159,25 @@ function wardRefresh(){
   var html="";
   for(var i=0;i<list.length;i++){
     var it=list[i], have=owns(it.id), on=cur===it.id;
-    // each swatch shows the two colours that item actually sets
+    /* THE TILE SAYS WHAT KIND OF THING IT IS BEFORE THE PRICE IS READ.
+       The chip used to be one flat `var(--rule)` square for every shape and
+       a bare hex for every colour, so a shelf of thirteen shapes was
+       thirteen identical grey squares and the only thing that told an owned
+       item from a locked one was the word under it. The classes here are
+       what let the CSS light the chip: `have` in the player's own colour,
+       `rew` and `gold` in the star's, `locked` left grey and dimmed. The
+       colour swatch hands its hex over as `--sw` rather than as a
+       background, so the same variable can drive the gloss, the rim and the
+       glow that hue casts on the tile. */
+    var kind = (have?" have":" locked")+
+      (it.reward?" rew":"")+((isDeal(it)||isPass(it))?" gold":"")+
+      (t==="color"?" sw":"");
     var swatch = t==="color"
-      ? "background:#"+it.hex.toString(16).padStart(6,"0")
-      : "background:var(--rule)";
-    html+="<div class='item"+(on?" on":"")+(sel===it.id?" sel":"")+
+      ? " style='--sw:#"+it.hex.toString(16).padStart(6,"0")+"'"
+      : "";
+    html+="<div class='item"+(on?" on":"")+(sel===it.id?" sel":"")+kind+
       "' data-id='"+it.id+"'>"+
-      "<i style='"+swatch+"'>"+(t==="color"?"":shapeGlyph(it.id))+"</i>"+
+      "<i"+swatch+">"+(t==="color"?"":shapeGlyph(it.id))+"</i>"+
       "<b>"+it.name+"</b>"+
       "<span"+(!have?(it.reward?" class='wlock'":isDeal(it)?" class='wusd'":""):"")+">"+
         (on?"equipped":have?(isPass(it)?"active":"owned")
@@ -205,7 +217,7 @@ function wardMeta(){
             "</li></ul>"+
             (it.needs&&hasPass(it.needs)
               ? "<div class='wcredit'>"+esc(findBy(PASSES,it.needs).name)+
-                " already paid for \u2014 this is the rest.</div>":"")
+                " already paid for - this is the rest.</div>":"")
           : "")+
         "<div class='wact'>";
   /* A PASS HAS NOTHING TO EQUIP. It is not worn, it is in force - so once it
@@ -237,9 +249,9 @@ function wardMeta(){
   // The hook name belongs in the code and in CLAUDE.md, not in a player's
   // narrow sidebar; all this has to say is why the button does nothing.
   if(!have&&isDeal(it))
-    s+="<div class='note'>No store yet \u2014 nothing can be charged until "+
+    s+="<div class='note'>No store yet - nothing can be charged until "+
        "the game is wrapped for one. The button is dead on purpose.</div>";
-  else if(!have&&!it.reward)s+="<div class='note'>No ad provider yet \u2014 the button is "+
+  else if(!have&&!it.reward)s+="<div class='note'>No ad provider yet - the button is "+
     "dead until the game is wrapped for a store.</div>";
   $("wMeta").innerHTML=s;
   bind("wEquip",function(){wardEquip(t,id);SFX.key();wardRefresh();});

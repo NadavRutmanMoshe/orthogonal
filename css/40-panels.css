@@ -297,6 +297,12 @@
       transparent 62%),
       color-mix(in srgb,var(--player) 12%,var(--panel));
     box-shadow:0 2px 0 color-mix(in srgb,var(--player) 34%,#04070d)}
+  /* THE MONEY SHELF IS GOLD ALL THE WAY DOWN. The tab already carries the
+     tag and the price is already gold; the tile was the one part of the
+     DEALS shelf still wearing the ordinary grey rim, so a shelf that is
+     deliberately not like the rest of the catalogue looked exactly like it. */
+  .item.gold:not(.sel){border-color:color-mix(in srgb,var(--star) 34%,var(--rule));
+    box-shadow:0 2px 0 color-mix(in srgb,var(--star) 26%,#04070d)}
 
   /* The wardrobe is a browsing UI rather than a block of text: it owns its
      height, and the item list scrolls inside it instead of the whole panel
@@ -330,12 +336,28 @@
     border-radius:50%;pointer-events:none;
     background:color-mix(in srgb,var(--player) 72%,transparent);
     filter:blur(11px);opacity:.6}
+  /* THE GLASS IS GLASS. A vignette over the render darkens the four corners
+     of the box and leaves the middle - where the piece stands - alone, so
+     the case reads as a lit alcove rather than as a flat square of `--void`
+     with a rim drawn round it. It is `::after` over the canvas rather than
+     anything behind it, because a canvas is opaque and paints over its own
+     backdrop; `pointer-events:none` so the drag that turns the piece still
+     reaches it. */
+  .wglass::after{content:"";position:absolute;inset:0;pointer-events:none;
+    border-radius:inherit;
+    background:radial-gradient(118% 86% at 50% 34%,transparent 42%,
+      rgba(2,4,9,.52) 100%)}
   .wcanvas{position:relative;inset:auto;width:100%;aspect-ratio:1/1;display:block;
     background:var(--void);touch-action:none;cursor:grab}
   .wcanvas:active{cursor:grabbing}
   .wturn{font-size:10px;letter-spacing:.11em;color:var(--fg-dim);
     text-align:center;margin:4px 0 6px}
-  .wname{font-size:13.5px;color:var(--fg);font-weight:500;line-height:1.3}
+  /* The name of the thing on the stand is the caption of the case, so it is
+     ruled off from it the way a plaque is - the meta column underneath used
+     to start with no edge at all and ran into the "DRAG TO TURN" line. */
+  .wname{font-size:13.5px;color:var(--fg);font-weight:500;line-height:1.3;
+    padding-top:6px;border-top:1px solid
+      color-mix(in srgb,var(--player) 22%,var(--rule))}
   .wcost{font-size:11px;color:var(--fg-dim);margin-top:1px}
   /* THE PRICE THAT NO LONGER APPLIES, struck through and dim, immediately
      before the one that does. It is the only thing on this shelf that says a
@@ -369,13 +391,49 @@
      button rather than clipped by the list. */
 
   .wlist{padding-bottom:2px}
-  .item i{display:block;width:30px;height:30px;margin:0 auto 5px;border-radius:5px;
-    font-style:normal;font-size:16px;line-height:30px;color:var(--fg);
+  /* THE CHIP IS LIT BY WHAT THE THING IS. It was `background:var(--rule)`
+     written inline for every shape, so the shape shelf was thirteen
+     identical grey squares and nothing but the word underneath said which
+     of them you already own. Four states now, and all four are mixed from
+     a token rather than written as a literal: owned takes `--player`,
+     a section reward and a deal take `--star`, locked stays grey and dim.
+     The glyph follows its chip, so the colour is read before the label. */
+  .item i{display:block;width:34px;height:34px;margin:0 auto 6px;border-radius:7px;
+    font-style:normal;font-size:16px;line-height:34px;color:var(--fg-dim);
+    background:linear-gradient(color-mix(in srgb,#fff 7%,transparent),
+      transparent 70%),var(--rule);
     box-shadow:inset 0 1px 0 color-mix(in srgb,#fff 14%,transparent),
-      inset 0 -6px 10px -6px #000}
+      inset 0 -7px 11px -6px #000;
+    transition:background .2s,color .2s,box-shadow .2s}
+  .item.have i{color:color-mix(in srgb,var(--player) 45%,var(--fg));
+    background:linear-gradient(color-mix(in srgb,#fff 10%,transparent),
+      transparent 70%),color-mix(in srgb,var(--player) 26%,var(--rule));
+    box-shadow:inset 0 1px 0 color-mix(in srgb,#fff 18%,transparent),
+      inset 0 -7px 11px -6px #000,
+      0 0 10px -2px color-mix(in srgb,var(--player) 30%,transparent)}
+  .item.rew i,.item.gold i{color:color-mix(in srgb,var(--star) 62%,var(--fg));
+    background:linear-gradient(color-mix(in srgb,#fff 10%,transparent),
+      transparent 70%),color-mix(in srgb,var(--star) 24%,var(--rule));
+    box-shadow:inset 0 1px 0 color-mix(in srgb,#fff 18%,transparent),
+      inset 0 -7px 11px -6px #000,
+      0 0 10px -2px color-mix(in srgb,var(--star) 26%,transparent)}
+  /* A LOCKED TILE IS QUIETER THAN AN OWNED ONE, which is the whole point of
+     a catalogue: the shelf should read as "these are yours, those are not"
+     before a single price is read. Never invisible - the price under it is
+     the offer, so it keeps its full contrast. */
+  .item.locked b{color:color-mix(in srgb,var(--fg) 74%,var(--fg-dim))}
+  /* THE COLOUR SWATCH IS A PIECE, NOT A PAINT CHIP. The hex comes in as
+     `--sw` (wardRefresh) rather than as a background, so the one value can
+     light the top face, sink the bottom and spill a little of itself onto
+     the tile - which is what the case behind it does with the same colour. */
+  .item.sw i{background:linear-gradient(color-mix(in srgb,#fff 30%,var(--sw)),
+      var(--sw) 46%,color-mix(in srgb,#000 22%,var(--sw)));
+    box-shadow:inset 0 1px 0 color-mix(in srgb,#fff 34%,transparent),
+      inset 0 -8px 12px -7px #000,
+      0 0 12px -2px color-mix(in srgb,var(--sw) 55%,transparent)}
   /* A shape whose glyph is a drawing rather than a character - see
      shapeGlyph() in js/16-panels.js. */
-  .item i svg{width:20px;height:20px;vertical-align:-4px;fill:currentColor}
+  .item i svg{width:21px;height:21px;vertical-align:-5px;fill:currentColor}
   .item b{display:block;font-size:11.5px;font-weight:500;color:var(--fg)}
   .item span{display:block;font-size:10.5px;color:var(--fg-dim);margin-top:2px}
   .wact .ad{gap:8px}
