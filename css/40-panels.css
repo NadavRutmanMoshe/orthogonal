@@ -309,10 +309,26 @@
      scrolling, so the display case stays put while you look through. */
   .panel.ward.on{display:flex;flex-direction:column;overflow:hidden;
     max-height:min(56vh,calc(100vh - 250px))}
-  .wbody{display:flex;gap:9px;flex:1;min-height:0}
-  .wlist{flex:1 1 0;min-width:0;overflow-y:auto;overflow-x:hidden}
-  .wlist .grid{grid-template-columns:repeat(2,1fr)}
-  .wcase{flex:0 0 40%;min-width:0;display:flex;flex-direction:column}
+  /* STACKED, NOT SIDE BY SIDE. See wardrobePanel() for why: the piece is
+     what is being sold and in two columns it was the smallest thing on the
+     screen. The list takes whatever the stage leaves and scrolls inside
+     itself, so the stage never moves while you browse. */
+  .wbody{display:flex;flex-direction:column;gap:10px;flex:1;min-height:0}
+  /* AND IT FADES AT THE CUT. The list ends wherever the stage begins, which
+     is usually through the middle of a row, and a row sliced clean off reads
+     as a rendering fault rather than as "there is more below". A 22px fade on
+     the mask says scroll without spending a scrollbar or a chevron on it. */
+  .wlist{flex:1 1 auto;min-height:0;min-width:0;
+    overflow-y:auto;overflow-x:hidden;padding:0 13px;
+    -webkit-mask-image:linear-gradient(#000 calc(100% - 22px),transparent);
+    mask-image:linear-gradient(#000 calc(100% - 22px),transparent)}
+  /* Three across now that the row is not shared with the case. At the
+     owner's 327px the column is 85px, which still holds "Bubblegum" and
+     "double kill" - the two longest strings on this shelf - without the
+     `nowrap` price widening the track. */
+  .wlist .grid{grid-template-columns:repeat(3,1fr)}
+  .wcase{flex:0 0 auto;min-width:0;display:flex;flex-direction:column;
+    padding:0 13px}
   /* THE CASE, AND ITS LIGHT. Shared with the home screen's plinth, which is
      the same singleton renderer pointed at what you have equipped - so a
      change here is a change to both, which is the point.
@@ -324,11 +340,23 @@
      bottom edge - the spill. Both are mixed from `--player`, which is
      rewritten by applySkin(), so the case is lit in whatever colour is
      standing in it and never in a hard-coded rose. */
-  .wglass{position:relative;border-radius:7px;overflow:hidden;
-    border:1px solid color-mix(in srgb,var(--player) 26%,var(--rule));
-    box-shadow:0 0 22px color-mix(in srgb,var(--player) 14%,transparent),
-      0 11px 26px -8px color-mix(in srgb,var(--player) 34%,transparent),
-      inset 0 1px 0 color-mix(in srgb,#fff 9%,transparent)}
+  /* THE STAGE. Wider corners, a deeper shadow and a rim that is mostly the
+     player's own colour: at 7px with a hairline it was a thumbnail, and a
+     thumbnail is what a list item looks like. Everything here is mixed from
+     `--player`, which applySkin() rewrites, so the stage is lit in whatever
+     colour is standing on it and never in a hard-coded rose. */
+  /* CAPPED AND CENTRED. The panel goes to 560px on a desktop and the stage's
+     height is capped by the viewport, so an uncapped stage there is a 2.5:1
+     letterbox with a small piece in the middle of it - and previewSize()'s
+     pull-back, which exists to stop a wide stage cropping, would then be
+     shrinking the piece for no reason. 400px keeps it near the phone's own
+     proportions everywhere. */
+  .wglass{width:100%;max-width:400px;margin-inline:auto;
+    position:relative;border-radius:14px;overflow:hidden;
+    border:1px solid color-mix(in srgb,var(--player) 30%,var(--rule));
+    box-shadow:0 0 26px color-mix(in srgb,var(--player) 15%,transparent),
+      0 16px 34px -16px color-mix(in srgb,var(--player) 46%,transparent),
+      inset 0 1px 0 color-mix(in srgb,#fff 11%,transparent)}
   /* INSIDE the bottom edge, not below it: the box clips its corners, so a
      glow hung underneath was clipped away entirely. On the lip it is a strip
      of footlights, which is the thing being drawn anyway. */
@@ -343,22 +371,48 @@
      anything behind it, because a canvas is opaque and paints over its own
      backdrop; `pointer-events:none` so the drag that turns the piece still
      reaches it. */
+  /* TWO LIGHTS AND A VIGNETTE, over the render rather than behind it - the
+     canvas is opaque and paints over its own backdrop, so anything under it
+     is invisible. A wash of the piece's own colour from the top, and the
+     four corners taken down, which is what makes a flat square of `--void`
+     read as an alcove with something lit in it. `pointer-events:none` so the
+     drag that turns the piece still reaches the canvas. */
   .wglass::after{content:"";position:absolute;inset:0;pointer-events:none;
     border-radius:inherit;
-    background:radial-gradient(118% 86% at 50% 34%,transparent 42%,
-      rgba(2,4,9,.52) 100%)}
-  .wcanvas{position:relative;inset:auto;width:100%;aspect-ratio:1/1;display:block;
+    background:
+      radial-gradient(92% 62% at 50% -6%,
+        color-mix(in srgb,var(--player) 18%,transparent),transparent 72%),
+      radial-gradient(118% 86% at 50% 34%,transparent 40%,
+        rgba(2,4,9,.58) 100%)}
+  /* FLUID, NOT A FIXED SQUARE. The stage is as tall as the screen can spare
+     and never taller: 24vh is about 200px on the owner's phone and 170 on a
+     short one, and the floor of 118 is the point below which the piece stops
+     being the biggest thing on the screen, which is the whole reason the
+     panel was restacked. */
+  .wcanvas{position:relative;inset:auto;display:block;
+    width:100%;height:clamp(118px,24vh,206px);
     background:var(--void);touch-action:none;cursor:grab}
   .wcanvas:active{cursor:grabbing}
-  .wturn{font-size:10px;letter-spacing:.11em;color:var(--fg-dim);
-    text-align:center;margin:4px 0 6px}
-  /* The name of the thing on the stand is the caption of the case, so it is
-     ruled off from it the way a plaque is - the meta column underneath used
-     to start with no edge at all and ran into the "DRAG TO TURN" line. */
-  .wname{font-size:13.5px;color:var(--fg);font-weight:500;line-height:1.3;
-    padding-top:6px;border-top:1px solid
-      color-mix(in srgb,var(--player) 22%,var(--rule))}
-  .wcost{font-size:11px;color:var(--fg-dim);margin-top:1px}
+  /* Inside the stage, bottom right, out of the way of the piece. It is an
+     affordance note rather than a label, so it is the quietest type here. */
+  .wturn{position:absolute;right:9px;top:8px;pointer-events:none;
+    font-size:9px;letter-spacing:.12em;color:var(--fg-dim);
+    padding:3px 7px;border-radius:99px;
+    background:rgba(4,7,14,.42);backdrop-filter:blur(2px)}
+  /* THE PLAQUE UNDER THE STAGE: the name in the display face at a size
+     nothing else on this panel uses, and the price on the same baseline at
+     the far end. The name used to be 13.5px mono with a rule over it, which
+     is a caption; the thing on the stand is the subject of the screen and
+     should be the biggest word on it. */
+  /* The plaque and the action follow the stage's width, so the three read as
+     one object rather than as a picture with a panel under it. */
+  #wMeta{width:100%;max-width:400px;margin-inline:auto}
+  .wtop{display:flex;align-items:baseline;justify-content:space-between;
+    gap:10px;margin-top:11px}
+  .wname{font-family:'Space Grotesk',system-ui,sans-serif;font-size:19px;
+    font-weight:700;letter-spacing:-.015em;color:var(--fg);line-height:1.2;
+    min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .wcost{font-size:11.5px;color:var(--fg-dim);white-space:nowrap;flex:none}
   /* THE PRICE THAT NO LONGER APPLIES, struck through and dim, immediately
      before the one that does. It is the only thing on this shelf that says a
      purchase already made has been counted. */
@@ -381,8 +435,12 @@
   /* A `u` rather than an `i`, because `.item i` is already the tile's own
      swatch box - an <i> in here becomes a 32px square. */
   .st{text-decoration:none;color:var(--star)}
-  .wact{display:flex;flex-direction:column;gap:4px;margin-top:6px}
-  .wact button{height:30px;width:100%;font-size:11.5px}
+  /* THE BUY BUTTON IS THE LAST THING ON THE SCREEN AND THE BIGGEST CONTROL
+     ON IT. At 30px in a 40% column it was the same weight as a settings row;
+     full width at 40px, under the thumb, it is the one thing this panel
+     exists to have pressed. */
+  .wact{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+  .wact button{height:40px;width:100%;font-size:12.5px;letter-spacing:.1em}
   .wact .wgo{border-color:var(--goal);color:var(--goal)}
   .wact .wsure{border-color:var(--player);color:var(--player)}
   .wcase .note{margin-top:5px}

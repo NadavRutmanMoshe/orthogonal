@@ -21,7 +21,7 @@ rather than guessing the file.
 | `10-buttons.css` | the button skin (`button`, `:active`, `:disabled`), `.bar`, `.dpad`, `.rot`, `.corner`, `button.rnd` and its five hues, the hint badge `.hn`, icon classes `.ln .lite .dim .ar .tn` |
 | `20-hud.css` | the live star row `.stars`, `.moves`, `.flatbtn` and its `.peril` / `.strike` states, the eye's `.look` pulse, `.tiny` |
 | `30-editor.css` | `#editBar`, `#composeBar`, `.chip`, `.verify` |
-| `40-panels.css` | `.panel` shell (the 44vh sheet), `.srow` sliders, `.lrow` level rows, `.tabs`, the wardrobe (`.wbody .wcase .wglass .wfloor .wcanvas .wact .item .grid`), `.secbar`, `.chap`, `.leg`, `button.mini` |
+| `40-panels.css` | `.panel` shell (the 44vh sheet), `.srow` sliders, `.lrow` level rows, `.tabs`, the wardrobe (`.wbody .wlist .wcase .wglass .wfloor .wcanvas .wturn .wtop .wname .wcost .wact .item .grid`), `.secbar`, `.chap`, `.leg`, `button.mini` |
 | `50-layout-cues.css` | control layouts `body.ui-compact / ui-none / norot / tut`, `.coach`, `.crow` + `.seg`, `cuePulse` / `button.cue`, `.toast` and `.toast.cuesay` |
 | `60-splash.css` | the sting (`.splash .sstage .scube .srule .sprompt`) |
 | `65-replay.css` | the kill cam end to end: the strike sting (`.bsting .bsflash .bsray .bsring .bsword`), the skip catcher (`.rskip`), the wind-up (`.killcam` + `.snow .cam .vf .live`, `.kcsnow .kcroll .kcvhs`, the camcorder `.kcrig .kccam .kcbody .kchandle .kcmic .kcvf .kcbarrel .kclens .kcglass .kctally`, the viewfinder `.kcframe .kcb .kcrec .kctc`), then `.replayui`, `.rbar`, `.rlabel`, `body.replaying` |
@@ -276,6 +276,24 @@ named). Undoing one of these needs the paragraph.
 - **The live star row is its own element**, rebuilt only when the count
   changes; anything animated inside `syncHud()`-rewritten markup restarts
   on every redraw.
+- **The wardrobe is stacked, not two columns: shelf on top, stage at the
+  bottom.** It was a scrolling list of tiles down the left with the case
+  pinned to 40% of the width on the right, which at phone width gave the case
+  about 130px to stand a piece in - the piece being the thing that is for
+  sale, and the smallest thing on the screen. Stacked, the stage gets the
+  panel's full width and half again the height, the grid goes to three
+  columns because it no longer shares the row, and the primary action lands
+  at the bottom where a thumb already is: browse at the top, look at the
+  bottom, buy under your thumb. `.wlist` is `flex:1 1 auto` and scrolls
+  inside itself, so the stage never moves while you browse, and it carries a
+  22px `mask-image` fade at its foot because the list always ends through the
+  middle of a row. The stage caps at **400px wide and 24vh tall** and
+  `previewSize()` pulls the camera back past 1.25:1 - the preview camera's
+  FOV is VERTICAL, so on a wide stage the height is the tight dimension and
+  at the original distance the plinth ran off the bottom. Both numbers are
+  one term each, so changing the stage's proportions cannot silently re-crop
+  the piece. `.wglass` is shared with the home screen's plinth, which is
+  square and therefore untouched by the pull-back.
 - **Panels are phone-width, centred, max 560px.** Full-height ones use
   `.panel.tall` furniture.
 - **The five full-height panels share one page shape** (menu, wardrobe,

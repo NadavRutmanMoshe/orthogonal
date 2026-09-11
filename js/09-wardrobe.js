@@ -603,6 +603,16 @@ function previewSize(){
   var w=pv.canvas.clientWidth||160, h=pv.canvas.clientHeight||160;
   pv.renderer.setSize(w,h,false);
   pv.camera.aspect=w/h;
+  /* AND IT PULLS BACK ON A WIDE STAGE. A perspective camera's FOV is
+     VERTICAL, so the taller-than-square case this was written for framed the
+     piece by its height and the aspect only ever added side margin. The
+     stage is full width and about 1.6:1 now (see .wcanvas in 40-panels.css)
+     and the height is the tight dimension: at the original 3.05 the plinth
+     ran off the bottom and the sides. One term, off the aspect, so a change
+     to the stage's proportions cannot silently re-crop the piece - and it is
+     zero at 1.25:1 or narrower, so the home screen's plinth, which shares
+     this renderer, is framed exactly as it was. */
+  pv.camera.position.z=3.05+Math.max(0,pv.camera.aspect-1.25)*.95;
   pv.camera.updateProjectionMatrix();
 }
 // Drag to spin, with the throw carried into inertia on release. Pointer events

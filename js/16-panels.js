@@ -90,16 +90,29 @@ function wardrobePanel(tab){
          on this panel that is not paid for in stars. */
       "<button class='tab tdeal' id='wD'>"+tagIcon()+"DEALS</button>"+
     "</div>"+
+    /* THE SHELF ON TOP, THE THING ITSELF UNDERNEATH.
+
+       It was two columns - a scrolling list of tiles down the left and a
+       narrow case pinned to 40% of the width on the right - and at phone
+       width that gave the case about 130px to stand a piece in. The piece is
+       what is being sold; it was the smallest thing on the shelf.
+
+       Stacked, the case gets the panel's whole width and roughly half again
+       the height, the grid goes to three columns because it is no longer
+       sharing the row, and the primary action lands at the bottom of the
+       screen where a thumb already is. That is the shape almost every mobile
+       shop uses, and the reason is the one above: browse at the top, look at
+       the bottom, buy under your thumb. */
     "<div class='wbody'>"+
       "<div class='wlist'><div class='grid' id='wGrid'></div></div>"+
       "<div class='wcase'>"+
-        /* The canvas is wrapped so the case can have a frame and a floor: a
-           canvas is a replaced element and will not carry ::before/::after,
-           and the light spilling out of the render onto the page is what
-           makes the box read as a lit case rather than a thumbnail. */
+        /* The canvas is wrapped so the stage can have a light, a floor and a
+           caption: a canvas is a replaced element and will not carry
+           ::before/::after, and the light spilling out of the render onto the
+           page is what makes it read as a lit stage rather than a thumbnail. */
         "<div class='wglass'><canvas id='wCase3d' class='wcanvas'></canvas>"+
-          "<i class='wfloor'></i></div>"+
-        "<div class='wturn'>DRAG TO TURN</div>"+
+          "<i class='wfloor'></i>"+
+          "<span class='wturn'>DRAG TO TURN</span></div>"+
         "<div id='wMeta'></div>"+
       "</div>"+
     "</div>"+
@@ -202,12 +215,17 @@ function wardRefresh(){
 function wardMeta(){
   var t=wardTab, id=wardSelected(t), it=findBy(wardList(t),id);
   var have=owns(id), on=wardEquipped(t)===id, bal=shards();
-  var s="<div class='wname'>"+it.name+"</div>"+
-        "<div class='wcost"+(!have&&isDeal(it)?" wusd":"")+"'>"+
+  /* THE NAME AND WHAT IT COSTS ARE ONE LINE, the way a price tag is one
+     line. Stacked they read as two unrelated facts; on a baseline together
+     the price is plainly the price OF the name beside it, and the row has
+     the panel's full width to do it in now that the case is not a 40%
+     column. */
+  var s="<div class='wtop'><span class='wname'>"+it.name+"</span>"+
+        "<span class='wcost"+(!have&&isDeal(it)?" wusd":"")+"'>"+
           (on?"equipped":have?(isPass(it)?"in force":"owned")
           :it.reward?esc(rewardSay(it))
           :isDeal(it)?dealPriceSay(it)
-          :it.cost+" <u class='st'>\u2605</u>")+"</div>"+
+          :it.cost+" <u class='st'>\u2605</u>")+"</span></div>"+
         /* WHAT A PASS ACTUALLY DOES, listed. A shape is its own description -
            it is standing in the case - and a pass is not: nothing on this
            panel would otherwise say that "No Limits" is about hints, skips
