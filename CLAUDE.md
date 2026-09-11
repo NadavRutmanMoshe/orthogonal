@@ -349,15 +349,19 @@ is the rule.
   is a rule, and a rule the solver has not been told about is a level whose
   par is a lie.
 - **He stands on his OWN square, off the board**: a plinth two clear squares
-  past the right-hand end of the level, drawn as a mesh rather than added as
-  a block (`guidePlinth()`). `recomputeBounds()` adds `guidePoint()` to the
-  extents it frames - the one line in the renderer that knows he exists - or
-  the camera would leave him past the edge of the screen.
+  past the level's `+x`/`+z` CORNER, drawn as a mesh rather than added as a
+  block (`guidePlinth()`). **A corner, not an edge**, and that is load-bearing:
+  screen-right is `±x` or `±z` depending on the view, so an offset along one
+  axis only is sideways in two views and straight at the camera in the other
+  two - which put him on top of the board. Offset on both, and one of the two
+  is the sideways one in all four. `recomputeBounds()` adds `guidePoint()` to
+  the extents it frames - the one line in the renderer that knows he exists -
+  or the camera would leave him past the edge of the screen.
 - **Never on a `tutorial:true` level**, and that is the whole placement rule
   (plus no boss, no trial, section 1 only). In PROLOGUE he offered the fold to
-  somebody the tutorial had not taught it to yet; on `09 - The Rotation` his
-  plinth is off the `+x` end and the lesson's own new verb turns it in front
-  of the board. He starts where the teaching stops, every time it stops.
+  somebody the tutorial had not taught it to yet, and a teaching level already
+  has a coach, a ghost hand and a guided lock. He starts where the teaching
+  stops, every time it stops.
 - **He is pressed on a DEFERRED single tap** (`guideArm()` / `guideCancel()`,
   called from `13-gestures.js`). A double tap is the fold in every layout, so
   the fold always wins the race.
@@ -366,6 +370,11 @@ is the rule.
   insertion would shift an index-keyed table onto the wrong boards silently;
   an unknown name falls through to `GUIDE_FALLBACK`, and `verify.js` fails on
   any key that is not a level he stands on.
+- **The bubble is placed as a box plus a tail, never centred on him.**
+  `guideFrame()` writes the box's LEFT where it fits on screen and `--tail`
+  (read by `css/99-guide.css`) wherever he is inside it. Centring it and then
+  clamping it back on screen is what put the box over the puzzle with its tail
+  pointing at nothing.
 - His tips render through `tutWords()`, his cheer goes on the **win card**
   (`guideWinLine()`, every third level), and ten losses opens his one
   unprompted line, which is a button into `struggleOffer()`.

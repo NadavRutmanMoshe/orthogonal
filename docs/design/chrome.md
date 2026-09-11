@@ -734,7 +734,7 @@ It was safe, because nothing knew he was there, and it still read wrong: a
 white cube sitting on a square of the puzzle is a square the player has to
 look at and rule out, and on the tighter boards he was inside the working
 area whatever the scoring said. He has a plinth now, two clear squares past
-the right-hand end of the level at its own floor level, and the plinth is a
+the level's `+x`/`+z` corner at its own floor level, and the plinth is a
 mesh this code draws rather than a block added to `L.blocks` - so the level
 is untouched and there is visibly nothing between him and the puzzle. The
 slab is drawn half a block high on purpose: a full cube out there would look
@@ -745,6 +745,34 @@ onto it.
 only line in the renderer that knows he exists, and without it the camera
 frames the board and leaves him past the edge of the screen; the cost is that
 the board is a little smaller on the levels he is on.
+
+**A corner, not an edge, and that took a photograph to find.** The first
+plinth was two squares past the `+x` end of the board, halfway along its
+depth: clear of the puzzle in the view a level opens in, and standing *inside*
+the puzzle in two of the other three. The cause is that the offset was along
+`x`, and `x` is screen-right in only two of the four views - in the other two
+it is DEPTH, so "two squares to the side" becomes "two squares towards the
+camera", which is on top of the board.
+
+`09 - The Rotation` was the first level it was reported on, and the reason was
+read off it wrongly: the level that teaches the turn is not a special case,
+it is simply the first level on which a turn is possible. Every
+rotation-unlocked board he stood on had it, and the owner found it again on
+`13 - Not a Simple Walk` - one press of the turn button and the neighbour is
+in the middle of the level in front of the goal.
+
+The fix is to offset him on **both** horizontal axes at once, past the
+`+x`/`+z` corner. Screen-right is `AX[view].r`, which is `±x` or `±z`, so one
+of his two offsets is the sideways one in every view: `+x` carries him right
+in view 0 and left in view 2, `+z` carries him left in view 1 and right in
+view 3. One static cell, no per-view placement to keep in step with the
+camera, and nothing in the renderer to re-run on a turn. It costs two cells of
+framed depth as well as two of width, which is only a cost at all on a board
+deeper than it is wide.
+
+He is also taken off `09 - The Rotation` outright, and that stands on its own
+reasoning rather than on this bug: it is a teaching level, and a teaching
+level already has three voices.
 
 **And he is not on a teaching level.** He turned up in PROLOGUE offering
 "double-tap to drop the world flat" to somebody the game had not taught the
@@ -779,7 +807,19 @@ there was room for this one.
 
 **Three ways he speaks, and each is where the player is looking.** The tip is
 a bubble over his head, projected from his world position every frame so it
-follows him through a turn and a fold. The cheer is a line on the **win
+follows him through a turn and a fold.
+
+**The box and its tail are placed separately**, and for a while one number did
+both, badly. He stands off the *side* of the board, so the bubble's anchor is
+near the edge of the screen and a centred box hangs past it; the first fix slid
+the whole box back inwards, which kept it on screen and moved it off him. On a
+phone the box ended up a third of the screen to his left, with its tail
+pointing at open sky and the box itself over the puzzle - reported as exactly
+that, with a photograph. So `guideFrame()` writes the box's LEFT edge where it
+fits and `--tail` wherever he actually is inside it. The bubble is above him in
+every case, and near an edge it grows *inwards from him* rather than sliding
+away. The column is capped at 30ch for the same reason: it now extends over
+the board rather than off the screen, so a narrower box is the one that reads. The cheer is a line on the **win
 card**, because by the time a level is solved the card is what is on screen
 and a bubble behind it is a line delivered to nobody - every third level, so
 he turns up rather than being wallpaper. And the one line he says unprompted

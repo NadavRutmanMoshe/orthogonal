@@ -44,8 +44,10 @@
    square the player has to look at and rule out, and on the tighter boards
    he was inside the working area whatever the scoring said.
 
-   So he has a plinth of his own, two clear squares off the right-hand end of
-   the board, at its lowest level. The plinth is NOT a block - it is a mesh
+   So he has a plinth of his own, two clear squares off the corner of the
+   board, at its lowest level - a CORNER rather than an edge, so that a
+   camera turn cannot swing him in front of the puzzle; guidePlinth() is
+   where that is worked through. The plinth is NOT a block - it is a mesh
    this file draws, like he is - so the level is untouched and there is
    visibly nothing between him and the puzzle. `guidePoint()` is how the
    camera finds out he is there: recomputeBounds() adds that one point to the
@@ -102,25 +104,25 @@ var GUIDE_SAY_MS=6500;           // how long a line stays up on its own
    ============================================================ */
 var GUIDE_LINES={
   "01 - On Your Own":
-    "{do:2d} drops the world flat. Things far apart in depth land side by side.",
+    "{do:2d} to go flat. Things far apart in depth land side by side.",
   "02 - Beware of Walls":
     "Anything sharing your column comes flat with you - and lands on top of you.",
   "03 - A Real Challenge":
-    "Stuck on one? The bulb gives you the next move. You get three, and one comes back every half hour.",
+    "Stuck? The bulb gives you the next move. Three of them, one back every half hour.",
   "04 - The Shortcut":
     "You can use the rules of this world to make it faster.",
   "05 - The Only Way":
-    "The world folds down onto one particular block. Which one, you find out from inside the fold.",
+    "The world folds onto one particular block. Which one, you find out from inside.",
   "06 - The Illusion":
     "Flat, the eye shows which block you would stand back up on. Look before you go.",
   "07 - The Block":
     "This world can take things from you, but it can also give.",
   "08 - Limited":
-    "Hold the eye in {n3} as well - leaning round the board shows you the puzzle better, and it is not a move.",
+    "Hold the eye in {n3} too. Leaning round the board is free - it is not a move.",
   "10 - No Bridge":
-    "The rules of this world and your turning, put together, make things you would not think were there.",
+    "The rules of this world and your turning, together, make things you would not expect.",
   "11 - No Bridge 2":
-    "The same two again, the rules and your turning. This one just wants more of it.",
+    "The same two again - the rules, and your turning. This board wants more of it.",
   "12 - Simple Walk":
     "You can build your own levels. MY LEVELS, on the home screen.",
   "13 - Not a Simple Walk":
@@ -202,25 +204,55 @@ function guideHere(idx){
 }
 /* HIS SQUARE, AND HIS PLINTH'S, DERIVED FROM THE BOARD.
 
-   Two clear squares past the right-hand end of the level, at the level's own
-   floor, halfway along its depth. Pure: it reads L and nothing else, so
-   recomputeBounds() can ask for it before any mesh exists and guideSync()
-   can ask for it again afterwards, and neither has to run first.
+   A CORNER, NOT AN EDGE, and that is the whole of this function's interest.
+
+   He used to stand two squares past the `+x` end of the board, halfway along
+   its depth: clear of the puzzle in the view the level opens in, and INSIDE
+   it in two of the other three. `09 - The Rotation` was reported first and
+   the reason was read off it wrongly - the level that teaches the turn is
+   not a special case, it is just the first level on which a turn is
+   possible. Every rotation-unlocked board he stands on had the same bug, and
+   `13 - Not a Simple Walk` is where the owner found it: one press of the
+   turn button and the neighbour is standing in the middle of the level,
+   in front of the goal.
+
+   The cause: the offset was along `x`, and `x` is screen-right in only two
+   of the four views. In the other two it is DEPTH, so "two squares to the
+   side" becomes "two squares towards the camera", which is on top of the
+   board.
+
+   The fix is to offset him on BOTH horizontal axes at once - past the `+x`
+   end and past the `+z` end, at the corner. Screen-right is `AX[view].r`,
+   which is `±x` or `±z`, so in every one of the four views one of his two
+   offsets is the sideways one:
+
+     view 0 (r = +x): two squares past the right-hand end
+     view 1 (r = -z): +z is screen-left, so two past the left-hand end
+     view 2 (r = -x): two past the left-hand end
+     view 3 (r = +z): two past the right-hand end
+
+   He is off the side of the puzzle in all four, with one static cell and no
+   per-view placement to keep in step with the camera. The cost is that
+   `recomputeBounds()` now frames two cells of depth as well as two of width,
+   which is only a cost at all on a board deeper than it is wide.
+
+   Pure: it reads L and nothing else, so recomputeBounds() can ask for it
+   before any mesh exists and guideSync() can ask for it again afterwards,
+   and neither has to run first.
 
    `guidePoint()` answers with the PLINTH's cell rather than his, because
    that is the lowest thing the camera has to keep on screen. */
 function guidePlinth(){
   if(!guideHere(typeof lvIndex==="number"?lvIndex:-1))return null;
   if(!L||!L.blocks||!L.blocks.length)return null;
-  var mx=-1e9,my=1e9,z0=1e9,z1=-1e9,i,b;
+  var mx=-1e9,my=1e9,mz=-1e9,i,b;
   for(i=0;i<L.blocks.length;i++){
     b=L.blocks[i];
     if(b[0]>mx)mx=b[0];
     if(b[1]<my)my=b[1];
-    if(b[2]<z0)z0=b[2];
-    if(b[2]>z1)z1=b[2];
+    if(b[2]>mz)mz=b[2];
   }
-  return [mx+2,my,Math.round((z0+z1)/2)];
+  return [mx+2,my,mz+2];
 }
 function guidePoint(){return guidePlinth();}
 /* Built, moved or taken away - called once per level load, from loadLevel. */
@@ -389,20 +421,41 @@ function guideFrame(dtMs,rx,rz,tdvx,tdvz,ft){
   if(el&&el.classList.contains("on")){
     if(GD.said&&!GD.stuck&&Date.now()-GD.said>GUIDE_SAY_MS)guideHide();
     else{
-      gdTmp.copy(GD.mesh.position);gdTmp.y+=.75;
+      gdTmp.copy(GD.mesh.position);gdTmp.y+=.95;
       gdTmp.project(camera);
       var w=window.innerWidth,h=window.innerHeight;
-      /* KEPT ON SCREEN. He stands off the right-hand end of the board, so
-         the bubble's natural anchor is close to the edge and half of it
-         would hang past it. The box is `width:max-content` (see
-         css/99-guide.css), so offsetWidth is a real number here and not a
-         consequence of where it was put - which is what makes clamping
-         against it work rather than feed back on itself. */
-      var bw=el.offsetWidth||160, pad=10;
-      var gx=(gdTmp.x*.5+.5)*w;
-      gx=Math.max(bw/2+pad,Math.min(w-bw/2-pad,gx));
-      el.style.left=Math.round(gx)+"px";
+      /* KEPT ON SCREEN, AND STILL OVER HIS HEAD. Two separate jobs, and for
+         a while one number did both, badly.
+
+         He stands off the SIDE of the board, so the bubble's natural anchor
+         is near the edge of the screen and a centred box hangs past it. The
+         old fix slid the whole box back inwards - which kept it on screen
+         and moved it off him: on a phone the box ended up a third of the
+         screen to his left with its tail pointing at open sky, sitting over
+         the puzzle instead of over the man talking. Reported as exactly
+         that, with a photograph.
+
+         So the box and the tail are placed separately. The box is put where
+         it fits; the TAIL is then put wherever he actually is inside it, as
+         `--tail` (css/99-guide.css reads it). The bubble is above him in
+         every case, and near an edge it simply grows inwards from him rather
+         than sliding away. The tail keeps `TAIL_IN` of padding at each end
+         so it never hangs off a rounded corner.
+
+         `left` is the box's LEFT here, not its centre: the CSS translate no
+         longer carries an -50%, because the centring is what had to go.
+
+         The box is `width:max-content` (see css/99-guide.css), so offsetWidth
+         is a real number here and not a consequence of where it was put -
+         which is what makes measuring against it work rather than feed back
+         on itself. */
+      var bw=el.offsetWidth||160, pad=10, TAIL_IN=16;
+      var cx=(gdTmp.x*.5+.5)*w;
+      var bx=Math.max(pad,Math.min(w-pad-bw,cx-bw/2));
+      el.style.left=Math.round(bx)+"px";
       el.style.top=Math.round((-gdTmp.y*.5+.5)*h)+"px";
+      el.style.setProperty("--tail",
+        Math.round(Math.max(TAIL_IN,Math.min(bw-TAIL_IN,cx-bx)))+"px");
     }
   }
 }
