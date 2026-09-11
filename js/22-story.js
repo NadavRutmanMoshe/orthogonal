@@ -237,72 +237,12 @@ function stHex(id){
    colours that are never free: nothing here may drift toward the boss's
    violet or the trial's amber. Warm cream and burnt terracotta are as far
    from both as a building can get. */
-/* THE WALL COLOUR HAS TO BEAT THE GRASS, and there is a NUMBER for it.
-
-   These multiply the grass surface, and that surface is green twice over: a
-   lawn wash of `#5faa41` on the top half of the atlas, and a green lip along
-   the top of every SIDE face (`#5aa83f`, with a lit `#6cbb4a` edge on top of
-   it) - which is what makes a grass block a grass block. A multiply cannot
-   add red, only take green away, so whether a tinted block reads warm or
-   olive is decided by one ratio:
-
-       the tint's own red / green  vs  the surface's green / red
-
-   The grass is about 1.8 green to red. A tint at 1.5 - which is what "half
-   again as much red as green" gave, and what the first two passes used - is
-   UNDER that, so every top face and every lip came out greener than it came
-   out warm. That is why three versions of this scene were photographed with
-   brick-coloured walls and a bright green band along the top of every course:
-   the walls were warm and their edges were not, and the edges are most of
-   what you see of a wall at this camera angle.
-
-   Clearing 1.8 gets the band to neutral. Clearing about 3 gets it to a warm
-   line - a course of brick, a ridge tile - which is where these sit. It
-   makes the raw hex look absurdly orange read on its own; it is not a colour,
-   it is a filter, and what matters is what comes out the other side. */
-/* AND THEY HAD TO GO FURTHER DOWN IN GREEN THAN THAT. The first pair took
-   the grass band from green to olive, which was enough to say "not lawn" and
-   not enough to say "wall": every block still wore a bright band along its
-   top edge, so a roof was three courses of sod and read as a heap. The band
-   is the brightest thing the texture has, so the tint's GREEN channel is the
-   only dial that reaches it - a multiply cannot add. Halving it takes the
-   band to a dark line of the wall's own colour, which is what a course of
-   brick or a ridge tile looks like from here. */
-var ST_WALL=0xef5410, ST_ROOF=0x9c2c12;
-/* AND THE SECOND HOUSE IS NOT THE FIRST ONE AGAIN.
-
-   Two identical houses side by side is one asset placed twice, which is what
-   the scene looked like: a repeated shape reads as a pattern, and a pattern
-   reads as terrain again - the exact thing the pitched roof and the tint were
-   put in to escape. A street is houses that were built by different people.
-
-   So the neighbours' house is paler in the wall and much darker in the roof,
-   and its chimney is on the other side. The difference is carried by the ROOF
-   because the roof is the biggest shape in the silhouette, and by VALUE
-   rather than by hue - every warm colour here has to survive the multiply
-   against a bright green band (see ST_WALL above), and a cool grey or blue
-   plaster comes out of that multiply green. Light walls with a red roof, and
-   lighter walls with a near-black one: two houses at a glance, no new fight
-   with the grass.
-
-   THE PATH AND THE DOORSTEPS ARE DIRT, and that is the cheapest thing in this
-   whole scene. A lawn with people walking on it is a field; a lawn with a
-   worn track to each door is where somebody lives. Same ochre family as the
-   dunes, two steps lighter so it still reads as trodden ground rather than as
-   more distance. */
-var ST_WALL2=0xb03c0e, ST_ROOF2=0x521a0e, ST_PATH=0xa6380a;
-/* WHAT IS BEHIND A WINDOW. The windows are HOLES cut in the face, and with
-   nothing behind them the hole shows the night sky and the dunes - so at a
-   glance the house had two bright gaps in it rather than two windows. A dark
-   pane one row in gives the hole a back, and a hole with a back is a window.
-
-   Deliberately NOT a lit one. A warm light in a window would be the best
-   thing in this picture and it is the one colour this scene may not have:
-   nothing here may drift toward the trial's amber or the boss's violet (see
-   the tint note above), and a lamp behind glass at night is amber by
-   definition. Dark panes say window without spending a colour that means
-   something else everywhere in the game. */
-var ST_PANE=0x2c1004;
+/* THE WALL COLOUR HAS TO BEAT THE GRASS, and the first one did not. These
+   multiply the surface texture, and the grass surface carries a bright green
+   band on every face - so a pale cream wall came out olive and the houses
+   were still green. A saturated warm tan takes that band down to brown,
+   which is what a multiply can do and a pale tint cannot. */
+var ST_WALL=0xd08b52, ST_ROOF=0xb2503c;
 function stHouseBoard(){
   var b=[],tint=[],x,z;
   function floor(x0,x1,z0,z1){
@@ -310,15 +250,11 @@ function stHouseBoard(){
   }
   // Everything a house is built of is painted; the ground it stands on is not.
   function put(x,y,z,hex){b.push([x,y,z]);tint.push([x,y,z,hex]);}
-  // The ground a house stands on is not painted; the ground people have WORN
-  // is - it is the one part of the lawn that is not lawn.
-  function pave(x,z){tint.push([x,0,z,ST_PATH]);}
   /* A face with a door in it, and a pitched roof over it. `x0+2` is the
      middle of the five, which is the door, the ridge's peak, and - not by
      accident - the column the census folds. */
-  function house(x0,x1,wall,roof,chimLeft){
+  function house(x0,x1){
     var i,y,j,mid=x0+2;
-    wall=wall||ST_WALL;roof=roof||ST_ROOF;
     /* THE FACE, WITH A DOOR AND TWO WINDOWS CUT OUT OF IT. The holes matter
        as much as the roof does: a blank rectangle of grass-topped stone is a
        cliff, and holes in a regular pattern are the other thing nothing
@@ -328,15 +264,10 @@ function stHouseBoard(){
     for(i=x0;i<=x1;i++)for(y=1;y<=3;y++){
       if(i===mid&&y<=2)continue;                       // the door
       if(y===3&&(i===x0+1||i===x0+3))continue;         // the two windows
-      put(i,y,0,wall);
+      put(i,y,0,ST_WALL);
     }
-    /* A BACK TO EACH WINDOW, one row in. See ST_PANE: without it the hole
-       shows the sky and reads as a gap in the wall rather than as a window.
-       It is at y=3 and the family stands at y=1, so it darkens a window and
-       hides nobody. */
-    put(x0+1,3,1,ST_PANE);put(x0+3,3,1,ST_PANE);
     // Two side walls, leaving the near side open to look through.
-    for(j=1;j<=2;j++)for(y=1;y<=3;y++){put(x0,y,j,wall);put(x1,y,j,wall);}
+    for(j=1;j<=2;j++)for(y=1;y<=3;y++){put(x0,y,j,ST_WALL);put(x1,y,j,ST_WALL);}
     /* THE ROOF IS THE GABLE END, AND IT IS ONE ROW DEEP.
 
        Two things were learned putting this on. TWO COURSES, NOT THREE:
@@ -355,38 +286,16 @@ function stHouseBoard(){
 
        The chimney is one block, and it is worth its one block: after the
        pitch, it is the single thing that says building rather than hill. */
-    for(i=x0;i<=x1;i++)put(i,4,0,roof);
-    for(i=x0+1;i<x1;i++)put(i,5,0,roof);
-    // The chimney changes sides between the two houses, which is the cheapest
-    // half of "these were built by different people".
-    put(chimLeft?x0+1:x0+3,6,0,roof);
-  }
-  /* A HOUSE AT THE FAR END OF THE STREET. Two squat courses, a one-course
-     roof and a dark tint, standing on the dune row behind everything - so it
-     is a house by shape and distance by value, and it never competes with the
-     two the scene is actually about.
-
-     It costs NOTHING in framing, which is why it is affordable at all:
-     recomputeBounds() frames the arena, and these sit inside the x range the
-     dunes already claim, at a z the dunes already reach, and four blocks
-     under the ridge of the near houses. The dunes themselves were cut back to
-     the strip's width once for exactly this reason - see below. */
-  function farHouse(x0,z0,hex,rhex){
-    for(var i=x0;i<=x0+2;i++)for(var y=1;y<=2;y++)put(i,y,z0,hex);
-    for(i=x0;i<=x0+2;i++)put(i,3,z0,rhex);
-    put(x0+1,4,z0,rhex);
+    for(i=x0;i<=x1;i++)put(i,4,0,ST_ROOF);
+    for(i=x0+1;i<x1;i++)put(i,5,0,ST_ROOF);
+    put(x0+3,6,0,ST_ROOF);
   }
   floor(1,5,0,3);      // our house
   floor(8,12,0,3);     // theirs
   floor(0,13,4,5);     // the strip across the front of both
-  for(z=6;z<=9;z++){b.push([3,0,z]);pave(3,z);}                       // the path
-  house(1,5,ST_WALL,ST_ROOF,false);
-  house(8,12,ST_WALL2,ST_ROOF2,true);
-  /* THE TRACK FROM EACH DOOR TO THE STREET. Ours is the path, which the
-     census walks up; theirs is two squares and no more, because it is a house
-     the scene never enters. Both doors are at `x0+2`. */
-  pave(3,4);pave(3,5);
-  pave(10,4);pave(10,5);
+  for(z=6;z<=9;z++)b.push([3,0,z]);                                   // the path
+  house(1,5);
+  house(8,12);
   /* ============================================================
      AND THE REST OF THE WORLD, WHICH IS WHAT MAKES IT A PLACE RATHER THAN A
      SET. Two houses on a strip is a diagram of a street; the strip having a
@@ -433,42 +342,12 @@ function stHouseBoard(){
      same warm brown as the houses and the top half of the picture read as
      one mass; the second version of a background has to recede, which on a
      night board means darker rather than merely different. */
-  /* AND THEY HAD TO GO MUCH DARKER STILL, because of WHERE they land rather
-     than what colour they are. Screen height here is `0.885y - 0.465z`, so a
-     block two rows further from the camera is drawn almost exactly as high up
-     the screen as a block two courses taller - which means this row at z=-2
-     and z=-3 sits in the same band as the houses' walls and their roofs, not
-     under them. Photographed with the dunes coloured in outright, the band
-     behind and between the two houses turned out to be almost all dune: the
-     houses had no sky behind them at all and the whole upper half of the
-     picture was one warm brown mass with a doorway in it.
-
-     There is no room to move them - pushing them back to z=-5 grows the
-     arena, and recomputeBounds() frames the arena, so the houses would simply
-     be drawn smaller. So they recede in VALUE instead, and by much more than
-     "two steps under the walls" was: this is close to the night sky's own
-     darkness, which is what lets a lit wall and a red roof have an edge
-     against it. */
-  var ST_SAND=0x461606;
+  var ST_SAND=0x7d4a2c;
   for(x=0;x<=13;x++){
     put(x,0,-2,ST_SAND);
     put(x,0,-3,ST_SAND);
-    // The crest gives way where a house stands on it: two things in one cell
-    // is two things drawn in one cell.
-    if(((x+3)%4)<2&&!(x>=10&&x<=12))put(x,1,-3,ST_SAND);
+    if(((x+3)%4)<2)put(x,1,-3,ST_SAND);
   }
-  /* AND THE STREET DOES NOT END AT THE SECOND HOUSE.
-
-     Two houses is a pair; four is a row, and a row is the difference between
-     a set and a neighbourhood. These two are on the dune ground behind, one
-     in the gap between the near houses and one off to the right, at a third
-     of the near houses' bulk and two steps darker again than the dunes they
-     stand on - so they read as more of the same place, further off, rather
-     than as two more things to look at. Both peak at y=4 against the near
-     ridge's y=6 and sit inside the x and z the dunes already claim, so the
-     camera frames exactly what it framed before. */
-  farHouse(5,-2,0x602408,0x321008);
-  farHouse(10,-3,0x4e1c06,0x280c05);
   return {blocks:b, tint:tint};
 }
 /* THE PLANE.
