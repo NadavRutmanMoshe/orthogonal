@@ -528,6 +528,17 @@ function menuPanel(){
         "<div class='crow bare'><span class='seg'>"+
           seg("mKcam","full","FULL",settings.killcam)+
           seg("mKcam","plain","PLAIN",settings.killcam)+"</span></div></div>"+
+      /* AND WHAT BEING HIT SOUNDS LIKE, on the same card's terms and for the
+         same reason: a question about feel that can only be answered by being
+         hit. It sits under the kill cam because the two are the same moment
+         seen and heard, and pressing one of these plays it at once - a sound
+         setting you have to go and die to hear is not a setting, it is a
+         guess. The other four deaths are fixed; see SFX.die(). */
+      "<div class='pcard'><h4>Hit by a hunter</h4>"+
+        "<div class='crow bare'><span class='seg'>"+
+          seg("mBdie","poof","POOF",settings.bossdie)+
+          seg("mBdie","kapoosh","KAPOOSH",settings.bossdie)+
+          seg("mBdie","thud","THUD",settings.bossdie)+"</span></div></div>"+
       /* WHAT THE PIECES DO IS OFF THE PANEL, on the owner's call. The pieces
          are taught where they are first met - the tutorial cards and the
          level briefs - and a reference list under More was a fourth row that
@@ -596,6 +607,14 @@ function menuPanel(){
       settings.killcam=m;saveSettings();menuPanel();
     });
   });
+  ["poof","kapoosh","thud"].forEach(function(m){
+    bind("mBdie_"+m,function(){
+      // Played on the press, before the panel is rebuilt. This is the one
+      // setting in the game whose value IS a sound, so choosing it and
+      // hearing it have to be the same action.
+      settings.bossdie=m;saveSettings();SFX.die("boss");menuPanel();
+    });
+  });
   bind("mTut",function(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
   });
@@ -618,6 +637,7 @@ function menuPanel(){
   bind("mReset",function(){
     settings.volume=defaultVolume();settings.volTouched=false;
     settings.brightness=1;settings.ui=UI_DEFAULT;settings.killcam="full";
+    settings.bossdie="poof";
 
     // including "stop suggesting things": a reset is a reset
     settings.noSlowOffer=false;settings.landHints=0;

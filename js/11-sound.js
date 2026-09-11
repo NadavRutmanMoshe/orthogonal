@@ -81,7 +81,16 @@ var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false
                  against; the two are a genuine question about how much
                  ceremony a death deserves, and it is the owner's to answer by
                  playing both rather than mine to answer by picking one. */
-              killcam:"full"};
+              killcam:"full",
+              /* WHAT A HUNTER'S HIT SOUNDS LIKE, and it is a setting for the
+                 same reason the kill cam is: it is a question about feel and
+                 the only way to answer it is to be hit three times. "poof" is
+                 soft and airy with no front edge, "kapoosh" puts a hard click
+                 in front of that, "thud" is the impact with no air at all.
+                 See SFX.die() above; the other four deaths are fixed, because
+                 a wall, a sweep, fire and a fall each only ever sounded like
+                 one thing. */
+              bossdie:"poof"};
 /* How many times the landing rule is spelled out in words. The rings keep
    drawing forever - they are free and they answer the question faster than a
    sentence does - but a line of text on every fold would be nagging. */
@@ -864,6 +873,35 @@ function noiseFall(c,at,dur,vol){
   src.connect(bp);bp.connect(g);g.connect(out(c));
   src.start(at);src.stop(at+dur+.14);
 }
+/* NOISE WITH A SHAPE, for the four named deaths.
+
+   noiseFall() is one fixed gesture - a bandpass swept 3800 to 320 - which is
+   the right sound for a crate scraping and is the only noise this file had.
+   The deaths need four different ones ("plack", "poof", "kshhh", "ssss") and
+   they differ in exactly four things: where the filter starts, where it ends,
+   how tight it is, and whether the envelope opens sharply or eases in. So
+   this is that gesture with those four as arguments rather than four more
+   copies of the same fifteen lines.
+
+   `q` IS THE WHOLE CHARACTER. At 1 it is air, at 6 it is a whistle, and the
+   difference between "kshhh" and "ssss" is mostly that number. `soft` eases
+   the attack over a fifth of the sound instead of a fiftieth, which is what
+   separates a hiss that starts from a burst that hits. */
+function noiseAt(c,at,dur,vol,f0,f1,q,soft){
+  var len=Math.floor(c.sampleRate*(dur+.2));
+  var buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);
+  for(var i=0;i<len;i++)d[i]=Math.random()*2-1;
+  var src=c.createBufferSource();src.buffer=buf;
+  var bp=c.createBiquadFilter();bp.type="bandpass";bp.Q.value=q||1.1;
+  bp.frequency.setValueAtTime(f0,at);
+  bp.frequency.exponentialRampToValueAtTime(f1,at+dur);
+  var g=c.createGain();
+  g.gain.setValueAtTime(.0001,at);
+  g.gain.exponentialRampToValueAtTime(vol,at+dur*(soft?.22:.04));
+  g.gain.exponentialRampToValueAtTime(.0001,at+dur+.10);
+  src.connect(bp);bp.connect(g);g.connect(out(c));
+  src.start(at);src.stop(at+dur+.12);
+}
 function noiseRise(c,at,dur,vol){
   var len=Math.floor(c.sampleRate*(dur+.2));
   var buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);
@@ -1008,41 +1046,64 @@ var SFX={
      one short noise breath keeps a front edge on it, so it still reads as an
      event on a phone speaker rather than as a fade. Quieter in total than
      the old single voice, and it lands rather than buzzes. */
+  /* FIVE DEATHS, FOUR OF THEM NAMED BY THE OWNER. One sound for all of them
+     was the first note; a softer one was the second; the third was that each
+     death should sound like the thing that did it, and these are those words
+     built out of the two ingredients this file has - a filtered noise burst
+     and a tone. The word is in the comment because the word is the spec. */
   die:function(kind){
     var c=audio();if(!c)return;
     var t=c.currentTime;
-    /* BURNING. Fire is broadband, so this is mostly noise: the sweep is long
-       and the body under it is low and slow, which is a thing going out
-       rather than a thing being hit. */
+    /* "SSSS" - fire. A long narrow hiss that eases in rather than hitting,
+       held high and closing only a little, because a gas escaping does not
+       thump. Q of 5 is what makes it a hiss and not just air; the tiny tone
+       under it is the body of the thing going out, at the edge of hearing. */
     if(kind==="spike"){
-      noiseFall(c,t,.42,.024);
-      blip(150,.44,"triangle",.024,72);
-    /* THE WORLD CLOSING ON YOU. Two hits a breath apart - the fold lands and
-       then the weight of it arrives - with a very short noise front so the
-       first one has an edge. It is the only one of the five with two beats,
-       because being crushed is the only death that happens twice. */
+      noiseAt(c,t,.62,.020,5200,2600,5,true);
+      blip(120,.5,"sine",.012,74);
+    /* "PLACK" - the world closing on you. Flat and over immediately: a very
+       short burst up at board level and one mid tone with almost no decay,
+       which is two pieces of something hard meeting and stopping. Anything
+       longer than about a tenth of a second stops being a clack and starts
+       being a hit. */
     } else if(kind==="crush"){
-      noiseFall(c,t,.09,.016);
-      blip(132,.30,"triangle",.040,74);
-      setTimeout(function(){blip(88,.34,"sine",.026,56);},95);
-    /* A CHARGE LANDING. One impact, lower and faster than a fall, with a
-       short bright tick on the front - the tick is what makes it read as
-       being struck by something rather than as arriving somewhere. It is the
-       hardest of the five because a hunter hitting you is the hardest thing
-       that happens in this game, and the sting is already on screen saying
-       so. */
-    } else if(kind==="boss"){
-      noiseFall(c,t,.11,.020);
-      blip(116,.34,"triangle",.042,58);
-      blip(232,.09,"sine",.016,150);
-    /* THE SLICE. Deliberately the sweep's own voice an octave down and with
-       an edge on it: the plane you just failed to dodge makes that sound
-       every few seconds, and the death has to be recognisably the same thing
-       arriving rather than a new event. */
+      noiseAt(c,t,.055,.034,2400,900,2.2,false);
+      blip(392,.075,"triangle",.036,300);
+      blip(138,.16,"sine",.028,104);
+    /* "KSHHH" - the sweep. A bright burst with a hard front that opens
+       downward and wide: the front is the edge arriving, the spread is it
+       going through. Deliberately brighter than the fire hiss and much
+       shorter, so the two noises are never mistaken for each other. */
     } else if(kind==="trial"){
-      noiseFall(c,t,.30,.022);
-      blip(300,.26,"sine",.026,96);
-      blip(110,.36,"triangle",.022,70);
+      noiseAt(c,t,.34,.030,7000,900,1.5,false);
+      blip(240,.2,"sine",.016,120);
+    /* THE BOSS, AND IT IS A SETTING. "kapoosh or poof - give me in settings
+       to try" is the owner's own note: it is a question about how a hit
+       should feel rather than a fact, and the honest way to answer it is to
+       play all three. See `bossdie` in the settings object below.
+
+       POOF: soft and airy, no front edge at all - a thing ceasing to be
+       there. KAPOOSH: a hard click and then the poof spreading out behind
+       it, which is the same event with an impact in front of it. THUD: no
+       air, just the impact - the one this shipped with. */
+    } else if(kind==="boss"){
+      var bd=(typeof settings!=="undefined"&&settings.bossdie)||"poof";
+      if(bd==="thud"){
+        noiseAt(c,t,.11,.020,3200,320,1.1,false);
+        blip(116,.34,"triangle",.042,58);
+        blip(232,.09,"sine",.016,150);
+      } else if(bd==="kapoosh"){
+        // the "ka": a click with no body, 30ms and gone
+        noiseAt(c,t,.03,.036,4200,1800,2.4,false);
+        blip(520,.05,"triangle",.030,260);
+        // and the "poosh" opening out behind it
+        noiseAt(c,t+.035,.40,.028,2600,420,.9,true);
+        blip(96,.40,"sine",.032,52);
+      } else {
+        noiseAt(c,t,.34,.030,1900,380,.85,true);
+        blip(104,.38,"sine",.034,56);
+        blip(208,.16,"triangle",.014,96);
+      }
     /* FALLING OUT OF THE WORLD, and the default for anything unnamed. The
        one the owner kept: a triangle sinking an octave for the fall, a sine
        under it for weight, a short breath for the front edge. */

@@ -390,6 +390,12 @@ is the rule.
 - `loadSettings()` is a **whitelist**. A key not read there does not exist
   after reload; a key whose feature is removed comes out of the list.
 - `noSlowOffer` keeps its name though nothing slow is left; it is persisted.
+- **`settings.bossdie` is POOF / KAPOOSH / THUD**, whitelisted in
+  `loadSettings()` and reset by RESET SETTINGS, and pressing one **plays it**:
+  a sound setting you have to go and die to hear is a guess, not a setting.
+  The other four deaths are fixed - `SFX.die(kind)` dispatches "plack" for a
+  crush, "kshhh" for the sweep, "ssss" for fire, and the fall's own voice for
+  everything unnamed.
 - The buttons default is `UI_DEFAULT` (`js/11-sound.js`, `"none"`). The fresh
   `settings` object and `RESET SETTINGS` both read it, so a reset cannot drift
   away from a first run; any other default belongs next to it, not inlined.

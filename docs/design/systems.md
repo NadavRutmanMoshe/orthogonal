@@ -420,6 +420,26 @@
   event. The fall keeps the softened voice unchanged and is the default for
   anything unnamed. **The replay tape carries the argument** (`a` in
   `repSfxBuf`), or a filmed death plays the fall over a picture of a smash.
+
+  **And then the owner named them, which is a better spec than any adjective
+  I had.** "plack" for a wall, "kshhh" for the sweep's spikes, "ssss" for
+  fire, "kapoosh or poof" for a hunter. Each is a filtered noise burst plus a
+  tone, and the four words differ in exactly four numbers - where the filter
+  starts, where it ends, how tight it is (`q`), and whether the envelope opens
+  sharply or eases in - so `noiseAt()` takes those four rather than the file
+  growing a fifth copy of `noiseFall()`. `q` carries most of the character: at
+  1 it is air, at 5 it is a hiss, and that is most of the difference between
+  "kshhh" and "ssss". A plack is 55ms and over, because anything longer stops
+  being a clack and becomes a hit.
+
+  **The hunter's one is a SETTING** (`settings.bossdie`: poof, kapoosh, thud),
+  because "give me in settings to try" is the right answer to a question about
+  feel - the same reason the kill cam is a setting. POOF is airy with no front
+  edge at all, KAPOOSH is a hard click with the poof opening out behind it,
+  THUD is the impact with no air, which is what shipped before. **Pressing one
+  plays it**, before the panel is rebuilt: it is the only setting in the game
+  whose value IS a sound, so choosing it and hearing it have to be one action.
+
   **The kill cam's wind-up is
   where this matters most**: `SFX.die()` is the only thing a death's wind-up
   plays (see the kill cam in `docs/UI.md`), so it is heard alone, under
