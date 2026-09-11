@@ -995,7 +995,25 @@ var SFX={
     setTimeout(function(){blip(660,.12,"sine",.013,247);},90);
   },
   turn:function(){blip(420,.07,"triangle",.03);},
-  die:function(){blip(220,.5,"sawtooth",.05,55);},
+  /* DYING, WITHOUT THE BUZZER. It was one sawtooth at 220Hz sliding to 55
+     over half a second. A sawtooth is the harshest voice in this file - it
+     is what a door buzzer is made of - and it fired on the one event the
+     player is already unhappy about, several times a level on a hard one.
+     Reported as disturbing, and that reading is right: the sound was not
+     sad, it was abrasive.
+
+     The replacement says the same sentence with no edge on it. A triangle
+     sinking an octave carries the fall, which was the whole of the old
+     sound's meaning; a sine underneath gives it the weight a body has; and
+     one short noise breath keeps a front edge on it, so it still reads as an
+     event on a phone speaker rather than as a fade. Quieter in total than
+     the old single voice, and it lands rather than buzzes. */
+  die:function(){
+    var c=audio();if(!c)return;
+    blip(196,.46,"triangle",.030,98);
+    blip(98,.54,"sine",.026,62);
+    noiseFall(c,c.currentTime,.13,.008);
+  },
   undo:function(){blip(260,.07,"sine",.03);},
   hint:function(){blip(700,.12,"sine",.035,1050);},
   /* A CRATE SLIDING. It was one square wave at 140Hz falling to 105, which

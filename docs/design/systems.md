@@ -393,6 +393,19 @@
   `shards()` only; `starsEarned()` and `wardrobe.spent` still do their real
   work, so buying exercises the true purchase path. **Set it back to `false`
   before shipping.**
+- **A DEATH IS SOFT, AND THAT IS A REVERSAL.** `SFX.die()` was one sawtooth
+  at 220Hz sliding to 55 over half a second, and it was reported as
+  disturbing. The reading is right and it is the same diagnosis the crate's
+  buzzer got: a sawtooth is the harshest voice in the file, and this one
+  fired on the event the player is already unhappy about, several times over
+  on a level they are stuck on. The sound was not sad, it was abrasive.
+  It is three quiet voices now - a triangle sinking an octave (the fall, which
+  was the whole of what the old one meant), a sine under it for weight, and a
+  130ms noise breath so it still has a front edge on a phone speaker. Lower
+  in total than the single voice it replaces. **The kill cam's wind-up is
+  where this matters most**: `SFX.die()` is the only thing a death's wind-up
+  plays (see the kill cam in `docs/UI.md`), so it is heard alone, under
+  television snow, with nothing else to hide behind.
 - **THE AMBIENT LAYER IS CURRENTLY MUTED** - `AMB_MUTED` in `js/11-sound.js`
   is `true`. Playtested and disliked: the birds, the sea, the wind and the
   desert together were more presence than the game wanted, and a bed you have
