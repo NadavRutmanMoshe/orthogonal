@@ -276,24 +276,40 @@ named). Undoing one of these needs the paragraph.
 - **The live star row is its own element**, rebuilt only when the count
   changes; anything animated inside `syncHud()`-rewritten markup restarts
   on every redraw.
-- **The wardrobe is stacked, not two columns: shelf on top, stage at the
-  bottom.** It was a scrolling list of tiles down the left with the case
-  pinned to 40% of the width on the right, which at phone width gave the case
-  about 130px to stand a piece in - the piece being the thing that is for
-  sale, and the smallest thing on the screen. Stacked, the stage gets the
-  panel's full width and half again the height, the grid goes to three
-  columns because it no longer shares the row, and the primary action lands
-  at the bottom where a thumb already is: browse at the top, look at the
-  bottom, buy under your thumb. `.wlist` is `flex:1 1 auto` and scrolls
-  inside itself, so the stage never moves while you browse, and it carries a
-  22px `mask-image` fade at its foot because the list always ends through the
-  middle of a row. The stage caps at **400px wide and 24vh tall** and
-  `previewSize()` pulls the camera back past 1.25:1 - the preview camera's
-  FOV is VERTICAL, so on a wide stage the height is the tight dimension and
-  at the original distance the plinth ran off the bottom. Both numbers are
-  one term each, so changing the stage's proportions cannot silently re-crop
-  the piece. `.wglass` is shared with the home screen's plinth, which is
-  square and therefore untouched by the pull-back.
+- **The wardrobe is stage, then shelf, then text - and the stage NEVER
+  MOVES.** That order is the whole point. With the piece at the bottom,
+  selecting something you do not own grew the block under it (a BUY cap, an ad
+  row, the note about there being no store) and the stage slid up the screen
+  every time you pressed a locked item; reported in exactly those words. The
+  stage is `flex:0 0 auto` at the top, `#wMeta` is `flex:0 0 auto` at the
+  bottom, and **the list between them is the only thing that resizes** - so
+  the caption can be one line or six and the thing you are looking at does not
+  twitch.
+- **The stage has no frame, because a frame is a box and a box is a
+  thumbnail.** `previewStart()` clears to **alpha 0** and `previewShow()` sets
+  `scene.background=null`, so there is no rectangle of `--void` to put a rim,
+  a radius, an inset highlight or a vignette around: what is on the panel is a
+  pedestal, a piece, and the light they throw. The two extra blocks that used
+  to sit behind the pedestal are gone with it ("one pedestal on a cool block
+  and that's it"), and `.wcanvas` must keep `background:transparent` or the
+  rectangle comes straight back. The pool of `--player` under the piece stays,
+  because the light is not the box. **The home screen's plinth shares all of
+  this** and is frameless now too.
+- **`previewSize()` owns the framing and both terms are aspect-driven.** The
+  preview camera's FOV is VERTICAL, so on a stage wider than it is tall the
+  height is the tight dimension: it pulls back past 1.25:1 (or the pedestal
+  runs off the bottom) and aims lower by the same measure (or the piece sits
+  in the bottom half under a band of empty air, because the group's centre is
+  below the camera's target). `lookAt()` must be called after the position is
+  set. Both terms are zero at 1.25:1 or narrower, so the square home plinth is
+  framed exactly as it always was.
+- **The wardrobe was two columns once**, list left and case pinned to 40%
+  right, which at phone width gave the case about 130px to stand the piece in: the thing being sold was the smallest object on the
+  screen. Stacking it is what made the stage worth having. The list goes to
+  three columns because it no longer shares the row, and it carries a 22px
+  `mask-image` fade at its foot because it always ends through the middle of a
+  row. The stage caps at **400px wide and 27vh tall** so a desktop's 560px
+  panel does not stretch it into a letterbox.
 - **Panels are phone-width, centred, max 560px.** Full-height ones use
   `.panel.tall` furniture.
 - **The five full-height panels share one page shape** (menu, wardrobe,

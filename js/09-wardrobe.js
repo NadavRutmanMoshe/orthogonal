@@ -554,7 +554,14 @@ function previewStop(){
 }
 function previewStart(cv){
   previewStop();
-  var r=new THREE.WebGLRenderer({antialias:true,canvas:cv,alpha:false});
+  /* TRANSPARENT, so the piece stands on the panel rather than in a box.
+     `alpha:false` cleared to opaque black and the stage was a hard-edged
+     rectangle of `--void` sitting on the panel's own ground - which is a
+     thumbnail, whatever is drawn inside it. With the clear alpha at zero
+     there is no rectangle: there is a pedestal, a piece, and the glow they
+     throw, and that is the whole of what the owner asked the stage to be. */
+  var r=new THREE.WebGLRenderer({antialias:true,canvas:cv,alpha:true});
+  r.setClearColor(0x000000,0);
   r.setPixelRatio(Math.min(window.devicePixelRatio,2));
   var sc=new THREE.Scene();
   var cam=new THREE.PerspectiveCamera(34,1,.1,50);
@@ -612,7 +619,17 @@ function previewSize(){
      to the stage's proportions cannot silently re-crop the piece - and it is
      zero at 1.25:1 or narrower, so the home screen's plinth, which shares
      this renderer, is framed exactly as it was. */
-  pv.camera.position.z=3.05+Math.max(0,pv.camera.aspect-1.25)*.95;
+  var wide=Math.max(0,pv.camera.aspect-1.25);
+  pv.camera.position.z=3.05+wide*.95;
+  /* AND IT AIMS A LITTLE LOWER as it pulls back. Pulling back alone leaves
+     the piece sitting in the bottom half of a wide stage with a band of empty
+     air over it, because the pedestal is below the camera's target and the
+     extra distance is spent showing more of nothing. Dropping the target
+     moves the whole group up the frame, which is the composition a stage
+     wants: the piece near the middle, the pedestal under it, headroom rather
+     than a hole. lookAt() must come after the position is set - it derives
+     the rotation from where the camera IS. */
+  pv.camera.lookAt(0,-.05-Math.min(.22,wide*.55),0);
   pv.camera.updateProjectionMatrix();
 }
 // Drag to spin, with the throw carried into inertia on release. Pointer events
@@ -695,18 +712,13 @@ function previewShow(shape,colorId,w3,w2,plane){
   while(root.children.length)root.remove(root.children[0]);
   var col=findBy(SKIN_COLORS,colorId).hex;
   var v=findBy(WORLDS3D,w3), p=findBy(WORLDS2D,w2);
-  var bg=plane?p.paper:v.void, blockCol=plane?p.ink:v.block;
-  /* A vertical wash rather than a flat fill. On a light ground (the plane)
-     it goes the other way - darker at the floor - so the lift is always
-     *toward* the middle of the range and never off the end of it. */
-  var lift=plane?0.94:1.45;
-  pv.scene.background=pvGradTex("bg"+bg+(plane?"p":"v"),function(x,n){
-    var g=x.createLinearGradient(0,0,0,n);
-    g.addColorStop(0,pvShade(bg,plane?1.02:0.72));
-    g.addColorStop(.62,hexCss(bg));
-    g.addColorStop(1,pvShade(bg,lift));
-    x.fillStyle=g;x.fillRect(0,0,n,n);
-  });
+  var blockCol=plane?p.ink:v.block;
+  /* NO BACKDROP. It was a vertical wash of the world's own void, which is
+     what made the case a case - and a case is a box, and the box is what was
+     cut. The renderer clears to nothing now (see previewStart) so the panel
+     itself is the ground; `pvGradTex`, `pvShade` and `hexCss` are still here
+     and still used by the pool below. */
+  pv.scene.background=null;
 
   var slabMat=new THREE.MeshLambertMaterial({color:blockCol});
   var slab=new THREE.Mesh(new THREE.BoxGeometry(1,.5,1),slabMat);
@@ -725,12 +737,12 @@ function previewShow(shape,colorId,w3,w2,plane){
       color:col,transparent:true,depthWrite:false,
       blending:THREE.AdditiveBlending}));
   pool.rotation.x=-Math.PI/2;pool.position.y=-.368;root.add(pool);
-  // two neighbours at depth, so a world's block colour reads as a world and
-  // not as a single lonely brick
-  [[-1,-.35],[1,-.35]].forEach(function(o){
-    var b=new THREE.Mesh(new THREE.BoxGeometry(1,.5,1),slabMat);
-    b.position.set(o[0],-1.12,o[1]);root.add(b);
-  });
+  /* AND NO NEIGHBOURS. There were two more blocks set back at depth, there to
+     stop a world's block colour reading as one lonely brick - a good argument
+     when the stage was a lit diorama with a sky behind it, and the wrong one
+     now: "one pedestal on a cool block and that's it" is the brief, and two
+     extra blocks in the corners of a frameless stage are two things the eye
+     has to rule out before it gets to the piece. */
   var edges=new THREE.LineSegments(
     new THREE.EdgesGeometry(new THREE.BoxGeometry(1,.5,1)),
     new THREE.LineBasicMaterial({color:plane?p.paper:p.ink,
@@ -749,7 +761,10 @@ function previewShow(shape,colorId,w3,w2,plane){
   }
   var item=buildPlayerMesh(shape,col,new THREE.MeshLambertMaterial({color:col}));
   item.position.y=-.06;
-  outlineFor(item,new THREE.Color(bg));
+  // No argument: outlineFor() reads the PIECE, not the background (see its
+  // own note), and the background it used to be handed was the stage's void -
+  // which the stage no longer has.
+  outlineFor(item);
   root.add(item);
 }
 /* THE RIM IS LIGHT BY DEFAULT, AND DARK ONLY ON A PIECE TOO PALE FOR A

@@ -104,17 +104,26 @@ function wardrobePanel(tab){
        shop uses, and the reason is the one above: browse at the top, look at
        the bottom, buy under your thumb. */
     "<div class='wbody'>"+
-      "<div class='wlist'><div class='grid' id='wGrid'></div></div>"+
+      /* THE STAGE IS FIRST, AND IT NEVER MOVES. That is the whole reason this
+         order exists: with the piece at the bottom, selecting something you do
+         not own grew the block under it - a BUY cap, an ad row, the note about
+         there being no store - and the stage slid up the screen every time.
+         Reported exactly that way. Fixed height, pinned to the top, and the
+         LIST is what absorbs the change: it is `flex:1 1 auto` and scrolls
+         inside itself, so the text below can be one line or six and the thing
+         you are looking at does not twitch.
+
+         Three siblings rather than a stage that owns its own caption, because
+         the caption has to be able to sit on the other side of the grid. */
       "<div class='wcase'>"+
-        /* The canvas is wrapped so the stage can have a light, a floor and a
-           caption: a canvas is a replaced element and will not carry
-           ::before/::after, and the light spilling out of the render onto the
-           page is what makes it read as a lit stage rather than a thumbnail. */
+        /* The canvas is wrapped so the stage can carry a floor and a caption:
+           a canvas is a replaced element and will not take ::before/::after. */
         "<div class='wglass'><canvas id='wCase3d' class='wcanvas'></canvas>"+
           "<i class='wfloor'></i>"+
           "<span class='wturn'>DRAG TO TURN</span></div>"+
-        "<div id='wMeta'></div>"+
       "</div>"+
+      "<div class='wlist'><div class='grid' id='wGrid'></div></div>"+
+      "<div id='wMeta'></div>"+
     "</div>"+
     "<div class='pfoot'><button id='wHome'>"+homeIcon()+"HOME</button>"+
       "<button id='wBack'>CLOSE</button></div>","wardrobe");

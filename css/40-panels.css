@@ -309,11 +309,11 @@
      scrolling, so the display case stays put while you look through. */
   .panel.ward.on{display:flex;flex-direction:column;overflow:hidden;
     max-height:min(56vh,calc(100vh - 250px))}
-  /* STACKED, NOT SIDE BY SIDE. See wardrobePanel() for why: the piece is
-     what is being sold and in two columns it was the smallest thing on the
-     screen. The list takes whatever the stage leaves and scrolls inside
-     itself, so the stage never moves while you browse. */
-  .wbody{display:flex;flex-direction:column;gap:10px;flex:1;min-height:0}
+  /* STAGE, THEN SHELF, THEN TEXT - and in that order for one reason: the
+     stage must never move. See wardrobePanel(). Everything here is
+     `flex:0 0 auto` except the list, so the list is the only thing that
+     changes size when the text below it grows a BUY cap and an ad row. */
+  .wbody{display:flex;flex-direction:column;gap:9px;flex:1;min-height:0}
   /* AND IT FADES AT THE CUT. The list ends wherever the stage begins, which
      is usually through the middle of a row, and a row sliced clean off reads
      as a rendering fault rather than as "there is more below". A 22px fade on
@@ -329,6 +329,10 @@
   .wlist .grid{grid-template-columns:repeat(3,1fr)}
   .wcase{flex:0 0 auto;min-width:0;display:flex;flex-direction:column;
     padding:0 13px}
+  /* The caption is the last thing in the panel and it is pinned there: it
+     does not grow into the list above it and the list does not push it
+     around. `flex:0 0 auto` on both, and the list between them absorbs. */
+  #wMeta{flex:0 0 auto;padding:0 13px}
   /* THE CASE, AND ITS LIGHT. Shared with the home screen's plinth, which is
      the same singleton renderer pointed at what you have equipped - so a
      change here is a change to both, which is the point.
@@ -345,25 +349,32 @@
      thumbnail is what a list item looks like. Everything here is mixed from
      `--player`, which applySkin() rewrites, so the stage is lit in whatever
      colour is standing on it and never in a hard-coded rose. */
-  /* CAPPED AND CENTRED. The panel goes to 560px on a desktop and the stage's
-     height is capped by the viewport, so an uncapped stage there is a 2.5:1
-     letterbox with a small piece in the middle of it - and previewSize()'s
-     pull-back, which exists to stop a wide stage cropping, would then be
-     shrinking the piece for no reason. 400px keeps it near the phone's own
-     proportions everywhere. */
+  /* NO FRAME AT ALL, on the owner's call: "one pedestal on a cool block and
+     that's it". It had a rim, a corner radius, an inset highlight and two
+     drop shadows, and every one of them was drawing the BOX rather than the
+     thing in it - a lit case is still a case, and a case at this size is a
+     thumbnail with decoration round it. The renderer clears to nothing now
+     (previewStart) so there is no rectangle left to frame: what is on the
+     panel is a pedestal, a piece, and the light they throw.
+
+     What stays is the light, because the light is not the box. One soft pool
+     of the player's own colour under the piece, mixed from `--player` so it
+     is lit in whatever is standing on it. Capped at 400px so the desktop's
+     560px panel does not stretch the stage into a letterbox. */
   .wglass{width:100%;max-width:400px;margin-inline:auto;
-    position:relative;border-radius:14px;overflow:hidden;
-    border:1px solid color-mix(in srgb,var(--player) 30%,var(--rule));
-    box-shadow:0 0 26px color-mix(in srgb,var(--player) 15%,transparent),
-      0 16px 34px -16px color-mix(in srgb,var(--player) 46%,transparent),
-      inset 0 1px 0 color-mix(in srgb,#fff 11%,transparent)}
+    position:relative;border-radius:16px;overflow:hidden;
+    background:radial-gradient(72% 56% at 50% 76%,
+      color-mix(in srgb,var(--player) 15%,transparent),transparent 72%)}
   /* INSIDE the bottom edge, not below it: the box clips its corners, so a
      glow hung underneath was clipped away entirely. On the lip it is a strip
      of footlights, which is the thing being drawn anyway. */
-  .wfloor{position:absolute;left:9%;right:9%;bottom:-11px;height:22px;
+  /* The spill, under the pedestal. Quieter than it was: with no box around
+     it there is nothing for it to be contained by, and at .6 it read as a
+     smear on the panel rather than as light coming off a lit object. */
+  .wfloor{position:absolute;left:22%;right:22%;bottom:4px;height:18px;
     border-radius:50%;pointer-events:none;
     background:color-mix(in srgb,var(--player) 72%,transparent);
-    filter:blur(11px);opacity:.6}
+    filter:blur(13px);opacity:.34}
   /* THE GLASS IS GLASS. A vignette over the render darkens the four corners
      of the box and leaves the middle - where the piece stands - alone, so
      the case reads as a lit alcove rather than as a flat square of `--void`
@@ -371,34 +382,26 @@
      anything behind it, because a canvas is opaque and paints over its own
      backdrop; `pointer-events:none` so the drag that turns the piece still
      reaches it. */
-  /* TWO LIGHTS AND A VIGNETTE, over the render rather than behind it - the
-     canvas is opaque and paints over its own backdrop, so anything under it
-     is invisible. A wash of the piece's own colour from the top, and the
-     four corners taken down, which is what makes a flat square of `--void`
-     read as an alcove with something lit in it. `pointer-events:none` so the
-     drag that turns the piece still reaches the canvas. */
-  .wglass::after{content:"";position:absolute;inset:0;pointer-events:none;
-    border-radius:inherit;
-    background:
-      radial-gradient(92% 62% at 50% -6%,
-        color-mix(in srgb,var(--player) 18%,transparent),transparent 72%),
-      radial-gradient(118% 86% at 50% 34%,transparent 40%,
-        rgba(2,4,9,.58) 100%)}
-  /* FLUID, NOT A FIXED SQUARE. The stage is as tall as the screen can spare
-     and never taller: 24vh is about 200px on the owner's phone and 170 on a
-     short one, and the floor of 118 is the point below which the piece stops
-     being the biggest thing on the screen, which is the whole reason the
-     panel was restacked. */
+  /* NO VIGNETTE EITHER. It existed to turn an opaque square of `--void` into
+     an alcove; with the square gone it would only be darkening the panel in a
+     rectangle, which is the frame coming back in by the side door. */
+  /* FLUID, AND THE BIGGEST THING ON THE SCREEN. It is the top of the panel
+     now and the only fixed-height block in it, so it takes what it needs and
+     the shelf underneath lives on the rest: 27vh is about 228px on the
+     owner's phone. `background:transparent` matters - the renderer clears to
+     nothing, and a canvas with a painted background would put the rectangle
+     straight back. */
   .wcanvas{position:relative;inset:auto;display:block;
-    width:100%;height:clamp(118px,24vh,206px);
-    background:var(--void);touch-action:none;cursor:grab}
+    width:100%;height:clamp(140px,27vh,236px);
+    background:transparent;touch-action:none;cursor:grab}
   .wcanvas:active{cursor:grabbing}
   /* Inside the stage, bottom right, out of the way of the piece. It is an
      affordance note rather than a label, so it is the quietest type here. */
-  .wturn{position:absolute;right:9px;top:8px;pointer-events:none;
-    font-size:9px;letter-spacing:.12em;color:var(--fg-dim);
-    padding:3px 7px;border-radius:99px;
-    background:rgba(4,7,14,.42);backdrop-filter:blur(2px)}
+  /* No pill any more - a pill is a small box, and the point of the stage is
+     that there are no boxes on it. Bottom right, quiet, out of the piece's
+     way. */
+  .wturn{position:absolute;right:10px;top:6px;pointer-events:none;
+    font-size:9px;letter-spacing:.12em;color:var(--fg-dim);opacity:.55}
   /* THE PLAQUE UNDER THE STAGE: the name in the display face at a size
      nothing else on this panel uses, and the price on the same baseline at
      the far end. The name used to be 13.5px mono with a rule over it, which
@@ -408,7 +411,7 @@
      one object rather than as a picture with a panel under it. */
   #wMeta{width:100%;max-width:400px;margin-inline:auto}
   .wtop{display:flex;align-items:baseline;justify-content:space-between;
-    gap:10px;margin-top:11px}
+    gap:10px;margin-top:0}
   .wname{font-family:'Space Grotesk',system-ui,sans-serif;font-size:19px;
     font-weight:700;letter-spacing:-.015em;color:var(--fg);line-height:1.2;
     min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
