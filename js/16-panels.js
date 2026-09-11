@@ -1346,7 +1346,7 @@ function mapKind(l){return l.boss?"boss":l.trial?"trial":l.tutorial?"tut":"lv";}
 function mapAds(k){return k==="boss"?3:k==="trial"?2:1;}
 // The circle already carries the number, so the label beside it drops it.
 function mapCaption(l){
-  return l.name.replace(/^\d+\s+—\s+/,"").replace(/^(?:TRIAL|BOSS)\s+[IVX]+\s+—\s+/,"");
+  return l.name.replace(/^\d+\s+-\s+/,"").replace(/^(?:TRIAL|BOSS)\s+[IVX]+\s+-\s+/,"");
 }
 /* The two landmarks get shapes out of the game's own vocabulary rather than
    ornament bolted onto a circle.
@@ -2008,13 +2008,13 @@ function mapSheet(i){
          "<span class='g'>"+starGlyphs(starsForRecord(l,progress[l.name]))+"</span> best so far")
     : st==="skipped"?"<span class='a'>skipped</span> · no stars yet, still playable"
     : st==="here"?"you are here"
-    : st==="open"?"open — not played yet"
+    : st==="open"?"open - not played yet"
     /* Two different locks, and they were saying the same sentence. Ahead of
        the window you can clear what is in front of it or buy the door; on
        the shelf neither is true, and telling somebody to skip ahead onto the
        one thing an ad cannot open is how a lock becomes a dead end. */
-    : mapSkippable(i)?"locked — clear what is in front of it, or skip ahead"
-    : "locked — the shelf is still sealed";
+    : mapSkippable(i)?"locked - clear what is in front of it, or skip ahead"
+    : "locked - the shelf is still sealed";
 
   var acts,note;
   if(st==="locked"&&mapSkippable(i)){
@@ -2282,7 +2282,7 @@ function myLevelsPanel(){
         "<path class='fr' d='M20.6 8.3 12 13.2v7.4l8.6-4.9Z'/></svg>"+
       "<b>No levels yet</b>"+
       "<span>ADD LEVEL asks for a name and opens the editor on it. "+
-      "It keeps itself as you build — finished or not.</span></div>";
+      "It keeps itself as you build - finished or not.</span></div>";
   } else {
     /* ONE LEVEL, ONE LINE, and the line is as wide as the buttons above it.
        The name takes whatever the row's five verbs leave and ellipsises;
@@ -2381,7 +2381,7 @@ function newLevelPanel(){
     }
     mlScreen("New Level","NAME AND GROUND",
       "<input id='nlName' placeholder='level name' />"+
-      "<div class='note'>GROUND — the world your level stands in.</div>"+
+      "<div class='note'>GROUND - the world your level stands in.</div>"+
       "<div class='grow'>"+chips+"</div>"+
       "<button class='mlbtn pgo' id='nlGo'>CREATE</button>",
       mlFoot("nlBack","← MY LEVELS"));
@@ -2398,7 +2398,7 @@ function newLevelPanel(){
              start:[0,1,0],goal:[3,1,0],rotate:true,theme:pick,
              score:null,moves:null,needsRot:false,flattens:0};
       library.push(e);
-      libSave().then(function(){loadIntoEditor(e);flash("new level — "+nm);});
+      libSave().then(function(){loadIntoEditor(e);flash("new level - "+nm);});
     });
   }
   draw();
@@ -2959,7 +2959,7 @@ function playLibraryLevel(lv){
 
 function projectPanel(){
   showPanel("<h3>PROJECT FILE</h3>"+
-    "Your whole library as one block of text. Copy it somewhere safe — "+
+    "Your whole library as one block of text. Copy it somewhere safe - "+
     "this is what carries the project between sessions or devices."+
     "<textarea id='pj'></textarea>"+
     "<div class='prow'><button id='pjAdd'>IMPORT (ADD)</button>"+

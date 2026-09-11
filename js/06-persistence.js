@@ -428,7 +428,7 @@ function libLoad(){
   }).catch(function(){library=[];});
 }
 function libSave(){
-  if(!window.storage){flash("storage unavailable — use export");return Promise.resolve();}
+  if(!window.storage){flash("storage unavailable - use export");return Promise.resolve();}
   return window.storage.set(LIB_KEY,JSON.stringify(library)).catch(function(){
     flash("couldn't save");
   });

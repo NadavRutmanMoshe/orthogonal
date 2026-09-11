@@ -296,7 +296,7 @@ function syncHud(){
   }
   if(app==="compose"){
     var flatNow=composeMode==="2";
-    $("lvName").textContent="COMPOSE — "+script.length+" MOVE"+(script.length===1?"":"S");
+    $("lvName").textContent="COMPOSE - "+script.length+" MOVE"+(script.length===1?"":"S");
     $("lvHint").className="script";
     $("lvHint").textContent=script.length?script.join(" "):
       "Tap the moves you want the player to make. The level builds itself underneath.";

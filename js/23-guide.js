@@ -101,31 +101,31 @@ var GUIDE_SAY_MS=6500;           // how long a line stays up on its own
    advice about a thing there is no way to try.
    ============================================================ */
 var GUIDE_LINES={
-  "01 — On Your Own":
+  "01 - On Your Own":
     "{do:2d} drops the world flat. Things far apart in depth land side by side.",
-  "02 — Beware of Walls":
+  "02 - Beware of Walls":
     "Anything sharing your column comes flat with you - and lands on top of you.",
-  "03 — A Real Challenge":
+  "03 - A Real Challenge":
     "Stuck on one? The bulb gives you the next move. You get three, and one comes back every half hour.",
-  "04 — The Shortcut":
+  "04 - The Shortcut":
     "You can use the rules of this world to make it faster.",
-  "05 — The Only Way":
+  "05 - The Only Way":
     "The world folds down onto one particular block. Which one, you find out from inside the fold.",
-  "06 — The Illusion":
+  "06 - The Illusion":
     "Flat, the eye shows which block you would stand back up on. Look before you go.",
-  "07 — The Block":
+  "07 - The Block":
     "This world can take things from you, but it can also give.",
-  "08 — Limited":
+  "08 - Limited":
     "Hold the eye in {n3} as well - leaning round the board shows you the puzzle better, and it is not a move.",
-  "10 — No Bridge":
+  "10 - No Bridge":
     "The rules of this world and your turning, put together, make things you would not think were there.",
-  "11 — No Bridge 2":
+  "11 - No Bridge 2":
     "The same two again, the rules and your turning. This one just wants more of it.",
-  "12 — Simple Walk":
+  "12 - Simple Walk":
     "You can build your own levels. MY LEVELS, on the home screen.",
-  "13 — Not a Simple Walk":
+  "13 - Not a Simple Walk":
     "Sometimes a simple walk is the hard one.",
-  "14 — The Silence Before the Storm":
+  "14 - The Silence Before the Storm":
     "I believe in you, son. You have got this - go and find your parents."
 };
 /* WHAT HE SAYS ON A BOARD NOBODY HAS WRITTEN HIM A LINE FOR. Today that is
