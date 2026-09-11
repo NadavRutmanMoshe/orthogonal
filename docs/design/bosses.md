@@ -704,3 +704,37 @@ run would be claiming a fight is winnable while walking its line straight
 through a live slice. Neither says whether the fight is *good* at this pace -
 the periods and the slice positions are numbers to feel out, per the working
 agreement, not numbers to tune against the simulator.
+
+
+---
+
+## The telegraph arrives earlier because it lasts longer
+
+Reported from playtesting as two things - "the ray needs to pop up earlier"
+and "give more time to react" - which are one beat. The line is drawn for the
+whole of `aim` and there is no delay in front of it to cut: a hunter plants
+and the pane is there on the same frame. So a longer `aim` IS an earlier
+warning, and `AIM_EASE` (1.4, `js/03-rules.js`) is that, applied across every
+phase at once.
+
+**A multiplier rather than 22 edited numbers**, because the curve those
+numbers draw is right. SPARRING plants for 2200ms and BOSS IV's last phase for
+660; that spread is the campaign's whole difficulty ramp for this fight, and
+hand-raising each one would have rewritten it by accident. The multiplier
+keeps every ratio and moves the floor.
+
+**Baked into the phase in `bossPhases()`, not applied where the lock is set.**
+`tools/bosssim.js` re-implements the fight from `03-rules.js` and never loads
+the game's state, so an ease applied in `12-play.js` would have left the
+simulator proving a fight nobody plays - the same trap `still:true` was taught
+to it to avoid. Downstream, `h.lock` is set from `bossAim()` rather than from
+`ph.aim` directly, so the clock the hunter waits out and the clock the
+renderer ramps the pane over are one number by construction.
+
+**And the other half was opacity, not time.** The pane opened at .28 and
+climbed on `t²`, so for the first third of the beat it was under the
+threshold at which a red plane reads as red against a lit arena floor - the
+warning was up and could not be seen, which is indistinguishable from a
+warning that came late. It opens at .46 now with the rim at .68. The ramp
+stays, because the ramp is the countdown; it simply no longer begins below
+the point where the drawing does its job.

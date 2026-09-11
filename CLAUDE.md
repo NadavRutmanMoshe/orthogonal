@@ -439,7 +439,14 @@ is the rule.
   changes; `syncMeshes` reuses meshes by cell otherwise.
 - `RAY_W` .46 is the width of the charge telegraph across its own row. It was
   a .06 pane, invisible end-on - which is the view you are in when you are
-  lined up, and the one the fold is taken from.
+  lined up, and the one the fold is taken from. It opens at **.46 opacity**,
+  not .28: below that the warning existed for the whole beat and was only
+  legible for the last of it, which reads as arriving late.
+- **`AIM_EASE` (`js/03-rules.js`) is the whole fight's reaction time**, 1.4,
+  baked into `ph.aim` by `bossPhases()` so `tools/bosssim.js` simulates the
+  fight that ships. A phase's own `aim` is the SHAPE of a fight; this is the
+  dial for when every fight is too fast. `h.lock` is set from `bossAim()`, not
+  from `ph.aim`, so the line on the floor cannot disagree with its own clock.
 - `INK_SETTLE` .18 and `PAPER_LIFT` .20 are the whole 2D look; both have
   been raised and reverted. The paper is derived from the sky.
 - `DEPTH_STEP` .34 charges the first cell of depth outright; `CAM_TILT` .62

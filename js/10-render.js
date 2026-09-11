@@ -2808,8 +2808,16 @@ function drawLines(){
     m.position.set(mx,h.y-.5+hgt/2,mz);
     // full bright as the beat closes: this is the last thing you see before
     // it is standing on you
+    /* IT ARRIVES AT FULL VOLUME AND THEN GETS LOUDER, rather than fading in
+       from nothing. The pane used to open at .28 and spend the first third of
+       the beat too faint to notice against the arena's own floor - so the
+       warning existed for the whole of `aim` and was only legible for the
+       last of it, which is the same thing as arriving late. Reported as the
+       ray needing to come up earlier. The ramp is still here, because the
+       ramp is the countdown; it just no longer starts below the threshold at
+       which the drawing does its job. */
     var t=1-Math.min(1,h.lock/bossAim());
-    m.material.opacity=.28+t*t*.62;
+    m.material.opacity=.46+t*t*.44;
     /* The line is always the charge colour, even when you could answer it.
        It used to turn green whenever the hunter was foldable, and green is
        this game's colour for the goal - for safe - so the one drawing that
@@ -2827,7 +2835,7 @@ function drawLines(){
     m.material.opacity=Math.min(1,m.material.opacity+(h.doom?perilPulse*.32:0));
     // The rim is what carries the pane's shape while the fill is still faint,
     // and it is what is left when the pane has closed to a bar.
-    if(m.userData.edge)m.userData.edge.material.opacity=.45+t*t*.55;
+    if(m.userData.edge)m.userData.edge.material.opacity=.68+t*t*.32;
     m.visible=true;
   }
   for(var k=n;k<lineMeshes.length;k++)lineMeshes[k].visible=false;

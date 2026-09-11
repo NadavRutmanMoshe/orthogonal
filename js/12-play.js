@@ -236,6 +236,11 @@ function bossEnterPhase(announce){
    at all and read, correctly, as being shot from across the arena. */
 function bossAim(){
   if(!B)return 1;
+  /* AIM_EASE is already inside ph.aim - bossPhases() bakes it in, so the
+     simulator reads the same fight the game plays. This is still the one
+     place the number is read: the plant sets h.lock from here and the
+     renderer ramps the line over it, so the line on the floor cannot
+     disagree with the clock it is drawing. */
   if(B.twin)return Math.max(1,B.aim||1);
   var ph=B.phases&&B.phases[bossPhase];
   return Math.max(1,(ph&&ph.aim)||1);
@@ -1207,7 +1212,7 @@ function bossFrame(dt){
          doomedCell(h.x,h.y,h.z,cr)){
         h.shy=(h.shy||0)+1;h.line=null;
       }else{
-        h.shy=0;h.lock=ph.aim;bossFlash=1;
+        h.shy=0;h.lock=bossAim();bossFlash=1;
       }
     }
   }

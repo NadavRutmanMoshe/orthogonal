@@ -175,6 +175,25 @@ function parseK(k){var p=k.split(",");return [+p[0],+p[1],+p[2]];}
    of blocks that rise when it begins, and an optional `cunning` flag. A boss
    written the old way, with a bare `at`, becomes a single phase, so nothing
    downstream needs to know both shapes. */
+/* HOW MUCH LONGER A HUNTER PLANTS THAN ITS PHASE ASKS FOR.
+
+   Every phase carries its own `aim` - the beat between a hunter planting on
+   your line and the charge coming down it - and the whole pacing curve of the
+   campaign is written in those numbers, from SPARRING's 2200ms to BOSS IV's
+   660. The charge was landing before the line on the floor had been read:
+   raised on playtesting, on the owner's report that the ray needed to arrive
+   earlier and leave more time to answer. Both are the same beat. The line is
+   drawn for the whole of `aim`, so a longer window IS an earlier warning -
+   there is no separate delay in front of it to cut.
+
+   A flat multiplier rather than 22 edited numbers, because the curve is
+   right: the fights still tighten in the same proportion, they just start
+   from somewhere a player can reach. Baked into the phase HERE rather than
+   applied where the lock is set, so `tools/bosssim.js` - which re-implements
+   the fight from this file and never loads the game's state - is simulating
+   the fight that ships. Set a phase's own `aim` for the shape of a fight;
+   set this when every fight is too fast. */
+var AIM_EASE=1.4;
 function bossPhases(b){
   var raw=b.phases||[{at:b.at,step:b.step,aim:b.aim}];
   return raw.map(function(p){
@@ -183,7 +202,8 @@ function bossPhases(b){
             add:p.add||[],
             say:p.say||"",              // what the banner says when it begins
             step:p.step||b.step||620,   // ms between hunter steps
-            aim:p.aim||b.aim||700,      // ms it plants on your line before it charges
+            // ms it plants on your line before it charges - see AIM_EASE
+            aim:Math.round((p.aim||b.aim||700)*AIM_EASE),
             /* THE ARENA ATTACKS TOO. A phase may carry the trial's lethal
                plane - {period,fire,beats} - and the fight installs it when the
                phase begins, so the sweep tightens with the pack rather than
