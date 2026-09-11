@@ -81,16 +81,7 @@ var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false
                  against; the two are a genuine question about how much
                  ceremony a death deserves, and it is the owner's to answer by
                  playing both rather than mine to answer by picking one. */
-              killcam:"full",
-              /* WHAT A HUNTER'S HIT SOUNDS LIKE, and it is a setting for the
-                 same reason the kill cam is: it is a question about feel and
-                 the only way to answer it is to be hit three times. "poof" is
-                 soft and airy with no front edge, "kapoosh" puts a hard click
-                 in front of that, "thud" is the impact with no air at all.
-                 See SFX.die() above; the other four deaths are fixed, because
-                 a wall, a sweep, fire and a fall each only ever sounded like
-                 one thing. */
-              bossdie:"poof"};
+              killcam:"full"};
 /* How many times the landing rule is spelled out in words. The rings keep
    drawing forever - they are free and they answer the question faster than a
    sentence does - but a line of text on every fold would be nagging. */
@@ -1077,33 +1068,19 @@ var SFX={
     } else if(kind==="trial"){
       noiseAt(c,t,.34,.030,7000,900,1.5,false);
       blip(240,.2,"sine",.016,120);
-    /* THE BOSS, AND IT IS A SETTING. "kapoosh or poof - give me in settings
-       to try" is the owner's own note: it is a question about how a hit
-       should feel rather than a fact, and the honest way to answer it is to
-       play all three. See `bossdie` in the settings object below.
-
-       POOF: soft and airy, no front edge at all - a thing ceasing to be
-       there. KAPOOSH: a hard click and then the poof spreading out behind
-       it, which is the same event with an impact in front of it. THUD: no
-       air, just the impact - the one this shipped with. */
+    /* "KAPOOSH" - a hunter's hit, and the winner of the three that shipped as
+       a setting for one round (poof, kapoosh, thud - owner's call, and the
+       switch is gone with the question). Two parts: a 30ms click with no body
+       at all, then the poof opening out behind it. The click is what makes it
+       read as being STRUCK rather than as ceasing to exist, which is what
+       plain "poof" gave and what a charge landing is not. */
     } else if(kind==="boss"){
-      var bd=(typeof settings!=="undefined"&&settings.bossdie)||"poof";
-      if(bd==="thud"){
-        noiseAt(c,t,.11,.020,3200,320,1.1,false);
-        blip(116,.34,"triangle",.042,58);
-        blip(232,.09,"sine",.016,150);
-      } else if(bd==="kapoosh"){
-        // the "ka": a click with no body, 30ms and gone
-        noiseAt(c,t,.03,.036,4200,1800,2.4,false);
-        blip(520,.05,"triangle",.030,260);
-        // and the "poosh" opening out behind it
-        noiseAt(c,t+.035,.40,.028,2600,420,.9,true);
-        blip(96,.40,"sine",.032,52);
-      } else {
-        noiseAt(c,t,.34,.030,1900,380,.85,true);
-        blip(104,.38,"sine",.034,56);
-        blip(208,.16,"triangle",.014,96);
-      }
+      // the "ka": a click with no body, 30ms and gone
+      noiseAt(c,t,.03,.036,4200,1800,2.4,false);
+      blip(520,.05,"triangle",.030,260);
+      // and the "poosh" opening out behind it
+      noiseAt(c,t+.035,.40,.028,2600,420,.9,true);
+      blip(96,.40,"sine",.032,52);
     /* FALLING OUT OF THE WORLD, and the default for anything unnamed. The
        one the owner kept: a triangle sinking an octave for the fall, a sine
        under it for weight, a short breath for the front edge. */

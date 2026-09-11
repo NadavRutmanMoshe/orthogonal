@@ -432,13 +432,15 @@
   "kshhh" and "ssss". A plack is 55ms and over, because anything longer stops
   being a clack and becomes a hit.
 
-  **The hunter's one is a SETTING** (`settings.bossdie`: poof, kapoosh, thud),
-  because "give me in settings to try" is the right answer to a question about
-  feel - the same reason the kill cam is a setting. POOF is airy with no front
-  edge at all, KAPOOSH is a hard click with the poof opening out behind it,
-  THUD is the impact with no air, which is what shipped before. **Pressing one
-  plays it**, before the panel is rebuilt: it is the only setting in the game
-  whose value IS a sound, so choosing it and hearing it have to be one action.
+  **The hunter's one was a SETTING for exactly one round**, and that is the
+  part worth keeping. "Give me in settings to try" is the right answer to a
+  question about feel: three candidates went into `settings.bossdie` (poof,
+  kapoosh, thud), pressing one played it on the spot, and the owner played all
+  three and picked. KAPOOSH won - a 30ms click with no body, then the poof
+  opening out behind it - and the switch came out with the question, because a
+  setting kept past its answer is an unmade decision with a control on it.
+  What the click buys is the difference between being STRUCK and ceasing to
+  exist, which is what plain "poof" gave and what a charge landing is not.
 
   **The kill cam's wind-up is
   where this matters most**: `SFX.die()` is the only thing a death's wind-up
