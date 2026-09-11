@@ -1569,7 +1569,19 @@ function sectionPicker(){
   }
   var h="<canvas class='mbg' id='mBg' aria-hidden='true'></canvas>"+
     "<div class='mhead'><div class='mt'><b>I'm Just A Cube</b>"+
-    "<span>"+cleared+" / "+total+" CLEARED</span></div>"+
+    /* THE SCREEN IS NAMED IN ITS SUBTITLE, not in its title. The title is
+       one of the four player-visible strings that carry the game's name
+       (docs/design/chrome.md) and must not be spent on a label; the subtitle
+       was a bare fraction, which says how much is done without ever saying
+       what of. "Worlds" is what these five are called everywhere else now -
+       the map's footer button, the ad that opens one, the toast that says
+       one has opened.
+
+       WITHOUT "CLEARED", which the line used to end on: the header is one
+       line that ellipsises, and on a 327px phone the added word pushed it to
+       "WORLDS · 24 / 105 C…". Every tile under it spells out "N/N CLEARED"
+       in full, so the fraction here is already read as progress. */
+    "<span>WORLDS · "+cleared+" / "+total+"</span></div>"+
     /* NO ? HERE. It opened mapHelp(), which explains the shapes of the map's
        nodes - a disc, a hexagon, a diamond - and there is not one of those on
        this screen. Reported as a button that does nothing, which from the
@@ -1667,7 +1679,7 @@ function secGridDraw(){
     tap(el,function(){
       grantSkip(LEVELS[SECTIONS[s].at].name);
       secGridDraw();
-      flash("section opened · no stars for a skip");
+      flash("world opened · no stars for a skip");
     });
   });
 }
@@ -1721,7 +1733,7 @@ function levelPicker(n){
         "<div class='mbody' id='mBody'><div class='mcard' id='mCard'></div>"+
         "<div id='mtrail'><svg></svg></div></div>"+
         "<div class='pfoot'>"+
-        "<button id='pkBack'>"+gridIcon()+"SECTIONS</button><button id='pkClose'>CLOSE</button></div>"+
+        "<button id='pkBack'>"+gridIcon()+"WORLDS</button><button id='pkClose'>CLOSE</button></div>"+
         "<div class='msheet' id='mSheet'></div>";
   showPanel(h,"map");   // syncCorners() adds .map and hides the corner total
   bind("pkBack",sectionPicker);
@@ -1762,8 +1774,8 @@ function mapDraw(spans){
     "<span>"+sp.got+"/"+sp.max+" ★</span></div>"+
     /* NO LIMITS: the same door, without the toll. */
     (mapSectionSkippable(n)
-      ? "<button class='skipsec' id='mSecAd'>"+(noLimits()?"START THIS SECTION":
-          adIcon()+"START THIS SECTION · WATCH 3 ADS")+"</button>"
+      ? "<button class='skipsec' id='mSecAd'>"+(noLimits()?"START THIS WORLD":
+          adIcon()+"START THIS WORLD · WATCH 3 ADS")+"</button>"
       : "")+
     /* THE LOCK HAS TO SAY WHAT IS HOLDING IT. This is the shelf, and the one
        thing a player cannot work out from anywhere else in the game is which
@@ -1788,7 +1800,7 @@ function mapDraw(spans){
   if(sa)tap(sa,function(){
     grantSkip(LEVELS[sec.at].name);
     mapDraw(sectionSpans());
-    flash("section opened · no stars for a skip");
+    flash("world opened · no stars for a skip");
   });
 
   /* Laid out from the last level down, so the first sits at the *bottom* and
@@ -2042,7 +2054,7 @@ function mapSheet(i){
        the shelf neither is true, and telling somebody to skip ahead onto the
        one thing an ad cannot open is how a lock becomes a dead end. */
     : mapSkippable(i)?"locked - clear what is in front of it, or skip ahead"
-    : "locked - the shelf is still sealed";
+    : "locked - this world is still sealed";
 
   var acts,note;
   if(st==="locked"&&mapSkippable(i)){
@@ -2064,7 +2076,7 @@ function mapSheet(i){
     acts=(lf.length&&!mapLocked(lf[0])
         ? "<button class='go' id='mBossTo'>GO TO "+esc(bossShort(LEVELS[lf[0]]))+"</button>"
         : "")+"<button class='qt' id='mNo'>CLOSE</button>";
-    note="This shelf opens when every boss is <b>beaten</b> \u2014 the one "+
+    note="This world opens when every boss is <b>beaten</b> - the one "+
          "thing an ad cannot buy."+
          (lf.length?" Still standing: <b>"+esc(bossesLeftSay())+"</b>. A boss "+
           "you skipped still counts as standing.":"");
@@ -2120,7 +2132,7 @@ function mapHelp(){
     row("mtrial",mapShape("trial")+"<span>I</span>",
         "<b>Trial</b> \u2014 three cores, on a clock.")+
     row("mboss",mapShape("boss")+"<span>I</span>",
-        "<b>Boss</b> \u2014 three phases. It closes the section.")+
+        "<b>Boss</b> - three phases. It closes the world.")+
     "</div><div class='mn'>Ads buy <b>progress, never score</b>. A skip awards "+
     "no stars, opens that level alone, and leaves it playable.</div>"+
     "<div class='ma'><button class='qt' id='mNo'>CLOSE</button></div>";

@@ -149,6 +149,13 @@ Block format `[x,y,z,k]`: 0 stone, 1 water (code says `glass`), 2 anchor,
   gates - lethal columns and depth - and from nothing else. It is a hexagon on
   the map, earns a tick rather than stars, and `bossesLeft()` skips it, so it
   gates nothing.
+- **A section is called a WORLD to the player.** `SECTIONS`, `secXxx()` and
+  `mapSecOf()` keep their names in code, but no string a player reads says
+  "section" any more: the map's footer button is `WORLDS`, the chooser's
+  subtitle is `WORLDS · n / m`, the ad says `START THIS WORLD`, and the
+  toast says `world opened`. The word "section" survives in one player-visible
+  string on purpose - the composer's advice about a *section of your solution*,
+  which is a different thing.
 - **`LEVELS` opens `sectionPicker()`, not the map.** One section per visit;
   the map has no tab strip and the way to another section is out and back in.
   PROLOGUE has no tile and no map (`secPickable()`) - it is the tutorial, and

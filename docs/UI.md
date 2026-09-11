@@ -283,7 +283,7 @@ named). Undoing one of these needs the paragraph.
   way its own screens are built). **Header:** title + subtitle left; then, always in this
   order and always right-aligned, `?` (only where help exists), the star
   total (`.mtot`), `✕`. **Footer** (`.pfoot` in `80-panel-tall.css`): two
-  equal buttons - left goes UP one level (`HOME`, or `SECTIONS` on the map),
+  equal buttons - left goes UP one level (`HOME`, or `WORLDS` on the map),
   right is `CLOSE`. Nothing else goes in either row. `campaignStars()` is the
   one source for the number the chooser and the map both print.
 - **LEVELS opens the chooser, not the map.** `sectionPicker()` is a 2x2 of
@@ -292,7 +292,7 @@ named). Undoing one of these needs the paragraph.
   back into it is REPLAY TUTORIAL in the menu. `levelPicker()` clamps off
   section 0 for the same reason. There is no tab strip on the map any more: one section per visit,
   and the way to another is out through the chooser (`‹` in the map header,
-  `SECTIONS` in its footer). That is what stopped a section rebuilding
+  `WORLDS` in its footer). That is what stopped a section rebuilding
   in place under an already-open map. A locked tile drains, takes chains and
   a padlock, and carries the ad chip when `mapSectionSkippable()`.
 - **`mapFocus()` scrolls `#mBody` and nothing else.** `scrollIntoView` walks
