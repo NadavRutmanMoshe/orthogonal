@@ -738,3 +738,37 @@ warning was up and could not be seen, which is indistinguishable from a
 warning that came late. It opens at .46 now with the rim at .68. The ramp
 stays, because the ramp is the countdown; it simply no longer begins below
 the point where the drawing does its job.
+
+
+## And the delay was real, it was just not in the drawing
+
+The telegraph was reported as late a second time, after the window had already
+been lengthened and brightened. It was right, and the first diagnosis was
+looking in the wrong place: the *drawing* has no delay - a hunter plants and
+the pane is there on the same frame - but the **plant** did. The hunter asked
+"am I on a line?" once per `step`, on the same beat that moved its feet, so
+stepping into its row a moment after that beat bought most of a second of
+silence before anything appeared. From the player's side that is exactly
+indistinguishable from the ray being slow, which is why it was reported as
+that twice.
+
+**The beat is the walk; the look is every frame.** Only the feet are still on
+the clock. Standing up, the ray appears on the frame you align, which is what
+was asked for - and combined with `AIM_EASE` it is earlier *and* longer rather
+than merely earlier.
+
+Two things had to hold while that changed:
+
+* **The plane keeps the beat.** Flat, you are a whole silhouette column and
+  every hunter sharing it has a line by definition, so asking per frame there
+  would plant the entire pack on the instant of the fold. That is a different
+  fight and not the one anyone reported. `beat||!flat` is the whole gate.
+* **`shy` counts beats, not frames.** A cunning hunter's patience budget is
+  measured in its own steps; charged every frame it would spend `hold`
+  refusals in a fiftieth of a second and plant immediately, which is phase
+  three's design deleted by accident.
+
+`tools/bosssim.js` makes the identical split, for the reason it was taught
+`still:true`: a simulator that models a slower opponent than the one that
+ships is proving a fight nobody plays. Both its assertions still hold - the
+idle run loses every fight, the duelling run wins every fight.

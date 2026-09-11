@@ -168,14 +168,19 @@ function sim(lv,policy,ms){
         continue;
       }
       h.ms+=TICK;
-      if(h.ms<h.step)continue;
-      h.ms=0;
+      /* THE BEAT IS THE WALK; THE LOOK IS EVERY TICK. Same split the game
+       * makes in bossFrame(): standing up, a hunter plants on the tick the
+       * player steps into its row rather than on its own next step, because
+       * the ray is what the player is reading and it must not wait out a
+       * beat it had nothing to do with. Modelled here or this file is
+       * measuring a fight nobody plays - the same reason it was taught about
+       * `still`. In the plane it keeps the beat, exactly as the game does.
+       */
+      const beat=h.ms>=h.step;
+      if(beat)h.ms=0;
       /* A still hunter skips the walk and nothing else - it still reads its
-       * line on this beat and still plants and charges. Modelled here because
-       * a walking hunter simulated against a board authored with a fixed one
-       * measures a fiction, which is the mistake this whole file exists to
-       * avoid. See `still` in bossPhases(). */
-      if(!ph().still){
+       * line and still plants and charges. See `still` in bossPhases(). */
+      if(beat&&!ph().still){
       const goal=goalFor(h);
       // Three grades, exactly as the game asks it: 0 no line, 1 a line, 2 a
       // line the player cannot fold on from where they stand.
@@ -191,11 +196,15 @@ function sim(lv,policy,ms){
       }
       if(grace<=0&&touched()){hit="reached";break;}
       }
-      if(lineOn(h)){
+      if((beat||!flat)&&lineOn(h)){
         // Declines a line the player could answer, but only while declining
         // is cheap - the same patience valve the game uses, and without it
         // this policy would be measuring an opponent that never attacks.
-        if(ph().cunning&&!flat&&h.shy<ph().hold&&doomed(h.x,h.y,h.z))h.shy++;
+        // `shy` counts BEATS, not ticks: charged every tick it would burn the
+        // whole patience budget in a fiftieth of a second.
+        if(ph().cunning&&!flat&&h.shy<ph().hold&&doomed(h.x,h.y,h.z)){
+          if(beat)h.shy++;
+        }
         else {h.shy=0;h.lock=ph().aim;}
       }
     }

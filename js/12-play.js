@@ -1176,13 +1176,21 @@ function bossFrame(dt){
       continue;
     }
     h.ms+=dt;
-    if(h.ms<h.step)continue;
-    h.ms=0;
+    /* THE BEAT IS THE WALK. It used to be the walk AND the look, which is
+       where the delay the telegraph was blamed for actually lived: a hunter
+       only asked "am I on a line" once every `step` - 570ms to 1400ms
+       depending on the phase - so stepping into its row a moment after its
+       beat bought you most of a second of silence before the ray appeared.
+       From the player's side that is indistinguishable from the drawing
+       being late, and it was reported as exactly that twice. The look is
+       every frame now (below); only the feet are still on the clock. */
+    var beat=h.ms>=h.step;
+    if(beat)h.ms=0;
     /* A STILL HUNTER SKIPS THE WALK AND NOTHING ELSE - see `still` in
        bossPhases(). It re-reads its line on this same beat and plants on it
-       exactly as the others do, so the only thing it cannot do is follow you.
+       exactly as the others do, so the only thing it cannot do is walk.
        The touch check goes with the walk: it cannot have arrived anywhere. */
-    if(!ph.still){
+    if(beat&&!ph.still){
       var goal=huntGoal(h);
       /* Three grades of square, not two - see bossNext. A cunning hunter
          rates a line you cannot answer above a line you can, which is the
@@ -1205,21 +1213,44 @@ function bossFrame(dt){
       if(nx&&!hunterAt(nx.x,nx.y,nx.z,i)){h.x=nx.x;h.y=nx.y;h.z=nx.z;}
       if(hunterTouching(h)){bossHurt("it reached you",h);return;}
     }
-    // Lined up, so it plants. The beat that follows is the whole fight.
-    h.line=huntLine(h,cr);
-    if(h.line){
-      /* A cunning one declines a line you could answer on the spot - but only
-         while declining is cheap. After `hold` refusals it plants anyway,
-         which is the same patience valve the twin uses and it is here for the
-         same reason: an opponent that will not attack from anywhere you can
-         punish stops attacking, and a fight where nobody can act is design
-         3's freeze wearing a new costume. It never stops *walking*, so it
-         closes on you the whole time it is being fussy. */
-      if(ph.cunning&&!flat&&(h.shy||0)<ph.hold&&
-         doomedCell(h.x,h.y,h.z,cr)){
-        h.shy=(h.shy||0)+1;h.line=null;
-      }else{
-        h.shy=0;h.lock=bossAim();bossFlash=1;
+    /* LINED UP, SO IT PLANTS - AND THIS IS ASKED EVERY FRAME.
+
+       Standing up, the ray now appears on the frame you step into a hunter's
+       row rather than on that hunter's next beat, which is the whole of the
+       reported "it takes some time from when I am aligned to the ray
+       appearing". What the player gets in exchange for the warning arriving
+       instantly is the warning being longer: AIM_EASE holds every plant 1.4x
+       the phase's own `aim`, so this is earlier AND slower, not merely
+       earlier.
+
+       NOT IN THE PLANE. Flat, you are a whole silhouette column and every
+       hunter sharing it has a line by definition - asking every frame there
+       would plant the entire pack on the instant of the fold, which is a
+       different fight and not the one that was reported. The plane keeps the
+       beat it always had. */
+    if(beat||!flat){
+      h.line=huntLine(h,cr);
+      if(h.line){
+        /* A cunning one declines a line you could answer on the spot - but
+           only while declining is cheap. After `hold` refusals it plants
+           anyway, which is the same patience valve the twin uses and it is
+           here for the same reason: an opponent that will not attack from
+           anywhere you can punish stops attacking, and a fight where nobody
+           can act is design 3's freeze wearing a new costume. It never stops
+           *walking*, so it closes on you the whole time it is being fussy.
+
+           `shy` STILL COUNTS IN BEATS, not in frames. It is a patience
+           budget measured in the hunter's own steps, and incrementing it
+           every frame would burn `hold` refusals in a fiftieth of a second
+           and make every cunning hunter plant immediately - which is the
+           phase-three design deleted by accident. */
+        if(ph.cunning&&!flat&&(h.shy||0)<ph.hold&&
+           doomedCell(h.x,h.y,h.z,cr)){
+          if(beat)h.shy=(h.shy||0)+1;
+          h.line=null;
+        }else{
+          h.shy=0;h.lock=bossAim();bossFlash=1;
+        }
       }
     }
   }

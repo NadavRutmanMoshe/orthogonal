@@ -446,6 +446,13 @@ is the rule.
   lined up, and the one the fold is taken from. It opens at **.46 opacity**,
   not .28: below that the warning existed for the whole beat and was only
   legible for the last of it, which reads as arriving late.
+- **A hunter's BEAT is its walk; its LOOK is every frame.** Standing up, it
+  plants on the frame you step into its row rather than on its own next step -
+  `beat||!flat` in `bossFrame()` - so the ray cannot be up to a whole `step`
+  (570-1400ms) late. The plane keeps the beat: flat you are a whole column and
+  every hunter sharing it has a line, so asking per frame there would plant the
+  pack on the instant of the fold. `shy` still counts BEATS or a cunning
+  hunter burns `hold` in a frame. `bosssim.js` makes the same split.
 - **`AIM_EASE` (`js/03-rules.js`) is the whole fight's reaction time**, 1.4,
   baked into `ph.aim` by `bossPhases()` so `tools/bosssim.js` simulates the
   fight that ships. A phase's own `aim` is the SHAPE of a fight; this is the
