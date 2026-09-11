@@ -1,10 +1,10 @@
-/* I'm Just A Cube — css/65-replay.css
-   The kill cam, end to end: the strike sting, then the replay chrome —
+/* I'm Just A Cube - css/65-replay.css
+   The kill cam, end to end: the strike sting, then the replay chrome -
    bars, wash, label.
    Loaded in the order listed in index.html; see docs/UI.md for the map of
    screens to files. */
 /* ============================================================
-   THE STRIKE STING — the loudest 900ms in the game
+   THE STRIKE STING - the loudest 900ms in the game
 
    A core going down, or one of your lives going, is the only moment here
    that is allowed to shout, and until now it said it with a screen shake
@@ -14,13 +14,13 @@
 
    It is DOM and not scene geometry for one reason: it has to cover the whole
    screen at the most expensive instant the game has (a hit, a shake, a
-   slow-mo and — a beat later — a replay), and a full-bleed CSS animation on
+   slow-mo and - a beat later - a replay), and a full-bleed CSS animation on
    four elements costs the compositor nothing while a screenful of new
    meshes costs the frame. Same argument as the replay's wash below.
 
    One colour drives all of it. `--k` is the goal's teal on a kill (which is
    already what a doomed hunter turns) and the pack's red on a death (which
-   is already what a hunter is), so the sting never has to be read — it is
+   is already what a hunter is), so the sting never has to be read - it is
    the colour of who just lost, and the word underneath only confirms it.
    ============================================================ */
   .bsting{position:fixed;inset:0;z-index:19;pointer-events:none;
@@ -68,8 +68,8 @@
     12%{opacity:.9}
     100%{opacity:0;scale:5.2}}
   /* THE WORD, and it is the whole reason this exists. It arrives far too big
-     and lands on 1 — the reverse of a thing growing at you, which reads as a
-     hit rather than as an animation — then holds still long enough to be
+     and lands on 1 - the reverse of a thing growing at you, which reads as a
+     hit rather than as an animation - then holds still long enough to be
      read and lifts away. */
   .bsword{position:absolute;left:0;right:0;top:46%;translate:0 -50%;
     text-align:center;
@@ -147,7 +147,7 @@
     transition:opacity .28s ease}
 
 /* ============================================================
-   THE KILL CAM'S WIND-UP — snow, then a camcorder, then the film
+   THE KILL CAM'S WIND-UP - snow, then a camcorder, then the film
 
    A replay that begins the instant you die is the game showing you a thing;
    a replay that begins with the signal dropping out and a camera being

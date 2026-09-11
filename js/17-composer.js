@@ -1,11 +1,11 @@
 "use strict";
-/* I'm Just A Cube — 17-composer.js
+/* I'm Just A Cube - 17-composer.js
    Solution-first level generation.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
 
 /* ============================================================
-   COMPOSER — build a level backwards from its solution.
+   COMPOSER - build a level backwards from its solution.
 
    You dictate the move sequence you want the player to make.
    For each move we add the least geometry that makes exactly
@@ -37,7 +37,7 @@ function synthesize(script,seed,partial){
       {set.add(k);blocks.push(anchor?[x,y,z,2]:glass?[x,y,z,1]:[x,y,z]);}
   }
   // Geometry placed to satisfy a move in the volume doesn't need to appear in
-  // the plane, so making some of it glass keeps the silhouette clean — which
+  // the plane, so making some of it glass keeps the silhouette clean - which
   // is exactly where shortcuts come from.
   function maybeGlass(){return rnd()<0.45;}
   var useAnchors=(seed%3)!==0;   // some layouts get anchors, some don't
@@ -285,7 +285,7 @@ function compose(script,tries){
 }
 
 /* ------------------------------------------------------------
-   COMPOSE MODE — dictate the solution, watch the level appear
+   COMPOSE MODE - dictate the solution, watch the level appear
    ------------------------------------------------------------ */
 var script=[],composeMode="3";
 

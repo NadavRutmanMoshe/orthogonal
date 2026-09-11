@@ -1,5 +1,5 @@
 "use strict";
-/* I'm Just A Cube — 14-editor.js
+/* I'm Just A Cube - 14-editor.js
    Tap-to-place level editor and its verify/minimize tools.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */

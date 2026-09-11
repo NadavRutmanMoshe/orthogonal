@@ -1,5 +1,5 @@
 "use strict";
-/* I'm Just A Cube — 01-coords.js
+/* I'm Just A Cube - 01-coords.js
    Camera axes and the two tiny helpers everything else is built on.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */

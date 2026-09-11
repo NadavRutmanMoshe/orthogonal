@@ -1,4 +1,4 @@
-# I'm Just A Cube — design history
+# I'm Just A Cube - design history
 
 Every version of a mechanic that was tried and dropped, and what it cost to
 find out. `CLAUDE.md` is the memory of how the game works *now*; this is the
@@ -7,14 +7,14 @@ memory of how it got there.
 **Read this before redesigning something.** Most of what is here looked
 correct on paper, and several of these ideas will look attractive again the
 next time the same problem comes round. Nothing in this file is a rule you
-have to follow — it is a record of what has already been paid for.
+have to follow - it is a record of what has already been paid for.
 
 ---
 
 ## The boss: five designs
 
-The current fight — a pack of hunters, a charge down a shared line, killed by
-folding while one shares your silhouette column — is the fifth. The four
+The current fight - a pack of hunters, a charge down a shared line, killed by
+folding while one shares your silhouette column - is the fifth. The four
 before it, in order:
 
 **1. Turn-based, walk to a marker.** Every action you took advanced the boss
@@ -25,7 +25,7 @@ to exist. It did not feel like a fight. The clock that never runs while you
 think turns a boss into a puzzle with a scary skin.
 
 **2. Real-time, walk to a marker.** The same sweep, on the wall clock. Much
-better pressure, and it cost the proof — a search over moves cannot say
+better pressure, and it cost the proof - a search over moves cannot say
 anything about a clock that advances while you think. Still an objective
 wearing a boss costume: there was nothing to fight, only somewhere to be.
 *This design is not dead. It is the trial now, where being an objective on a
@@ -39,8 +39,8 @@ clock is exactly the right thing to be.*
 > left behind as a no-op, is real again for it. See `docs/design/bosses.md`.
 
 **3. Crush it on a static line.** A real attack at last, but the
-vulnerability was a property of the *floor* — stand in the right place, wait,
-fold — so the fight became manipulating the floor rather than the opponent.
+vulnerability was a property of the *floor* - stand in the right place, wait,
+fold - so the fight became manipulating the floor rather than the opponent.
 Making the boss avoid the lethal lines only taught it to freeze, which reads
 as broken, and produced a new two-button loop instead of removing the old one.
 
@@ -49,30 +49,30 @@ machine-checkable, and genuinely a duel. It read as a duel with a machine
 that spent most of the fight walking into position: the opening was something
 you waited for rather than something you made, and one opponent shuffling for
 a firing angle cannot be fast. The owner's word for it was "weird", which is
-the right word — correct, and inert.
+the right word - correct, and inert.
 
 **The lesson, paid for four times: a vulnerability that does not come out of
 the boss's own behaviour is a condition to farm.** In the fifth design the
 kill and the attack are the same event on the same square, so there is no
-opening to wait for and none to decline — declining is what being hit is.
+opening to wait for and none to decline - declining is what being hit is.
 
 ### What the simulator found, which nothing else would have
 
 The fifth design itself took three passes. `tools/bosssim.js` rejected the
 first two before a human ever saw them, and each failure looked fine on paper:
 
-- **Crush them against the pillars** — fold, and anything standing in any
+- **Crush them against the pillars** - fold, and anything standing in any
   filled silhouette column dies. A prettier rule, and it does not work: a
   pillar's shadow is a whole *line* across the arena, so every approach has
   to cross one, and a player who never moves simply collects them as they
   arrive. The idle policy won all four arenas standing in a corner. Making
-  the kill require *your* column is what put the player back in the fight —
+  the kill require *your* column is what put the player back in the fight -
   the one thing you cannot harvest from a corner is alignment you did not go
   and get.
 - **Hunters that dodge your fold.** Two ways to get this wrong, both
   measured. Weight avoidance heavily and they circle forever rather than
   cross a line: against a player standing where every approach was covered,
-  both sides stopped dead — design 3's freeze in a new costume, found in one
+  both sides stopped dead - design 3's freeze in a new costume, found in one
   run at three lives, no kills, nobody within reach of anybody. Weight it as
   a tie-break instead and they stroll into a shadow on the way to a player
   who never moved. In the end they stopped dodging altogether, because once
@@ -83,7 +83,7 @@ first two before a human ever saw them, and each failure looked fine on paper:
   arena in under five seconds. The charge is what made a line cost something
   to stand on.
 - **Spawns that shared a column.** Two hunters whose spawn cells shared an x
-  or a z crush each other for free the first time anyone folds — and they
+  or a z crush each other for free the first time anyone folds - and they
   respawn together after every hit, so it was a standing gift, renewed.
   Found by the idle policy winning a fight without taking a step.
   `bossArena()` now rejects it.
@@ -94,13 +94,13 @@ The fifth design survived. What changed in the end was not the fight but its
 *shape*, and the argument is worth keeping because it applies to anything
 real-time this game ever grows.
 
-Every dial the fight exposed — `step`, `aim`, hunter count, `creep` — moves
+Every dial the fight exposed - `step`, `aim`, hunter count, `creep` - moves
 execution difficulty: how fast you must act once you already know what to do.
 Orthogonal's verb set is three slow buttons. There is no dexterity ceiling to
 climb toward, so tightening the clock does not make a player better; it
 shortens the window for a decision that takes as long as it takes. Every
 "is this too hard or too easy" question ran into that wall, and the honest
-answer — recorded in this file's own limitations for a long time — was that
+answer - recorded in this file's own limitations for a long time - was that
 nobody knew, because the only available knob was the wrong one.
 
 The fights also had no arc. Three hunters, three kills, all the same kill;
@@ -118,34 +118,34 @@ caught:
 
 - **The crush verdict has to be taken before the fold resolves.** Clearing a
   phase raises that phase's pillars, so asking `R` afterwards asks a world
-  that has grown one since the player committed — and the player is crushed
+  that has grown one since the player committed - and the player is crushed
   by the reward for the kill they just made. This is *precisely* the twin's
   old respawn bug, in a new place, found only because it had already been
   written down. Which is the argument for this file.
 - **A phase is nearly always cleared from inside the plane**, because folding
   is how you kill. So "a pillar rising into an occupied square" is the common
-  case, not an edge case, and what has to rise with it is `flatPos.y` — the
-  height `doUnflatten` will land you at — rather than `player.y`.
+  case, not an edge case, and what has to rise with it is `flatPos.y` - the
+  height `doUnflatten` will land you at - rather than `player.y`.
 - **`bosssim`'s duellist climbs.** Given a pillar between it and a hunter it
   walks up onto it and then oscillates on and off forever, one storey above
   anything `foldKills` could reach, because its move scoring had no term for
   height. It read as two unwinnable arenas. The fix is a fact about the rules
-  rather than a heuristic — a square at the wrong `y` cannot be attacked from
-  at all — but the near-miss is the point: an arena was one edit away from
+  rather than a heuristic - a square at the wrong `y` cannot be attacked from
+  at all - but the near-miss is the point: an arena was one edit away from
   being redesigned to satisfy a broken instrument.
 
 **The first playtest of the phased fights found three things, and only one of
 them was a matter of taste.**
 
 - **"It shoots me."** The charge is telegraphed by a line drawn along the row,
-  ramping in opacity as the beat closes — except the ramp divided by `B.aim`,
+  ramping in opacity as the beat closes - except the ramp divided by `B.aim`,
   and `aim` had just moved onto the phase. `Math.max(1, undefined)` is `NaN`,
   a `NaN` opacity does not throw, and the line simply stopped being drawn. So
   the charge really did arrive out of nowhere. Worth stating as a rule: a
   telegraph that fails silently is worse than no telegraph, because the thing
   it explains keeps happening and the player learns the fight is unfair.
 - **And when the line *was* drawn, it lied.** It turned green whenever the
-  hunter was foldable — meaning "this line is yours", which is a lovely idea
+  hunter was foldable - meaning "this line is yours", which is a lovely idea
   and the wrong drawing to put it on. Green is the goal colour, so the
   telegraph announced *safe* at the exact instant the danger peaked, and the
   second report was that a green line did not seem to indicate anything. The
@@ -156,19 +156,19 @@ them was a matter of taste.**
 - **A pillar rising in phase 3 buried phase 3.** The phase whose job was to
   announce "the opponent has changed" also changed the arena, so it read as
   more of phase 2. All geometry now arrives in phase 2. This also made phases
-  3 and 4 a controlled comparison for the first time — same board, one smarter
-  against two ordinary — which is the entire reason both exist.
+  3 and 4 a controlled comparison for the first time - same board, one smarter
+  against two ordinary - which is the entire reason both exist.
 - **The spawn was campable.** Stand beside it, fold as each arrival appears,
   and the fight is a queue. Clearing a phase now returns the player to the
-  start square — a phase boundary and not a kill, because the queue being
+  start square - a phase boundary and not a kill, because the queue being
   farmed was the one *between* phases, where each new hunter arrives on the
   same cell. Inside a phase there is nothing to farm, so killing one of phase
   4's two moves nobody; taking that ground back would charge the player for
   playing well, which is the thing a hit is careful not to do. Two things fell
   out of the rule immediately: it must move you and do
-  *nothing else* — an early version also stood you up and gave grace, and
+  *nothing else* - an early version also stood you up and gave grace, and
   since being flat is what a fold costs, that made folding free and the idle
-  policy won all four arenas without being hit once — and a spawn near the
+  policy won all four arenas without being hit once - and a spawn near the
   start square stopped being decoration and became a scheduled free hit, since
   the start is now where the player keeps reappearing. Every second spawn in
   the game was 2–3 squares from it. `bossArena()` now requires 5.
@@ -184,7 +184,7 @@ on. Obviously right, and it pulled a thread that ran through the whole fight.
 **Being flat after a kill was the anti-camp mechanism, and nobody knew.** The
 send-home rule had deliberately left the player in the plane, on the argument
 that exposure is what a fold costs. Standing them up instead made `bosssim`'s
-idle policy — which never takes a step — go from dying in phase 2 to winning
+idle policy - which never takes a step - go from dying in phase 2 to winning
 all four arenas without being hit once. The measurement was unambiguous and
 the cause was not the exposure at all: staying flat meant the *unfold* chose
 where you landed by the nearest-camera rule, so a stationary player never got
@@ -209,7 +209,7 @@ the single silhouette column a stationary player can fold on, which is why
 standing still won: half of its line-seeking was suicide. Preferring the
 unanswerable line means the answer is a rotation, and a policy that never
 rotates loses. `cunning` keeps its identity as the *refusal to plant* on a
-line you could answer — measured at 18–21 declines in phase 3 against a
+line you could answer - measured at 18–21 declines in phase 3 against a
 passive player, and none in phase 2.
 
 This is a real erosion of the fifth design's cleanest sentence, "the square it
@@ -227,25 +227,25 @@ full duellist run produces zero declines; the same phase against a passive
 policy produces 18–21. That the mechanic fires is checked. Whether it is worth
 having is a playtest, which is the agreement.
 
-### The twin, retired — and how to bring it back
+### The twin, retired - and how to bring it back
 
 `BOSS I` was the twin: one creature with two bodies, each hunting your
 reflection through a centre, killed by folding while the halves shared a
 silhouette column. Playtesting called it too hard and it was parked. The
-diagnosis, made when the phases went in, is that it was never too *fast* — it
+diagnosis, made when the phases went in, is that it was never too *fast* - it
 asks you to compose three transformations in your head (reflect through a
 centre, project along the current axis, remember the centre moved) under a
 clock. Lowering `step` from 640 would not have touched that. If it comes back,
 it should be one phase of something else, not a whole fight: the reflection is
 a lovely flourish and a punishing steady state.
 
-All of its code is still live and exercised — `makeBoss`'s `twin` branch,
+All of its code is still live and exercised - `makeBoss`'s `twin` branch,
 `twinSpawn`, `twinMirror`, `twinAligned`, `bossNext`'s `avoid` path, and the
 twin arm of `bossArena`. Only the level data went. It was:
 
 ```js
-{name:"BOSS I — The Twin",
-   hint:"One creature, two bodies, mirrored through the amber cross. Bait a half onto the bright arm, step off it yourself, and fold — they land in the same square.",
+{name:"BOSS I - The Twin",
+   hint:"One creature, two bodies, mirrored through the amber cross. Bait a half onto the bright arm, step off it yourself, and fold - they land in the same square.",
    boss:{twin:true,step:640,floorStep:340,creepEvery:7000,
          cores:[{c:[4,1,3],a:[7,1,1]},
                 {c:[3,1,4],a:[6,1,6]},
@@ -256,8 +256,8 @@ twin arm of `bossArena`. Only the level data went. It was:
    start:[1,1,3]},
 ```
 
-Its pillars were kept: they are what rises in phase 2 of `BOSS I — The Hunt`,
-because a symmetric arrangement is the honest one to teach on — no corner is
+Its pillars were kept: they are what rises in phase 2 of `BOSS I - The Hunt`,
+because a symmetric arrangement is the honest one to teach on - no corner is
 quietly better than another. Restoring the twin means pasting the block back
 and adding a `LEVEL_RENAMES` row; **do not delete the rows already there**,
 and remember `migrateNames()` does not chase chains, so every row pointing at
@@ -272,8 +272,8 @@ the game no longer understands. The four arenas are authored by hand in
 
 ## The trial
 
-Design 2 above, put where it belongs. The argument that killed it as a boss —
-an objective wearing a boss costume is not a fight — says nothing against the
+Design 2 above, put where it belongs. The argument that killed it as a boss -
+an objective wearing a boss costume is not a fight - says nothing against the
 sweep itself, and as a change of pace four or five levels into a section it
 is exactly right.
 
@@ -304,8 +304,8 @@ except one. Anchors and amber are shelved whole in the EXTRA section, so
 turning them back on is a data move rather than a rebuild. The judgement was
 that 40 good levels beat 60 that repeat themselves.
 
-The exception is `01 — Fill the gap`, which is gone for good. Its solution
-was `→ → FLAT → → → → POP` against the tutorial's `→ FLAT → → → POP` — the
+The exception is `01 - Fill the gap`, which is gone for good. Its solution
+was `→ → FLAT → → → → POP` against the tutorial's `→ FLAT → → → POP` - the
 same verbs in the same order, rotation locked in both, from the same square.
 It was the tutorial with a wider gap. **When a level duplicates a tutorial
 step, the tutorial wins**, because the tutorial is unscored and teaching a
@@ -325,16 +325,16 @@ that table, never rewrite it.**
 levels at its head, which pushed every number in the game and needed 61 new
 rename entries on top of the 152 already there. That was done by a script,
 and the script is the interesting part: it composed the table rather than
-regenerating it — every existing key kept its key and had its *value*
-re-pointed — and then refused to write unless two invariants held. No key
+regenerating it - every existing key kept its key and had its *value*
+re-pointed - and then refused to write unless two invariants held. No key
 dropped, and no value also a key pointing somewhere else. The second one
 matters because `migrateNames()` makes a single pass in enumeration order: a
 chain `A → B` alongside `B → C` half-applies depending on which it happens to
 reach first, and the failure is silent and only visible to a player with an
 old save.
 
-It caught something on the first run. Three levels — `The Last Step`, `Turn
-Twice More`, `The Last Placement` — came back round to a number they had worn
+It caught something on the first run. Three levels - `The Last Step`, `Turn
+Twice More`, `The Last Placement` - came back round to a number they had worn
 in an *earlier* numbering, so an old key ended up mapping to itself. That is
 harmless (`migrateNames` skips `old===now`, and a save under that name is
 already correct) but it is indistinguishable from a real chain if you only
@@ -347,7 +347,7 @@ happen again: numbers are a small space and this campaign keeps reshuffling.
 
 For a long time the first thing after the tutorial scored 21 and the third
 scored 33. A new player was in `brutal` by their fourth level, in the section
-whose whole job is teaching — while sections II, III and IV each opened with
+whose whole job is teaching - while sections II, III and IV each opened with
 two or three gentle ones. Nobody designed that; it is what happens when levels
 are cut and reshuffled and the front of the campaign is the part you stop
 looking at because you have solved it a hundred times.
@@ -358,21 +358,21 @@ measurement was not being read.** The solver gives an exact optimal path for
 every level; the tier is a formula over it. A step of more than about +10 in
 the opening section is a fact you can print, not a thing to argue about.
 
-The four levels that filled it — 14, 16, 19, 28, around the existing 21 — were
+The four levels that filled it - 14, 16, 19, 28, around the existing 21 - were
 designed against the harness rather than by feel, and two of the four came out
 wrong on the first try in a way that is worth recording:
 
-- **`02 — The Near One`** teaches that you return on the block nearest the
+- **`02 - The Near One`** teaches that you return on the block nearest the
   camera by putting a decoy in the goal's column. The first version was
   solvable in seven moves by folding, popping onto the decoy, turning 180°
-  and popping again — because from the far side the far block *is* the near
+  and popping again - because from the far side the far block *is* the near
   one. The decoy had become a stepping stone. It only stopped being one once
   the bridge blocks' depths were chosen so that no second axis lines anything
   up, which is a constraint the level's own view never shows you.
-- **`05 — Halfway Across`** is meant to need two folds. The first version
+- **`05 - Halfway Across`** is meant to need two folds. The first version
   needed one: the plane was a single connected staircase, so the player could
   climb *within* the plane and walk the whole way. Forcing the second fold
-  needed a wall in the plane — two blocks stacked, no step up — placed at a
+  needed a wall in the plane - two blocks stacked, no step up - placed at a
   depth the volume route does not pass through. Same blocks on the route and
   they block both.
 
@@ -384,21 +384,21 @@ get machine-verified, always.
 
 ## Teaching rule 5: three attempts, and what a tutorial step can be
 
-Rule 5 — *you come back on the block at the front* — cost the first real
+Rule 5 - *you come back on the block at the front* - cost the first real
 playtester more than anything else in the game. Three levels have now been
 built to teach it and the differences between them are the interesting part.
 
-**Attempt one was a sentence.** `00 — First Fold` said it while teaching the
+**Attempt one was a sentence.** `00 - First Fold` said it while teaching the
 fold. It could not work: the goal column there held one block, so the rule
 described an event with no alternative. **You cannot teach a tie-break with
 nothing to break.**
 
-**Attempt two was a demonstration, and it was too quiet.** `00 — First
+**Attempt two was a demonstration, and it was too quiet.** `00 - First
 Landing` put two blocks in one silhouette column five apart in depth, with a
 180° turn between them, so the same fold from the opposite side lands
 somewhere else. The geometry is right and is still the level. What it lacked
 was that *nothing said what to watch*. The player folded, popped back onto
-themselves, turned, folded, and crossed — and both halves look identical
+themselves, turned, folded, and crossed - and both halves look identical
 until you already know the rule, which is the thing being taught. It also
 forced a peek step, which asked for a preview of a landing the level had not
 yet said existed. The owner played it and did not like it, in those terms.
@@ -408,7 +408,7 @@ three pieces of machinery that did not exist:
 
 - an **explanation card** (`card:{h,p}` on a step): a full-bleed screen the
   player acknowledges, because this is the one rule with nothing to look at
-  while it happens — both candidates are at the same screen position the
+  while it happens - both candidates are at the same screen position the
   instant you fold, which is what folding means;
 - a **derived world marker** (`show:"landing"`): the landing rings, held up
   for the length of a step instead of flashed after a landing, built from the
@@ -424,7 +424,7 @@ the level points at the block under the player's feet, and there a wireframe
 cube is swallowed by the block's own lit rim and by the player sitting on it.
 The one square the lesson was about was the one square the marker could not
 be seen on. The fix is to tint the block itself, and to lift *both*
-candidates out of the depth fade — the loser is five cells back and was
+candidates out of the depth fade - the loser is five cells back and was
 nearly invisible, in a lesson that needs two blocks visible to make "one of
 them was chosen" mean anything.
 
@@ -433,26 +433,26 @@ believed matters.** `tutGuide()` overrides any step whose cue disagrees with
 the solver's next move, and the solver never folds from the opening view, so
 the step really was overridden on every frame. `free:true` was the documented
 escape and it was rejected on the grounds that *a fold is not free*. That is
-true — the level is no longer walked in the solver's own move count — and it
+true - the level is no longer walked in the solver's own move count - and it
 is simply not a cost here, because a tutorial has no par and no stars. The
 rule that survives is the narrower one: **`free:true` on a step that asks for
 a real move is safe only where nothing is scored.**
 
 **The colonnade is the legibility bug, admitted.** Screen-vertical is height
 and depth added together, so the far block draws about three cells *above*
-the near one, and a first-time player reads it as higher — in the level whose
+the near one, and a first-time player reads it as higher - in the level whose
 whole subject is depth. `tools/legible.js` has been printing this class of
 lie for the whole campaign. Two rows running the length of the gap give the
 eye something to count. Getting them somewhere harmless took four tries and
 each failure is a different rule:
 
 - **stone at `y=0`** becomes a landing candidate in views 1 and 3, where the
-  player's silhouette column runs along depth — a wandering player folds and
+  player's silhouette column runs along depth - a wandering player folds and
   is teleported onto an unreachable rail;
 - **stone at `y=1`** shares the player's own row and crushes any fold taken
   from view 1;
-- **stone at `y=2`** is inert — outside `R.landings()`, which wants a block
-  at `y=0` under a clear `y=1`, and one row above anything that could crush —
+- **stone at `y=2`** is inert - outside `R.landings()`, which wants a block
+  at `y=0` under a clear `y=1`, and one row above anything that could crush -
   and the owner played it and said it looked like it was floating, which it
   was;
 - **glass at `y=0`** is the answer, and it is the answer for a reason that
@@ -462,7 +462,7 @@ each failure is a different rule:
   a crusher; trimmed to `z=-1..-4` it never shares either square the player
   occupies, so it is not a landing candidate either.
 
-**Decoration in this game is not free — it has to be checked against
+**Decoration in this game is not free - it has to be checked against
 `landings`, `siloSolid` and `solve` in all four views, not just looked at.**
 
 **And identity is colour, because the two other axes both broke something.**
@@ -471,12 +471,12 @@ player can track them through the half turn. Colour is safe: `L.tint` is a
 hue on ordinary stone, no kind, no rule. Shape is not, and both attempts
 failed in a way worth recording, because both looked completely reasonable:
 
-- **taller** — a four-cell pillar under the far platform — put two of its
+- **taller** - a four-cell pillar under the far platform - put two of its
   blocks within 0.14 cells of where ground would be for the *first press of
   the level*. `legible.js` flags it from the start square. Height is the one
   axis this projection conflates with depth, so shape-by-height is exactly
   the lie the level exists to correct.
-- **wider** — three cells across — was worse and silent. The extra square
+- **wider** - three cells across - was worse and silent. The extra square
   casts into the plane one column off the player's, so `solve()` finds
   "fold, step left, pop, step right" and **the level becomes solvable
   without ever rotating**. The whole point of the level, gone, with nothing
@@ -486,7 +486,7 @@ Width becomes a bridge in the plane; height becomes a lie on screen. The
 identity that survives is a hue, and the highlight had to move off hue as a
 result: it is a slow *brightening* of whatever colour the block already has,
 because a highlight that repaints the winner makes the two blocks swap colour
-at the same instant they swap screen position — and then the player cannot
+at the same instant they swap screen position - and then the player cannot
 tell whether the blocks moved or the marker did, which is the only question
 the level asks.
 
@@ -504,7 +504,7 @@ There are two families of replay system and the choice between them was not
 close here.
 
 **Deterministic input replay** records inputs plus a seed and re-simulates.
-It is tiny — a few hundred bytes for a whole match — and it is what fighting
+It is tiny - a few hundred bytes for a whole match - and it is what fighting
 games and RTS games use, because their simulations are fixed-step and exactly
 reproducible. This fight is neither. The pack advances on wall-clock `dt`, so
 a frame that arrives three milliseconds late puts every hunter somewhere
@@ -516,7 +516,7 @@ to explain.
 **State-snapshot recording** stores the world at a fixed cadence into a ring
 buffer and plays it back. It costs memory rather than determinism, and here
 that cost is nothing: the world is a handful of integer cells, so six seconds
-at 20Hz is 120 frames of about a dozen numbers each — a few kilobytes,
+at 20Hz is 120 frames of about a dozen numbers each - a few kilobytes,
 allocated once. It is exact by construction.
 
 **20Hz was picked, not tuned.** Everything in this fight moves in whole cells
@@ -526,8 +526,8 @@ get right, which is the quiet advantage of a grid game.
 
 **Playback writes the recorded pose into the live state**, rather than drawing
 a parallel set of ghosts. That sounds reckless and is safe for one specific
-reason: the fight is frozen for the whole replay — `bossHolding()` refuses all
-four verbs and `bossFrame` returns — so nothing else is reading or advancing
+reason: the fight is frozen for the whole replay - `bossHolding()` refuses all
+four verbs and `bossFrame` returns - so nothing else is reading or advancing
 it. What it buys is every drawing path for free: the fold, the telegraph pane,
 the depth fade, the peril tint and the shield bubble all work on the film
 exactly as they work on the fight, with no second implementation to keep in
@@ -536,14 +536,14 @@ sync. The live state is saved at the start and restored at the end.
 Two things fell out of building it.
 
 **A phase clear has to wait for its replay.** Advancing first and filming
-afterwards leaves the restore putting back a board that had already moved on —
+afterwards leaves the restore putting back a board that had already moved on -
 which is the twin's old respawn bug and the phase-2 crush bug for the third
 time. `bossPendingAdvance` holds the advance until the film ends.
 
 **A camera that borrows a state value must give it back on every path out.**
 The first version restored `viewAngleTarget` under a guard that the caller had
 already invalidated one line earlier, so the 90° the swing added was never
-taken off while `view` never changed — and from then on the arrows moved the
+taken off while `view` never changed - and from then on the arrows moved the
 player at a right angle to the screen. It was reported exactly that way:
 up/down/left/right getting stuck after a kill. The fix is one word, but the
 rule is worth more than the fix.
@@ -554,7 +554,7 @@ rule is worth more than the fix.
 
 Both real-time levels were reported as hard to understand, and the owner's
 instinct for each was a redesign. In both cases what actually shipped was the
-same rule told in a vocabulary the player already had — and the reason is the
+same rule told in a vocabulary the player already had - and the reason is the
 same reason both times.
 
 **The trial's slice became blocks falling out of the sky.** The hazard was a
@@ -568,26 +568,26 @@ The important constraint is the one that nearly got lost. The first idea was
 **a bomb on each square**, and that is a prettier drawing of a *different
 game*: the lethal thing here is a **slice**, not a square, because flattened
 you are every depth at once and therefore standing on all of it. That is the
-entire reason a trial is about the fold rather than about walking — it is why
+entire reason a trial is about the fold rather than about walking - it is why
 the slices were moved onto the depth axis in the first place. Separate
 per-cell hazards make folding no longer uniquely fatal. So the whole slice
 falls together, and the mechanic survives the redecoration intact.
 
 **The boss's charge became a fold.** The proposal was to give the hunter a
 real dimension-shift: it folds too, and whoever folds first wins the line.
-That survives the test that killed four earlier designs — the kill and the
-attack stay one event on one square, so there is nothing to farm — but it
+That survives the test that killed four earlier designs - the kill and the
+attack stay one event on one square, so there is nothing to farm - but it
 fails a different one. Orthogonal has three slow buttons and no dexterity
 ceiling; a fight decided by who presses first is a reaction race, which is the
 one axis this game cannot tune, and the phases exist precisely because
 tightening execution was the wrong knob.
 
 What it turned out to want was already there. **A hunter on your row *is* a
-hunter in your silhouette column the moment you face along that row** — which
+hunter in your silhouette column the moment you face along that row** - which
 is why folding answers the charge at all. So the telegraph is now a pane
 standing along the line that collapses to nothing as the beat closes: the
 fold, done to that row, by the other side. Same line, same beat, same hit,
-nothing to re-verify — and "it is folding onto me, and I can fold first" is
+nothing to re-verify - and "it is folding onto me, and I can fold first" is
 now a sentence a player can reach by looking. The sixth design is still
 available if the retelling is not enough; it needs a full `bosssim` run and a
 beat-telegraphed fold rather than a free one.
@@ -597,7 +597,7 @@ are both instant, and both land on a beat the player is already reacting to,
 so the thing they most need to see is over before they have looked at it. One
 multiplication on `dt`, in the same place `paceScale()` lives, so every window
 in the fight slows together and keeps its ratio to the others. Its own counter
-runs on real time — slowing the clock would otherwise slow the thing that ends
+runs on real time - slowing the clock would otherwise slow the thing that ends
 the slowing.
 
 ---
@@ -611,11 +611,11 @@ The cause is worth recording because nothing about it was a mistake locally.
 A clock level had grown three separate ways to spend a life, each with its own
 guard, and each guard only knew about its own:
 
-- `bossGraceMs` — set on a hunter hit, and consulted by `bossContact()`. It
+- `bossGraceMs` - set on a hunter hit, and consulted by `bossContact()`. It
   stops a *hunter* touching you again.
-- `trialGrace` — set on a sweep hit, and consulted by `trialFrame`. It stops
+- `trialGrace` - set on a sweep hit, and consulted by `trialFrame`. It stops
   the *sweep* landing twice in a beat.
-- `die()` → `spendLife()` — falling, spikes, folding into a wall. **Guarded by
+- `die()` → `spendLife()` - falling, spikes, folding into a wall. **Guarded by
   neither.**
 
 Every one of those is correct on its own terms, and the sentence "you have
@@ -625,7 +625,7 @@ life is spent, asked wherever one would be.
 
 Three details fell out of building it that were not obvious going in.
 
-**And it must not tick between a fatal move being committed and landing** —
+**And it must not tick between a fatal move being committed and landing** -
 which is the half that was missed on the first pass, and the half the owner
 reported next, on a boss. Folding into a wall is deliberately not instant:
 `doFlatten` lets the fold play out and schedules the death 420ms later,
@@ -640,11 +640,11 @@ lost.
 
 The general lesson is the same one that produced the bug in the first place:
 **a guard has to be expressed in the player's clock, not the renderer's.**
-Every window here — the grace beats, the shield — is time the player has to
+Every window here - the grace beats, the shield - is time the player has to
 act in, and any of it spent on an animation is time they never had.
 
 **It must not tick while you are dying.** The shield shares the fight's clock,
-and the fight is paused through a death animation — which sounds like an
+and the fight is paused through a death animation - which sounds like an
 oversight and is in fact exactly the window the bug lived in. The reported
 sequence is *hit, then fall*, and a fall spends 820ms in `die()` before it
 charges anything. On real time the shield would be almost gone by then; on the
@@ -653,12 +653,12 @@ covers.
 
 **Absorbing a death is not the same as cancelling it.** You fell out of the
 world; there is nowhere to leave you. So `respawn()` was factored out of
-`spendLife()` and the shield takes the accounting without the consequence —
+`spendLife()` and the shield takes the accounting without the consequence -
 you still go back to the start, you simply are not charged.
 
 **The drawing had to be re-done twice, and the size was why.** A wireframe
 sphere is the obvious bubble. The player is about thirty pixels across, and at
-14×10 segments the cage closes into a fuzzy ball that buries them — the
+14×10 segments the cage closes into a fuzzy ball that buries them - the
 opposite of what a shield around somebody should do. 10×6 was no better. What
 works is a **ring turned to face the camera every frame**, the same trick the
 flames use: one clean outline reads at any size and leaves the player visible
@@ -676,8 +676,8 @@ sweep cannot land on you, the bubble says nothing at all can take a life.
 ## Publishing overwrote the artifact with a build from the wrong branch
 
 Worth recording because it cost nothing in git and could have cost everything.
-The published artifact had been built from an unmerged branch — the map, the
-phased bosses, the menu redesign — and a later session, working from `main`,
+The published artifact had been built from an unmerged branch - the map, the
+phased bosses, the menu redesign - and a later session, working from `main`,
 rebuilt the single-file bundle and republished it to the same URL. The design
 work vanished from the link while sitting perfectly safe on its branch.
 
@@ -685,7 +685,7 @@ work vanished from the link while sitting perfectly safe on its branch.
 replacement build was 875KB. A 70KB gap between what you are replacing and
 what you are replacing it with is a question, not a rounding error. The rule
 that follows: **before republishing an artifact, check that the build you are
-about to push accounts for the size of the one already there** — and if it
+about to push accounts for the size of the one already there** - and if it
 does not, find the branch that does.
 
 Recovery was total and took one command, because `tools/build-single.js` is
@@ -703,7 +703,7 @@ hand-built level disproved it. The shape that does it: a column with three or
 more landing candidates where the one you need is strictly in the **middle**.
 Turning 180° reaches either *end* of a column and never the middle, so only
 an anchor gets you there. The generator built connected shelves and picked
-goals on existing blocks, so it essentially never produced that topology —
+goals on existing blocks, so it essentially never produced that topology -
 the wrong space had been sampled thousands of times and mistaken for proof.
 
 **Absence of evidence from a biased generator is not evidence of absence.**
@@ -741,26 +741,26 @@ need not march away from the camera (13% → 12%, noise).
 
 ## The two-finger turn: four versions
 
-Asked for on mobile, and got wrong twice before it worked at all — both times
+Asked for on mobile, and got wrong twice before it worked at all - both times
 by measuring the wrong thing about the hand. The fourth version is not a fix
 for a bug in the third; it is the owner choosing a different gesture.
 
 **One: the midpoint alone.** Track the centre between the two fingers, map its
 horizontal travel to degrees. This answers a two-finger parallel *slide* and
 strictly nothing else. A pivot barely moves the midpoint, and a symmetric
-twist — two fingers turning about a fixed centre, which is exactly what
-"rotate with two fingers" means to anyone who has used a map — does not move
+twist - two fingers turning about a fixed centre, which is exactly what
+"rotate with two fingers" means to anyone who has used a map - does not move
 it at all. Reported as "it feels like it waits for a specific movement", which
 was the literal truth.
 
 **Two: the midpoint plus the twist, summed.** Worse, and worse in a way that
-no constant could reach. `viewAngle` grows *clockwise* on screen — the render
+no constant could reach. `viewAngle` grows *clockwise* on screen - the render
 loop's screen-right is `rx=cos(ta), rz=-sin(ta)`, so a point on the near edge
 has screen-x `-r·sin(a)` and slides left as the angle rises. A clockwise
 finger twist therefore wants **+angle**, while a rightward slide moves the
 near edge right and wants **−angle**. Opposite signs. Summing them meant that
-the commonest grip in the world — one finger planted, the other sweeping,
-which produces a twist *and* a midpoint shift together — had its two channels
+the commonest grip in the world - one finger planted, the other sweeping,
+which produces a twist *and* a midpoint shift together - had its two channels
 cancel. Worked example: left finger at the origin, right finger at (100,0),
 swung 90° clockwise to (0,100). Twist +90, midpoint −50px. Summed with one
 sign it gives −55 and turns the wrong way, weakly.
@@ -771,12 +771,12 @@ of jumping when it takes hold. A two-finger slide now does nothing at all,
 which is also what it does on a map. The midpoint is still measured, but only
 to tell a turn from a two-finger tap.
 
-**Four: the midpoint alone, again — on purpose this time.** The owner asked
+**Four: the midpoint alone, again - on purpose this time.** The owner asked
 for a two-finger swipe left or right, so the gesture the game is answering
 changed and version one stopped being a mistake. The horizontal midpoint is
 read directly, 14px of grab subtracted, `TURN_DEG` .42° per pixel, and the
-same lean/spring-back/commit machinery underneath. Version one's complaint —
-that this is deaf to a pivot — is still exactly true and is now the
+same lean/spring-back/commit machinery underneath. Version one's complaint -
+that this is deaf to a pivot - is still exactly true and is now the
 specification. What survives from version two is the **sign**: a rightward
 slide is a *negative* lean, and the minus in front of `past*TURN_DEG` is the
 whole of that lesson.
@@ -790,32 +790,32 @@ would have caught it before any of it shipped.
 
 Reported from a playtest by the owner's mother: she finished section IV, the
 Extra shelf stayed locked, and when she got into it anyway the levels she
-solved there opened nothing — "progression stopped". Three separate faults,
+solved there opened nothing - "progression stopped". Three separate faults,
 and only the first one is the interesting one.
 
 **The gate was right and unreadable.** `sectionsUnlocked()` asks whether every
 boss is in `progress`, and a *skipped* boss is deliberately not in `progress`
-— that is the rule that stops an ad buying the reward for beating the game.
+- that is the rule that stops an ad buying the reward for beating the game.
 But `struggleOffer()` offers the skip itself after three losses on a
 landmark, so the game hands out the state that seals the shelf and then never
 mentions it again: the tab drew a padlock and the sheet said "this shelf
 opens when every boss is down", which is true, unfalsifiable from the
 player's chair, and describes a save they cannot inspect. The fix is not to
-loosen the gate — it is to make it name itself. `bossesLeft()` is the
+loosen the gate - it is to make it name itself. `bossesLeft()` is the
 primitive now and the gate is derived from it, so the section card, the
 locked sheet and the win card on `BOSS IV` all say *which* fight is standing,
 and each of them offers a tap that goes there.
 
 **Two back doors walked straight through it.** `NEXT LEVEL` goes to
 `lvIndex+1` unconditionally, and `BOSS IV` is the level immediately before the
-shelf — so beating that fight handed you the first level of a section the map
+shelf - so beating that fight handed you the first level of a section the map
 was refusing to open. `mapHere()` had the same hole from the other end: the
 first level you have not dealt with is that same shelf level, so the home
 screen's `CONTINUE` pointed into it too. Both now stop at the lock, and
 `mapHere()` answers with the fight instead, because that is where the player
 actually is.
 
-**And inside a locked section the rolling window does not apply at all** —
+**And inside a locked section the rolling window does not apply at all** -
 `mapLocked()` short-circuits on `s.locked` before it ever looks at
 `mapReach()`. That is correct for a shelf nobody should be in, and it is
 exactly why the back doors were bad: once through one, every level you solved
@@ -829,7 +829,7 @@ The rule was never wrong. It was silent, and silent read as broken.
 ## Hints: three currencies, and the one that was wrong
 
 Hints have been metered three ways. The first was the obvious one and was
-rejected before it shipped: **an energy timer** — a fixed stock of attempts
+rejected before it shipped: **an energy timer** - a fixed stock of attempts
 that refills on a clock. It was turned down for a reason that has not changed,
 which is that a timer standing between a player and *the level* teaches them
 to close the app, and a free puzzle game cannot afford to teach that.
@@ -840,14 +840,14 @@ two dropped you to two, three or four to one, five or more to none, with
 laundered into currency. Mechanically it was clean and the laundering hole was
 genuinely closed. It was still the wrong currency, and the owner called it:
 the bulb is what somebody reaches for at the exact moment they are stuck,
-which is the moment the game most wants them to carry on — and marking them
+which is the moment the game most wants them to carry on - and marking them
 down for it turns "I don't want to be stuck" into "I don't want to be marked
 down". The bulb then goes unused by the only person it exists for, and the
 star economy quietly becomes a tax on being new.
 
 The third is **a pool**: three hints, one back every half hour, an ad refills
 to a higher ceiling. It looks like the energy timer that was rejected and it
-is not the same object, and the difference is the whole point — **the pool
+is not the same object, and the difference is the whole point - **the pool
 gates a hint, never a level.** Nothing is ever unplayable, no clock ever has
 to be waited out to make progress, and the thing being sold is help rather
 than access. It also charges in a currency the game can afford to take: time
@@ -868,8 +868,8 @@ they chose to watch.
 
 `Menu > Real time > Pace` let a player run every clock in the game at 100%,
 75% or 50%. It was one multiplication on `dt`, which is the right way to build
-it — every window in a fight is derived from the clock, so scaling the clock
-keeps every ratio — and it was free, on the grounds that a slower clock hands
+it - every window in a fight is derived from the clock, so scaling the clock
+keeps every ratio - and it was free, on the grounds that a slower clock hands
 you nothing you did not already have to work out.
 
 It went anyway, on the owner's call, and the reason was written under it the
@@ -882,7 +882,7 @@ ramp never had to be right.
 Two things were kept rather than deleted. `paceScale()` still multiplies `dt`
 in both fight loops, because that one multiplication is the seam the whole
 setting would come back through. And `pace` was removed from
-`loadSettings()`'s whitelist — deliberately, because a save written while
+`loadSettings()`'s whitelist - deliberately, because a save written while
 somebody was on SLOW would otherwise pin every clock in the game at half speed
 with no row left to change it. That is the whitelist trap running the other
 way: usually a key that is written and not read is silently forgotten; here a
@@ -893,7 +893,7 @@ key that is read and no longer writable is silently permanent.
 - **The verb's name.** `GO 2D / GO 3D` was auditioned against `FOLD /
   UNFOLD` and `FLATTEN / UNFLATTEN` from a menu row and decided by feel. The
   row is gone; the wording is no longer a setting. Saves written before the
-  decision may carry a `verbs` key, which `loadSettings` ignores — that is
+  decision may carry a `verbs` key, which `loadSettings` ignores - that is
   the migration.
 - **The wardrobe used to buy and equip on one tap**, so a mis-tap while
   scrolling the grid spent stars. Selecting, buying and equipping are three
@@ -903,7 +903,7 @@ key that is read and no longer writable is silently permanent.
   viewport.
 - **Two of Section I's new levels were the same level.** `The Other Axis`
   (19) and `Turn to see` (21) read as a clean two-step ramp and were both
-  "the bridge only exists along the other axis" — one object seen twice.
+  "the bridge only exists along the other axis" - one object seen twice.
   Nothing mechanical catches this: the difficulty curve is a function of the
   solved path, and two identical lessons at different lengths look exactly
   like progression. The test that does catch it is a sentence per level, said
@@ -913,50 +913,50 @@ key that is read and no longer writable is silently permanent.
   the lethal plane, which worked while the slices ran on `x`: from the opening
   view that is edge-on, a wall at a readable screen position. On `z` the same
   slab points straight at the camera, and an orthographic face-on plane does
-  not move as its depth changes — so it tinted the whole screen and said
+  not move as its depth changes - so it tinted the whole screen and said
   nothing about where it was. Reported exactly that way: you had to rotate to
   find out, on a clock, where turning is a move. The answer was that empty
   space has no landmarks but the floor does: mark the standable squares inside
   the slice and let the blocks around them supply the position. The slab is now
-  suppressed precisely when it is face-on — the same `comp===0` test the hit
-  rule already used — and keeps its old weight edge-on, where it was never the
+  suppressed precisely when it is face-on - the same `comp===0` test the hit
+  rule already used - and keeps its old weight edge-on, where it was never the
   problem.
 - **The trial's slices used to run across the road, not down it.** All four
   trials swept on `x`, which is the axis you can safely be flat under in the
-  starting view — so the clock had no opinion about folding, and a trial was a
+  starting view - so the clock had no opinion about folding, and a trial was a
   test of when to *walk*. Turning them onto `z` makes the fold itself timed,
   because views 0 and 2 both look down z and a sweep along the axis you are
   looking down catches every depth at once. Worth recording that BFS is blind
   to this: every variant returned identical move counts, because the geometry
   never changed. `trialSafety()` is the only check with anything to say, and
-  it rejected two of the seven candidates — a `y` plane at standing height
+  it rejected two of the seven candidates - a `y` plane at standing height
   corners twenty cells, and four `z` lanes spawn you inside a live beat.
 - **The tutorial contradicted itself, and then contradicted the screen.** It
-  named the verb four ways — "collapse the world", "Collapse", "flatten",
-  "stand back up" — while the button said `GO 2D`, in the three levels whose
+  named the verb four ways - "collapse the world", "Collapse", "flatten",
+  "stand back up" - while the button said `GO 2D`, in the three levels whose
   whole job is naming things. The fix is a token (`{to2}`) substituted from
   `VERBS` when the line is shown, so the prose cannot drift from the button
   again. Worse was `First Fold` calling the floating block "far behind
   everything": +z points *toward* the camera, so it was the nearest thing on
   screen. And rule 5 was *stated* in a column containing one block, where it
-  had no observable consequence — you cannot teach a tie-break with nothing to
+  had no observable consequence - you cannot teach a tie-break with nothing to
   break. Two blocks in that column, the near one being the goal, and the rule
   is something you watch happen.
 - **The boss lost its fourth phase, and the reason is worth keeping.** The
   arc was: one hunter on a bare floor, the arena rising, a single `cunning`
   hunter that refuses lines you can answer, then two ordinary ones. Phases 3
-  and 4 were deliberately two answers to one question — is a smarter opponent
-  better than more of them? — set side by side so a player could feel both in
+  and 4 were deliberately two answers to one question - is a smarter opponent
+  better than more of them? - set side by side so a player could feel both in
   one sitting. Played, the question turned out to belong to the design rather
   than to the player: two hunters on ground you already understand is the
   ending, and the clever one in front of it made the middle sag. Three beats
   is the arc this fight has: nothing, then the ground, then more of them. The
   `cunning`/`hold` machinery is untouched, so it is one line of level data
-  to bring back — the same standing offer the twin has.
+  to bring back - the same standing offer the twin has.
 - **The tutorial's guided lock shipped as a mood before it was a hint.** The
   first version dimmed the world the moment a step began, and since every step
   names a control it was on from the first frame to the last. The owner's
-  report was exact: "the tutorial is dark all the way through — the game is
+  report was exact: "the tutorial is dark all the way through - the game is
   just dark at the start." That is the whole lesson. A hint is an *event*; if
   it is always present it is not pointing at anything, and layering dark on a
   dark game communicates nothing at all. It now waits out a beat of
@@ -964,7 +964,7 @@ key that is read and no longer writable is silently permanent.
   dimming carries the message. Two further corrections fell out of building
   the wait: it must not accrue while the intro card or a panel is up (the
   first one ran out behind the intro, so the guide was already on at BEGIN),
-  and — the correction after that — it *must* re-arm when the player presses
+  and - the correction after that - it *must* re-arm when the player presses
   the button being asked for. Refusing to, as an anti-flicker measure, meant
   `First Fold` step 3 (three presses of one arrow) stayed dark through all
   three while the player did exactly as told. A guide that does not respond to
@@ -974,13 +974,13 @@ key that is read and no longer writable is silently permanent.
   rope.
 - **The tutorial's green light and its dim were one class, and should never
   have been.** Pressing the button the step asked for dismissed the dim, and
-  took the green with it — so on a step wanting three presses of one arrow,
+  took the green with it - so on a step wanting three presses of one arrow,
   a player obeying perfectly was left mid-step with nothing lit at all. The
   general shape is worth keeping: two statements with different lifetimes
   ("this is the control" / "you are stuck") cannot share one piece of state,
   however alike they look on screen the first time you build them.
 - **A hint used to point at nothing, twice over.** `cue()` pulses a button,
-  and `cue("bUndo")` named a button this game has never had — so the hint you
+  and `cue("bUndo")` named a button this game has never had - so the hint you
   get when you are wedged past recovery did nothing at all. With controls
   `HIDDEN` every cue had the same problem, and it still charged you a star.
   `cue()` now speaks the move when its target is not on screen, and returns
@@ -995,7 +995,7 @@ key that is read and no longer writable is silently permanent.
 
 ## The memory file ate the budget it was meant to save
 
-`CLAUDE.md` grew to 244KB — about sixty thousand tokens, loaded into every
+`CLAUDE.md` grew to 244KB - about sixty thousand tokens, loaded into every
 session before a word of the request was read. It was doing two jobs: the
 one-line invariants a session needs to avoid breaking something, and the
 paragraph of reasoning behind each, which a session needs only when it is
@@ -1011,11 +1011,11 @@ Three things changed, none of them to the game:
   filed. The rule going forward is one line here, the paragraph there.
 - **`css/style.css` (103KB) became fourteen files, one per screen**, cut
   at existing section boundaries and linked in the same order, so the
-  cascade is byte-for-byte what it was — checked by concatenating them
+  cascade is byte-for-byte what it was - checked by concatenating them
   back and diffing. A change to the map now reads 25KB, not 103.
 - **`tools/shot.js` photographs any screen headless**, seeding a save and
   calling the game's own functions. A UI change made blind was being made
-  twice — once to write it and once to fix what it looked like — and the
+  twice - once to write it and once to fix what it looked like - and the
   second pass was the one that cost. `docs/UI.md` maps every screen to its
   file and its builder so the first pass reads one file.
 
@@ -1027,8 +1027,8 @@ already.
 
 **The browse strip** was two scrolling rows under the plinth, SHAPE and
 COLOUR, one 34px tile per item. It began as three locked tiles with prices
-and no behaviour — a drawing, with the WARDROBE button under it as the way
-in — and that was wrong the first time anybody used it: a thing shaped like
+and no behaviour - a drawing, with the WARDROBE button under it as the way
+in - and that was wrong the first time anybody used it: a thing shaped like
 a tile invites a press, and a press that answers nothing is worse than
 showing no tiles. So every tile went live: owned equipped straight away,
 locked opened the wardrobe already showing that item with its BUY under it,
@@ -1040,7 +1040,7 @@ the two ways into the wardrobe are recognisably one door.
 
 **The tab strip** was a scrolling row of section chips at the top of the
 map. Pressing one rebuilt the trail, the section card, the ambient canvas
-and the weather in place, against a panel that was already open — which is
+and the weather in place, against a panel that was already open - which is
 where "the section came up half-drawn" came from. It is now a screen of its
 own (`sectionPicker()`), which fixes the bug by construction: a map is
 built once per visit, on a section that cannot change under it.
@@ -1079,10 +1079,10 @@ black: a filled hexagon with a violet rim and no ring, an amber diamond with
 no fill and no clock.
 
 The cause was fourteen lines of prose at the top of `css/85-map.css`. The
-file's header comment closed on line 4, then the long "THE MAP — the level
+file's header comment closed on line 4, then the long "THE MAP - the level
 picker as a path" essay ran on as *code* until its own `*/` on line 18. A CSS
 parser handles that by treating everything from the error to the next `{...}`
-as one bogus selector and dropping the block behind it — and the block behind
+as one bogus selector and dropping the block behind it - and the block behind
 it was `:root{--vio;--vio-lip;--amb;--amb-lip}`, the whole token set the two
 landmarks are drawn from.
 
@@ -1103,19 +1103,19 @@ whole family of things loses its colour at once.
 
 Reported as "it shows one star instead of 3 when I get into a level". The row
 under the move count opened a fresh, unplayed level already down a star or
-two, and stayed wrong for the whole level: `09 — No Bridge 2` was solved in
+two, and stayed wrong for the whole level: `09 - No Bridge 2` was solved in
 three moves, the win card said *Perfect · 3 moves (optimal)*, and the HUD
 behind it still showed one gold star.
 
 `syncStars()` writes no DOM when the count it is handed matches the count it
 believes is on screen. That early return is not an optimisation, it is the fix
-for a real bug — the row is redrawn by `syncHud()` on every move, and
+for a real bug - the row is redrawn by `syncHud()` on every move, and
 re-creating the falling star each time restarted its animation, so holding a
 direction down left it flickering in place instead of falling off. So
 `starsLive` has to be a claim about *what is drawn*, and the hiding path broke
 that claim: a tutorial, a boss, a trial or the editor calls `syncStars(null)`,
-which hid the row and set `starsLive=3` — a level's worth of golds it had
-never written. `TRIAL I` sits between `06 — Limited` and `07 — The Rotation`,
+which hid the row and set `starsLive=3` - a level's worth of golds it had
+never written. `TRIAL I` sits between `06 - Limited` and `07 - The Rotation`,
 so the sequence is ordinary play: lose two stars on 06, cross the trial, and
 every level after it opens on three, is told three, sees `3===3`, and returns
 without touching a row that is still showing one.
@@ -1140,8 +1140,8 @@ SPARRING was built to answer a report: players reached BOSS I able to see a
 thing walking at them and with no account of what the fight wanted from them.
 The first version put a hunter that **could not move** at the far end of a
 small bare board (`still:true` on the phase, machinery still in
-`bossPhases()`), on the reasoning that the kill is a conjunction — line up,
-look down that line, fold, and be first — and a conjunction cannot be taught
+`bossPhases()`), on the reasoning that the kill is a conjunction - line up,
+look down that line, fold, and be first - and a conjunction cannot be taught
 by pressing one button, so it should be said in words over a board with
 nothing else happening on it.
 
@@ -1155,20 +1155,20 @@ cannot show. A lesson with no stakes teaches the moves and not the fight.
 
 **So it became BOSS I's phase-one hunter outright, and that was wrong in the
 other direction.** It walked, it closed, and the level stopped being about the
-kill: a hunter coming at you makes the *board* the subject — where to stand,
-when to run, how much floor is behind you — and the board is exactly what
+kill: a hunter coming at you makes the *board* the subject - where to stand,
+when to run, how much floor is behind you - and the board is exactly what
 BOSS I is for. The lesson was now competing with the thing it was supposed to
 prepare you for, on a board a third the size.
 
 **The third version is the one, and it is one word: `still` means it cannot
 walk, not that it cannot act.** It plants a line the moment you share its row
 or column, the ray comes down that row, and it kills you if you are still
-standing there when the beat closes — the whole of rule four, learnable by
+standing there when the beat closes - the whole of rule four, learnable by
 losing to it once. What it cannot do is follow you, and that is what makes the
 danger *opt-in*: the start square is one row off its line, so nothing happens
 until the player steps onto it, and the four rules can be read in complete
-safety. `aim` (2200) is the dial that matters — the window a first-timer has
-to turn and fold in — and `step` is now only the beat it re-reads its line on.
+safety. `aim` (2200) is the dial that matters - the window a first-timer has
+to turn and fold in - and `step` is now only the beat it re-reads its line on.
 
 The general shape of the mistake is worth keeping: **a teaching level's
 opponent should be missing the ability that makes the real fight hard, not the
@@ -1177,7 +1177,7 @@ removed nothing; taking away its feet removes the pressure to *move* and keeps
 the pressure to *act*, which is the one the four rules describe.
 
 **The second half of the same note was the more interesting one.** "There is
-an insta kill if you go into an opponent, it shouldn't happen — only time
+an insta kill if you go into an opponent, it shouldn't happen - only time
 under the same axis should kill." Walking into a hunter cost a life, and the
 comment defending that had been written from the pack's side: *they are not
 solid, because a body you cannot pass is a body that can trap you against a
@@ -1185,19 +1185,19 @@ wall, and walking into one simply costs the same as being walked into*. Both
 halves are true and the conclusion was still wrong, because the two events are
 not the same from the player's chair. Being walked into is the end of a
 sequence you watched happen. Walking into one is your own move, and this fight
-is built on the promise that nothing kills you without a telegraph first — so
+is built on the promise that nothing kills you without a telegraph first - so
 the one death with nothing in front of it was the one the player caused.
 
 The fix is not "make it harmless". If the player can stand on a hunter's
 square they share its silhouette column in every view at once, so folding
 kills it for free, and every fight in the game collapses to *walk onto it,
 fold* for two moves. So a hunter is **solid to your step**: the move is
-refused the way a wall refuses one — no life, no move spent, `it is in the
+refused the way a wall refuses one - no life, no move spent, `it is in the
 way`. The old objection stands and is accepted; being cornered is a cost, and
 the answer to it is the verb the game is about. Nothing changed on their side.
 
 **And the list became a checklist.** Four sentences of static text at the top
-of the screen are a card on the wall: read once, then furniture — and the
+of the screen are a card on the wall: read once, then furniture - and the
 owner asked for the obvious better thing, which is that the list answer back.
 Every line is a predicate over the kill state now (`killState()`), exactly as
 a tutorial step is a predicate over counters, so the boxes tick and untick as
@@ -1209,7 +1209,7 @@ when the fight is won.
 **And the death note is not in the list.** It was, for one playtest: an amber
 line under the four boxes saying what to do about it. The owner's note was
 "in the middle of the screen a little bit higher, on top of the kill cam even
-and a bit after", and that is right for a reason worth writing down — in the
+and a bit after", and that is right for a reason worth writing down - in the
 second after losing a life the player is watching the replay in the middle of
 the screen, and the top-left corner is not where anyone looks, nor is a
 paragraph what anyone reads. So it is one short sentence, at the phase note's
@@ -1219,13 +1219,13 @@ face it*. The checklist is still up at the top saying what to do about it, and
 the box the sentence names is the one still unticked.
 
 The half of that which needed care is **which state the note describes**. It
-says which line you missed — *you had it, it was simply faster*, or *you were in its line
-and still looking across it* — and the first version read the live board,
+says which line you missed - *you had it, it was simply faster*, or *you were in its line
+and still looking across it* - and the first version read the live board,
 which is wrong on the only death that matters: the charge stands the hunter on
 your square *before* `bossHurt()` runs, so at that instant you are perfectly
 aligned and perfectly facing, and the note congratulates you on the thing that
 just killed you. It reads `primerLast` instead, refreshed by `primerMarks()`
-from the render loop before `bossFrame()` — the board as it was when the
+from the render loop before `bossFrame()` - the board as it was when the
 checklist in front of the player was last drawn, which is the only state a
 death can honestly be explained against. The checklist itself freezes while
 the film plays, for the same reason turned around: the replay writes the
@@ -1233,7 +1233,7 @@ recorded pose into live state, so the boxes would tick along with the footage
 and show *face its direction* satisfied under a caption saying it was not.
 
 **And the telegraph got a width.** The pane a planted hunter draws along the
-row it is about to charge down was `.06` of a cell thick — visible broadside,
+row it is about to charge down was `.06` of a cell thick - visible broadside,
 and two pixels of red seen end-on. End-on is exactly the view that matters:
 looking straight down the line *is* being aligned, and it is the view the fold
 is taken from, so the drawing that says "this row is about to be folded onto
@@ -1245,7 +1245,7 @@ as the charge lands.
 ## The SAVE button's three lives, and the crate the ray went through
 
 The editor's SAVE started as a `.tiny` cap at the right end of the bar's top
-row — the smallest, quietest button on a screen whose bottom third is fifteen
+row - the smallest, quietest button on a screen whose bottom third is fifteen
 other buttons, and the one that decided whether an evening's building still
 existed tomorrow. Reported as forgettable, and it was. So it was made loud: a
 green pill in the top-right corner, in the space the five round buttons leave
@@ -1256,15 +1256,15 @@ behind the board.
 That was the right diagnosis of the wrong problem. A control nobody remembers
 to press, whose *timing the machine already knows exactly*, does not need to
 be louder; it needs not to exist. `snapshot()` was already the one funnel every
-board change goes through — it is what pushes the undo entry, which is why the
-dot could be `editDirty` and a single flag — so it was already the one place
+board change goes through - it is what pushes the undo entry, which is why the
+dot could be `editDirty` and a single flag - so it was already the one place
 that could ask for a write. It asks now, and the button, its CSS, its owner
 `syncSave()` and the dot are gone.
 
 The only real design question was **the solver**. A save was one operation:
 write the board, and take the numbers with `statsFor()`, which is two BFS runs
 capped at 400k states. That is fine once, on a button press; it is not fine
-between two taps of a block. So the save is two timers on different clocks —
+between two taps of a block. So the save is two timers on different clocks -
 the board at 140ms, which coalesces somebody dragging out a wall into one
 write, and the numbers 1.1 seconds after the hand stops. In between the entry
 carries a null score, which is exactly what a draft already looks like
@@ -1275,7 +1275,7 @@ Two things had to be told the board could change under them. `loadIntoEditor()`
 calls `saveCancel()`, because the `snapshot()` at the top of it has already
 scheduled a write of the board you are *leaving*, and 140ms later `editingId`
 belongs to the level you are arriving at. And a pasted or composed level clears
-`editingId` — that rule already existed for the paste, with the reasoning that
+`editingId` - that rule already existed for the paste, with the reasoning that
 keeping the id would make the next SAVE quietly overwrite a level you never
 touched, and it simply had not been applied to the composer, where nothing had
 gone wrong yet only because the press was still manual. Autosave turns "would
@@ -1283,7 +1283,7 @@ overwrite if you pressed SAVE" into "overwrites".
 
 **The crate in the same pass.** A crate could be placed and then never removed.
 `onCanvasTap()` raycasts against `meshes`, the static table `syncMeshes()`
-keeps by cell — and a crate is deliberately not in it: it is the one piece with
+keeps by cell - and a crate is deliberately not in it: it is the one piece with
 state, it moves when it is shoved, so `buildDynamic()` draws it into
 `crateMeshes` instead. The ray went straight through every crate on the board.
 Not just erase: you could not build on one, and you could not stand the start
@@ -1294,7 +1294,7 @@ mesh already carried its own).
 
 The same blind spot had a second half further down. `validate()` asked
 `R.solid()` whether the start was standing on anything, and `makeRules()`
-leaves crates out of its block set on purpose — every world query takes the
+leaves crates out of its block set on purpose - every world query takes the
 live crate list as a fourth argument, and this one was not passing it. A start
 on a crate was "standing on nothing", so the level could never be scored and
 sat as a permanent draft. That had been true the whole time and nobody had hit
@@ -1305,7 +1305,7 @@ it, because until the ray could hit a crate you could not put the start on one.
 
 ## The two cutscenes, and three things they cost
 
-The story got a beginning and an end — the house the census came to, and the
+The story got a beginning and an end - the house the census came to, and the
 fold that finds the mother in the plane. The reasoning lives in
 `docs/design/chrome.md`; this is what was tried first and thrown away.
 
@@ -1313,12 +1313,12 @@ fold that finds the mother in the plane. The reasoning lives in
 14×11 rectangle of ground, which is how a garden is shaped and not how this
 game draws one. The camera is orthographic and sits about 28° above the
 horizon, so every row of depth is drawn a little higher up the screen than the
-row in front of it — eleven of them stack into a green cliff with the two
+row in front of it - eleven of them stack into a green cliff with the two
 houses buried somewhere inside it. Nothing in the campaign had ever shown this
 because a level is one or two blocks deep. The fix is to build a cutscene the
 way a level is built: ground only where somebody stands, which here is two
 floors, a strip across the front and a one-square path. The path being one
-square wide is not only composition — it is the column the census folds.
+square wide is not only composition - it is the column the census folds.
 
 Height had the same cause. Walls two blocks high, made of the same
 grass-topped stone as the ground, read as terrain rather than as a building:
@@ -1327,36 +1327,36 @@ high with a beam across the opening is a doorway, and it reads at a glance.
 
 **A house made of the ground is a hill.** The house went through four shapes
 before it read. A three-walled box with a beam over the opening was terrain.
-A pitched roof on it was a fir tree — a cone in that section's green is a
+A pitched roof on it was a fir tree - a cone in that section's green is a
 conifer, and the game draws a treeline behind the scene to prove it. Cutting
 a door and two windows into the face helped and still left a green mound,
 because every block in the world wears the same grass-topped stone and the
 holes were the only thing distinguishing wall from lawn. Worse, the roof ran
 back over the interior and, in this projection, an overhang is drawn *in
-front of* the face it belongs to — screen height is `0.885y − 0.465z`, so the
+front of* the face it belongs to - screen height is `0.885y − 0.465z`, so the
 roof's near rows landed on the windows and hid them.
 
 What finished it was a mechanism that already existed for something else:
-`L.tint`, the per-cell colour list written for `00 — First Landing` so two
+`L.tint`, the per-cell colour list written for `00 - First Landing` so two
 identical grey blocks could be told apart through a half turn. Painting the
 walls warm tan and the roof terracotta made the houses buildings in one edit.
 The first tint was a pale cream and did nothing, which is worth remembering:
 these values *multiply* the surface texture, the grass surface carries a
-bright green band on every face, and a multiply can only darken — a pale tint
+bright green band on every face, and a multiply can only darken - a pale tint
 over green stays green. Saturated or not at all.
 
 **Two instructions on one screen.** The ending hands `GO 2D` back to the
 player, and the first version forced the control bar up to carry it *whatever
-the player's control layout was* — copying `body.tut.ui-none #playBar.on`,
+the player's control layout was* - copying `body.tut.ui-none #playBar.on`,
 which the tutorial uses for exactly that. But the caption is written `{do:2d}`
 and rendered through `tutWords()`, so on the default layout it already said
-"Double-tap the world" — with a button underneath it saying `GO 2D`. Two
+"Double-tap the world" - with a button underneath it saying `GO 2D`. Two
 different instructions for one press. The bar is now brought back only on the
 layouts that have one, and the caption follows the layout, so they cannot
 disagree.
 
 **A screenshot tool that could not be told to wait.** `tools/shot.js` took
-`--wait MS`, and then used `job.def.wait||o.wait` — so a screen declaring its
+`--wait MS`, and then used `job.def.wait||o.wait` - so a screen declaring its
 own settle time always won and the flag was silently ignored. Photographing a
 24-second cutscene with `--wait 27000` produced the frame at 700ms, over and
 over, which looks exactly like a cutscene frozen on its first beat. An hour
@@ -1370,9 +1370,9 @@ not given.
 ## The white skin had no edges, and had not since it shipped
 
 `outlineFor()` picked the rim off the BACKGROUND: light on a dark ground, dark
-on a light one. That is exactly right for a *silhouette* — it is what keeps
+on a light one. That is exactly right for a *silhouette* - it is what keeps
 the Black skin visible against the void and the White one visible against
-paper — and it is exactly wrong for the edges *inside* the silhouette, which
+paper - and it is exactly wrong for the edges *inside* the silhouette, which
 are the only thing making a cube look like a cube rather than a rectangle. A
 white piece on the void got a white rim and lost every facet.
 
@@ -1387,7 +1387,7 @@ middle of the range, which was fussier than it needed to be and made a
 mid-tone piece change its rim depending where it stood. On the owner's call it
 is now the simplest rule that fixes the bug: **white lines on everything,
 black lines on anything too pale to take them.** One threshold, no
-background, and a given skin's rim is the same everywhere it is drawn — in
+background, and a given skin's rim is the same everywhere it is drawn - in
 play, in the plane, on the plinth and in the case.
 
 
@@ -1404,13 +1404,13 @@ world the walls and the lawn are made of the same grass-topped stone, and
 nothing about a silhouette can separate two things drawn in the same
 material.
 
-`L.tint` — the per-cell colour list already in the engine for
-`00 — First Landing` — fixed it in one edit. Warm tan walls, terracotta roof,
+`L.tint` - the per-cell colour list already in the engine for
+`00 - First Landing` - fixed it in one edit. Warm tan walls, terracotta roof,
 one-block chimney, and the houses were buildings.
 
 The trap inside the fix is worth more than the fix. These values **multiply**
 the surface texture, the grass surface carries a bright green band on every
-face, and a multiply can only darken — so a pale, believable sand or plaster
+face, and a multiply can only darken - so a pale, believable sand or plaster
 comes out olive and changes nothing. To land warmer than green, a tint needs
 roughly half again as much red as green. The first wall tint was a pale cream
 and did nothing at all; the first dune tint was a proper sand (`0xd9bd83`,
@@ -1424,7 +1424,7 @@ almost equal red and green) and the dunes came out as more lawn.
 `.gbub` is `position:fixed` with a `left` written every frame from the
 speaker's projected position, and no `right`. Its containing block is
 therefore the viewport and its used width is *shrink-to-fit against whatever
-is left of the screen past `left`* — so when the neighbour moved to his own
+is left of the screen past `left`* - so when the neighbour moved to his own
 plinth off the right-hand end of the board, the available width collapsed to
 a hundred-odd pixels and the box wrapped one word at a time and ran off the
 edge. The `translate(-50%,-100%)` that centres it is applied after the width
@@ -1433,7 +1433,7 @@ is already decided, so it cannot help.
 `width:max-content` is the fix: it takes the available width out of the
 calculation altogether, so the box is as wide as its longest line wants,
 capped by `max-width`, wherever it is put. Only then is `offsetWidth` a real
-number rather than a consequence of where the box was placed — which is what
+number rather than a consequence of where the box was placed - which is what
 makes clamping `left` against it work instead of feeding back on itself.
 
 Worth remembering for any future element positioned this way: a fixed box

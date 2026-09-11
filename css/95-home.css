@@ -1,9 +1,9 @@
-/* I'm Just A Cube — css/95-home.css
+/* I'm Just A Cube - css/95-home.css
    The home screen: plinth, CONTINUE, the shop strip.
    Loaded in the order listed in index.html; see docs/UI.md for the map of
    screens to files. */
 /* ============================================================
-   THE HOME SCREEN — where the game starts from
+   THE HOME SCREEN - where the game starts from
 
    z-index 11 puts it over the world, the HUD and the bar, and *under* the
    panels (12), which is the whole arrangement: the map and the wardrobe open
@@ -206,7 +206,7 @@
 body.athome .hud,body.athome .bar,body.athome .coach,body.athome .boss,
 body.athome .startotal{display:none}
 
-/* MULTIPLAYER, SHUT — the smallest and lowest thing on the screen
+/* MULTIPLAYER, SHUT - the smallest and lowest thing on the screen
 
    A mode that is not built is worth putting on the screen anyway: a door you
    can see and cannot open is a promise, and an empty space is nothing.

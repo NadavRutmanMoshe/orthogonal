@@ -1,9 +1,9 @@
-/* I'm Just A Cube — css/10-buttons.css
+/* I'm Just A Cube - css/10-buttons.css
    The button skin (cap, lip, press, disabled), the control bar, d-pad, turn buttons, the five round corner buttons and their icons, the hint badge.
    Loaded in the order listed in index.html; see docs/UI.md for the map of
    screens to files. */
   /* ============================================================
-     BUTTONS — one skin, and it is meant to look pressable
+     BUTTONS - one skin, and it is meant to look pressable
 
      Everything here used to be a 1px outline on nothing with a 2px radius:
      honest, quiet, and reported as feeling stale and not inviting. Nothing

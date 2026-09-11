@@ -1,5 +1,5 @@
 "use strict";
-/* I'm Just A Cube — 22-story.js
+/* I'm Just A Cube - 22-story.js
    The two cutscenes: the house at the beginning, the plane at the end.
 
    Loaded as a classic script like everything else, but listed AFTER
@@ -381,7 +381,7 @@ function stFireBoard(){
 }
 
 /* ============================================================
-   THE ARRIVAL — how a scene that follows a fight gets there.
+   THE ARRIVAL - how a scene that follows a fight gets there.
 
    The two scenes that come off a boss do not cut to their board, they TRAVEL
    to it: you stand a moment on the arena you have just won, that arena folds
@@ -500,7 +500,7 @@ var STORY={
   },
 
   /* ============================================================
-     THE FIRE — after BOSS II, which is the fight II · FIRE ends on.
+     THE FIRE - after BOSS II, which is the fight II · FIRE ends on.
 
      `from:"here"` is what makes this and the ending arrive rather than cut.
      The scene begins on the arena you have just won, folds it flat, fades,

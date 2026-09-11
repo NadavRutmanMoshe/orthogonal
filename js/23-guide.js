@@ -1,5 +1,5 @@
 "use strict";
-/* I'm Just A Cube — 23-guide.js
+/* I'm Just A Cube - 23-guide.js
    The two people who stand in your levels: the neighbour, who helps, and
    the father, who does not.
 
@@ -187,7 +187,7 @@ function guideHere(idx){
      fourth voice. He starts where the teaching stops.
 
      `tutorial:true` is the test rather than "is it PROLOGUE", because the
-     second place it bites is inside I · NATURE: `09 — The Rotation` is the
+     second place it bites is inside I · NATURE: `09 - The Rotation` is the
      level that hands rotation over, and it is where the owner found him in
      the way. His plinth is placed off the +x end of the board and nowhere
      else (guidePlinth()), which is out of the way in exactly one of the four
@@ -409,7 +409,7 @@ function guideFrame(dtMs,rx,rz,tdvx,tdvz,ft){
 
 
 /* ============================================================
-   THE GLIMPSE — the father, in the back of II · FIRE
+   THE GLIMPSE - the father, in the back of II · FIRE
 
    Every twenty seconds on a fire level the game tosses a coin, and on heads
    something dark stands behind the board for six tenths of a second and is

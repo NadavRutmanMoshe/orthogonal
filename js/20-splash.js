@@ -1,12 +1,12 @@
 "use strict";
-/* I'm Just A Cube — 20-splash.js
+/* I'm Just A Cube - 20-splash.js
    The studio sting, and the gesture that unlocks the sound.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. This file only declares; 21-boot.js
    is what runs it. */
 
 /* ============================================================
-   THE STING — the logo is a fold.
+   THE STING - the logo is a fold.
 
    A studio card that is just a logo appearing is a logo appearing. This one
    is the game's own pitch, played once: the wordmark starts as a cloud of

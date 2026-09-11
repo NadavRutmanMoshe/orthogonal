@@ -1,11 +1,11 @@
 "use strict";
-/* I'm Just A Cube — 11-sound.js
+/* I'm Just A Cube - 11-sound.js
    Web Audio blips. No assets.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
 
 /* ============================================================
-   SOUND — a few oscillator blips, no assets. The audio context
+   SOUND - a few oscillator blips, no assets. The audio context
    can only start after a gesture, so it's created lazily.
    ============================================================ */
 var actx=null, masterGain=null, limiter=null, postGain=null, shaper=null;
@@ -87,7 +87,7 @@ var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false
    sentence does - but a line of text on every fold would be nagging. */
 var LAND_HINT_TIMES=3;
 
-/* PACE — how fast the two real-time things run. RETIRED AS A SETTING, and
+/* PACE - how fast the two real-time things run. RETIRED AS A SETTING, and
    the multiplier is kept.
 
    `Menu > Real time > Pace` let a player slow every clock in the game to 75%
@@ -879,7 +879,7 @@ function noiseRise(c,at,dur,vol){
   src.connect(bp);bp.connect(g);g.connect(out(c));
   src.start(at);src.stop(at+dur+.18);
 }
-/* THE CROWD — the room the fight is being watched in
+/* THE CROWD - the room the fight is being watched in
 
    A boss is the only thing in this game with an audience implied by its
    shape: three phases, a clock, lives, a replay. The kill cam puts that room
@@ -893,7 +893,7 @@ function noiseRise(c,at,dur,vol){
    way. So the room reacts to the thing worth reacting to and is silent for
    the other, which is also what a room does.
 
-   WHAT MAKES NOISE SOUND LIKE PEOPLE is not the filter, it is the envelope —
+   WHAT MAKES NOISE SOUND LIKE PEOPLE is not the filter, it is the envelope -
    and, more than either, THE HANDS. Flat noise through a bandpass is wind;
    the same noise with a slow random walk multiplied into it is a room,
    because a crowd is hundreds of voices whose sum wanders. But the bed alone

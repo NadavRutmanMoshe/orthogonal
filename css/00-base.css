@@ -1,4 +1,4 @@
-/* I'm Just A Cube — css/00-base.css
+/* I'm Just A Cube - css/00-base.css
    Tokens (:root), body, the flat theme swap, the HUD text (title, hint, axis).
    Loaded in the order listed in index.html; see docs/UI.md for the map of
    screens to files. */
@@ -47,7 +47,7 @@
   .hint{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;
     letter-spacing:.03em;color:var(--fg-dim);margin-top:4px;max-width:54vw;
     line-height:1.5;transition:color .5s ease}
-  /* THE PRIMER — a level's rules, listed, under its hint.
+  /* THE PRIMER - a level's rules, listed, under its hint.
 
      Not the retired "brief", which was a full-bleed card explaining a fight
      and was dropped for explaining what the board already showed; that word

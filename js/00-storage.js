@@ -1,5 +1,5 @@
 "use strict";
-/* I'm Just A Cube — 00-storage.js
+/* I'm Just A Cube - 00-storage.js
    The game was born inside a Claude artifact, where the host page supplies
    window.storage. Nothing else does. This shim provides the same
    promise-based API on top of localStorage so the identical code runs from a

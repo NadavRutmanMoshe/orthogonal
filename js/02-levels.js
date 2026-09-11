@@ -1,5 +1,5 @@
 "use strict";
-/* I'm Just A Cube — 02-levels.js
+/* I'm Just A Cube - 02-levels.js
    The campaign: four sections and a locked shelf, each section a run of
    levels around a trial and closed by a boss, plus the tutorial scripts.
    Loaded as a classic script: everything here shares one global scope,
@@ -57,7 +57,7 @@ var LEVELS=[
       three blocks in one silhouette column, so standing back up puts you on
       the one at the FRONT - and the goal is the middle of the three. The
       player is not told the landing rule here, they watch it happen and take
-      one more step. That is `00 — First Landing`'s lesson arriving as a
+      one more step. That is `00 - First Landing`'s lesson arriving as a
       consequence rather than as a card, which is why dropping that level
       costs less than it looks like it should. */
    blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[1,0,1],
@@ -195,7 +195,7 @@ var LEVELS=[
       height the floor offers, so the only way out is to CLIMB the step at
       [0,1,-1] first and fold from on top of it.
 
-      `02 — Step Down First` said the safe square can be below you; this one
+      `02 - Step Down First` said the safe square can be below you; this one
       says it can be above. Same verb, opposite direction, and between them
       the player stops reading the floor as flat. Solvable in six with the
       turn locked out, which is what it ships with. */
@@ -263,7 +263,7 @@ var LEVELS=[
       level where that stops being true, and being wrong on purpose once is
       what makes the turn land as an answer rather than as a new button.
 
-      `free:true` on both, and it is the same hatch `00 — First Landing`
+      `free:true` on both, and it is the same hatch `00 - First Landing`
       used: tutGuide() replaces any step whose cue disagrees with the
       solver's next move, and the solver would never spend a fold here - it
       opens `up, rot+`. Without the flag these two steps are overridden on
@@ -517,7 +517,7 @@ var LEVELS=[
    /* THE OWNER'S TITLE AND THE OWNER'S LEVEL, and the measurement earns it:
       of the nine squares you can stand on, two crush you when you fold and
       six burn you, which leaves one. It is the fire section's answer to
-      `08 — Limited` - the same "find the one square" pressure, made of the
+      `08 - Limited` - the same "find the one square" pressure, made of the
       piece this section teaches rather than of walls. Impossible without
       rotating. */
    blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[1,0,1],
@@ -949,9 +949,9 @@ var LEVELS=[
    revelation needs five levels of quietly assuming there is nothing to
    reveal. It is checked rather than assumed - walk each optimal path and
    count the candidates at every POP, and the first level where the number is
-   ever 2 is `05 — Two Windows`, which is the first level after the reveal.
+   ever 2 is `05 - Two Windows`, which is the first level after the reveal.
 
-   `03 — The Near One` used to sit in this run and does not any more: it puts
+   `03 - The Near One` used to sit in this run and does not any more: it puts
    a decoy in the goal's column, so it PUNISHES the naive model at a point
    where the game has not yet corrected it. It now sits immediately after the
    reveal, where being caught by the decoy is the lesson landing rather than a
@@ -969,7 +969,7 @@ var LEVELS=[
       and the only way onto it is to turn round first so that the far one
       becomes the near one.
 
-      It is placed immediately after `00 — First Landing` for that reason.
+      It is placed immediately after `00 - First Landing` for that reason.
       Before the reveal it would be a trap; after it, it is the one question
       the reveal was answering, asked once, with nothing else in the way. */
    blocks:[[0,0,0],[1,0,0],[2,0,0],[3,0,0],[3,0,-2]],
@@ -996,7 +996,7 @@ var LEVELS=[
    blocks:[[0,0,0],[-4,1,1],[-3,0,1],[-2,0,1],[-1,0,1,4]],
    start:[0,1,0],goal:[-2,1,1],rotate:true},
 {name:"43 - Scattered Steps",
-   /* Six blocks at six unrelated depths. Flat, they are a staircase — which
+   /* Six blocks at six unrelated depths. Flat, they are a staircase - which
       is the tutorial's lesson again, but with the answer no longer written
       on screen and with height in it, so the plane has to be *read* rather
       than walked. One fold, no turn: nothing here is a decision yet. */
@@ -1008,7 +1008,7 @@ var LEVELS=[
    /* THE NAIVE MODEL, ON PURPOSE. Every column in this level holds exactly
       one block, so R.landings() never has a choice to make and GO 3D always
       puts the player back somewhere obvious. That is the whole job: the
-      landing rule is what `00 — First Landing` reveals AFTER the trial, and
+      landing rule is what `00 - First Landing` reveals AFTER the trial, and
       it only reads as a revelation if the player has spent four levels
       quietly assuming there was nothing to reveal. Checked, not assumed -
       tools/land.js walks the optimal path and reports how many candidates
@@ -1024,7 +1024,7 @@ var LEVELS=[
    blocks:[[0,0,0],[6,0,-1],[6,0,-2],[6,0,-3],[3,0,-4]],
    start:[0,1,0],goal:[3,1,-4],rotate:true},
 {name:"46 - Turn to See",
-   /* Kept over "03 — The Other Axis", which was cut for teaching the same
+   /* Kept over "03 - The Other Axis", which was cut for teaching the same
       lesson: both were "the bridge only exists along the other axis". This one
       is the older of the two and the better picture - a wall standing off to
       one side turns out to be the bridge, which is one object read two ways
@@ -1045,7 +1045,7 @@ var LEVELS=[
 {name:"47 - Halfway Across",
    /* The first level where one fold is not enough, which is the idea every
       hard level in the game is built on. The plane is walled at the fourth
-      column — two blocks stacked, so there is no step up — and the way past
+      column - two blocks stacked, so there is no step up - and the way past
       is to stand up, climb two in the volume, and flatten again from the new
       height, where the silhouette is a different shape.
 
@@ -1059,7 +1059,7 @@ var LEVELS=[
    start:[0,1,0],goal:[6,3,-4],rotate:true},
 {name:"48 - The Near One",
    /* Rule 5, on its own. The goal's column holds two blocks and you come
-      back on the one nearest the camera, which is not the goal — so you have
+      back on the one nearest the camera, which is not the goal - so you have
       to stand up one square early and finish on foot.
 
       The decoy block is the whole level and it is worth saying why it is not
@@ -1273,7 +1273,7 @@ var LEVELS=[
 /* SECTION IV WAS RE-CUT THE SAME WAY SECTION III WAS, and these eight are
    what came out of it: three of the owner's levels took the front of the
    section and four crate-fire-water levels took the run after the trial.
-   Nothing here is broken - `32 — There and Back` and `37 — Twice Pushed` in
+   Nothing here is broken - `32 - There and Back` and `37 - Twice Pushed` in
    particular are two of the best crate levels in the game. They are pure
    crate, and what the finale wanted was the three pieces in one board.
    Renumbered into 89..96; the boards are untouched. */
@@ -1310,7 +1310,7 @@ var LEVELS=[
    blocks:[[1,1,1],[1,1,2],[1,1,3],[1,1,4],[2,2,5],[0,0,0],[1,2,2,3],[1,3,2,3]],
    start:[0,1,0],goal:[2,3,5],rotate:true},
 /* Off the campaign one playtest after the re-cut, and not for being a bad
-   level - it is the same lesson as `30 — Out of the Way`, which is four
+   level - it is the same lesson as `30 - Out of the Way`, which is four
    levels in front of it. Two levels teaching "get the crate out of the column
    that would crush you" read as a repeat rather than as a test, and the slot
    before a trial is the one place a section can least afford that. */
@@ -1546,7 +1546,7 @@ var LEVEL_RENAMES={
   "09 — Six Across":"52 - Six Across",
   "10 — Fold After Climbing":"53 - Fold After Climbing",
  /* THE CENSUS RENAMED ALL FOUR BOSSES. Composed, not rewritten: the three
-    keys that used to land on "BOSS I — The Hunt" are re-pointed at its new
+    keys that used to land on "BOSS I - The Hunt" are re-pointed at its new
     name in the same edit that makes "The Hunt" itself a key, which is what
     keeps the no-value-is-also-a-key invariant true. Bosses II-IV had never
     been renamed, so they arrive as one new entry each. */
@@ -1827,9 +1827,9 @@ var LEVEL_RENAMES={
  "64 — Three Folds Deep": "81 - Three Folds Deep",
  "65 — Everything at Once": "82 - Everything at Once",
  /* 02 and 03 traded places after playtesting. Composed, not rewritten: the
-    three older keys that used to land on "03 — Turn to see" were re-pointed
+    three older keys that used to land on "03 - Turn to see" were re-pointed
     at its new name in the same edit, which is what leaves one of them
-    ("02 — Turn to see", from an era when it was 02 the first time) mapping
+    ("02 - Turn to see", from an era when it was 02 the first time) mapping
     to itself. That is correct and expected - numbers come back round, and a
     save under that name already holds the right level. */
  "03 — Turn to see": "46 - Turn to See",
@@ -1876,7 +1876,7 @@ var LEVEL_RENAMES={
 
   /* TWO OF THE OWNER'S LEVELS WENT IN AT 04 AND 05, and the campaign was
      renumbered end to end behind them. Two things happened in one pass:
-     everything from `04 — The Illusion` on moved up by two, and the shelf -
+     everything from `04 - The Illusion` on moved up by two, and the shelf -
      which had been carrying 78..81, then 65..77, then 38..64, then 82..97 in
      that order, because levels had been moved onto it four times and each
      move kept the numbers it arrived with - was renumbered into the run it

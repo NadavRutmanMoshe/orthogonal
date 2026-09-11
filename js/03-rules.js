@@ -1,5 +1,5 @@
 "use strict";
-/* I'm Just A Cube — 03-rules.js
+/* I'm Just A Cube - 03-rules.js
    Movement, block kinds, and the solid/silhouette/landing lookups.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
@@ -15,7 +15,7 @@ var FELL=-9999;   // fell out of the world - not the same as being blocked
 function resolveStep(occ,y,occHere){
   if(!occ(y) && occ(y-1)) return y;              // walk level
   // Stepping up needs clearance above where you're standing as well as
-  // where you're going — otherwise you slide diagonally past a ceiling.
+  // where you're going - otherwise you slide diagonally past a ceiling.
   if(occ(y) && !occ(y+1) && !(occHere&&occHere(y+1))) return y+1;
   if(!occ(y) && !occ(y-1)){                      // nothing underfoot: fall
     var n=y;
@@ -38,7 +38,7 @@ function resolveStep(occ,y,occHere){
 function isGlass(b){return b[3]===1;}
 function isAnchor(b){return b[3]===2;}
 function isCrate(b){return b[3]===3;}
-// Spikes are solid and they cast like stone — but standing on one kills you.
+// Spikes are solid and they cast like stone - but standing on one kills you.
 // Which means a spike buried deep in the world poisons the whole silhouette
 // column it lands in. Ground that looks safe in the volume can be lethal once
 // you fold, and you have to check what's behind before you commit.
@@ -59,7 +59,7 @@ function crateSet(list){var s=new Set();for(var i=0;i<list.length;i++)s.add(list
 function parseK(k){var p=k.split(",");return [+p[0],+p[1],+p[2]];}
 
 /* ============================================================
-   BOSSES — the pack, and the fold as the weapon
+   BOSSES - the pack, and the fold as the weapon
 
    A boss is several hunters. They walk the volume toward you on a real
    clock, they are fast, and touching you costs a life. There is no gun, no
@@ -130,7 +130,7 @@ function parseK(k){var p=k.split(",");return [+p[0],+p[1],+p[2]];}
    dangerous to stand on is what turned an execution into a duel.
    ============================================================ */
 /* ------------------------------------------------------------
-   THE TWIN — one creature, two bodies, and a point of symmetry
+   THE TWIN - one creature, two bodies, and a point of symmetry
 
    A different fight sharing the same machinery. The two halves are one
    animal: each hunts the *reflection* of you through a centre, so whatever
@@ -143,17 +143,17 @@ function parseK(k){var p=k.split(",");return [+p[0],+p[1],+p[2]];}
    was only ever pretending to be two collapses into itself. That is rule 4
    again, pointed at something new: the halves are solid in the plane, so the
    identical fold kills *you* if you are the one sharing a column with one of
-   them — which is why the line you want them on is the line you must not be
+   them - which is why the line you want them on is the line you must not be
    standing on.
 
    Because they mirror, they share a column exactly when one of them stands
-   on the centre's row or column — whichever the current view collapses. So
+   on the centre's row or column - whichever the current view collapses. So
    the cross drawn on the floor is the whole fight: bait a half onto the arm
    that your axis flattens, step off it yourself, fold. And each core moves
    the centre somewhere new, so the answer is never twice in the same place.
    ------------------------------------------------------------ */
 /* ------------------------------------------------------------
-   PHASES — the fight's own difficulty curve
+   PHASES - the fight's own difficulty curve
 
    A boss is a sequence of phases, not one pack. Clearing what is on the board
    advances to the next, and each one changes the fight rather than repeating
@@ -439,7 +439,7 @@ function bossSafety(level){
 }
 
 /* ============================================================
-   TRIALS — a clock, and somewhere to be
+   TRIALS - a clock, and somewhere to be
 
    A trial is the boss stripped back to the one thing the boss was always
    best at. There is no opponent: the arena attacks. A lethal plane sweeps

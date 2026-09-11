@@ -1,11 +1,11 @@
 "use strict";
-/* I'm Just A Cube — 06-persistence.js
+/* I'm Just A Cube - 06-persistence.js
    Progress, settings, session, library and wardrobe storage.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
 
 /* ============================================================
-   PERSISTENCE — one key holds the whole library, so saving
+   PERSISTENCE - one key holds the whole library, so saving
    costs a single write instead of one per level.
    ============================================================ */
 var LIB_KEY="orthogonal:library";
@@ -283,7 +283,7 @@ function clearFails(name){
   delete fails[name];failSave();
 }
 /* ============================================================
-   THE HINT BANK — three of them, one back every half hour
+   THE HINT BANK - three of them, one back every half hour
 
    Hints used to be unlimited and paid for in stars: nought cost three stars,
    one or two cost you down to two, and five or more meant none at all. That

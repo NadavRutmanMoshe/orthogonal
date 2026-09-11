@@ -1,10 +1,10 @@
-/* I'm Just A Cube — css/90-tutorial.css
+/* I'm Just A Cube - css/90-tutorial.css
    The guided lock, the phase card, the ghost hand.
    Loaded in the order listed in index.html; see docs/UI.md for the map of
    screens to files. */
 
 /* ============================================================
-   THE GUIDED LOCK — the tutorial insisting on one control
+   THE GUIDED LOCK - the tutorial insisting on one control
 
    The world goes quiet and every play button but one goes faint, so the
    sentence in the coach line has exactly one thing it can be referring to.
@@ -27,7 +27,7 @@ body.tutlock::before{content:"";position:fixed;inset:0;z-index:5;
 body.flat.tutlock::before{background:rgba(90,84,68,.30)}
 @keyframes tutdim{from{opacity:0}to{opacity:1}}
 /* A LIGHTER DIM WHERE THE LEVEL ASKS FOR ONE (`L.tutSoft`). The overlay says
-   "this is the only control I accept", and on `00 — First Landing` that is
+   "this is the only control I accept", and on `00 - First Landing` that is
    true but secondary: the player has just been handed a rule and two blocks
    to check it against, and the world is the thing they are supposed to be
    looking at. At the full weight the lesson goes dark exactly while it is
@@ -65,7 +65,7 @@ body.tutlock #playBar button.tutlive{opacity:1;pointer-events:auto;
 body.tutlock .coach{z-index:11}
 
 /* ============================================================
-   THE PHASE CARD — the breath between one phase and the next
+   THE PHASE CARD - the breath between one phase and the next
 
    Clearing a phase used to raise the next one's pillars, drop a fresh hunter
    in and teleport the player home 420ms later, all while the clock ran. The
@@ -88,7 +88,7 @@ body.tutlock .coach{z-index:11}
   letter-spacing:-.01em;color:var(--fg);margin-top:8px;line-height:1.25}
 @keyframes phaseIn{from{transform:translateY(14px) scale(.96)}to{transform:none}}
 /* ============================================================
-   WHAT KILLED YOU — one line, over the kill cam
+   WHAT KILLED YOU - one line, over the kill cam
 
    The checklist at the top of the screen already says which boxes are not
    ticked, and after a death that is the wrong place for it twice over: the
@@ -124,7 +124,7 @@ body.bosshold::before{content:"";position:fixed;inset:0;z-index:6;
 body.flat.bosshold::before{background:rgba(90,84,68,.34)}
 
 /* ============================================================
-   THE GHOST HAND — the gesture tutorial's only affordance
+   THE GHOST HAND - the gesture tutorial's only affordance
 
    With the bar off there is no button to turn green, so this takes the green
    button's job: it says "this step wants this control", and it is on for

@@ -1,11 +1,11 @@
 "use strict";
-/* I'm Just A Cube — 09-wardrobe.js
+/* I'm Just A Cube - 09-wardrobe.js
    Skins, palettes and the star economy.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
 
 /* ============================================================
-   WARDROBE — what you look like, and what the world looks like.
+   WARDROBE - what you look like, and what the world looks like.
 
    Worlds only ever change the world (background, stone, ink).
    The pieces keep their own colours and their shape markers, so
@@ -152,7 +152,7 @@ function adsFor(cost){return cost<=0?0:Math.ceil(cost/10);}
 function adsWatched(id){return (wardrobe.ads&&wardrobe.ads[id])||0;}
 
 /* ============================================================
-   THE TWO PASSES — the shelf's other half
+   THE TWO PASSES - the shelf's other half
 
    The DEALS tab had one thing on it: a shape, for a price. These two are not
    shapes, and that is the point of them - they are the game's two ceilings

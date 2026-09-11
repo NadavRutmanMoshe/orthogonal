@@ -9,7 +9,7 @@ default:
 
 | Read this | when you are touching |
 |---|---|
-| `docs/UI.md` | **anything a player looks at** — screens, panels, cards, buttons, the map, the HUD. The screen-to-file map, the tokens, the class collisions, and the screenshot loop. Start here for UI work. |
+| `docs/UI.md` | **anything a player looks at** - screens, panels, cards, buttons, the map, the HUD. The screen-to-file map, the tokens, the class collisions, and the screenshot loop. Start here for UI work. |
 | `docs/design/chrome.md` | why the buttons, the map, the home screen, the sting, the story and the two cutscenes are shaped the way they are |
 | `docs/design/levels.md` | the campaign, `SECTIONS`, `LEVEL_RENAMES`, what each level teaches |
 | `docs/design/trials.md` | the sweep, the falling blocks, lives, the shield |
@@ -130,15 +130,17 @@ Block format `[x,y,z,k]`: 0 stone, 1 water (code says `glass`), 2 anchor,
   re-pointing every existing key's value at the new name and adding one new
   entry. No key dropped, no value that is also a key. `verify.js` asserts
   both. Bosses and trials carry a numeral and no number so a landmark can
-  never renumber a section.
+  never renumber a section. **Its keys are the one place an em dash may
+  stay** - every level was `NN — Name` until the titles were de-dashed, and
+  those keys are the saves written under the old titles.
 - Rotation is locked (`rotate:false`) from the tutorials through `TRIAL I`
-  and unlocked at `09 — The Rotation`, then never taken back. On a locked
+  and unlocked at `09 - The Rotation`, then never taken back. On a locked
   level the turn buttons are **not drawn** (`body.norot`).
 - `tutorial:true` means no par, no stars, and the solver is not asked.
 - Progress is keyed by level **name**. `progress[name]` holds a move count
   on an ordinary level and lives kept on a clock level, so reads go through
   `starsForRecord()` and writes through `betterRecord()`.
-- **A fight is taught before it is fought.** `SPARRING — One of Them` sits
+- **A fight is taught before it is fought.** `SPARRING - One of Them` sits
   before `BOSS I`: a `tutorial:true` level carrying `boss` data - BOSS I's
   phase one on the smallest arena it fits on, with a hunter that cannot walk -
   and the kill's four rules at the top of the screen as a live checklist
@@ -149,7 +151,7 @@ Block format `[x,y,z,k]`: 0 stone, 1 water (code says `glass`), 2 anchor,
   gates nothing.
 - **`LEVELS` opens `sectionPicker()`, not the map.** One section per visit;
   the map has no tab strip and the way to another section is out and back in.
-  PROLOGUE has no tile and no map (`secPickable()`) — it is the tutorial, and
+  PROLOGUE has no tile and no map (`secPickable()`) - it is the tutorial, and
   `REPLAY TUTORIAL` in the menu is the way back to it.
 - **Skips live in `skips`, never in `progress`.** Ads buy progress, never
   score. `V · EXTRA` opens when every boss is down (`bossesLeft()`), and
@@ -157,7 +159,7 @@ Block format `[x,y,z,k]`: 0 stone, 1 water (code says `glass`), 2 anchor,
 - Always `node tools/verify.js` after touching a non-boss level.
 
 **The player's own levels** (`docs/UI.md`)
-- **MY LEVELS on the home screen is a full-height screen** —
+- **MY LEVELS on the home screen is a full-height screen** -
   `myLevelsPanel()`, and every screen under it goes through `mlScreen()`. A
   row is one line: the name with the rename pencil against it, then ▶ · EDIT ·
   share · ×. `libraryPanel()` (sort, project file, composer) has no button any
@@ -167,8 +169,8 @@ Block format `[x,y,z,k]`: 0 stone, 1 water (code says `glass`), 2 anchor,
   `editingId` says which entry the editor is on, and `saveCurrent()` keeps
   whatever is on the board, solvable or not. Only `VERIFY` still asks the
   solver on demand.
-- **There is no SAVE button: every edit writes.** `snapshot()` — already the
-  one funnel every board change goes through — calls `autosave()`, which
+- **There is no SAVE button: every edit writes.** `snapshot()` - already the
+  one funnel every board change goes through - calls `autosave()`, which
   writes the board 140ms later and re-runs the solver 1.1s after the hand
   stops (a null score is a draft, so a level is never unsaved, only briefly
   unscored). `saveCurrent()` is still the one writer; `loadIntoEditor()` calls
@@ -180,7 +182,7 @@ Block format `[x,y,z,k]`: 0 stone, 1 water (code says `glass`), 2 anchor,
   them: a placed crate could not be erased or built on. `onCanvasTap()` adds
   `crateMeshes` and reads the cell through `hitCell()` (`userData.base` for a
   block, `userData.cell` for a crate). `validate()` passes the crate set to
-  `R.solid()` for the same reason — a start standing on a crate is standing on
+  `R.solid()` for the same reason - a start standing on a crate is standing on
   something.
 - **You build with what the campaign has shown you.** `seenTools()` hides
   piece chips you have not met and `seenSections()` the grounds; both read
@@ -211,7 +213,7 @@ is the rule.
 - `saveSession()` refuses to write while `dying`; `respawn()` and
   `trialHurt()` write afterwards. The trial's cores and lives are in the
   session; a boss resumes fresh.
-- **A boss phase may carry a `sweep`** — the trial's lethal plane, installed as
+- **A boss phase may carry a `sweep`** - the trial's lethal plane, installed as
   `TR` by `bossEnterPhase()`. BOSS IV is the level. So **`TR` means "a sweep is
   running", not "this is a trial"**: `B` names a death (`die(B?"boss":"trial")`)
   and `B` decides which frame ticks the shared `shieldMs`/`slowMoMs`, or both
@@ -219,7 +221,7 @@ is the rule.
   `bossReset()` in `enterPlay()`, or it wipes the sweep the phase just armed;
   `bossReset()` reads `(B||TR)` for lives for the same reason. The sweep stops
   for the phase card, the kill cam and `bossGraceMs`. `bossSafety()` is no
-  longer a no-op — it holds every sweeping phase to `trialSafety`'s property
+  longer a no-op - it holds every sweeping phase to `trialSafety`'s property
   (`bosses.md`).
 - Boss arena blocks edit `L.blocks`; the pristine list is captured **once**
   in `L.arenaBase`. Crush verdicts are taken *before* `bossFoldCrush()`
@@ -353,7 +355,7 @@ is the rule.
   the camera would leave him past the edge of the screen.
 - **Never on a `tutorial:true` level**, and that is the whole placement rule
   (plus no boss, no trial, section 1 only). In PROLOGUE he offered the fold to
-  somebody the tutorial had not taught it to yet; on `09 — The Rotation` his
+  somebody the tutorial had not taught it to yet; on `09 - The Rotation` his
   plinth is off the `+x` end and the lesson's own new verb turns it in front
   of the board. He starts where the teaching stops, every time it stops.
 - **He is pressed on a DEFERRED single tap** (`guideArm()` / `guideCancel()`,
@@ -387,7 +389,7 @@ is the rule.
   a skip and the star balance (`noLimits()`, `hintsUnlimited()`, `shards()`);
   `EVERYTHING` is that plus every paid shape, granted by rule inside `owns()`
   so shapes added later are included. `dealPrice()` discounts the second when
-  the first is owned. Rewards are never in a pass — money buys progress,
+  the first is owned. Rewards are never in a pass - money buys progress,
   never score.
 - **Four shapes carry `reward:true` and cannot be bought**: one per numbered
   section, granted by `grantShape()` for every star in it. Paid at the moment
@@ -470,6 +472,12 @@ load-bearing per screen.
 
 ## Working notes
 
+- **No em dash (`—`) anywhere.** It reads as machine-written, and the owner
+  does not want it in the game, in a comment or in these docs. A plain `-`
+  does the job. The **only** exception is a `LEVEL_RENAMES` *key*: those are
+  the titles old saves were written under and changing one throws that save
+  away. `grep -rn '—' js/ css/ docs/ index.html tools/ CLAUDE.md` should find
+  nothing outside that table.
 - The owner is learning, not shipping. Explanations of *why* are wanted, not
   just working code.
 - Levels can be pasted in and out as JSON from the editor's ⋯ menu (`ioPanel`), and one at a time from MY LEVELS' SHARE.
@@ -477,14 +485,14 @@ load-bearing per screen.
 ### How to work on this, agreed with the owner
 
 - **Propose before building, whenever the ask is open-ended.** A few options,
-  two paragraphs each, no code. The owner picks one — or two, if more than one
+  two paragraphs each, no code. The owner picks one - or two, if more than one
   is interesting. Designing three fights at full fidelity and discarding two
   is the expensive way to arrive at the same answer, and it happened once.
   **A concrete list of UI fixes is not open-ended**: do them, one commit
   each, and show the screenshots.
 - **Feel beats simulation on anything real-time.** For bosses and trials the
   owner playtests and says what is wrong immediately, which is faster and
-  truer than tuning against `bosssim` — and the fight may be scrapped anyway.
+  truer than tuning against `bosssim` - and the fight may be scrapped anyway.
   Run the checks when the *rules* change or when something must be proved
   possible; do not run them to tune a number.
 - **Ordinary levels are the opposite: always machine-verify.** `node
@@ -498,7 +506,7 @@ load-bearing per screen.
   because one of them was broken once and cost the whole map redesign off the
   live link (`docs/HISTORY.md`):
   - **Commit before you build.** The build stamps its own commit into the
-    file, and warns when the tree is dirty — a build from uncommitted work
+    file, and warns when the tree is dirty - a build from uncommitted work
     cannot be re-derived, so there is no way back to it.
   - **Check the size against what is already live** before replacing it. A
     build that is *smaller* than the one it replaces is a question. −70KB
@@ -506,7 +514,7 @@ load-bearing per screen.
   - **Publish to the URL, never to a new one.** A second artifact is not a
     new version, it is a second link the owner now has to keep straight.
   - **Rolling back is `git checkout <commit> && build && publish`.** The
-    build is deterministic — same commit, byte-identical file — which is what
+    build is deterministic - same commit, byte-identical file - which is what
     makes "put it back" checkable rather than hopeful.
 - **Publishing updates the artifact; it does not update what other people
   see.** Each publish becomes a version, and the share is pinned to one of

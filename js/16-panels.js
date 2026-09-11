@@ -1,5 +1,5 @@
 "use strict";
-/* I'm Just A Cube — 16-panels.js
+/* I'm Just A Cube - 16-panels.js
    Chapters and every slide-up panel: menu, levels, wardrobe, library.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
@@ -819,7 +819,7 @@ function sectionSpans(){
   }
   return out;
 }
-/* MASTERED — every scoreable level in the section on three stars.
+/* MASTERED - every scoreable level in the section on three stars.
 
    Not "cleared": cleared is what the rolling window already tracks and what
    the bar under the section card already draws. This is the other thing, and
@@ -845,7 +845,7 @@ function sectionMastered(sp){
 }
 
 /* ============================================================
-   THE MAP — the picker as a path
+   THE MAP - the picker as a path
 
    A section at a time: a run of levels, a trial partway in, a boss closing
    it. The list this replaced showed all seventy-two at once in one column of
@@ -1401,7 +1401,7 @@ function mapShape(k){
 /* The number in the node.
 
    THE TUTORIALS ARE NUMBERED BY POSITION, NOT BY NAME, and that is the whole
-   reason this takes an ordinal. All three are called `00 — ...` on purpose:
+   reason this takes an ordinal. All three are called `00 - ...` on purpose:
    they sit outside the campaign's numbering, so they do not consume 01, 02
    and 03 and cannot renumber anything after them. The cost was that every
    node in PROLOGUE read "00", and once solved they all read the same tick -
@@ -2515,7 +2515,7 @@ function shareData(lv){
 }
 
 /* ============================================================
-   THE SHARE CODE — one level, one code, always the same length
+   THE SHARE CODE - one level, one code, always the same length
 
    WHAT A LEVEL COSTS AS JSON is about fourteen characters per block, and
    almost all of it is punctuation: `[3,0,-4],` is nine characters carrying

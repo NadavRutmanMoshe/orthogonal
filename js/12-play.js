@@ -1,5 +1,5 @@
 "use strict";
-/* I'm Just A Cube — 12-play.js
+/* I'm Just A Cube - 12-play.js
    The verbs: move, shove, collapse, restore, die, win.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
@@ -311,20 +311,20 @@ function bossAdvance(){
    phase boundary, or a kill cam replaying the charge that just landed. */
 function bossHolding(){return bossPause>0||!!rep;}
 /* ============================================================
-   THE STRIKE STING — the big, loud beat
+   THE STRIKE STING - the big, loud beat
 
    A hit used to be a shake, a two-tone blip and a toast, and the toast said
    the important part. That is the correct weight for everything else this
    fight does and the wrong weight for the two events the fight is actually
    made of: one of them going down, or one of you going. So both now get a
-   full-screen sting — a bloom, speed lines, two rings and one word — and the
+   full-screen sting - a bloom, speed lines, two rings and one word - and the
    toast stays underneath as the bookkeeping it always was.
 
    It is one call, it writes two strings and one class, and everything else
    is in the CSS (`.bsting`, css/65-replay.css). Two reasons it is built this
    way rather than as an animation in the scene: it has to be free at the
    most expensive instant in the game, and it has to be re-triggerable
-   instantly — a second kill 400ms after the first must restart it, not queue
+   instantly - a second kill 400ms after the first must restart it, not queue
    behind it. `void el.offsetWidth` is what restarts a CSS animation, and it
    is the same trick deathSayShow() uses one screen down for the same reason.
 
@@ -373,7 +373,7 @@ function bossStingHide(){
   var el=$("bossSting");if(el)el.className="bsting";
 }
 /* ============================================================
-   THE KILL CAM'S WIND-UP — snow, a camcorder, then the film
+   THE KILL CAM'S WIND-UP - snow, a camcorder, then the film
 
    The replay itself is unchanged; what is new is the second and a half in
    front of it. The picture drops to white noise, a camcorder is walked up to
@@ -498,7 +498,7 @@ function killCamHide(){
    THE REPLAY - recorder and control. See 05-state.js for the design.
    ============================================================ */
 /* ============================================================
-   THE SOUNDTRACK — what was heard, recorded by listening
+   THE SOUNDTRACK - what was heard, recorded by listening
 
    The film had the pictures and none of the noise, which is the difference
    between watching footage of a thing and reliving it. Every step, bump,
@@ -2545,9 +2545,9 @@ function bindNever(){
    at it: a level is beaten or it is not, the three glyphs in the corner move
    silently, and a player who walks every level and never folds a shortcut is
    never told they missed anything. So it is said once, in words, on the
-   first level carrying `stars:true` - which is `12 — Simple Walk`, where par
+   first level carrying `stars:true` - which is `12 - Simple Walk`, where par
    is exactly what walking costs. The player is told to aim for three, gets
-   them for free, and then meets `13 — Not a Simple Walk`, which looks identical
+   them for free, and then meets `13 - Not a Simple Walk`, which looks identical
    and where walking is one move too many. The card is the setup; the second
    level is the punchline.
 

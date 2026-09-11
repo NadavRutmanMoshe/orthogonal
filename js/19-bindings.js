@@ -1,5 +1,5 @@
 "use strict";
-/* I'm Just A Cube — 19-bindings.js
+/* I'm Just A Cube - 19-bindings.js
    Every button and key binding.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */

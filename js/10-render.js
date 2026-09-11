@@ -1,5 +1,5 @@
 "use strict";
-/* I'm Just A Cube — 10-render.js
+/* I'm Just A Cube - 10-render.js
    three.js scene, meshes, depth shading, the animation loop.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
@@ -58,7 +58,7 @@ var repFade=0, repFollow=new THREE.Vector3();
 var viewSize=10,viewSizeT=10;
 
 /* ============================================================
-   THE FOLLOW CAMERA — an experiment, and easy to take out
+   THE FOLLOW CAMERA - an experiment, and easy to take out
 
    The camera has always been centred on the *arena*: it frames the whole
    level and never moves while you play. That is clean, and it costs the one
@@ -2084,7 +2084,7 @@ function makeBlockMesh(kind){
   return m;
 }
 /* ============================================================
-   PIECE PORTRAITS — the real mesh, photographed small
+   PIECE PORTRAITS - the real mesh, photographed small
 
    The editor's tool chips are pictures of the pieces they place. They were
    drawn by hand in SVG first, twice: once off the legend's flat swatch
@@ -2521,7 +2521,7 @@ function huntMesh(){
   return g;
 }
 /* ============================================================
-   GOING TO ASH — the only death animation in the game
+   GOING TO ASH - the only death animation in the game
 
    Until now nothing actually died on screen. A hunter you killed was spliced
    out of the array and its mesh simply stopped being drawn; the player losing
@@ -2838,7 +2838,7 @@ function drawLines(){
    through that point, so they share a silhouette column exactly when one of
    them stands on the arm the current view is about to collapse. That arm is
    drawn bright and the other faint, and both re-label themselves when you
-   rotate — which is the moment the whole board changes meaning, and it
+   rotate - which is the moment the whole board changes meaning, and it
    should be visible as one.
 
    The tether says the two bodies are one animal, and goes green the instant

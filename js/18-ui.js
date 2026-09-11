@@ -1,5 +1,5 @@
 "use strict";
-/* I'm Just A Cube — 18-ui.js
+/* I'm Just A Cube - 18-ui.js
    Toasts, panel plumbing, and syncHud.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
@@ -330,7 +330,7 @@ function syncHud(){
      back the moment you stand up, so greying them says "not now". A level
      with `rotate:false` is a different sentence: the turn does not exist yet.
      The opening ten levels are all locked, so the buttons arriving on
-     `09 — The Rotation` is the reveal that level is built around, and a
+     `09 - The Rotation` is the reveal that level is built around, and a
      pair of dead controls sitting in the bar for ten levels would spend it
      in advance. Deliberately not keyed off `noRot`, which includes flat. */
   document.body.classList.toggle("norot",
@@ -357,12 +357,12 @@ function syncHud(){
 }
 
 /* ============================================================
-   THE PRIMER — a level's rules, as a checklist that ticks itself
+   THE PRIMER - a level's rules, as a checklist that ticks itself
 
    Almost every level in this game teaches by being played: the coach cues a
    control and pressing it is the explanation. A fight cannot open that way,
-   because the thing it has to say is a conjunction — be on its line, AND be
-   looking down that line, AND fold, AND do all of it before it does — and
+   because the thing it has to say is a conjunction - be on its line, AND be
+   looking down that line, AND fold, AND do all of it before it does - and
    there is no single press that demonstrates a conjunction. So SPARRING says
    it, in a list, above a board where each line is one move.
 
@@ -371,8 +371,8 @@ function syncHud(){
    a lesson is that each line answers back. Every step is a predicate over the
    kill state (killState(), 12-play.js), the boxes tick and untick as the
    player moves and turns, and the fourth goes red for exactly as long as the
-   hunter's ray is live. The player can therefore *find* the rule by moving —
-   which is how every other thing in this game is taught — and the words are
+   hunter's ray is live. The player can therefore *find* the rule by moving -
+   which is how every other thing in this game is taught - and the words are
    only there to name what they are watching happen.
 
    And when it kills them, the level's `why` line says which step they missed -
@@ -388,7 +388,7 @@ function syncHud(){
 
    TWO PASSES, and they are separate on purpose. syncPrimer() writes markup
    and is called from syncHud, so it runs when the level or the control layout
-   changes — anything animated inside markup that is rewritten every redraw
+   changes - anything animated inside markup that is rewritten every redraw
    restarts, which is the rule the live star row is its own element for.
    primerMarks() only toggles classes, and it runs every frame from the render
    loop, because what the checklist describes changes without the player
