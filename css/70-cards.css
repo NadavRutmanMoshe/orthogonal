@@ -66,6 +66,12 @@
     color:var(--sec);border:1px solid color-mix(in srgb,var(--sec) 46%,transparent);
     padding:4px 11px;border-radius:99px;
     animation:wmast .6s cubic-bezier(.2,1.5,.4,1) .72s both}
+  /* A FEAT IS NOT A SHELF, so it does not borrow `--sec`. Two of the pack in
+     one fold is paid in the star's own gold - the colour this game already
+     uses for the thing a star cannot be spent on (see `.wearn` in
+     40-panels.css) - and it is the only `.wonwear` that can appear without a
+     mastery pill above it, so it carries its own top margin. */
+  .wonfeat{--sec:var(--star);margin-top:9px}
   @keyframes wmast{0%{opacity:0;transform:scale(.8)}100%{opacity:1;transform:scale(1)}}
   /* WHY THE NEXT THING IS SHUT. Only ever seen on BOSS IV with a boss still
      standing, and it is the amber the game already uses for "a landmark on a

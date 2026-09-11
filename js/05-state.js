@@ -261,6 +261,14 @@ var bossPendingAdvance=false;
    wants the film - they are about to fight the whole thing again - so the
    reset waits behind it exactly as a phase clear does. */
 var bossPendingDeath=false;
+/* A SHAPE EARNED BY A MOVE, waiting to be announced. Two of the pack in one
+   silhouette column is the feat (bossFoldCrush); it is granted the instant it
+   happens, because the fight may still take the player afterwards and the
+   feat already happened - this only carries the NEWS, to whichever of the
+   three things that follows a fold gets there first: the toast, the phase
+   note, or the win card. Cleared by bossReset(), so it can never be
+   announced on a fight it was not earned in. */
+var featNews=null;
 /* Trials. T is null on every level that isn't one, and like B every check is
    guarded on it. It deliberately spends the same `lives` a boss does: a level
    is either on a clock or it isn't, never both, and one counter means the HUD,

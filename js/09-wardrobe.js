@@ -81,7 +81,26 @@ var SKIN_SHAPES=[
   {id:"sapling", name:"Sapling",  cost:0, reward:true, sec:1},
   {id:"flame",   name:"Flame",    cost:0, reward:true, sec:2},
   {id:"minnow",  name:"Minnow",   cost:0, reward:true, sec:3},
-  {id:"cactus",  name:"Cactus",   cost:0, reward:true, sec:4}
+  {id:"cactus",  name:"Cactus",   cost:0, reward:true, sec:4},
+  /* THE ONE THAT IS PAID FOR BY A MOVE RATHER THAN BY A SHELF.
+
+     `reward:true` is what keeps it off sale - no BUY, no ad row, no star
+     price - and `feat` is what says the condition is not a section: two of
+     the pack in ONE silhouette column, crushed by one fold (n>=2 in
+     bossFoldCrush, js/12-play.js). It is deliberately the rarest sentence
+     the fight has and the hardest to arrange, because depth is what puts
+     them in the same column and depth is the thing the player chooses.
+
+     A DOMINO, because that is what the feat looks like: one piece made of
+     two squares, and dominoes are the thing that falls two at a time. It
+     has no `sec`, so rewardShapeFor() and the boot sweep can never pay it
+     out - only the fold can. */
+  {id:"domino",  name:"Domino",   cost:0, reward:true, feat:"double",
+   /* `short` is what the 74px tile prints, and `.item span.wlock` is
+      `white-space:nowrap` - a long one does not wrap, it widens the grid
+      column it is in and pushes the whole list out under the display case.
+      Three words at most here; the sentence goes in `say`. */
+   say:"two of them in one fold", short:"double kill"}
 ];
 /* Which shape a section awards, and whether it has been taken. Kept as
    lookups over SKIN_SHAPES rather than a second table, so adding a reward is
@@ -359,6 +378,25 @@ function buildPlayerMesh(shape,col,mat){
     bx(.10,.20,.13,-.22,.16,0);
     bx(.14,.09,.13,.16,-.09,0);
     bx(.10,.16,.12,.20,.03,0);
+  } else if(shape==="domino"){
+    /* THE TILE, STANDING UP. A slab thinner in z than it is wide, so it is
+       a tile from every one of the four camera views rather than a second
+       cube from two of them; a bar across its waist where the two halves
+       meet; and two pips on each half.
+
+       The pips stand PROUD of the face rather than being drawn on it. There
+       is no second colour available - the whole piece takes the equipped
+       one, like every other shape - so a pip has to be a shape, and
+       addOutline() draws the edges of every mesh in the group, which is
+       what makes four small squares read as pips at the size this is
+       actually seen at. A double two, because a double is the point. */
+    g=new THREE.Group();
+    bx(.46,.62,.20,0,0,0);               // the tile
+    bx(.50,.045,.215,0,0,0);             // the bar across the waist
+    [[-.11,.20],[.11,.20],[-.11,-.20],[.11,-.20]].forEach(function(o){
+      bx(.10,.10,.045,o[0],o[1],.115);   // pips, front
+      bx(.10,.10,.045,o[0],o[1],-.115);  // and the same on the back
+    });
   } else if(shape==="rook"){
     /* THE CASTLE, bottom to top: a wide foot, a plinth, the shaft, the
        collar under the crown, and four merlons at the corners so the notches

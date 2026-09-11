@@ -122,7 +122,8 @@ function bossReset(){
   bossPause=0;phaseNoteEnd();
   bossHp=B?B.hp:0;bossFlash=0;bossHitFlash=0;bossCreepMs=0;bossGraceMs=0;
   shieldMs=0;deathPending=false;slowMoMs=0;
-  rep=null;bossPendingAdvance=false;bossPendingDeath=false;replayClear();
+  rep=null;bossPendingAdvance=false;bossPendingDeath=false;featNews=null;
+  replayClear();
   document.body.classList.remove("replaying");
   bossStingHide();killCamHide();repSfxInstall();
   if(typeof ashClear==="function")ashClear();
@@ -285,6 +286,17 @@ function bossSendHome(){
    whole structure in four lines: the health bar counts phases, and the last
    one running out is the win. */
 var BOSS_PAUSE=1900;   // how long the board is yours to read. A feel number.
+/* THE NEWS, WHEREVER IT LANDS. Answers true when it had something to say, so
+   a caller can use it INSTEAD of its own toast rather than on top of one -
+   two flashes in a row is one flash, because the second overwrites the first
+   and the rarer of the two is the one that would be lost. */
+function featAnnounce(){
+  if(!featNews)return false;
+  var it=featNews;featNews=null;
+  flash(it.name+" unlocked · "+(it.say||"a feat"));
+  if(SFX.mastery)SFX.mastery();
+  return true;
+}
 function bossAdvance(){
   bossPhase++;
   bossHp=B.phases.length-bossPhase;
@@ -304,6 +316,9 @@ function bossAdvance(){
   bossEnterPhase(true);
   bossPause=BOSS_PAUSE;
   phaseNote(B.phases[bossPhase].say||("phase "+(bossPhase+1)+" of "+B.phases.length));
+  // A fold that cleared the phase AND took two at once went straight past the
+  // toast at the foot of bossFoldCrush; the news rides in behind the card.
+  featAnnounce();
 }
 /* Held while the card is up: nothing walks, nothing lands, nothing you press
    does anything. Read by the four verbs and by bossFrame. */
@@ -1331,6 +1346,18 @@ function bossFoldCrush(){
      just did is the kill, and how many they got is the part that varies from
      fold to fold. The stakes go under it, where they still read. */
   var left=hunters.length, n=doomed.length;   // survivors, then kills
+  /* THE FEAT, PAID THE INSTANT IT HAPPENS. Two of them in one silhouette
+     column is the rarest thing this fight can be made to do - they are only
+     ever in the same column because the player chose the axis that put them
+     there - so it is the one move in the game that buys a shape outright.
+
+     Granted here rather than at the end of the fight because the fold is
+     what earned it and the next charge may still take the player;
+     grantShape() writes the wardrobe itself and answers null when it was
+     already owned, so it is news exactly once. The twin's branch above is
+     deliberately not included: a twin core is ALWAYS both halves, so it
+     would pay out on the first fold of BOSS III and mean nothing. */
+  if(n>=2&&typeof grantShape==="function")featNews=grantShape("domino")||featNews;
   /* Two or more in one square is the rarest sentence this fight has and it
      was going by too fast to read. The extra beat is spent by the wind-up. */
   kcBonus=(n>=2)?700:0;
@@ -1364,8 +1391,9 @@ function bossFoldCrush(){
     }
     bossAdvance();return;
   }
-  flash(doomed.length>1?(doomed.length+" in one square · "+hunters.length+" left"):
-        ("folded onto it · "+hunters.length+" left"));
+  if(!featAnnounce())
+    flash(doomed.length>1?(doomed.length+" in one square · "+hunters.length+" left"):
+          ("folded onto it · "+hunters.length+" left"));
   syncHud();
 }
 /* ============================================================
@@ -2355,6 +2383,20 @@ function win(){
         " unlocked \u00b7 in the wardrobe</em>";
       setTimeout(function(){if(SFX.mastery)SFX.mastery();},520);
     }
+  }
+  /* AND A FEAT EARNED BY THE WINNING FOLD IS NAMED ON THE CARD, because the
+     toast at the foot of bossFoldCrush is never reached on the fold that
+     clears the board - that one goes into the kill cam and out through
+     bossAdvance() into this. Same `.wonwear` line the section payout uses,
+     in the star's gold rather than a section's colour: it is not a shelf
+     that paid for it. */
+  if(featNews){
+    var fw=featNews;featNews=null;
+    var sub3=$("wonSub");
+    sub3.innerHTML=(sub3.children.length?sub3.innerHTML:esc(sub3.textContent))+
+      "<em class='wonwear wonfeat'>"+esc(fw.name)+" unlocked · "+
+      esc(fw.say||"a feat")+"</em>";
+    setTimeout(function(){if(SFX.mastery)SFX.mastery();},520);
   }
   /* AND IF THE NEXT LEVEL IS BEHIND A LOCK, SAY SO HERE.
 

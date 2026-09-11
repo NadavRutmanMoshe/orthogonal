@@ -228,6 +228,13 @@ function wardMeta(){
   /* A REWARD IS NOT FOR SALE. No BUY, no ad row, and the button says the one
      thing that opens it. Ads buy progress, never score - and this is the one
      item in the catalogue that IS score. */
+  /* A FEAT SAYS THE MOVE, not the shelf. Same dead gold button, because it
+     is the same kind of thing - something a star cannot be spent on - but
+     "EVERY ★ IN undefined" is what the section wording gives a shape with no
+     section, and this one is paid for by one fold. */
+  else if(it.reward&&it.feat)
+                      s+="<button disabled class='wearn wfeat'>"+
+                         esc((it.short||it.say).toUpperCase())+"</button>";
   else if(it.reward)  s+="<button disabled class='wearn'>EVERY "+
                          "<u class='st'>\u2605</u> IN "+
                          esc(secNumeral(it.sec))+"</button>";
@@ -310,6 +317,8 @@ function grantShards(n){
    section's numeral and the condition. Falls back to the whole name where a
    section has no numeral, which none of the four awarding ones do. */
 function rewardSay(it){
+  // A feat is not a shelf: it names the move that pays it, not a section.
+  if(it.feat)return it.say||"a feat";
   var sec=SECTIONS[it.sec];
   if(!sec)return "every star";
   return "every \u2605 in "+sec.name;
@@ -324,6 +333,7 @@ function secNumeral(n){
 // The same thing in a 74px column: the numeral only. "every ★ in III" wrapped
 // to two lines there and made one tile taller than the row it is in.
 function rewardShort(it){
+  if(it.feat)return esc(it.short||it.say||"a feat");
   var sec=SECTIONS[it.sec];
   if(!sec)return "all \u2605";
   return secNumeral(it.sec)+" \u00b7 all <u class='st'>\u2605</u>";
@@ -391,6 +401,12 @@ function shapeSvg(d){
   return "<svg viewBox='0 0 24 24' aria-hidden='true'><path d='"+d+"'/></svg>";
 }
 var SHAPE_SVG={
+  /* Two squares with a gap between them and two pips in each: the pips are
+     holes rather than a second path, wound the other way round so the one
+     fill leaves them open. A domino at 21px is the gap and the pips; an
+     outline with a line down the middle is a window frame. */
+  domino:"M5.5 2.5H18.5V11.4H5.5ZM7.6 6.9H10.2V4.3H7.6ZM13.8 9.6H16.4V7H13.8Z"+
+         "M5.5 12.6H18.5V21.5H5.5ZM7.6 17H10.2V14.4H7.6ZM13.8 19.7H16.4V17.1H13.8Z",
   rook:"M5 3h3.2v2h1.8V3h4v2h1.8V3H19v4.2H5Zm1.6 4.9h10.8l-.8 1.9H7.4Zm.8 "+
        "2.5h9.2l1.1 6.2H6.3Zm-2.8 6.9h14.8v1.5H4.6Zm-.7 2.1h16.2v2.1H3.9Z",
   pup:"M4.6 9.1c0-1 .5-1.6 1.3-1.6.6 0 1 .3 1.4.9l.5.8h4.3c1.4 0 2.6.5 3.5 "+

@@ -400,10 +400,17 @@ is the rule.
   so shapes added later are included. `dealPrice()` discounts the second when
   the first is owned. Rewards are never in a pass - money buys progress,
   never score.
-- **Four shapes carry `reward:true` and cannot be bought**: one per numbered
-  section, granted by `grantShape()` for every star in it. Paid at the moment
+- **Five shapes carry `reward:true` and cannot be bought**: four by section
+  (`sec`), granted by `grantShape()` for every star in it, paid at the moment
   the last star lands (`win()`) and swept once on boot for older saves;
   neither path may use `sectionMastered()`, which the preview switch fakes.
+  The fifth is a **feat** (`feat`, no `sec`): the **Domino**, paid by two of
+  the pack in one silhouette column (`n>=2` in `bossFoldCrush()`), granted the
+  instant it happens. `featNews` carries only the NEWS, to whichever of the
+  toast, the phase note or the win card gets there first. The twin's branch is
+  deliberately not included - a twin core is always both halves. A feat's tile
+  label (`short`) must be three words at most: `.item span.wlock` is `nowrap`
+  and a long one widens the grid column and pushes the list under the case.
 - **`UNLIMITED_SHARDS` in `js/09-wardrobe.js` is `true` for playtesting.**
   Set it back to `false` before shipping. `AMB_MUTED` in `js/11-sound.js`
   is `true`: the ambient beds are built but muted, on the owner's call.

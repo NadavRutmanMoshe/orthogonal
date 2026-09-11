@@ -338,7 +338,7 @@
   but the player is drawn against the void in 3D and paper in 2D - opposite ends
   of the range - so no single colour reads against both. The rim is re-picked
   from the current background instead of fudging the colours to mid-grey.
-- **Four shapes are earned, not sold.** Sapling, Flame, Minnow and Cactus
+- **Five shapes are earned, not sold.** Sapling, Flame, Minnow and Cactus
   carry `reward:true` and a `sec` in `SKIN_SHAPES`, and each is granted for
   taking *every star* in the section it names - nature, fire, water, desert,
   each standing up as a character in that section's element. They are the
@@ -359,6 +359,34 @@
   on a repeat, so the two paths cannot pay twice. Neither goes through
   `sectionMastered()`, which answers yes to everything while the mastery
   preview switch is on - a preview must never be able to pay out.
+
+  **And the fifth is paid for by a move rather than by a shelf.** The Domino
+  carries `reward:true` and a `feat` instead of a `sec`, and the condition is
+  two of the pack in ONE silhouette column, crushed by one fold - `n>=2` in
+  `bossFoldCrush()`. It is the rarest thing the fight can be made to do,
+  because the only reason two hunters are ever in the same column is that the
+  player chose the axis that put them there, which is the whole game's verb
+  used offensively. A domino is what the feat looks like: one piece made of
+  two squares, and the thing that falls two at a time.
+
+  It is granted **the instant the fold lands**, not at the end of the fight.
+  The fold is what earned it and the next charge may still take the player;
+  `grantShape()` writes the wardrobe itself and answers null on a repeat, so
+  it is news exactly once. What is deferred is only the *announcement*:
+  `featNews` holds the item, and `featAnnounce()` spends it on the first of
+  the three things that can follow a fold - the toast at the foot of
+  `bossFoldCrush()`, the phase note in `bossAdvance()`, or a `.wonwear` line
+  on the win card, in the star's gold rather than a section's colour.
+  `featAnnounce()` answers true when it said something so a caller can use it
+  INSTEAD of its own toast: two flashes in a row is one flash, and the rarer
+  of the two is the one that would be lost.
+
+  The twin's branch of `bossFoldCrush()` is deliberately left out. A twin core
+  is ALWAYS both halves, so including it would pay the Domino out on the first
+  fold of BOSS III and mean nothing.
+
+  `rewardShapeFor()` and `sweepSectionRewards()` walk `sec`, so neither can
+  ever reach it - only the fold can pay it.
 - **`UNLIMITED_SHARDS` in `js/09-wardrobe.js` is currently `true`** so the whole
   wardrobe can be walked during playtesting - the catalogue costs more than
   perfect play earns, so it is otherwise unreachable. It short-circuits
