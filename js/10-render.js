@@ -2474,10 +2474,18 @@ function fitViewSize(){
 
    AND IT DOES NOT TURN. The octahedron span - slowly while hunting, hard
    when doomed - and the cube inherited it for one build before it went on
-   the owner's call. Nothing is lost: the state was never carried by the spin
-   alone (the cage colours, the telegraph draws, the scale swells), and a
-   thing that is now recognisably a PERSON must not rotate on the spot. It is
-   squared to the camera like the player, so it is always seen face-on.
+   the owner's call: a thing that is now recognisably a PERSON must not
+   rotate on the spot. It is squared to the camera like the player, so it is
+   always seen face-on.
+
+   WHAT THE SPIN WAS QUIETLY DOING, THOUGH, WAS MAKING THEM FINDABLE. Taking
+   it away left a near-black cube with a hairline rim on a dark board, and
+   that was reported straight back. Three things replace it and none of them
+   is motion of the piece: the body is lifted off black to something that
+   actually has a value, the rim is nearly solid instead of half, and there
+   is an AURA - a slightly larger box of the hunter's own colour at low
+   opacity, depth-write off - putting a soft halo round it. The only movement
+   left is the halo breathing, which is a scale and not a turn.
 
    The parts keep their names. `core` sits inside an opaque shell and is
    never seen - it was never seen on the octahedron either - and `cage` is
@@ -2485,15 +2493,30 @@ function fitViewSize(){
    goal's green when the fold would kill it. */
 function huntMesh(){
   var g=new THREE.Group();
+  /* NOT PURE BLACK. The officers read in the opening because they stand on a
+     bright meadow; an arena is basalt or night grass, and 0x241820 on that
+     is a hole in the board rather than a thing on it. Lifted far enough to
+     have a value and kept cold enough to still read as black. */
   var shell=new THREE.Mesh(new THREE.BoxGeometry(.72,.72,.72),
-    new THREE.MeshLambertMaterial({color:0x241820}));
+    new THREE.MeshLambertMaterial({color:0x46323e}));
   var core=new THREE.Mesh(new THREE.OctahedronGeometry(.2),
     new THREE.MeshBasicMaterial({color:0xff4d5e}));
+  /* THE AURA IS WHAT REPLACED THE SPIN. A dark cube with a one-pixel rim is
+     hard to find on a dark board, and the spin was doing that job by moving.
+     A slightly larger box of its own colour at low opacity, drawn without
+     writing depth, puts a soft halo round it instead - so it is found by
+     CONTRAST rather than by motion, which is the right way for a thing the
+     player has to locate in a second. It takes the same colour the cage
+     does, so doom turns the whole piece green rather than only its wire. */
+  var aura=new THREE.Mesh(new THREE.BoxGeometry(.94,.94,.94),
+    new THREE.MeshBasicMaterial({color:0xff4d5e,transparent:true,opacity:.16,
+      depthWrite:false}));
+  aura.renderOrder=-1;
   var cage=new THREE.LineSegments(
     new THREE.EdgesGeometry(new THREE.BoxGeometry(.78,.78,.78)),
-    new THREE.LineBasicMaterial({color:0xff6b7a,transparent:true,opacity:.85}));
-  g.add(shell);g.add(core);g.add(cage);
-  g.userData.core=core;g.userData.cage=cage;
+    new THREE.LineBasicMaterial({color:0xff6b7a,transparent:true,opacity:.95}));
+  g.add(aura);g.add(shell);g.add(core);g.add(cage);
+  g.userData.core=core;g.userData.cage=cage;g.userData.aura=aura;
   scene.add(g);
   return g;
 }
@@ -2900,9 +2923,20 @@ function drawBoss(rx,rz,tdvx,tdvz){
     m.rotation.y=Math.atan2(tdvx,tdvz);
     m.userData.core.material.color.setHex(h.doom?0x35c2a5:0xff4d5e);
     m.userData.cage.material.color.setHex(h.doom?0x35c2a5:0xff6b7a);
-    m.userData.cage.material.opacity=h.doom?(.7+perilPulse*.3):(.5+bossFlash*.4);
+    m.userData.cage.material.opacity=h.doom?(.85+perilPulse*.15):(.8+bossFlash*.2);
     m.userData.core.scale.setScalar(h.doom?1.35:1);
-    m.scale.setScalar((1+bossHitFlash*.3)*(h.doom?1.06:(h.lock>0?1.12:1)));
+    /* The halo breathes, and that is the only motion left on them. It is a
+       scale rather than a turn: it says "here" without saying "spinning
+       object", and it reads at the edge of vision, which is where a hunter
+       usually is when you need to find it. Doubled and greened on doom,
+       because that is the one second in the fight worth shouting about. */
+    if(m.userData.aura){
+      m.userData.aura.material.color.setHex(h.doom?0x35c2a5:0xff4d5e);
+      m.userData.aura.material.opacity=h.doom?(.24+perilPulse*.20)
+        :(.15+.05*Math.sin(Date.now()*.004+i));
+    }
+    m.scale.setScalar((1+bossHitFlash*.3)*(h.doom?1.06:(h.lock>0?1.12:1))
+      *(1+.028*Math.sin(Date.now()*.004+i*1.7)));
   }
   drawLines();
   drawTwin(rx,rz);

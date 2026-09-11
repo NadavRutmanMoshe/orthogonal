@@ -803,7 +803,18 @@ Photographed, the glimpse was perfect and invisible.
 `huntMesh()` was an octahedron: spiky, abstract, belonging to nobody. It is
 the same near-black cube with the same red rim the census wears in the opening
 cutscene, at the same values. Nothing says the hunters and the officers are
-the same thing; the shape says it, from the first fight. **And it does not turn.** The octahedron span, and the cube inherited the spin
+the same thing; the shape says it, from the first fight. **What the spin was quietly doing was making them findable.** Taking it away
+left a near-black cube with a hairline rim on a dark board, and that came
+straight back from a playtest. Three things replace it and none of them is
+motion of the piece: the body is lifted off black to something with an actual
+value, the rim goes from half opacity to near-solid, and an *aura* — a
+slightly larger box of the hunter's own colour at low opacity with depth
+writing off — puts a soft halo round it. The only movement left is the halo
+breathing, which is a scale rather than a turn: it says *here* without saying
+*spinning object*, and it reads at the edge of vision, which is where a
+hunter usually is when you need to find it.
+
+**And it does not turn.** The octahedron span, and the cube inherited the spin
 for one build before it went. Nothing is lost: the state was never carried by
 the spin alone — the cage is red or the goal's green, the telegraph draws the
 line before a charge, the scale still swells. What the spin cost was the

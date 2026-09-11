@@ -1415,3 +1415,26 @@ comes out olive and changes nothing. To land warmer than green, a tint needs
 roughly half again as much red as green. The first wall tint was a pale cream
 and did nothing at all; the first dune tint was a proper sand (`0xd9bd83`,
 almost equal red and green) and the dunes came out as more lawn.
+
+
+---
+
+## A speech bubble that wrapped one word per line
+
+`.gbub` is `position:fixed` with a `left` written every frame from the
+speaker's projected position, and no `right`. Its containing block is
+therefore the viewport and its used width is *shrink-to-fit against whatever
+is left of the screen past `left`* — so when the neighbour moved to his own
+plinth off the right-hand end of the board, the available width collapsed to
+a hundred-odd pixels and the box wrapped one word at a time and ran off the
+edge. The `translate(-50%,-100%)` that centres it is applied after the width
+is already decided, so it cannot help.
+
+`width:max-content` is the fix: it takes the available width out of the
+calculation altogether, so the box is as wide as its longest line wants,
+capped by `max-width`, wherever it is put. Only then is `offsetWidth` a real
+number rather than a consequence of where the box was placed — which is what
+makes clamping `left` against it work instead of feeding back on itself.
+
+Worth remembering for any future element positioned this way: a fixed box
+with one inset set is sized by the space past that inset.

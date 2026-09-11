@@ -302,10 +302,11 @@ is the rule.
   behind the black and fades up. `ST_ARRIVE` is those five beats and
   `stArrive()` is the swap; a menu replay skips them.
 - **The pack wears the officers' look and does not spin.** `huntMesh()` is the
-  same near-black cube with the same red rim the census wears in the opening,
-  squared to the camera. The state was never carried by the spin (the cage
-  colours, the telegraph draws, the scale swells) and a person does not
-  rotate on the spot.
+  same cube with the same red rim the census wears in the opening, squared to
+  the camera. The spin was quietly making them FINDABLE, so three things
+  replace it: the body is lifted off black, the rim is near-solid, and an
+  AURA (a larger box of the hunter's colour, low opacity, `depthWrite:false`)
+  haloes it. The only motion left is that halo breathing - a scale, not a turn.
 - **The father is glimpsed in II · FIRE**: every 20s, a 50% coin, 600ms,
   one time in ten as the Shard he came back as (`ghostFrame()` in
   `js/23-guide.js`). Behind and just over the board and INSIDE the frame -

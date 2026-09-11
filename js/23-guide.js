@@ -330,7 +330,16 @@ function guideFrame(dtMs,rx,rz,tdvx,tdvz,ft){
       gdTmp.copy(GD.mesh.position);gdTmp.y+=.75;
       gdTmp.project(camera);
       var w=window.innerWidth,h=window.innerHeight;
-      el.style.left=Math.round((gdTmp.x*.5+.5)*w)+"px";
+      /* KEPT ON SCREEN. He stands off the right-hand end of the board, so
+         the bubble's natural anchor is close to the edge and half of it
+         would hang past it. The box is `width:max-content` (see
+         css/99-guide.css), so offsetWidth is a real number here and not a
+         consequence of where it was put - which is what makes clamping
+         against it work rather than feed back on itself. */
+      var bw=el.offsetWidth||160, pad=10;
+      var gx=(gdTmp.x*.5+.5)*w;
+      gx=Math.max(bw/2+pad,Math.min(w-bw/2-pad,gx));
+      el.style.left=Math.round(gx)+"px";
       el.style.top=Math.round((-gdTmp.y*.5+.5)*h)+"px";
     }
   }

@@ -15,9 +15,24 @@
    cutscene overlay (12) - it is a thing in the level, not a screen, and it
    must go away behind anything that is.
    ============================================================ */
+  /* `width:max-content` IS LOAD-BEARING, and its absence was a real bug.
+
+     This is `position:fixed` with a `left` written every frame and no
+     `right`, so its containing block is the viewport and its used width is
+     SHRINK-TO-FIT against whatever is left of the screen past `left`. Park
+     the neighbour near the right-hand edge - which is exactly where he
+     stands now, on his own plinth off the end of the board - and the
+     available width collapses to a hundred-odd pixels, so the box wrapped
+     one word per line and ran off the screen. The transform that centres it
+     is applied AFTER the width is decided, so it cannot help.
+
+     `max-content` takes the available width out of the calculation
+     altogether: the box is as wide as its longest line wants, capped by
+     max-width, wherever it is put. guideFrame() then keeps it on screen by
+     clamping `left` against its measured width. */
   .gbub{position:fixed;left:0;top:0;z-index:11;
     transform:translate(-50%,-100%);
-    max-width:min(74vw,34ch);padding:9px 12px;
+    width:max-content;max-width:min(74vw,34ch);padding:9px 12px;
     border-radius:11px;
     /* His own colour, at the weight a spoken line can carry: a pale ground
        with dark type on it, which is the one thing on screen that is not
