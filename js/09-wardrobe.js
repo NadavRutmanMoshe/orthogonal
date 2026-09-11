@@ -409,6 +409,29 @@ function buildPlayerMesh(shape,col,mat){
     bx(.14,.09,.13,.16,-.09,0);
     bx(.10,.16,.12,.20,.03,0);
   } else if(shape==="domino"){
+    /* THE PIPS ARE THEIR OWN COLOUR, and it is the piece's opposite.
+
+       Built in the body's colour they were studs: four bumps the same shade
+       as the tile they sit on, told apart only by the edge lines round them,
+       which at the size this is actually seen at is not told apart at all. A
+       domino's pips are PRINTED - the one part of it that is not the tile -
+       so they take ink, and ink here is black on anything but a piece too
+       dark to take it, at which point they flip to white. Same idea as
+       `outlineFor()` and a lower threshold: the owner's rule is black
+       always, white only on a dark skin, and only Black clears .26.
+
+       Cloned from the material handed in rather than made fresh, so the pips
+       are lit by whatever is lighting the body - a fresh MeshBasic in a lit
+       scene is a flat sticker. And marked `keepColor`, which playerChar()
+       reads: that function traverses EVERY mesh in the group and writes the
+       equipped colour into it, so without the mark one burn would repaint
+       the pips in the body's colour and leave them there. */
+    var dl=pipLum(col), pmat=(mat&&mat.clone)?mat.clone():mat;
+    if(pmat&&pmat.color)pmat.color.setHex(dl<PIP_DARK?0xf2f4f8:0x14161d);
+    function pip(w,h,d,x,y,z){
+      var m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),pmat);
+      m.position.set(x,y,z);m.userData.keepColor=true;g.add(m);return m;
+    }
     /* THE TILE, STANDING UP. A slab thinner in z than it is wide, so it is
        a tile from every one of the four camera views rather than a second
        cube from two of them; a bar across its waist where the two halves
@@ -424,8 +447,8 @@ function buildPlayerMesh(shape,col,mat){
     bx(.46,.62,.20,0,0,0);               // the tile
     bx(.50,.045,.215,0,0,0);             // the bar across the waist
     [[-.11,.20],[.11,.20],[-.11,-.20],[.11,-.20]].forEach(function(o){
-      bx(.10,.10,.045,o[0],o[1],.115);   // pips, front
-      bx(.10,.10,.045,o[0],o[1],-.115);  // and the same on the back
+      pip(.10,.10,.035,o[0],o[1],.118);   // pips, front
+      pip(.10,.10,.035,o[0],o[1],-.118);  // and the same on the back
     });
   } else if(shape==="rook"){
     /* THE CASTLE, bottom to top: a wide foot, a plinth, the shaft, the
@@ -770,6 +793,18 @@ function previewShow(shape,colorId,w3,w2,plane){
 var outlineCol=new THREE.Color();
 var outlineOwn=new THREE.Color();
 var OUTLINE_PALE=.62;
+/* A SECOND, MUCH LOWER THRESHOLD, for ink printed ON a piece rather than for
+   the rim drawn round it. The rim asks "can this colour take a white line
+   against the void", which almost everything can; a pip asks "is this piece
+   dark enough that black would vanish INTO it", which almost nothing is.
+   Only Black (.185) clears .26 - every other colour in the catalogue is over
+   .39 - so the pips are black on everything and white on the one skin that
+   would otherwise swallow them. */
+var PIP_DARK=.26;
+// Rec.601 luma of a hex, the same weighting pieceLum() uses on a material.
+function pipLum(hex){
+  return (((hex>>16)&255)*.299+((hex>>8)&255)*.587+(hex&255)*.114)/255;
+}
 function pieceLum(obj){
   var lum=-1;
   obj.traverse(function(c){

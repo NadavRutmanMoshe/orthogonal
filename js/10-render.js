@@ -782,6 +782,13 @@ function playerChar(t){
   var base=findBy(SKIN_COLORS,wardrobe.color).hex;
   playerMesh.traverse(function(c){
     if(!c.isMesh||!c.material||!c.material.color)return;
+    /* EXCEPT THE PARTS THAT ARE NOT THE PIECE'S COLOUR. This writes the
+       equipped hex into every mesh in the group, which is right for a body
+       and wrong for anything printed on one - the Domino's pips are ink
+       (see PIP_DARK in js/09-wardrobe.js), and one burn would have repainted
+       them in the body's colour and left them there, because playerCharT
+       latches and the return to 0 writes `base` just the same. */
+    if(c.userData.keepColor)return;
     c.material.color.setHex(base).lerp(charCol.setHex(PLAYER_CHAR),t);
   });
 }

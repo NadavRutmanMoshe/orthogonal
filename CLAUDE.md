@@ -418,6 +418,10 @@ is the rule.
   deliberately not included - a twin core is always both halves. A feat's tile
   label (`short`) must be three words at most: `.item span.wlock` is `nowrap`
   and a long one widens the grid column and pushes the list under the case.
+  Its **pips are ink, not body**: a cloned material at `PIP_DARK` (.26, far
+  under `OUTLINE_PALE`) so they are black on every skin and white only on
+  Black, and `userData.keepColor` so `playerChar()` - which writes the
+  equipped hex into every mesh in the group - leaves them alone.
 - **`UNLIMITED_SHARDS` in `js/09-wardrobe.js` is `true` for playtesting.**
   Set it back to `false` before shipping. `AMB_MUTED` in `js/11-sound.js`
   is `true`: the ambient beds are built but muted, on the owner's call.
