@@ -79,7 +79,11 @@ var SKIN_SHAPES=[
      chose, and these are meant to be worn with whatever they already like.
      Every one of them takes the equipped colour like every other shape. */
   {id:"sapling", name:"Sapling",  cost:0, reward:true, sec:1},
-  {id:"flame",   name:"Flame",    cost:0, reward:true, sec:2},
+  /* THE ID IS `flame` AND THE NAME IS NOT. It was a flame through three
+     rebuilds and is a volcano now (see buildPlayerMesh); the id is what
+     wardrobe.owned is written with, so changing it would take the shape away
+     from every save that had already earned it. */
+  {id:"flame",   name:"Volcano",  cost:0, reward:true, sec:2},
   {id:"minnow",  name:"Minnow",   cost:0, reward:true, sec:3},
   {id:"cactus",  name:"Cactus",   cost:0, reward:true, sec:4},
   /* THE ONE THAT IS PAID FOR BY A MOVE RATHER THAN BY A SHELF.
@@ -302,90 +306,60 @@ function buildPlayerMesh(shape,col,mat){
     bx(.32,.13,.32,0,.17,0);
     bx(.19,.11,.19,0,.26,0);
   } else if(shape==="flame"){
-    /* LOW-POLY, NOT VOXEL - and that is the whole fix.
+    /* A VOLCANO, AND THE ID STILL SAYS `flame` ON PURPOSE.
 
-       This was boxes twice: a stepped stack, then a leaning stepped stack
-       with a second stack beside it. Both were reported as looking bad and
-       both readings were the same one, because a stack of axis-aligned
-       squares has a staircase for a silhouette, and a staircase is masonry.
-       No arrangement of boxes gets out of that; a flame's whole identity is
-       a smooth curve to a point.
+       The id is what `wardrobe.owned` is written with, so renaming it would
+       throw away the shape for everybody who has already earned it. The
+       NAME is what a player reads and that is what changed. Same for the
+       tile's glyph: REWARD_GLYPH still maps this to the fire world's own
+       emblem, which is the flame drop, because that is the shelf it comes
+       off and the drop is a good drawing at 21px.
 
-       So it is the one shape in the catalogue that is not built from the
-       game's own cubes. THREE.LatheGeometry spins a profile - a teardrop,
-       fattest a third of the way up, tapering to a point - and SEVEN radial
-       segments keep it faceted rather than smooth. That is a deliberate
-       low-poly flame rather than a failed round one, and it sits with the
-       rest of the game because everything here is already flat-shaded
-       polygons with their edges drawn.
+       THREE TRIES AT A FLAME, AND THE THIRD ONE PROVED THE PROBLEM WAS THE
+       SUBJECT. Boxes gave it a staircase silhouette, which is masonry. A
+       lathe fixed that and gave it a leaf. Narrower, fewer facets and two
+       licks on opposite diagonals fixed the leaf and it still read as
+       something growing, because FIRE HAS NO SOLID FORM: it is defined by
+       motion and by being see-through, and a piece in this game is one
+       still, opaque, flat-coloured object photographed from four fixed
+       angles. Every fix made a better flame and none of them made it a
+       thing. Owner's call after playing all three - see docs/HISTORY.md.
 
-       `flatShading` is set on a CLONE of the material handed in. The
-       original is shared with whatever else the caller is drawing, and one
-       shape must not decide how the others are lit. */
+       So the fire world gives its LANDMARK instead, which is what the other
+       three worlds already do: nature a sapling, water a fish, the desert a
+       saguaro. All four are things that stand still. A volcano is a solid,
+       it is unmistakably this world, and its silhouette is a shape nothing
+       else in the catalogue has - a trapezoid with a NOTCH bitten out of the
+       top. The Pyramid is the nearest neighbour and it comes to a point, so
+       the two can never be confused at any size. */
     g=new THREE.Group();
-    var fmat=(mat&&mat.clone)?mat.clone():mat;
-    if(fmat){fmat.flatShading=true;fmat.needsUpdate=true;}
-    /* AND THE TIP HOOKS. A teardrop spun on its axis is a droplet, or a
-       fruit; what makes it fire is that the point curls off to one side. The
-       lathe cannot say that, so the vertices above the waist are pushed
-       sideways by the square of their height - nothing at the middle,
-       everything at the tip - and the normals are recomputed so the facets
-       still catch the light correctly afterwards. */
-    function flame(s,x,y,z,tilt,hook,lean){
-      /* A NARROWER WAIST AND A LONGER POINT than the first profile had. That
-         one was widest at the middle and tapered evenly to the tip, which is
-         a teardrop; a teardrop with a leaf's proportions is what it was
-         being read as. The shoulder is lower and the top half is slimmer
-         now, so the last third is a point rather than a nose. */
-      var prof=[[0,-.330],[.072,-.322],[.136,-.282],[.176,-.198],[.190,-.092],
-                [.178,.010],[.150,.106],[.112,.198],[.066,.284],[0,.360]];
-      var pts=prof.map(function(q){
-        return new THREE.Vector2(q[0]*s,q[1]*s);
-      });
-      var geo=new THREE.LatheGeometry(pts,5);
-      var pos=geo.attributes.position, top=.360*s;
-      for(var i=0;i<pos.count;i++){
-        var vy=pos.getY(i);
-        if(vy<=0)continue;
-        /* CUBED, NOT SQUARED, and half again as far. Squared, the curl was
-           spread over the whole top half and read as a lean; what a lick of
-           fire does is stand up straight and then turn over at the very end,
-           which is a curve that does almost nothing until it does all of it. */
-        var t=vy/top;
-        pos.setX(i,pos.getX(i)+hook*t*t*t*s);
-      }
-      pos.needsUpdate=true;
-      geo.computeVertexNormals();
-      var m=new THREE.Mesh(geo,fmat);
-      m.position.set(x,y,z);
-      m.rotation.z=tilt;
-      // Leaning in z as well as in x, so a tongue placed on a diagonal leans
-      // along that diagonal rather than sideways out of it.
-      m.rotation.x=lean||0;
-      g.add(m);
-      return m;
-    }
-    /* THREE TONGUES ON A DIAGONAL, and the diagonal is the whole fix.
-
-       The first arrangement had the two small tongues at the FOOT of the big
-       one, one in front and one behind, at less than a fifth of a square from
-       the middle. They were inside the main body's own width at that height,
-       so they were never visible from anywhere: the piece was one smooth
-       teardrop with a bump on it, and it was read as a leaf.
-
-       The camera turns through four views and screen-right is `±x` in two of
-       them and `±z` in the other two (`AX` in js/01-coords.js), so a tongue
-       offset along ONE axis is beside the flame in two views and directly in
-       front of it in the other two - which is the same trap the neighbour's
-       plinth is on a corner for. Offset on BOTH and it is beside the flame in
-       all four. So the two licks sit at opposite corners, at three different
-       heights, leaning out along their own diagonals: whichever way the world
-       is turned, the silhouette is a tall point with a shorter one to its
-       left and a shorter one again to its right. Notches are what makes fire
-       read as fire at this size. */
-    flame(1,0,0,0,-.05,.30);                    // the tongue, curling over
-    flame(.58,.148,-.040,.148,-.34,.26,.34);    // a lick out to one corner
-    flame(.46,-.148,-.085,-.148,.36,-.22,-.36); // and a shorter one opposite
+    var vmat=(mat&&mat.clone)?mat.clone():mat;
+    if(vmat){vmat.flatShading=true;vmat.needsUpdate=true;}
+    /* THE CRATER IS IN THE PROFILE, not cut out afterwards. A lathe just
+       revolves a polyline, so a profile that climbs to the rim and then turns
+       back INWARD and DOWN spins a cone with a hole in the top of it - one
+       mesh, no boolean, and the notch is in the silhouette from every angle
+       because it is radially symmetric. Seven segments, faceted, so it reads
+       as cut rock rather than as a smooth funnel. */
+    var vprof=[[0,-.310],[.345,-.310],[.320,-.240],[.268,-.140],[.212,-.030],
+               [.168,.062],[.140,.118],[.112,.062],[.092,.012],[0,.012]];
+    var vgeo=new THREE.LatheGeometry(vprof.map(function(q){
+      return new THREE.Vector2(q[0],q[1]);
+    }),7);
+    vgeo.computeVertexNormals();
+    g.add(new THREE.Mesh(vgeo,vmat));
+    /* AND ONE TONGUE OVER THE LIP, on a DIAGONAL. A cone with a hole in it is
+       a volcano at rest and could be read as a bowl; what says it is going is
+       something spilling out of it. Three blocks stepping down the outside,
+       and they are on the x+z diagonal for the reason the neighbour's plinth
+       is on a corner: screen-right is `±x` in two of the four camera views
+       and `±z` in the other two, so a detail offset along ONE axis is beside
+       the piece in two views and hidden behind it in the other two. On the
+       diagonal it is beside the piece in all four, which is the only way a
+       detail on a radially symmetric shape is ever worth its geometry. */
+    bx(.115,.075,.115,.105,.088,.105);
+    bx(.100,.070,.100,.160,.010,.160);
+    bx(.085,.065,.085,.205,-.072,.205);
   } else if(shape==="minnow"){
     // Flat in z on purpose: a fish read as a loaf until the body was thinner
     // than it is tall, and the fins are what carry the rest.

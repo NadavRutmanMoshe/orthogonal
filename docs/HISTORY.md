@@ -1479,3 +1479,42 @@ read as fire at a hundred pixels.
 The curl went from `t*t` to `t*t*t` in the same pass: squared, the bend was
 spread over the whole top half and read as a lean. A lick of fire stands up
 straight and turns over at the very end.
+
+
+---
+
+## The Flame, three times, and why fire is the wrong subject
+
+Boxes, then a lathe, then a narrower lathe with fewer facets and two licks on
+opposite diagonals. Each version was a better flame than the one before it and
+every one was reported as looking off. The third rebuild is where the pattern
+became visible: the notes were never about the drawing, they were about the
+thing being drawn.
+
+**A piece in this game is a still, opaque, flat-coloured object photographed
+from four fixed angles.** Fire is none of those. It is defined by motion, by
+being see-through and by having no boundary - take all three away and what is
+left is a shape with a point on it, which the eye files as a leaf, a petal or
+a drop. The world's own fire blocks get away with flames because they are
+BILLBOARDED flat strips with the colour written into their vertices and they
+flicker; the player's piece can be none of that, because it turns with the
+camera, takes one equipped colour and holds still.
+
+So the fire world gives its LANDMARK instead, which is what the other three
+worlds were quietly doing all along: nature a sapling, water a fish, the
+desert a saguaro - three things that stand still. A volcano is a solid, it is
+unmistakably that world, and its silhouette is a trapezoid with a notch bitten
+out of the top, which nothing else in the catalogue is. The crater is in the
+lathe's own profile - climb to the rim, then turn back inward and down, and
+the revolve spins a cone with a hole in it - so the notch is in the outline
+from every angle without a boolean or a second mesh.
+
+**The id stayed `flame`.** `wardrobe.owned` is written with ids, so renaming it
+would have taken the shape away from every save that had already earned it;
+only the NAME a player reads changed. The tile keeps the fire world's flame-drop
+emblem too - that was never the part that was wrong, and a 21px drop is a good
+drawing where a 100px one is not.
+
+Worth remembering: **when three fixes in a row each improve the execution and
+none of them fix the report, the subject is wrong.** Ask what the medium can
+actually hold before rebuilding a fourth time.
