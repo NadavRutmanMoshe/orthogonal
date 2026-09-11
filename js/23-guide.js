@@ -10,9 +10,10 @@
    WHO HE IS
 
    The white father from the house next door - the one who walked over to the
-   boy after the census took his parents, in the opening cutscene. He is in
-   the tutorial and through the whole of I · NATURE, standing somewhere on
-   the board, and pressing him gets you a piece of advice about the game.
+   boy after the census took his parents, in the opening cutscene. He stands
+   beside every ordinary board of I · NATURE - not the tutorials, not the
+   trial, not the fights - and pressing him gets you a piece of advice about
+   the level you are looking at.
 
    That is the whole of it, and it costs the fiction nothing to have: the
    neighbours took the boy in, so of course they are around at the start and
@@ -71,30 +72,74 @@ var GUIDE_SIZE=1.15;
 var GUIDE_SAY_MS=6500;           // how long a line stays up on its own
 
 /* ============================================================
-   WHAT HE KNOWS
+   WHAT HE KNOWS: ONE LINE PER LEVEL, KEYED BY NAME
 
-   Ordered, and the order is the campaign's: the fold, then the two buttons
-   that help, then what the score is for, then the pieces I · NATURE actually
-   contains. A tip about water or crates would be a spoiler in section one,
-   and worse, advice about a thing the player has no way to try.
+   He used to carry a list of twelve general tips and hand out `lvIndex %
+   12` of them. It worked and it was wallpaper: whatever he said, he was
+   saying it *near* the puzzle rather than *about* it, and the one player who
+   pressed him twice on two different boards got two facts in the wrong order.
 
-   `{do:2d}` and friends go through tutWords(), so every line names the
-   player's OWN controls - the same rule the coach and the primer follow, and
-   the reason none of these say "press the button" in words.
+   So each board he stands on now has its own line, and the line is about
+   that board. The tip is the level's own lesson said by somebody rather than
+   printed at the top of the screen - which is the only thing a neighbour can
+   offer that the hint line cannot.
+
+   KEYED BY NAME, NOT BY INDEX, and that is the same reason progress is:
+   `SECTIONS[].at` are array indices and inserting a level shifts every one
+   of them, so an index-keyed table would quietly start telling level 5 about
+   level 4 and nothing would ever say so. A name that stops existing falls
+   through to GUIDE_FALLBACK instead, which is a lost line rather than a
+   wrong one - and `tools/verify.js` fails on any key that is not a level,
+   so a rename is loud.
+
+   `{do:2d}`, `{n3}` and friends go through tutWords(), so every line names
+   the player's OWN controls - the same rule the coach and the primer follow,
+   and the reason none of these say "press the button" in words.
+
+   Nothing here may mention a piece the player has not met. I · NATURE is
+   stone only: water, fire, crates and amber are all spoilers here, and worse,
+   advice about a thing there is no way to try.
    ============================================================ */
-var GUIDE_TIPS=[
-  "{do:2d} to drop the world flat. Things far apart in depth land side by side.",
-  "Hold the eye to lean and see depth. It costs you nothing - it is not a move.",
-  "Flat, the eye shows which block you would stand back up on. Look before you go.",
-  "Stuck on one? The bulb gives you the next move. You get three, and one comes back every half hour.",
+var GUIDE_LINES={
+  "01 — On Your Own":
+    "{do:2d} drops the world flat. Things far apart in depth land side by side.",
+  "02 — Beware of Walls":
+    "Anything sharing your column comes flat with you - and lands on top of you.",
+  "03 — A Real Challenge":
+    "Stuck on one? The bulb gives you the next move. You get three, and one comes back every half hour.",
+  "04 — The Shortcut":
+    "You can use the rules of this world to make it faster.",
+  "05 — The Only Way":
+    "The world folds down onto one particular block. Which one, you find out from inside the fold.",
+  "06 — The Illusion":
+    "Flat, the eye shows which block you would stand back up on. Look before you go.",
+  "07 — The Block":
+    "This world can take things from you, but it can also give.",
+  "08 — Limited":
+    "Hold the eye in {n3} as well - leaning round the board shows you the puzzle better, and it is not a move.",
+  "10 — No Bridge":
+    "The rules of this world and your turning, put together, make things you would not think were there.",
+  "11 — No Bridge 2":
+    "The same two again, the rules and your turning. This one just wants more of it.",
+  "12 — Simple Walk":
+    "You can build your own levels. MY LEVELS, on the home screen.",
+  "13 — Not a Simple Walk":
+    "Sometimes a simple walk is the hard one.",
+  "14 — The Silence Before the Storm":
+    "I believe in you, son. You have got this - go and find your parents."
+};
+/* WHAT HE SAYS ON A BOARD NOBODY HAS WRITTEN HIM A LINE FOR. Today that is
+   no board at all: every level he stands on is in the table above. It exists
+   for the level somebody inserts into I · NATURE next, so that pressing him
+   there is a piece of advice rather than a shrug.
+
+   All four are true everywhere in the campaign and none of them names a
+   piece, because a fallback cannot know which section it landed in. */
+var GUIDE_FALLBACK=[
   "Stars are for solving in few moves, not for solving at all. Nobody gets them first time.",
-  "Spend your stars in the wardrobe. Some of the shapes in there cannot be bought at all.",
   "Restarting costs you nothing. Only the move count is ever scored.",
-  "Amber catches you when you come back to 3D, even when something else is nearer the camera.",
-  "Two fingers turn the world. Which way you fold is most of the puzzle.",
   "If a fold would crush you, the button says so before you press it. Look at it, not at the board.",
-  "Water holds you up and casts nothing, so in 2D there is nothing of it left.",
-  "You can build your own levels. MY LEVELS, on the home screen."
+  "Spend your stars in the wardrobe. Some of the shapes in there cannot be bought at all."
 ];
 /* Said on the win card, not in a bubble - by the time a level is solved the
    card is what the player is looking at, and a speech bubble behind it is a
@@ -133,13 +178,24 @@ function guideHere(idx){
   if(typeof storyOn==="function"&&storyOn())return false;
   if(typeof app==="undefined"||app!=="play")return false;
   if(!L||L.boss||L.trial)return false;
-  /* NOT IN THE TUTORIAL, and this is the one placement rule that came from
-     playing it. He turned up in PROLOGUE offering "double-tap to drop the
-     world flat" to somebody who had not been taught the fold yet - advice
-     about a verb the game is three screens away from introducing, delivered
-     over the top of the lesson that introduces it. The tutorial has a coach,
-     a ghost hand and a guided lock; it does not need a fourth voice. He
-     starts where the teaching stops. */
+  /* NOT ON A TEACHING LEVEL, and this is the one placement rule that came
+     from playing it. He turned up in PROLOGUE offering "double-tap to drop
+     the world flat" to somebody who had not been taught the fold yet -
+     advice about a verb the game is three screens away from introducing,
+     delivered over the top of the lesson that introduces it. A teaching
+     level has a coach, a ghost hand and a guided lock; it does not need a
+     fourth voice. He starts where the teaching stops.
+
+     `tutorial:true` is the test rather than "is it PROLOGUE", because the
+     second place it bites is inside I · NATURE: `09 — The Rotation` is the
+     level that hands rotation over, and it is where the owner found him in
+     the way. His plinth is placed off the +x end of the board and nowhere
+     else (guidePlinth()), which is out of the way in exactly one of the four
+     views - so from `09` on, the lesson's own new verb swings him in front
+     of the puzzle. Every level before it is rotate:false and cannot.
+     He stays on 10-14 because their lines are worth the turn; the level
+     whose whole job is teaching the turn is not the place to find out. */
+  if(L.tutorial)return false;
   if(typeof SECTIONS==="undefined"||typeof mapSecOf!=="function")
     return idx>=2&&idx<=18;
   return mapSecOf(idx)===1;
@@ -220,9 +276,15 @@ function guideDrop(){
 /* ============================================================
    WHAT HE SAYS
    ============================================================ */
+/* The level's own line if it has one, and a general one if it does not.
+   `typeof ...==="string"` rather than a truth test on the lookup: a level
+   called "constructor" would otherwise hand back a function and put
+   "function Object() { [native code] }" in a speech bubble. */
 function guideTip(){
-  var i=(typeof lvIndex==="number"?lvIndex:0);
-  return GUIDE_TIPS[((i%GUIDE_TIPS.length)+GUIDE_TIPS.length)%GUIDE_TIPS.length];
+  var n=(typeof L!=="undefined"&&L&&L.name)||"";
+  if(typeof GUIDE_LINES[n]==="string")return GUIDE_LINES[n];
+  var i=(typeof lvIndex==="number"?lvIndex:0), k=GUIDE_FALLBACK.length;
+  return GUIDE_FALLBACK[((i%k)+k)%k];
 }
 /* His line on a win card. Not every level: a neighbour who congratulates you
    on all nineteen boards is wallpaper, and the point of him is that he turns

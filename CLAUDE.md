@@ -99,7 +99,7 @@ listed in `index.html`. `21-boot.js` is the only file that *runs* anything.
 | `js/20-splash.js` | the studio sting; the tap that unlocks audio |
 | `js/21-boot.js` | startup order; runs last |
 | `js/22-story.js` | the three cutscenes: `STORY`, `storyPlay()`, `storyFrame()`, `storyHolds()`. Loaded *after* boot; every call into it is `typeof`-guarded |
-| `js/23-guide.js` | the neighbour who stands in PROLOGUE and I · NATURE levels and gives tips. **Pure decoration** - no rule, no solver, never solid. Also loaded after boot and `typeof`-guarded |
+| `js/23-guide.js` | the neighbour who stands on the I · NATURE levels and gives a tip written for the one he is standing on. **Pure decoration** - no rule, no solver, never solid. Also loaded after boot and `typeof`-guarded |
 | `tools/verify.js` | every level machine-checked: BFS, `trialSafety()`, `bossArena()`, `bosssim`, the `SECTIONS`/`LEVEL_RENAMES` invariants |
 | `tools/shot.js` | **headless screenshots of any screen** (`node tools/shot.js --list`). The eyes for UI work. A cutscene is seekable by beat (`story1:12`), and an explicit `--wait` now beats the screen's own default. |
 | `tools/build-single.js` | inlines everything into one file for itch.io / the artifact |
@@ -351,11 +351,19 @@ is the rule.
   a block (`guidePlinth()`). `recomputeBounds()` adds `guidePoint()` to the
   extents it frames - the one line in the renderer that knows he exists - or
   the camera would leave him past the edge of the screen.
-- **Not in PROLOGUE.** He offered the fold to somebody the tutorial had not
-  taught it to yet. He starts where the teaching stops.
+- **Never on a `tutorial:true` level**, and that is the whole placement rule
+  (plus no boss, no trial, section 1 only). In PROLOGUE he offered the fold to
+  somebody the tutorial had not taught it to yet; on `09 — The Rotation` his
+  plinth is off the `+x` end and the lesson's own new verb turns it in front
+  of the board. He starts where the teaching stops, every time it stops.
 - **He is pressed on a DEFERRED single tap** (`guideArm()` / `guideCancel()`,
   called from `13-gestures.js`). A double tap is the fold in every layout, so
   the fold always wins the race.
+- **One tip per level, keyed by level NAME** (`GUIDE_LINES`, `js/23-guide.js`),
+  about that level. Keyed by name because `SECTIONS[].at` are indices and an
+  insertion would shift an index-keyed table onto the wrong boards silently;
+  an unknown name falls through to `GUIDE_FALLBACK`, and `verify.js` fails on
+  any key that is not a level he stands on.
 - His tips render through `tutWords()`, his cheer goes on the **win card**
   (`guideWinLine()`, every third level), and ten losses opens his one
   unprompted line, which is a button into `struggleOffer()`.

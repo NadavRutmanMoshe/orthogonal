@@ -711,9 +711,9 @@ second.
 ## The neighbour
 
 **He is the white father from the house next door** — the one who walks over
-to the boy at the end of the opening — and he is standing on the board through
-the tutorial and the whole of I · NATURE. Pressing him gets a piece of advice
-about the game. He is not on a trial or a boss: a bystander in an arena is a
+to the boy at the end of the opening — and he is standing on every ordinary
+board of I · NATURE. Pressing him gets a piece of advice about the level he is
+standing on. He is not on a trial or a boss: a bystander in an arena is a
 piece the player has to work out is *not* a threat, at the exact moment the
 game is teaching them what a threat looks like. And he is gone after section
 one, which costs the fiction nothing — the neighbours took the boy in, so of
@@ -746,12 +746,28 @@ only line in the renderer that knows he exists, and without it the camera
 frames the board and leaves him past the edge of the screen; the cost is that
 the board is a little smaller on the levels he is on.
 
-**And he is not in the tutorial.** He turned up in PROLOGUE offering
+**And he is not on a teaching level.** He turned up in PROLOGUE offering
 "double-tap to drop the world flat" to somebody the game had not taught the
 fold to yet — advice about a verb three screens before it is introduced,
-delivered over the top of the lesson that introduces it. PROLOGUE has a
-coach, a ghost hand and a guided lock; it does not need a fourth voice. He
+delivered over the top of the lesson that introduces it. A teaching level has
+a coach, a ghost hand and a guided lock; it does not need a fourth voice. He
 starts where the teaching stops.
+
+The test is `L.tutorial`, not "is it PROLOGUE", because the second place this
+bites is inside I · NATURE and it took playing the game to find. `09 — The
+Rotation` is the level that hands rotation over, and `guidePlinth()` puts him
+two squares off the `+x` end of the board and nowhere else — which is out of
+the way in exactly one of the four views. Every level before `09` is
+`rotate:false` and cannot turn him into the shot; `09` is the level whose
+whole job is teaching the player to. So the lesson's own new verb swings a
+white cube in front of the puzzle, on a board that already has a ghost hand
+and a lock on it. He comes off it, and the camera stops having to frame his
+plinth as well, so the board is visibly bigger there into the bargain.
+
+He stays on `10`–`14`, which can turn him into the shot just as easily. That
+is a judgement rather than an inconsistency: those levels have a line worth
+the occasional awkward view, and none of them is the level where the player
+is finding out what turning does.
 
 **He is pressed on a deferred single tap.** Tapping the world is already spoken
 for — a double tap is the fold, in every layout — so a first tap that lands on
@@ -774,6 +790,32 @@ pressing him again opens the card.
 
 Every line renders through `tutWords()`, so he names the player's own
 controls like the coach and the primer do.
+
+**The tip is about the level he is standing on.** He used to carry a list of
+twelve general facts about the game and hand out `lvIndex % 12` of them. It
+worked, and it was wallpaper: whatever he said, he was saying it *near* the
+puzzle rather than *about* it, and the player who pressed him on two boards
+in a row got two unrelated facts in whatever order the modulo landed in.
+`GUIDE_LINES` is one line per board now, and each one is that board's own
+lesson said by a person instead of printed at the top of the screen — which
+is the only thing a neighbour can offer that the hint line cannot. `12 —
+Simple Walk` is where he mentions MY LEVELS, because that is the first board
+with nothing else to say about it; `14 — The Silence Before the Storm` is the
+last thing he says in the game, and it is not a tip.
+
+**Keyed by level name, for the same reason progress is.** `SECTIONS[].at`
+are array indices, so inserting a level shifts every one of them — an
+index-keyed table would quietly start telling `05` about `04`, and nothing
+in the game would ever say so. A name that stops existing falls through to
+`GUIDE_FALLBACK` instead, which is a *missing* line rather than a *wrong*
+one, and `tools/verify.js` fails the run on any key that is not a level he
+stands on, so a rename is loud. The fallback pool is four lines that are true
+anywhere in the campaign and name no piece: it is for the level somebody
+inserts into I · NATURE next, and today nothing reaches it.
+
+Nothing in the table may name a piece the player has not met. I · NATURE is
+stone only, so water, fire, crates and amber are all spoilers there, and
+worse, advice about a thing there is no way to try.
 
 ## The father, glimpsed
 
