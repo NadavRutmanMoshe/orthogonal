@@ -35,7 +35,7 @@ function die(kind){
         kind==="spike"?"you burned":
         kind==="boss"||kind==="trial"?"out of lives":
         "the world closed on you");
-  SFX.die();
+  SFX.die(kind);
   setTimeout(function(){
     dying=null;dyingT=0;
     playerMesh.scale.set(1,1,1);
@@ -557,8 +557,15 @@ function repSfxInstall(){
       /* Recorded only while a fight is genuinely running in front of the
          player - the same question replayTick() asks - and never while the
          film is playing, or the tape would record itself. */
+      /* `a` IS THE FIRST ARGUMENT, and it is on the tape because one of
+         these voices now has one: SFX.die(kind) picks a different death for
+         a burn, a crush, a charge and the sweep, and a film that replayed it
+         with no argument played the fall. General rather than special-cased -
+         any sound that takes an argument later is recorded correctly for
+         free, and a sound that takes none stores undefined and is called
+         exactly as it was. */
       if(B&&app==="play"&&!rep&&!dying&&!levelDone&&!bossPause)
-        repSfxBuf.push({t:repT+repAcc,n:n});
+        repSfxBuf.push({t:repT+repAcc,n:n,a:arguments[0]});
       return f.apply(SFX,arguments);
     };
   });
@@ -574,8 +581,8 @@ function repSfxTrim(){
 function repSfxAt(t){
   if(!rep)return;
   while(rep.si<repSfxBuf.length&&repSfxBuf[rep.si].t<=t){
-    var f=repSfxRaw[repSfxBuf[rep.si++].n];
-    if(f)f.call(SFX);
+    var e=repSfxBuf[rep.si++], f=repSfxRaw[e.n];
+    if(f)f.call(SFX,e.a);
   }
 }
 function replayClear(){repBuf=[];repT=0;repAcc=0;repSfxBuf=[];}
@@ -1543,7 +1550,7 @@ function bossHurt(why,who,line){
           h:who?{x:who.x,y:who.y,z:who.z}:null};        // asserted here as well as at the call site
   lives--;
   kcBonus=0;                  // a death is never a multi-kill; see kcHold()
-  SFX.die();shakeT=1;slowMo();
+  SFX.die("boss");shakeT=1;slowMo();
   /* AND YOU COME APART TOO. Taken from `at` rather than from `player`,
      because a flat death is standing somewhere else by the time this runs -
      `at.h` is the hunter's cell and it is where the two of you met, which is
@@ -1699,7 +1706,7 @@ function trialFrame(dt){
 function trialHurt(){
   if(shielded())return;        // asserted here as well as at the call site
   lives--;
-  SFX.die();shakeT=1;slowMo();
+  SFX.die("trial");shakeT=1;slowMo();
   trialGrace=TR.period;
   shieldMs=SHIELD_MS;
   var bar=$("bossBar");

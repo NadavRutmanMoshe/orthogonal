@@ -893,7 +893,11 @@ function stTake(ids,quiet){
                a.mat.color.getHex());
     a.going=1;
   }
-  if(!quiet&&typeof SFX!=="undefined"&&SFX.die)SFX.die();
+  // "crush", because that is literally what happens to them: four cubes in
+  // one silhouette column is rule 4, and the sound has to be the sound the
+  // game makes when the world closes on you rather than the one it makes
+  // when you fall off it.
+  if(!quiet&&typeof SFX!=="undefined"&&SFX.die)SFX.die("crush");
   if(quiet&&typeof SFX!=="undefined"&&SFX.fold)SFX.fold();
 }
 

@@ -1008,11 +1008,49 @@ var SFX={
      one short noise breath keeps a front edge on it, so it still reads as an
      event on a phone speaker rather than as a fade. Quieter in total than
      the old single voice, and it lands rather than buzzes. */
-  die:function(){
+  die:function(kind){
     var c=audio();if(!c)return;
-    blip(196,.46,"triangle",.030,98);
-    blip(98,.54,"sine",.026,62);
-    noiseFall(c,c.currentTime,.13,.008);
+    var t=c.currentTime;
+    /* BURNING. Fire is broadband, so this is mostly noise: the sweep is long
+       and the body under it is low and slow, which is a thing going out
+       rather than a thing being hit. */
+    if(kind==="spike"){
+      noiseFall(c,t,.42,.024);
+      blip(150,.44,"triangle",.024,72);
+    /* THE WORLD CLOSING ON YOU. Two hits a breath apart - the fold lands and
+       then the weight of it arrives - with a very short noise front so the
+       first one has an edge. It is the only one of the five with two beats,
+       because being crushed is the only death that happens twice. */
+    } else if(kind==="crush"){
+      noiseFall(c,t,.09,.016);
+      blip(132,.30,"triangle",.040,74);
+      setTimeout(function(){blip(88,.34,"sine",.026,56);},95);
+    /* A CHARGE LANDING. One impact, lower and faster than a fall, with a
+       short bright tick on the front - the tick is what makes it read as
+       being struck by something rather than as arriving somewhere. It is the
+       hardest of the five because a hunter hitting you is the hardest thing
+       that happens in this game, and the sting is already on screen saying
+       so. */
+    } else if(kind==="boss"){
+      noiseFall(c,t,.11,.020);
+      blip(116,.34,"triangle",.042,58);
+      blip(232,.09,"sine",.016,150);
+    /* THE SLICE. Deliberately the sweep's own voice an octave down and with
+       an edge on it: the plane you just failed to dodge makes that sound
+       every few seconds, and the death has to be recognisably the same thing
+       arriving rather than a new event. */
+    } else if(kind==="trial"){
+      noiseFall(c,t,.30,.022);
+      blip(300,.26,"sine",.026,96);
+      blip(110,.36,"triangle",.022,70);
+    /* FALLING OUT OF THE WORLD, and the default for anything unnamed. The
+       one the owner kept: a triangle sinking an octave for the fall, a sine
+       under it for weight, a short breath for the front edge. */
+    } else {
+      blip(196,.46,"triangle",.030,98);
+      blip(98,.54,"sine",.026,62);
+      noiseFall(c,t,.13,.008);
+    }
   },
   undo:function(){blip(260,.07,"sine",.03);},
   hint:function(){blip(700,.12,"sine",.035,1050);},

@@ -402,7 +402,25 @@
   It is three quiet voices now - a triangle sinking an octave (the fall, which
   was the whole of what the old one meant), a sine under it for weight, and a
   130ms noise breath so it still has a front edge on a phone speaker. Lower
-  in total than the single voice it replaces. **The kill cam's wind-up is
+  in total than the single voice it replaces.
+
+  **And then it split five ways, on the second report.** One sound for every
+  death was the other half of what was wrong: a fall, a burn, being crushed
+  by your own fold, a hunter's charge and the sweep are five different things
+  and they were all the same noise, so the softened one that fits a fall was
+  under-reacting to the other four. `SFX.die(kind)` dispatches now and the
+  call sites pass what happened - `die()` its own `kind`, `bossHurt()`
+  "boss", `trialHurt()` "trial", and the opening's abduction "crush",
+  because four cubes in one column is exactly that. A burn is mostly noise,
+  long and falling, because fire is broadband; a crush is two beats, since
+  being crushed is the only death that happens twice; a charge is one hard
+  impact with a bright tick on its front, because being struck reads as a
+  tick; the sweep's death is the sweep's own voice an octave down, so it is
+  recognisably the thing you failed to dodge arriving rather than a new
+  event. The fall keeps the softened voice unchanged and is the default for
+  anything unnamed. **The replay tape carries the argument** (`a` in
+  `repSfxBuf`), or a filmed death plays the fall over a picture of a smash.
+  **The kill cam's wind-up is
   where this matters most**: `SFX.die()` is the only thing a death's wind-up
   plays (see the kill cam in `docs/UI.md`), so it is heard alone, under
   television snow, with nothing else to hide behind.
