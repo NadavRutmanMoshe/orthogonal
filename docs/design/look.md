@@ -155,6 +155,22 @@ fade, the peril red and the lerp to ink - the block loop never changed.
 - **A section's stone colour goes near-white when it has a surface**
   (`0xbdbdbd` for grass), because the texture is carrying the hue and a
   saturated tint would double it into ink.
+- **A tint over a surface is a RATIO, not a colour choice, and there is a
+  number for it.** `material.color` (and `L.tint`, which takes its place)
+  multiplies the surface map, and a multiply can only take a channel away.
+  So whether a tinted block reads warm or olive is decided by the tint's own
+  red-to-green against the SURFACE's green-to-red. The grass texture is green
+  twice - a `#5faa41` lawn on the top half of the atlas and a `#5aa83f` lip
+  along the top of every side face, which is what makes a grass block a grass
+  block - and both are about **1.8 green to red**. A tint under 1.8 leaves
+  every top face and every lip greener than it is warm; clearing 1.8 gets
+  them neutral; clearing about **3** gets them to a warm line. Measured while
+  trying to paint brick walls on grass-topped stone in the opening cutscene:
+  four passes in a row came out as brick-coloured walls with a bright green
+  band along the top of every course, because the walls cleared the threshold
+  and their edges did not - and at this camera angle the edges are most of
+  what you see of a wall. **Pick the colour you want out of the far end, then
+  check it against the surface's own ratio before believing the hex.**
 
 **A block outlives its level, and that bit.** `syncMeshes` keys meshes by cell
 and `addMesh` returns early when one is already there, so a block standing in
