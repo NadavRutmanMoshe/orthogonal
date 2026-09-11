@@ -331,31 +331,61 @@ function buildPlayerMesh(shape,col,mat){
        sideways by the square of their height - nothing at the middle,
        everything at the tip - and the normals are recomputed so the facets
        still catch the light correctly afterwards. */
-    function flame(s,x,y,z,tilt,hook){
-      var prof=[[0,-.310],[.115,-.302],[.200,-.245],[.243,-.140],[.246,-.030],
-                [.205,.070],[.148,.155],[.092,.225],[.042,.278],[0,.315]];
+    function flame(s,x,y,z,tilt,hook,lean){
+      /* A NARROWER WAIST AND A LONGER POINT than the first profile had. That
+         one was widest at the middle and tapered evenly to the tip, which is
+         a teardrop; a teardrop with a leaf's proportions is what it was
+         being read as. The shoulder is lower and the top half is slimmer
+         now, so the last third is a point rather than a nose. */
+      var prof=[[0,-.330],[.072,-.322],[.136,-.282],[.176,-.198],[.190,-.092],
+                [.178,.010],[.150,.106],[.112,.198],[.066,.284],[0,.360]];
       var pts=prof.map(function(q){
         return new THREE.Vector2(q[0]*s,q[1]*s);
       });
-      var geo=new THREE.LatheGeometry(pts,7);
-      var pos=geo.attributes.position, top=.315*s;
+      var geo=new THREE.LatheGeometry(pts,5);
+      var pos=geo.attributes.position, top=.360*s;
       for(var i=0;i<pos.count;i++){
         var vy=pos.getY(i);
         if(vy<=0)continue;
+        /* CUBED, NOT SQUARED, and half again as far. Squared, the curl was
+           spread over the whole top half and read as a lean; what a lick of
+           fire does is stand up straight and then turn over at the very end,
+           which is a curve that does almost nothing until it does all of it. */
         var t=vy/top;
-        pos.setX(i,pos.getX(i)+hook*t*t*s);
+        pos.setX(i,pos.getX(i)+hook*t*t*t*s);
       }
       pos.needsUpdate=true;
       geo.computeVertexNormals();
       var m=new THREE.Mesh(geo,fmat);
       m.position.set(x,y,z);
       m.rotation.z=tilt;
+      // Leaning in z as well as in x, so a tongue placed on a diagonal leans
+      // along that diagonal rather than sideways out of it.
+      m.rotation.x=lean||0;
       g.add(m);
       return m;
     }
-    flame(1,0,0,0,-.06,.17);             // the flame, leaning, tip curled
-    flame(.52,-.185,-.135,.075,.30,.12); // a tongue at its foot, in front
-    flame(.30,.175,-.19,-.055,-.34,-.10);// and a smaller one behind
+    /* THREE TONGUES ON A DIAGONAL, and the diagonal is the whole fix.
+
+       The first arrangement had the two small tongues at the FOOT of the big
+       one, one in front and one behind, at less than a fifth of a square from
+       the middle. They were inside the main body's own width at that height,
+       so they were never visible from anywhere: the piece was one smooth
+       teardrop with a bump on it, and it was read as a leaf.
+
+       The camera turns through four views and screen-right is `±x` in two of
+       them and `±z` in the other two (`AX` in js/01-coords.js), so a tongue
+       offset along ONE axis is beside the flame in two views and directly in
+       front of it in the other two - which is the same trap the neighbour's
+       plinth is on a corner for. Offset on BOTH and it is beside the flame in
+       all four. So the two licks sit at opposite corners, at three different
+       heights, leaning out along their own diagonals: whichever way the world
+       is turned, the silhouette is a tall point with a shorter one to its
+       left and a shorter one again to its right. Notches are what makes fire
+       read as fire at this size. */
+    flame(1,0,0,0,-.05,.30);                    // the tongue, curling over
+    flame(.58,.148,-.040,.148,-.34,.26,.34);    // a lick out to one corner
+    flame(.46,-.148,-.085,-.148,.36,-.22,-.36); // and a shorter one opposite
   } else if(shape==="minnow"){
     // Flat in z on purpose: a fish read as a loaf until the body was thinner
     // than it is tall, and the fins are what carry the rest.

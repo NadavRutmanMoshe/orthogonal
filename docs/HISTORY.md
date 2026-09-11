@@ -1438,3 +1438,44 @@ makes clamping `left` against it work instead of feeding back on itself.
 
 Worth remembering for any future element positioned this way: a fixed box
 with one inset set is sized by the space past that inset.
+
+
+---
+
+## The Flame that was a leaf twice
+
+Three tries. **Boxes**, first: a stepped stack, then a leaning stepped stack
+with a second stack beside it. Both were reported as looking bad and both
+readings were the same one - a stack of axis-aligned squares has a staircase
+for a silhouette and a staircase is masonry. No arrangement of cubes gets out
+of that.
+
+**A lathe**, second: a teardrop profile spun on seven segments, with the
+vertices above the waist pushed sideways by the square of their height so the
+tip curls. That is the right machinery and it still read as a leaf, for three
+reasons that only show up in a screenshot:
+
+* **It was as wide as it was tall** - .50 across against .655 high. A flame is
+  about twice as tall as it is wide; at 1.3:1 the outline is an almond.
+* **The two small tongues were invisible.** They sat at the FOOT of the big
+  one, under a fifth of a square out, which is *inside* the main body's own
+  radius at that height. They cost geometry and drew nothing, so the piece was
+  one smooth teardrop with a bump on it.
+* **The facet seams read as veins.** `addOutline()` draws every edge over 28
+  degrees, and a seven-segment lathe has seven vertical seams meeting at the
+  point. Curved lines converging on a tip is precisely the drawing of a leaf.
+
+The third one is the one that ships, and each of the three notes above is a
+number in it: the profile is 1.9:1, the seams are down to five so they read as
+facets rather than as veins, and the two licks are out on **opposite
+diagonals**. The diagonal is the part worth keeping. Screen-right is `±x` in
+two of the four camera views and `±z` in the other two, so a tongue offset
+along one axis is beside the flame in two views and directly in front of it in
+the other two - the same trap the neighbour's plinth was moved to a corner to
+escape. Offset on both and it is beside the flame in all four, which is what
+puts a notch in the silhouette from every angle. Notches are what makes fire
+read as fire at a hundred pixels.
+
+The curl went from `t*t` to `t*t*t` in the same pass: squared, the bend was
+spread over the whole top half and read as a lean. A lick of fire stands up
+straight and turns over at the very end.
