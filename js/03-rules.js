@@ -1,5 +1,5 @@
 "use strict";
-/* Orthogonal — 03-rules.js
+/* I'm Just A Cube - 03-rules.js
    Movement, block kinds, and the solid/silhouette/landing lookups.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
@@ -15,7 +15,7 @@ var FELL=-9999;   // fell out of the world - not the same as being blocked
 function resolveStep(occ,y,occHere){
   if(!occ(y) && occ(y-1)) return y;              // walk level
   // Stepping up needs clearance above where you're standing as well as
-  // where you're going — otherwise you slide diagonally past a ceiling.
+  // where you're going - otherwise you slide diagonally past a ceiling.
   if(occ(y) && !occ(y+1) && !(occHere&&occHere(y+1))) return y+1;
   if(!occ(y) && !occ(y-1)){                      // nothing underfoot: fall
     var n=y;
@@ -38,7 +38,7 @@ function resolveStep(occ,y,occHere){
 function isGlass(b){return b[3]===1;}
 function isAnchor(b){return b[3]===2;}
 function isCrate(b){return b[3]===3;}
-// Spikes are solid and they cast like stone — but standing on one kills you.
+// Spikes are solid and they cast like stone - but standing on one kills you.
 // Which means a spike buried deep in the world poisons the whole silhouette
 // column it lands in. Ground that looks safe in the volume can be lethal once
 // you fold, and you have to check what's behind before you commit.
@@ -59,7 +59,7 @@ function crateSet(list){var s=new Set();for(var i=0;i<list.length;i++)s.add(list
 function parseK(k){var p=k.split(",");return [+p[0],+p[1],+p[2]];}
 
 /* ============================================================
-   BOSSES — the pack, and the fold as the weapon
+   BOSSES - the pack, and the fold as the weapon
 
    A boss is several hunters. They walk the volume toward you on a real
    clock, they are fast, and touching you costs a life. There is no gun, no
@@ -130,7 +130,7 @@ function parseK(k){var p=k.split(",");return [+p[0],+p[1],+p[2]];}
    dangerous to stand on is what turned an execution into a duel.
    ============================================================ */
 /* ------------------------------------------------------------
-   THE TWIN — one creature, two bodies, and a point of symmetry
+   THE TWIN - one creature, two bodies, and a point of symmetry
 
    A different fight sharing the same machinery. The two halves are one
    animal: each hunts the *reflection* of you through a centre, so whatever
@@ -143,17 +143,17 @@ function parseK(k){var p=k.split(",");return [+p[0],+p[1],+p[2]];}
    was only ever pretending to be two collapses into itself. That is rule 4
    again, pointed at something new: the halves are solid in the plane, so the
    identical fold kills *you* if you are the one sharing a column with one of
-   them — which is why the line you want them on is the line you must not be
+   them - which is why the line you want them on is the line you must not be
    standing on.
 
    Because they mirror, they share a column exactly when one of them stands
-   on the centre's row or column — whichever the current view collapses. So
+   on the centre's row or column - whichever the current view collapses. So
    the cross drawn on the floor is the whole fight: bait a half onto the arm
    that your axis flattens, step off it yourself, fold. And each core moves
    the centre somewhere new, so the answer is never twice in the same place.
    ------------------------------------------------------------ */
 /* ------------------------------------------------------------
-   PHASES — the fight's own difficulty curve
+   PHASES - the fight's own difficulty curve
 
    A boss is a sequence of phases, not one pack. Clearing what is on the board
    advances to the next, and each one changes the fight rather than repeating
@@ -175,6 +175,25 @@ function parseK(k){var p=k.split(",");return [+p[0],+p[1],+p[2]];}
    of blocks that rise when it begins, and an optional `cunning` flag. A boss
    written the old way, with a bare `at`, becomes a single phase, so nothing
    downstream needs to know both shapes. */
+/* HOW MUCH LONGER A HUNTER PLANTS THAN ITS PHASE ASKS FOR.
+
+   Every phase carries its own `aim` - the beat between a hunter planting on
+   your line and the charge coming down it - and the whole pacing curve of the
+   campaign is written in those numbers, from SPARRING's 2200ms to BOSS IV's
+   660. The charge was landing before the line on the floor had been read:
+   raised on playtesting, on the owner's report that the ray needed to arrive
+   earlier and leave more time to answer. Both are the same beat. The line is
+   drawn for the whole of `aim`, so a longer window IS an earlier warning -
+   there is no separate delay in front of it to cut.
+
+   A flat multiplier rather than 22 edited numbers, because the curve is
+   right: the fights still tighten in the same proportion, they just start
+   from somewhere a player can reach. Baked into the phase HERE rather than
+   applied where the lock is set, so `tools/bosssim.js` - which re-implements
+   the fight from this file and never loads the game's state - is simulating
+   the fight that ships. Set a phase's own `aim` for the shape of a fight;
+   set this when every fight is too fast. */
+var AIM_EASE=1.4;
 function bossPhases(b){
   var raw=b.phases||[{at:b.at,step:b.step,aim:b.aim}];
   return raw.map(function(p){
@@ -183,8 +202,38 @@ function bossPhases(b){
             add:p.add||[],
             say:p.say||"",              // what the banner says when it begins
             step:p.step||b.step||620,   // ms between hunter steps
-            aim:p.aim||b.aim||700,      // ms it plants on your line before it charges
+            // ms it plants on your line before it charges - see AIM_EASE
+            aim:Math.round((p.aim||b.aim||700)*AIM_EASE),
+            /* THE ARENA ATTACKS TOO. A phase may carry the trial's lethal
+               plane - {period,fire,beats} - and the fight installs it when the
+               phase begins, so the sweep tightens with the pack rather than
+               being one dial for the whole fight.
+
+               This is not the boss design that was dropped (see HISTORY: 1 and
+               2 were the sweep INSTEAD of an opponent, which is an objective
+               wearing a boss costume). Here there is still a pack to fight and
+               the sweep is the ground being taken away underneath it. What
+               makes it the right hazard for the LAST fight rather than a
+               harder version of any of them: the fold is your only weapon, and
+               a sweep down the axis you are looking along cannot be dodged in
+               the plane at all. So the sweep taxes the one verb the fight is
+               about, which no pillar and no hunter can do. */
+            sweep:p.sweep||null,
             cunning:!!p.cunning,
+            /* IT CANNOT WALK. Its feet are taken away and nothing else is:
+               it still plants a line the moment you share its row or column,
+               the ray still comes down that row, and the charge still kills
+               you. Everything that reads the pack sees an ordinary hunter.
+
+               What that buys is a fight whose subject is the KILL rather than
+               the board. A hunter that closes on you is asking where to stand
+               and when to run, which is what a boss is for; one that cannot
+               follow you asks only "line up, face it, fold, and be first" -
+               and it asks it exactly when the player chooses to step onto its
+               line, so the danger is opt-in. SPARRING is the level (see
+               02-levels.js); it is a phase flag rather than a level one so a
+               later fight could open on one and then let it go. */
+            still:!!p.still,
             /* How many times a cunning hunter refuses a line you could fold
                on before it takes it anyway. The same patience valve the twin
                uses, and it is here for the same reason: an opponent that will
@@ -232,6 +281,10 @@ function makeBoss(level){
   var ps=bossPhases(b);
   return {
     phases:ps,
+    /* This arena is a lesson, not a stage. See bossArena(): it turns off the
+       two checks that ask whether the fight is worth having, and nothing
+       else. */
+    teach:!!b.teach,
     hp:ps.length,             // the phases are the health bar
     at:ps[0].at,              // the opening spawns, for anything that only wants those
     /* Two escalations, both there to stop the fight becoming a kite. `rage`
@@ -379,13 +432,34 @@ function foldKills(R,v,p,h,cr){
   return h.y===p.y&&R.uOf(v,h.x,h.z)===R.uOf(v,p.x,p.z)&&
          !crushedBy(R,v,p.x,p.y,p.z,cr);
 }
-// The boss's own sweeps are gone: the projectile is its ranged attack now.
-// Kept as a no-op so any boss data still carrying `beats` loads without
-// special-casing. Sweeps themselves live on, in the trials below.
-function bossSafety(level){return {ok:true};}
+/* A fight may sweep, and if it does the sweep is held to the trial's own
+   fairness property: for every square you can stand on and every beat that
+   phase has, either that square is safe or a square one step away is. The
+   arena never corners you.
+
+   Per phase, because a phase is a different board AND a different sweep: the
+   pillars that rise for phase two can turn a slice you used to step out of
+   into a pocket with a wall on the far side, and that is precisely the thing
+   this catches. The start square is checked against the first beat of every
+   phase too, because a phase change puts you back on it.
+
+   This used to be a no-op - the boss's own sweeps were removed in the
+   redesign and only trials kept them. They are back on BOSS IV, as the
+   arena's own attack alongside the pack rather than instead of it. */
+function bossSafety(level){
+  var B=makeBoss(level); if(!B||!B.phases)return {ok:true};
+  var bad=[], born=false;
+  for(var pi=0;pi<B.phases.length;pi++){
+    var T=makeSweep(B.phases[pi].sweep); if(!T)continue;
+    var r=sweepSafety({start:level.start,blocks:bossBlocksAt(level,pi)},T);
+    if(r.trapped)bad=bad.concat(r.trapped);
+    if(r.born)born=true;
+  }
+  return {ok:!bad.length&&!born,trapped:bad,born:born};
+}
 
 /* ============================================================
-   TRIALS — a clock, and somewhere to be
+   TRIALS - a clock, and somewhere to be
 
    A trial is the boss stripped back to the one thing the boss was always
    best at. There is no opponent: the arena attacks. A lethal plane sweeps
@@ -411,20 +485,17 @@ function bossSafety(level){return {ok:true};}
    question is the one the whole game asks - which axis, and is this the
    moment - only now it is asked with a metronome running.
    ============================================================ */
-function makeTrial(level){
-  if(!level.trial)return null;
-  var t=level.trial;
+/* THE SWEEP, ON ITS OWN. Split out of makeTrial() because a trial is no
+   longer the only thing that has one: BOSS IV's phases each carry a `sweep`
+   and the fight installs it as `TR` when the phase begins, so every reader of
+   a sweep - the hit test, the renderer, the GO 2D peril cue - is the same
+   code whether the clock belongs to a trial or to a fight. A trial is this
+   plus `cores`, which is the only part of it a boss has no use for. */
+function makeSweep(t){
+  if(!t||!t.beats||!t.beats.length)return null;
   var beats=t.beats, period=t.period||2300, fire=t.fire||320;
   return {
-    /* Three targets in sequence, not one. A trial where the first arrival
-       ends it is over before its second beat, and the clock never gets to be
-       the level - you cross once, on the rhythm you happened to arrive on.
-       Three crossings is what makes it a rhythm you have to learn: the first
-       teaches the beat, the second is a return trip you now have to time,
-       and the third is under a clock that has been running long enough to
-       have sped you up. `level.goal` is cores[0] so the solver, the picker
-       and the renderer all still have one square to talk about. */
-    cores:t.cores||null,
+    cores:null,                    // filled in by makeTrial; a boss has none
     beats:beats, period:period, fire:fire,
     cycle:period*beats.length,
     // which slice is charging right now, how far through its beat it is, and
@@ -446,6 +517,21 @@ function makeTrial(level){
     }
   };
 }
+function makeTrial(level){
+  if(!level.trial)return null;
+  var T=makeSweep(level.trial);
+  if(!T)return null;
+  /* Three targets in sequence, not one. A trial where the first arrival ends
+     it is over before its second beat, and the clock never gets to be the
+     level - you cross once, on the rhythm you happened to arrive on. Three
+     crossings is what makes it a rhythm you have to learn: the first teaches
+     the beat, the second is a return trip you now have to time, and the third
+     is under a clock that has been running long enough to have sped you up.
+     `level.goal` is cores[0] so the solver, the picker and the renderer all
+     still have one square to talk about. */
+  T.cores=level.trial.cores||null;
+  return T;
+}
 /* The fairness property, and the reason `solve()` is still allowed to have an
    opinion about a trial.
 
@@ -465,8 +551,13 @@ function makeTrial(level){
    Deliberately a check on the volume only. The plane is where a sweep down
    the view axis is unsurvivable, and that is the mechanic, not a bug: it is
    the reason folding is a decision here rather than a free verb. */
-function trialSafety(level){
-  var T=makeTrial(level); if(!T)return {ok:true};
+/* The check itself, over one board and one sweep pattern. Factored out of
+   trialSafety() so BOSS IV's phases can be held to exactly the same standard:
+   each phase is a different board with a different sweep, and "the arena never
+   corners you" has to be true of every one of them. `level` here is any
+   {blocks,start} - bossArena() already builds one per phase. */
+function sweepSafety(level,T){
+  if(!T)return {ok:true};
   var R=makeRules(level), cr=crateSet(crateKeys(level));
   var stand=[], seen={};
   for(var i=0;i<level.blocks.length;i++){
@@ -497,6 +588,9 @@ function trialSafety(level){
   }
   var s=level.start, born=T.hits(T.beats[0],0,"3",s[0],s[1],s[2]);
   return {ok:!bad.length&&!born,trapped:bad,born:born};
+}
+function trialSafety(level){
+  return sweepSafety(level,makeTrial(level));
 }
 
 /* Every cell you could ever stand on, walking out from the start. Shared by
@@ -637,7 +731,17 @@ function bossArena(level){
     var last=B.phases.length-1;
     for(var pi=0;pi<B.phases.length;pi++){
       var lvP={start:level.start,blocks:bossBlocksAt(level,pi)};
-      var f=arenaFail(lvP,B.phases[pi].at,pi===last);
+      /* A TEACHING BOARD IS EXEMPT FROM THE QUALITY GATES, AND ONLY THOSE.
+         `requireLethal` here and the depth count below are the two checks
+         that ask "is this a fight worth having" - they want pillars to fight
+         over and depth to fold through. A board whose whole job is to show
+         the kill once, on a target that does not move, deliberately has
+         neither: it is the opening phase of every fight in the game with
+         nothing else on it. Everything structural is still asked - a spawn
+         inside a block, a spawn the pack cannot walk to you from, a spawn
+         beside the start square, a start square that cannot be folded from -
+         because those break a lesson exactly as hard as they break a fight. */
+      var f=arenaFail(lvP,B.phases[pi].at,pi===last&&!B.teach);
       for(var fi=0;fi<f.length;fi++)fail.push("phase "+(pi+1)+": "+f[fi]);
       /* A block may not rise onto a cell something is standing on when the
          phase begins. The game lifts the player out rather than burying them,
@@ -663,7 +767,7 @@ function bossArena(level){
     var depths={},nd=0;
     for(var q2=0;q2<lvL.blocks.length;q2++)
       if(!depths[lvL.blocks[q2][2]]){depths[lvL.blocks[q2][2]]=1;nd++;}
-    if(nd<4)fail.push("too flat for folding to buy anything");
+    if(nd<4&&!B.teach)fail.push("too flat for folding to buy anything");
     var crates=0;
     for(var c2=0;c2<lvL.blocks.length;c2++)if(isCrate(lvL.blocks[c2]))crates++;
     return {ok:!fail.length,fail:fail,

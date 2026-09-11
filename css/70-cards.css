@@ -1,4 +1,4 @@
-/* Orthogonal — css/70-cards.css
+/* I'm Just A Cube - css/70-cards.css
    Full-bleed cards: the win card and its stars, the intro card, the tutorial card.
    Loaded in the order listed in index.html; see docs/UI.md for the map of
    screens to files. */
@@ -44,8 +44,12 @@
   }
   .won h2{font-family:'Space Grotesk',system-ui,sans-serif;font-size:24px;
     margin:0;color:var(--fg);font-weight:700;letter-spacing:-.02em}
+  /* Capped for the same reason the row is: the longest subtitle in the game
+     is the last tutorial's ("N moves · not scored · from here on, tap the
+     bulb for a hint"), and uncapped it ran off both edges of a 327px phone. */
   .won p{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12.5px;
-    color:var(--fg-dim);margin:0;letter-spacing:.05em}
+    color:var(--fg-dim);margin:0;letter-spacing:.05em;
+    max-width:min(88vw,46ch);text-align:center}
   /* Said once, on the run that finishes a section. The map is where the
      reward lives afterwards; this is the sentence. */
   .wonmast{display:block;font-style:normal;margin-top:9px;
@@ -62,6 +66,12 @@
     color:var(--sec);border:1px solid color-mix(in srgb,var(--sec) 46%,transparent);
     padding:4px 11px;border-radius:99px;
     animation:wmast .6s cubic-bezier(.2,1.5,.4,1) .72s both}
+  /* A FEAT IS NOT A SHELF, so it does not borrow `--sec`. Two of the pack in
+     one fold is paid in the star's own gold - the colour this game already
+     uses for the thing a star cannot be spent on (see `.wearn` in
+     40-panels.css) - and it is the only `.wonwear` that can appear without a
+     mastery pill above it, so it carries its own top margin. */
+  .wonfeat{--sec:var(--star);margin-top:9px}
   @keyframes wmast{0%{opacity:0;transform:scale(.8)}100%{opacity:1;transform:scale(1)}}
   /* WHY THE NEXT THING IS SHUT. Only ever seen on BOSS IV with a boss still
      standing, and it is the amber the game already uses for "a landmark on a
@@ -106,9 +116,14 @@
   .tutcard p b{color:var(--goal);font-weight:500}
   .tutcard button{min-width:120px}
   /* Capped and centred: on the owner's narrow phone the pair used to run off
-     both edges, and a button whose rim is off-screen reads as broken. */
-  .wonrow{display:flex;gap:8px;align-items:center;justify-content:center;
-    max-width:94vw}
+     both edges, and a button whose rim is off-screen reads as broken.
+     AND IT WRAPS, because one label is not fixed: a teaching level's card
+     says STILL LEARNING · UNDERSTOOD, and that pair is ~45px wider than a
+     327px phone. Wrapping never fires on any other card - every other pair
+     fits - so it costs nothing where it is not needed and stacks the two
+     buttons where it is, in the order they already read in. */
+  .wonrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+    justify-content:center;max-width:94vw}
   .won button{height:46px;padding:0 clamp(13px,4.4vw,24px);font-weight:600;
     --c:var(--goal);color:var(--c);
     border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent);

@@ -1,9 +1,9 @@
-/* Orthogonal — css/95-home.css
+/* I'm Just A Cube - css/95-home.css
    The home screen: plinth, CONTINUE, the shop strip.
    Loaded in the order listed in index.html; see docs/UI.md for the map of
    screens to files. */
 /* ============================================================
-   THE HOME SCREEN — where the game starts from
+   THE HOME SCREEN - where the game starts from
 
    z-index 11 puts it over the world, the HUD and the bar, and *under* the
    panels (12), which is the whole arrangement: the map and the wardrobe open
@@ -172,12 +172,23 @@
 .home button.hward.hlevels{--c:#4ec8e0;height:44px}
 .hlevels svg{width:18px;height:18px}
 
-.home .tiny{width:auto;height:30px;padding:0 16px;margin-top:14px;
+/* THE TWO SMALL BUTTONS ARE ONE PAIR, so they are one width.
+
+   They used to hug their own labels, which was right while SETTINGS was
+   alone: a single short pill under four full-width doors reads as a footnote,
+   which is what it is. The moment MULTIPLAYER joined it under there, two
+   different widths stacked on one axis stopped reading as a pair and started
+   reading as a mistake - the longer word simply made a wider button, which is
+   an accident of the alphabet rather than a decision. Reported that way.
+
+   So both take the same box, and with a box there is a column again: the icon
+   goes back to being pinned rather than inline, at the same offset in both,
+   and the labels stay centred on the button as if the icon were not there -
+   the same arrangement the four doors above use, for the same reason. */
+.home .tiny{width:178px;height:32px;padding:0;margin-top:13px;
   font-size:11px;border-color:var(--rule);color:var(--fg-dim)}
-/* SETTINGS is the one button that hugs its label rather than filling the
-   width, so it keeps its icon inline - there is no column for it to join. */
-.home .tiny svg{position:static;transform:none;width:15px;height:15px;
-  margin-right:7px}
+.home .tiny svg{position:absolute;left:15px;top:50%;
+  transform:translateY(-50%);width:15px;height:15px;margin:0}
 
 /* Play chrome has nothing to do while the home screen is up, and the star
    total is shown inside it instead - two counts of the same number, one of
@@ -194,3 +205,39 @@
    ones already in this file. */
 body.athome .hud,body.athome .bar,body.athome .coach,body.athome .boss,
 body.athome .startotal{display:none}
+
+/* MULTIPLAYER, SHUT - the smallest and lowest thing on the screen
+
+   A mode that is not built is worth putting on the screen anyway: a door you
+   can see and cannot open is a promise, and an empty space is nothing.
+
+   BUT IT MUST NOT OUTRANK THE FOUR THINGS THAT WORK. It was a full-width pill
+   in the shop strip, the same size and weight as WARDROBE and MY LEVELS, and
+   at that size a fifth pill is just a fifth pill - the screen stopped reading
+   as four doors and started reading as a menu. So it is SETTINGS' size, and
+   it sits under SETTINGS: the two smallest things on the title screen are the
+   one that is housekeeping and the one that is not open yet.
+
+   Shut is said with the chooser's own language - the colour drained out, the
+   rim dashed, a padlock where a value would be (`.sectile.lk`, css/85-map.css)
+   - because a second visual language for the same idea would be a second
+   thing to learn. The `SOON` cap that used to sit beside the padlock is gone
+   with the size: at 30px the padlock is the whole sentence, and pressing it
+   says the rest.
+
+   It keeps a lit background, like every disabled button in this game: a
+   control that goes to nothing at all reads as a rendering failure rather
+   than as a locked door. */
+.home .tiny.hmulti{margin-top:8px;
+  border-style:dashed;color:#8a94ad;
+  filter:saturate(.4) brightness(.92)}
+/* No cap to press down onto: the press is what says a button answered, and
+   this one does not. */
+.home .tiny.hmulti:active{transform:none;box-shadow:0 3px 0 var(--lip)}
+/* The padlock is the one icon here that is NOT in the column: the column is
+   for the icon saying what the button is, and this says what is wrong with
+   it, so it sits at the other end where a price or a chevron would. `.home
+   .tiny svg` pins every icon on this button to the left, so the lock has to
+   say otherwise on both sides. */
+.home .tiny.hmulti .hlock{left:auto;right:14px;width:12px;height:12px;
+  fill:#c6cddd;opacity:.85}

@@ -1,6 +1,6 @@
 ---
 name: ui
-description: Make a visual change to Orthogonal's chrome (HUD, buttons, panels, map, home screen, cards) cheaply — the screen-to-file map, the one CSS file to edit, and the screenshot loop that checks it. Use for any "make X look like Y" request, or a list of them.
+description: Make a visual change to I'm Just A Cube's chrome (HUD, buttons, panels, map, home screen, cards) cheaply — the screen-to-file map, the one CSS file to edit, and the screenshot loop that checks it. Use for any "make X look like Y" request, or a list of them.
 ---
 
 # UI change, the cheap way

@@ -1,0 +1,115 @@
+/* I'm Just A Cube - css/99-guide.css
+   The neighbour's speech bubble.
+   Loaded in the order listed in index.html; see docs/UI.md for the map of
+   screens to files. */
+/* ============================================================
+   ONE ELEMENT, AND IT FOLLOWS A CUBE
+
+   `left`/`top` are written every frame by guideFrame() from the projected
+   world position of the piece it belongs to, so the bubble stays over his
+   head through a camera turn and a fold. Everything here is therefore about
+   the OFFSET from that point, not about where on the screen it sits: the
+   translate lifts it clear of the cube, and `--tail` says where in the box
+   he is standing.
+
+   z-index 11 is over the world and the HUD (10) and under the panels and the
+   cutscene overlay (12) - it is a thing in the level, not a screen, and it
+   must go away behind anything that is.
+   ============================================================ */
+  /* `width:max-content` IS LOAD-BEARING, and its absence was a real bug.
+
+     This is `position:fixed` with a `left` written every frame and no
+     `right`, so its containing block is the viewport and its used width is
+     SHRINK-TO-FIT against whatever is left of the screen past `left`. Park
+     the neighbour near the right-hand edge - which is exactly where he
+     stands now, on his own plinth off the end of the board - and the
+     available width collapses to a hundred-odd pixels, so the box wrapped
+     one word per line and ran off the screen. A transform is applied AFTER
+     the width is decided, so no amount of it can help.
+
+     `max-content` takes the available width out of the calculation
+     altogether: the box is as wide as its longest line wants, capped by
+     max-width, wherever it is put. guideFrame() then measures it and puts
+     it where it fits. */
+  /* `left` IS THE BOX'S LEFT EDGE, not its centre, and `--tail` is where he
+     is standing inside it - both written every frame by guideFrame(). The
+     translate therefore lifts the box clear of him and does nothing
+     horizontally: centring it here is what used to slide it off him near the
+     edge of the screen. See the note in guideFrame().
+
+     The cap is 30ch rather than 34: the box now grows INWARDS from wherever
+     he is, so a narrower column is what keeps a long line from reaching
+     across the board behind it. Three or four short lines above his head
+     read better than two that span the screen. */
+  .gbub{position:fixed;left:0;top:0;z-index:11;
+    --tail:50%;
+    transform:translateY(-100%);
+    width:max-content;max-width:min(66vw,30ch);padding:9px 12px;
+    border-radius:11px;
+    /* His own colour, at the weight a spoken line can carry: a pale ground
+       with dark type on it, which is the one thing on screen that is not
+       the game's dark-on-darker chrome. He is a person talking. */
+    background:linear-gradient(180deg,#fdfefe,#e6ebf2);
+    border:1px solid rgba(255,255,255,.85);
+    box-shadow:0 6px 18px rgba(0,0,0,.45), 0 0 0 1px rgba(15,20,36,.25);
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:11.5px;line-height:1.55;letter-spacing:.01em;
+    color:#171b26;text-align:center;
+    pointer-events:none;   /* the CUBE is the button, not the bubble */
+    opacity:0;display:none}
+  .gbub.on{display:block;transform-origin:var(--tail) 100%;
+    animation:gbin .28s cubic-bezier(.2,1.4,.4,1) both}
+  /* It grows out of him, so the transform-origin is the tail rather than the
+     middle of the box - on a bubble that is mostly to one side of the man
+     talking, a centre-scaled pop reads as the box arriving from nowhere. */
+  @keyframes gbin{
+    0%  {opacity:0;transform:translateY(-100%) scale(.88)}
+    100%{opacity:1;transform:translateY(-100%) scale(1)}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .gbub.on{animation:gbfade .2s ease both}
+    @keyframes gbfade{from{opacity:0}to{opacity:1}}
+  }
+  /* The tail, pointing back down at whoever is talking. Drawn as a rotated
+     square rather than a border triangle so it inherits the bubble's own
+     gradient and rim and cannot drift out of step with them. */
+  .gbub::after{content:"";position:absolute;left:var(--tail);bottom:-5px;
+    width:11px;height:11px;margin-left:-5.5px;transform:rotate(45deg);
+    background:#e6ebf2;border-right:1px solid rgba(15,20,36,.25);
+    border-bottom:1px solid rgba(15,20,36,.25)}
+  .gbub b{font-weight:600}
+  /* THE ONE LINE HE SAYS WITHOUT BEING ASKED, and it is a button in all but
+     name: pressing him again takes the offer. It wears the amber the game
+     already uses for "this is a way round" and says so underneath, because a
+     bubble that does something when you press it has to look different from
+     eleven that do not. */
+  /* Column, so the ::before caption can be ordered BELOW the line it is
+     about. It renders first in the box otherwise, and "press again to skip
+     it" above the sentence it refers to reads as a heading rather than as
+     the answer to it. */
+  /* `.on.stuck`, NOT `.stuck` - `.gbub` is display:none until `.on` is on
+     it, and a bare `.stuck{display:flex}` later in the file would beat that
+     and leave a dismissed bubble on screen. guideHide() only takes `.on`
+     off, deliberately, so the rule that shows it has to name `.on` too. */
+  .gbub.on.stuck{display:flex;flex-direction:column;
+    background:linear-gradient(180deg,#fdf3e0,#f5e3c4);
+    border-color:rgba(224,160,60,.7)}
+  .gbub.stuck::after{background:#f5e3c4;border-color:rgba(224,160,60,.55)}
+  .gbub.stuck::before{content:"press again to skip it";display:block;order:2;
+    margin-top:6px;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+    color:#8a6220}
+
+  /* He belongs to the level, so every screen that takes the level away takes
+     him with it. The full-bleed cards are not in this list and do not need to
+     be: they sit at z-index 20 and cover him outright. */
+  body.athome .gbub,body.instory .gbub,body.mapopen .gbub,
+  body.replaying .gbub{display:none}
+
+  /* HIS LINE ON A WIN CARD. Not a bubble - by the time a level is solved the
+     card is what the player is looking at, and a bubble behind it is a line
+     delivered to nobody. It is the last thing in #wonSub, in his own white,
+     quieter than the score and set apart from it. */
+  .wonguide{display:block;font-style:normal;margin-top:9px;
+    font-size:11px;letter-spacing:.04em;color:#e8edf5;opacity:.9}
+  .wonguide::before{content:"\201C"}
+  .wonguide::after{content:"\201D"}

@@ -1,5 +1,5 @@
 "use strict";
-/* Orthogonal — 18-ui.js
+/* I'm Just A Cube - 18-ui.js
    Toasts, panel plumbing, and syncHud.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
@@ -127,35 +127,26 @@ function panelOpen(){return $("panel").classList.contains("on");}
    and the two clocks would carry on regardless. It is also what makes
    tutPlayable() false while a card is being read, so time spent reading one
    is not counted as hesitation. */
+/* The story's last card is in here for the same reasons the tutorial's is:
+   it covers the world, and a keyboard does not care what is on top of it.
+   A running cutscene is deliberately NOT in here - it holds the four verbs
+   at the verbs (storyHolds), which is finer-grained than this test can be:
+   the ending hands GO 2D back for one beat, and a screen that swallowed
+   every game key would swallow the space bar that presses it. */
 function screenUp(){
   return homeUp()||!$("intro").classList.contains("gone")||
+         $("storyend").classList.contains("on")||
          (typeof tutCardUp==="function"&&tutCardUp());
 }
 function syncCorners(){
   var m=$("bMenu"), w=$("bWard");
   if(m)m.classList.toggle("on",panelKind==="menu");
   if(w)w.classList.toggle("on",panelKind==="wardrobe");
-  syncSave();
   syncMapChrome();
 }
-/* SAVE'S ONE OWNER. Called from syncHud() like every other button class, and
-   from syncCorners() as well - a panel opening or closing does not run a HUD
-   pass, and `.panel.tall` covers this corner, so without the second caller
-   the pill sat glowing through the frosted glass of the ⋯ sheet.
-
-   The dot is `editDirty` (js/14-editor.js) and nothing else: not "has this
-   level ever been saved", which would leave a level you saved a second ago
-   still asking to be saved. */
-function syncSave(){
-  var b=$("eLib");
-  if(!b)return;
-  var show=(typeof app!=="undefined"&&app==="edit")&&
-           !(typeof homeUp==="function"&&homeUp())&&
-           !panelOpen()&&!screenUp();
-  b.classList.toggle("on",show);
-  b.classList.toggle("dirty",
-    show&&typeof editDirty!=="undefined"&&!!editDirty);
-}
+/* syncSave() is gone with the SAVE button it owned. The editor saves on
+   every edit now (autosave(), js/14-editor.js), so there is no pill to show
+   and no dot to keep in step with the board. */
 function toggleMenu(){
   if(panelKind==="menu"){hidePanel();return;}
   menuPanel();
@@ -193,11 +184,22 @@ function paperIsLight(){
    case that wants it - a second star lost while the first is still falling.
 
    It also has to go back up. Undo lowers the move count, so a star can be
-   regained; the fallen glyph loses its class and returns to its socket. */
-var starsLive=3;
+   regained; the fallen glyph loses its class and returns to its socket.
+
+   `starsLive` IS A CLAIM ABOUT THE DOM, NOT ABOUT THE LEVEL, so hiding the
+   row cannot set it to 3: that is the whole of the "one star on a fresh
+   level" bug. Hiding writes no glyphs, so a row left at one star by the
+   previous level still says one star underneath - and the next level opens
+   on three, sees 3===3, and takes the early return that exists to stop the
+   animation restarting. The stale row then survives the whole level, because
+   every count it is asked for afterwards is one it thinks it is already
+   drawing. -1 is "I do not know what is on screen": it matches no count, so
+   the first call after a hide always redraws, and `lost` is false against it
+   so nothing falls or plays a sound on the way back in. */
+var starsLive=-1;
 function syncStars(st){
   var el=$("starRow"); if(!el)return;
-  if(st===null){el.hidden=true;starsLive=3;return;}
+  if(st===null){el.hidden=true;starsLive=-1;return;}
   el.hidden=false;
   if(!el.childElementCount){
     var h="";
@@ -245,13 +247,23 @@ function syncHud(){
      it did, handing the whole document `display:none`. See the note in
      css/95-home.css. */
   document.body.classList.toggle("athome",homeUp());
-  var inPlay=app==="play"&&!homeUp();
+  /* A CUTSCENE IS A SCREEN TOO, and the same rule applies: the chrome
+     answers to it exactly as it answers to a panel, and this is the one
+     place that decides. `instory` takes the HUD, the bar, the coach and the
+     star total off (css/98-story.css, the same list body.athome takes);
+     `storyask` is the one beat that hands a verb back and needs the bar for
+     the length of one press. */
+  var inStory=typeof storyOn==="function"&&storyOn();
+  document.body.classList.toggle("instory",inStory);
+  document.body.classList.toggle("storyask",
+    inStory&&typeof storyAsking==="function"&&!!storyAsking());
+  /* The corner buttons cannot be done in CSS: their display is set inline
+     just below, and an inline style beats any stylesheet. So a cutscene is
+     simply not "in play" as far as the chrome is concerned. */
+  var inPlay=app==="play"&&!homeUp()&&!inStory;
   ["bHint","bLook","bMenu","bWard","bRestart"].forEach(function(id){
     var el=$(id); if(el)el.style.display=inPlay?"flex":"none";
   });
-  // SAVE is the one corner button that belongs to the editor rather than to
-  // play, so it is asked separately - and asked again by syncCorners().
-  syncSave();
   /* THE BANK IS NOT SHOWN INSIDE A LEVEL. How many stars you have collected
      across the whole game cannot change while you are playing one, and it is
      not what you are thinking about - the row under the move count is. It
@@ -262,6 +274,9 @@ function syncHud(){
   $("starTotal").classList.toggle("on",inPlay&&levelDone);
   syncHintN();
   syncStarTotal();
+  /* Before the bar, not after it: syncBossBar() measures .hud's height to
+     decide where the lives row sits, and the primer is inside .hud. */
+  syncPrimer();
   syncBossBar();
 
   if(app==="edit"){
@@ -281,7 +296,7 @@ function syncHud(){
   }
   if(app==="compose"){
     var flatNow=composeMode==="2";
-    $("lvName").textContent="COMPOSE — "+script.length+" MOVE"+(script.length===1?"":"S");
+    $("lvName").textContent="COMPOSE - "+script.length+" MOVE"+(script.length===1?"":"S");
     $("lvHint").className="script";
     $("lvHint").textContent=script.length?script.join(" "):
       "Tap the moves you want the player to make. The level builds itself underneath.";
@@ -314,9 +329,9 @@ function syncHud(){
      behaviour and it is right for the *flat* case - there the buttons come
      back the moment you stand up, so greying them says "not now". A level
      with `rotate:false` is a different sentence: the turn does not exist yet.
-     The opening eight levels are all locked, so the buttons arriving on
-     `05 — No Way From Here` is the reveal that level is built around, and a
-     pair of dead controls sitting in the bar for eight levels would spend it
+     The opening ten levels are all locked, so the buttons arriving on
+     `09 - The Rotation` is the reveal that level is built around, and a
+     pair of dead controls sitting in the bar for ten levels would spend it
      in advance. Deliberately not keyed off `noRot`, which includes flat. */
   document.body.classList.toggle("norot",
     app==="play"&&!!L&&L.rotate===false);
@@ -341,6 +356,95 @@ function syncHud(){
   tutSync();
 }
 
+/* ============================================================
+   THE PRIMER - a level's rules, as a checklist that ticks itself
+
+   Almost every level in this game teaches by being played: the coach cues a
+   control and pressing it is the explanation. A fight cannot open that way,
+   because the thing it has to say is a conjunction - be on its line, AND be
+   looking down that line, AND fold, AND do all of it before it does - and
+   there is no single press that demonstrates a conjunction. So SPARRING says
+   it, in a list, above a board where each line is one move.
+
+   A LIST WOULD BE A CARD ON THE WALL. The four rules were static text for one
+   playtest and that is a thing you read once and stop seeing; what makes them
+   a lesson is that each line answers back. Every step is a predicate over the
+   kill state (killState(), 12-play.js), the boxes tick and untick as the
+   player moves and turns, and the fourth goes red for exactly as long as the
+   hunter's ray is live. The player can therefore *find* the rule by moving -
+   which is how every other thing in this game is taught - and the words are
+   only there to name what they are watching happen.
+
+   And when it kills them, the level's `why` line says which step they missed -
+   not here, but in the middle of the screen over the kill cam, which is where
+   they are looking in that second. See deathSayShow() in 12-play.js.
+
+   NOT the retired "brief". That was a full-bleed card that opened a trial or
+   a boss, and it went because a card explaining what the board already shows
+   is read once and dismissed unread (js/15-tutorial.js, where the word is
+   still spoken for). This is the opposite trade: it says the one thing the
+   board cannot show, it is never in the way, and it does not have to be
+   dismissed.
+
+   TWO PASSES, and they are separate on purpose. syncPrimer() writes markup
+   and is called from syncHud, so it runs when the level or the control layout
+   changes - anything animated inside markup that is rewritten every redraw
+   restarts, which is the rule the live star row is its own element for.
+   primerMarks() only toggles classes, and it runs every frame from the render
+   loop, because what the checklist describes changes without the player
+   touching anything: a hunter plants a line on its own clock. It is the third
+   thing re-judged per frame, alongside the GO 2D button and the eye.
+   ============================================================ */
+var primerShown=null, primerRows=null, primerMarked="";
+function primerSteps(){
+  return (app==="play"&&L&&L.primer&&L.primer.steps)?L.primer.steps:null;
+}
+function syncPrimer(){
+  var el=$("lvPrimer");if(!el)return;
+  var st=primerSteps();
+  el.hidden=!st;
+  if(!st){primerRows=null;primerShown=null;return;}
+  var key=L.name+"|"+((typeof tutGestures==="function"&&tutGestures())?"g":"b");
+  if(key!==primerShown){
+    primerShown=key;primerMarked="";
+    var out="<i>"+tutWords(L.primer.lead||"")+"</i><ol>";
+    for(var i=0;i<st.length;i++)out+="<li><span>"+tutWords(st[i].say)+"</span></li>";
+    el.innerHTML=out+"</ol>";
+    primerRows=el.querySelectorAll("li");
+  }
+  primerMarks();
+}
+/* The boxes. Called from here and from the render loop, so it has to be cheap
+   and it has to be idempotent: the marks are joined into one short string and
+   nothing is touched while that string is unchanged. */
+function primerMarks(){
+  var st=primerSteps();
+  if(!st||!primerRows||primerRows.length!==st.length)return;
+  /* FROZEN WHILE THE KILL CAM RUNS. The replay writes the recorded pose into
+     the live state, so a list marked off it would tick "face its direction"
+     during the film of the charge - the hunter is standing on you in that
+     last frame - directly under a line that says you did not turn. What the
+     player should see beside "you didn't turn to face it" is the list as it
+     was when that was true, which is what holding still gives them. */
+  if(rep)return;
+  var k=killState(null);
+  if(typeof primerLast!=="undefined")primerLast=k;
+  var sig="",i,done,hot;
+  for(i=0;i<st.length;i++){
+    // A won level is a finished list. Without this the win card shows the two
+    // lines that describe where you were STANDING unticked - the kill sends
+    // you home and unfolds you - which reads as "you did it wrong and won".
+    done=k.won||!!(st[i].done&&st[i].done(k));
+    hot=!done&&!!(st[i].hot&&st[i].hot(k));
+    sig+=done?"1":hot?"2":"0";
+  }
+  if(sig===primerMarked)return;
+  primerMarked=sig;
+  for(i=0;i<st.length;i++){
+    primerRows[i].classList.toggle("on",sig.charAt(i)==="1");
+    primerRows[i].classList.toggle("hot",sig.charAt(i)==="2");
+  }
+}
 /* ============================================================
    THE STAR TOTAL, AND STARS IN FLIGHT
 

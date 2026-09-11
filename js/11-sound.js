@@ -1,11 +1,11 @@
 "use strict";
-/* Orthogonal — 11-sound.js
+/* I'm Just A Cube - 11-sound.js
    Web Audio blips. No assets.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
 
 /* ============================================================
-   SOUND — a few oscillator blips, no assets. The audio context
+   SOUND - a few oscillator blips, no assets. The audio context
    can only start after a gesture, so it's created lazily.
    ============================================================ */
 var actx=null, masterGain=null, limiter=null, postGain=null, shaper=null;
@@ -58,17 +58,36 @@ function defaultVolume(){
    keeps its name now that the offer it was born for - slowing the clock - has
    gone, because it is persisted and renaming it would silently un-silence
    everyone who has already pressed the button. */
-var settings={volume:defaultVolume(),brightness:1,ui:"none",volTouched:false,
+/* The one place the buttons default lives. RESET SETTINGS reads it too,
+   so the reset cannot drift away from a fresh install the way it had:
+   it put the buttons back to "full" while a first run starts hidden. */
+var UI_DEFAULT="none";
+var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false,
               /* pace is retired and pinned at 1; see paceScale() below. */
               pace:1,
               noSlowOffer:false,landHints:0,
-              starAsked:false};
+              starAsked:false,
+              /* The three cutscenes, each played once. Declared here so the
+                 shape of a fresh settings object is the whole truth, and
+                 deliberately NOT reset by RESET SETTINGS: that button puts
+                 preferences back, and whether you have watched the opening
+                 is not a preference. REPLAY STORY is how you ask for it. */
+              seenStory1:false, seenStory2:false, seenStory3:false,
+              /* HOW MUCH KILL CAM. "full" is the whole conceit - the signal
+                 drops to television snow, a camcorder is walked up to the
+                 screen and pushed through it, and the film plays behind its
+                 lens. "plain" keeps the sting and the film and cuts the
+                 wind-up out of the middle, which is the version to compare it
+                 against; the two are a genuine question about how much
+                 ceremony a death deserves, and it is the owner's to answer by
+                 playing both rather than mine to answer by picking one. */
+              killcam:"full"};
 /* How many times the landing rule is spelled out in words. The rings keep
    drawing forever - they are free and they answer the question faster than a
    sentence does - but a line of text on every fold would be nagging. */
 var LAND_HINT_TIMES=3;
 
-/* PACE — how fast the two real-time things run. RETIRED AS A SETTING, and
+/* PACE - how fast the two real-time things run. RETIRED AS A SETTING, and
    the multiplier is kept.
 
    `Menu > Real time > Pace` let a player slow every clock in the game to 75%
@@ -845,6 +864,35 @@ function noiseFall(c,at,dur,vol){
   src.connect(bp);bp.connect(g);g.connect(out(c));
   src.start(at);src.stop(at+dur+.14);
 }
+/* NOISE WITH A SHAPE, for the four named deaths.
+
+   noiseFall() is one fixed gesture - a bandpass swept 3800 to 320 - which is
+   the right sound for a crate scraping and is the only noise this file had.
+   The deaths need four different ones ("plack", "poof", "kshhh", "ssss") and
+   they differ in exactly four things: where the filter starts, where it ends,
+   how tight it is, and whether the envelope opens sharply or eases in. So
+   this is that gesture with those four as arguments rather than four more
+   copies of the same fifteen lines.
+
+   `q` IS THE WHOLE CHARACTER. At 1 it is air, at 6 it is a whistle, and the
+   difference between "kshhh" and "ssss" is mostly that number. `soft` eases
+   the attack over a fifth of the sound instead of a fiftieth, which is what
+   separates a hiss that starts from a burst that hits. */
+function noiseAt(c,at,dur,vol,f0,f1,q,soft){
+  var len=Math.floor(c.sampleRate*(dur+.2));
+  var buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);
+  for(var i=0;i<len;i++)d[i]=Math.random()*2-1;
+  var src=c.createBufferSource();src.buffer=buf;
+  var bp=c.createBiquadFilter();bp.type="bandpass";bp.Q.value=q||1.1;
+  bp.frequency.setValueAtTime(f0,at);
+  bp.frequency.exponentialRampToValueAtTime(f1,at+dur);
+  var g=c.createGain();
+  g.gain.setValueAtTime(.0001,at);
+  g.gain.exponentialRampToValueAtTime(vol,at+dur*(soft?.22:.04));
+  g.gain.exponentialRampToValueAtTime(.0001,at+dur+.10);
+  src.connect(bp);bp.connect(g);g.connect(out(c));
+  src.start(at);src.stop(at+dur+.12);
+}
 function noiseRise(c,at,dur,vol){
   var len=Math.floor(c.sampleRate*(dur+.2));
   var buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);
@@ -859,6 +907,75 @@ function noiseRise(c,at,dur,vol){
   g.gain.exponentialRampToValueAtTime(.0001,at+dur+.16);
   src.connect(bp);bp.connect(g);g.connect(out(c));
   src.start(at);src.stop(at+dur+.18);
+}
+/* THE CROWD - the room the fight is being watched in
+
+   A boss is the only thing in this game with an audience implied by its
+   shape: three phases, a clock, lives, a replay. The kill cam puts that room
+   on the soundtrack, and it is the one voice here that is a bed rather than
+   an event, so it is built rather than blipped.
+
+   IT ONLY CHEERS. There was a groan for deaths and it was cut: a bandpassed
+   noise bed swept down to 155Hz is a fair drawing of a crowd going "ohhh",
+   and on a phone speaker under a screenful of television snow it is
+   indistinguishable from the snow having a soundtrack. Reported exactly that
+   way. So the room reacts to the thing worth reacting to and is silent for
+   the other, which is also what a room does.
+
+   WHAT MAKES NOISE SOUND LIKE PEOPLE is not the filter, it is the envelope -
+   and, more than either, THE HANDS. Flat noise through a bandpass is wind;
+   the same noise with a slow random walk multiplied into it is a room,
+   because a crowd is hundreds of voices whose sum wanders. But the bed alone
+   is ambiguous, which is what the groan proved, so the bed is now the quiet
+   half and the claps carry it: applause is the one crowd sound nothing else
+   in this game could be mistaken for.
+
+   Deliberately quiet (.026 against a blip's .05). It fires on the same beat
+   as SFX.strike() and must sit UNDER it: the hit is the event, this is the
+   room reacting to it. */
+function crowdBed(c,at,dur,vol){
+  var len=Math.floor(c.sampleRate*(dur+.3));
+  var buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);
+  var env=0;
+  for(var i=0;i<len;i++){
+    env+=(Math.random()-.5)*.055;
+    if(env>1)env=1; else if(env<-1)env=-1;
+    d[i]=(Math.random()*2-1)*(.5+.5*Math.abs(env));
+  }
+  var src=c.createBufferSource();src.buffer=buf;
+  var bp=c.createBiquadFilter();bp.type="bandpass";bp.Q.value=.85;
+  bp.frequency.setValueAtTime(620,at);
+  bp.frequency.exponentialRampToValueAtTime(1600,at+dur*.42);
+  bp.frequency.exponentialRampToValueAtTime(980,at+dur);
+  var g=c.createGain();
+  g.gain.setValueAtTime(.0001,at);
+  g.gain.exponentialRampToValueAtTime(vol,at+.16);
+  g.gain.setValueAtTime(vol,at+dur*.5);
+  g.gain.exponentialRampToValueAtTime(.0001,at+dur+.22);
+  src.connect(bp);bp.connect(g);g.connect(out(c));
+  src.start(at);src.stop(at+dur+.28);
+}
+/* One pair of hands. Scattered rather than metrical, because applause that
+   lands on a grid is a drum machine. */
+function crowdClap(c,at,vol){
+  var len=Math.floor(c.sampleRate*.09);
+  var buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);
+  for(var i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,7);
+  var src=c.createBufferSource();src.buffer=buf;
+  var hp=c.createBiquadFilter();hp.type="highpass";hp.frequency.value=1500;
+  var g=c.createGain();g.gain.value=vol;
+  src.connect(hp);hp.connect(g);g.connect(out(c));
+  src.start(at);src.stop(at+.12);
+}
+/* WHERE THE HANDS FALL. Real applause is not evenly spread: it arrives in a
+   rush and thins out, so the times are the square of a uniform draw, which
+   piles them at the front and leaves a tail. Uniform times sounded like a
+   machine ticking, which is the same failure a metrical clap would be. */
+function crowdClaps(c,at,n,dur){
+  for(var i=0;i<n;i++){
+    var u=Math.random();
+    crowdClap(c,at+.06+u*u*dur,.009+Math.random()*.009);
+  }
 }
 /* HAPTICS - the same event, felt.
 
@@ -907,7 +1024,72 @@ var SFX={
     setTimeout(function(){blip(660,.12,"sine",.013,247);},90);
   },
   turn:function(){blip(420,.07,"triangle",.03);},
-  die:function(){blip(220,.5,"sawtooth",.05,55);},
+  /* DYING, WITHOUT THE BUZZER. It was one sawtooth at 220Hz sliding to 55
+     over half a second. A sawtooth is the harshest voice in this file - it
+     is what a door buzzer is made of - and it fired on the one event the
+     player is already unhappy about, several times a level on a hard one.
+     Reported as disturbing, and that reading is right: the sound was not
+     sad, it was abrasive.
+
+     The replacement says the same sentence with no edge on it. A triangle
+     sinking an octave carries the fall, which was the whole of the old
+     sound's meaning; a sine underneath gives it the weight a body has; and
+     one short noise breath keeps a front edge on it, so it still reads as an
+     event on a phone speaker rather than as a fade. Quieter in total than
+     the old single voice, and it lands rather than buzzes. */
+  /* FIVE DEATHS, FOUR OF THEM NAMED BY THE OWNER. One sound for all of them
+     was the first note; a softer one was the second; the third was that each
+     death should sound like the thing that did it, and these are those words
+     built out of the two ingredients this file has - a filtered noise burst
+     and a tone. The word is in the comment because the word is the spec. */
+  die:function(kind){
+    var c=audio();if(!c)return;
+    var t=c.currentTime;
+    /* "SSSS" - fire. A long narrow hiss that eases in rather than hitting,
+       held high and closing only a little, because a gas escaping does not
+       thump. Q of 5 is what makes it a hiss and not just air; the tiny tone
+       under it is the body of the thing going out, at the edge of hearing. */
+    if(kind==="spike"){
+      noiseAt(c,t,.62,.020,5200,2600,5,true);
+      blip(120,.5,"sine",.012,74);
+    /* "PLACK" - the world closing on you. Flat and over immediately: a very
+       short burst up at board level and one mid tone with almost no decay,
+       which is two pieces of something hard meeting and stopping. Anything
+       longer than about a tenth of a second stops being a clack and starts
+       being a hit. */
+    } else if(kind==="crush"){
+      noiseAt(c,t,.055,.034,2400,900,2.2,false);
+      blip(392,.075,"triangle",.036,300);
+      blip(138,.16,"sine",.028,104);
+    /* "KSHHH" - the sweep. A bright burst with a hard front that opens
+       downward and wide: the front is the edge arriving, the spread is it
+       going through. Deliberately brighter than the fire hiss and much
+       shorter, so the two noises are never mistaken for each other. */
+    } else if(kind==="trial"){
+      noiseAt(c,t,.34,.030,7000,900,1.5,false);
+      blip(240,.2,"sine",.016,120);
+    /* "KAPOOSH" - a hunter's hit, and the winner of the three that shipped as
+       a setting for one round (poof, kapoosh, thud - owner's call, and the
+       switch is gone with the question). Two parts: a 30ms click with no body
+       at all, then the poof opening out behind it. The click is what makes it
+       read as being STRUCK rather than as ceasing to exist, which is what
+       plain "poof" gave and what a charge landing is not. */
+    } else if(kind==="boss"){
+      // the "ka": a click with no body, 30ms and gone
+      noiseAt(c,t,.03,.036,4200,1800,2.4,false);
+      blip(520,.05,"triangle",.030,260);
+      // and the "poosh" opening out behind it
+      noiseAt(c,t+.035,.40,.028,2600,420,.9,true);
+      blip(96,.40,"sine",.032,52);
+    /* FALLING OUT OF THE WORLD, and the default for anything unnamed. The
+       one the owner kept: a triangle sinking an octave for the fall, a sine
+       under it for weight, a short breath for the front edge. */
+    } else {
+      blip(196,.46,"triangle",.030,98);
+      blip(98,.54,"sine",.026,62);
+      noiseFall(c,t,.13,.008);
+    }
+  },
   undo:function(){blip(260,.07,"sine",.03);},
   hint:function(){blip(700,.12,"sine",.035,1050);},
   /* A CRATE SLIDING. It was one square wave at 140Hz falling to 105, which
@@ -944,6 +1126,45 @@ var SFX={
   strike:function(){
     blip(150,.22,"square",.055,70);
     blip(900,.3,"sine",.04,1400);
+  },
+  /* THE ROOM, ON A KILL. Hands first and loudest, a bright bed under them,
+     and two voices going up over the top - one crowd sound this game could
+     not be mistaken for, one that says how many people, and one that says
+     they are people. There is deliberately no death half; see crowdBed(). */
+  cheer:function(){
+    var c=audio();if(!c)return;
+    var t=c.currentTime;
+    crowdBed(c,t,2.4,.026);
+    crowdClaps(c,t,20,1.5);
+    blip(430,.5,"sine",.012,690);
+    setTimeout(function(){blip(520,.45,"triangle",.010,810);},170);
+  },
+  /* THE RECORD LIGHT COMING ON. Two short high chirps, the noise every
+     camcorder ever made when the button went down - it lands on the beat the
+     viewfinder appears, so the picture and the sound say the same thing at
+     the same moment. Tiny: it is a click on a device, not an event in the
+     fight. */
+  rec:function(){
+    blip(1760,.045,"sine",.020);
+    setTimeout(function(){blip(2200,.055,"sine",.018);},95);
+  },
+  /* THE HIT, LANDING AGAIN, on the film's closing fold - the beat where the
+     world drops onto the thing you caught. Nothing new is synthesised: it is
+     the game's own strike, at half gain, because reliving it should sound
+     like it did one remove away.
+
+     IT NO LONGER PLAYS THE FOLD. It used to open with SFX.fold(), and once
+     the replay grew a soundtrack that became a duplicate: the fold the player
+     actually made is on the tape at the moment they made it (see repSfx in
+     js/12-play.js) and plays itself. Only the strike is here, and only
+     because it is deliberately kept OFF the tape - it fires on the last
+     instant of the recorded window, and the closing fold takes another half
+     second after that, so recorded it would land before its own picture. */
+  relive:function(ms){
+    setTimeout(function(){
+      blip(150,.22,"square",.030,70);
+      blip(900,.3,"sine",.022,1400);
+    },Math.max(0,ms|0));
   },
   // One per star landing on the counter, climbing as they arrive, so three
   // stars resolve upward instead of repeating the same note three times.

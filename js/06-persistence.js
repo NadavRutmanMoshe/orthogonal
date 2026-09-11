@@ -1,11 +1,11 @@
 "use strict";
-/* Orthogonal — 06-persistence.js
+/* I'm Just A Cube - 06-persistence.js
    Progress, settings, session, library and wardrobe storage.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
 
 /* ============================================================
-   PERSISTENCE — one key holds the whole library, so saving
+   PERSISTENCE - one key holds the whole library, so saving
    costs a single write instead of one per level.
    ============================================================ */
 var LIB_KEY="orthogonal:library";
@@ -78,6 +78,8 @@ function loadSettings(){
         }
         if(typeof o.brightness==="number")settings.brightness=o.brightness;
         if(o.ui&&["full","compact","none"].indexOf(o.ui)>=0)settings.ui=o.ui;
+        if(o.killcam&&["full","plain"].indexOf(o.killcam)>=0)
+          settings.killcam=o.killcam;
         /* `pace` is deliberately NOT read any more. The row that set it is
            gone, so a save carrying 0.5 would pin every clock in the game at
            half speed with nothing left to change it - which is the trap this
@@ -101,6 +103,17 @@ function loadSettings(){
            may still carry it; it is ignored rather than migrated, because
            nothing is left that would ask. */
         if(o.starAsked===true)settings.starAsked=true;
+        /* THE TWO CUTSCENES, and they are on this list for exactly the
+           reason the note above gives. The opening plays once, between the
+           intro card's BEGIN and the first tutorial; the ending plays once,
+           off the win card of BOSS IV. A key written by saveSettings() and
+           not read here is silently forgotten on every reload - so without
+           these two lines the opening would play every single launch, which
+           is the worst version of a cutscene there is. Skipping counts as
+           seeing; REPLAY STORY in the settings panel is the way back. */
+        if(o.seenStory1===true)settings.seenStory1=true;
+        if(o.seenStory2===true)settings.seenStory2=true;
+        if(o.seenStory3===true)settings.seenStory3=true;
         if(typeof o.landHints==="number"&&o.landHints>=0)
           settings.landHints=Math.min(99,o.landHints|0);
         // o.verbs may exist in settings saved before the wording was settled.
@@ -270,7 +283,7 @@ function clearFails(name){
   delete fails[name];failSave();
 }
 /* ============================================================
-   THE HINT BANK — three of them, one back every half hour
+   THE HINT BANK - three of them, one back every half hour
 
    Hints used to be unlimited and paid for in stars: nought cost three stars,
    one or two cost you down to two, and five or more meant none at all. That
@@ -415,7 +428,7 @@ function libLoad(){
   }).catch(function(){library=[];});
 }
 function libSave(){
-  if(!window.storage){flash("storage unavailable — use export");return Promise.resolve();}
+  if(!window.storage){flash("storage unavailable - use export");return Promise.resolve();}
   return window.storage.set(LIB_KEY,JSON.stringify(library)).catch(function(){
     flash("couldn't save");
   });

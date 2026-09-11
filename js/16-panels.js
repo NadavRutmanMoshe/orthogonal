@@ -1,5 +1,5 @@
 "use strict";
-/* Orthogonal — 16-panels.js
+/* I'm Just A Cube - 16-panels.js
    Chapters and every slide-up panel: menu, levels, wardrobe, library.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
@@ -90,18 +90,40 @@ function wardrobePanel(tab){
          on this panel that is not paid for in stars. */
       "<button class='tab tdeal' id='wD'>"+tagIcon()+"DEALS</button>"+
     "</div>"+
+    /* THE SHELF ON TOP, THE THING ITSELF UNDERNEATH.
+
+       It was two columns - a scrolling list of tiles down the left and a
+       narrow case pinned to 40% of the width on the right - and at phone
+       width that gave the case about 130px to stand a piece in. The piece is
+       what is being sold; it was the smallest thing on the shelf.
+
+       Stacked, the case gets the panel's whole width and roughly half again
+       the height, the grid goes to three columns because it is no longer
+       sharing the row, and the primary action lands at the bottom of the
+       screen where a thumb already is. That is the shape almost every mobile
+       shop uses, and the reason is the one above: browse at the top, look at
+       the bottom, buy under your thumb. */
     "<div class='wbody'>"+
-      "<div class='wlist'><div class='grid' id='wGrid'></div></div>"+
+      /* THE STAGE IS FIRST, AND IT NEVER MOVES. That is the whole reason this
+         order exists: with the piece at the bottom, selecting something you do
+         not own grew the block under it - a BUY cap, an ad row, the note about
+         there being no store - and the stage slid up the screen every time.
+         Reported exactly that way. Fixed height, pinned to the top, and the
+         LIST is what absorbs the change: it is `flex:1 1 auto` and scrolls
+         inside itself, so the text below can be one line or six and the thing
+         you are looking at does not twitch.
+
+         Three siblings rather than a stage that owns its own caption, because
+         the caption has to be able to sit on the other side of the grid. */
       "<div class='wcase'>"+
-        /* The canvas is wrapped so the case can have a frame and a floor: a
-           canvas is a replaced element and will not carry ::before/::after,
-           and the light spilling out of the render onto the page is what
-           makes the box read as a lit case rather than a thumbnail. */
+        /* The canvas is wrapped so the stage can carry a floor and a caption:
+           a canvas is a replaced element and will not take ::before/::after. */
         "<div class='wglass'><canvas id='wCase3d' class='wcanvas'></canvas>"+
-          "<i class='wfloor'></i></div>"+
-        "<div class='wturn'>DRAG TO TURN</div>"+
-        "<div id='wMeta'></div>"+
+          "<i class='wfloor'></i>"+
+          "<span class='wturn'>DRAG TO TURN</span></div>"+
       "</div>"+
+      "<div class='wlist'><div class='grid' id='wGrid'></div></div>"+
+      "<div id='wMeta'></div>"+
     "</div>"+
     "<div class='pfoot'><button id='wHome'>"+homeIcon()+"HOME</button>"+
       "<button id='wBack'>CLOSE</button></div>","wardrobe");
@@ -159,13 +181,25 @@ function wardRefresh(){
   var html="";
   for(var i=0;i<list.length;i++){
     var it=list[i], have=owns(it.id), on=cur===it.id;
-    // each swatch shows the two colours that item actually sets
+    /* THE TILE SAYS WHAT KIND OF THING IT IS BEFORE THE PRICE IS READ.
+       The chip used to be one flat `var(--rule)` square for every shape and
+       a bare hex for every colour, so a shelf of thirteen shapes was
+       thirteen identical grey squares and the only thing that told an owned
+       item from a locked one was the word under it. The classes here are
+       what let the CSS light the chip: `have` in the player's own colour,
+       `rew` and `gold` in the star's, `locked` left grey and dimmed. The
+       colour swatch hands its hex over as `--sw` rather than as a
+       background, so the same variable can drive the gloss, the rim and the
+       glow that hue casts on the tile. */
+    var kind = (have?" have":" locked")+
+      (it.reward?" rew":"")+((isDeal(it)||isPass(it))?" gold":"")+
+      (t==="color"?" sw":"");
     var swatch = t==="color"
-      ? "background:#"+it.hex.toString(16).padStart(6,"0")
-      : "background:var(--rule)";
-    html+="<div class='item"+(on?" on":"")+(sel===it.id?" sel":"")+
+      ? " style='--sw:#"+it.hex.toString(16).padStart(6,"0")+"'"
+      : "";
+    html+="<div class='item"+(on?" on":"")+(sel===it.id?" sel":"")+kind+
       "' data-id='"+it.id+"'>"+
-      "<i style='"+swatch+"'>"+(t==="color"?"":shapeGlyph(it.id))+"</i>"+
+      "<i"+swatch+">"+(t==="color"?"":shapeGlyph(it.id))+"</i>"+
       "<b>"+it.name+"</b>"+
       "<span"+(!have?(it.reward?" class='wlock'":isDeal(it)?" class='wusd'":""):"")+">"+
         (on?"equipped":have?(isPass(it)?"active":"owned")
@@ -190,12 +224,17 @@ function wardRefresh(){
 function wardMeta(){
   var t=wardTab, id=wardSelected(t), it=findBy(wardList(t),id);
   var have=owns(id), on=wardEquipped(t)===id, bal=shards();
-  var s="<div class='wname'>"+it.name+"</div>"+
-        "<div class='wcost"+(!have&&isDeal(it)?" wusd":"")+"'>"+
+  /* THE NAME AND WHAT IT COSTS ARE ONE LINE, the way a price tag is one
+     line. Stacked they read as two unrelated facts; on a baseline together
+     the price is plainly the price OF the name beside it, and the row has
+     the panel's full width to do it in now that the case is not a 40%
+     column. */
+  var s="<div class='wtop'><span class='wname'>"+it.name+"</span>"+
+        "<span class='wcost"+(!have&&isDeal(it)?" wusd":"")+"'>"+
           (on?"equipped":have?(isPass(it)?"in force":"owned")
           :it.reward?esc(rewardSay(it))
           :isDeal(it)?dealPriceSay(it)
-          :it.cost+" <u class='st'>\u2605</u>")+"</div>"+
+          :it.cost+" <u class='st'>\u2605</u>")+"</span></div>"+
         /* WHAT A PASS ACTUALLY DOES, listed. A shape is its own description -
            it is standing in the case - and a pass is not: nothing on this
            panel would otherwise say that "No Limits" is about hints, skips
@@ -205,7 +244,7 @@ function wardMeta(){
             "</li></ul>"+
             (it.needs&&hasPass(it.needs)
               ? "<div class='wcredit'>"+esc(findBy(PASSES,it.needs).name)+
-                " already paid for \u2014 this is the rest.</div>":"")
+                " already paid for - this is the rest.</div>":"")
           : "")+
         "<div class='wact'>";
   /* A PASS HAS NOTHING TO EQUIP. It is not worn, it is in force - so once it
@@ -216,6 +255,13 @@ function wardMeta(){
   /* A REWARD IS NOT FOR SALE. No BUY, no ad row, and the button says the one
      thing that opens it. Ads buy progress, never score - and this is the one
      item in the catalogue that IS score. */
+  /* A FEAT SAYS THE MOVE, not the shelf. Same dead gold button, because it
+     is the same kind of thing - something a star cannot be spent on - but
+     "EVERY ★ IN undefined" is what the section wording gives a shape with no
+     section, and this one is paid for by one fold. */
+  else if(it.reward&&it.feat)
+                      s+="<button disabled class='wearn wfeat'>"+
+                         esc((it.short||it.say).toUpperCase())+"</button>";
   else if(it.reward)  s+="<button disabled class='wearn'>EVERY "+
                          "<u class='st'>\u2605</u> IN "+
                          esc(secNumeral(it.sec))+"</button>";
@@ -237,9 +283,9 @@ function wardMeta(){
   // The hook name belongs in the code and in CLAUDE.md, not in a player's
   // narrow sidebar; all this has to say is why the button does nothing.
   if(!have&&isDeal(it))
-    s+="<div class='note'>No store yet \u2014 nothing can be charged until "+
+    s+="<div class='note'>No store yet - nothing can be charged until "+
        "the game is wrapped for one. The button is dead on purpose.</div>";
-  else if(!have&&!it.reward)s+="<div class='note'>No ad provider yet \u2014 the button is "+
+  else if(!have&&!it.reward)s+="<div class='note'>No ad provider yet - the button is "+
     "dead until the game is wrapped for a store.</div>";
   $("wMeta").innerHTML=s;
   bind("wEquip",function(){wardEquip(t,id);SFX.key();wardRefresh();});
@@ -298,6 +344,8 @@ function grantShards(n){
    section's numeral and the condition. Falls back to the whole name where a
    section has no numeral, which none of the four awarding ones do. */
 function rewardSay(it){
+  // A feat is not a shelf: it names the move that pays it, not a section.
+  if(it.feat)return it.say||"a feat";
   var sec=SECTIONS[it.sec];
   if(!sec)return "every star";
   return "every \u2605 in "+sec.name;
@@ -312,6 +360,7 @@ function secNumeral(n){
 // The same thing in a 74px column: the numeral only. "every ★ in III" wrapped
 // to two lines there and made one tile taller than the row it is in.
 function rewardShort(it){
+  if(it.feat)return esc(it.short||it.say||"a feat");
   var sec=SECTIONS[it.sec];
   if(!sec)return "all \u2605";
   return secNumeral(it.sec)+" \u00b7 all <u class='st'>\u2605</u>";
@@ -379,6 +428,12 @@ function shapeSvg(d){
   return "<svg viewBox='0 0 24 24' aria-hidden='true'><path d='"+d+"'/></svg>";
 }
 var SHAPE_SVG={
+  /* Two squares with a gap between them and two pips in each: the pips are
+     holes rather than a second path, wound the other way round so the one
+     fill leaves them open. A domino at 21px is the gap and the pips; an
+     outline with a line down the middle is a window frame. */
+  domino:"M5.5 2.5H18.5V11.4H5.5ZM7.6 6.9H10.2V4.3H7.6ZM13.8 9.6H16.4V7H13.8Z"+
+         "M5.5 12.6H18.5V21.5H5.5ZM7.6 17H10.2V14.4H7.6ZM13.8 19.7H16.4V17.1H13.8Z",
   rook:"M5 3h3.2v2h1.8V3h4v2h1.8V3H19v4.2H5Zm1.6 4.9h10.8l-.8 1.9H7.4Zm.8 "+
        "2.5h9.2l1.1 6.2H6.3Zm-2.8 6.9h14.8v1.5H4.6Zm-.7 2.1h16.2v2.1H3.9Z",
   pup:"M4.6 9.1c0-1 .5-1.6 1.3-1.6.6 0 1 .3 1.4.9l.5.8h4.3c1.4 0 2.6.5 3.5 "+
@@ -471,6 +526,17 @@ function menuPanel(){
           seg("mUi","full","FULL",settings.ui)+
           seg("mUi","compact","COMPACT",settings.ui)+
           seg("mUi","none","HIDDEN",settings.ui)+"</span></div></div>"+
+      /* THE KILL CAM, AS A ROW, because it is a genuine question about how
+         much ceremony a death deserves and the only way to answer it is to
+         play both. FULL is the television: the signal drops to snow, a
+         camcorder is pushed through the screen, and the film plays behind its
+         lens. PLAIN keeps the sting and the film and cuts that out of the
+         middle. It is on this card rather than under More because it is a
+         preference about what the game does, not a tool. */
+      "<div class='pcard'><h4>Kill cam</h4>"+
+        "<div class='crow bare'><span class='seg'>"+
+          seg("mKcam","full","FULL",settings.killcam)+
+          seg("mKcam","plain","PLAIN",settings.killcam)+"</span></div></div>"+
       /* WHAT THE PIECES DO IS OFF THE PANEL, on the owner's call. The pieces
          are taught where they are first met - the tutorial cards and the
          level briefs - and a reference list under More was a fourth row that
@@ -479,6 +545,20 @@ function menuPanel(){
          `legendPanel()` is untouched and still one bind away. */
       "<div class='pcard'><h4>More</h4><div class='psub'>"+
         "<button id='mTut'>REPLAY TUTORIAL</button>"+
+        /* AND THE WAY BACK TO THE STORY, beside the way back to the lesson,
+           because they are the same kind of thing: something that plays once
+           and is then gone, filed where a player would go looking for it.
+
+           BOTH SCENES ARE ALWAYS OFFERED, on the owner's call. The ending
+           used to appear only once it had been reached, on the reasoning
+           that a button naming it is a spoiler - and that is true, but the
+           owner wants to be able to watch it, and a door that is there only
+           after you no longer need it is not a door. It is under More, next
+           to RESET SETTINGS, which is about as far from an accident as a
+           button gets. */
+        "<button id='mStory'>WATCH THE OPENING</button>"+
+        "<button id='mStoryFire'>WATCH THE FIRE</button>"+
+        "<button id='mStoryEnd'>WATCH THE ENDING</button>"+
         /* LEVEL EDITOR MOVED TO THE HOME SCREEN as MY LEVELS. It is not a
            setting - it is a place you go, like LEVELS and the wardrobe are -
            and filing it under More next to RESET SETTINGS is what made it
@@ -520,19 +600,43 @@ function menuPanel(){
       settings.ui=m;applyUI();saveSettings();syncHud();onResize();menuPanel();
     });
   });
+  ["full","plain"].forEach(function(m){
+    bind("mKcam_"+m,function(){
+      settings.killcam=m;saveSettings();menuPanel();
+    });
+  });
   bind("mTut",function(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
   });
+  /* `true` is the replay flag: watching a scene from here does not count as
+     having reached it, so somebody who looks at the ending early still gets
+     FIND THEM on BOSS IV's card - and it hands back to whatever screen this
+     panel was opened over rather than to the scene's own destination. */
+  bind("mStory",function(){
+    hidePanel();
+    if(typeof storyPlay==="function")storyPlay("open",true);
+  });
+  bind("mStoryFire",function(){
+    hidePanel();
+    if(typeof storyPlay==="function")storyPlay("fire",true);
+  });
+  bind("mStoryEnd",function(){
+    hidePanel();
+    if(typeof storyPlay==="function")storyPlay("end",true);
+  });
   bind("mReset",function(){
     settings.volume=defaultVolume();settings.volTouched=false;
-    settings.brightness=1;settings.ui="full";
+    settings.brightness=1;settings.ui=UI_DEFAULT;settings.killcam="full";
 
     // including "stop suggesting things": a reset is a reset
     settings.noSlowOffer=false;settings.landHints=0;
     settings.starAsked=false;
     muted=false;
     applyVolume();
-    applyBrightness();applyUI();saveSettings();syncHud();
+    /* onResize() as well, exactly as the FULL/COMPACT/HIDDEN segment does:
+       putting the buttons back changes how much screen the arena has, and
+       fitViewSize() only re-runs from here. */
+    applyBrightness();applyUI();saveSettings();syncHud();onResize();
     flash("settings reset");menuPanel();
   });
   bind("mHome",function(){hidePanel();homeShow();});
@@ -731,10 +835,16 @@ function homeGo(){
    So the list is the primitive and the gate is derived from it. Everything
    that draws the lock reads the same list, which means the map can name the
    fight and put the player in front of it. */
+/* A TEACHING FIGHT IS NOT ONE OF THEM. SPARRING carries `boss` because it is
+   one - a phase, a pack of one, the same kill - but V - EXTRA is what beating
+   the four LANDMARKS is for, and a lesson standing between the player and the
+   shelf would be a gate nobody agreed to. `tutorial` is already the flag for
+   "this level does not mark you"; this is the same sentence about unlocking. */
 function bossesLeft(){
   var out=[];
   for(var i=0;i<LEVELS.length;i++)
-    if(LEVELS[i].boss&&progress[LEVELS[i].name]===undefined)out.push(i);
+    if(LEVELS[i].boss&&!LEVELS[i].tutorial&&
+       progress[LEVELS[i].name]===undefined)out.push(i);
   return out;
 }
 // "BOSS II" - the numeral is what a player looks for on the map, and the
@@ -764,7 +874,7 @@ function sectionSpans(){
   }
   return out;
 }
-/* MASTERED — every scoreable level in the section on three stars.
+/* MASTERED - every scoreable level in the section on three stars.
 
    Not "cleared": cleared is what the rolling window already tracks and what
    the bar under the section card already draws. This is the other thing, and
@@ -790,7 +900,7 @@ function sectionMastered(sp){
 }
 
 /* ============================================================
-   THE MAP — the picker as a path
+   THE MAP - the picker as a path
 
    A section at a time: a run of levels, a trial partway in, a boss closing
    it. The list this replaced showed all seventy-two at once in one column of
@@ -1291,7 +1401,7 @@ function mapKind(l){return l.boss?"boss":l.trial?"trial":l.tutorial?"tut":"lv";}
 function mapAds(k){return k==="boss"?3:k==="trial"?2:1;}
 // The circle already carries the number, so the label beside it drops it.
 function mapCaption(l){
-  return l.name.replace(/^\d+\s+—\s+/,"").replace(/^(?:TRIAL|BOSS)\s+[IVX]+\s+—\s+/,"");
+  return l.name.replace(/^\d+\s+-\s+/,"").replace(/^(?:TRIAL|BOSS)\s+[IVX]+\s+-\s+/,"");
 }
 /* The two landmarks get shapes out of the game's own vocabulary rather than
    ornament bolted onto a circle.
@@ -1346,7 +1456,7 @@ function mapShape(k){
 /* The number in the node.
 
    THE TUTORIALS ARE NUMBERED BY POSITION, NOT BY NAME, and that is the whole
-   reason this takes an ordinal. All three are called `00 — ...` on purpose:
+   reason this takes an ordinal. All three are called `00 - ...` on purpose:
    they sit outside the campaign's numbering, so they do not consume 01, 02
    and 03 and cannot renumber anything after them. The cost was that every
    node in PROLOGUE read "00", and once solved they all read the same tick -
@@ -1354,9 +1464,14 @@ function mapShape(k){
    whose order you could not see, while every other section spells it out.
    The name stays untouched, because a name is a save key; only the label
    counts. Single digits rather than `01`, so a glance never confuses a
-   prologue node with a Fundamentals one. */
+   prologue node with a Nature one. */
 function mapNumeral(l,ord){
-  if(l.tutorial)return String(ord);
+  /* The ordinal is for the prologue's three unnumbered levels, so a LANDMARK
+     is not given one even when it teaches: SPARRING is a hexagon sitting next
+     to BOSS I's hexagon, and numbering it by position would print a campaign
+     number on the one node in the section that deliberately has none. It
+     falls through to the dot at the foot of this function. */
+  if(l.tutorial&&!l.boss&&!l.trial)return String(ord);
   var m=l.name.match(/^(\d+)/); if(m)return m[1];
   var r=l.name.match(/^(?:TRIAL|BOSS)\s+([IVX]+)/); if(r)return r[1];
   return "·";
@@ -1480,8 +1595,20 @@ function sectionPicker(){
     if(mapTouched(i))cleared++;
   }
   var h="<canvas class='mbg' id='mBg' aria-hidden='true'></canvas>"+
-    "<div class='mhead'><div class='mt'><b>Orthogonal</b>"+
-    "<span>"+cleared+" / "+total+" CLEARED</span></div>"+
+    "<div class='mhead'><div class='mt'><b>I'm Just A Cube</b>"+
+    /* THE SCREEN IS NAMED IN ITS SUBTITLE, not in its title. The title is
+       one of the four player-visible strings that carry the game's name
+       (docs/design/chrome.md) and must not be spent on a label; the subtitle
+       was a bare fraction, which says how much is done without ever saying
+       what of. "Worlds" is what these five are called everywhere else now -
+       the map's footer button, the ad that opens one, the toast that says
+       one has opened.
+
+       WITHOUT "CLEARED", which the line used to end on: the header is one
+       line that ellipsises, and on a 327px phone the added word pushed it to
+       "WORLDS · 24 / 105 C…". Every tile under it spells out "N/N CLEARED"
+       in full, so the fraction here is already read as progress. */
+    "<span>WORLDS · "+cleared+" / "+total+"</span></div>"+
     /* NO ? HERE. It opened mapHelp(), which explains the shapes of the map's
        nodes - a disc, a hexagon, a diamond - and there is not one of those on
        this screen. Reported as a button that does nothing, which from the
@@ -1529,8 +1656,9 @@ function secGridDraw(){
        (n===here&&!lk?" here":"")+(wide?" wide":"")+
        "' data-sec='"+n+"' style=\"--tabc:"+(sec.col||"#c3cde4")+"\">"+
        /* The numeral rides with the emblem and the word gets the tile's full
-          width to itself. Kept on one line beside it, FUNDAMENTALS is wider
-          than a column on a 327px phone and broke mid-word. */
+          width to itself. Kept on one line beside it, the longest name at the
+          time - FUNDAMENTALS, since renamed to NATURE - was wider than a
+          column on a 327px phone and broke mid-word. */
        "<span class='sectop'>"+secEmblem(sec)+
        (num?"<span class='secnum'>"+esc(num)+"</span>":"")+"</span>"+
        "<span class='secname'>"+esc(ttl)+"</span>"+
@@ -1578,7 +1706,7 @@ function secGridDraw(){
     tap(el,function(){
       grantSkip(LEVELS[SECTIONS[s].at].name);
       secGridDraw();
-      flash("section opened · no stars for a skip");
+      flash("world opened · no stars for a skip");
     });
   });
 }
@@ -1609,7 +1737,7 @@ function levelPicker(n){
   var h="<canvas class='mbg' id='mBg' aria-hidden='true'></canvas>"+
         "<div class='mhead'>"+
         /* The section's name WITHOUT its numeral. The card directly below
-           carries "I \u00b7 FUNDAMENTALS" in full; up here, beside a star
+           carries "I \u00b7 NATURE" in full; up here, beside a star
            pill and two round buttons, the numeral is what pushes the word off
            the end of a 327px phone.
 
@@ -1632,7 +1760,7 @@ function levelPicker(n){
         "<div class='mbody' id='mBody'><div class='mcard' id='mCard'></div>"+
         "<div id='mtrail'><svg></svg></div></div>"+
         "<div class='pfoot'>"+
-        "<button id='pkBack'>"+gridIcon()+"SECTIONS</button><button id='pkClose'>CLOSE</button></div>"+
+        "<button id='pkBack'>"+gridIcon()+"WORLDS</button><button id='pkClose'>CLOSE</button></div>"+
         "<div class='msheet' id='mSheet'></div>";
   showPanel(h,"map");   // syncCorners() adds .map and hides the corner total
   bind("pkBack",sectionPicker);
@@ -1673,8 +1801,8 @@ function mapDraw(spans){
     "<span>"+sp.got+"/"+sp.max+" ★</span></div>"+
     /* NO LIMITS: the same door, without the toll. */
     (mapSectionSkippable(n)
-      ? "<button class='skipsec' id='mSecAd'>"+(noLimits()?"START THIS SECTION":
-          adIcon()+"START THIS SECTION · WATCH 3 ADS")+"</button>"
+      ? "<button class='skipsec' id='mSecAd'>"+(noLimits()?"START THIS WORLD":
+          adIcon()+"START THIS WORLD · WATCH 3 ADS")+"</button>"
       : "")+
     /* THE LOCK HAS TO SAY WHAT IS HOLDING IT. This is the shelf, and the one
        thing a player cannot work out from anywhere else in the game is which
@@ -1699,7 +1827,7 @@ function mapDraw(spans){
   if(sa)tap(sa,function(){
     grantSkip(LEVELS[sec.at].name);
     mapDraw(sectionSpans());
-    flash("section opened · no stars for a skip");
+    flash("world opened · no stars for a skip");
   });
 
   /* Laid out from the last level down, so the first sits at the *bottom* and
@@ -1739,7 +1867,11 @@ function mapDraw(spans){
        finished prologue was three identical ticks with no order left in it. */
     if(st==="solved"){
       var sh="";
-      if(k==="tut")sh="<u>✓</u>";
+      /* Asked of the LEVEL, not of the node's shape. SPARRING is drawn as the
+         fight it is - a hexagon, next to BOSS I's - and scored as the lesson
+         it is, which is not at all; a row of stars under it would be three
+         the player can never have. */
+      if(l.tutorial)sh="<u>✓</u>";
       else{
         var got=masteryPreview()&&mast?3:starsForRecord(l,progress[l.name]);
         for(var s2=0;s2<3;s2++)sh+="<u class='"+(s2<got?"":"off")+"'>★</u>";
@@ -1943,13 +2075,13 @@ function mapSheet(i){
          "<span class='g'>"+starGlyphs(starsForRecord(l,progress[l.name]))+"</span> best so far")
     : st==="skipped"?"<span class='a'>skipped</span> · no stars yet, still playable"
     : st==="here"?"you are here"
-    : st==="open"?"open — not played yet"
+    : st==="open"?"open - not played yet"
     /* Two different locks, and they were saying the same sentence. Ahead of
        the window you can clear what is in front of it or buy the door; on
        the shelf neither is true, and telling somebody to skip ahead onto the
        one thing an ad cannot open is how a lock becomes a dead end. */
-    : mapSkippable(i)?"locked — clear what is in front of it, or skip ahead"
-    : "locked — the shelf is still sealed";
+    : mapSkippable(i)?"locked - clear what is in front of it, or skip ahead"
+    : "locked - this world is still sealed";
 
   var acts,note;
   if(st==="locked"&&mapSkippable(i)){
@@ -1971,7 +2103,7 @@ function mapSheet(i){
     acts=(lf.length&&!mapLocked(lf[0])
         ? "<button class='go' id='mBossTo'>GO TO "+esc(bossShort(LEVELS[lf[0]]))+"</button>"
         : "")+"<button class='qt' id='mNo'>CLOSE</button>";
-    note="This shelf opens when every boss is <b>beaten</b> \u2014 the one "+
+    note="This world opens when every boss is <b>beaten</b> - the one "+
          "thing an ad cannot buy."+
          (lf.length?" Still standing: <b>"+esc(bossesLeftSay())+"</b>. A boss "+
           "you skipped still counts as standing.":"");
@@ -2027,7 +2159,7 @@ function mapHelp(){
     row("mtrial",mapShape("trial")+"<span>I</span>",
         "<b>Trial</b> \u2014 three cores, on a clock.")+
     row("mboss",mapShape("boss")+"<span>I</span>",
-        "<b>Boss</b> \u2014 three phases. It closes the section.")+
+        "<b>Boss</b> - three phases. It closes the world.")+
     "</div><div class='mn'>Ads buy <b>progress, never score</b>. A skip awards "+
     "no stars, opens that level alone, and leaves it playable.</div>"+
     "<div class='ma'><button class='qt' id='mNo'>CLOSE</button></div>";
@@ -2086,16 +2218,20 @@ function legendPanel(){
    Three rules hold the whole screen up:
 
    - A LEVEL EXISTS BEFORE IT WORKS. The entry is created when you name it,
-     and SAVE writes whatever is on the board - unsolvable, half-built, one
-     block. Solvability is what VERIFY is for, and it stays advice.
+     and every edit writes whatever is on the board - unsolvable, half-built,
+     one block (autosave(), js/14-editor.js; there is no SAVE button any
+     more). Solvability is what VERIFY is for, and it stays advice.
    - YOU BUILD WITH WHAT YOU HAVE BEEN SHOWN. The piece chips and the ground
      choices are filtered by how far the campaign has actually taken you
      (seenTools(), seenSections()), so the editor teaches in the same order
      the game does rather than opening with five pieces nobody has met.
    - SHARE IS TEXT. There is no server here and there is not going to be one,
-     so a shared level is a block of JSON you copy, and LOAD A LEVEL is the
-     same block pasted back in. It is the project file's format, one level at
-     a time, so the two can read each other. */
+     so a shared level is a short code you copy - `OL2<64 characters>~Name`,
+     one line, the same length for every level - and LOAD A LEVEL is that
+     code pasted back in. It was the project file's JSON for one level,
+     which is the same thing in five to ten times the characters; JSON and
+     the older `OL1` codes are both still read on the way in. See the share
+     code above shareCode(). */
 
 /* The sections whose ground a custom level may be built on: the ones the
    campaign has actually walked you through. Same seenIndex() the piece chips
@@ -2212,8 +2348,8 @@ function myLevelsPanel(){
         "<path class='fl' d='M3.4 8.3 12 13.2v7.4L3.4 15.7Z'/>"+
         "<path class='fr' d='M20.6 8.3 12 13.2v7.4l8.6-4.9Z'/></svg>"+
       "<b>No levels yet</b>"+
-      "<span>ADD LEVEL asks for a name and opens the editor on it; "+
-      "SAVE keeps whatever you have built, finished or not.</span></div>";
+      "<span>ADD LEVEL asks for a name and opens the editor on it. "+
+      "It keeps itself as you build - finished or not.</span></div>";
   } else {
     /* ONE LEVEL, ONE LINE, and the line is as wide as the buttons above it.
        The name takes whatever the row's five verbs leave and ellipsises;
@@ -2312,7 +2448,7 @@ function newLevelPanel(){
     }
     mlScreen("New Level","NAME AND GROUND",
       "<input id='nlName' placeholder='level name' />"+
-      "<div class='note'>GROUND — the world your level stands in.</div>"+
+      "<div class='note'>GROUND - the world your level stands in.</div>"+
       "<div class='grow'>"+chips+"</div>"+
       "<button class='mlbtn pgo' id='nlGo'>CREATE</button>",
       mlFoot("nlBack","← MY LEVELS"));
@@ -2329,7 +2465,7 @@ function newLevelPanel(){
              start:[0,1,0],goal:[3,1,0],rotate:true,theme:pick,
              score:null,moves:null,needsRot:false,flattens:0};
       library.push(e);
-      libSave().then(function(){loadIntoEditor(e);flash("new level — "+nm);});
+      libSave().then(function(){loadIntoEditor(e);flash("new level - "+nm);});
     });
   }
   draw();
@@ -2344,8 +2480,12 @@ function loadIntoEditor(lv){
   custom.rotate=lv.rotate!==false;
   custom.theme=(lv.theme==null?null:lv.theme);
   editingId=lv.id;
-  // Freshly loaded is freshly saved: the board and the library entry agree.
-  editDirty=false;
+  /* Freshly loaded is freshly saved: the board and the library entry agree.
+     saveCancel() rather than a flag, because the snapshot() at the top of
+     this function has already scheduled a write of the board that was here
+     a moment ago - and that board belongs to the level we are leaving, not
+     to this one. */
+  saveCancel();
   ghosted.clear();
   enterEditor();
 }
@@ -2399,10 +2539,12 @@ function deletePanel(id){
   });
 }
 
-/* SHARING IS TEXT, and it is the same shape the project file uses for one of
-   its levels, so anything that can read one can read the other. Selected on
-   open, because the whole point is to copy it and a textarea you have to
-   drag-select on a phone is not a share button. */
+/* SHARING IS TEXT, and it is now ONE LINE of it - see the share code below.
+   It used to be the project file's JSON for a single level, which is the
+   same thing said in about five times the characters; the code is what a
+   person can actually paste into a message. Selected on open, because the
+   whole point is to copy it and a textarea you have to drag-select on a
+   phone is not a share button. */
 function sharePanel(id){
   var lv=findLevel(id);
   if(!lv)return;
@@ -2410,10 +2552,10 @@ function sharePanel(id){
     mlHero(lv)+
     "<div class='note'>Copy this and send it. Whoever gets it pastes it into "+
     "LOAD A LEVEL.</div>"+
-    "<textarea id='shTxt'></textarea>"+
+    "<textarea id='shTxt' class='shcode'></textarea>"+
     "<button class='mlbtn pgo' id='shCopy'>COPY</button>",
     mlFoot("shBack","← MY LEVELS"));
-  $("shTxt").value=JSON.stringify(shareData(lv));
+  $("shTxt").value=shareCode(lv);
   $("shTxt").focus();$("shTxt").select();
   bind("mlClose",hidePanel);
   bind("shBack",myLevelsPanel);
@@ -2439,11 +2581,326 @@ function shareData(lv){
           rotate:lv.rotate!==false,theme:lv.theme==null?null:lv.theme};
 }
 
-/* The other end of SHARE. It takes one shared level, a bare level object, or
-   a whole project file, because those are the three things somebody will
-   actually paste in here - and it never replaces what you have: this button
-   adds. Replacing is still on the project file's own panel, where it says so
-   in the button. */
+/* ============================================================
+   THE SHARE CODE - one level, one code, always the same length
+
+   WHAT A LEVEL COSTS AS JSON is about fourteen characters per block, and
+   almost all of it is punctuation: `[3,0,-4],` is nine characters carrying
+   three small numbers. A thirty-block level came out around 600 characters
+   of brackets and commas, which is four screens on a phone, wraps in every
+   chat app, and looks like something has gone wrong rather than like a
+   thing you send a friend.
+
+   IT IS NOT A SECRET AND IT IS NOT TRYING TO BE, and it is NOT A HASH -
+   it cannot be. A hash is one way: you can check a thing against one, you
+   can never get the thing back out. The whole level has to be inside this
+   string, because there is no server anywhere in this game to look an id up
+   in and there is not going to be one. So what a code can be is FIXED
+   WIDTH: every level padded out to the same length, whatever is in it.
+   That is what SHARE_WIDTH is, and everything below exists to make the
+   width small enough to be worth fixing.
+
+   HOW IT PACKS. Every number is zigzagged (so -1 costs what 1 costs) and
+   written little-endian in five-bit groups, one character each, with the
+   sixth bit set while more groups follow - so anything in -16..15 is ONE
+   character, which is every coordinate a hand-built level has ever had.
+   The alphabet is 64 URL-safe characters, so a code survives a link, a QR,
+   an SMS and a chat app that thinks it knows what a quote mark is.
+
+   AND THE BLOCKS ARE PACKED TWO WAYS, THE SHORTER ONE WINNING. As a LIST
+   they cost four characters each, which is cheap when a level is a handful
+   of blocks scattered wide. As a BITMAP - the bounding box, then one bit
+   per cell in it - they cost one sixth of a character per cell no matter
+   how many are filled, which is far cheaper the moment a level is dense.
+   Neither wins everywhere: the campaign's worst level is 154 characters as
+   a list and 125 as a bitmap, but the sparse ones invert that (12 blocks
+   spread over a 660-cell box: 57 as a list, 125 as a bitmap). So both are
+   built and the shorter is sent, with one flag bit saying which - and the
+   worst level in the whole campaign lands at 57 characters instead of 154,
+   which is what makes a fixed 64 affordable. Kinds ride separately, three
+   bits per filled cell, and only when a level has anything but stone in it.
+
+   WHY 64. Measured over every campaign level: median 29 characters, worst
+   57. 64 is the next power of two above the worst case and leaves seven
+   characters of slack, so every level a person is likely to build is one
+   code of exactly 64 characters. A level too big for that does not fail -
+   the code rounds up to the next multiple (128, and so on), which is the
+   honest thing for a format to do rather than refusing to carry a level
+   somebody made. Padding is the alphabet's zero, and the reader stops when
+   it has read what the header said, so the padding is never looked at.
+
+   THE NAME RIDES AT THE END, after a `~`, in plain text. The payload is
+   pure alphabet so a `~` can never appear inside it and the split is
+   unambiguous, and a name is the one part a human should be able to read
+   before pasting a stranger's code into their game. That is also the one
+   part that is not fixed width, deliberately: the CODE is a fixed length,
+   the label on it is as long as the person's own words.
+
+   VERSIONED BY ITS PREFIX. `OL2` is this shape; `OL1` was the variable
+   length first one and is still read, because a format that invalidates
+   what people have already sent each other is not a better format. JSON is
+   read on the way in for the same reason, and because a project file is
+   JSON by definition.
+   ============================================================ */
+var SHARE_ALPHA="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
+var SHARE_TAG="OL2";        // this shape: fixed width, two block packings
+var SHARE_TAG1="OL1";       // the first shape: variable length, list only
+var SHARE_WIDTH=64;         // every code is this many characters, or a multiple
+
+/* The writer. Numbers first, bits last, and that order is a rule rather
+   than a habit: a bit is six-to-a-character and a number is a whole one, so
+   a number written after a partial character would have to flush it and
+   waste up to five bits. Every layout below writes its header as numbers
+   and then runs the bitmap to the end. */
+function shareW(){
+  var w={s:"",acc:0,n:0};
+  w.num=function(v){
+    var u=Math.round(v),g;
+    u=u<0?(-u*2-1):(u*2);
+    do{g=u&31;u=Math.floor(u/32);w.s+=SHARE_ALPHA.charAt(g+(u>0?32:0));}while(u>0);
+  };
+  w.bit=function(b){
+    w.acc=w.acc*2+(b?1:0);
+    if(++w.n===6){w.s+=SHARE_ALPHA.charAt(w.acc);w.acc=0;w.n=0;}
+  };
+  w.bits=function(v,n){for(var i=n-1;i>=0;i--)w.bit((v>>i)&1);};
+  w.end=function(){while(w.n)w.bit(0);return w.s;};   // pad the last character
+  return w;
+}
+/* The reader, and it THROWS rather than returning a sentinel: every caller
+   is inside one try, and a code that has run out of characters is not a
+   level in any of the dozen places that would otherwise have to check. */
+function shareR(s){
+  var r={s:s,i:0,acc:0,n:0};
+  r.chr=function(){
+    if(r.i>=r.s.length)throw 0;
+    var v=SHARE_ALPHA.indexOf(r.s.charAt(r.i++));
+    if(v<0)throw 0;                       // not our alphabet: not our code
+    return v;
+  };
+  r.num=function(){
+    var u=0,sh=1,v;
+    for(;;){v=r.chr();u+=(v&31)*sh;sh*=32;if(!(v&32))break;}
+    return u&1?-((u+1)/2):u/2;
+  };
+  r.bit=function(){
+    if(!r.n){r.acc=r.chr();r.n=6;}
+    return (r.acc>>(--r.n))&1;
+  };
+  r.bits=function(n){var v=0;while(n--)v=v*2+r.bit();return v;};
+  return r;
+}
+/* One level, packed one of the two ways. Returns null when this packing
+   cannot carry this level at all, so the caller simply takes the other. */
+function shareBody(d,bmp){
+  var blocks=d.blocks||[],n=blocks.length,i,b,special=false;
+  for(i=0;i<n;i++){
+    b=blocks[i];
+    if(b[3])special=true;
+    // Three bits per cell is what the bitmap has room for. Nothing in the
+    // game is above 4, but a pasted-in level is not the game.
+    if(bmp&&((b[3]||0)<0||(b[3]||0)>7))return null;
+  }
+  var box=null;
+  if(bmp){
+    if(!n)return null;
+    var x0=blocks[0][0],x1=x0,y0=blocks[0][1],y1=y0,z0=blocks[0][2],z1=z0;
+    for(i=1;i<n;i++){
+      b=blocks[i];
+      if(b[0]<x0)x0=b[0]; if(b[0]>x1)x1=b[0];
+      if(b[1]<y0)y0=b[1]; if(b[1]>y1)y1=b[1];
+      if(b[2]<z0)z0=b[2]; if(b[2]>z1)z1=b[2];
+    }
+    box={x:x0,y:y0,z:z0,w:x1-x0+1,h:y1-y0+1,d:z1-z0+1};
+    if(box.w*box.h*box.d>200000)return null;      // a box nobody should send
+  }
+  var w=shareW();
+  w.num((d.rotate?1:0)|(d.theme==null?0:2)|(bmp?4:0)|(special?8:0));
+  if(d.theme!=null)w.num(d.theme);
+  w.num(d.start[0]);w.num(d.start[1]);w.num(d.start[2]);
+  w.num(d.goal[0]);w.num(d.goal[1]);w.num(d.goal[2]);
+  /* Keys come before the blocks here, where in OL1 they came after. They
+     are numbers and the bitmap is bits, and bits have to be last. */
+  var keys=d.keys||[];
+  w.num(keys.length);
+  for(i=0;i<keys.length;i++){w.num(keys[i][0]);w.num(keys[i][1]);w.num(keys[i][2]);}
+  if(!bmp){
+    w.num(n);
+    for(i=0;i<n;i++){b=blocks[i];w.num(b[0]);w.num(b[1]);w.num(b[2]);w.num(b[3]||0);}
+    return w.end();
+  }
+  w.num(box.x);w.num(box.y);w.num(box.z);
+  w.num(box.w);w.num(box.h);w.num(box.d);
+  var at={},kinds=[],x,y,z,k;
+  for(i=0;i<n;i++){b=blocks[i];at[K(b[0],b[1],b[2])]=b[3]||0;}
+  for(x=0;x<box.w;x++)for(y=0;y<box.h;y++)for(z=0;z<box.d;z++){
+    k=at[K(box.x+x,box.y+y,box.z+z)];
+    w.bit(k===undefined?0:1);
+    if(k!==undefined)kinds.push(k);
+  }
+  if(special)for(i=0;i<kinds.length;i++)w.bits(kinds[i],3);
+  return w.end();
+}
+function shareCode(lv){
+  var d=shareData(lv);
+  var list=shareBody(d,false),bmp=shareBody(d,true),body=list;
+  if(bmp&&(!list||bmp.length<list.length))body=bmp;
+  if(!body)body="";
+  // Out to the fixed width, or to the next multiple of it for a level too
+  // big to fit one, and the last character of it checks the rest.
+  var want=Math.max(SHARE_WIDTH,Math.ceil((body.length+1)/SHARE_WIDTH)*SHARE_WIDTH);
+  body=sharePad(body,want-1);
+  body+=shareSum(body);
+  // The name is trimmed of newlines only: it sits at the end of a line a
+  // chat app may wrap, and a name with a newline in it would cut the code
+  // in half on the way back.
+  return SHARE_TAG+body+"~"+String(d.name||"Untitled").replace(/[\r\n]+/g," ");
+}
+/* THE PADDING IS NOISE, NOT ZEROS, and that is a legibility decision rather
+   than a technical one. The reader stops when the header says it has
+   everything, so the tail could be anything - and a nine-block level padded
+   with the alphabet's zero came out as `OL2A0202268000046C_003320` followed
+   by forty `0`s, which looks like a bug in front of a player who has no
+   reason to know what padding is. Seeded from the body itself, so it is
+   deterministic: the same level always makes the same code, which is what
+   makes a code comparable at all. Nothing reads it. */
+function sharePad(s,n){
+  var h=0,i;
+  for(i=0;i<s.length;i++)h=(h*31+SHARE_ALPHA.indexOf(s.charAt(i)))%2147483647;
+  var out=s;
+  while(out.length<n){
+    h=(h*1103515245+12345)%2147483647;
+    out+=SHARE_ALPHA.charAt((h>>9)&63);
+  }
+  return out;
+}
+/* THE LAST CHARACTER OF AN OL2 BODY CHECKS THE REST OF IT, and the fixed
+   width checks itself: a body whose length is not a multiple of SHARE_WIDTH
+   has lost or gained characters. Together they are what a variable-length
+   code could not have. A short code used to decode happily into a SMALLER
+   level - drop the tail of a 64-character code and the header inside it is
+   still a complete, wrong level - and silently handing somebody a level
+   that is not the one they were sent is worse than refusing the paste.
+   It is position-weighted, so a transposition moves it as well as a
+   substitution does. Measured over 145,152 single-character changes across
+   40 levels' codes: 99.05% refused. Not a guarantee - it is one character -
+   but it is the difference between "that isn't a level" and a level with a
+   hole in it, for one of the seven characters the width had spare. */
+function shareSum(s){
+  var t=0;
+  for(var i=0;i<s.length;i++)t=(t+SHARE_ALPHA.indexOf(s.charAt(i))*(i%7+1))%64;
+  return SHARE_ALPHA.charAt(t);
+}
+/* OL2. Reads exactly what the header says is there and stops, so the
+   padding after it is never looked at. */
+function shareRead2(body){
+  var r=shareR(body),i,o={format:"orthogonal-level-1",blocks:[],keys:[]};
+  var f=r.num();
+  o.rotate=(f&1)!==0;
+  o.theme=(f&2)?r.num():null;
+  o.start=[r.num(),r.num(),r.num()];
+  o.goal=[r.num(),r.num(),r.num()];
+  var nk=r.num();
+  if(!(nk>=0&&nk<4096))return null;
+  for(i=0;i<nk;i++)o.keys.push([r.num(),r.num(),r.num()]);
+  if(f&4){
+    var bx=r.num(),by=r.num(),bz=r.num(),w=r.num(),h=r.num(),d=r.num();
+    if(!(w>0&&h>0&&d>0)||w*h*d>200000)return null;
+    var x,y,z;
+    for(x=0;x<w;x++)for(y=0;y<h;y++)for(z=0;z<d;z++)
+      if(r.bit())o.blocks.push([bx+x,by+y,bz+z]);
+    if(f&8)for(i=0;i<o.blocks.length;i++){
+      var k=r.bits(3);
+      if(k)o.blocks[i].push(k);
+    }
+  } else {
+    var nb=r.num();
+    if(!(nb>0&&nb<20000))return null;
+    for(i=0;i<nb;i++){
+      var b=[r.num(),r.num(),r.num()],bk=r.num();
+      if(bk)b.push(bk);
+      o.blocks.push(b);
+    }
+  }
+  return o.blocks.length?o:null;
+}
+/* OL1, the first shape - variable length, list only, keys after the blocks.
+   Kept because codes in this shape have been sent. */
+function shareRead1(body){
+  var r=shareR(body),i,o={format:"orthogonal-level-1",blocks:[],keys:[]};
+  var f=r.num();
+  o.rotate=(f&1)!==0;
+  o.theme=(f&2)?r.num():null;
+  o.start=[r.num(),r.num(),r.num()];
+  o.goal=[r.num(),r.num(),r.num()];
+  var nb=r.num();
+  if(!(nb>0&&nb<20000))return null;
+  for(i=0;i<nb;i++){
+    var b=[r.num(),r.num(),r.num()],k=r.num();
+    if(k)b.push(k);
+    o.blocks.push(b);
+  }
+  var nk=r.num();
+  if(!(nk>=0&&nk<4096))return null;
+  for(i=0;i<nk;i++)o.keys.push([r.num(),r.num(),r.num()]);
+  return o.blocks.length?o:null;
+}
+/* Returns a level object, or null if this is not a share code at all - the
+   caller then tries JSON, which is what every project file is. Throws
+   nothing: a mangled code is simply not a level. */
+function shareParse(txt){
+  var s=String(txt||"").trim();
+  var tag=s.slice(0,3)===SHARE_TAG?SHARE_TAG:(s.slice(0,3)===SHARE_TAG1?SHARE_TAG1:null);
+  if(!tag)return null;
+  var cut=s.indexOf("~"), name=cut<0?"":s.slice(cut+1).trim();
+  var body=(cut<0?s.slice(3):s.slice(3,cut))
+    /* Whitespace anywhere is forgiven, because a code that has been through
+       an email client has been through a line-wrapper. It cannot be
+       ambiguous: no whitespace character is in the alphabet. */
+    .replace(/\s+/g,"");
+  if(tag===SHARE_TAG&&
+     (!body.length||body.length%SHARE_WIDTH||
+      shareSum(body.slice(0,-1))!==body.charAt(body.length-1)))return null;
+  try{
+    var o=(tag===SHARE_TAG?shareRead2:shareRead1)(body);
+    if(!o)return null;
+    o.name=name||"Untitled";
+    return o;
+  }catch(e){return null;}
+}
+/* One paste, however many codes are in it. Both of the shapes a paste
+   actually arrives in have to work and they pull in opposite directions:
+   ONE code that a mail client has wrapped across three lines (whitespace
+   inside a code is forgiven, so that one is already handled), and SEVERAL
+   codes pasted one per line. Splitting on the tag serves the second and
+   would ruin the first if it ever guessed wrong - so the split only stands
+   if EVERY piece of it is a level. A level called "OL2 something" cannot
+   quietly cost the player the rest of their paste. */
+function shareParseAll(txt){
+  var s=String(txt||"").trim();
+  if(s.slice(0,3)!==SHARE_TAG&&s.slice(0,3)!==SHARE_TAG1)return null;
+  var parts=s.split(new RegExp("\\s+(?="+SHARE_TAG+"|"+SHARE_TAG1+")")),out=[],i;
+  if(parts.length>1){
+    for(i=0;i<parts.length;i++){
+      var one=shareParse(parts[i]);
+      if(!one){out=null;break;}
+      out.push(one);
+    }
+    if(out&&out.length)return out;
+  }
+  var whole=shareParse(s);
+  return whole?[whole]:null;
+}
+/* The other end of SHARE. It takes a share code, one shared level as JSON, a
+   bare level object, or a whole project file, because those are the four
+   things somebody will actually paste in here - and it never replaces what
+   you have: this button adds. Replacing is still on the project file's own
+   panel, where it says so in the button.
+
+   THE CODE IS TRIED FIRST AND JSON IS NEVER DROPPED. Every level shared
+   before the code existed is JSON and is still out there in somebody's chat
+   history; the project file is JSON by definition. A new format that
+   invalidates what people already sent each other is not a better format. */
 function loadLevelPanel(){
   mlScreen("Load A Level","PASTE ONE SOMEBODY SHARED",
     "<div class='note'>It is added to your levels; nothing you have is "+
@@ -2454,8 +2911,8 @@ function loadLevelPanel(){
   bind("mlClose",hidePanel);
   bind("ldBack",myLevelsPanel);
   bind("ldGo",function(){
-    var list;
-    try{
+    var list=shareParseAll($("ldTxt").value);
+    if(!list)try{
       var o=JSON.parse($("ldTxt").value);
       list=o.levels||(o.length?o:[o]);
       for(var i=0;i<list.length;i++)
@@ -2569,7 +3026,7 @@ function playLibraryLevel(lv){
 
 function projectPanel(){
   showPanel("<h3>PROJECT FILE</h3>"+
-    "Your whole library as one block of text. Copy it somewhere safe — "+
+    "Your whole library as one block of text. Copy it somewhere safe - "+
     "this is what carries the project between sessions or devices."+
     "<textarea id='pj'></textarea>"+
     "<div class='prow'><button id='pjAdd'>IMPORT (ADD)</button>"+
@@ -2619,12 +3076,14 @@ function ioPanel(){
       custom.rotate=o.rotate!==false;
       custom.theme=(typeof o.theme==="number"&&SECTIONS[o.theme])?o.theme:null;
       /* Pasted-in text is a DIFFERENT level, so it is not still the saved one
-         the editor had open: keeping the id would make the next SAVE quietly
-         overwrite a level you never touched. It saves as a new entry, under
-         the name that came in with it. */
+         the editor had open: keeping the id would make the next write quietly
+         overwrite a level you never touched. It becomes a new entry, under
+         the name that came in with it - and it becomes one at once, because
+         the autosave() below is what a paste is now instead of a SAVE. */
       editingId=null;
       if(typeof applyTheme==="function")applyTheme(levelTheme(custom));
-      ghosted.clear();R=makeRules(custom);initDynamic();syncMeshes();hidePanel();flash("loaded");
+      ghosted.clear();R=makeRules(custom);initDynamic();syncMeshes();hidePanel();
+      autosave();flash("loaded");
     }catch(err){flash("that isn't valid level data");}
   });
   bind("pBack",myLevelsPanel);
@@ -2646,6 +3105,8 @@ function enterEditor(){
   if(typeof homeUp==="function"&&homeUp())homeHide();
   if(typeof panelOpen==="function"&&panelOpen())hidePanel();
   app="edit";fromEditor=false;
+  // One visit, one telling that the level keeps itself (saveCurrent()).
+  saidSaved=false;
   L=custom;R=makeRules(custom);
   /* THE GROUND THE LEVEL WAS BUILT ON, put back every time the editor opens.
      A custom level carries a section index rather than a surface name, so it

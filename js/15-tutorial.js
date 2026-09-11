@@ -1,5 +1,5 @@
 "use strict";
-/* Orthogonal — 15-tutorial.js
+/* I'm Just A Cube - 15-tutorial.js
    Control cues, the tutorial coach, the gesture lesson's ghost hand,
    and the hint button.
    Loaded as a classic script: everything here shares one global scope,
@@ -21,7 +21,7 @@ function clearCue(){
    A cue is a pulse on a button, and a pulse on a button that is not on
    screen is a hint delivered to nobody. That happens three ways: COMPACT
    drops the d-pad, HIDDEN drops the whole bar, and `cue("bUndo")` has always
-   pointed at a button this game does not have — so the one hint you get when
+   pointed at a button this game does not have - so the one hint you get when
    you have wedged yourself past recovery was the one that showed nothing.
    Every gesture and button also has a key, so there is always something true
    to say instead. */
@@ -62,7 +62,7 @@ function cueVisible(el){
 
    Returns the spoken form when it fell all the way through to words, and
    null otherwise. Callers about to flash a message of their own use that to
-   carry the move along rather than clobber it — there is one toast, so the
+   carry the move along rather than clobber it - there is one toast, so the
    last write wins and a bare flash here would be wiped by the next line. */
 function cue(id){
   clearCue();
@@ -79,7 +79,7 @@ function cue(id){
   return say;
 }
 /* ============================================================
-   THE GHOST HAND — showing a control instead of pressing one
+   THE GHOST HAND - showing a control instead of pressing one
 
    A cue is a pulse on a button, and there are two ways there is no button to
    pulse: the layout dropped it (COMPACT has no d-pad, HIDDEN has no bar), or
@@ -300,7 +300,7 @@ function tutWords(s){
           .replace(/\{n2\}/g,v.n2).replace(/\{n3\}/g,v.n3);
 }
 
-/* THE GUIDED LOCK — shown to a player who has stopped, not to every player.
+/* THE GUIDED LOCK - shown to a player who has stopped, not to every player.
 
    When it is up, the named control is the only one the game accepts: the
    world dims, every other play button goes faint and inert, and the one being
@@ -371,8 +371,8 @@ function tutBlocks(id){
 
    **Pressing the button being asked for dismisses the guide**, every time,
    including while it is already up. The first version refused to re-arm once
-   it had engaged — meant to stop it flickering on a step that takes several
-   presses — and that was exactly backwards: 'First Fold' step 3 asks for three
+   it had engaged - meant to stop it flickering on a step that takes several
+   presses - and that was exactly backwards: 'First Fold' step 3 asks for three
    presses of the same arrow, so a player following the instruction perfectly
    watched the screen stay dark through all three. Complying has to be the
    thing that turns it off, or the guide is not answering the player at all.
@@ -383,7 +383,7 @@ function tutBlocks(id){
    strobes, and a player who stalls again still gets it back.
 
    An input that is *not* the cued control does nothing here, on purpose. It
-   neither buys time nor spends it — the wait carries on from where it was, so
+   neither buys time nor spends it - the wait carries on from where it was, so
    pressing other things cannot hold the help off forever. It cannot happen
    while the guide is up in any case: those buttons are inert. */
 function tutPoke(id){
@@ -696,7 +696,7 @@ function tutCardSync(g){
   /* TWO CARDS IN A ROW REPAINT, and the first version did not. The card was
      only written when it was being raised from nothing, which was fine while
      every card had a normal step between it and the next one - the card came
-     down in between and went back up with new text. `00 — First Landing`
+     down in between and went back up with new text. `00 - First Landing`
      now opens with two of them back to back, so the second never brought the
      element down and the player acknowledged card one twice. */
   if(!el.classList.contains("on")||cardShown!==card.h){

@@ -2,7 +2,7 @@
 
 An inventory, written to be marked up. Every pop-up, card, toast, cue and
 note the player can be shown, with its exact current text, where it lives,
-and what makes it appear. Nothing here is a design argument — the reasoning
+and what makes it appear. Nothing here is a design argument - the reasoning
 for each kind is in `docs/design/*` and `docs/UI.md`; this is the script.
 
 **How to use it:** write the new wording next to the old one and hand the
@@ -27,19 +27,20 @@ There are **six kinds of pop-up**, and they are six different designs:
 
 One line, no buttons, gone in about two seconds. `flash()` in `js/18-ui.js`.
 
-### In play — the ones a player meets often
+### In play - the ones a player meets often
 
 | Text | When | Where |
 |---|---|---|
 | `blocked` | you walk into something solid | `12-play.js:1187`, `:1212` |
+| `it is in the way` | you walk into a hunter - refused like a wall, no life and no move | `12-play.js` (`hunterHere`, `hunterInColumn`) |
 | `nothing solid behind that` | GO 3D with no block to land on | `12-play.js:1432` |
 | `nothing to undo` | undo on move zero | `05-state.js:254` |
 | `amber has it` | you try to shove a crate an anchor is pinning | `12-play.js:1176` |
-| `still sealed — N to collect` | you reach the goal with keys left | `12-play.js:1549` |
+| `still sealed - N to collect` | you reach the goal with keys left | `12-play.js:1549` |
 | `shielded · no life lost` | a hit lands inside the shield window | `12-play.js:70` |
 | `one more` / `N more` | a trial core reached, more to go | `12-play.js:1556` |
 
-### Fights — a kill
+### Fights - a kill
 
 | Text | When | Where |
 |---|---|---|
@@ -48,19 +49,20 @@ One line, no buttons, gone in about two seconds. `flash()` in `js/18-ui.js`.
 | `N in one square · N left` | two or more killed by one fold | `12-play.js:894` |
 | `crushed under the crate · N left` | a hunter killed by a shove | `12-play.js:981` |
 
-### Fights — a hit
+### Fights - a hit
 
-All four end in ` · N lives left` (or `1 life left`).
+All three end in ` · N lives left` (or `1 life left`).
 
 | Text | When | Where |
 |---|---|---|
 | `it closed on you · …` | a hunter reached you on its own turn | `12-play.js:728` |
 | `it came down the line · …` | a hunter fired along your line | `12-play.js:752` |
 | `it reached you · …` | a hunter caught you moving | `12-play.js:780` |
-| `you walked into it · …` | you stepped into a hunter | `12-play.js:830` |
+| ~~`you walked into it · …`~~ | **retired** - stepping into a hunter is refused now, not fatal | see `it is in the way` above |
 | `caught by the sweep · …` | a trial's plane caught you in the volume | `12-play.js:1058` |
 | `flat in the slice · …` | it caught you folded | `12-play.js:1058` |
 | `N lives left` / `1 life left` | any other hit on a clock | `12-play.js:76` |
+| `you didn't turn to face it` / `you didn't GO 2D in time` / `you walked off the edge` | the level's own `why` line, in the middle of the screen over the kill cam - SPARRING only | `deathSayShow()`, from `L.primer.why` |
 
 ### Hints, stars, skips
 
@@ -79,7 +81,7 @@ All four end in ` · N lives left` (or `1 life left`).
 | Text | When | Where |
 |---|---|---|
 | `settings reset` | RESET SETTINGS | `16-panels.js:460` |
-| `storage unavailable — use export` | localStorage denied | `06-persistence.js:398` |
+| `storage unavailable - use export` | localStorage denied | `06-persistence.js:398` |
 | `couldn't save` | a write failed | `06-persistence.js:400` |
 
 ### Tutorial refusals (only inside a lesson)
@@ -89,7 +91,7 @@ All four end in ` · N lives left` (or `1 life left`).
 | `follow the line and the hand` | a control the lesson has not asked for | `15-tutorial.js:824` |
 | `follow the line above the bar` | same, in the gesture layout | `15-tutorial.js:826` |
 | `too tangled to search from here` | the solver gives up | `15-tutorial.js:830` |
-| `no way to finish from here — undo or reset` | you have made the level unsolvable | `15-tutorial.js:835` |
+| `no way to finish from here - undo or reset` | you have made the level unsolvable | `15-tutorial.js:835` |
 | `you're standing on it` | the hint points at where you already are | `15-tutorial.js:838` |
 
 ### Editor, library, composer (never seen in the campaign)
@@ -100,7 +102,7 @@ All four end in ` · N lives left` (or `1 life left`).
 | `tap a block face to place a key` | `14-editor.js:79` |
 | `tap a block` | `14-editor.js:81` |
 | `solve it before saving` | `14-editor.js:193` |
-| `saved — N in library` | `14-editor.js:204` |
+| `saved - N in library` | `14-editor.js:204` |
 | `loaded <level name>` | `16-panels.js:2028` |
 | `library is empty` | `16-panels.js:2059` |
 | `library: N levels` | `16-panels.js:2092` |
@@ -108,7 +110,7 @@ All four end in ` · N lives left` (or `1 life left`).
 | `loaded` | `16-panels.js:2118` |
 | `that isn't valid level data` | `16-panels.js:2119` |
 | `flatten then pop with no move between rarely holds` | `17-composer.js:307` |
-| `doubling back can't be forced — a shorter route always exists` | `17-composer.js:313` |
+| `doubling back can't be forced - a shorter route always exists` | `17-composer.js:313` |
 | `nothing to remove` | `17-composer.js:317` |
 | `give it at least a few moves` | `17-composer.js:332` |
 
@@ -119,7 +121,7 @@ All four end in ` · N lives left` (or `1 life left`).
 Same slot as a toast, different design: a big teal **move** with a small grey
 **note** under it. `flashCue(move,note)` in `js/18-ui.js`.
 
-**The move words** (`CUE_WORDS`, `js/15-tutorial.js:35`) — used when the
+**The move words** (`CUE_WORDS`, `js/15-tutorial.js:35`) - used when the
 control has no button and no gesture to show:
 
 `go left` · `go right` · `go up` · `go down` ·
@@ -135,7 +137,7 @@ and the fold, which is named per direction: **`2D shift`** going in,
 | `N hints left` / `1 hint left` | an ordinary hint | `15-tutorial.js:856` |
 | `last one · another in N min` | the last hint in the pool | `15-tutorial.js:855` |
 | `you come back on the block at the front` | first time GO 3D lands you on the near block | `12-play.js:1456` |
-| `the anchor held you — an anchor beats the front block` | the same moment, with an anchor in the column | `12-play.js:1455` |
+| `the anchor held you - an anchor beats the front block` | the same moment, with an anchor in the column | `12-play.js:1455` |
 
 The hint accounting has **three homes** depending on the control layout: with
 the bar up it is an ordinary toast, with the hand up it is the note under the
@@ -149,20 +151,20 @@ A sheet over a dimmed board, in five parts: a **kicker** in the card's own
 colour, a **title** in the display face, one **lead** line at reading weight,
 the **buttons**, and an optional **note** under a hairline.
 `offerShell(kick,title,lead,acts,note,tone)`, `js/12-play.js`. Three of them
-exist — the card that introduced the bulb was cut.
+exist - the card that introduced the bulb was cut.
 
-### THREE STARS — shown once, on the first level that scores
+### THREE STARS - shown once, on the first level that scores
 *Shot: `starsoffer`. `starsOffer()`. Tone: gold.*
 
 - **Kicker:** `SCORING`
 - **Title:** `Three stars`
-- **Lead:** `Three stars means you found the **shortest route** — not that you
+- **Lead:** `Three stars means you found the **shortest route** - not that you
   finished.`
 - **Buttons:** `TRY FOR THREE`
 - **Note:** `Half again as many moves is two stars, twice as many is one.
   **This one is three moves.**`
 
-### OUT OF HINTS — the bulb with an empty pool
+### OUT OF HINTS - the bulb with an empty pool
 *Shot: `refill`. `hintRefillOffer()`. Tone: gold.*
 
 - **Kicker:** `THE BULB`
@@ -171,12 +173,12 @@ exist — the card that introduced the bulb was cut.
 - **Buttons:** `REFILL · WATCH AN AD (+N)` · `WAIT IT OUT`
 - **Note:** none
 
-### THE SKIP — after repeated losses on a boss or trial
+### THE SKIP - after repeated losses on a boss or trial
 *Shot: `struggle`. `struggleOffer()`. Tone: the boss's violet, or the trial's
 amber.*
 
 - **Kicker:** `BOSS · STUCK` (or `TRIAL · STUCK`)
-- **Title:** the level's own name, e.g. `BOSS I — Catch Me If You Can!`
+- **Title:** the level's own name, e.g. `BOSS I - Catch Me If You Can!`
 - **Lead:** `This one has beaten you N times. You can come back to it whenever
   you like.`
 - **Buttons:** `SKIP THIS BOSS · WATCH 1 AD` (or `TRIAL`) · `KEEP TRYING` ·
@@ -189,7 +191,7 @@ amber.*
 
 Take the whole screen and stop the game. One button.
 
-### THE INTRO — the first thing a new player sees
+### THE INTRO - the first thing a new player sees
 *Shot: `intro`. Static markup, `index.html:353`.*
 
 - **Title:** `Orthogonal`
@@ -199,15 +201,15 @@ Take the whole screen and stop the game. One button.
   there.`
 - **Buttons:** `BEGIN` · `PICK A LEVEL`
 
-### THE EXPLANATION CARD — raised by a tutorial step
+### THE EXPLANATION CARD - raised by a tutorial step
 *Shot: `tutcard`. `cardPut(h,p,owner)`, `15-tutorial.js:669`. Markup
 `index.html:375`. Button: `OK`.*
 
-No campaign level raises one at the moment — the tutorial teaches by cueing
+No campaign level raises one at the moment - the tutorial teaches by cueing
 buttons instead, and the trial/boss briefs were cut (`15-tutorial.js:717`).
 The card is live and one call away if any of the new text below wants one.
 
-### THE STING — before anything else
+### THE STING - before anything else
 *Shot: `splash`. `index.html:289`, `20-splash.js:186`.*
 
 - `tap to fold`, which becomes `tap to begin` once the word has assembled.
@@ -220,22 +222,22 @@ Not a pop-up: a line under the level name during a lesson, with the step
 number in front of it. Three levels have one, and the text lives with the
 level in `js/02-levels.js`.
 
-**`00 — First Steps`** (`02-levels.js:37`)
+**`00 - First Steps`** (`02-levels.js:37`)
 1. `You are the pink cube. The green square is where you are going.<br>{do:right} twice.`
 2. `The other two move you away from the camera and back toward it.<br>{do:up} once.`
 3. `And {do:down} to come back.`
-4. `There is no jump. A block one high is a **step** — walk straight into it.`
+4. `There is no jump. A block one high is a **step** - walk straight into it.`
 
-**`00 — First Fold`** (`02-levels.js:67`)
+**`00 - First Fold`** (`02-levels.js:67`)
 1. `Walk to the edge.`
 2. `Too far to walk, and there is no jump.<br>{do:2d}: everything flattens along your line of sight, and depth stops existing.`
 3. `Depth is gone, so that strip far behind you is simply next to you now. Walk across.`
-4. `{do:3d} to stand up.<br>Three blocks share that column, and you come back on the one at **the front** — nearest you. The green square is one step behind it.`
+4. `{do:3d} to stand up.<br>Three blocks share that column, and you come back on the one at **the front** - nearest you. The green square is one step behind it.`
 
-**`07 — The Rotation`** (`02-levels.js:243`)
+**`09 - The Rotation`** (`02-levels.js:243`)
 1. `Something is over there. {do:2d} and see how far it gets you.`
 2. `Nothing to cross to. The bridge you need does not exist along this axis.<br>{do:3d} to stand back up.`
-3. `So look down a different one. {do:turnr} — the world turns, and what lines up turns with it.`
+3. `So look down a different one. {do:turnr} - the world turns, and what lines up turns with it.`
 
 Once the scripted steps run out the coach says whatever the solver's next
 move is, in one of eight fixed phrasings (`TUT_MOVE_SAY`,
@@ -294,16 +296,16 @@ underneath.
 own `say:` in `js/02-levels.js`.*
 
 **BOSS I** `one of them, and nothing in the way` · `the ground comes up` ·
-`same ground — two of them`
+`same ground - two of them`
 
 **BOSS II** `bare ground, for now` · `cover for it, and the floor bites` ·
-`same ground — two of them`
+`same ground - two of them`
 
 **BOSS III** `clear glass, clear floor` ·
-`stone you cannot fold through, glass you can` · `same ground — two of them`
+`stone you cannot fold through, glass you can` · `same ground - two of them`
 
 **BOSS IV** `the widest floor in the game` ·
-`everything at once — and two crates to shove` · `same ground — two of them`
+`everything at once - and two crates to shove` · `same ground - two of them`
 
 Fallback when a phase has no `say:`: `phase N of M`.
 
@@ -311,25 +313,25 @@ Fallback when a phase has no `say:`: `phase N of M`.
 
 ## 8 · Reference sheets (not pop-ups, but text a player reads)
 
-**The map's help sheet** (`mapHelp()`, `16-panels.js:1934`, shot `maphelp`) —
+**The map's help sheet** (`mapHelp()`, `16-panels.js:1934`, shot `maphelp`) -
 title `What the map means`, then one line per node kind: `Solved.` `Its stars
 sit underneath. Three means optimal.` · `Where you are.` · `Open.` `You can
 always reach a couple ahead.` · `Locked.` `Clear what is in front of it, or
 open it with an ad.` · `Skipped.` `Its stars are still there to take.` ·
-`Trial — three cores, on a clock.` · `Boss — three phases. It closes the
+`Trial - three cores, on a clock.` · `Boss - three phases. It closes the
 section.` Footer: `Ads buy progress, never score. A skip awards no stars,
 opens that level alone, and leaves it playable.`
 
-**The piece legend** (`legendPanel()`, `16-panels.js:1965`, shot `legend`) —
+**The piece legend** (`legendPanel()`, `16-panels.js:1965`, shot `legend`) -
 **no button opens it any more** (it came off the settings panel), but the text
-is still there: `Stone — solid, and still there in 2D.` · `Water — stand on
-it. It leaves nothing in 2D.` · `Fire — it burns you. In 2D it burns the
-whole line.` · `Crate — walk into it and it slides. It reshapes 2D.` ·
-`Amber — catches you on the way back to 3D. It pins a crate.` · `You — the
-plate shows what you stand on.` · `Goal — reach it in 3D. Standing on it in
-2D is not enough.` · `The eye — hold it to see how far away things are. Costs
+is still there: `Stone - solid, and still there in 2D.` · `Water - stand on
+it. It leaves nothing in 2D.` · `Fire - it burns you. In 2D it burns the
+whole line.` · `Crate - walk into it and it slides. It reshapes 2D.` ·
+`Amber - catches you on the way back to 3D. It pins a crate.` · `You - the
+plate shows what you stand on.` · `Goal - reach it in 3D. Standing on it in
+2D is not enough.` · `The eye - hold it to see how far away things are. Costs
 no move.`
 
 **Every level's own hint**, the grey line under the level name, is in
-`LEVELS[].hint` in `js/02-levels.js` — 91 of them, not listed here. Ask if
+`LEVELS[].hint` in `js/02-levels.js` - 91 of them, not listed here. Ask if
 you want them pulled out as a table too.

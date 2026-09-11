@@ -1,5 +1,5 @@
 "use strict";
-/* Orthogonal — 21-boot.js
+/* I'm Just A Cube - 21-boot.js
    Startup order. This file runs last on purpose.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */

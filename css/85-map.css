@@ -1,9 +1,9 @@
-/* Orthogonal — css/85-map.css
+/* I'm Just A Cube - css/85-map.css
    The map: tabs, section card, trail, nodes, fill, sheet, help, legend, mastery.
    Loaded in the order listed in index.html; see docs/UI.md for the map of
    screens to files.
 
-     THE MAP — the level picker as a path
+     THE MAP - the level picker as a path
 
      A run of levels, a trial partway in, a boss at the end, drawn as a trail
      you walk down. The list it replaced was honest and unreadable: seventy-two
@@ -59,8 +59,9 @@
     border-bottom:1px solid var(--rule);flex-shrink:0}
   .mhead .mt{flex:1;min-width:0}
   /* 13px, not 15: the header now carries the SECTION's name rather than the
-     game's, and "I · FUNDAMENTALS" at 15px wrapped to two lines beside the
-     back chevron. */
+     game's, and the longest one at the time - "I · FUNDAMENTALS", since
+     renamed to "I · NATURE" - wrapped to two lines at 15px beside the back
+     chevron. Kept at 13, because the next long name costs nothing here. */
   .mhead .mt b{display:block;font-family:'Space Grotesk',system-ui,sans-serif;
     font-size:13px;font-weight:700;letter-spacing:-.02em;color:var(--fg);
     line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -129,13 +130,14 @@
     border:1px solid color-mix(in srgb,var(--tabc) 46%,transparent)}
   .secem{width:22px;height:22px;flex:none;fill:var(--tabc);
     filter:drop-shadow(0 0 7px color-mix(in srgb,var(--tabc) 44%,transparent))}
-  /* Wraps rather than truncates: "I · FUNDAMENTALS" does not fit one column
-     at any size worth reading, and a section whose name is cut off is a
-     section you have to open to identify. */
+  /* Wraps rather than truncates: a section whose name is cut off is a
+     section you have to open to identify. "I · FUNDAMENTALS" was the name
+     that did not fit one column at any size worth reading; it is "I · NATURE"
+     now and fits, and the rule stays because the next one may not. */
   .secname{display:block;font-family:'Space Grotesk',system-ui,sans-serif;
     font-size:12px;font-weight:700;letter-spacing:-.03em;line-height:1.15;
     min-width:0;margin-top:-1px;
-    /* FUNDAMENTALS is one word wider than a column on a 327px phone, and a
+    /* FUNDAMENTALS was one word wider than a column on a 327px phone, and a
        word that cannot break simply runs out of the tile. */
     overflow-wrap:anywhere}
   .secsub{flex:1;font-size:11px;line-height:1.45;color:var(--fg-dim);
@@ -385,7 +387,7 @@ L96 14 L0 14 Z' fill='%23fff'/></svg>");
   .mnode.mboss.here:active{box-shadow:0 1px 0 var(--vio-lip);animation:none}
 
   /* ============================================================
-     A MASTERED SECTION — every level in it on three stars.
+     A MASTERED SECTION - every level in it on three stars.
      The trail is redrawn as one continuous stroke and the colour climbs it
      from the first level to the boss, lighting each node as it arrives.
      See sectionMastered() and mapLayout() in js/16-panels.js.

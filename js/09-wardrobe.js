@@ -1,11 +1,11 @@
 "use strict";
-/* Orthogonal — 09-wardrobe.js
+/* I'm Just A Cube - 09-wardrobe.js
    Skins, palettes and the star economy.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
 
 /* ============================================================
-   WARDROBE — what you look like, and what the world looks like.
+   WARDROBE - what you look like, and what the world looks like.
 
    Worlds only ever change the world (background, stone, ink).
    The pieces keep their own colours and their shape markers, so
@@ -79,9 +79,32 @@ var SKIN_SHAPES=[
      chose, and these are meant to be worn with whatever they already like.
      Every one of them takes the equipped colour like every other shape. */
   {id:"sapling", name:"Sapling",  cost:0, reward:true, sec:1},
-  {id:"flame",   name:"Flame",    cost:0, reward:true, sec:2},
+  /* THE ID IS `flame` AND THE NAME IS NOT. It was a flame through three
+     rebuilds and is a volcano now (see buildPlayerMesh); the id is what
+     wardrobe.owned is written with, so changing it would take the shape away
+     from every save that had already earned it. */
+  {id:"flame",   name:"Volcano",  cost:0, reward:true, sec:2},
   {id:"minnow",  name:"Minnow",   cost:0, reward:true, sec:3},
-  {id:"cactus",  name:"Cactus",   cost:0, reward:true, sec:4}
+  {id:"cactus",  name:"Cactus",   cost:0, reward:true, sec:4},
+  /* THE ONE THAT IS PAID FOR BY A MOVE RATHER THAN BY A SHELF.
+
+     `reward:true` is what keeps it off sale - no BUY, no ad row, no star
+     price - and `feat` is what says the condition is not a section: two of
+     the pack in ONE silhouette column, crushed by one fold (n>=2 in
+     bossFoldCrush, js/12-play.js). It is deliberately the rarest sentence
+     the fight has and the hardest to arrange, because depth is what puts
+     them in the same column and depth is the thing the player chooses.
+
+     A DOMINO, because that is what the feat looks like: one piece made of
+     two squares, and dominoes are the thing that falls two at a time. It
+     has no `sec`, so rewardShapeFor() and the boot sweep can never pay it
+     out - only the fold can. */
+  {id:"domino",  name:"Domino",   cost:0, reward:true, feat:"double",
+   /* `short` is what the 74px tile prints, and `.item span.wlock` is
+      `white-space:nowrap` - a long one does not wrap, it widens the grid
+      column it is in and pushes the whole list out under the display case.
+      Three words at most here; the sentence goes in `say`. */
+   say:"two of them in one fold", short:"double kill"}
 ];
 /* Which shape a section awards, and whether it has been taken. Kept as
    lookups over SKIN_SHAPES rather than a second table, so adding a reward is
@@ -152,7 +175,7 @@ function adsFor(cost){return cost<=0?0:Math.ceil(cost/10);}
 function adsWatched(id){return (wardrobe.ads&&wardrobe.ads[id])||0;}
 
 /* ============================================================
-   THE TWO PASSES — the shelf's other half
+   THE TWO PASSES - the shelf's other half
 
    The DEALS tab had one thing on it: a shape, for a price. These two are not
    shapes, and that is the point of them - they are the game's two ceilings
@@ -283,60 +306,60 @@ function buildPlayerMesh(shape,col,mat){
     bx(.32,.13,.32,0,.17,0);
     bx(.19,.11,.19,0,.26,0);
   } else if(shape==="flame"){
-    /* LOW-POLY, NOT VOXEL - and that is the whole fix.
+    /* A VOLCANO, AND THE ID STILL SAYS `flame` ON PURPOSE.
 
-       This was boxes twice: a stepped stack, then a leaning stepped stack
-       with a second stack beside it. Both were reported as looking bad and
-       both readings were the same one, because a stack of axis-aligned
-       squares has a staircase for a silhouette, and a staircase is masonry.
-       No arrangement of boxes gets out of that; a flame's whole identity is
-       a smooth curve to a point.
+       The id is what `wardrobe.owned` is written with, so renaming it would
+       throw away the shape for everybody who has already earned it. The
+       NAME is what a player reads and that is what changed. Same for the
+       tile's glyph: REWARD_GLYPH still maps this to the fire world's own
+       emblem, which is the flame drop, because that is the shelf it comes
+       off and the drop is a good drawing at 21px.
 
-       So it is the one shape in the catalogue that is not built from the
-       game's own cubes. THREE.LatheGeometry spins a profile - a teardrop,
-       fattest a third of the way up, tapering to a point - and SEVEN radial
-       segments keep it faceted rather than smooth. That is a deliberate
-       low-poly flame rather than a failed round one, and it sits with the
-       rest of the game because everything here is already flat-shaded
-       polygons with their edges drawn.
+       THREE TRIES AT A FLAME, AND THE THIRD ONE PROVED THE PROBLEM WAS THE
+       SUBJECT. Boxes gave it a staircase silhouette, which is masonry. A
+       lathe fixed that and gave it a leaf. Narrower, fewer facets and two
+       licks on opposite diagonals fixed the leaf and it still read as
+       something growing, because FIRE HAS NO SOLID FORM: it is defined by
+       motion and by being see-through, and a piece in this game is one
+       still, opaque, flat-coloured object photographed from four fixed
+       angles. Every fix made a better flame and none of them made it a
+       thing. Owner's call after playing all three - see docs/HISTORY.md.
 
-       `flatShading` is set on a CLONE of the material handed in. The
-       original is shared with whatever else the caller is drawing, and one
-       shape must not decide how the others are lit. */
+       So the fire world gives its LANDMARK instead, which is what the other
+       three worlds already do: nature a sapling, water a fish, the desert a
+       saguaro. All four are things that stand still. A volcano is a solid,
+       it is unmistakably this world, and its silhouette is a shape nothing
+       else in the catalogue has - a trapezoid with a NOTCH bitten out of the
+       top. The Pyramid is the nearest neighbour and it comes to a point, so
+       the two can never be confused at any size. */
     g=new THREE.Group();
-    var fmat=(mat&&mat.clone)?mat.clone():mat;
-    if(fmat){fmat.flatShading=true;fmat.needsUpdate=true;}
-    /* AND THE TIP HOOKS. A teardrop spun on its axis is a droplet, or a
-       fruit; what makes it fire is that the point curls off to one side. The
-       lathe cannot say that, so the vertices above the waist are pushed
-       sideways by the square of their height - nothing at the middle,
-       everything at the tip - and the normals are recomputed so the facets
-       still catch the light correctly afterwards. */
-    function flame(s,x,y,z,tilt,hook){
-      var prof=[[0,-.310],[.115,-.302],[.200,-.245],[.243,-.140],[.246,-.030],
-                [.205,.070],[.148,.155],[.092,.225],[.042,.278],[0,.315]];
-      var pts=prof.map(function(q){
-        return new THREE.Vector2(q[0]*s,q[1]*s);
-      });
-      var geo=new THREE.LatheGeometry(pts,7);
-      var pos=geo.attributes.position, top=.315*s;
-      for(var i=0;i<pos.count;i++){
-        var vy=pos.getY(i);
-        if(vy<=0)continue;
-        var t=vy/top;
-        pos.setX(i,pos.getX(i)+hook*t*t*s);
-      }
-      pos.needsUpdate=true;
-      geo.computeVertexNormals();
-      var m=new THREE.Mesh(geo,fmat);
-      m.position.set(x,y,z);
-      m.rotation.z=tilt;
-      g.add(m);
-      return m;
-    }
-    flame(1,0,0,0,-.06,.17);             // the flame, leaning, tip curled
-    flame(.52,-.185,-.135,.075,.30,.12); // a tongue at its foot, in front
-    flame(.30,.175,-.19,-.055,-.34,-.10);// and a smaller one behind
+    var vmat=(mat&&mat.clone)?mat.clone():mat;
+    if(vmat){vmat.flatShading=true;vmat.needsUpdate=true;}
+    /* THE CRATER IS IN THE PROFILE, not cut out afterwards. A lathe just
+       revolves a polyline, so a profile that climbs to the rim and then turns
+       back INWARD and DOWN spins a cone with a hole in the top of it - one
+       mesh, no boolean, and the notch is in the silhouette from every angle
+       because it is radially symmetric. Seven segments, faceted, so it reads
+       as cut rock rather than as a smooth funnel. */
+    var vprof=[[0,-.310],[.345,-.310],[.320,-.240],[.268,-.140],[.212,-.030],
+               [.168,.062],[.140,.118],[.112,.062],[.092,.012],[0,.012]];
+    var vgeo=new THREE.LatheGeometry(vprof.map(function(q){
+      return new THREE.Vector2(q[0],q[1]);
+    }),7);
+    vgeo.computeVertexNormals();
+    g.add(new THREE.Mesh(vgeo,vmat));
+    /* AND ONE TONGUE OVER THE LIP, on a DIAGONAL. A cone with a hole in it is
+       a volcano at rest and could be read as a bowl; what says it is going is
+       something spilling out of it. Three blocks stepping down the outside,
+       and they are on the x+z diagonal for the reason the neighbour's plinth
+       is on a corner: screen-right is `±x` in two of the four camera views
+       and `±z` in the other two, so a detail offset along ONE axis is beside
+       the piece in two views and hidden behind it in the other two. On the
+       diagonal it is beside the piece in all four, which is the only way a
+       detail on a radially symmetric shape is ever worth its geometry. */
+    bx(.115,.075,.115,.105,.088,.105);
+    bx(.100,.070,.100,.160,.010,.160);
+    bx(.085,.065,.085,.205,-.072,.205);
   } else if(shape==="minnow"){
     // Flat in z on purpose: a fish read as a loaf until the body was thinner
     // than it is tall, and the fins are what carry the rest.
@@ -359,6 +382,48 @@ function buildPlayerMesh(shape,col,mat){
     bx(.10,.20,.13,-.22,.16,0);
     bx(.14,.09,.13,.16,-.09,0);
     bx(.10,.16,.12,.20,.03,0);
+  } else if(shape==="domino"){
+    /* THE PIPS ARE THEIR OWN COLOUR, and it is the piece's opposite.
+
+       Built in the body's colour they were studs: four bumps the same shade
+       as the tile they sit on, told apart only by the edge lines round them,
+       which at the size this is actually seen at is not told apart at all. A
+       domino's pips are PRINTED - the one part of it that is not the tile -
+       so they take ink, and ink here is black on anything but a piece too
+       dark to take it, at which point they flip to white. Same idea as
+       `outlineFor()` and a lower threshold: the owner's rule is black
+       always, white only on a dark skin, and only Black clears .26.
+
+       Cloned from the material handed in rather than made fresh, so the pips
+       are lit by whatever is lighting the body - a fresh MeshBasic in a lit
+       scene is a flat sticker. And marked `keepColor`, which playerChar()
+       reads: that function traverses EVERY mesh in the group and writes the
+       equipped colour into it, so without the mark one burn would repaint
+       the pips in the body's colour and leave them there. */
+    var dl=pipLum(col), pmat=(mat&&mat.clone)?mat.clone():mat;
+    if(pmat&&pmat.color)pmat.color.setHex(dl<PIP_DARK?0xf2f4f8:0x14161d);
+    function pip(w,h,d,x,y,z){
+      var m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),pmat);
+      m.position.set(x,y,z);m.userData.keepColor=true;g.add(m);return m;
+    }
+    /* THE TILE, STANDING UP. A slab thinner in z than it is wide, so it is
+       a tile from every one of the four camera views rather than a second
+       cube from two of them; a bar across its waist where the two halves
+       meet; and two pips on each half.
+
+       The pips stand PROUD of the face rather than being drawn on it. There
+       is no second colour available - the whole piece takes the equipped
+       one, like every other shape - so a pip has to be a shape, and
+       addOutline() draws the edges of every mesh in the group, which is
+       what makes four small squares read as pips at the size this is
+       actually seen at. A double two, because a double is the point. */
+    g=new THREE.Group();
+    bx(.46,.62,.20,0,0,0);               // the tile
+    bx(.50,.045,.215,0,0,0);             // the bar across the waist
+    [[-.11,.20],[.11,.20],[-.11,-.20],[.11,-.20]].forEach(function(o){
+      pip(.10,.10,.035,o[0],o[1],.118);   // pips, front
+      pip(.10,.10,.035,o[0],o[1],-.118);  // and the same on the back
+    });
   } else if(shape==="rook"){
     /* THE CASTLE, bottom to top: a wide foot, a plinth, the shaft, the
        collar under the crown, and four merlons at the corners so the notches
@@ -489,7 +554,14 @@ function previewStop(){
 }
 function previewStart(cv){
   previewStop();
-  var r=new THREE.WebGLRenderer({antialias:true,canvas:cv,alpha:false});
+  /* TRANSPARENT, so the piece stands on the panel rather than in a box.
+     `alpha:false` cleared to opaque black and the stage was a hard-edged
+     rectangle of `--void` sitting on the panel's own ground - which is a
+     thumbnail, whatever is drawn inside it. With the clear alpha at zero
+     there is no rectangle: there is a pedestal, a piece, and the glow they
+     throw, and that is the whole of what the owner asked the stage to be. */
+  var r=new THREE.WebGLRenderer({antialias:true,canvas:cv,alpha:true});
+  r.setClearColor(0x000000,0);
   r.setPixelRatio(Math.min(window.devicePixelRatio,2));
   var sc=new THREE.Scene();
   var cam=new THREE.PerspectiveCamera(34,1,.1,50);
@@ -538,6 +610,26 @@ function previewSize(){
   var w=pv.canvas.clientWidth||160, h=pv.canvas.clientHeight||160;
   pv.renderer.setSize(w,h,false);
   pv.camera.aspect=w/h;
+  /* AND IT PULLS BACK ON A WIDE STAGE. A perspective camera's FOV is
+     VERTICAL, so the taller-than-square case this was written for framed the
+     piece by its height and the aspect only ever added side margin. The
+     stage is full width and about 1.6:1 now (see .wcanvas in 40-panels.css)
+     and the height is the tight dimension: at the original 3.05 the plinth
+     ran off the bottom and the sides. One term, off the aspect, so a change
+     to the stage's proportions cannot silently re-crop the piece - and it is
+     zero at 1.25:1 or narrower, so the home screen's plinth, which shares
+     this renderer, is framed exactly as it was. */
+  var wide=Math.max(0,pv.camera.aspect-1.25);
+  pv.camera.position.z=3.05+wide*.95;
+  /* AND IT AIMS A LITTLE LOWER as it pulls back. Pulling back alone leaves
+     the piece sitting in the bottom half of a wide stage with a band of empty
+     air over it, because the pedestal is below the camera's target and the
+     extra distance is spent showing more of nothing. Dropping the target
+     moves the whole group up the frame, which is the composition a stage
+     wants: the piece near the middle, the pedestal under it, headroom rather
+     than a hole. lookAt() must come after the position is set - it derives
+     the rotation from where the camera IS. */
+  pv.camera.lookAt(0,-.05-Math.min(.22,wide*.55),0);
   pv.camera.updateProjectionMatrix();
 }
 // Drag to spin, with the throw carried into inertia on release. Pointer events
@@ -620,18 +712,13 @@ function previewShow(shape,colorId,w3,w2,plane){
   while(root.children.length)root.remove(root.children[0]);
   var col=findBy(SKIN_COLORS,colorId).hex;
   var v=findBy(WORLDS3D,w3), p=findBy(WORLDS2D,w2);
-  var bg=plane?p.paper:v.void, blockCol=plane?p.ink:v.block;
-  /* A vertical wash rather than a flat fill. On a light ground (the plane)
-     it goes the other way - darker at the floor - so the lift is always
-     *toward* the middle of the range and never off the end of it. */
-  var lift=plane?0.94:1.45;
-  pv.scene.background=pvGradTex("bg"+bg+(plane?"p":"v"),function(x,n){
-    var g=x.createLinearGradient(0,0,0,n);
-    g.addColorStop(0,pvShade(bg,plane?1.02:0.72));
-    g.addColorStop(.62,hexCss(bg));
-    g.addColorStop(1,pvShade(bg,lift));
-    x.fillStyle=g;x.fillRect(0,0,n,n);
-  });
+  var blockCol=plane?p.ink:v.block;
+  /* NO BACKDROP. It was a vertical wash of the world's own void, which is
+     what made the case a case - and a case is a box, and the box is what was
+     cut. The renderer clears to nothing now (see previewStart) so the panel
+     itself is the ground; `pvGradTex`, `pvShade` and `hexCss` are still here
+     and still used by the pool below. */
+  pv.scene.background=null;
 
   var slabMat=new THREE.MeshLambertMaterial({color:blockCol});
   var slab=new THREE.Mesh(new THREE.BoxGeometry(1,.5,1),slabMat);
@@ -650,12 +737,12 @@ function previewShow(shape,colorId,w3,w2,plane){
       color:col,transparent:true,depthWrite:false,
       blending:THREE.AdditiveBlending}));
   pool.rotation.x=-Math.PI/2;pool.position.y=-.368;root.add(pool);
-  // two neighbours at depth, so a world's block colour reads as a world and
-  // not as a single lonely brick
-  [[-1,-.35],[1,-.35]].forEach(function(o){
-    var b=new THREE.Mesh(new THREE.BoxGeometry(1,.5,1),slabMat);
-    b.position.set(o[0],-1.12,o[1]);root.add(b);
-  });
+  /* AND NO NEIGHBOURS. There were two more blocks set back at depth, there to
+     stop a world's block colour reading as one lonely brick - a good argument
+     when the stage was a lit diorama with a sky behind it, and the wrong one
+     now: "one pedestal on a cool block and that's it" is the brief, and two
+     extra blocks in the corners of a frameless stage are two things the eye
+     has to rule out before it gets to the piece. */
   var edges=new THREE.LineSegments(
     new THREE.EdgesGeometry(new THREE.BoxGeometry(1,.5,1)),
     new THREE.LineBasicMaterial({color:plane?p.paper:p.ink,
@@ -674,16 +761,62 @@ function previewShow(shape,colorId,w3,w2,plane){
   }
   var item=buildPlayerMesh(shape,col,new THREE.MeshLambertMaterial({color:col}));
   item.position.y=-.06;
-  outlineFor(item,new THREE.Color(bg));
+  // No argument: outlineFor() reads the PIECE, not the background (see its
+  // own note), and the background it used to be handed was the stage's void -
+  // which the stage no longer has.
+  outlineFor(item);
   root.add(item);
 }
-// Pick the rim colour that separates a silhouette from its background: light
-// on a dark ground, dark on a light one.
+/* THE RIM IS LIGHT BY DEFAULT, AND DARK ONLY ON A PIECE TOO PALE FOR A
+   LIGHT ONE TO SHOW.
+
+   It read the BACKGROUND once: light rim on a dark ground, dark rim on a
+   light one. That is the right rule for a SILHOUETTE - it is what keeps a
+   black cube visible against the void - and the wrong rule for the edges
+   INSIDE the silhouette, which are what make a cube look like a cube. A
+   white piece on the void got a white rim, so its faces had no edges at all
+   and it drew as a flat rectangle. Reported on the white family in the
+   opening, and it had been true of the White skin everywhere in the game,
+   the wardrobe's display case included.
+
+   Then it read the piece with the background as a tiebreaker in the middle
+   of the range, which was fussier than it needed to be and made a mid-tone
+   piece change its rim depending where it stood. On the owner's call it is
+   now the simplest rule that fixes the bug: WHITE LINES ON EVERYTHING,
+   BLACK LINES ON ANYTHING TOO PALE TO TAKE THEM. One threshold, no
+   background, and the rim on a given skin is the same everywhere it is
+   drawn - in play, in the plane, on the plinth and in the case.
+
+   `bg` is still taken, because the shield shell borrows the colour this
+   picks (js/10-render.js) and because a future rule may want it again. */
 var outlineCol=new THREE.Color();
+var outlineOwn=new THREE.Color();
+var OUTLINE_PALE=.62;
+/* A SECOND, MUCH LOWER THRESHOLD, for ink printed ON a piece rather than for
+   the rim drawn round it. The rim asks "can this colour take a white line
+   against the void", which almost everything can; a pip asks "is this piece
+   dark enough that black would vanish INTO it", which almost nothing is.
+   Only Black (.185) clears .26 - every other colour in the catalogue is over
+   .39 - so the pips are black on everything and white on the one skin that
+   would otherwise swallow them. */
+var PIP_DARK=.26;
+// Rec.601 luma of a hex, the same weighting pieceLum() uses on a material.
+function pipLum(hex){
+  return (((hex>>16)&255)*.299+((hex>>8)&255)*.587+(hex&255)*.114)/255;
+}
+function pieceLum(obj){
+  var lum=-1;
+  obj.traverse(function(c){
+    if(lum>=0||!c.isMesh||!c.material||!c.material.color)return;
+    outlineOwn.copy(c.material.color);
+    lum=outlineOwn.r*.299+outlineOwn.g*.587+outlineOwn.b*.114;
+  });
+  return lum;
+}
 function outlineFor(obj,bg){
   if(!obj||!obj.userData.outlines)return;
-  var lum=bg.r*.299+bg.g*.587+bg.b*.114;
-  outlineCol.setRGB(lum>.5?.06:.94,lum>.5?.07:.95,lum>.5?.09:1);
+  var dark=pieceLum(obj)>OUTLINE_PALE;
+  outlineCol.setRGB(dark?.06:.94,dark?.07:.95,dark?.09:1);
   obj.userData.outlines.forEach(function(e){e.material.color.copy(outlineCol);});
 }
 
