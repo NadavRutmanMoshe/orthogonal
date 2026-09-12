@@ -585,10 +585,71 @@ function adIcon(){
     "<path d='M8 20.4h8c.5 0 .9.4.9.9s-.4.9-.9.9H8c-.5 0-.9-.4-.9-.9s.4-.9."+
       "9-.9Z'/></svg>";
 }
+/* A PRESS IS ON THE WAY DOWN; A PRESS INSIDE SOMETHING THAT SCROLLS IS ON
+   THE WAY UP. Everything the player can press goes through tap(), and tap()
+   fired on `pointerdown` - which is right for the d-pad, where the answer
+   has to be on the frame the finger lands, and wrong for every list in the
+   game. MY LEVELS is a column of rows that are almost entirely button: a
+   finger put down to scroll it lands on PLAY or SHARE or ×, and the old
+   handler both fired that button and called preventDefault on the
+   pointerdown, which cancels the scroll the finger was asking for. So the
+   list was hard to move and dangerous to move - one gesture, two bugs.
+
+   The fix is not a flag on the buttons that need it - it is asking where
+   the button IS. tapScroller() walks up from the element looking for an
+   ancestor that scrolls (`.pbody`, `.mbody`, `.panel`, `.tutcard`, `.home`
+   - grep `overflow` in css/ for the list). Inside one, the press is armed
+   on the way down and spent on the way up, and only if the finger stayed
+   inside TAP_SLOP of where it landed and lifted on the same button. Drag
+   further than that and it was a scroll, so nothing fires. Outside one -
+   the d-pad, the corners, the bar, every full-bleed card's buttons - not a
+   line changes.
+
+   The deferred path must NOT preventDefault the pointerdown: that is the
+   call that stops the panel scrolling under the finger, and suppressing it
+   is half the point of this. */
+var TAP_SLOP=10;      // px of travel that turns a press into a scroll
+function tapScroller(el){
+  for(var n=el.parentNode;n&&n.nodeType===1&&n!==document.body;n=n.parentNode){
+    var ov="";
+    try{ov=getComputedStyle(n).overflowY;}catch(e){}
+    if(ov==="auto"||ov==="scroll")return n;
+  }
+  return null;
+}
+function tapDeferred(el,e,fn){
+  var x0=e.clientX,y0=e.clientY,id=e.pointerId,live=true;
+  function moved(ev){
+    return Math.abs(ev.clientX-x0)>TAP_SLOP||Math.abs(ev.clientY-y0)>TAP_SLOP;
+  }
+  function off(){
+    live=false;
+    window.removeEventListener("pointermove",mv,true);
+    window.removeEventListener("pointerup",up,true);
+    window.removeEventListener("pointercancel",off,true);
+  }
+  function mv(ev){if(live&&ev.pointerId===id&&moved(ev))off();}
+  function up(ev){
+    if(!live||ev.pointerId!==id)return;
+    off();
+    if(el.disabled||moved(ev))return;
+    // The finger has to lift on the button it landed on. A list that scrolled
+    // less than the slop still moved, so ask the document what is under the
+    // finger now rather than trusting the element it started on.
+    var over=document.elementFromPoint(ev.clientX,ev.clientY);
+    if(!over||!(over===el||el.contains(over)))return;
+    ev.preventDefault();fn();
+  }
+  window.addEventListener("pointermove",mv,true);
+  window.addEventListener("pointerup",up,true);
+  window.addEventListener("pointercancel",off,true);
+}
 function tap(el,fn){
   if(!el)return;
   el.addEventListener("pointerdown",function(e){
-    if(el.disabled)return;e.preventDefault();e.stopPropagation();fn();
+    if(el.disabled)return;
+    if(tapScroller(el)){tapDeferred(el,e,fn);return;}
+    e.preventDefault();e.stopPropagation();fn();
   });
   el.addEventListener("click",function(e){e.preventDefault();});
 }
