@@ -654,6 +654,31 @@ pass - ochre over plain stone was flat brown blocks, and once the scene was
 shot house by house they stood either side of the house like a pair of
 wings. The section's own treeline is the distance now.
 
+**And the sixth turned the house round.** With plaster walls and a red roof
+the house was reported as still not a house in the volume, "only when I go
+2D". The screenshot agreed and said why: every version so far had been a
+CUTAWAY - the wall with the door at the back of the floor, the near side
+open so the family could be seen inside, the roof a one-row gable over the
+back wall - and from the game's camera that is a U of wall with a decorated
+back. The fold reads because the fold is the one view that collapses the U
+onto its facade. So the house is now solid and faces the camera: the facade
+is the row nearest it, everything behind is wall, and nobody is inside - the
+family stands on the strip in front of their own door, which is where you
+stand to say goodbye anyway. The roof runs the full depth, and the overhang
+rule that ruined the cutaway now works for it: a roof row one square further
+from the camera draws half a course higher, which is the slope of a roof seen
+from the front and above. The windows are painted night glass rather than
+holes (a hole would show the same wall), the door is the one hole, showing
+the interior block a step darker in the depth fade, and the chimney is two
+bricks beside the ridge so it stands above the roof rather than level with
+it. The census still folds column `x=3`, which is now the doorstep, the foot
+of the strip and two squares of path rather than the doorway, the step and
+the path. One thing bit: `foldPeril()`, the crush warning, tints the blocks
+in the player's silhouette column his own colour, and in front of a solid
+house every square shares a column with the wall, so the doorway lit pink.
+It returns null while a scene runs; the verbs are held, so it was warning
+about a fold nobody could make.
+
 **A scene is shot, not surveyed.** `recomputeBounds()` fits the whole arena
 to the screen, which is right for a puzzle and wrong for a scene: the street
 is fourteen squares wide, and fitted to a phone the family was a quarter of
@@ -669,8 +694,15 @@ the fold. The renderer's own lerp toward `centerT` and `viewSizeT` carries
 each change over about half a second, so a reframe is a camera move rather
 than a cut, and the wide frame is set a beat before the wide moment so it has
 settled when the moment comes. The box is a fit target, not a clip; blocks
-outside it still draw, off centre. The fire and the ending have no `frame`
-and fit their boards as they always did.
+outside it still draw, off centre. The fire is shot wide, close, wide: it
+arrives on the whole shelf so the wall of fire is read first, moves in on
+the two of them for his first line, and pulls back to the empty shelf
+(`stFrame(null)`) for the last line once he is gone. The ending is close from
+its first frame - one cube on an empty platform with room for exactly one
+more - and a scene's first shot is applied in `stArrive()`, just before its
+board loads, not in `storyPlay()`: a travelling scene spends its first beats
+on the arena it is leaving, and a frame set early would fit that arena to
+the wrong box on a resize.
 
 **And the roof lives at z=0 only.** Run back over the interior it becomes an
 overhang, and an overhang in this projection is drawn in front of the face it

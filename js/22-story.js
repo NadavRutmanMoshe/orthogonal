@@ -247,6 +247,10 @@ function stHex(id){
    between them is what says building. Neither drifts toward the boss's
    violet or the trial's amber. */
 var ST_WALL=0xe9d6ae, ST_ROOF=0xa33d33;
+/* The window glass is the night sky's own blue, a step darker, so a lit
+   house at night is not what it says - nobody is home yet - and the chimney
+   is a brick between the wall and the roof. */
+var ST_GLASS=0x27395c, ST_BRICK=0x6e4034;
 function stHouseBoard(){
   var b=[],tint=[],x,z;
   function floor(x0,x1,z0,z1){
@@ -254,45 +258,55 @@ function stHouseBoard(){
   }
   // Everything a house is built of is painted; the ground it stands on is not.
   function put(x,y,z,hex){b.push([x,y,z]);tint.push([x,y,z,hex]);}
-  /* A face with a door in it, and a pitched roof over it. `x0+2` is the
-     middle of the five, which is the door, the ridge's peak, and - not by
-     accident - the column the census folds. */
+  /* A SOLID HOUSE, FACING THE CAMERA, WITH THE FAMILY OUTSIDE IT.
+
+     The sixth version, and the first one that reads as a house in the
+     VOLUME rather than only in the plane. The five before it were all
+     cutaways: the wall with the door stood at the BACK of the floor (z=0),
+     the side nearest the camera was left open so the family could be seen
+     inside, and the roof was a one-row gable over the back wall only.
+     Photographed from the game's camera that is a U of wall with a
+     decorated back - and it was reported exactly so: "only when I go 2D can
+     I tell it is a house", because the fold is the one view that collapses
+     the U onto its facade.
+
+     So the house is turned round and filled. The facade is at z=3, the row
+     NEAREST the camera, and everything behind it is wall to the back. Nobody
+     is inside and nobody needs to be: the family stands on the strip in
+     front of the door, which is where you stand to say goodbye anyway.
+
+     THE ROOF RUNS THE FULL DEPTH, and the overhang rule from the cutaway
+     versions now works FOR it. Screen height is `0.885y - 0.465z`, so a
+     roof row one square further from the camera draws about half a course
+     HIGHER - which is exactly what the slope of a roof seen from the front
+     and above does. Over the cutaway that same fact put the roof's near
+     rows on top of the windows, because the near rows were in front of the
+     face; with the face at the near edge, every roof row is behind it and
+     recedes upward. Three courses, 5 wide, 3, 1, at every row of depth.
+
+     WINDOWS ARE PAINTED, NOT CUT. A hole in the facade used to show the
+     interior; now it would show a solid block of the same wall. So the two
+     windows are cells of a dark night glass in the top course, and the door
+     is still a hole - two blocks tall in the middle - which shows the
+     interior block behind it a step darker in the depth fade, so it reads as
+     a doorway you could walk into. `x0+2` is the middle of the five: the
+     door, the ridge, and the column the census folds.
+
+     The chimney is two blocks now, on the near slope beside the ridge, so
+     it stands ABOVE the roof rather than level with it. */
   function house(x0,x1){
     var i,y,j,mid=x0+2;
-    /* THE FACE, WITH A DOOR AND TWO WINDOWS CUT OUT OF IT. The holes matter
-       as much as the roof does: a blank rectangle of grass-topped stone is a
-       cliff, and holes in a regular pattern are the other thing nothing
-       natural has. The door is two blocks tall in the middle - which is also
-       the column the census folds - and the windows are single blocks either
-       side of it along the top course. */
-    for(i=x0;i<=x1;i++)for(y=1;y<=3;y++){
-      if(i===mid&&y<=2)continue;                       // the door
-      if(y===3&&(i===x0+1||i===x0+3))continue;         // the two windows
-      put(i,y,0,ST_WALL);
+    for(j=0;j<=3;j++)for(i=x0;i<=x1;i++)for(y=1;y<=3;y++){
+      if(j===3&&i===mid&&y<=2)continue;                        // the door
+      var win=(j===3&&y===3&&(i===x0+1||i===x0+3));            // the windows
+      put(i,y,j,win?ST_GLASS:ST_WALL);
     }
-    // Two side walls, leaving the near side open to look through.
-    for(j=1;j<=2;j++)for(y=1;y<=3;y++){put(x0,y,j,ST_WALL);put(x1,y,j,ST_WALL);}
-    /* THE ROOF IS THE GABLE END, AND IT IS ONE ROW DEEP.
-
-       Two things were learned putting this on. TWO COURSES, NOT THREE:
-       5 wide, 3, 1 over a short wall is a cone on a stump, and in this
-       section's green it read as a fir tree. A tall box with a small hat is
-       a house; a short box with a big hat is scenery.
-
-       And it lives at z=0 ONLY. Run back over the interior it becomes an
-       overhang, and an overhang in this projection is drawn in FRONT of the
-       face it belongs to - screen height is `0.885y - 0.465z`, so a roof
-       block two rows nearer the camera lands almost exactly on top of the
-       wall course it is supposed to be sitting above. Photographed, the
-       house had a roof and no windows, because the roof was covering them.
-       At z=0 it is the gable end of a house seen end-on, which is the view
-       we are in, and the face underneath it is left alone.
-
-       The chimney is one block, and it is worth its one block: after the
-       pitch, it is the single thing that says building rather than hill. */
-    for(i=x0;i<=x1;i++)put(i,4,0,ST_ROOF);
-    for(i=x0+1;i<x1;i++)put(i,5,0,ST_ROOF);
-    put(x0+3,6,0,ST_ROOF);
+    for(j=0;j<=3;j++){
+      for(i=x0;i<=x1;i++)put(i,4,j,ST_ROOF);
+      for(i=x0+1;i<x1;i++)put(i,5,j,ST_ROOF);
+      put(mid,6,j,ST_ROOF);
+    }
+    put(x0+3,6,1,ST_BRICK);put(x0+3,7,1,ST_BRICK);
   }
   floor(1,5,0,3);      // our house
   floor(8,12,0,3);     // theirs
@@ -396,10 +410,17 @@ var ST_ARRIVE=[
    DOOR    our house, the door column and the son's square at x=6 - the two
            columns the fold is about, and nothing else */
 var ST_SHOT={
-  home:  [[0,0,0],[6,4,3]],
+  home:  [[0,0,0],[6,4,5]],
   street:[[0,0,0],[13,4,5]],
   path:  [[0,0,0],[8,4,9]],
-  door:  [[0,0,0],[8,4,5]]
+  door:  [[0,0,0],[8,4,7]],
+  /* THE FIRE: the shelf is nine wide and he is one cube in a gap in the
+     wall, so his lines are said close, on the two of them, and the shelf is
+     only seen whole as the scene arrives and after he has gone. */
+  fire:  [[1,0,0],[7,2,3]],
+  /* THE ENDING: an empty platform and one cube on it, close, so that when
+     the fold puts her beside him there is nothing else in the picture. */
+  end:   [[1,0,0],[7,2,3]]
 };
 
 var STORY={
@@ -411,15 +432,18 @@ var STORY={
     son:"rose",
     frame:ST_SHOT.home,
     level:{name:"I'm Just A Cube", hint:"", theme:1, tutorial:true, rotate:false,
-           start:[3,1,2], goal:[3,1,2], blocks:null},
+           start:[3,1,4], goal:[3,1,4], blocks:null},
     /* BIGGER THAN THEY WERE. The parents were 1.18 against the son's 1.0 and
        were reported as barely seen - a black cube in a dark doorway at
        fourteen squares of arena width is a smudge. 1.4 is a third again as
        big as their son, which is also the honest reading of "the parents are
        bigger", and it is what makes the black one legible at all. */
+    /* OUTSIDE, on the strip in front of their own door, the son between
+       them: the house is solid now (stHouseBoard) and there is no inside to
+       be seen in. The neighbours stand in front of theirs the same way. */
     cast:[
-      {id:"dad",  col:"black", size:1.4,  at:[2,1,1]},
-      {id:"mum",  body:ST_MUM, size:1.4,  at:[4,1,1]},
+      {id:"dad",  col:"black", size:1.4,  at:[2,1,4]},
+      {id:"mum",  body:ST_MUM, size:1.4,  at:[4,1,4]},
       {id:"nDad", col:"white", size:1.4,  at:[9,1,5]},
       {id:"nMum", col:"white", size:1.4,  at:[11,1,5]},
       {id:"nKid", col:"white", size:1.0,  at:[10,1,4]},
@@ -440,8 +464,8 @@ var STORY={
       {ms:1900, say:"Three of them lived here."},
       {ms:1150, at:function(){stHop("son");stHop("dad",300);}},
       {ms:1250, at:function(){stHop("son");stHop("mum",300);}, say:null},
-      // Out through the door and down onto the strip.
-      {ms:1060, at:function(){stWalk("son",[[3,3],[3,4],[3,5]]);}},
+      // A step away from the door, out to the front of the strip.
+      {ms:1060, at:function(){stWalk("son",[[3,5]]);}},
       // And along the front, toward the neighbours. The camera pulls back
       // to the whole street as he goes, so they are in the picture before
       // he reaches them.
@@ -459,9 +483,9 @@ var STORY={
       {ms:1600, say:"The census came up the path.",
        at:function(){
          stFrame(ST_SHOT.path);
-         stShow("copA");stWalk("copA",[[3,8],[3,7],[3,6],[3,5]]);
+         stShow("copA");stWalk("copA",[[3,8],[3,7],[3,6]]);
          stAfter(300,function(){
-           stShow("copB");stWalk("copB",[[3,8],[3,7],[3,6]]);
+           stShow("copB");stWalk("copB",[[3,8],[3,7]]);
          });
        }},
       {ms:700},
@@ -470,13 +494,14 @@ var STORY={
       // the rest of it: this shot holds the door column and the son's
       // square, which is everything the fold is about.
       {ms:1000, at:function(){stFrame(ST_SHOT.door);stKnock("copA");}, say:null},
-      // The father comes out to them.
-      {ms:1250, at:function(){stWalk("dad",[[2,2],[3,2],[3,3],[3,4]]);}},
+      // The father goes down to meet them at the foot of the strip.
+      {ms:1250, at:function(){stWalk("dad",[[2,5],[3,5]]);}},
       {ms:1100, at:function(){stHop("dad");stHop("copA",340);},
        say:"They had questions about the house."},
-      // And the mother comes as far as the doorway, which is as far as she
-      // gets. She is now on the same line as the other three.
-      {ms:1150, at:function(){stWalk("mum",[[4,2],[3,2],[3,3]]);}},
+      // And the mother comes as far as the doorstep, which is as far as she
+      // gets. She is now on the same line as the other three: the doorstep,
+      // the foot of the strip, and the two squares of path under the census.
+      {ms:1150, at:function(){stWalk("mum",[[3,4]]);}},
       {ms:900,  at:function(){stHop("mum");stHop("dad",200);}, say:null},
       // THE FOLD IS THE ABDUCTION. No new verb, no effect nobody has seen:
       // the world does the one thing this game does, and four cubes standing
@@ -532,13 +557,20 @@ var STORY={
       {id:"dad", col:"black", shape:"star", size:1.4, at:[4,1,0]}
     ],
     pre:ST_ARRIVE,
+    /* SHOT WIDE, THEN CLOSE, THEN WIDE. No `frame` on the scene, so it
+       arrives on the whole shelf and the wall of fire is the first thing
+       read; the camera moves in on the two of them for his first line and
+       stays there until he is gone, and the last line is said over the
+       empty shelf again. */
     beats:[
       {ms:1900, say:"Something was standing in the fire."},
-      {ms:2500, say:"You came further than I did.", who:"dad"},
+      {ms:2500, say:"You came further than I did.", who:"dad",
+       at:function(){stFrame(ST_SHOT.fire);}},
       {ms:3000, say:"The plane keeps a little of everything it flattens.", who:"dad"},
       {ms:3000, say:"I did not come back the same shape.", who:"dad"},
       {ms:1700, at:function(){stTake(["dad"],true);}, say:null},
-      {ms:2400, say:"Everything this world has ever flattened is still in there."}
+      {ms:2400, say:"Everything this world has ever flattened is still in there.",
+       at:function(){stFrame(null);}}
     ]
   },
 
@@ -555,6 +587,9 @@ var STORY={
       {id:"mum", body:ST_MUM, size:1.4, at:[5,1,0], plane:true}
     ],
     pre:ST_ARRIVE,
+    // Close from the moment it arrives: one cube on an empty platform, and
+    // room for exactly one more beside him.
+    frame:ST_SHOT.end,
     /* LONGER THAN IT WAS, ALL THE WAY THROUGH. Every line here was timed by
        somebody who already knew what it said; played cold they went past
        before they were finished. Roughly half again on each, and the last
@@ -633,7 +668,7 @@ function storyPlay(id,replay){
   var travels=def.from==="here"&&!replay;
   ST={id:id, def:def, list:(travels?def.pre:[]).concat(def.beats),
       i:-1, t:0, actors:[], await:null, over:false, replay:!!replay,
-      arrived:false, frame:def.frame||null};
+      arrived:false, frame:null};
   var el=$("story");if(el)el.classList.add("on");
   stSay(null);
   stFadeTo(0,420);
@@ -653,6 +688,11 @@ function stArrive(){
   var built=id==="open"?stHouseBoard():id==="fire"?stFireBoard():stPlaneBoard();
   lv.blocks=built.blocks;
   lv.tint=built.tint;
+  /* The scene's first shot goes in HERE, not in storyPlay(): a scene that
+     travels spends its first beats on the arena it is leaving, and a frame
+     set early would fit that arena to the wrong box on a resize. Set just
+     before the board loads, syncMeshes() fits it on the first frame drawn. */
+  ST.frame=def.frame||null;
   playSource="story";
   enterPlay(lv,undefined,false);
   /* The one mark loadLevel leaves: trailHere() puts a footprint on the start

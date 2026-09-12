@@ -1620,3 +1620,15 @@ Worth remembering: **four attempts at a shape were four attempts at the wrong
 variable.** The lids were a texture and the scale was a camera, and both were
 one screenshot away from being obvious. And **"make it a video" is usually
 "shoot it"**: the camera was what the ask was missing, not the renderer.
+
+**And then the sixth, because the fifth read only when folded.** Reported as
+"the visual house is not there, only when I go 2D can I tell it's a house".
+Every version had been a cutaway with the door wall at the back and the near
+side open, so the family could be seen inside; from the camera that is a U of
+wall, and the fold is the one view that collapses a U onto its facade. Turned
+round and filled, with the family outside the door, it reads in both. The
+lesson is the cutaway itself: **the convention that lets you see inside a
+voxel house is the convention that stops it being a house from the front.**
+Put the people outside. And a solid house woke the crush warning - every
+square in front of it shares a column with the wall - which is now off while
+a scene runs.

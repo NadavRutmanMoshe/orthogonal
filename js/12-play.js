@@ -1928,9 +1928,17 @@ function move2(du){
    blocked - dying to it stays a legal outcome and the puzzles still turn on
    picking the right axis. It just stops being a gotcha and becomes a choice.
 
-   Returns null when the fold is safe, otherwise {kind, cells}. */
+   Returns null when the fold is safe, otherwise {kind, cells}.
+
+   AND NEVER DURING A CUTSCENE. The verbs are held there, so a warning about
+   a fold nobody can make is noise - and in the opening it was worse than
+   noise: the son stands in front of a solid house, every square in front of
+   it shares a silhouette column with the wall behind, and the doorway lit up
+   in his own colour as if the house were about to crush him. The ending
+   hands the fold back on an empty platform, where this is null anyway. */
 function foldPeril(){
   if(!L||app!=="play"||flat||dying||!R||!canShift())return null;
+  if(typeof storyOn==="function"&&storyOn())return null;
   var u=R.uOf(view,player.x,player.z), cr=liveCrates();
   var crush=R.siloSolid(view,u,player.y,cr);
   var spike=R.deadly2(view,u,player.y);
