@@ -288,38 +288,34 @@ function guideSync(){
        nothing to mistake him for: a cube over the board, bobbing, plainly not
        standing on anything, is not a square anybody is going to try to fold
        onto. A floating slab under him would be the confusing object now. */
-    GD={mesh:m,mat:mat,x:0,y:0,z:0,said:0,bob:Math.random()*6.283};
+    GD={mesh:m,mat:mat,x:0,y:0,z:0,px:0,py:0,pz:0,said:0,bob:Math.random()*6.283};
   }
   GD.x=p[0];GD.y=p[1];GD.z=p[2];
+  /* Snapped, not chased: a new board is a cut, and easing him across the
+     screen from wherever he stood on the last one is a camera move nobody
+     asked for. */
+  GD.px=GD.x;GD.py=GD.y;GD.pz=GD.z;
   GD.mesh.visible=true;
   GD.mesh.position.set(GD.x,GD.y,GD.z);
   guideHide();
-  /* AND NOW HE SPEAKS FIRST, EVERY TIME.
+  /* AND HE WAITS TO BE PRESSED AGAIN.
 
-     He used to wait to be pressed, because the level's name and its hint were
-     on screen saying what the board was about and he was the second opinion.
-     They are not any more - on a level he stands on, `body.gquiet` takes both
-     off (syncHud), on the owner's call: people were reading past them. So the
-     line he has for this level is the only description there is, and a
-     description nobody has tapped is not a description.
+     For one build he said his line by himself on every board, because the
+     level's name and hint had been taken off the levels he stands on and his
+     was the only description there was. Both are back on the owner's call, so
+     the reason is gone: an unprompted bubble over a board that is already
+     captioned is a second description arriving on top of the first, and it
+     covers the puzzle to do it.
 
-     It says itself and then gets out of the way after GUIDE_SAY_MS, and
-     pressing him brings it back - which is the same bubble doing the same
-     job, now with a default. The delay is the level settling: the camera is
-     still moving into frame at 0ms.
-
-     AND IF THIS LEVEL HAS BEATEN YOU TEN TIMES, he says something else
-     instead. The game has already offered a skip twice by then
-     (struggleOffer fires on every third loss); this is not a third offer, it
-     is somebody saying out loud that taking it is allowed. Pressing the
-     bubble is what opens the card. */
+     AND IF THIS LEVEL HAS BEATEN YOU TEN TIMES, he still speaks first. The
+     game has already offered a skip twice by then (struggleOffer fires on
+     every third loss); this is not a third offer, it is somebody saying out
+     loud that taking it is allowed. Pressing the bubble is what opens the
+     card. */
   var n=(typeof fails!=="undefined"&&levelKey&&fails[levelKey])||0;
-  var stuck=n>=GUIDE_STUCK_AT;
-  setTimeout(function(){
-    if(!GD||app!=="play")return;
-    if(stuck)guideSay(GUIDE_STUCK,true);
-    else guideSay(guideTip());
-  },stuck?900:700);
+  if(n>=GUIDE_STUCK_AT)setTimeout(function(){
+    if(GD&&app==="play")guideSay(GUIDE_STUCK,true);
+  },900);
 }
 function guideDrop(){
   if(!GD)return;
@@ -420,13 +416,24 @@ function guideCancel(){
    drawn with the maths the player is drawn with. The bubble is placed by
    projecting his position to the screen, so it follows him round a turn.
    ============================================================ */
-/* One end of the bubble's leash: his drawn position, lifted by `dy` cells
-   and projected to the screen. Reads GD.mesh.position rather than GD.x/y/z
-   because that is where he actually IS on this frame - he folds with the
-   world and lerps into place, and a bubble anchored to his cell would sit
-   off him for the whole of a fold. */
+/* One end of the bubble's leash: a point `dy` cells above or below him,
+   projected to the screen.
+
+   IT READS THE STILL POSITION, NOT THE MESH'S. This is the whole of the
+   wobble fix, and the bug is worth writing down because it is the kind that
+   only shows up on type. He BREATHES - a sine of .035 of a cell on the
+   drawn mesh - and the bubble used to be projected from that mesh, so the
+   text inherited the breath. On a cube two hundredths of a cell is life; on
+   four lines of 11.5px mono it is a one-or-two pixel judder at 60fps, dead
+   centre of the screen, on the one element the player is trying to READ.
+   Rounding to whole pixels made it worse rather than better: a value drifting
+   across a pixel boundary snaps back and forth instead of easing.
+
+   So the bob is applied to the mesh and to nothing else. `GD.px/py/pz` is the
+   same smoothed position without it - the fold still carries the bubble,
+   because the smoothing chases the same folded target the mesh does. */
 function guideAnchor(dy,w,h){
-  gdTmp.copy(GD.mesh.position);gdTmp.y+=dy;gdTmp.project(camera);
+  gdTmp.set(GD.px,GD.py+dy,GD.pz);gdTmp.project(camera);
   return {x:(gdTmp.x*.5+.5)*w, y:(-gdTmp.y*.5+.5)*h};
 }
 function guideFrame(dtMs,rx,rz,tdvx,tdvz,ft){
@@ -435,8 +442,15 @@ function guideFrame(dtMs,rx,rz,tdvx,tdvz,ft){
   var u=GD.x*rx+GD.z*rz;
   var fx=u*rx+1.0*tdvx, fz=u*rz+1.0*tdvz;
   GD.bob+=dtMs*.0013;
-  gdTmp.set(GD.x+(fx-GD.x)*ft, GD.y+Math.sin(GD.bob)*.035, GD.z+(fz-GD.z)*ft);
-  GD.mesh.position.lerp(gdTmp,.3);
+  /* THE SMOOTHED POSITION IS KEPT SEPARATELY FROM THE DRAWN ONE, and the bob
+     is added at the last moment, to the mesh only. Everything that has to be
+     STILL - the bubble, and so the tail under it - reads GD.px/py/pz; see
+     guideAnchor() above. It is the same .3 chase the mesh position was doing,
+     moved one step earlier so that only one thing breathes. */
+  GD.px+=((GD.x+(fx-GD.x)*ft)-GD.px)*.3;
+  GD.py+=(GD.y-GD.py)*.3;
+  GD.pz+=((GD.z+(fz-GD.z)*ft)-GD.pz)*.3;
+  GD.mesh.position.set(GD.px, GD.py+Math.sin(GD.bob)*.035, GD.pz);
   GD.mesh.rotation.y=Math.atan2(tdvx,tdvz);
   if(typeof outlineFor==="function"&&scene)outlineFor(GD.mesh,scene.background);
   /* THE BUBBLE FOLLOWS HIM. Projected every frame rather than placed once,

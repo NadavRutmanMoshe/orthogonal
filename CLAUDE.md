@@ -417,12 +417,19 @@ is the rule.
   and straight at the camera in the other two (`chrome.md`).
   `recomputeBounds()` adds `guidePoint()` to the extents it frames - the one
   line in the renderer that knows he exists.
-- **He is the level's description now, and that is an experiment**
-  (`body.gquiet`, set in `syncHud()` from `guideHere()`): on a level he stands
-  on, the level NAME and HINT come off the HUD and he says his line by himself
-  when the board opens, because people read past the chrome. Two declarations
-  in `css/99-guide.css`; deleting them puts the text back. His bubble flips
-  BELOW him (`.down`) when there is no room over his head.
+- **The level NAME and HINT stay on every level, his included, and he waits to
+  be pressed.** Taking them off his boards and letting him say the line
+  instead (`body.gquiet`) was built, played and reversed on the owner's call
+  in one round - the hole it leaves is bigger than the chrome was, and an
+  unprompted bubble covers the board to say what is already written
+  (`chrome.md`). His one unprompted line is still the stuck one.
+- **THE BUBBLE IS ANCHORED TO A STILL POINT, NOT TO HIS MESH** (`GD.px/py/pz`,
+  `guideAnchor()`). He breathes - a sine of .035 of a cell - and projecting
+  the bubble off the bobbing mesh put that breath into four lines of 11.5px
+  type, which reads as a judder rather than as life. The bob is applied to
+  the mesh and to nothing else. Anything anchored to him must read the still
+  position. His bubble flips BELOW him (`.down`) when there is no room over
+  his head.
 - **Never on a `tutorial:true` level**, and that is the whole placement rule
   (plus no boss, no trial, section 1 only). In PROLOGUE he offered the fold to
   somebody the tutorial had not taught it to yet, and a teaching level already

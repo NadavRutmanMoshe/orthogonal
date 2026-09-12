@@ -126,11 +126,6 @@
   body.athome .gbub,body.instory .gbub,body.mapopen .gbub,
   body.replaying .gbub{display:none}
 
-  /* THE LEVEL'S NAME AND HINT COME OFF THE LEVELS HE STANDS ON. He says the
-     line instead - see the note on `gquiet` in syncHud(). Two declarations,
-     so putting the text back is deleting them. The move count, the star row
-     and the primer are untouched: they are score and rules, not description. */
-  body.gquiet .title,body.gquiet .hint{display:none}
 
   /* HIS LINE ON A WIN CARD. Not a bubble - by the time a level is solved the
      card is what the player is looking at, and a bubble behind it is a line

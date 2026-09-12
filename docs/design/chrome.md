@@ -870,22 +870,45 @@ What does NOT change is the trap the corner was invented for: an offset along
 one horizontal axis only is sideways in two views and straight at the camera
 in the other two. If he ever comes down again, he comes down on a corner.
 
-**He is also the level's description now, and that is an experiment.** On a
-board he stands on, `body.gquiet` (set in `syncHud()` from the same
-`guideHere()` that decides whether he exists) takes the level's NAME and HINT
-off the HUD, and he says his line by himself when the board opens rather than
-waiting to be pressed. The owner's reading of the playtests is that people
-look straight past the two lines at the top of the screen - they are chrome,
-in the place chrome lives - and a person standing over the level talking is
-not. The line still goes away after `GUIDE_SAY_MS` and pressing him still
-brings it back; the name is still on the map, the level sheet and the win
-card. It is two declarations in `css/99-guide.css` and one class, so putting
-the text back is deleting them.
+**He was the level's description for one build, and it was reversed.** On the
+boards he stands on, `body.gquiet` took the level's NAME and HINT off the HUD
+and he said his line by himself when the board opened. The reasoning was
+sound and the owner's own: people look straight past the two lines at the top
+of the screen, because they are chrome in the place chrome lives, and a person
+standing over the level talking is not.
+
+Played, and back out in one round. Two things went wrong with it. The hole is
+bigger than the chrome was - a board with no name and no sentence under it is
+a board you have to work out from scratch, and "ignored" is not "useless":
+the hint is there for the moment you look for it, which is not the moment you
+arrive. And the replacement had to arrive by itself to replace anything, so a
+bubble opened over the puzzle on every single entry, including every restart,
+saying something the player could have read in a quarter of the space without
+anything being covered.
+
+So the name and the hint are on every level again, he is back to being pressed
+when he is wanted, and his one unprompted line is the stuck one. Worth knowing
+this was tried, so that "nobody reads the hint" is not solved this way twice:
+if it comes up again, the answer is to make the hint worth reading, not to
+take it away and put a person in front of it.
 
 One consequence of the height: his bubble no longer fits over his head near
 the top of the screen, so `guideFrame()` projects an anchor above him AND one
 below him and takes whichever fits, with `.down` flipping the tail to the top
 edge of the box.
+
+**And the bubble is anchored to a still point, which is a bug worth keeping in
+mind for anything else pinned to a moving object.** He BREATHES - a sine of
+.035 of a cell applied to the drawn mesh - and the bubble used to be projected
+from that mesh, so the text inherited the breath. On a cube two hundredths of
+a cell is life. On four lines of 11.5px mono it is a one-to-two pixel judder
+at 60fps, and it was reported as exactly that: the text wobbles and it is not
+easy on the eye. Rounding to whole pixels made it worse, not better - a value
+drifting across a pixel boundary snaps rather than eases. `GD.px/py/pz` is now
+the smoothed position WITHOUT the bob, the bob is added to the mesh at the
+last moment, and the bubble reads the still one. Measured across a walk: the
+anchor no longer changes at all, and the only thing that moves the text now is
+the death shake, which moves the whole screen.
 
 **A corner, not an edge, and that took a photograph to find.** The first
 plinth was two squares past the `+x` end of the board, halfway along its
