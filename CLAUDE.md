@@ -395,6 +395,10 @@ is the rule.
   "ssss" for fire, and the fall's own voice for everything unnamed. The
   hunter's was POOF / KAPOOSH / THUD in `settings.bossdie` for one round;
   the owner picked, and the switch came out with the question.
+- **`settings.foldmark` is `"on"`/`"off"`** - Menu > Where you land, the
+  switch on the green block the fold marks. Whitelisted in `loadSettings()`
+  and reset by RESET SETTINGS, like `killcam`. Nothing applies it: the render
+  loop asks `foldMarkOn()` every frame.
 - The buttons default is `UI_DEFAULT` (`js/11-sound.js`, `"none"`). The fresh
   `settings` object and `RESET SETTINGS` both read it, so a reset cannot drift
   away from a first run; any other default belongs next to it, not inlined.
@@ -467,22 +471,25 @@ is the rule.
   fight that ships. A phase's own `aim` is the SHAPE of a fight; this is the
   dial for when every fight is too fast. `h.lock` is set from `bossAim()`, not
   from `ph.aim`, so the line on the floor cannot disagree with its own clock.
-- **The fold's motion is one beat; what teaches rule 5 is a MARK**
-  (`foldHiBuild()`, `js/10-render.js`). While the fold runs, the block you
-  would come back onto is lifted toward the goal's green and takes a bright
-  rim - up before the world moves (`FOLD_HI_IN`), gone by the plane. **Coming
-  back to 3D it runs on the landing rings' own clock** (`landFade()`, the one
-  source for that curve; the mark takes whichever of the two is louder), so
-  it holds for `LAND_MS` after the world has stood up rather than vanishing
-  with the 620ms tween. It is **one per LEDGE**: each screen-right column is
-  walked from the top for a square that is filled with the square above it
-  empty, because a block with something over it cannot be stood on once the
-  world is flat, and the winner is asked for with the game's own
-  `R.landings()`/`R.pick()` so the anchor's override of rule 5 is free. Only
-  columns holding two or more blocks, or a flat meadow goes green on every
-  fold. Peril and the tutorial's landing marker both outrank it. A two-beat
-  fold that gathered the world into the front block was built, played and
-  dropped for this (`controls.md`, `HISTORY.md`).
+- **The fold's motion is one beat; what teaches rule 5 is a MARK, and it is
+  only drawn COMING BACK** (`foldHiBuild()`, `js/10-render.js`). The block you
+  land on is lifted toward the goal's green and takes a bright rim, on
+  **exactly the landing rings' clock** - `landFade()` is the one source for
+  that curve, so the block and the ring around it can never fade apart, and
+  the peek's live rings light it too. It lit on the way INTO 2D as well, off
+  `flatT`, and that half came out on the owner's call: a 520ms fold gives it
+  a few hundred milliseconds, so it read as a flash, and it was answering a
+  question the player had not asked yet. It is **one per LEDGE**: each
+  screen-right column is walked from the top for a square that is filled with
+  the square above it empty, because a block with something over it cannot be
+  stood on once the world is flat, and the winner is asked for with the
+  game's own `R.landings()`/`R.pick()` so the anchor's override of rule 5 is
+  free. Only columns holding two or more blocks, or a flat meadow goes green.
+  Peril and the tutorial's landing marker both outrank it. `foldMarkOn()`
+  (`settings.foldmark`, Menu > Where you land) turns it off; the RINGS are
+  deliberately not on that switch. A two-beat fold that gathered the world
+  into the front block was built, played and dropped for this
+  (`controls.md`, `HISTORY.md`).
 - `INK_SETTLE` .18 and `PAPER_LIFT` .20 are the whole 2D look; both have
   been raised and reverted. The paper is derived from the sky.
 - `DEPTH_STEP` .34 charges the first cell of depth outright; `CAM_TILT` .62

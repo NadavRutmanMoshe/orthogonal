@@ -551,6 +551,19 @@ function menuPanel(){
         "<div class='crow bare'><span class='seg'>"+
           seg("mKcam","full","FULL",settings.killcam)+
           seg("mKcam","plain","PLAIN",settings.killcam)+"</span></div></div>"+
+      /* WHERE YOU LAND, AS A ROW. Coming back to 3D puts you on the block
+         nearest the camera among the ones you can actually reach, and that
+         block goes green while the landing rings hold. It is the only
+         drawing rule 5 has, so it is on by default - but it is a teaching
+         aid, and once the rule is learned it is a colour on the board that
+         answers a question the player has stopped asking. Named for what it
+         marks rather than for how it looks, the same way Kill cam is.
+         The RINGS are not on this switch: they sit beside the block rather
+         than on it, and they are the older statement. */
+      "<div class='pcard'><h4>Where you land</h4>"+
+        "<div class='crow bare'><span class='seg'>"+
+          seg("mMark","on","SHOW",settings.foldmark)+
+          seg("mMark","off","OFF",settings.foldmark)+"</span></div></div>"+
       /* WHAT THE PIECES DO IS OFF THE PANEL, on the owner's call. The pieces
          are taught where they are first met - the tutorial cards and the
          level briefs - and a reference list under More was a fourth row that
@@ -619,6 +632,12 @@ function menuPanel(){
       settings.killcam=m;saveSettings();menuPanel();
     });
   });
+  // Nothing to apply: the render loop asks foldMarkOn() every frame.
+  ["on","off"].forEach(function(m){
+    bind("mMark_"+m,function(){
+      settings.foldmark=m;saveSettings();menuPanel();
+    });
+  });
   bind("mTut",function(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
   });
@@ -641,6 +660,7 @@ function menuPanel(){
   bind("mReset",function(){
     settings.volume=defaultVolume();settings.volTouched=false;
     settings.brightness=1;settings.ui=UI_DEFAULT;settings.killcam="full";
+    settings.foldmark="on";
 
     // including "stop suggesting things": a reset is a reset
     settings.noSlowOffer=false;settings.landHints=0;

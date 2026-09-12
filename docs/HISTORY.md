@@ -1561,6 +1561,24 @@ top, and the winner is asked for with the game's own `R.landings()` /
 `R.pick()` rather than re-derived - which also made the anchor's override of
 rule 5 correct without anything being written for it.
 
+**And then half the mark came out too.** It lit in BOTH directions, and going
+into 2D it was reported as "it disappeared super fast" - which it did, and
+could not help doing: the fold in is 520ms end to end, so a mark that comes up
+before the world moves and is gone by the plane has a few hundred milliseconds
+to exist. The deeper problem is that going in it answers a question the player
+has not asked yet. Nothing has happened; there is no "which one did it pick?"
+until something has picked. A flash on the board with nothing behind it is
+read as something going wrong. Coming back the question is live and the rings
+are already there to answer it, so that is the only direction left, and the
+mark runs on their clock rather than one of its own.
+
+It also got a switch (`settings.foldmark`, Menu > Where you land). Everything
+here is a teaching aid, and a teaching aid nobody can turn off is decoration
+everybody has to keep looking at; a player who has learned rule 5 is entitled
+to want their board back.
+
 Worth remembering: **when an ask is "explain X", try marking X before
-animating X.** The animation is the expensive answer and it is the one that
-can only be inferred; a mark is cheap, exact, and revertible on its own.
+animating X** - the animation is the expensive answer and the only one that
+can only be inferred. And **a cue that fires before anything has happened is
+not early, it is unprompted.** Put it where the question is, not where the
+mechanic starts.

@@ -3328,23 +3328,17 @@ var DEPTH_STEP=.34, DEPTH_SLOPE=.09, DEPTH_CAP=.68;
    re-derived here - which is what makes the anchor's override of rule 5
    correct for free, and what stops the drawing and the rule ever drifting.
    ============================================================ */
-/* HOW FAST THE WINNER LIGHTS UP.
-
-   The block has to be marked BEFORE the world starts moving, or the mark is
-   a caption on something that has already happened. .22 is about a tenth of
-   a second of a 520ms fold: long enough not to snap on, early enough that
-   the blocks are still where the player last saw them when it says which one
-   wins. It goes out again over .58 to .96, so the plane - where there is no
-   depth and the mark would mean nothing - is clean, and on the way back it
-   blooms again exactly as the world stands up. */
-var FOLD_HI_IN=.22, FOLD_HI_OUT_A=.58, FOLD_HI_OUT_B=.96;
 var foldHiT=0;
-// smoothstep over a window of flatT, clamped at both ends
-function foldStage(t,a,b){
-  var p=(t-a)/(b-a);
-  if(p<=0)return 0;
-  if(p>=1)return 1;
-  return p*p*(3-2*p);
+/* THE PLAYER'S OWN SWITCH (`settings.foldmark`, Menu > Where you land).
+
+   The mark is a teaching aid, and a teaching aid that cannot be turned off
+   is decoration everybody has to keep looking at. Off means off: no tint, no
+   rim, and nothing rebuilt per frame either, because `foldHiT` is what gates
+   that work. The landing RINGS are deliberately not on this switch - they
+   are the older statement, they sit beside the block rather than on it, and
+   the sentence under them names them; this is only the block going green. */
+function foldMarkOn(){
+  return !(typeof settings!=="undefined"&&settings.foldmark==="off");
 }
 /* THE BLOCKS THE FOLD HANDS YOU, as cell keys the block loop can test in
    O(1). Rebuilt once a frame while the fold is running, and not at all when
@@ -3935,33 +3929,28 @@ function animate(now){
   setSkyColors(skyWarm);
   layoutAtmosphere(dtMs);
   landFrame(dtMs);
-  /* THE MARK'S STRENGTH, and it has two clocks because the fold has two
-     directions.
+  /* THE MARK'S STRENGTH, and it is the landing rings' own, exactly.
 
-     GOING IN it rides `flatT` - up before the world moves, out before the
-     plane - which is also what keeps peek, the replay's closing fold and
-     every external snap to 0 working untouched.
+     IT USED TO LIGHT GOING INTO 2D AS WELL, off `flatT`, and that half is
+     gone on the owner's call: reported as "it disappeared super fast", which
+     it did and could not help doing. The fold in is 520ms end to end, so a
+     mark that comes up before the world moves and is out before the plane
+     lands has a few hundred milliseconds to be seen - and it is answering a
+     question ("which one will it pick?") the player has not asked yet,
+     because nothing has happened. It is a flash, and a flash on the board is
+     read as something going wrong.
 
-     COMING OUT that is not long enough. The world stands up in 620ms and the
-     mark went with it, so the answer to "which one did it pick" was gone
-     about the time the player finished reading the question. The rings that
-     appear on landing already hold for LAND_MS with a fade at each end, and
-     they are saying the same thing about the same block - so the mark simply
-     takes the LOUDER of the two, and the rings' own envelope carries it for
-     the rest of the second and a half. Same curve, one source (`landFade`),
-     so the block and the ring around it can never fade apart.
-
-     Whichever is louder rather than a third rule: on the way IN there are no
-     rings and flatT has it; on the way OUT the rings are still fading in over
-     their first fifth while flatT still has it, and they take over as it
-     drops. Neither has to know about the other.
+     COMING BACK is where the question is live, and there the rings already
+     answer it: they appear on the landing, hold for LAND_MS and fade at both
+     ends. So the mark simply IS them - same clock, same curve, one source
+     (`landFade`), so the block and the ring around it can never fade apart -
+     and it is on the block itself, which is the only marker that survives
+     being stood on. The peek's live rings light it too, and should: a peek
+     is a preview of coming back, not of going away.
 
      Placed after landFrame so both read the same frame's `landHint`; nothing
      between here and the block loop reads either. */
-  foldHiT=Math.max(
-    foldStage(flatT,0,FOLD_HI_IN)*
-      (1-foldStage(flatT,FOLD_HI_OUT_A,FOLD_HI_OUT_B)),
-    landFade());
+  foldHiT=foldMarkOn()?landFade():0;
   // Nothing is rebuilt while the world is simply standing there in the
   // volume, which is most frames of most sessions.
   if(foldHiT>.01)foldHiBuild(); else foldHiSet={};

@@ -81,7 +81,14 @@ var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false
                  against; the two are a genuine question about how much
                  ceremony a death deserves, and it is the owner's to answer by
                  playing both rather than mine to answer by picking one. */
-              killcam:"full"};
+              killcam:"full",
+              /* THE GREEN BLOCK, on or off. Coming back to 3D the block you
+                 land on is lit for as long as the landing rings hold; this
+                 is the switch that stops it. On by default because it is the
+                 one drawing of rule 5 there is, but a teaching aid nobody can
+                 turn off is decoration - and a player who has learned the
+                 rule is entitled to want their board back. */
+              foldmark:"on"};
 /* How many times the landing rule is spelled out in words. The rings keep
    drawing forever - they are free and they answer the question faster than a
    sentence does - but a line of text on every fold would be nagging. */

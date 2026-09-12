@@ -34,18 +34,31 @@ exclusive - every gesture also has a key and, unless hidden, a button:
   that**; if the turn ever feels mushy again, check the signs before touching
   `TURN_DEG`. `docs/HISTORY.md` has the worked example.
 - two-finger tap - turn right, unchanged: it is a drag that never travelled
-- **THE FOLD MARKS THE BLOCK IT IS ABOUT TO HAND YOU** (`foldHiBuild()`,
-  `FOLD_HI_IN` .22, `FOLD_HI_OUT_A/B` .58/.96, `colFoldHi`, all in
-  `js/10-render.js`). Rule 5 - coming back to 3D puts you on the supporting
-  block nearest the camera - is the one rule nobody could read off the
-  screen. The motion says the world is collapsing; it does not say which of
-  the blocks in a column you will be standing on afterwards. So while the
-  fold runs, that block is lifted toward the goal's green and takes a bright
-  rim, and the motion is left alone. **A two-beat FOLD was built and played
+- **THE FOLD MARKS THE BLOCK IT HANDS YOU BACK** (`foldHiBuild()`,
+  `foldMarkOn()`, `colFoldHi`, all in `js/10-render.js`). Rule 5 - coming
+  back to 3D puts you on the supporting block nearest the camera - is the one
+  rule nobody could read off the screen. The motion says the world is collapsing; it does not say which of
+  the blocks in a column you will be standing on afterwards. So that block is
+  lifted toward the goal's green and takes a bright rim, and the motion is
+  left alone. **Only coming BACK**, which is the owner's call after playing
+  it: the mark lit going into 2D as well, off `flatT`, and a 520ms fold gives
+  it a few hundred milliseconds - reported as "it disappeared super fast",
+  which it did and could not help doing. Worse, going in it answers a
+  question ("which one will it pick?") the player has not asked yet, because
+  nothing has happened; a flash on the board with nothing behind it reads as
+  something going wrong. Coming back the question is live, and the rings are
+  already there to answer it. **A two-beat FOLD was built and played
   instead of this** - the whole world gathering into the front block of each
   column while the camera stayed up in the volume, then flattening - and
   dropped on the owner's call; the mark is what survived it, and it is the
   cheaper half (`docs/HISTORY.md`).
+  **It can be turned off** (`foldMarkOn()`, `settings.foldmark`, Menu > Where
+  you land). A teaching aid nobody can switch off is decoration everybody has
+  to keep looking at, and a player who has learned rule 5 is entitled to want
+  their board back. Off means off: `foldHiT` is 0, so the per-frame rebuild
+  does not run either. The landing RINGS are deliberately not on the switch -
+  they are the older statement, they sit beside the block rather than on it,
+  and the sentence under them names them.
   Four things are load-bearing. **It is asked for with the game's own
   `R.landings()` / `R.pick()`** rather than re-derived, so the anchor's
   override of rule 5 is correct for free and the drawing cannot drift from
@@ -57,22 +70,16 @@ exclusive - every gesture also has a key and, unless hidden, a button:
   squares that are filled with the square above them empty, and the rules are
   asked what standing there would put you on. **Only columns holding two or
   more blocks**, or a flat meadow turns entirely green on every fold and a
-  highlight that marks everything marks nothing. And it **comes up over the
-  first 22% of the fold, before the world moves** - a mark that arrives after
-  the travel is a caption on something that has already happened - then goes
-  out again by .96, so the plane is clean. **On the way back it runs on the
-  LANDING RINGS' clock instead**, which is the owner's call and the right
-  one: the world stands up in 620ms and the mark went with it, so the answer
-  to "which one did it pick" was gone about the time the player finished
-  reading the question. The rings already hold for `LAND_MS` with a fade at
-  each end and are saying the same thing about the same block, so the mark
-  takes whichever of the two is LOUDER (`Math.max`) and their envelope
-  carries it for the rest of the second and a half. One source for that
-  curve, `landFade()`, or the block and the ring around it drift apart;
-  `Math.max` rather than a third rule, because on the way in there are no
-  rings and `flatT` has it, and on the way out they take over as `flatT`
-  drops without either having to know about the other. It is a lift plus a rim
-  rather than a repaint, the same pair the tutorial's landing marker uses,
+  highlight that marks everything marks nothing. And **it runs on the LANDING
+  RINGS' clock, and on nothing else**. The world stands up in 620ms, so a
+  mark tied to the tween was gone about the time the player finished reading
+  the question; the rings
+  already hold for `LAND_MS` with a fade at each end and are saying the same
+  thing about the same block. `landFade()` is the single source for that
+  curve - two copies of it would drift, and "as long as the ring" is a
+  promise two copies cannot keep - so `landFrame()` and the mark both read
+  it, and the block and the ring around it fade as one thing. It is a lift
+  plus a rim rather than a repaint, the same pair the tutorial's marker uses,
   and both PERIL and that marker outrank it - the marker for a sharp reason,
   since it draws its own loser in a dim version of this same green.
 - **THE FOLD IS A TIMED TWEEN, NOT A LERP** (`FOLD_MS_IN` 520, `FOLD_MS_OUT`

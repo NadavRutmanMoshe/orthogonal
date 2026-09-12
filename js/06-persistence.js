@@ -80,6 +80,8 @@ function loadSettings(){
         if(o.ui&&["full","compact","none"].indexOf(o.ui)>=0)settings.ui=o.ui;
         if(o.killcam&&["full","plain"].indexOf(o.killcam)>=0)
           settings.killcam=o.killcam;
+        if(o.foldmark&&["on","off"].indexOf(o.foldmark)>=0)
+          settings.foldmark=o.foldmark;
         /* `pace` is deliberately NOT read any more. The row that set it is
            gone, so a save carrying 0.5 would pin every clock in the game at
            half speed with nothing left to change it - which is the trap this
