@@ -143,6 +143,11 @@ named). Undoing one of these needs the paragraph.
   bar) and 82% during a gesture lesson (`body.tutgest`, which hides the bar),
   86% in landscape. It used to be at 60% - on top of the blocks, with its
   swipe track across them - and players read it as "touch the piece".
+  **Its LABEL had the same fault for longer**: `.glabel` sat 78px above the
+  contact point, which on a 327px phone put the gesture's name straight across
+  the bottom row of blocks while the hand itself was clear of them. 46px (38
+  sideways) is measured off the tallest thing above the contact - the tap's
+  ripple, at 31px - and puts the name in the band with the hand it belongs to.
 - **Icons are solid SVG** with `.lite` / `.dim` / `.ln`; text glyphs at that
   size were reported as missing buttons.
 - **The primer is `L.primer`, at the top, and only SPARRING has one.** A

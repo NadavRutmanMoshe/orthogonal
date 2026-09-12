@@ -191,24 +191,32 @@ body.tutlock .ghost.on{opacity:1}
    than blinking in mid-air. The gradient on a swipe runs from nothing at the
    start to the goal colour at the finish, which states the direction a
    second time for anyone who glances at a still frame. */
-/* The gesture's name, ABOVE the hand. Below it would land in the middle of
-   the fist: the hand hangs *down* from its fingertip, which is the contact
-   point at the ghost's own centre, so everything under that point is drawing.
-   Above it there is only the tap's ripple and the 42px an upward swipe
-   travels, and 78px clears both.
+/* The gesture's name, ABOVE the hand - and MEASURED, not guessed.
 
-   A SIDEWAYS GESTURE NEEDS NOTHING LIKE THAT MUCH, and it is the one that
-   has to fit: 78px of gap put the name back up among the blocks as soon as
-   the hand itself was pushed down clear of them. A horizontal swipe never
-   goes above its own dot, and the two-finger pair's upper contact stops at
-   -29, so 54px clears the lot and keeps the name with the hand it belongs
-   to. `.gy` and the double tap keep the full 78. */
-.glabel{position:absolute;left:50%;top:-78px;transform:translateX(-50%);
+   It sits above because below would land in the middle of the fist: the hand
+   hangs *down* from its fingertip, which is the contact point at the ghost's
+   own centre, so everything under that point is drawing. What is above the
+   contact point is only the tap's ripple (2.4 x a 26px dot, so 31px), the
+   half-span an upward swipe travels, and the hand's own 15px lift.
+
+   IT WAS 78px AND THAT IS TWICE WHAT ANYTHING THERE NEEDS. On the owner's
+   327px phone the name landed straight across the bottom row of blocks while
+   the hand itself sat clear of them in the empty band below - so the label
+   was saying "touch the piece" on its own, which is the exact mistake the
+   hand was moved down the screen to stop. Reported with a screenshot of
+   `00 - First Fold`.
+
+   46px puts the name's underside 86px above the contact point, which still
+   clears the tallest thing up there (the ripple, at 31) nearly three times
+   over, and puts the whole label in the gap between the arena and the hand.
+   A sideways gesture needs even less - it never goes above its own dot - so
+   it keeps its own, tighter value. */
+.glabel{position:absolute;left:50%;top:-46px;transform:translateX(-50%);
   white-space:nowrap;text-transform:uppercase;
   font-family:'IBM Plex Mono',ui-monospace,monospace;
   font-size:15px;font-weight:600;letter-spacing:.16em;color:var(--goal);
   text-shadow:0 2px 10px rgba(0,0,0,.55)}
-.ghost.gx .glabel{top:-54px}
+.ghost.gx .glabel{top:-38px}
 .glabel:empty{display:none}
 .gtrack{position:absolute;left:50%;top:50%;border-radius:3px;
   transform:translate(-50%,-50%);display:none}
