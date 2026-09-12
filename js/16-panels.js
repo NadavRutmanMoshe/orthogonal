@@ -2576,9 +2576,16 @@ function deletePanel(id){
 /* SHARING IS TEXT, and it is now ONE LINE of it - see the share code below.
    It used to be the project file's JSON for a single level, which is the
    same thing said in about five times the characters; the code is what a
-   person can actually paste into a message. Selected on open, because the
-   whole point is to copy it and a textarea you have to drag-select on a
-   phone is not a share button. */
+   person can actually paste into a message.
+
+   IT DOES NOT ASK FOR THE KEYBOARD. The box was focused and selected on
+   open, on the theory that a textarea you have to drag-select on a phone is
+   not a share button - but focusing a textarea on a phone throws the
+   keyboard up over half the screen, and the screen it covers is the one
+   with COPY on it. COPY is the share button, so the box is `readonly` and
+   nothing is focused until the clipboard actually refuses: only then is the
+   text selected, which is the one case where selecting it is the answer
+   rather than the obstacle. */
 function sharePanel(id){
   var lv=findLevel(id);
   if(!lv)return;
@@ -2586,26 +2593,33 @@ function sharePanel(id){
     mlHero(lv)+
     "<div class='note'>Copy this and send it. Whoever gets it pastes it into "+
     "LOAD A LEVEL.</div>"+
-    "<textarea id='shTxt' class='shcode'></textarea>"+
+    "<textarea id='shTxt' class='shcode' readonly></textarea>"+
     "<button class='mlbtn pgo' id='shCopy'>COPY</button>",
     mlFoot("shBack","← MY LEVELS"));
   $("shTxt").value=shareCode(lv);
-  $("shTxt").focus();$("shTxt").select();
   bind("mlClose",hidePanel);
   bind("shBack",myLevelsPanel);
   bind("shCopy",function(){
-    var t=$("shTxt");t.focus();t.select();
+    var t=$("shTxt");
     /* Three ways, because all three fail somewhere real: the async clipboard
        needs a secure context and a permission, execCommand is deprecated but
-       is what an old WebView has, and if both refuse the text is already
-       selected on screen and the player can copy it by hand. */
+       is what an old WebView has, and if both refuse the text is selected on
+       screen and the player can copy it by hand.
+
+       Only the last two touch the box. execCommand("copy") copies the
+       SELECTION, so it has to select first - and by then the clipboard has
+       already refused, so the keyboard it brings up is the price of the
+       fallback rather than the cost of opening the screen. */
     var done=false;
     try{
       if(navigator.clipboard&&navigator.clipboard.writeText){
         navigator.clipboard.writeText(t.value);done=true;
       }
     }catch(e){}
-    if(!done){try{done=document.execCommand("copy");}catch(e){}}
+    if(!done){
+      t.focus();t.select();
+      try{done=document.execCommand("copy");}catch(e){}
+    }
     flash(done?"copied":"select it and copy");
   });
 }
