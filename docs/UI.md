@@ -148,6 +148,10 @@ named). Undoing one of these needs the paragraph.
   the bottom row of blocks while the hand itself was clear of them. 46px (38
   sideways) is measured off the tallest thing above the contact - the tap's
   ripple, at 31px - and puts the name in the band with the hand it belongs to.
+  **The stroke is `GHOST_SPAN` (`js/15-tutorial.js`) and the track is twice
+  it**, so the two move together: 100px sideways, 76px up and down, raised
+  from 56/42 because a centimetre of travel demonstrates a flick rather than
+  a swipe.
 - **Icons are solid SVG** with `.lite` / `.dim` / `.ln`; text glyphs at that
   size were reported as missing buttons.
 - **The primer is `L.primer`, at the top, and only SPARRING has one.** A

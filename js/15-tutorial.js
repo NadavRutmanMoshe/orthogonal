@@ -143,8 +143,16 @@ function tutGestureLesson(){
 }
 /* How far the finger travels, in pixels, per direction. Horizontal gets more
    room than vertical because the demo box is wider than it is tall - and the
-   track is sized to match in the CSS, by the same gx / gy class. */
-var GHOST_SPAN={right:[56,0],left:[-56,0],up:[0,-42],down:[0,42]};
+   track is sized to match in the CSS, by the same gx / gy class (the track is
+   twice the travel, both ways, so the path is visibly longer than the stroke).
+
+   NEARLY DOUBLED ON THE OWNER'S CALL, from 56/42. At the old size the finger
+   moved about a centimetre on a phone, which is a shorter stroke than any
+   swipe a player would actually make - so the demonstration was of a flick
+   rather than of the gesture, and a flick is the thing the gesture reader is
+   most likely to miss. Nothing clips at the new size: `.ghost` is 190x118
+   with no `overflow`, and the hand and the track are free to run past it. */
+var GHOST_SPAN={right:[100,0],left:[-100,0],up:[0,-76],down:[0,76]};
 /* Restart every loop in the hand from the top.
 
    Called only when the demonstration actually changes, and it has to be

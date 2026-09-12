@@ -221,8 +221,8 @@ body.tutlock .ghost.on{opacity:1}
 .gtrack{position:absolute;left:50%;top:50%;border-radius:3px;
   transform:translate(-50%,-50%);display:none}
 .ghost.g-swipe .gtrack,.ghost.g-two .gtrack,.ghost.g-dbl .gtrack{display:block}
-.ghost.gx .gtrack{width:112px;height:4px}
-.ghost.gy .gtrack{width:4px;height:84px}
+.ghost.gx .gtrack{width:200px;height:4px}
+.ghost.gy .gtrack{width:4px;height:152px}
 .ghost.d-right .gtrack{background:linear-gradient(90deg,
   rgba(53,194,165,.05),rgba(53,194,165,.5))}
 .ghost.d-left .gtrack{background:linear-gradient(270deg,
