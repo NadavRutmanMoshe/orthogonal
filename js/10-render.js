@@ -3329,6 +3329,56 @@ var DEPTH_STEP=.34, DEPTH_SLOPE=.09, DEPTH_CAP=.68;
    correct for free, and what stops the drawing and the rule ever drifting.
    ============================================================ */
 var foldHiT=0;
+/* THE MARK'S OWN CLOCK, and it needs one - this is the bug that shipped.
+
+   It used to read `landFade()` outright, on the reasoning that the mark and
+   the landing rings say the same thing about the same block and should fade
+   as one. They do, but the rings have a TRIGGER as well as a clock, and it
+   is deliberately narrow: `doUnflatten()` only calls `showLanding()` when
+   the column held MORE THAN ONE candidate, because rings drawn round a
+   single block announce a choice nobody made. Reading their fade inherited
+   that trigger, so on `03 - A Real Challenge` - where every square you
+   actually climb to has exactly one candidate - coming back to 3D lit
+   nothing at all. Reported in exactly those words.
+
+   So the mark starts on EVERY unfold and runs for LAND_MS on its own count.
+   Same envelope (`landEnvelope`), so where the rings do appear the two still
+   fade as one thing; different trigger, because "where did I land" is a
+   question every landing raises and "which one did it pick" is not.
+
+   Pinned to the level it started on: a level that loads inside the second
+   and a half - winning on the unfold, say - would otherwise inherit a
+   running mark and flash its own blocks. */
+/* AND IT BREATHES, which is the half of this that colour cannot do.
+
+   A tint alone is only ever as loud as the difference between it and the
+   ground under it, and on the NATURE world the ground is green - so a mark
+   in the goal's green was nearly invisible on exactly the levels where the
+   teaching happens. Both reports of this came from grass.
+
+   Brightness plus a breath is the answer the tutorial's own landing marker
+   already reached, for the same reason and in the same words: "a block that
+   is visibly alive is unmistakable". Motion does not care what colour it is
+   over. Two breaths across the mark's life, counted off its own clock rather
+   than off the wall, so every mark looks the same from its own first frame
+   instead of catching the sine wherever it happened to be. */
+var FOLD_BREATH_MS=780;
+var foldMarkT=-1, foldMarkL=null, foldMarkPh=0, foldMarkBreath=.5;
+function foldMarkStart(){
+  foldMarkT=0;foldMarkPh=0;foldMarkL=(typeof L!=="undefined")?L:null;
+}
+function foldMarkFade(dtMs){
+  if(typeof L!=="undefined"&&foldMarkL&&foldMarkL!==L)foldMarkT=-1;
+  foldMarkPh+=dtMs;
+  foldMarkBreath=.5+.5*Math.sin(foldMarkPh/FOLD_BREATH_MS*Math.PI*2);
+  // Flat: no landing to mark, but a peek is a preview of one and lights the
+  // same block. Folding again ends the count, the way it ends the rings'.
+  if(flat){foldMarkT=-1;return planePeek>.05?peekFade():0;}
+  if(foldMarkT<0)return 0;
+  foldMarkT+=dtMs;
+  if(foldMarkT>=LAND_MS){foldMarkT=-1;return 0;}
+  return landEnvelope(foldMarkT/LAND_MS);
+}
 /* THE PLAYER'S OWN SWITCH (`settings.foldmark`, Menu > Where you land).
 
    The mark is a teaching aid, and a teaching aid that cannot be turned off
@@ -3390,6 +3440,18 @@ function foldHiBuild(){
       var w=R.pick(land);
       foldHiSet[K(w.x,y,w.z)]=1;
     }
+  }
+  /* AND THE BLOCK UNDER YOUR OWN FEET, whatever the rules above decided.
+
+     Those rules are about columns where something was chosen, and they are
+     right to be - but the one block the player is actually asking about is
+     the one they are standing on, and a column holding a single block would
+     leave it out. "I came back, show me where" must never come up empty. */
+  if(flat){
+    var lp=(typeof peekLanding==="function")?peekLanding():null;
+    if(lp&&flatPos)foldHiSet[K(lp.win.x,flatPos.y-1,lp.win.z)]=1;
+  } else if(app==="play"&&!dying){
+    foldHiSet[K(player.x,player.y-1,player.z)]=1;
   }
 }
 
@@ -3757,14 +3819,18 @@ function tutLandMark(dtMs){
    the mark to last as long as the ring on the block you are stood on, and
    "as long as" is a promise two copies of a curve cannot keep. One
    expression, two things reading it. */
+/* The shape both of them fade with: in over the first fifth - the world is
+   still standing up before that - and out over the last third, so neither
+   ever just vanishes. `p` is 0..1 through LAND_MS. */
+function landEnvelope(p){
+  return Math.max(0,Math.min(1,p/.2)*Math.min(1,(1-p)/.34));
+}
+// A peek belongs to the finger, not to a clock.
+function peekFade(){return Math.max(0,Math.min(1,(planePeek-.05)/.35));}
 function landFade(){
   if(!landHint)return 0;
-  // The peek's rings belong to the finger, not to a clock.
-  if(landHint.live)return Math.max(0,Math.min(1,(planePeek-.05)/.35));
-  var p=landHint.t/LAND_MS;
-  // in over the first fifth - the world is still standing up before that -
-  // and out over the last third, so it never just vanishes
-  return Math.max(0,Math.min(1,p/.2)*Math.min(1,(1-p)/.34));
+  if(landHint.live)return peekFade();
+  return landEnvelope(landHint.t/LAND_MS);
 }
 function landFrame(dtMs){
   var i;
@@ -3950,7 +4016,7 @@ function animate(now){
 
      Placed after landFrame so both read the same frame's `landHint`; nothing
      between here and the block loop reads either. */
-  foldHiT=foldMarkOn()?landFade():0;
+  foldHiT=foldMarkOn()?foldMarkFade(dtMs):0;
   // Nothing is rebuilt while the world is simply standing there in the
   // volume, which is most frames of most sessions.
   if(foldHiT>.01)foldHiBuild(); else foldHiSet={};
@@ -4189,10 +4255,18 @@ function animate(now){
        place edge colours are restored from. */
     if(foldHiT>.01&&foldHiSet[k]&&!(perilSet&&perilSet[k])&&
        !(tutMarkSet&&tutMarkSet[k])){
-      m.material.color.lerp(colFoldHi,.46*foldHiT);
+      /* WHITE FIRST, THEN THE TEAL, AND ALL OF IT BREATHING. A tint straight
+         to the goal's green is nearly invisible on the nature world - green
+         on green - which is where both reports of this came from. A lift
+         toward white brightens any surface the game has; the teal on top of
+         it names the colour; the breath is what carries it when neither is
+         enough. Same three things the tutorial's landing marker uses, in the
+         same order and for the same reason. */
+      var hk=foldHiT*(.58+.42*foldMarkBreath);
+      m.material.color.lerp(colWhite,.50*hk).lerp(colFoldHi,.26*hk);
       m.userData.edge.material.color.set(0x9dffe8);
       m.userData.edge.material.opacity=Math.max(
-        m.userData.edge.material.opacity,.25+.75*foldHiT);
+        m.userData.edge.material.opacity,.30+.70*hk);
       m.material.opacity=1;
       if(perilCleanup.indexOf(k)<0)perilCleanup.push(k);
     }

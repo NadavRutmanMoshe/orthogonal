@@ -2134,10 +2134,15 @@ function doUnflatten(){
   player.x=b.x;player.z=b.z;player.y=flatPos.y;
   trailHere();
   flat=false;flatTarget=0;SFX.unfold();foldJolt(false);
-  /* RULE 5, SHOWN. Only when the column actually held a choice - see
-     showLanding() - so it is silent on the levels where nothing was decided
-     and speaks on the ones that turn on it. The sentence goes with it the
-     first few times only: after that the rings say it faster than words. */
+  /* RULE 5, SHOWN, and the two halves have different triggers on purpose.
+
+     THE MARK on the block itself starts on every landing: "where did I come
+     back?" is a question every unfold raises. THE RINGS only appear when the
+     column actually held a choice - see showLanding() - because rings drawn
+     round a single block announce a decision nobody made. Tying the mark to
+     the rings' trigger is what left it dark on the levels whose squares have
+     one candidate each; see foldMarkStart() in js/10-render.js. */
+  if(typeof foldMarkStart==="function")foldMarkStart();
   if(typeof showLanding==="function"&&land.length>1){
     b.yStand=flatPos.y;
     showLanding(land,b,!!b.anchor);

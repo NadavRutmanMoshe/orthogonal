@@ -70,16 +70,42 @@ exclusive - every gesture also has a key and, unless hidden, a button:
   squares that are filled with the square above them empty, and the rules are
   asked what standing there would put you on. **Only columns holding two or
   more blocks**, or a flat meadow turns entirely green on every fold and a
-  highlight that marks everything marks nothing. And **it runs on the LANDING
-  RINGS' clock, and on nothing else**. The world stands up in 620ms, so a
-  mark tied to the tween was gone about the time the player finished reading
-  the question; the rings
+  highlight that marks everything marks nothing. **The block under your own
+  feet is added to that set unconditionally**, though: those rules are about
+  columns where something was CHOSEN, and they are right to be, but the one
+  block the player is asking about is the one they are standing on. "I came
+  back, show me where" must never come up empty.
+  **It runs for `LAND_MS` on ITS OWN clock, started by every unfold.** It
+  read `landFade()` outright for one build, on the reasoning that the mark
+  and the rings say the same thing and should fade as one - but the rings
+  have a TRIGGER as well as a clock, and it is deliberately narrow
+  (`doUnflatten` only calls `showLanding` when the column held more than one
+  candidate, because rings round a single block announce a choice nobody
+  made). Reading their fade inherited that trigger, and on
+  `03 - A Real Challenge`, where every square you climb to has exactly one
+  candidate, coming back lit nothing at all. Same envelope
+  (`landEnvelope`), so where the rings do appear the two still fade as one
+  thing; different trigger, because "where did I land" is a question every
+  landing raises and "which one did it pick" is not. The world stands up in
+  620ms, so a mark tied to the fold TWEEN was gone about the time the player
+  finished reading the question; the rings
   already hold for `LAND_MS` with a fade at each end and are saying the same
   thing about the same block. `landFade()` is the single source for that
   curve - two copies of it would drift, and "as long as the ring" is a
   promise two copies cannot keep - so `landFrame()` and the mark both read
-  it, and the block and the ring around it fade as one thing. It is a lift
-  plus a rim rather than a repaint, the same pair the tutorial's marker uses,
+  it, and the block and the ring around it fade as one thing.
+  **And it BREATHES, which is the half of this that colour cannot do.** A
+  tint is only ever as loud as the difference between it and the ground under
+  it, and on the NATURE world the ground is green - so a mark in the goal's
+  green was nearly invisible on exactly the levels where the teaching
+  happens. Both reports of it being missed came from grass. So the lift goes
+  toward WHITE first (which brightens any surface the game has) and leans
+  teal after, and the whole thing swings on `FOLD_BREATH_MS` - twice across
+  the mark's life, counted off its own clock rather than off the wall, so
+  every mark looks the same from its own first frame. Brightness plus a
+  breath is what the tutorial's landing marker already reached, in the same
+  words: a block that is visibly alive is unmistakable. It is a lift
+  plus a rim rather than a repaint, the same pair that marker uses,
   and both PERIL and that marker outrank it - the marker for a sharp reason,
   since it draws its own loser in a dim version of this same green.
 - **THE FOLD IS A TIMED TWEEN, NOT A LERP** (`FOLD_MS_IN` 520, `FOLD_MS_OUT`

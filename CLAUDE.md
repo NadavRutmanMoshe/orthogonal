@@ -473,10 +473,13 @@ is the rule.
   from `ph.aim`, so the line on the floor cannot disagree with its own clock.
 - **The fold's motion is one beat; what teaches rule 5 is a MARK, and it is
   only drawn COMING BACK** (`foldHiBuild()`, `js/10-render.js`). The block you
-  land on is lifted toward the goal's green and takes a bright rim, on
-  **exactly the landing rings' clock** - `landFade()` is the one source for
-  that curve, so the block and the ring around it can never fade apart, and
-  the peek's live rings light it too. It lit on the way INTO 2D as well, off
+  land on is lifted toward white, leans teal, takes a bright rim and
+  **breathes** - colour alone is invisible on the nature world, green on
+  green. It runs for `LAND_MS` on **its own clock, started by every unfold**
+  (`foldMarkStart()` in `doUnflatten`), sharing the rings' envelope
+  (`landEnvelope`) but not their trigger: the rings only appear when the
+  column held more than one candidate, and reading their fade outright left
+  the mark dark on every level whose squares have one. A peek lights it too. It lit on the way INTO 2D as well, off
   `flatT`, and that half came out on the owner's call: a 520ms fold gives it
   a few hundred milliseconds, so it read as a flash, and it was answering a
   question the player had not asked yet. It is **one per LEDGE**: each
@@ -484,7 +487,9 @@ is the rule.
   the square above it empty, because a block with something over it cannot be
   stood on once the world is flat, and the winner is asked for with the
   game's own `R.landings()`/`R.pick()` so the anchor's override of rule 5 is
-  free. Only columns holding two or more blocks, or a flat meadow goes green.
+  free. Only columns holding two or more blocks, or a flat meadow goes green -
+  plus the block under your own feet, always, or "show me where I landed" can
+  come up empty.
   Peril and the tutorial's landing marker both outrank it. `foldMarkOn()`
   (`settings.foldmark`, Menu > Where you land) turns it off; the RINGS are
   deliberately not on that switch. A two-beat fold that gathered the world
