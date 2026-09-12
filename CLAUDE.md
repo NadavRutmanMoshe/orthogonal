@@ -467,6 +467,18 @@ is the rule.
   fight that ships. A phase's own `aim` is the SHAPE of a fight; this is the
   dial for when every fight is too fast. `h.lock` is set from `bossAim()`, not
   from `ph.aim`, so the line on the floor cannot disagree with its own clock.
+- **The fold is two beats and `foldPath()` (`js/10-render.js`) is both of
+  them**: every block travels into the front block of its own silhouette
+  column while the camera is still up in the volume (the GATHER, `flatT` 0 to
+  `FOLD_GATHER_END`), and only then does the camera come down and the stack
+  slide onto the plane (the SHEET, from `FOLD_SHEET_START`). That is rule 5
+  drawn. It stops `FOLD_GATHER_KEEP` short of the front block so coincident
+  cards cannot z-fight, and the squash rides the gather so what arrives is
+  already a card. Everything that folds goes through it - blocks, crates, the
+  pack, the goal, the rings, the player, the cutscene cast - and the player is
+  the one split case: only its DEPTH goes through, its screen-right and height
+  still ride `flatT`. Unfolding is the same two beats in reverse for free
+  (`controls.md`).
 - `INK_SETTLE` .18 and `PAPER_LIFT` .20 are the whole 2D look; both have
   been raised and reverted. The paper is derived from the sky.
 - `DEPTH_STEP` .34 charges the first cell of depth outright; `CAM_TILT` .62

@@ -34,8 +34,41 @@ exclusive - every gesture also has a key and, unless hidden, a button:
   that**; if the turn ever feels mushy again, check the signs before touching
   `TURN_DEG`. `docs/HISTORY.md` has the worked example.
 - two-finger tap - turn right, unchanged: it is a drag that never travelled
-- **THE FOLD IS A TIMED TWEEN, NOT A LERP** (`FOLD_MS_IN` 520, `FOLD_MS_OUT`
-  620, `FOLD_MS_CLOCK` 380, in `js/05-state.js`). It used to be
+- **THE FOLD GOES THROUGH THE BLOCK NEAREST THE CAMERA, IN TWO BEATS**
+  (`foldPath()`, `FOLD_GATHER_END` .58, `FOLD_SHEET_START` .44,
+  `FOLD_GATHER_KEEP` .94, all in `js/10-render.js`). Rule 5 - coming back to
+  3D puts you on the supporting block nearest the camera - is the one rule
+  nobody could read off the screen, because the fold used to say nothing
+  about it: every block slid straight to the plane along its own line of
+  sight and arrived as an undifferentiated sheet, so which block you were
+  about to stand on was information the animation had, threw away, and then
+  surprised you with. Now: **(1) the GATHER**, every block travels along the
+  view axis into the front block of its own silhouette column, flattening
+  into a card as it goes, with the camera still up in the volume so the
+  travel is seen as travel *through depth*; **(2) the SHEET**, the camera
+  comes down to the axis and the stack slides onto the plane. Unfolding is
+  the same two beats backwards for free - `flatT` runs 1 → 0, the camera
+  lifts while the world is still one stack, and then the blocks come back
+  OUT of the front block to their own depths, which is the rule read out
+  loud in reverse. Three things are load-bearing: the **gather stops six per
+  cent short** of the front block, because two blocks arriving at exactly the
+  same depth are coplanar boxes that z-fight (the same reason the flat plane
+  has always kept `d*.012` between its cards); the **squash is driven off the
+  gather rather than off `flatT`**, so what arrives at the front is a card
+  .04 deep, smaller than the residue; and the **silhouette column is keyed on
+  `AX[view]`, the snapped basis**, not on the eased `viewAngle` the drawing
+  uses, or the key is a float with noise on it and never matches. Everything
+  that folds goes through `foldPath()` - blocks, crates, the pack, the goal,
+  the landing rings, the player and the cutscene cast - so none of them can
+  disagree about where the middle of a fold is. The player is the one split
+  case: screen-right and height still travel on `flatT` (that is only where
+  they end up), and **only the depth** goes through `foldPath`, so the piece
+  rides forward onto the block it is about to be stood on.
+- **THE FOLD IS A TIMED TWEEN, NOT A LERP** (`FOLD_MS_IN` 760, `FOLD_MS_OUT`
+  860, `FOLD_MS_CLOCK` 380, in `js/05-state.js`; the first two were 520/620
+  and were raised to give the two beats above room - run together, the gather,
+  which is the whole explanation, went past before it could be watched). It
+  used to be
   `flatT += (want-flatT)*rate`, which is an exponential ease-*out*: most of
   the travel happens in the first few frames and the rest is half a second of
   creeping the last two percent. So the verb the whole game is built on was

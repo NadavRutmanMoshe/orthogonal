@@ -29,7 +29,12 @@ var foldSlamT=0, foldSlamDir=-1;
    up is the slower of the two because it is the one moment that shows you
    travelling to the front of the stack. On a clock both are cut short - the
    fight cannot wait most of a second for the picture. */
-var FOLD_MS_IN=520, FOLD_MS_OUT=620, FOLD_MS_CLOCK=380;
+/* THE FOLD NOW HAS TWO BEATS TO FIT IN (js/10-render.js): the gather into
+   the block nearest the camera, then the sheet. At 520/620 the two of them
+   ran together and the first one - which is the whole explanation of rule 5 -
+   went past before it could be watched. The clock keeps its own short one:
+   in a fight half a second is a real cost. */
+var FOLD_MS_IN=760, FOLD_MS_OUT=860, FOLD_MS_CLOCK=380;
 /* The tween's own state, owned by 10-render.js. `foldLast` is what the loop
    last wrote to flatT, which is how an external write to it is noticed. */
 var foldBase=0, foldFrom=0, foldP=1, foldWas=0, foldLast=0;

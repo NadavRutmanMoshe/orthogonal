@@ -2921,8 +2921,8 @@ function drawBoss(rx,rz,tdvx,tdvz){
     var h=hunters[i];
     m.visible=true;
     var hu=h.x*rx+h.z*rz, hd=h.x*tdvx+h.z*tdvz;
-    var px=hu*rx+hd*.012*tdvx, pz=hu*rz+hd*.012*tdvz;
-    tmp.set(h.x+(px-h.x)*flatT, h.y, h.z+(pz-h.z)*flatT);
+    var hdn=foldPath(hu,h.y,hd,hd*.012);
+    tmp.set(hu*rx+hdn*tdvx, h.y, hu*rz+hdn*tdvz);
     // Snapped rather than eased when it is a long way off: a hunter thrown
     // back to its spawn should arrive there, not glide across the arena.
     m.position.lerp(tmp, m.position.distanceTo(tmp)>2.5?1:.35);
@@ -3303,6 +3303,99 @@ function onResize(){
    visibly receded, which is a categorical statement rather than a gradient
    the eye has to measure. */
 var DEPTH_STEP=.34, DEPTH_SLOPE=.09, DEPTH_CAP=.68;
+/* ============================================================
+   THE FOLD GOES THROUGH THE BLOCK NEAREST THE CAMERA
+
+   Rule 5 is the one rule of this game nobody reads off the screen: coming
+   back to 3D puts you on the SUPPORTING BLOCK NEAREST THE CAMERA. The fold
+   used to say nothing about it. Every block slid straight to the plane at
+   once, along its own line of sight, and arrived as an undifferentiated
+   sheet - so which block you were about to be stood on was information the
+   animation had, threw away, and then surprised you with a second later.
+
+   So the fold is TWO BEATS instead of one, and the first one is the lesson:
+
+     1. THE GATHER. Every block travels along the view axis into the front
+        block of its own silhouette column - the one nearest the camera, the
+        one you would land on - flattening into a card as it goes. The front
+        block does not move at all; everything behind it comes to IT. The
+        camera is still in the volume for this, tilted, so the travel is
+        seen as travel through depth rather than as a fade.
+     2. THE SHEET. Only then does the camera come down to the axis and the
+        stack slide onto the plane, which is the "and now it is 2D" beat.
+
+   Unfolding is the same two beats backwards, and it costs nothing extra to
+   say so: `flatT` runs 1 -> 0, the sheet undoes first (the camera lifts,
+   the world is still one stack), and then the blocks come back OUT of the
+   front block to their own depths. Which is the rule read out loud in
+   reverse: you were on the front one, and here is everything that was
+   hiding behind it.
+
+   THE GATHER STOPS SIX PER CENT SHORT, and that is not a detail. Two blocks
+   in a column that arrive at exactly the same depth are two coincident
+   boxes: their top faces are coplanar and z-fight, which reads as the world
+   tearing. Six per cent of the gap keeps them ordered - the same trick the
+   flat plane itself has always used with `d*.012` - and by the time they are
+   that close they are cards .04 deep, so the residue is bigger than they
+   are. The squash is driven off the GATHER, not off `flatT`, for exactly
+   this reason: the flattening has to have happened by the time they meet.
+
+   The two stages overlap by a hair (.44 to .58) so there is no dead frame
+   between them where nothing is moving.
+   ============================================================ */
+var FOLD_GATHER_END=.58, FOLD_SHEET_START=.44, FOLD_GATHER_KEEP=.94;
+var foldGatherT=0, foldSheetT=0;
+// smoothstep over a window of flatT, clamped at both ends
+function foldStage(t,a,b){
+  var p=(t-a)/(b-a);
+  if(p<=0)return 0;
+  if(p>=1)return 1;
+  return p*p*(3-2*p);
+}
+/* THE FRONT OF EVERY SILHOUETTE COLUMN, rebuilt once a frame off the block
+   table. Keyed on (screen-right, height), because that pair IS the
+   silhouette cell - everything sharing it merges into one square when the
+   world folds, and the nearest of them is what rule 5 hands back.
+
+   Built off `AX[view]`, the SNAPPED basis, rather than off the eased
+   `viewAngle` the drawing uses: u has to come out an exact integer or the
+   key is a float with noise on it and nothing ever matches. The two agree
+   whenever a fold is running, because turning is refused in the plane and
+   the fold is refused during a turn. */
+var foldFront={};
+function foldFrontBuild(){
+  foldFront={};
+  var ax=AX[view], r0=ax.r[0], r2=ax.r[2], d0=ax.d[0], d2=ax.d[2];
+  for(var k in meshes){
+    var b=meshes[k].userData.base;
+    var key=(b[0]*r0+b[2]*r2)+"|"+b[1], d=b[0]*d0+b[2]*d2;
+    if(!(key in foldFront)||d>foldFront[key])foldFront[key]=d;
+  }
+}
+/* WHERE ALONG THE VIEW AXIS TO DRAW SOMETHING, THIS FRAME.
+
+   `u` is its screen-right coordinate, `y` its height, `d` its own depth and
+   `dEnd` the depth the finished plane puts it at. Everything that folds goes
+   through here, so the blocks, the crates, the pack, the goal, the landing
+   rings and the player cannot disagree about where the middle of a fold is.
+
+   The column is looked up at the thing's own height FIRST and at the one
+   below it second, and that second lookup is what carries everything that is
+   not a block: the player, a crate and the goal all sit in the empty cell
+   ABOVE the block they belong to, so their own row is usually empty and the
+   row under it is the stack they have to travel with. Without it the player
+   stood still while the block under their feet slid away.
+
+   With no column either way it does not gather at all and simply slides to
+   the plane, which is the old behaviour and the right one for a thing with
+   nothing under it - something falling out of the world, say. */
+function foldPath(u,y,d,dEnd){
+  var key=Math.round(u)+"|", f=foldFront[key+y];
+  if(f===undefined)f=foldFront[key+(y-1)];
+  if(f===undefined)f=d;
+  var dg=d+(f-d)*foldGatherT*FOLD_GATHER_KEEP;
+  return dg+(dEnd-dg)*foldSheetT;
+}
 
 /* HOW FAR THE CAMERA LEANS - the one structural lever on depth ambiguity.
 
@@ -3696,9 +3789,9 @@ function landRingsDraw(fade){
   for(i=0;i<landHint.cells.length;i++){
     var c=landHint.cells[i],m=landRing(i);
     m.visible=true;
-    var cu=c.x*rx+c.z*rz, cd=c.x*dvx+c.z*dvz, cfd=cd*.012;
-    var cpx=cu*rx+cfd*dvx, cpz=cu*rz+cfd*dvz;
-    m.position.set(c.x+(cpx-c.x)*flatT,c.y,c.z+(cpz-c.z)*flatT);
+    var cu=c.x*rx+c.z*rz, cd=c.x*dvx+c.z*dvz;
+    var cdn=foldPath(cu,c.y,cd,cd*.012);
+    m.position.set(cu*rx+cdn*dvx,c.y,cu*rz+cdn*dvz);
     /* The winner in the colour of whatever decided it - amber when an anchor
        overrode the rule, the goal's green when it was simply the nearest -
        and the ones that lost in a dim version of the same, so the choice is
@@ -3806,6 +3899,14 @@ function animate(now){
   }
   flatT=ftWant;
   foldLast=flatT;               // see the external-write test above
+  /* The fold's two beats, both derived from flatT so that peek, the replay's
+     closing fold and every external snap to 0 keep working untouched. */
+  foldGatherT=foldStage(flatT,0,FOLD_GATHER_END);
+  foldSheetT =foldStage(flatT,FOLD_SHEET_START,1);
+  // Standing in the volume nothing reads the map - foldPath with both stages
+  // at zero hands back the thing's own depth - so it is not rebuilt there,
+  // which is most frames of most sessions.
+  if(flatT>0)foldFrontBuild();
   viewAngle+=(viewAngleTarget-viewAngle)*.16;
   /* THE WEATHER. Driven off real frame time like the fight clocks, so it
      runs at the same rate on a 120Hz phone and a loaded one - and folded,
@@ -3891,7 +3992,11 @@ function animate(now){
   var dvx=Math.sin(a),dvz=Math.cos(a);
   var ta=viewAngle*Math.PI/180;
   var tdvx=Math.sin(ta),tdvz=Math.cos(ta),rx=Math.cos(ta),rz=-Math.sin(ta);
-  var tilt=(1-flatT)*CAM_TILT;
+  /* The camera holds its angle through the gather and only comes down to the
+     axis for the sheet. That is what makes the first beat readable: the
+     blocks are seen travelling THROUGH depth, which they cannot be once the
+     camera is looking along it. */
+  var tilt=(1-foldSheetT)*CAM_TILT;
   if(dying)shakeT=Math.min(1,shakeT+.12); else shakeT*=.86;
   /* Both of these are camera offsets in WORLD units, so a level drawn at
      twice the scale would feel half the kick - `viewSize` is the frustum's
@@ -3935,10 +4040,12 @@ function animate(now){
     var m=meshes[k],b=m.userData.base;
     if(m.userData.mark)m.userData.mark.visible=flatT<.45;
     if(m.userData.trail)m.userData.trail.visible=flatT<.45;
-    var u=b[0]*rx+b[2]*rz,d=b[0]*tdvx+b[2]*tdvz,fd=d*.012;
-    var px=u*rx+fd*tdvx,pz=u*rz+fd*tdvz;
-    m.position.set(b[0]+(px-b[0])*flatT,b[1],b[2]+(pz-b[2])*flatT);
-    var s=1-.96*flatT;
+    var u=b[0]*rx+b[2]*rz,d=b[0]*tdvx+b[2]*tdvz;
+    var dn=foldPath(u,b[1],d,d*.012);
+    m.position.set(u*rx+dn*tdvx,b[1],u*rz+dn*tdvz);
+    // ...and it flattens as it TRAVELS, so what arrives at the front block is
+    // a card rather than a cube (see FOLD_GATHER_KEEP).
+    var s=1-.96*foldGatherT;
     m.scale.set(1-(1-s)*Math.abs(tdvx),1,1-(1-s)*Math.abs(tdvz));
     if(perilSet&&perilSet[k]){
       /* Marked as the thing that will crush you. Deliberately NOT passed
@@ -4044,11 +4151,11 @@ function animate(now){
   for(var ci=0;ci<crateMeshes.length;ci++){
     var cm=crateMeshes[ci],cb=gCrates[ci];
     if(!cb)continue;
-    var cu=cb[0]*rx+cb[2]*rz, cd=cb[0]*tdvx+cb[2]*tdvz, cfd=cd*.012;
-    var cpx=cu*rx+cfd*tdvx, cpz=cu*rz+cfd*tdvz;
-    tmp.set(cb[0]+(cpx-cb[0])*flatT, cb[1], cb[2]+(cpz-cb[2])*flatT);
+    var cu=cb[0]*rx+cb[2]*rz, cd=cb[0]*tdvx+cb[2]*tdvz;
+    var cdn=foldPath(cu,cb[1],cd,cd*.012);
+    tmp.set(cu*rx+cdn*tdvx, cb[1], cu*rz+cdn*tdvz);
     cm.position.lerp(tmp,.3);
-    var cs=1-.96*flatT;
+    var cs=1-.96*foldGatherT;
     cm.scale.set(1-(1-cs)*Math.abs(tdvx),1,1-(1-cs)*Math.abs(tdvz));
     if(cm.userData.mark)cm.userData.mark.visible=flatT<.45;
     var held=R&&R.heldFast&&R.heldFast(cb[0],cb[1],cb[2]);
@@ -4084,8 +4191,15 @@ function animate(now){
     if(lp){srcX=lp.win.x;srcZ=lp.win.z;srcY=flatPos.y;}
   }
   var pu=flat?flatPos.u:(srcX*rx+srcZ*rz), py=flat?flatPos.y:srcY;
-  var fx=pu*rx+1.2*tdvx,fz=pu*rz+1.2*tdvz;
-  tmp.set(srcX+(fx-srcX)*flatT, srcY+(py-srcY)*flatT, srcZ+(fz-srcZ)*flatT);
+  /* SPLIT IN TWO, and the split is the point. Screen-right and height still
+     travel on `flatT` - they are where the player ENDS UP, and there is
+     nothing to teach about them. Depth goes through foldPath, so the piece
+     rides forward onto the block it is about to be stood on while the rest
+     of that column piles in behind it, and then leads the stack onto the
+     plane. Drawn at 1.2 in front of everything there, as it always was. */
+  var pu0=srcX*rx+srcZ*rz, pd0=srcX*tdvx+srcZ*tdvz;
+  var pun=pu0+(pu-pu0)*flatT, pdn=foldPath(pu0,srcY,pd0,1.2);
+  tmp.set(pun*rx+pdn*tdvx, srcY+(py-srcY)*flatT, pun*rz+pdn*tdvz);
   /* CAUGHT BY THE FIRE, and it does not fall - it burns where it stands.
 
      The piece was a spike once and the death was the same one falling out of
@@ -4214,8 +4328,8 @@ function animate(now){
     !B&&!(typeof storyOn==="function"&&storyOn());
   var g=((typeof liveGoal==="function"&&L.goal)?liveGoal():L.goal)||[0,0,0];
   var gu=g[0]*rx+g[2]*rz, gd=g[0]*tdvx+g[2]*tdvz;
-  var gx=gu*rx+gd*.012*tdvx, gz=gu*rz+gd*.012*tdvz;
-  goalMesh.position.set(g[0]+(gx-g[0])*flatT,g[1],g[2]+(gz-g[2])*flatT);
+  var gdn=foldPath(gu,g[1],gd,gd*.012);
+  goalMesh.position.set(gu*rx+gdn*tdvx,g[1],gu*rz+gdn*tdvz);
   goalMesh.rotation.y+=.012;goalMesh.rotation.x+=.008;
   if(goalGhost){
     goalGhost.position.copy(goalMesh.position);
