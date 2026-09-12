@@ -78,6 +78,20 @@ function loadSettings(){
         }
         if(typeof o.brightness==="number")settings.brightness=o.brightness;
         if(o.ui&&["full","compact","none"].indexOf(o.ui)>=0)settings.ui=o.ui;
+        /* THE OTHER TWO THIRDS OF THE AGE CARD. Bounded against their own
+           tables rather than trusted, exactly like `ui` above: a value that
+           is not one of the three would fall through boardScale() and
+           paceScale() to 1 anyway, but it would sit in the menu with no row
+           lit, which is a setting nobody can see to change. */
+        if(o.size&&["small","medium","large"].indexOf(o.size)>=0)
+          settings.size=o.size;
+        if(o.speed&&["slow","regular","fast"].indexOf(o.speed)>=0)
+          settings.speed=o.speed;
+        /* And which band wrote them, if any. Bounded by the table itself -
+           `ageBandOf` is the list - so a renamed band cannot leave a save
+           pointing at a row that is not there. */
+        if(typeof o.ageBand==="string"&&ageBandOf(o.ageBand))
+          settings.ageBand=o.ageBand;
         if(o.killcam&&["full","plain"].indexOf(o.killcam)>=0)
           settings.killcam=o.killcam;
         if(o.foldmark&&["on","off"].indexOf(o.foldmark)>=0)

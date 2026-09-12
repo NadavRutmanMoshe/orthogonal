@@ -529,17 +529,42 @@ function menuPanel(){
         "<div class='srow'><label>Brightness</label>"+
           "<input type='range' id='mBri' min='60' max='140' value='"+bri+"'>"+
           "<span id='mBriV'>"+bri+"%</span></div></div>"+
-      /* ONE ROW, THREE OPTIONS, AND NO PARAGRAPH UNDER IT. The card is
-         called Controls and the three buttons are the whole of it - a
-         setting whose options are three words does not need a sentence
-         explaining them, and the note under this one was four lines of
-         gesture reference nobody had asked for. The Tutorial row went with
-         it: the lesson now teaches whatever this is set to. */
-      "<div class='pcard'><h4>Controls</h4>"+
-        "<div class='crow bare'><span class='seg'>"+
+      /* THE THREE THE AGE CARD WRITES, ON ONE CARD, IN THE ORDER IT WRITES
+         THEM. This is where "you can change it later" lands: a first run is
+         asked one question it can answer - how old are you - and this card is
+         the three answers it turned into, each on its own row.
+
+         It merges what used to be a card called Controls with two new rows,
+         and the merge is the point rather than a saving: three cards of one
+         row each is three headings saying the same thing as three labels, and
+         it pushed the sheet past the fold on a phone, which the settings
+         panel was deliberately trimmed to fit inside. The old card's rule
+         still holds - no paragraph under any of them. A setting whose options
+         are three words does not need a sentence, and the note that used to
+         sit under Controls was four lines of gesture reference nobody asked
+         for. The Tutorial row went with that note: the lesson teaches
+         whatever Controls is set to.
+
+         Board and Speed both matter to the fit of the level: the buttons and
+         the board size are two of the three things fitViewSize() reads, so
+         all three handlers below end in the same onResize(). */
+      "<div class='pcard'><h4>How it plays</h4>"+
+        "<div class='crow'><label>Controls</label><span class='seg'>"+
           seg("mUi","full","FULL",settings.ui)+
           seg("mUi","compact","COMPACT",settings.ui)+
-          seg("mUi","none","HIDDEN",settings.ui)+"</span></div></div>"+
+          seg("mUi","none","HIDDEN",settings.ui)+"</span></div>"+
+        "<div class='crow'><label>Board</label><span class='seg'>"+
+          seg("mSize","small","SMALL",settings.size)+
+          seg("mSize","medium","MEDIUM",settings.size)+
+          seg("mSize","large","LARGE",settings.size)+"</span></div>"+
+        /* Named for what it is measured against, not for the clock: the two
+           real-time things in the game are the bosses and the trials, and a
+           row called Speed on a settings sheet in a turn-based puzzle would
+           read as the speed of everything. */
+        "<div class='crow bare'><label>Fights</label><span class='seg'>"+
+          seg("mSpd","slow","SLOW",settings.speed)+
+          seg("mSpd","regular","REGULAR",settings.speed)+
+          seg("mSpd","fast","FAST",settings.speed)+"</span></div></div>"+
       /* THE KILL CAM, AS A ROW, because it is a genuine question about how
          much ceremony a death deserves and the only way to answer it is to
          play both. FULL is the television: the signal drops to snow, a
@@ -571,6 +596,17 @@ function menuPanel(){
          the settings sheet fit on one screen with nothing to scroll to.
          `legendPanel()` is untouched and still one bind away. */
       "<div class='pcard'><h4>More</h4><div class='psub'>"+
+        /* THE AGE CARD, REOPENED. It is here and not on the card above
+           because it is not a fourth setting - it is the shortcut that
+           writes the three, and the rows above are the long way round.
+
+           It also has to exist for a reason that is easy to miss: the card
+           only ever shows on a FIRST RUN, because nothingBehind() puts the
+           home screen in front of anybody with a save. Without this button
+           every existing player - the owner included - would have a game
+           that had silently decided their settings and no way to ask the
+           question again. */
+        "<button id='mAge'>SET UP BY AGE</button>"+
         "<button id='mTut'>REPLAY TUTORIAL</button>"+
         /* AND THE WAY BACK TO THE STORY, beside the way back to the lesson,
            because they are the same kind of thing: something that plays once
@@ -627,6 +663,27 @@ function menuPanel(){
       settings.ui=m;applyUI();saveSettings();syncHud();onResize();menuPanel();
     });
   });
+  /* Both of these end in onResize() for the same reason the row above does:
+     updateFrustum() is the only thing that re-runs fitViewSize(), and it is
+     reached from there. The renderer lerps `viewSize` toward the new target,
+     so the board grows or shrinks into place rather than jumping - which is
+     also what makes the three sizes comparable by pressing them in turn.
+
+     They deliberately do NOT re-pick an age band. Changing one of the three
+     by hand is the player disagreeing with the band on that one thing, and
+     overwriting `ageBand` here would either lie about which row is lit on the
+     age sheet or drag the other two settings along with it. */
+  ["small","medium","large"].forEach(function(m){
+    bind("mSize_"+m,function(){
+      settings.size=m;saveSettings();onResize();menuPanel();
+    });
+  });
+  // Nothing to apply: both real-time loops ask paceScale() every frame.
+  ["slow","regular","fast"].forEach(function(m){
+    bind("mSpd_"+m,function(){
+      settings.speed=m;saveSettings();menuPanel();
+    });
+  });
   ["full","plain"].forEach(function(m){
     bind("mKcam_"+m,function(){
       settings.killcam=m;saveSettings();menuPanel();
@@ -638,6 +695,7 @@ function menuPanel(){
       settings.foldmark=m;saveSettings();menuPanel();
     });
   });
+  bind("mAge",agePanel);
   bind("mTut",function(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
   });
@@ -661,6 +719,12 @@ function menuPanel(){
     settings.volume=defaultVolume();settings.volTouched=false;
     settings.brightness=1;settings.ui=UI_DEFAULT;settings.killcam="full";
     settings.foldmark="on";
+    /* The other two thirds of the age card go back to a fresh install too,
+       and so does the memory of which band was picked: a reset that left the
+       age sheet showing a band it had just overwritten would be lying about
+       what the game is set to. The question is not re-asked - RESET SETTINGS
+       is not a first run, and SET UP BY AGE is one button away. */
+    settings.size=SIZE_DEFAULT;settings.speed=SPEED_DEFAULT;settings.ageBand="";
 
     // including "stop suggesting things": a reset is a reset
     settings.noSlowOffer=false;settings.landHints=0;
@@ -2210,6 +2274,49 @@ function mapHelp(){
    name of the thing in front of them. So each piece gets one sentence in
    those words, and the two that were still called by their old names are
    called what they are drawn as: water and fire. */
+/* ============================================================
+   SET UP BY AGE
+
+   The intro card's question, with a way back to it. On a first run the five
+   bands are the start button (index.html, #intro); afterwards they are this
+   sheet, reached from Menu > More, because nothingBehind() means a player
+   with a save never sees that card again.
+
+   It says what each band sets rather than only naming the band, which the
+   card does not have room for and does not need - a first run has no idea
+   what a compact control bar is, and somebody opening this sheet has played
+   and does. That is the whole difference between the two.
+
+   A short panel like legendPanel(), not a full-height one: it is five rows
+   and a way back, and the five tall panels wear a page shape (header, star
+   total, footer) that would be furniture round a list this short.
+   ============================================================ */
+var AGE_UI_WORD={full:"full buttons",compact:"compact buttons",
+                 none:"gestures"};
+function ageSets(b){
+  return b.size+" board · "+b.speed+" fights · "+AGE_UI_WORD[b.ui];
+}
+function agePanel(){
+  var rows="";
+  AGE_BANDS.forEach(function(b){
+    rows+="<button class='ageb"+(settings.ageBand===b.id?" on":"")+
+      "' id='agB_"+b.id+"'><b>"+b.label+"</b><i>"+ageSets(b)+"</i></button>";
+  });
+  showPanel("<h3>SET UP BY AGE</h3>"+
+    "<p class='agep'>One question instead of three. Each of the three is "+
+      "still its own row in Settings.</p>"+
+    "<div class='psub'>"+rows+"</div>"+
+    "<div class='prow'><button id='agBack'>BACK</button></div>");
+  AGE_BANDS.forEach(function(b){
+    bind("agB_"+b.id,function(){
+      applyAgeBand(b.id);
+      flash(b.label.toLowerCase()+" · "+ageSets(b));
+      menuPanel();
+    });
+  });
+  bind("agBack",menuPanel);
+}
+
 function legendPanel(){
   showPanel("<h3>THE PIECES</h3>"+
     "<div class='leg'><i style='background:#5a6d94'></i><span><b>Stone</b> \u2014 "+

@@ -18,12 +18,18 @@ bind("bRestart",function(){
   if(fromEditor){enterEditor();return;}
   hidePanel();resetLevel();SFX.undo();
 });
-bind("bBegin",function(){
+/* THE INTRO CARD'S ONE WAY IN, and it is now five buttons rather than BEGIN.
+   Picking an age band writes the three settings it stands for (applyAgeBand()
+   in js/11-sound.js) and then does exactly what BEGIN did, in that order: the
+   settings have to be in before the card comes down, because putting the
+   control bar up changes how much room the arena is fitted into and the
+   opening cutscene is the next thing drawn. */
+function introBegin(){
   $("intro").classList.add("gone");
   audio();applyBrightness();     // first gesture unlocks sound
-  /* AND THEN THE HOUSE. The opening cutscene sits between BEGIN and the
-     first tutorial, which is the one place it can go: the card above it is
-     the only explanation of the verb a new player gets, so the scene plays
+  /* AND THEN THE HOUSE. The opening cutscene sits between the age card and
+     the first tutorial, which is the one place it can go: the card above it
+     is the only explanation of the verb a new player gets, so the scene plays
      to somebody who has just read what a fold is - and it plays after they
      have agreed to start, rather than in front of a player who has not yet
      said they want to. */
@@ -31,6 +37,9 @@ bind("bBegin",function(){
     storyPlay("open");
     return;
   }
+}
+AGE_BANDS.forEach(function(b){
+  bind("bAge_"+b.id,function(){applyAgeBand(b.id);introBegin();});
 });
 /* The cutscenes' two buttons. SKIP is live for the whole of a scene; the end
    card's is the only way off it. */

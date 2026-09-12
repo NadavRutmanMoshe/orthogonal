@@ -1082,7 +1082,7 @@ function bossFrame(dt){
   if(dying||levelDone||panelOpen()||screenUp()||
      $("won").classList.contains("on"))return;
   /* Clamp first, then scale. The clamp is about a backgrounded tab handing
-     back one enormous frame; the scale is the player's pace setting, and
+     back one enormous frame; the scale is Menu > Fights, and
      applying it here means every derived interval below - the phase's step
      and aim, creep, rage, grace - slows together and keeps its ratio to the
      others. A phase is a set of dials; pace must not be another one. */
@@ -1680,7 +1680,7 @@ function trialFrame(dt){
   if(dying||levelDone||panelOpen()||screenUp()||
      $("won").classList.contains("on"))return;
   // Clamped against a backgrounded tab's one enormous frame, then scaled by
-  // the pace setting - see paceScale() in 11-sound.js for why it is one
+  // Menu > Fights - see paceScale() in 11-sound.js for why it is one
   // multiplication here rather than a slower `period` and `fire`.
   /* AND EVERYTHING THAT STOPS THE FIGHT STOPS THE SWEEP, on a boss that has
      one. bossFrame() already returns for the phase card and for the kill cam,

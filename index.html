@@ -468,7 +468,31 @@
     Drop the world to 2D and things far apart in depth<br>land side by side.
   </p>
   <p class="introstory">Everything this world has ever flattened is still in there.</p>
-  <button id="bBegin">BEGIN</button>
+  <!-- THE AGE QUESTION IS THE START BUTTON. There is no BEGIN any more:
+       picking a band is what starts the game, so the card asks one question
+       instead of putting a question in front of a button.
+
+       Why an age and not three settings: how big the board is drawn, how
+       fast the fights run and whether the control bar is up are the three
+       things that decide how this game feels, and they are exactly the three
+       a player cannot answer before they have played. An age predicts all
+       three well enough to start with, and every one of them is a row in the
+       menu afterwards - which the line under the list says, because a
+       question with no visible way back is a question people resent.
+
+       The ids are read by AGE_BANDS in js/11-sound.js, which is also where
+       the table of what each one sets lives; the bindings are in
+       js/19-bindings.js. -->
+  <p class="agesq">How old are you?</p>
+  <div class="ages" id="introAges">
+    <button id="bAge_u18">UNDER 18</button>
+    <button id="bAge_a18">18 - 25</button>
+    <button id="bAge_a26">26 - 39</button>
+    <button id="bAge_a40">40 - 59</button>
+    <button id="bAge_a60">60 +</button>
+  </div>
+  <p class="agesw">Sets the board size, the speed of the fights and the
+    controls. All three are in the menu.</p>
   <button class="tiny" id="bSkipTo" style="height:30px;padding:0 14px">PICK A LEVEL</button>
 </div>
 

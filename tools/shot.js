@@ -62,6 +62,7 @@ const SCREENS={
   "sheet:N":{what:"the map with level N's sheet up", js:"levelPicker();mapSheet(N);", wait:1200},
   maphelp:  {what:"the map's help sheet", js:"levelPicker();mapHelp();", wait:1200},
   menu:     {what:"the menu panel", js:"menuPanel();"},
+  age:      {what:"SET UP BY AGE, the intro card's question as a sheet", js:"agePanel();"},
   wardrobe: {what:"the wardrobe on SHAPE", js:"wardrobePanel('shape');", wait:1200},
   "wardrobe:color":{what:"the wardrobe on COLOUR", js:"wardrobePanel('color');", wait:1200},
   legend:   {what:"the piece legend", js:"legendPanel();"},

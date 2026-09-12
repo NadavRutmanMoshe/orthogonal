@@ -162,4 +162,28 @@
   .wonlv span{letter-spacing:.16em}
   #intro{display:flex}
   #intro.gone{display:none}
+  /* THE AGE QUESTION, which is this card's start button - see the comment on
+     the markup in index.html.
+
+     The question is set like the premise above it and not like a heading: it
+     is one line in the card's own mono, a little brighter than the story line
+     so the eye lands on it, and it carries the whole of the instruction. The
+     line UNDER the list is deliberately the quietest thing on the card - it
+     is there for the player who does not want to answer, and it says the
+     three settings are in the menu. */
+  .won p.agesq{color:var(--fg);letter-spacing:.12em;text-transform:uppercase;
+    font-size:12px;margin-top:6px}
+  .won p.agesw{font-size:10.5px;opacity:.62;max-width:min(80vw,34ch);
+    line-height:1.6;letter-spacing:.04em;margin-top:-4px}
+  /* TWO COLUMNS WITH THE LAST ONE SPANNING, rather than a column of five.
+     Five 46px buttons plus two paragraphs is taller than the owner's narrow
+     phone once the premise above is wrapping, and a card that scrolls is a
+     card whose bottom button nobody presses. Three rows fit with the story
+     line intact. The spanning row is the oldest band, which is the one that
+     most wants a wide target. */
+  .ages{display:grid;grid-template-columns:1fr 1fr;gap:8px;
+    width:min(86vw,300px)}
+  .ages button{height:42px;padding:0 6px;width:100%;
+    font-size:12px;letter-spacing:.1em}
+  .ages button:last-child{grid-column:1 / -1}
   #intro .tiny,#won .tiny{border-color:var(--rule);color:var(--fg-dim)}

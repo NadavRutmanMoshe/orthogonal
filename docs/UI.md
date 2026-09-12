@@ -97,7 +97,8 @@ buttons at the end of its builder.
 | Replay chrome | `#replayUI` | `replayStart` / `replayEnd` | `65-replay` | (use `--eval`) |
 | Toast / spoken cue | `#toast` | `flash()`, `flashCue()` | `50-layout-cues` | `toast` |
 | The sting | `#splash` | `20-splash.js` | `60-splash` | `splash` |
-| Intro card | `#intro` (static) | `nothingBehind()` decides it shows | `70-cards` | `intro` |
+| Intro card | `#intro` (static) | `nothingBehind()` decides it shows; the five age buttons (`#introAges`) are its start button, bound in `19-bindings.js` from `AGE_BANDS` and applied by `applyAgeBand()` (`11-sound.js`) | `70-cards` (`.ages`, `.agesq`, `.agesw`) | `intro` |
+| SET UP BY AGE | `#panel` | `agePanel()` (`16-panels.js`), from Menu > More. The intro card's question after a first run, which never sees that card again | `40-panels` (`.ageb`, `.agep`) | `age` |
 | Tutorial / explanation card | `#tutcard` | `cardPut(h,p,owner)` | `70-cards` | `tutcard` |
 | Win card | `#won` | `win()` (`12-play.js`): title, `.bigstars`, `#wonSub`, mastery/lock/story lines, buttons | `70-cards` | `win:2` |
 | Cutscene caption / skip / fade | `#story` (static) | `stSay()`, `stFadeTo()`, `storySkip()` (`22-story.js`); the scene itself is a level in the game's own renderer, placed by `storyFrame()` and framed shot by shot with `stFrame()` (`ST_SHOT`) | `98-story` | `story1:0`, `story1:14`, `story3:3`, `story2:1`, `reunion` |
@@ -105,7 +106,7 @@ buttons at the end of its builder.
 | The neighbour's speech bubble | `#guideBub` (static) | `guideSay()` / `guideHide()` (`23-guide.js`); moved every frame by `guideFrame()` to sit over the cube it belongs to. The CUBE is the button, not the bubble | `99-guide` | `guide`, `guidestuck` |
 | The last card, after the last fold | `#storyend` (static) | `storyEndCard()` / `storyEndOk()` (`22-story.js`); answers `screenUp()` | `98-story`, `70-cards` (`.won`) | `storyend` |
 | Home screen | `#home` (static shell) | `homeShow`, `homeSync`, `homeCase` | `95-home` | `home` |
-| Menu | `#panel` | `menuPanel()` (`16-panels.js`); rows via `seg()` | `80-panel-tall`, `40-panels` (`.srow`), `50-layout-cues` (`.crow .seg`) | `menu` |
+| Menu | `#panel` | `menuPanel()` (`16-panels.js`); rows via `seg()`. **How it plays** is one card of three rows - Controls, Board, Fights - because the age card writes all three together | `80-panel-tall`, `40-panels` (`.srow`), `50-layout-cues` (`.crow .seg`) | `menu` |
 | Wardrobe | `#panel.ward` | `wardrobePanel(tab)` (`shape` / `color` / `deal`), `wardRefresh`, `wardMeta` | `40-panels`, `80-panel-tall` | `wardrobe`, `wardrobe:color` |
 | DEALS shelf | same | `wardList("deal")` = `PASSES` + `deal:true` shapes; prices via `dealPrice()` / `dealPriceSay()`, the `.wgives` list and `.wwas` struck price in `wardMeta` | `40-panels` | `--eval "wardrobePanel('deal')"` |
 | Section chooser | `#panel.map.secs` | `sectionPicker()` → `secGridDraw`, `secEmblem`, `secChains`, `secLock` | `85-map` | `sections` |

@@ -638,3 +638,86 @@
 
 ---
 
+## The age card, and the three settings it writes
+
+**One question a new player can answer, instead of three they cannot.** How
+big the board is drawn, how fast a fight runs and whether the control bar is
+up are the three settings that decide how this game feels, and they are
+exactly the three nobody goes into a menu to look for - a player who has never
+seen a cube has no way to know whether they want buttons or gestures. So the
+intro card asks an age instead, and writes all three. The five bands and what
+each sets are `AGE_BANDS` in `js/11-sound.js`; `applyAgeBand()` is the one
+writer, and the table is the only place the mapping exists.
+
+**The card IS the start button.** There is no BEGIN any more: the five bands
+are the way into the game, so the card asks one question rather than putting a
+question in front of a button somebody can walk past. Everything BEGIN did -
+unlock audio, drop the card, play the opening - is `introBegin()` in
+`js/19-bindings.js`, and a band is applied before it runs, because putting the
+control bar up changes how much room the arena is fitted into and the opening
+cutscene is the next thing drawn.
+
+**It is a default, not a lock, and the way back matters more than the card.**
+`nothingBehind()` means a player with a save never sees the intro card again,
+so without a second door every existing player - the owner included - would
+have a game that had quietly decided their settings. That door is
+**Menu > More > SET UP BY AGE** (`agePanel()`), which is the same five bands
+with what each one sets spelled out underneath: the sheet is opened by
+somebody who has played, so the words that mean nothing on the intro card
+("compact buttons") are the reason to open it. Each of the three is also its
+own row in **Menu > How it plays**, and changing one by hand deliberately does
+NOT re-pick a band - that is the player disagreeing with the band about one
+thing, not asking for the other two to move.
+
+**The three rows are one card because the age card writes them together.**
+What was a card called Controls is now a row called Controls beside Board and
+Fights. Three cards of one row each is three headings saying what three labels
+already say, and it pushed the settings sheet past the fold on a phone - which
+it was deliberately trimmed to fit inside.
+
+**Fights is the old `pace`, back through the seam it was left open at.**
+`paceScale()` still multiplies `dt` in both real-time loops and nothing else,
+so every interval in a fight - step, aim, creep, rage, the trial's period and
+fire window, the beat of grace - moves together and every ratio between them
+survives. The KEY is new, though: `speed` with word values, not the numeric
+`pace`. `pace` came out of `loadSettings()`'s whitelist when its row was cut,
+precisely so a save carrying 0.5 could not pin every clock in the game at half
+speed with no row left to change it; reading it again would spring that trap
+on every save written back then. What is different from the row that was cut
+is that nobody is asked cold any more - the age card answers it, and this row
+is where that answer is changed.
+
+`.75` and `1.2` are a lean on a hand-tuned fight, not a redesign of it: slow
+enough to read a telegraph in, fast enough to feel urgent, and never far
+enough to make an authored phase unsolvable. It is free and does not touch
+stars, and that has to stay true - a slower clock hands you nothing you did
+not have to work out, it only gives you longer to say it.
+
+**Board size is a wish that gets clamped.** `boardScale()` multiplies the fit
+in `fitViewSize()`, and on its own that CROPS - which is not obvious from the
+arithmetic and is worth knowing before tuning it. There is no spare room in a
+fit that already touches the edges: BOSS IV's arena is 12 cells across inside
+a 14-cell frustum, so any multiplier much under .86 puts its outer columns off
+the screen, and a fight you cannot see the edge of is not a legibility
+setting. So the answer is clamped up by two things that are not negotiable -
+the whole arena on screen with `PAD_TIGHT` of margin, and the vertical
+requirement untouched, because those margins are the level name at the top and
+the control bar at the bottom rather than slack. The consequence: on the
+biggest boards LARGE can only win the margin, because they are already nearly
+screen-filling, and it is SMALL that has room to move. Nothing about a rule,
+a par or the solver knows this setting exists.
+
+**And it is pinned at 1 while a cutscene runs.** A scene is shot, not
+surveyed: the beats hand `stFrame()` two corners of the board and
+`fitViewSize()` frames that, so the sizes re-frame a composed shot - and in
+the direction that hurts. The opening's first beat is the house with sky over
+it and the treeline under it; at LARGE the horizon went off the bottom of the
+screen. The player asked for a bigger BOARD, which is a thing they read and
+act on. A scene is a thing they watch, and its framing is the author's.
+
+**A side effect worth keeping:** `tutGestures()` derives the lesson from
+`settings.ui`, so a band that asks for buttons gets the buttons taught, and one
+that asks for gestures gets the gestures taught. The age card therefore picks
+the tutorial too, without a word about it anywhere.
+
+---

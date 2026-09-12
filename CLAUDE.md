@@ -434,6 +434,22 @@ is the rule.
   unprompted line, which is a button into `struggleOffer()`.
 
 **Settings and saves** (`systems.md`)
+- **A first run is asked ONE question: how old are you.** The intro card's
+  five bands ARE its start button (there is no BEGIN), and each writes three
+  settings at once - `size`, `speed`, `ui` - from `AGE_BANDS` in
+  `js/11-sound.js` through `applyAgeBand()`, the one writer. Under 18 medium ·
+  fast · hidden, 18-25 medium · regular · hidden, 26-39 medium · slow ·
+  compact, 40-59 and 60+ large · slow · full. Nobody is given SMALL.
+- **It is a default, not a lock, and the way back is load-bearing**:
+  `nothingBehind()` means a save never sees that card again, so
+  **Menu > More > SET UP BY AGE** (`agePanel()`) is the only door an existing
+  player has. All three are also rows on **Menu > How it plays** - one card,
+  because the age card writes them together - and changing one by hand does
+  NOT re-pick a band.
+- **`settings.speed` is the old `pace`, under a new key on purpose.**
+  `paceScale()` is still one multiplication onto `dt` in both real-time loops
+  and nothing else. The numeric `pace` stays out of `loadSettings()`, or a
+  save from when that row existed would pin every clock at half speed.
 - `loadSettings()` is a **whitelist**. A key not read there does not exist
   after reload; a key whose feature is removed comes out of the list.
 - `noSlowOffer` keeps its name though nothing slow is left; it is persisted.
@@ -549,6 +565,14 @@ is the rule.
   the owner's decision. `FOLLOW=0`.
 - `fitViewSize()` fits the arena to the screen per axis; portrait and
   landscape convert differently, and the bar does not buy size in portrait.
+- **Menu > Board (`boardScale()`) is a wish, and `fitViewSize()` clamps it.**
+  Scaling that fit crops - the biggest arena is 12 cells inside a 14-cell
+  frustum - so the answer is held up by the whole arena plus `PAD_TIGHT`, and
+  the vertical requirement passes through untouched (those margins are the
+  level name and the control bar). LARGE can only win the margin on a board
+  that already fills the screen. No rule, par or solver knows it exists, and
+  it is **pinned at 1 while a cutscene runs** - a scene is shot, not surveyed,
+  and `stFrame()`'s boxes are composed against the default framing.
 - Nothing in a baked horizon texture moves; motion is drawn on top.
 - `edgeGeo` is cut from the .9 case; `repeat.set(2,1)` only for a band with
   no landmark in it.

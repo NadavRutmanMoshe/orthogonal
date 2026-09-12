@@ -2477,6 +2477,10 @@ function recomputeBounds(){
    requirement is multiplied by the aspect because in portrait the frustum's
    half-height is vs/a, so a vertical need of H means vs >= H*a. */
 var arenaSW=8, arenaSH=8;
+/* The margin LARGE is allowed to squeeze the ordinary one down to, in cells.
+   Not zero: a board whose outer column is flush with the edge of the screen
+   reads as cropped even when every block is on it. */
+var PAD_TIGHT=.25;
 function fitViewSize(){
   var w=window.innerWidth||430,h=window.innerHeight||760,a=w/h;
   /* Margins in cells. The top always carries the level name and its hint;
@@ -2484,14 +2488,54 @@ function fitViewSize(){
      default layout is now GESTURES with no bar at all - which is most of
      why there is room to do this. */
   var padW=1.0, padH=barIsUp()?3.0:1.7;
+  /* MENU > BOARD SIZE. Guarded because 11-sound.js loads after this file; by
+     the time this is first called it is there, and the guard is the same one
+     barIsUp() takes above.
+
+     AND IT IS PINNED WHILE A CUTSCENE RUNS, because a scene is shot, not
+     surveyed. The beats hand `stFrame()` two corners of the board and this
+     function frames THAT - so the sizes would re-frame a composed shot, and
+     they do it in the direction that hurts: the opening's first beat is the
+     house with sky over it and the treeline under it, and LARGE pushes in
+     until the horizon is off the bottom. The player asked for a bigger BOARD,
+     which is a thing they have to read and act on. A scene is a thing they
+     watch, and its framing is the author's. */
+  var k=(typeof boardScale==="function")?boardScale():1;
+  if(typeof storyOn==="function"&&storyOn())k=1;
   /* updateFrustum sets half-width = vs and half-height = vs/a in PORTRAIT,
      and half-width = vs*a, half-height = vs in LANDSCAPE - so the two
      requirements convert into vs differently in each. Getting this backwards
      is silent: it only shows as a badly framed level on one orientation. */
-  var needW,needH;
-  if(a>=1){ needW=(arenaSW/2+padW)/a; needH=arenaSH/2+padH; }
-  else    { needW=arenaSW/2+padW;     needH=(arenaSH/2+padH)*a; }
-  return Math.max(3.2,needW,needH);
+  var needW,needH,tightW;
+  if(a>=1){ needW=(arenaSW/2+padW)/a; needH=arenaSH/2+padH;
+            tightW=(arenaSW/2+PAD_TIGHT)/a; }
+  else    { needW=arenaSW/2+padW;     needH=(arenaSH/2+padH)*a;
+            tightW=arenaSW/2+PAD_TIGHT; }
+  /* THE SIZE IS WHAT IS WANTED; THE TWO BELOW ARE WHAT IS POSSIBLE.
+
+     `want` is the ordinary fit scaled - SMALL pulls back, LARGE pushes in -
+     and on its own it CROPS, which is worth writing down because the first
+     version of this did exactly that and it is not obvious from the
+     arithmetic. There is no "spare" room in a fit that already touches the
+     edges: BOSS IV's arena is 12 cells across inside a 14-cell frustum, so
+     any multiplier under about .86 puts its outer columns off the screen,
+     and a fight you cannot see the edge of is not a legibility setting.
+
+     So the answer is clamped up by two things that are not negotiable. The
+     whole arena has to be on screen with a hairline of margin (`tightW`),
+     which is what LARGE actually converges to on the biggest boards - they
+     are already nearly screen-filling, so the most LARGE can win there is
+     the margin. And the VERTICAL requirement is passed through untouched
+     (`needH`): those margins are not slack either, they are the level name
+     and its hint at the top and the control bar at the bottom, and eating
+     them is how a board ends up under the d-pad.
+
+     The floor stays 3.2 and is scaled with everything else. It stops a
+     four-block tutorial board filling the screen; unscaled it would also
+     stop LARGE doing anything at all on the small boards, which are the ones
+     a player who asked for LARGE is most likely to be standing on. */
+  var want=Math.max(3.2,needW,needH)*k;
+  return Math.max(want,tightW,needH);
 }
 /* The pack.
 
