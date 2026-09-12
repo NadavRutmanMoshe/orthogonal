@@ -667,11 +667,15 @@ family stands on the strip in front of their own door, which is where you
 stand to say goodbye anyway. The roof runs the full depth, and the overhang
 rule that ruined the cutaway now works for it: a roof row one square further
 from the camera draws half a course higher, which is the slope of a roof seen
-from the front and above. The windows are painted night glass rather than
-holes (a hole would show the same wall), the door is the one hole, showing
-the interior block a step darker in the depth fade, and the chimney is two
-bricks beside the ridge so it stands above the roof rather than level with
-it. The census still folds column `x=3`, which is now the doorstep, the foot
+from the front and above. The door and the two windows are cut through every
+row of depth: the first solid house painted the windows a night-glass blue
+and cut the door one block deep, and that was reported as off against the
+cutaway's real holes. The holes are what a house has that a hill does not,
+and a painted square is a decal on a box. Cut through, they are openings into
+a dark interior in the volume and, because nothing stands behind them along
+the view axis, still holes in the plane, so the folded house is the one the
+cutaway drew. The chimney is two bricks beside the ridge so it stands above
+the roof rather than level with it. The census still folds column `x=3`, which is now the doorstep, the foot
 of the strip and two squares of path rather than the doorway, the step and
 the path. One thing bit: `foldPeril()`, the crush warning, tints the blocks
 in the player's silhouette column his own colour, and in front of a solid

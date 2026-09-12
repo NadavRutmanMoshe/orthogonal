@@ -1632,3 +1632,10 @@ voxel house is the convention that stops it being a house from the front.**
 Put the people outside. And a solid house woke the crush warning - every
 square in front of it shares a column with the wall - which is now off while
 a scene runs.
+
+The sixth's painted windows lasted one look: "still off, it was better a
+moment ago", with the ask to make the door and windows open. Cut through the
+whole depth they are open in the volume and holes in the plane, which is the
+cutaway's folded facade on a house that also stands up in 3D. **A painted
+window is a decal; a hole is a house.** The caption timings went in the same
+pass, matched to the ending's, which had been reported as right.

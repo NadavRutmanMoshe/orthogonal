@@ -247,10 +247,8 @@ function stHex(id){
    between them is what says building. Neither drifts toward the boss's
    violet or the trial's amber. */
 var ST_WALL=0xe9d6ae, ST_ROOF=0xa33d33;
-/* The window glass is the night sky's own blue, a step darker, so a lit
-   house at night is not what it says - nobody is home yet - and the chimney
-   is a brick between the wall and the roof. */
-var ST_GLASS=0x27395c, ST_BRICK=0x6e4034;
+// The chimney is a brick between the wall and the roof.
+var ST_BRICK=0x6e4034;
 function stHouseBoard(){
   var b=[],tint=[],x,z;
   function floor(x0,x1,z0,z1){
@@ -284,22 +282,27 @@ function stHouseBoard(){
      face; with the face at the near edge, every roof row is behind it and
      recedes upward. Three courses, 5 wide, 3, 1, at every row of depth.
 
-     WINDOWS ARE PAINTED, NOT CUT. A hole in the facade used to show the
-     interior; now it would show a solid block of the same wall. So the two
-     windows are cells of a dark night glass in the top course, and the door
-     is still a hole - two blocks tall in the middle - which shows the
-     interior block behind it a step darker in the depth fade, so it reads as
-     a doorway you could walk into. `x0+2` is the middle of the five: the
-     door, the ridge, and the column the census folds.
+     THE DOOR AND THE WINDOWS ARE OPEN, ALL THE WAY THROUGH. The first solid
+     house painted the windows a night-glass blue and cut the door one block
+     deep, so it showed the wall behind it - and it was reported as off, and
+     the cutaway with real holes as better. The holes are what a house has
+     that a hill does not, and a painted square is a decal on a box. So the
+     door (two tall, in the middle) and the two windows (top course, either
+     side) are cut through every row of depth. In the volume they are
+     openings into a dark interior; in the plane, where the fold projects
+     the whole depth onto the facade, nothing stands behind them along the
+     view axis, so they stay holes and the folded house is the one the
+     cutaway drew. `x0+2` is the middle of the five: the door, the ridge,
+     and the column the census folds.
 
-     The chimney is two blocks now, on the near slope beside the ridge, so
-     it stands ABOVE the roof rather than level with it. */
+     The chimney is two blocks, on the near slope beside the ridge, so it
+     stands ABOVE the roof rather than level with it. */
   function house(x0,x1){
     var i,y,j,mid=x0+2;
     for(j=0;j<=3;j++)for(i=x0;i<=x1;i++)for(y=1;y<=3;y++){
-      if(j===3&&i===mid&&y<=2)continue;                        // the door
-      var win=(j===3&&y===3&&(i===x0+1||i===x0+3));            // the windows
-      put(i,y,j,win?ST_GLASS:ST_WALL);
+      if(i===mid&&y<=2)continue;                                // the door
+      if(y===3&&(i===x0+1||i===x0+3))continue;                  // the windows
+      put(i,y,j,ST_WALL);
     }
     for(j=0;j<=3;j++){
       for(i=x0;i<=x1;i++)put(i,4,j,ST_ROOF);
@@ -461,7 +464,12 @@ var STORY={
          each of them in turn. The line is what makes the viewer count the
          cubes, which is the whole trick: three is a number the ending can
          take two away from. */
-      {ms:1900, say:"Three of them lived here."},
+      /* THE LINES ARE HELD AT THE ENDING'S PACE. A caption shows until the
+         next beat that says something (or says null), so a line's reading
+         time is the sum of the beats it sits over. The opening's were timed
+         by somebody who already knew what they said; the ending's, half
+         again as long, were reported as right, so these now match them. */
+      {ms:2600, say:"Three of them lived here."},
       {ms:1150, at:function(){stHop("son");stHop("dad",300);}},
       {ms:1250, at:function(){stHop("son");stHop("mum",300);}, say:null},
       // A step away from the door, out to the front of the strip.
@@ -480,7 +488,7 @@ var STORY={
          second one is let out a step later rather than started a square
          further back, because a square further back is a square of path that
          exists only to hold him. */
-      {ms:1600, say:"The census came up the path.",
+      {ms:2400, say:"The census came up the path.",
        at:function(){
          stFrame(ST_SHOT.path);
          stShow("copA");stWalk("copA",[[3,8],[3,7],[3,6]]);
@@ -496,7 +504,7 @@ var STORY={
       {ms:1000, at:function(){stFrame(ST_SHOT.door);stKnock("copA");}, say:null},
       // The father goes down to meet them at the foot of the strip.
       {ms:1250, at:function(){stWalk("dad",[[2,5],[3,5]]);}},
-      {ms:1100, at:function(){stHop("dad");stHop("copA",340);},
+      {ms:2000, at:function(){stHop("dad");stHop("copA",340);},
        say:"They had questions about the house."},
       // And the mother comes as far as the doorstep, which is as far as she
       // gets. She is now on the same line as the other three: the doorstep,
@@ -516,9 +524,9 @@ var STORY={
          first, in his own colour, and the mechanical line follows a beat
          later when there is room for it. Both are still said; the order is
          what changed. */
-      {ms:1500, say:"My parents!", who:"son",
+      {ms:2000, say:"My parents!", who:"son",
        at:function(){stSob("son",4200);stHop("son");}},
-      {ms:2000, say:"He was not standing on their line."},
+      {ms:2600, say:"He was not standing on their line."},
       // The neighbours close the distance. Nobody says anything, because
       // there is nothing to say and the walk is the sentence.
       {ms:1500, at:function(){
@@ -527,7 +535,7 @@ var STORY={
         stWalk("nMum",[[10,5],[9,5]]);
         stWalk("nKid",[[9,4],[8,4],[7,4],[7,5]]);
       }},
-      {ms:2600, say:"Everything this world has ever flattened is still in there."}
+      {ms:3800, say:"Everything this world has ever flattened is still in there."}
     ]
   },
 
@@ -563,13 +571,14 @@ var STORY={
        stays there until he is gone, and the last line is said over the
        empty shelf again. */
     beats:[
-      {ms:1900, say:"Something was standing in the fire."},
-      {ms:2500, say:"You came further than I did.", who:"dad",
+      // Held at the ending's pace, like the opening's (see there).
+      {ms:2600, say:"Something was standing in the fire."},
+      {ms:3200, say:"You came further than I did.", who:"dad",
        at:function(){stFrame(ST_SHOT.fire);}},
-      {ms:3000, say:"The plane keeps a little of everything it flattens.", who:"dad"},
-      {ms:3000, say:"I did not come back the same shape.", who:"dad"},
+      {ms:3800, say:"The plane keeps a little of everything it flattens.", who:"dad"},
+      {ms:3600, say:"I did not come back the same shape.", who:"dad"},
       {ms:1700, at:function(){stTake(["dad"],true);}, say:null},
-      {ms:2400, say:"Everything this world has ever flattened is still in there.",
+      {ms:3800, say:"Everything this world has ever flattened is still in there.",
        at:function(){stFrame(null);}}
     ]
   },
