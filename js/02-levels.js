@@ -239,7 +239,7 @@ var LEVELS=[
       only thing making it hard. */
    start:[0,1,0],goal:[7,1,4],rotate:false},
 {name:"09 - The Rotation",
-   hint:"A new mechanic \u2014 rotation. You came a long way, and the options are now endless (not really endless, but you have more options).",
+   hint:"A new mechanic - rotation. You came a long way, and the options are now endless (not really endless, but you have more options).",
    /* THE ROTATION REVEAL, and it is a proof rather than an instruction.
       `solve()` says this level is IMPOSSIBLE with rotation locked - checked
       both ways - so the player can fold and stand up as often as they like
