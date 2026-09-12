@@ -217,12 +217,16 @@ body.tutlock .ghost.on{opacity:1}
   font-size:15px;font-weight:600;letter-spacing:.16em;color:var(--goal);
   text-shadow:0 2px 10px rgba(0,0,0,.55)}
 .ghost.gx .glabel{top:-38px}
+/* An UP swipe is the one demonstration that climbs toward the name: the dot
+   reaches 60px above the contact point and carries a 13px radius with it, so
+   the label needs a little more air than the tap's 46px leaves it. */
+.ghost.gy .glabel{top:-54px}
 .glabel:empty{display:none}
 .gtrack{position:absolute;left:50%;top:50%;border-radius:3px;
   transform:translate(-50%,-50%);display:none}
 .ghost.g-swipe .gtrack,.ghost.g-two .gtrack,.ghost.g-dbl .gtrack{display:block}
 .ghost.gx .gtrack{width:200px;height:4px}
-.ghost.gy .gtrack{width:4px;height:152px}
+.ghost.gy .gtrack{width:4px;height:136px}
 .ghost.d-right .gtrack{background:linear-gradient(90deg,
   rgba(53,194,165,.05),rgba(53,194,165,.5))}
 .ghost.d-left .gtrack{background:linear-gradient(270deg,

@@ -141,18 +141,29 @@ function tutGestures(){
 function tutGestureLesson(){
   return app==="play" && !!L && !!L.tut && tutGestures();
 }
-/* How far the finger travels, in pixels, per direction. Horizontal gets more
-   room than vertical because the demo box is wider than it is tall - and the
-   track is sized to match in the CSS, by the same gx / gy class (the track is
-   twice the travel, both ways, so the path is visibly longer than the stroke).
+/* How far the finger travels, in pixels, per direction, and the track in the
+   CSS is drawn to match by the same gx / gy class.
 
-   NEARLY DOUBLED ON THE OWNER'S CALL, from 56/42. At the old size the finger
-   moved about a centimetre on a phone, which is a shorter stroke than any
-   swipe a player would actually make - so the demonstration was of a flick
-   rather than of the gesture, and a flick is the thing the gesture reader is
-   most likely to miss. Nothing clips at the new size: `.ghost` is 190x118
-   with no `overflow`, and the hand and the track are free to run past it. */
-var GHOST_SPAN={right:[100,0],left:[-100,0],up:[0,-76],down:[0,76]};
+   THE TRACK USED TO BE TWICE THE TRAVEL and that was the bug, not the size.
+   Lengthening the stroke lengthened the line with it, so the finger still
+   crossed only the middle half of a longer track and the demonstration
+   looked, if anything, smaller: a long path with a short journey on it reads
+   as a finger that could not be bothered. Reported in those terms.
+
+   So the travel is now the track less a margin at each end - 180 inside 200
+   sideways, 120 inside 136 up and down. The 10px of lead-in and lead-out is
+   all that is left of the old idea, and it is worth keeping: the dot fading
+   in exactly at the end of the line reads as the line being its own edge.
+
+   VERTICAL IS THE CONSTRAINED ONE, and it is not symmetric with horizontal
+   for that reason. An upward swipe rises toward the arena, and the gesture's
+   name rides above the dot - so every pixel of vertical travel is a pixel
+   the label has to climb to stay clear of it. 120 is what fits under the
+   board on a 327px phone with the name still in the empty band.
+
+   Nothing clips at either size: `.ghost` is 190x118 with no `overflow`, so
+   the hand and the track are free to run past its box. */
+var GHOST_SPAN={right:[180,0],left:[-180,0],up:[0,-120],down:[0,120]};
 /* Restart every loop in the hand from the top.
 
    Called only when the demonstration actually changes, and it has to be

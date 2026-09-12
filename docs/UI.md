@@ -148,10 +148,15 @@ named). Undoing one of these needs the paragraph.
   the bottom row of blocks while the hand itself was clear of them. 46px (38
   sideways) is measured off the tallest thing above the contact - the tap's
   ripple, at 31px - and puts the name in the band with the hand it belongs to.
-  **The stroke is `GHOST_SPAN` (`js/15-tutorial.js`) and the track is twice
-  it**, so the two move together: 100px sideways, 76px up and down, raised
-  from 56/42 because a centimetre of travel demonstrates a flick rather than
-  a swipe.
+  **The stroke is `GHOST_SPAN` (`js/15-tutorial.js`) and the track is the
+  stroke plus a 10px margin at each end** - 180 inside 200 sideways, 120
+  inside 136 up and down, raised from 56/42 because a centimetre of travel
+  demonstrates a flick rather than a swipe. The track was TWICE the stroke
+  once, and that is the trap: lengthening the stroke lengthened the line with
+  it, so the finger still crossed only its middle half and the demonstration
+  looked no bigger. Vertical is deliberately shorter than horizontal - an
+  upward swipe climbs toward the arena and takes the label with it, so
+  `.ghost.gy .glabel` carries its own, higher `top`.
 - **Icons are solid SVG** with `.lite` / `.dim` / `.ln`; text glyphs at that
   size were reported as missing buttons.
 - **The primer is `L.primer`, at the top, and only SPARRING has one.** A
