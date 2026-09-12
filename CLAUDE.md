@@ -467,22 +467,19 @@ is the rule.
   fight that ships. A phase's own `aim` is the SHAPE of a fight; this is the
   dial for when every fight is too fast. `h.lock` is set from `bossAim()`, not
   from `ph.aim`, so the line on the floor cannot disagree with its own clock.
-- **The fold is two beats and `foldPath()` (`js/10-render.js`) is both of
-  them**: every block travels into the front block of its own silhouette
-  column while the camera is still up in the volume (the GATHER, `flatT` 0 to
-  `FOLD_GATHER_END`), and only then does the camera come down and the stack
-  slide onto the plane (the SHEET, from `FOLD_SHEET_START`). That is rule 5
-  drawn. It stops `FOLD_GATHER_KEEP` short of the front block so coincident
-  cards cannot z-fight, and the squash rides the gather so what arrives is
-  already a card. Everything that folds goes through it - blocks, crates, the
-  pack, the goal, the rings, the player, the cutscene cast - and the player is
-  the one split case: only its DEPTH goes through, its screen-right and height
-  still ride `flatT`. Unfolding is the same two beats in reverse for free.
-  **The front block of every column with TWO OR MORE blocks in it is lit**
-  while the transition runs (`foldHiSet`, `FOLD_HI_IN`): a lift toward the
-  goal's green plus a bright rim, up before the travel and gone by the plane.
-  Only contested columns, or a flat meadow turns green on every fold; peril
-  and the tutorial's landing marker both outrank it (`controls.md`).
+- **The fold's motion is one beat; what teaches rule 5 is a MARK**
+  (`foldHiBuild()`, `js/10-render.js`). While the fold runs, the block you
+  would come back onto is lifted toward the goal's green and takes a bright
+  rim - up before the world moves (`FOLD_HI_IN`), gone by the plane, blooming
+  again on the way back. It is **one per LEDGE**: each screen-right column is
+  walked from the top for a square that is filled with the square above it
+  empty, because a block with something over it cannot be stood on once the
+  world is flat, and the winner is asked for with the game's own
+  `R.landings()`/`R.pick()` so the anchor's override of rule 5 is free. Only
+  columns holding two or more blocks, or a flat meadow goes green on every
+  fold. Peril and the tutorial's landing marker both outrank it. A two-beat
+  fold that gathered the world into the front block was built, played and
+  dropped for this (`controls.md`, `HISTORY.md`).
 - `INK_SETTLE` .18 and `PAPER_LIFT` .20 are the whole 2D look; both have
   been raised and reverted. The paper is derived from the sky.
 - `DEPTH_STEP` .34 charges the first cell of depth outright; `CAM_TILT` .62

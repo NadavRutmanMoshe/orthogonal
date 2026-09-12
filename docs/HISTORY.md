@@ -1518,3 +1518,49 @@ drawing where a 100px one is not.
 Worth remembering: **when three fixes in a row each improve the execution and
 none of them fix the report, the subject is wrong.** Ask what the medium can
 actually hold before rebuilding a fourth time.
+
+---
+
+## The fold that gathered into the front block (built, played, dropped)
+
+**The ask was "make the transition to 2D explain that the block closest to
+the camera is the one we go into".** The obvious answer is to animate it: have
+every block in a silhouette column travel along the view axis INTO the front
+block, with the camera still up in the volume so the travel reads as travel
+through depth, and only then bring the camera down and slide the stack onto
+the plane. Two beats instead of one. That was built.
+
+It worked, in the sense that the pictures were right. `foldPath()` replaced
+the straight lerp at all six places anything projects - blocks, crates, the
+pack, the goal, the landing rings, the player, and the cutscene cast - so
+nothing could disagree about where the middle of a fold was. The squash had
+to ride the GATHER rather than `flatT` (two blocks arriving at the same depth
+are coplanar boxes that z-fight, so they had to be cards by the time they
+met, and the gather stopped six per cent short for the same reason). The fold
+had to get longer to hold two beats: 520/620 became 760/860.
+
+**The owner played it and asked for the old animation back, with the
+highlight kept.** No amount of the motion being correct made it the thing
+that was wanted, and the cost was visible in the list above: a second timing
+system, a longer fold on every press for the whole game, and a new rule about
+coplanar faces to remember.
+
+What survived is the half that was actually teaching: **mark the block, leave
+the motion alone.** The mark is a lift toward the goal's green plus a bright
+rim, up before the world moves and gone by the plane. It is one line of
+state and a small per-frame set, it does not touch the tween, and it says the
+rule outright rather than hoping the player infers it from a trajectory.
+
+**And the mark was wrong first, in a way the animation had hidden.** It lit
+the front block of every silhouette SQUARE, which included squares buried
+under other squares - and a block with something on top of it is not
+somewhere you can stand once the world is flat, so the game was pointing at
+blocks it would never hand you. The owner caught it in one sentence. It marks
+one block per LEDGE now, found by walking each screen-right column from the
+top, and the winner is asked for with the game's own `R.landings()` /
+`R.pick()` rather than re-derived - which also made the anchor's override of
+rule 5 correct without anything being written for it.
+
+Worth remembering: **when an ask is "explain X", try marking X before
+animating X.** The animation is the expensive answer and it is the one that
+can only be inferred; a mark is cheap, exact, and revertible on its own.

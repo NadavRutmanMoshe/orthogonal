@@ -34,60 +34,39 @@ exclusive - every gesture also has a key and, unless hidden, a button:
   that**; if the turn ever feels mushy again, check the signs before touching
   `TURN_DEG`. `docs/HISTORY.md` has the worked example.
 - two-finger tap - turn right, unchanged: it is a drag that never travelled
-- **THE FOLD GOES THROUGH THE BLOCK NEAREST THE CAMERA, IN TWO BEATS**
-  (`foldPath()`, `FOLD_GATHER_END` .58, `FOLD_SHEET_START` .44,
-  `FOLD_GATHER_KEEP` .94, all in `js/10-render.js`). Rule 5 - coming back to
-  3D puts you on the supporting block nearest the camera - is the one rule
-  nobody could read off the screen, because the fold used to say nothing
-  about it: every block slid straight to the plane along its own line of
-  sight and arrived as an undifferentiated sheet, so which block you were
-  about to stand on was information the animation had, threw away, and then
-  surprised you with. Now: **(1) the GATHER**, every block travels along the
-  view axis into the front block of its own silhouette column, flattening
-  into a card as it goes, with the camera still up in the volume so the
-  travel is seen as travel *through depth*; **(2) the SHEET**, the camera
-  comes down to the axis and the stack slides onto the plane. Unfolding is
-  the same two beats backwards for free - `flatT` runs 1 → 0, the camera
-  lifts while the world is still one stack, and then the blocks come back
-  OUT of the front block to their own depths, which is the rule read out
-  loud in reverse. Three things are load-bearing: the **gather stops six per
-  cent short** of the front block, because two blocks arriving at exactly the
-  same depth are coplanar boxes that z-fight (the same reason the flat plane
-  has always kept `d*.012` between its cards); the **squash is driven off the
-  gather rather than off `flatT`**, so what arrives at the front is a card
-  .04 deep, smaller than the residue; and the **silhouette column is keyed on
-  `AX[view]`, the snapped basis**, not on the eased `viewAngle` the drawing
-  uses, or the key is a float with noise on it and never matches. Everything
-  that folds goes through `foldPath()` - blocks, crates, the pack, the goal,
-  the landing rings, the player and the cutscene cast - so none of them can
-  disagree about where the middle of a fold is. The player is the one split
-  case: screen-right and height still travel on `flatT` (that is only where
-  they end up), and **only the depth** goes through `foldPath`, so the piece
-  rides forward onto the block it is about to be stood on.
-- **AND THE WINNER IS LIT WHILE IT HAPPENS** (`foldHiSet`, `FOLD_HI_IN` .22,
-  `colFoldHi`). The gather shows a column collapsing; it does not by itself
-  say that a CHOICE was made, and a player who has not been told what they
-  are looking at sees a pile. So the front block of each column is lifted
-  toward the goal's green and takes a bright rim for the length of the
-  transition - rule 5's answer, drawn on the block itself. Three decisions:
-  it comes up over the first 22% of the fold, **before** the travel, or it is
-  a caption on something that has already happened; it fades out over the
-  SHEET, so in the plane - where there is no depth and the mark would mean
-  nothing - it is gone, and on the way back it blooms again exactly as the
-  world stands up; and it marks only columns with **two or more** blocks in
-  them. That last one is the whole selectivity: a one-block column has a
-  front block trivially, nothing merged into it, and lighting it says only
-  "there is a block here". Lighting every front block was the first build,
-  and on a flat meadow that is the entire ground going green on every fold.
-  It is a lift plus a rim rather than a repaint, the same pair the tutorial's
-  landing marker uses, and both PERIL and that landing marker outrank it -
-  the marker for a sharp reason, since it draws its own loser in a dim
-  version of this same green.
-- **THE FOLD IS A TIMED TWEEN, NOT A LERP** (`FOLD_MS_IN` 760, `FOLD_MS_OUT`
-  860, `FOLD_MS_CLOCK` 380, in `js/05-state.js`; the first two were 520/620
-  and were raised to give the two beats above room - run together, the gather,
-  which is the whole explanation, went past before it could be watched). It
-  used to be
+- **THE FOLD MARKS THE BLOCK IT IS ABOUT TO HAND YOU** (`foldHiBuild()`,
+  `FOLD_HI_IN` .22, `FOLD_HI_OUT_A/B` .58/.96, `colFoldHi`, all in
+  `js/10-render.js`). Rule 5 - coming back to 3D puts you on the supporting
+  block nearest the camera - is the one rule nobody could read off the
+  screen. The motion says the world is collapsing; it does not say which of
+  the blocks in a column you will be standing on afterwards. So while the
+  fold runs, that block is lifted toward the goal's green and takes a bright
+  rim, and the motion is left alone. **A two-beat FOLD was built and played
+  instead of this** - the whole world gathering into the front block of each
+  column while the camera stayed up in the volume, then flattening - and
+  dropped on the owner's call; the mark is what survived it, and it is the
+  cheaper half (`docs/HISTORY.md`).
+  Four things are load-bearing. **It is asked for with the game's own
+  `R.landings()` / `R.pick()`** rather than re-derived, so the anchor's
+  override of rule 5 is correct for free and the drawing cannot drift from
+  the rule. **It is ONE PER LEDGE, not one per silhouette square** - the
+  first build lit the front block of every square including squares buried
+  under other squares, and a block with something over it is not somewhere
+  you can stand once the world is flat (the owner's correction, after
+  playing it); so each screen-right column is walked from the top down for
+  squares that are filled with the square above them empty, and the rules are
+  asked what standing there would put you on. **Only columns holding two or
+  more blocks**, or a flat meadow turns entirely green on every fold and a
+  highlight that marks everything marks nothing. And it **comes up over the
+  first 22% of the fold, before the world moves** - a mark that arrives after
+  the travel is a caption on something that has already happened - then goes
+  out again by .96, so the plane is clean and the mark blooms a second time
+  on the way back, exactly as the world stands up. It is a lift plus a rim
+  rather than a repaint, the same pair the tutorial's landing marker uses,
+  and both PERIL and that marker outrank it - the marker for a sharp reason,
+  since it draws its own loser in a dim version of this same green.
+- **THE FOLD IS A TIMED TWEEN, NOT A LERP** (`FOLD_MS_IN` 520, `FOLD_MS_OUT`
+  620, `FOLD_MS_CLOCK` 380, in `js/05-state.js`). It used to be
   `flatT += (want-flatT)*rate`, which is an exponential ease-*out*: most of
   the travel happens in the first few frames and the rest is half a second of
   creeping the last two percent. So the verb the whole game is built on was

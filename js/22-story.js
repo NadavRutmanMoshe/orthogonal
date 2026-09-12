@@ -1124,19 +1124,10 @@ function storyFrame(dtMs,rx,rz,tdvx,tdvz,ft){
     /* THE PROJECTION, and it is the player's, line for line. u is the
        screen-right coordinate that survives a fold; the depth is thrown
        away and replaced with a fixed step toward the camera, so an actor in
-       the plane stands in front of the paper rather than inside it.
-
-       THE DEPTH GOES THROUGH foldPath, which is the two-beat fold every
-       block in 10-render.js takes: into the front of its own silhouette
-       column first, then onto the plane. Without it the cast stood still
-       for the first half of every fold while the ground travelled out from
-       under them - and on the abduction, which IS a fold with four cubes in
-       one column, that is the one beat the scene exists to show. `ft` is
-       still passed in; a function is not the render value. */
-    var u=a.x*rx+a.z*rz, ad=a.x*tdvx+a.z*tdvz;
-    var an=(typeof foldPath==="function")?foldPath(u,a.y,ad,ST_DEPTH)
-                                         :ad+(ST_DEPTH-ad)*ft;
-    stTmp.set(u*rx+an*tdvx, a.y, u*rz+an*tdvz);
+       the plane stands in front of the paper rather than inside it. */
+    var u=a.x*rx+a.z*rz;
+    var fx=u*rx+ST_DEPTH*tdvx, fz=u*rz+ST_DEPTH*tdvz;
+    stTmp.set(a.x+(fx-a.x)*ft, a.y, a.z+(fz-a.z)*ft);
     // A hop, and a sob: one is a bounce, the other is the same bounce far
     // smaller and never leaving the ground.
     if(a.hop>0&&a.hopIn<=0)stTmp.y+=Math.sin((1-a.hop)*Math.PI)*.30;
