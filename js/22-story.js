@@ -211,12 +211,15 @@ function stHex(id){
    `0.885y - 0.465z`, so the roof's near edge sits about 1.05 above the floor
    it covers, and anyone standing under it is behind it.
 
-   THE IMPORTANT GEOMETRY IS THE COLUMN AT x=3. The door is at x=3, the path
-   is x=3, and when the fold comes everyone on that line - mother in the
-   doorway, father on the step, and the two officers behind them - is in one
-   square. The son is at x=6 by then, and there is nothing else anywhere in
-   this world at x=6 above the ground. That is why he lives, and it is on
-   screen before it is in words. */
+   THE IMPORTANT GEOMETRY IS TWO COLUMNS, x=2 AND x=4. The parents stand
+   either side of their door, the path is two wide so the census comes up
+   it side by side, and when the fold comes one officer is standing in front
+   of each parent: father and officer in x=2, mother and officer in x=4, two
+   silhouette squares with two cubes in each, taken in one fold. (It was one
+   column of four at x=3, in single file; the owner asked for them abreast,
+   and for one to take each parent at the same moment.) The son is at x=6 by
+   then, and there is nothing else anywhere in this world at x=6 above the
+   ground. That is why he lives, and it is on screen before it is in words. */
 /* THE ONE THING THAT MADE IT A HOUSE AND NOT A HILL: `L.tint`.
 
    Shape alone was not enough, and three versions proved it. Everything in
@@ -247,8 +250,9 @@ function stHex(id){
    between them is what says building. Neither drifts toward the boss's
    violet or the trial's amber. */
 var ST_WALL=0xe9d6ae, ST_ROOF=0xa33d33;
-// The chimney is a brick between the wall and the roof.
-var ST_BRICK=0x6e4034;
+// The chimney is a brick between the wall and the roof; the path is pale
+// flagstone and the pond's rim a cool grey, both over plain stone.
+var ST_BRICK=0x6e4034, ST_PATH=0xd6c9ab, ST_RIM=0x8e969e;
 function stHouseBoard(){
   var b=[],tint=[],x,z;
   function floor(x0,x1,z0,z1){
@@ -350,7 +354,11 @@ function stHouseBoard(){
   floor(1,5,0,3);      // our house
   floor(8,12,0,3);     // theirs
   floor(0,13,4,5);     // the strip across the front of both
-  for(z=6;z<=9;z++)b.push([3,0,z]);                                   // the path
+  /* THE PATH IS TWO WIDE AND PAVED. Two wide because the census walks up
+     it side by side (see the beats); paved because on grass it was a strip
+     of grass indistinguishable from the strip it joins, and a painted cell
+     wears plain stone, so a pale warm tint is flagstones. */
+  for(z=6;z<=9;z++){put(3,0,z,ST_PATH);put(4,0,z,ST_PATH);}
   house(1,5);
   house(8,12);
   /* ============================================================
@@ -377,12 +385,26 @@ function stHouseBoard(){
      poking out beside the roof as a stray block. The treeline the section
      already draws behind every level is the distance now.
      ============================================================ */
-  // The pond, in front of the strip, off to one side of the path.
-  for(x=5;x<=9;x++)for(z=7;z<=8;z++)b.push([x,0,z,1]);
-  for(x=6;x<=8;x++)b.push([x,0,9,1]);
-  // A lip of ground round it, so it is a pond and not a hole in the world.
-  for(x=4;x<=10;x++)b.push([x,0,6]);
-  b.push([4,0,7]);b.push([4,0,8]);b.push([10,0,7]);b.push([10,0,8]);
+  /* THE POND IS SUNK A COURSE AND RIMMED IN STONE. At ground level it was
+     a sheet of water lying on the lawn; a course down, with a ring of grey
+     stone round it at ground level, the rim's side faces show above the
+     water and it is a pond you could fall into. Rounder than it was: four
+     rows, the middle two wider. The rim is every ground cell touching the
+     water that is not already path, and the path runs along its west edge. */
+  var pond={}, rim={}, i;
+  var rows=[[7,6,9],[8,5,10],[9,5,10],[10,6,9]];          // [z, x0, x1]
+  for(i=0;i<rows.length;i++)for(x=rows[i][1];x<=rows[i][2];x++){
+    pond[x+","+rows[i][0]]=1;b.push([x,-1,rows[i][0],1]);
+  }
+  for(var pk in pond){
+    var px=+pk.split(",")[0], pz=+pk.split(",")[1];
+    for(var dx=-1;dx<=1;dx++)for(var dz=-1;dz<=1;dz++){
+      var nx=px+dx, nz=pz+dz, nk=nx+","+nz;
+      if(pond[nk]||rim[nk])continue;
+      if((nx===3||nx===4)&&nz>=6&&nz<=9)continue;      // the path keeps its cells
+      rim[nk]=1;put(nx,0,nz,ST_RIM);
+    }
+  }
   return {blocks:b, tint:tint};
 }
 /* THE PLANE.
@@ -487,7 +509,7 @@ var STORY={
       {id:"nMum", col:"white", size:1.4,  at:[11,1,5]},
       {id:"nKid", col:"white", size:1.0,  at:[10,1,4]},
       {id:"copA", body:ST_COP_BODY, rim:ST_COP_RIM, size:1.34, at:[3,1,9], hidden:true},
-      {id:"copB", body:ST_COP_BODY, rim:ST_COP_RIM, size:1.34, at:[3,1,9], hidden:true}
+      {id:"copB", body:ST_COP_BODY, rim:ST_COP_RIM, size:1.34, at:[4,1,9], hidden:true}
     ],
     beats:[
       /* THE THREE OF THEM, NAMED AND COUNTED, BEFORE ANYTHING HAPPENS.
@@ -524,29 +546,33 @@ var STORY={
          second one is let out a step later rather than started a square
          further back, because a square further back is a square of path that
          exists only to hold him. */
+      /* SIDE BY SIDE UP THE PATH, which is two wide for this. They were in
+         single file in one column; abreast they are a pair, which is what
+         the next beats need them to be. */
       {ms:2400, say:"The census came up the path.",
        at:function(){
          stFrame(ST_SHOT.path);
-         stShow("copA");stWalk("copA",[[3,8],[3,7],[3,6]]);
-         stAfter(300,function(){
-           stShow("copB");stWalk("copB",[[3,8],[3,7]]);
-         });
+         stShow("copA");stShow("copB");
+         stWalk("copA",[[3,8],[3,7],[3,6]]);
+         stWalk("copB",[[4,8],[4,7],[4,6]]);
        }},
-      {ms:700},
+      // Onto the strip, still abreast, in front of the door.
+      {ms:700, at:function(){stWalk("copA",[[3,5]]);stWalk("copB",[[4,5]]);}},
       // Two taps on a door, which in a world made of cubes is a cube
       // knocking itself against one. The camera closes on the door for
-      // the rest of it: this shot holds the door column and the son's
-      // square, which is everything the fold is about.
+      // the rest of it: this shot holds both parents' columns and the
+      // son's square, which is everything the fold is about.
       {ms:1000, at:function(){stFrame(ST_SHOT.door);stKnock("copA");}, say:null},
-      // The father goes down to meet them at the foot of the strip.
-      {ms:1250, at:function(){stWalk("dad",[[2,5],[3,5]]);}},
-      {ms:2000, at:function(){stHop("dad");stHop("copA",340);},
+      // The parents answer, from where they stand either side of the door.
+      {ms:2000, at:function(){stHop("dad");stHop("mum",220);},
        say:"They had questions about the house."},
-      // And the mother comes as far as the doorstep, which is as far as she
-      // gets. She is now on the same line as the other three: the doorstep,
-      // the foot of the strip, and the two squares of path under the census.
-      {ms:1150, at:function(){stWalk("mum",[[3,4]]);}},
-      {ms:900,  at:function(){stHop("mum");stHop("dad",200);}, say:null},
+      /* ONE TAKES EACH. The first officer steps across to stand in front
+         of the father; the second is already in front of the mother. That
+         puts father and officer in column x=2 and mother and officer in
+         x=4 - two silhouette squares with two cubes in each - and the fold
+         takes both pairs at the same moment. */
+      {ms:1150, at:function(){stWalk("copA",[[2,5]]);}},
+      {ms:900,  at:function(){stHop("copA");stHop("copB",120);}, say:null},
       // THE FOLD IS THE ABDUCTION. No new verb, no effect nobody has seen:
       // the world does the one thing this game does, and four cubes standing
       // in one column do not come back from it.
@@ -562,7 +588,7 @@ var STORY={
          what changed. */
       {ms:2000, say:"My parents!", who:"son",
        at:function(){stSob("son",4200);stHop("son");}},
-      {ms:2600, say:"He was not standing on their line."},
+      {ms:2600, say:"He was not standing on either line."},
       // The neighbours close the distance. Nobody says anything, because
       // there is nothing to say and the walk is the sentence.
       {ms:1500, at:function(){
@@ -1068,15 +1094,19 @@ function stSay(text,who){
   else if(who){
     var a=stFind(who);
     if(a){
-      /* A SPEAKER TOO DARK TO SET TYPE IN GETS A NEUTRAL. The line is drawn
-         in the speaker's own colour, which is the point of `who` - and the
-         father is Black, which as body text on a night ground is a line
-         nobody can read. Anything under a third of the way up the range
-         falls back to the caption's ordinary light grey; the colour is a
-         nice touch and legibility is not. */
-      var c=a.mat.color;
+      /* A SPEAKER TOO DARK TO SET TYPE IN IS LIFTED, NOT SWAPPED. The line
+         is drawn in the speaker's own colour, which is the point of `who` -
+         and the father is Black, which as body text on a night ground is a
+         line nobody can read. This used to fall back to the narrator's
+         violet, which put his lines in the narrator's voice; the owner's
+         rule is narrator violet, every cube its own colour. So a colour
+         under a third of the way up the range is mixed most of the way
+         toward white instead: Black speaks in a pale grey, which is still
+         his and is not the narrator's. */
+      var c=a.mat.color.clone();
       var lum=c.r*.299+c.g*.587+c.b*.114;
-      col=lum<.34?null:"#"+c.getHex().toString(16).padStart(6,"0");
+      if(lum<.34)c.lerp(new THREE.Color(0xffffff),.72);
+      col="#"+c.getHex().toString(16).padStart(6,"0");
     }
   }
   el.style.setProperty("--say",col||"#a274ff");

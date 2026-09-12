@@ -90,10 +90,11 @@ const SCREENS={
   phase:    {what:"the between-phases note on a boss", js:"lv(18);setTimeout(function(){phaseNote('the ground rises');},300);", wait:1200},
   /* THE CUTSCENES, seekable by beat. storySeek() runs every beat up to the
      one asked for and snaps the walks to their last cell, which is near
-     enough to the pose a beat holds - so `story1:14` is the frame just after
+     enough to the pose a beat holds - so `story1:13` is the frame just after
      the fold that takes the parents. The beat numbers are the array indices
-     in STORY.open.beats / STORY.end.beats in js/22-story.js. */
-  "story1:N":{what:"the opening cutscene at beat N (0 the house, 14 the fold, 19 the last line)",
+     in STORY.open.beats / STORY.end.beats in js/22-story.js, so they move
+     when a beat is added or cut; the ones quoted here are a guide. */
+  "story1:N":{what:"the opening cutscene at beat N (0 the house, 13 the fold, 18 the last line)",
               js:"storyShot();storyPlay('open');storySeek(N);", wait:700},
   "story2:N":{what:"the ending cutscene at beat N; a replay, so it skips the arrival (1 is the press it asks for)",
               js:"storyShot();storyPlay('end',true);storySeek(N);", wait:700},

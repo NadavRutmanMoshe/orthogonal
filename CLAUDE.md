@@ -362,8 +362,13 @@ is the rule.
   THROUGH every row of depth -
   open in the volume, and still holes in the plane because nothing stands
   behind them along the view axis. Painted windows were tried and reported
-  as off. The census still folds column `x=3`: doorstep, foot of the strip,
-  two squares of path.
+  as off. The census comes up a two-wide paved path side by side and the
+  fold takes TWO columns at once - father and officer in `x=2`, mother and
+  officer in `x=4` - on the owner's call; the pond is sunk a course and
+  rimmed in painted stone.
+- **A speaker's line is in the speaker's colour, the narrator's in violet.**
+  A cube too dark to set type in (Black) is lifted toward white, never
+  swapped for the narrator's violet (`stSay()`).
 - **Caption time is the sum of the beats a line sits over**, and the
   opening's and the fire's are held at the ending's pace (2.6s to 3.8s a
   line), which the owner called right.

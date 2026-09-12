@@ -574,11 +574,14 @@ rides `flatT` and whose `u` is one square from his. Any other renderer fakes
 the one moment the whole game has been building the vocabulary for.
 
 **The abduction is the fold, and that is the rule, not a flourish.** The
-census does not take the parents away in a puff of light. Mother, father and
-two officers are standing on `x=3` - the door, the step, and the path, which
-is one square wide for this reason - and the world folds. Four things in one
-silhouette column is rule 4, and it is the boss kill rule, and it is the only
-way anything in this game dies at somebody else's hand. The son lives because
+census does not take the parents away in a puff of light. The parents stand
+either side of their door, the two officers come up the path side by side
+(it is two wide for this) and one steps in front of each: father and officer
+in `x=2`, mother and officer in `x=4` - and the world folds. Two things in one
+silhouette column, twice over, is rule 4, and it is the boss kill rule, and it
+is the only way anything in this game dies at somebody else's hand. (It was
+four in one column at `x=3` in single file; the owner asked for them abreast
+and for one to take each parent at the same moment.) The son lives because
 he had stepped outside to say hello, so his column was empty; there is
 nothing else in that world above the ground at `x=6`. It is on screen before
 it is in words, which is the standing rule here: **a story beat that does not
