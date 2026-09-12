@@ -637,6 +637,41 @@ game entitled to some. The tint has to be *saturated* - a pale cream over the
 grass surface's bright green band comes out olive, and a multiply can only
 darken.
 
+**And the fifth version was a texture, not a shape.** The tan-and-terracotta
+house was reported as still not looking good, and the screenshot said why:
+every wall block wore the meadow's grass texture, so every course carried a
+bright green lid, and five courses of green-lidded brown under a brown
+pyramid is a terraced hill whatever the sides are painted. The tint could
+darken the sides and could do nothing about the lids, because a multiply
+cannot remove a band the texture draws. So a painted cell now wears plain
+stone: `paintedCell()` in `js/10-render.js` builds any cell in the tint
+table on `TEX.stone`, the near-white grain the prologue wears, and the tint
+lands on that. Two things follow. The wall no longer has to beat the green,
+so it can be the pale cream it wanted to be from the start; and the roof can
+be a deep red that is a different *family* from the wall, so the edge between
+them is what says building. The dunes behind the houses went in the same
+pass - ochre over plain stone was flat brown blocks, and once the scene was
+shot house by house they stood either side of the house like a pair of
+wings. The section's own treeline is the distance now.
+
+**A scene is shot, not surveyed.** `recomputeBounds()` fits the whole arena
+to the screen, which is right for a puzzle and wrong for a scene: the street
+is fourteen squares wide, and fitted to a phone the family was a quarter of
+the screen high, three small cubes in a picture that was mostly sky. A beat
+may now call `stFrame(box)` with two board corners and the renderer fits that
+box instead (`storyFrameBox()`, guarded with `typeof` like `guidePoint()`,
+because the story file loads after the renderer). The opening has four shots
+in `ST_SHOT`: our house alone for the goodbyes, the whole street for the
+hello and for the neighbours' walk at the end, the house and the path for the
+census climbing it, and the door - our house, the door column and the son's
+square at x=6, which is everything the fold is about - from the knock through
+the fold. The renderer's own lerp toward `centerT` and `viewSizeT` carries
+each change over about half a second, so a reframe is a camera move rather
+than a cut, and the wide frame is set a beat before the wide moment so it has
+settled when the moment comes. The box is a fit target, not a clip; blocks
+outside it still draw, off centre. The fire and the ending have no `frame`
+and fit their boards as they always did.
+
 **And the roof lives at z=0 only.** Run back over the interior it becomes an
 overhang, and an overhang in this projection is drawn in front of the face it
 belongs to: screen height is `0.885y − 0.465z`, so a roof block two rows

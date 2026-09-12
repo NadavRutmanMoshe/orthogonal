@@ -1582,3 +1582,41 @@ animating X** - the animation is the expensive answer and the only one that
 can only be inferred. And **a cue that fires before anything has happened is
 not early, it is unprompted.** Put it where the question is, not where the
 mechanic starts.
+
+
+---
+
+## The fifth house was a texture and a camera, and a video was on the table
+
+The opening was reported as not looking good, with two options offered: fix
+the scene in the engine, or replace it with a video. The screenshot said what
+was wrong before either was argued. The house had been through four shapes
+and had a colour, and it still read as a brown hill, because every wall block
+wore the meadow's grass texture - a bright green lid on every course - and
+the tint, being a multiply, could darken the sides and never remove the lids.
+And it was small: the camera fitted the whole fourteen-wide street to a
+phone, and the three cubes the scene is about counting were the smallest
+things on screen.
+
+**The video was costed and declined.** It reverses the no-media-files rule in
+`look.md`, it would be inlined as several megabytes of base64 in a single-file
+build that has a size cap, it cannot be streamed from a CDN in the artifact,
+and it cannot be the fold - a video can show one, but the whole story is
+built on the abduction being the verb the player presses on the next level.
+The fire and the ending would have stayed in the engine either way, so the
+game would have opened in one look and continued in another.
+
+**What fixed it was two small mechanisms, neither of them a shape.** A
+painted cell now wears plain stone (`paintedCell()`), so a cream wall is
+cream and a red roof is red and the two are different families, which is the
+edge that says building. And a beat can frame a box instead of the board
+(`stFrame()`, `ST_SHOT`), so the scene opens tight on the household, pulls
+back for the street, and closes on the door column and the boy's square for
+the fold. The renderer's existing lerp made the reframes camera moves for
+free. The dunes came out in the same pass: retired by the tight framing, which
+stood them either side of the house like wings.
+
+Worth remembering: **four attempts at a shape were four attempts at the wrong
+variable.** The lids were a texture and the scale was a camera, and both were
+one screenshot away from being obvious. And **"make it a video" is usually
+"shoot it"**: the camera was what the ask was missing, not the renderer.

@@ -350,6 +350,18 @@ is the rule.
   this camera angle. A house needs a roof, windows AND `L.tint` - shape alone
   reads as terrain, and the roof must sit at `z=0` or it overhangs its own
   face. Screen height is `0.885y - 0.465z` (`chrome.md`).
+- **A painted cell wears plain stone** (`paintedCell()`, `js/10-render.js`):
+  a cell in `L.tint` is built on `TEX.stone`, not the section's surface, so
+  the tint is the colour you see and a wall has no grass lid. The house is
+  cream plaster under a deep red roof, and that is what finally made it a
+  house after four shapes had not. `syncMeshes()` rebuilds a cell whose
+  painted-ness changed, like a changed kind.
+- **A scene is shot, not surveyed.** A beat may call `stFrame(box)` with two
+  board corners and `recomputeBounds()` fits THAT instead of the arena
+  (`storyFrameBox()`, typeof-guarded like `guidePoint()`); `def.frame` is the
+  first shot. The renderer's own lerp carries the move, so set the wide frame
+  a beat before the wide moment. `ST_SHOT` holds the opening's four shots.
+  The fire and the ending have no frame and fit their board as before.
 - **`WATCH THE OPENING` / `THE FIRE` / `THE ENDING` are always in the menu**, and a
   replay is not a first watch: `storyPlay(id,replay)` does not mark the scene
   seen and hands back where it came from, so looking at the ending early does

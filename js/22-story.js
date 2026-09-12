@@ -237,12 +237,16 @@ function stHex(id){
    colours that are never free: nothing here may drift toward the boss's
    violet or the trial's amber. Warm cream and burnt terracotta are as far
    from both as a building can get. */
-/* THE WALL COLOUR HAS TO BEAT THE GRASS, and the first one did not. These
-   multiply the surface texture, and the grass surface carries a bright green
-   band on every face - so a pale cream wall came out olive and the houses
-   were still green. A saturated warm tan takes that band down to brown,
-   which is what a multiply can do and a pale tint cannot. */
-var ST_WALL=0xd08b52, ST_ROOF=0xb2503c;
+/* THE WALL IS PLASTER AND THE ROOF IS TILE, AND THE TWO MUST NOT BE THE
+   SAME FAMILY. For four versions the tint multiplied the meadow's grass
+   texture, so the wall had to be a saturated tan just to beat the green band
+   on every face - and a tan wall under a terracotta roof is one brown mass
+   with a green lid on every course, which is a terraced hill. A painted cell
+   now wears plain stone (paintedCell() in js/10-render.js), so the tint is
+   the colour you see: a pale cream wall, a deep red roof, and the edge
+   between them is what says building. Neither drifts toward the boss's
+   violet or the trial's amber. */
+var ST_WALL=0xe9d6ae, ST_ROOF=0xa33d33;
 function stHouseBoard(){
   var b=[],tint=[],x,z;
   function floor(x0,x1,z0,z1){
@@ -297,23 +301,28 @@ function stHouseBoard(){
   house(1,5);
   house(8,12);
   /* ============================================================
-     AND THE REST OF THE WORLD, WHICH IS WHAT MAKES IT A PLACE RATHER THAN A
-     SET. Two houses on a strip is a diagram of a street; the strip having a
-     pond at the front of it and dunes behind it is somewhere people live.
+     AND THE POND, WHICH IS WHAT MAKES IT A PLACE RATHER THAN A SET. Two
+     houses on a strip is a diagram of a street; the strip having a pond at
+     the front of it is somewhere people live.
 
-     Both are made of pieces the game already has, which is the rule
-     everything in these scenes follows. The pond is WATER - kind 1, the
-     piece III · WATER teaches - so it ripples and it is see-through because
-     every water block is. The dunes are ordinary stone under a sand tint,
-     which is the same trick the houses use: `L.tint` is a hue on a piece of
-     stone and changes no rule.
+     It is made of a piece the game already has, which is the rule everything
+     in these scenes follows: WATER - kind 1, the piece III · WATER teaches -
+     so it ripples and it is see-through because every water block is. A
+     player meets it here before the game teaches it, and that is deliberate
+     rather than sloppy: it is scenery in a cutscene that holds every verb -
+     nothing can be stepped on, folded or drowned in - so all a first-time
+     player takes from it is that this world has water in it. Two sections
+     later that turns out to have been true.
 
-     A PLAYER MEETS BOTH OF THESE HERE BEFORE THE GAME TEACHES THEM, and
-     that is deliberate rather than sloppy. They are scenery in a cutscene
-     that holds every verb - nothing can be stepped on, folded or drowned
-     in - so all a first-time player takes from it is that this world has
-     water in it and sand beyond it. Two sections later that turns out to
-     have been true.
+     THERE WERE DUNES BEHIND THE HOUSES, AND THE CAMERA RETIRED THEM. Two
+     rows of ochre-tinted stone with a ridge on the back row, standing in for
+     distance. They earned their place while the whole street was fitted to
+     the screen and the houses needed something behind them; once a painted
+     cell wore plain stone they became flat brown blocks, and once the scene
+     was shot house by house they stood either side of the house at the
+     height of its second course, like a pair of brown wings, with the ridge
+     poking out beside the roof as a stray block. The treeline the section
+     already draws behind every level is the distance now.
      ============================================================ */
   // The pond, in front of the strip, off to one side of the path.
   for(x=5;x<=9;x++)for(z=7;z<=8;z++)b.push([x,0,z,1]);
@@ -321,33 +330,6 @@ function stHouseBoard(){
   // A lip of ground round it, so it is a pond and not a hole in the world.
   for(x=4;x<=10;x++)b.push([x,0,6]);
   b.push([4,0,7]);b.push([4,0,8]);b.push([10,0,7]);b.push([10,0,8]);
-  /* THE DUNES, behind the houses and stepping UP away from the camera -
-     which is the one direction depth is free in here. They are further off
-     than anything anybody touches and they rise as they go, so they read as
-     distance rather than as a second lawn.
-
-     THE TINT HAS TO BEAT THE GRASS AND SAND ALMOST CANNOT. These values
-     multiply the surface, the grass texture carries a bright green band on
-     every face, and a multiply only darkens - so for the result to come out
-     warmer than it is green the tint needs roughly half again as much red as
-     green. A believable sand (0xd9bd83) has nearly equal amounts and came
-     out olive: photographed, the dunes were more lawn. This is an ochre, and
-     over green it lands on the brown a dune is at night.
-
-     Kept to the strip's own width. The first version ran them four squares
-     wider on each side, which stretched the arena, shrank the houses and
-     framed the scene in two green wings.
-
-     And DARK, two steps under the walls. At the walls' own tan they were the
-     same warm brown as the houses and the top half of the picture read as
-     one mass; the second version of a background has to recede, which on a
-     night board means darker rather than merely different. */
-  var ST_SAND=0x7d4a2c;
-  for(x=0;x<=13;x++){
-    put(x,0,-2,ST_SAND);
-    put(x,0,-3,ST_SAND);
-    if(((x+3)%4)<2)put(x,1,-3,ST_SAND);
-  }
   return {blocks:b, tint:tint};
 }
 /* THE PLANE.
@@ -403,6 +385,23 @@ var ST_ARRIVE=[
   {ms:900,  at:function(){stFadeTo(0,850);}}
 ];
 
+/* THE SHOTS OF THE OPENING, as boxes for stFrame() (see THE CAMERA below).
+   Board cells: our house is x 1..5 and z 0..3, theirs x 8..12, the strip
+   z 4..5, the path x=3 z 6..9. The y top is the eaves, not the chimney, so
+   the family sits near the middle of the screen rather than under it.
+
+   HOME    our house alone, for the goodbyes
+   STREET  both houses and the strip, for the hello and the neighbours' walk
+   PATH    our house and the path, for the census climbing it
+   DOOR    our house, the door column and the son's square at x=6 - the two
+           columns the fold is about, and nothing else */
+var ST_SHOT={
+  home:  [[0,0,0],[6,4,3]],
+  street:[[0,0,0],[13,4,5]],
+  path:  [[0,0,0],[8,4,9]],
+  door:  [[0,0,0],[8,4,5]]
+};
+
 var STORY={
   open:{
     to:"prologue",
@@ -410,6 +409,7 @@ var STORY={
        playerMesh for the length of this scene only; storyStop() puts the
        equipped one back with applySkin(). See ST_MUM above. */
     son:"rose",
+    frame:ST_SHOT.home,
     level:{name:"I'm Just A Cube", hint:"", theme:1, tutorial:true, rotate:false,
            start:[3,1,2], goal:[3,1,2], blocks:null},
     /* BIGGER THAN THEY WERE. The parents were 1.18 against the son's 1.0 and
@@ -442,8 +442,11 @@ var STORY={
       {ms:1250, at:function(){stHop("son");stHop("mum",300);}, say:null},
       // Out through the door and down onto the strip.
       {ms:1060, at:function(){stWalk("son",[[3,3],[3,4],[3,5]]);}},
-      // And along the front, toward the neighbours.
-      {ms:1060, at:function(){stWalk("son",[[4,5],[5,5],[6,5]]);}},
+      // And along the front, toward the neighbours. The camera pulls back
+      // to the whole street as he goes, so they are in the picture before
+      // he reaches them.
+      {ms:1060, at:function(){stFrame(ST_SHOT.street);
+                              stWalk("son",[[4,5],[5,5],[6,5]]);}},
       {ms:480,  at:function(){stHop("son");}},
       // All three say it back. Staggered, because three cubes hopping in
       // unison is a machine and three cubes hopping raggedly is a family.
@@ -455,6 +458,7 @@ var STORY={
          exists only to hold him. */
       {ms:1600, say:"The census came up the path.",
        at:function(){
+         stFrame(ST_SHOT.path);
          stShow("copA");stWalk("copA",[[3,8],[3,7],[3,6],[3,5]]);
          stAfter(300,function(){
            stShow("copB");stWalk("copB",[[3,8],[3,7],[3,6]]);
@@ -462,8 +466,10 @@ var STORY={
        }},
       {ms:700},
       // Two taps on a door, which in a world made of cubes is a cube
-      // knocking itself against one.
-      {ms:1000, at:function(){stKnock("copA");}, say:null},
+      // knocking itself against one. The camera closes on the door for
+      // the rest of it: this shot holds the door column and the son's
+      // square, which is everything the fold is about.
+      {ms:1000, at:function(){stFrame(ST_SHOT.door);stKnock("copA");}, say:null},
       // The father comes out to them.
       {ms:1250, at:function(){stWalk("dad",[[2,2],[3,2],[3,3],[3,4]]);}},
       {ms:1100, at:function(){stHop("dad");stHop("copA",340);},
@@ -491,6 +497,7 @@ var STORY={
       // The neighbours close the distance. Nobody says anything, because
       // there is nothing to say and the walk is the sentence.
       {ms:1500, at:function(){
+        stFrame(ST_SHOT.street);
         stWalk("nDad",[[8,5]]);
         stWalk("nMum",[[10,5],[9,5]]);
         stWalk("nKid",[[9,4],[8,4],[7,4],[7,5]]);
@@ -626,7 +633,7 @@ function storyPlay(id,replay){
   var travels=def.from==="here"&&!replay;
   ST={id:id, def:def, list:(travels?def.pre:[]).concat(def.beats),
       i:-1, t:0, actors:[], await:null, over:false, replay:!!replay,
-      arrived:false};
+      arrived:false, frame:def.frame||null};
   var el=$("story");if(el)el.classList.add("on");
   stSay(null);
   stFadeTo(0,420);
@@ -923,6 +930,34 @@ function stUnfold(){
   flatTarget=0;
   if(typeof SFX!=="undefined"&&SFX.unfold)SFX.unfold();
   if(typeof foldJolt==="function")foldJolt(false);
+}
+
+/* ============================================================
+   THE CAMERA
+
+   A scene is shot, not surveyed. recomputeBounds() fits the whole arena to
+   the screen, which is right for a puzzle and wrong here: the street is
+   fourteen squares wide and fitted to a phone the family is a quarter of the
+   screen high, three small cubes in a picture that is mostly sky. So a beat
+   may name a BOX - two corners in board cells - and recomputeBounds() fits
+   that instead (it asks storyFrameBox(), guarded, because this file loads
+   after the renderer). The renderer's own lerp toward the new centre and
+   size carries the change over about half a second, so a reframe is a
+   camera move, not a cut; the beat before a wide moment sets the wide frame
+   so it has settled by the time the moment comes.
+
+   The box is a FIT TARGET, not a clip: blocks and actors outside it still
+   draw, they are just off centre and may run off the edge. A scene's `frame`
+   is its first shot, in place before the first frame is drawn; stFrame() in
+   a beat changes it; storyStop() nulling ST drops it and the next level's
+   syncMeshes() fits its own board again.
+   ============================================================ */
+function storyFrameBox(){return (ST&&ST.frame)||null;}
+function stFrame(box){
+  if(!ST)return;
+  ST.frame=box||null;
+  if(typeof recomputeBounds==="function"&&typeof L!=="undefined"&&L&&L.blocks)
+    recomputeBounds();
 }
 
 /* ============================================================

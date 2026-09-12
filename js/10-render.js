@@ -2011,10 +2011,27 @@ function trailClear(){
   trailSet={};
 }
 
+/* A PAINTED CELL WEARS PLAIN STONE, NOT THE SECTION'S SURFACE.
+
+   `L.tint` multiplies a colour into the block's texture, and for four
+   versions of the opening's house that texture was the meadow's grass - so
+   every course of wall carried a bright green lid, and a wall of green-lidded
+   blocks five high is a terraced hill whatever colour its sides are. The
+   tint could darken the sides and could do nothing about the lids, because a
+   multiply cannot remove a band the texture draws.
+
+   So a cell that is in the tint table is built on `TEX.stone` - the plain,
+   near-white grain the prologue wears - and the tint lands on that: warm over
+   white is plaster, red over white is tile. Nothing else changes: the tint
+   still rides material.color in the block loop, still takes the depth fade
+   and the settle toward ink. It is a texture choice at build time, which is
+   why the mesh remembers it (`userData.painted`) and syncMeshes rebuilds a
+   cell whose painted-ness changed, exactly as it does for a changed kind. */
+function paintedCell(k){return !!(tintSet&&tintSet[k]!==undefined);}
 function addMesh(x,y,z,kind){
   var k=K(x,y,z);
   if(meshes[k])return;
-  var m=makeBlockMesh(kind);
+  var m=makeBlockMesh(kind,paintedCell(k));
   m.position.set(x,y,z);
   m.userData.base=[x,y,z];
   scene.add(m);meshes[k]=m;
@@ -2025,7 +2042,7 @@ function addMesh(x,y,z,kind){
    is a function rather than the body of addMesh(). The chips used to be
    hand-drawn SVG approximations of these, and an approximation of a thing the
    player is looking at on the same screen is just a wrong picture. */
-function makeBlockMesh(kind){
+function makeBlockMesh(kind,painted){
   var glass=kind===1, anchor=kind===2, spike=kind===4;
   var mat=glass
     /* Water reads through a warm section, which is where it is taught, so it
@@ -2035,7 +2052,7 @@ function makeBlockMesh(kind){
     ? new THREE.MeshLambertMaterial({color:colGlass.clone(),transparent:true,
         opacity:.78,vertexColors:true,map:TEX.water})
     : new THREE.MeshLambertMaterial({vertexColors:true,
-        map:spike?TEX.lava:(anchor?TEX.stone:stoneSurface()),
+        map:spike?TEX.lava:((anchor||painted)?TEX.stone:stoneSurface()),
         color:(anchor?colAnchor:spike?colSpike:colBlock).clone()});
   /* THE FORM IS THE LABEL. Stone keeps the case-and-rim; water and fire are
      full cells with a surface plate, so they are told apart in silhouette
@@ -2044,6 +2061,7 @@ function makeBlockMesh(kind){
   m.userData.glass=glass;
   m.userData.anchor=anchor;
   m.userData.kind=kind||0;
+  m.userData.painted=!!painted;
   var edge=new THREE.LineSegments((glass||spike)?liquidEdgeGeo:edgeGeo,
     new THREE.LineBasicMaterial({
       color:glass?0xbdeaf7:(anchor?0xffd98a:(spike?0xff8a72:0x0f1424)),
@@ -2386,9 +2404,11 @@ function syncMeshes(){
     var b=L.blocks[i],k=K(b[0],b[1],b[2]);
     if(isCrate(b))continue;                  // crates are drawn separately
     want[k]=b;
-    // a block that changed material has to be rebuilt, not just kept
+    // a block that changed material has to be rebuilt, not just kept -
+    // its kind, or whether it is painted (see paintedCell above addMesh)
     var kind=b[3]||0;
-    if(meshes[k]&&meshes[k].userData.kind!==kind){
+    if(meshes[k]&&(meshes[k].userData.kind!==kind||
+                   !!meshes[k].userData.painted!==paintedCell(k))){
       scene.remove(meshes[k]);meshes[k].material.dispose();delete meshes[k];
     }
     addMesh(b[0],b[1],b[2],kind);
@@ -2418,6 +2438,18 @@ function recomputeBounds(){
   if(typeof guidePoint==="function"){
     var gp=guidePoint();
     if(gp)pts=pts.concat([gp]);
+  }
+  /* AND A CUTSCENE MAY FRAME LESS THAN THE BOARD. The fit below takes the
+     whole arena, which is right for a puzzle - every block is a move - and
+     wrong for a scene, where a fourteen-wide street fitted to a phone leaves
+     the family a quarter of the screen high. storyFrameBox() (js/22-story.js,
+     loaded after this file, hence the guard) hands back a [lo,hi] box when
+     the running beat wants one, and this function fits THAT instead. The
+     render loop's own lerp toward centerT and viewSizeT carries the change,
+     so a beat that reframes reads as a camera move rather than a cut. */
+  if(typeof storyFrameBox==="function"){
+    var fb=storyFrameBox();
+    if(fb)pts=[fb[0],fb[1]];
   }
   for(var i=0;i<pts.length;i++)for(var j=0;j<3;j++){
     a[j]=Math.min(a[j],pts[i][j]);b[j]=Math.max(b[j],pts[i][j]);
