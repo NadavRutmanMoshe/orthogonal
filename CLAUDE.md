@@ -351,9 +351,13 @@ is the rule.
 - **The house is SOLID and FACES the camera, and the family stands outside
   it.** Five cutaway versions (door wall at the back, near side open) read as
   a U of wall in the volume and as a house only once folded. The facade is
-  now the row nearest the camera, everything behind it is wall, the roof runs
-  the full depth and recedes UPWARD on screen (the overhang rule, working for
-  it), and the door and both windows are cut THROUGH every row of depth -
+  now the row nearest the camera and carries the whole gable; the body
+  behind it is built LOWER - one course at the row behind, two at the rows
+  behind that - because a row one square back draws half a course higher
+  and a roof run at full height was a staircase. The arithmetic is in
+  `house()`. The facade's four corner blocks (bottom two courses, both ends)
+  are out on the owner's call, and the door and both windows are cut
+  THROUGH every row of depth -
   open in the volume, and still holes in the plane because nothing stands
   behind them along the view axis. Painted windows were tried and reported
   as off. The census still folds column `x=3`: doorstep, foot of the strip,

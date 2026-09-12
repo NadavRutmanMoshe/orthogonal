@@ -1639,3 +1639,13 @@ whole depth they are open in the volume and holes in the plane, which is the
 cutaway's folded facade on a house that also stands up in 3D. **A painted
 window is a decal; a hole is a house.** The caption timings went in the same
 pass, matched to the ending's, which had been reported as right.
+
+**And the roof that ran the full depth was a ziggurat.** Every row further
+from the camera draws half a course higher, which I had written up as "the
+slope of a roof, working for us". It is a staircase. The fix is a gable on
+the facade row and a body behind it built low enough to hide under the
+gable's top edge; the first cut made every row one course lower and the back
+rows still climbed out over the ridge, because the amount depends on the
+row: half a course per square of depth, so one course at the row behind and
+two at the rows behind that. **When a thing must be hidden behind another in
+this projection, do the arithmetic per row; "lower" is not a number.**

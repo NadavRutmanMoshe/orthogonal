@@ -273,14 +273,32 @@ function stHouseBoard(){
      is inside and nobody needs to be: the family stands on the strip in
      front of the door, which is where you stand to say goodbye anyway.
 
-     THE ROOF RUNS THE FULL DEPTH, and the overhang rule from the cutaway
-     versions now works FOR it. Screen height is `0.885y - 0.465z`, so a
-     roof row one square further from the camera draws about half a course
-     HIGHER - which is exactly what the slope of a roof seen from the front
-     and above does. Over the cutaway that same fact put the roof's near
-     rows on top of the windows, because the near rows were in front of the
-     face; with the face at the near edge, every roof row is behind it and
-     recedes upward. Three courses, 5 wide, 3, 1, at every row of depth.
+     THE ROOF IS THE GABLE END, AND THE BODY HIDES BEHIND IT. Screen height
+     is `0.885y - 0.465z`, so a row one square further from the camera draws
+     about half a course HIGHER. A roof run at full height over every row of
+     depth was therefore a staircase climbing away from the camera - four
+     stepped tiers of tile on each eave, a ziggurat, reported as "the roof
+     still seems off in 3D". A roof cannot recede without stepping in this
+     projection, so the answer is a roof that does not recede: the facade
+     row carries the gable at full height, and the rows behind it are built
+     LOWER, by enough that every block of the body sits behind the gable's
+     front faces and tops. How much lower is arithmetic. A block at (y,z)
+     reaches up the screen to 0.885y - 0.465z + 0.675 (its top face's far
+     edge); the gable block at height Y on the facade row reaches
+     0.885Y - 0.72. Hiding needs Y - y >= (1.395 - 0.465z) / 0.885, which is
+     0.53 for the row one square back and 1.05 and 1.58 for the two behind
+     it: ONE course lower at z=2, TWO courses lower at z=1 and z=0. The first
+     cut made every row one course lower, and the back rows climbed out
+     over the ridge again. What the camera sees now is one clean gable end
+     with lit tops, and the fold still projects the whole body inside the
+     facade's silhouette, so the plane draws the same house as before.
+
+     THE FACADE'S FOUR CORNER BLOCKS ARE OUT, on the owner's call: the
+     bottom two courses at each end, the blocks beside the parents in the
+     first frame. The body's own corners stand one row back, a step darker
+     and half a course higher, so the corner reads as set back rather than
+     missing, and in the plane they project into the gap and the facade is
+     whole.
 
      THE DOOR AND THE WINDOWS ARE OPEN, ALL THE WAY THROUGH. The first solid
      house painted the windows a night-glass blue and cut the door one block
@@ -295,21 +313,38 @@ function stHouseBoard(){
      cutaway drew. `x0+2` is the middle of the five: the door, the ridge,
      and the column the census folds.
 
-     The chimney is two blocks, on the near slope beside the ridge, so it
-     stands ABOVE the roof rather than level with it. */
+     The chimney is two bricks at the eave end of the body, one row behind
+     the gable, starting a course above the eave so it stands clear of the
+     roofline in both views: from the front it rises out of the eave, and
+     in the plane it is two bricks beside the roof's upper course with sky
+     between it and the ridge. Nothing visibly holds it up, and nothing
+     needs to: a support course under it would sit flush with the roof in
+     the plane and read as a brown tile. Beside the ridge would put it in a
+     window column, and the plane would fill the window with brick. */
   function house(x0,x1){
     var i,y,j,mid=x0+2;
-    for(j=0;j<=3;j++)for(i=x0;i<=x1;i++)for(y=1;y<=3;y++){
-      if(i===mid&&y<=2)continue;                                // the door
-      if(y===3&&(i===x0+1||i===x0+3))continue;                  // the windows
-      put(i,y,j,ST_WALL);
+    // The door column, two tall, and the two windows in the top course.
+    function hole(i,y){return (i===mid&&y<=2)||(y===3&&(i===x0+1||i===x0+3));}
+    /* The body: three rows behind the facade, each built `down` courses
+       lower than it (see above), walls to 3-down under a roof of 5, 3, 1,
+       with the door and window columns left open all the way through. */
+    for(j=0;j<=2;j++){
+      var down=(j===2)?1:2, top=3-down;
+      for(i=x0;i<=x1;i++)for(y=1;y<=top;y++)if(!hole(i,y))put(i,y,j,ST_WALL);
+      for(i=x0;i<=x1;i++)if(!hole(i,top+1))put(i,top+1,j,ST_ROOF);
+      for(i=x0+1;i<x1;i++)if(!hole(i,top+2))put(i,top+2,j,ST_ROOF);
+      put(mid,top+3,j,ST_ROOF);
     }
-    for(j=0;j<=3;j++){
-      for(i=x0;i<=x1;i++)put(i,4,j,ST_ROOF);
-      for(i=x0+1;i<x1;i++)put(i,5,j,ST_ROOF);
-      put(mid,6,j,ST_ROOF);
+    // The facade, a course taller, carrying the gable.
+    for(i=x0;i<=x1;i++)for(y=1;y<=3;y++){
+      if(hole(i,y))continue;
+      if((i===x0||i===x1)&&y<=2)continue;      // the four corner blocks
+      put(i,y,3,ST_WALL);
     }
-    put(x0+3,6,1,ST_BRICK);put(x0+3,7,1,ST_BRICK);
+    for(i=x0;i<=x1;i++)put(i,4,3,ST_ROOF);
+    for(i=x0+1;i<x1;i++)put(i,5,3,ST_ROOF);
+    put(mid,6,3,ST_ROOF);
+    put(x1,5,2,ST_BRICK);put(x1,6,2,ST_BRICK);
   }
   floor(1,5,0,3);      // our house
   floor(8,12,0,3);     // theirs

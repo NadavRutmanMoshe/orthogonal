@@ -664,10 +664,19 @@ back. The fold reads because the fold is the one view that collapses the U
 onto its facade. So the house is now solid and faces the camera: the facade
 is the row nearest it, everything behind is wall, and nobody is inside - the
 family stands on the strip in front of their own door, which is where you
-stand to say goodbye anyway. The roof runs the full depth, and the overhang
-rule that ruined the cutaway now works for it: a roof row one square further
-from the camera draws half a course higher, which is the slope of a roof seen
-from the front and above. The door and the two windows are cut through every
+stand to say goodbye anyway. The roof was first run at full height over
+every row of depth, on the theory that a row one square further from the
+camera drawing half a course higher is the slope of a roof seen from the
+front. It is not; it is a staircase, four stepped tiers of tile on each eave,
+and it was reported as off. A roof cannot recede without stepping in this
+projection, so the facade row carries the whole gable and the body behind it
+is built lower: one course at the row behind, two at the rows behind that,
+the amounts a block needs to sit under the gable's top edge (the working is
+in `house()`). The camera sees one clean gable end; the fold still projects
+the body inside the facade's silhouette. The facade's four corner blocks,
+the bottom two courses at each end, are out on the owner's call, and the
+body's own corners stand one row back, so the corner reads as set back. The
+door and the two windows are cut through every
 row of depth: the first solid house painted the windows a night-glass blue
 and cut the door one block deep, and that was reported as off against the
 cutaway's real holes. The holes are what a house has that a hill does not,
