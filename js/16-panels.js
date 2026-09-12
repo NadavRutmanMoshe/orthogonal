@@ -2936,14 +2936,36 @@ function shareParseAll(txt){
    history; the project file is JSON by definition. A new format that
    invalidates what people already sent each other is not a better format. */
 function loadLevelPanel(){
+  var seen=seenSections(),world="";
+  for(var w=0;w<seen.length;w++){
+    /* PROLOGUE is not on the list, and `secPickable()` is the reason rather
+       than a test of its own: it is the tutorial, it has no tile on the
+       chooser and no map, and its two boards are a coached first step
+       apiece. */
+    if(!secPickable(seen[w])||!sectionCopies(seen[w]).length)continue;
+    world+="<button class='mlbtn' data-sec='"+seen[w]+"'>COPY THE "+
+           esc(groundName(seen[w]))+" LEVELS</button>";
+  }
+  if(world)world="<div class='note' style='margin-top:16px'>Or take the "+
+    "campaign's own puzzles, named and numbered as they are, and pull them "+
+    "apart. Bosses and trials are not on the list: neither is a thing the "+
+    "editor can hold.</div>"+world;
   mlScreen("Load A Level","PASTE ONE SOMEBODY SHARED",
     "<div class='note'>It is added to your levels; nothing you have is "+
     "touched.</div>"+
     "<textarea id='ldTxt' placeholder='paste here'></textarea>"+
-    "<button class='mlbtn pgo' id='ldGo'>ADD IT</button>",
+    "<button class='mlbtn pgo' id='ldGo'>ADD IT</button>"+
+    /* THE CAMPAIGN IS ALSO SOMEWHERE A LEVEL CAN COME FROM, and this is the
+       screen that means "bring levels in", so it goes here rather than on MY
+       LEVELS - which is two actions and a list on the owner's call. One
+       button per world you have stood in, named by the world. */
+    world,
     mlFoot("ldBack","← MY LEVELS"));
   bind("mlClose",hidePanel);
   bind("ldBack",myLevelsPanel);
+  $("panel").querySelectorAll("[data-sec]").forEach(function(el){
+    tap(el,function(){addSectionLevels(+el.getAttribute("data-sec"));});
+  });
   bind("ldGo",function(){
     var list=shareParseAll($("ldTxt").value);
     if(!list)try{
@@ -2957,6 +2979,63 @@ function loadLevelPanel(){
       myLevelsPanel();
       flash("added "+list.length+" level"+(list.length===1?"":"s"));
     });
+  });
+}
+/* THE CAMPAIGN'S OWN LEVELS, AS SOMETHING YOU CAN TAKE APART.
+
+   One world's ordinary puzzles, copied into your own levels under the names
+   they already carry - the number is part of the name, so "03 - A Real
+   Challenge" arrives as itself and the list sorts the way the map reads.
+
+   ORDINARY ONLY, and that is not a simplification. A boss carries phases and
+   a pack; a trial carries a sweep. Neither is a thing `custom` has a field
+   for or the editor has a chip for, so a copy of one would be its arena with
+   the fight silently missing - a level that looks like BOSS I and is not it.
+   `SPARRING` goes for the same reason: it is a boss. A `tutorial:true`
+   puzzle like `09 - The Rotation` is an ordinary board with coaching on top,
+   so the board copies fine and the coaching is simply not part of it.
+
+   THE SECTION IS ASKED FOR BY INDEX AND ANSWERED BY `mapSecOf()`, never by a
+   range written down here: `SECTIONS[].at` are array indices and inserting a
+   level shifts every later one, so the map's own answer to "which world is
+   this level in" is the only answer that cannot go stale.
+
+   THE BLOCKS ARE DEEP-COPIED. `LEVELS` is the live campaign; the editor
+   mutates `custom.blocks` in place and `adoptLevel()` keeps whatever array it
+   is handed, so a shallow copy would let a player's edit rewrite the campaign
+   under them for the rest of the session. */
+function sectionCopies(n){
+  var out=[];
+  if(typeof LEVELS==="undefined")return out;
+  for(var i=0;i<LEVELS.length;i++){
+    var L=LEVELS[i];
+    if(mapSecOf(i)!==n||L.boss||L.trial)continue;
+    out.push({name:L.name,
+              blocks:L.blocks.map(function(v){return v.slice();}),
+              keys:(L.keys||[]).map(function(v){return v.slice();}),
+              start:L.start.slice(),goal:L.goal.slice(),
+              rotate:L.rotate!==false,theme:n});
+  }
+  return out;
+}
+/* Pressing it twice must not give you two of everything, so a name you
+   already have is skipped rather than added - which also means a copy you
+   have renamed is a level of your own now and the button will hand you a
+   fresh one. Everything else is `adoptLevel()`'s job, including the solver
+   run: a campaign level's par is on the level, not in the library entry, and
+   re-scoring is what makes the row say "gentle - 9 moves" like any other. */
+function addSectionLevels(n){
+  var list=sectionCopies(n),have={},added=0;
+  for(var i=0;i<library.length;i++)have[library[i].name]=1;
+  for(var j=0;j<list.length;j++){
+    if(have[list[j].name])continue;
+    library.push(adoptLevel(list[j],"c"+j));
+    added++;
+  }
+  if(!added){flash("already in your levels");return;}
+  libSave().then(function(){
+    myLevelsPanel();
+    flash("added "+added+" level"+(added===1?"":"s"));
   });
 }
 /* A level from outside is re-scored here rather than trusted: the numbers on

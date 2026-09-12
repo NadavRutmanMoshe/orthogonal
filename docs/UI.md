@@ -494,6 +494,21 @@ named). Undoing one of these needs the paragraph.
   is on the project file's own panel, where the button says so. **Nothing
   that could read before stops reading**: an OL1 code and a JSON level are
   both still in somebody's chat history.
+- **`LOAD A LEVEL` also copies the campaign in**, one button per world you
+  have stood in (`sectionCopies()` / `addSectionLevels()`, `js/16-panels.js`).
+  It is here rather than on MY LEVELS because this is the screen that means
+  "bring levels in"; MY LEVELS is two actions and a list on the owner's call.
+  A copy arrives under the campaign's own name, number and all, on that
+  section's ground (`theme` is the `SECTIONS` index), and is re-scored by
+  `adoptLevel()` like anything else from outside. Three things it deliberately
+  will not do: no boss and no trial, because the editor has no field for a
+  pack or a sweep and a copy of `BOSS I` would be its arena with the fight
+  silently missing; no PROLOGUE, gated by `secPickable()`, because that is the
+  tutorial and not a world; and no second copy of a name you already have, so
+  pressing it twice is safe and a copy you have *renamed* is a level of your
+  own. Which levels belong to a world is asked of `mapSecOf()` rather than
+  written down as a range - `SECTIONS[].at` are indices and an insertion
+  shifts them.
 - **Win card**: `.wonmast` is the section-finished pill and `.wonwear` under
   it names the shape that finished section just paid out (`grantShape()`);
   `won` story line is `esc()`d innerHTML; only newly gained stars fly; `NEXT LEVEL` becomes `WHAT'S LEFT` when the next level is

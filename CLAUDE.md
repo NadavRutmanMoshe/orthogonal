@@ -203,6 +203,12 @@ Block format `[x,y,z,k]`: 0 stone, 1 water (code says `glass`), 2 anchor,
   rest. It is not a hash and cannot be one: nothing here can look an id up.
   `LOAD A LEVEL` still reads `OL1` codes, `orthogonal-level-1` JSON, a bare
   level and a whole project file (`shareCode()`, `js/16-panels.js`).
+- **`LOAD A LEVEL` also copies the campaign into your levels**, one button per
+  world you have stood in (`sectionCopies()`/`addSectionLevels()`). Ordinary
+  levels only - no boss, no trial, no PROLOGUE (`secPickable()`) - under the
+  campaign's own names, on that section's ground, re-scored by `adoptLevel()`,
+  and a name you already have is skipped. Membership comes from `mapSecOf()`,
+  never a written-down range.
 
 ## Invariants that bite
 
