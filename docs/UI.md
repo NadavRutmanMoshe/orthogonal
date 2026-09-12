@@ -135,6 +135,25 @@ named). Undoing one of these needs the paragraph.
 - **Buttons** are lit caps: fill + `0 3px 0 var(--lip)` + press. A disabled
   button keeps a visible background. Any `box-shadow` keyframe must carry
   the lip or the cap flattens while it pulses (`cuePulse`, `tutlive`).
+- **A button fires on the way DOWN, unless it is inside something that
+  scrolls - then it fires on the way UP.** `tap()` (`js/18-ui.js`) is the one
+  funnel, and it used to fire every button on `pointerdown` and
+  `preventDefault` it. That is right for the d-pad, where the answer has to
+  be on the frame the finger lands, and wrong for every list: MY LEVELS is a
+  column of rows that are almost entirely button, so a finger put down to
+  scroll it pressed PLAY or SHARE or × on the way past - and the
+  `preventDefault` cancelled the scroll it was asking for, so the list was
+  both hard to move and dangerous to move, out of one gesture.
+  `tapScroller()` asks **where the button is** rather than adding a flag to
+  the ones that need it: it walks up for an ancestor whose computed
+  `overflow-y` is `auto`/`scroll` (`.pbody`, `.mbody`, `.panel`, `.tutcard`,
+  `.home` - grep `overflow` in `css/`), and inside one the press is armed on
+  the way down and spent on the way up, only if the finger stayed within
+  `TAP_SLOP` (10px) and lifted on the same button - `document.elementFromPoint`
+  rather than the element it landed on, because a list that scrolled less
+  than the slop still moved. The deferred path **must not**
+  `preventDefault` the pointerdown; that call is the scroll. Outside a
+  scroller nothing changed at all.
 - **`.flatbtn.peril`** (fold will kill you) is dark hazard stripes and a
   blinking triangle, never a glow; **`.strike`** (fold will kill *it*) is
   the lit, breathing one. Opposites by construction.

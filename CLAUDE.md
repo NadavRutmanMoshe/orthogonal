@@ -570,6 +570,13 @@ is the rule.
 - Peek is the fourth verb: in the plane it previews the unfold by lowering
   the `flatT` target; `peekLanding()` makes the same two calls
   `doUnflatten()` makes.
+- **`tap()` fires on pointerdown, except inside something that scrolls -
+  there it fires on the lift.** `tapScroller()` (`js/18-ui.js`) looks for an
+  ancestor with `overflow-y:auto|scroll`; inside one the press waits for
+  pointerup and is cancelled by `TAP_SLOP` (10px) of travel, and the
+  pointerdown is deliberately **not** `preventDefault`ed, because that call
+  is what was cancelling the scroll. Outside one the d-pad is unchanged
+  (`docs/UI.md`).
 
 ## Working on the UI
 
