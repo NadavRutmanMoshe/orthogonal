@@ -162,4 +162,49 @@
   .wonlv span{letter-spacing:.16em}
   #intro{display:flex}
   #intro.gone{display:none}
+  /* THE AGE QUESTION, which is this card's start button - see the comment on
+     the markup in index.html.
+
+     The question is set like the premise above it and not like a heading: it
+     is one line in the card's own mono, a little brighter than the story line
+     so the eye lands on it, and it carries the whole of the instruction. The
+     line UNDER the list is deliberately the quietest thing on the card - it
+     is there for the player who does not want to answer, and it says the
+     three settings are in the menu. */
+  .won p.agesq{color:var(--fg);letter-spacing:.12em;text-transform:uppercase;
+    font-size:12px;margin-top:6px}
+  /* WHAT A BAND SETS IS NOT ON THIS CARD, on the owner's call. There was a
+     line here saying "sets the board size, the speed of the fights and the
+     controls" and it is gone with the thing it described: the whole point of
+     asking one easy question is that the player does not have to read three
+     settings to start playing. See AGE_BANDS in js/11-sound.js.
+
+     I'D RATHER NOT SAY is quiet - it is the answer for somebody who does not
+     want to give one, not a fourth option competing with the bands - so it is
+     drawn like the old PICK A LEVEL was: no cap, no hue, a rule round it. */
+  .won button.agesno{height:32px;font-size:10.5px;letter-spacing:.1em;
+    padding:0 14px;--c:#8c9dc4;color:var(--fg-dim);
+    border-color:var(--rule);background:var(--panel);box-shadow:none}
+  .won button.agesno:active{transform:translateY(1px)}
+  /* The second question replaces the first in place. Three across, so it
+     cannot be mistaken for the five-band grid it stands in for; the span rule
+     below is turned off for the same reason. */
+  #introDiff{display:none}
+  #intro.diff #introAges,#intro.diff #bAgeNo{display:none}
+  #intro.diff #introDiff{display:grid;grid-template-columns:repeat(3,1fr)}
+  #introDiff button:last-child{grid-column:auto}
+  /* CANCEL is only there when the card was opened to be looked at. */
+  .agescan{display:none}
+  #intro.setup .agescan{display:flex}
+  /* TWO COLUMNS WITH THE LAST ONE SPANNING, rather than a column of five.
+     Five 46px buttons plus two paragraphs is taller than the owner's narrow
+     phone once the premise above is wrapping, and a card that scrolls is a
+     card whose bottom button nobody presses. Three rows fit with the story
+     line intact. The spanning row is the oldest band, which is the one that
+     most wants a wide target. */
+  .ages{display:grid;grid-template-columns:1fr 1fr;gap:8px;
+    width:min(86vw,300px)}
+  .ages button{height:42px;padding:0 6px;width:100%;
+    font-size:12px;letter-spacing:.1em}
+  .ages button:last-child{grid-column:1 / -1}
   #intro .tiny,#won .tiny{border-color:var(--rule);color:var(--fg-dim)}

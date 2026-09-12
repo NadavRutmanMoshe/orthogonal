@@ -18,12 +18,18 @@ bind("bRestart",function(){
   if(fromEditor){enterEditor();return;}
   hidePanel();resetLevel();SFX.undo();
 });
-bind("bBegin",function(){
+/* THE INTRO CARD'S ONE WAY IN, and it is the bands rather than BEGIN.
+   Picking one writes the three settings it stands for (applyAgeBand() in
+   js/11-sound.js) and then does exactly what BEGIN did, in that order: the
+   settings have to be in before the card comes down, because putting the
+   control bar up changes how much room the arena is fitted into and the
+   opening cutscene is the next thing drawn. */
+function introBegin(){
   $("intro").classList.add("gone");
   audio();applyBrightness();     // first gesture unlocks sound
-  /* AND THEN THE HOUSE. The opening cutscene sits between BEGIN and the
-     first tutorial, which is the one place it can go: the card above it is
-     the only explanation of the verb a new player gets, so the scene plays
+  /* AND THEN THE HOUSE. The opening cutscene sits between the setup card and
+     the first tutorial, which is the one place it can go: the card above it
+     is the only explanation of the verb a new player gets, so the scene plays
      to somebody who has just read what a fold is - and it plays after they
      have agreed to start, rather than in front of a player who has not yet
      said they want to. */
@@ -31,6 +37,49 @@ bind("bBegin",function(){
     storyPlay("open");
     return;
   }
+}
+/* THE SAME CARD IS THE SETTING, on the owner's call. Menu > More > SET UP BY
+   AGE used to open a sheet of its own that listed the bands with what each
+   one sets written underneath; it now opens THIS card, the one a first run
+   sees, because the owner wants to look at the first-run screen without
+   throwing a save away to get to it - and because two drawings of one
+   question is one drawing too many.
+
+   `setup` is the difference and it is the whole of it: the card is being
+   looked at rather than answered, so CANCEL exists and picking a band applies
+   and closes rather than starting the game. `diff` is reset on every open, or
+   a card closed on the second question would reopen on it. */
+var introSetup=false;
+function introOpen(setup){
+  var el=$("intro");
+  if(!el)return;
+  introSetup=!!setup;
+  el.classList.toggle("setup",!!setup);
+  el.classList.remove("diff");
+  $("introQ").textContent="How old are you?";
+  el.classList.remove("gone");
+  if(typeof syncHud==="function")syncHud();
+}
+function introDone(){
+  var el=$("intro");
+  if(!el)return;
+  if(!introSetup){introBegin();return;}
+  el.classList.add("gone");
+  el.classList.remove("setup","diff");
+  introSetup=false;
+  if(typeof syncHud==="function")syncHud();
+}
+AGE_BANDS.concat(DIFF_BANDS).forEach(function(b){
+  bind("bAge_"+b.id,function(){applyAgeBand(b.id);introDone();});
+});
+/* Not a way out - the other question, in the same place. */
+bind("bAgeNo",function(){
+  $("intro").classList.add("diff");
+  $("introQ").textContent="How hard do you want it?";
+});
+bind("bAgeCancel",function(){
+  introSetup=true;   // whatever brought the card up, CANCEL closes it quietly
+  introDone();
 });
 /* The cutscenes' two buttons. SKIP is live for the whole of a scene; the end
    card's is the only way off it. */
@@ -56,10 +105,11 @@ bind("hMulti",function(){audio();flash("multiplayer \u00b7 coming soon");});
    in css/65-replay.css), so this can never fire outside a film. */
 bind("repSkip",function(){replaySkip();});
 bind("hMenu",function(){audio();menuPanel();});
-bind("bSkipTo",function(){
-  $("intro").classList.add("gone");
-  audio();sectionPicker();
-});
+/* PICK A LEVEL IS OFF THE INTRO CARD, on the owner's call. It was a second
+   door on a screen that now asks one question, and a first run has no levels
+   to pick from anyway - the map is a tap away the moment the tutorial ends,
+   and the home screen (which is what a returning player sees instead of this
+   card) is made of doors. */
 /* PEEK: HOLD IT, OR TAP TO LATCH IT.
 
    It was hold-only, which on a phone means keeping a thumb on a corner

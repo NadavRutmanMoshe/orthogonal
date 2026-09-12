@@ -62,9 +62,31 @@ function defaultVolume(){
    so the reset cannot drift away from a fresh install the way it had:
    it put the buttons back to "full" while a first run starts hidden. */
 var UI_DEFAULT="none";
+/* The other two thirds of the setup question, and their defaults live here
+   beside the buttons for the same reason: RESET SETTINGS reads all three, so
+   a reset cannot drift away from a fresh install. MEDIUM and REGULAR are the
+   middle of each scale and the answer three of the five age bands get. */
+var SIZE_DEFAULT="medium";
+var SPEED_DEFAULT="regular";
 var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false,
-              /* pace is retired and pinned at 1; see paceScale() below. */
-              pace:1,
+              /* HOW BIG THE BOARD IS DRAWN - small, medium, large. A camera
+                 setting and nothing else: boardScale() multiplies the arena
+                 term in fitViewSize(), so the whole level still fits on the
+                 screen at every value and only the margin round it changes.
+                 No rule, no par and no solver knows about it. */
+              size:SIZE_DEFAULT,
+              /* HOW FAST THE CLOCKS RUN - slow, regular, fast. One number
+                 multiplied onto `dt` in both real-time loops; see
+                 paceScale() below for why it is one number and not a set of
+                 dials. Word values rather than the retired numeric `pace`,
+                 which is deliberately not read by loadSettings() any more. */
+              speed:SPEED_DEFAULT,
+              /* WHICH AGE BAND WAS PICKED, or "" if the question has not
+                 been answered. It is remembered rather than derived so the
+                 menu can show which row is standing, and so SET UP BY AGE
+                 opens on the answer you gave; nothing else reads it, because
+                 the three settings it wrote are the whole of its effect. */
+              ageBand:"",
               noSlowOffer:false,landHints:0,
               starAsked:false,
               /* The three cutscenes, each played once. Declared here so the
@@ -94,24 +116,26 @@ var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false
    sentence does - but a line of text on every fold would be nagging. */
 var LAND_HINT_TIMES=3;
 
-/* PACE - how fast the two real-time things run. RETIRED AS A SETTING, and
-   the multiplier is kept.
+/* SPEED - how fast the two real-time things run. This is the seam the old
+   `pace` setting was kept open for, and it is now a row again: Menu > Fight
+   speed, SLOW / REGULAR / FAST.
 
-   `Menu > Real time > Pace` let a player slow every clock in the game to 75%
-   or 50%. It went on the owner's call, and the reason is the one that was
-   always written under it: a menu row asking a new player to diagnose their
-   own difficulty is standing in for a fight that is not tuned properly, and
-   the fights are tuned per fight now - the first boss is slow enough to
-   think in and the ramp does the rest. What is left for somebody genuinely
-   stuck is the skip, which struggleOffer() puts up on the fifth loss.
+   What went before, and why it is not simply back: `Menu > Real time > Pace`
+   asked a new player to diagnose their own difficulty in percentages, in the
+   middle of a settings sheet, and it was standing in for fights that were
+   not tuned. The fights are tuned per fight now. What is different this time
+   is that NOBODY IS ASKED COLD: the age card on a first run picks a value,
+   and this row is where that answer is changed afterwards rather than a
+   question put to somebody who has not played yet.
 
-   paceScale() stays, still multiplied onto `dt` in both fight loops, because
-   that one multiplication is the seam it would come back through. `pace` is
-   deliberately no longer read by loadSettings(), so a save written while
-   somebody was on SLOW cannot pin every clock in the game at half speed with
-   no row left to change it.
+   The key is `speed` with word values, NOT the old numeric `pace`, and that
+   is deliberate. `pace` came out of loadSettings()'s whitelist when its row
+   was cut, exactly so a save carrying 0.5 could not pin every clock in the
+   game at half speed with no row left to change it. Reading it again now
+   would spring that trap on every save written back then. A new key with a
+   new shape cannot.
 
-   It was deliberately *one number applied to dt*, not a set of eased dials.
+   It is deliberately *one number applied to dt*, not a set of eased dials.
    Every interval in a fight is derived from the clock - the step, the aim
    window, the creep, the rage multiplier, the trial's period and its fire
    window, the beat of grace after a hit - so scaling the clock scales all of
@@ -119,12 +143,118 @@ var LAND_HINT_TIMES=3;
    `step` by hand would not: it would change how many steps a hunter gets per
    telegraph, which is the fight's whole shape.
 
-   It was free and did not touch stars, and if it ever comes back it should
-   stay that way: a slower clock hands you nothing you did not already have
-   to work out, it only gives you longer to say it. */
+   The two ends are gentle on purpose. SLOW is a quarter longer to read a
+   telegraph in, which is the difference between seeing the line and reacting
+   to being hit; FAST is a fifth quicker, enough to feel urgent and not
+   enough to make a phase that was authored as solvable unsolvable. A fight
+   is hand-tuned, so these are a lean on it rather than a redesign of it.
+
+   It is free and does not touch stars, and it must stay that way: a slower
+   clock hands you nothing you did not already have to work out, it only
+   gives you longer to say it. */
+var SPEED_SCALE={slow:.75,regular:1,fast:1.2};
 function paceScale(){
-  var p=settings.pace;
-  return (typeof p==="number"&&p>0&&p<=1)?p:1;
+  return SPEED_SCALE[settings.speed]||1;
+}
+
+/* SIZE - how big the board is drawn, and nothing else.
+
+   fitViewSize() frames the arena and returns the frustum's half-size, so a
+   BIGGER number is MORE world on screen and therefore SMALLER blocks. That
+   inversion is the whole of the arithmetic here: LARGE is the value under 1.
+
+   It is a WISH, not the answer. fitViewSize() clamps it back up so the whole
+   arena is always on screen and the vertical margins - which are the level
+   name at the top and the control bar at the bottom, not slack - are never
+   eaten. The consequence is worth knowing before tuning these numbers: on the
+   biggest boards, which are already nearly screen-filling, LARGE can only win
+   the margin, and it is SMALL that has room to move. The comment in
+   fitViewSize() has the arithmetic and the board that proves it.
+
+   The ends are about a fifth either way, which is plainly a different size
+   without turning a two-block tutorial into a wall. */
+var BOARD_SCALE={small:1.2,medium:1,large:.82};
+function boardScale(){
+  return BOARD_SCALE[settings.size]||1;
+}
+
+/* THE SETUP CARD'S ANSWERS, and what each one sets.
+
+   NOTHING ON THE CARD SAYS WHAT A BAND DOES, on the owner's call, and that is
+   the point rather than an omission. A card that prints "medium board · slow
+   fights · compact buttons" under every row is three settings again - it hands
+   a first-time player the whole control surface at a glance and asks them to
+   audit it, which is the thing asking an age was supposed to avoid. They
+   answer one easy question and the game is set up. The rows in Settings are
+   where the details live, for whoever goes looking.
+
+   A first run is asked one question it can actually answer - how old are you -
+   instead of three it cannot: a player who has never seen the game has no way
+   to know whether they want the buttons, and the three settings that decide
+   how it feels are exactly the three nobody goes looking for. So the card
+   asks the one thing that predicts all three and writes them together.
+
+   The values are the owner's, and the shape of them is worth reading in one
+   go: the board grows with the band and the clock slows with it, and the
+   controls go the other way - the youngest band gets the screen (gestures,
+   no bar) and the oldest gets the buttons. Nobody is given SMALL by default.
+   SMALL exists for a player who wants to see more of the board at once and
+   goes and asks for it.
+
+   This is a DEFAULT, not a lock. Every one of the three is a row in the
+   menu, and picking a band again from SET UP BY AGE is the only thing that
+   ever overwrites all three at once. */
+var AGE_BANDS=[
+  {id:"u18", label:"UNDER 18", size:"medium", speed:"fast",    ui:"none"},
+  {id:"a18", label:"18 - 25",  size:"medium", speed:"regular", ui:"none"},
+  {id:"a26", label:"26 - 39",  size:"medium", speed:"slow",    ui:"compact"},
+  {id:"a40", label:"40 - 59",  size:"large",  speed:"slow",    ui:"full"},
+  {id:"a60", label:"60 +",     size:"large",  speed:"slow",    ui:"full"}
+];
+/* AND THE ANSWER FOR SOMEBODY WHO WILL NOT GIVE ONE.
+
+   I'D RATHER NOT SAY is on the card, and it is not a way out - it asks the
+   other question instead. An age is a proxy for how much help somebody wants;
+   this is the same question asked directly, for a player who would rather
+   answer it directly (or would rather not hand over their age, which is a
+   perfectly ordinary thing to feel about a game asking).
+
+   The three are deliberately not the same rows as three of the bands. EASY is
+   the oldest band's setup - the big board, the slow clock, the buttons on
+   screen - because "easy" here means "make it easy to see and easy to react
+   to", which is what that band was already asking for. HARD is the youngest
+   band's. MEDIUM sits between them with the compact bar, so the middle answer
+   is the one that has both some help and most of the screen. */
+var DIFF_BANDS=[
+  {id:"deasy", label:"EASY",   size:"large",  speed:"slow",    ui:"full"},
+  {id:"dmed",  label:"MEDIUM", size:"medium", speed:"regular", ui:"compact"},
+  {id:"dhard", label:"HARD",   size:"medium", speed:"fast",    ui:"none"}
+];
+/* One lookup over both tables, because everything downstream - the card, the
+   whitelist, `settings.ageBand` - only ever needs "is this a band, and what
+   does it set". The ids do not collide, and a save carrying one from either
+   table is valid. */
+function ageBandOf(id){
+  var i;
+  for(i=0;i<AGE_BANDS.length;i++)if(AGE_BANDS[i].id===id)return AGE_BANDS[i];
+  for(i=0;i<DIFF_BANDS.length;i++)if(DIFF_BANDS[i].id===id)return DIFF_BANDS[i];
+  return null;
+}
+/* Writes the three, remembers which band said so, and re-runs everything a
+   change to any of them needs: applyUI() for the body class, syncHud() for
+   the bar, onResize() because both the buttons and the board size change how
+   much room fitViewSize() is fitting the arena into. The same three calls the
+   menu's own rows make, in one place, so the card and the rows cannot
+   disagree about what applying a setting means. */
+function applyAgeBand(id){
+  var b=ageBandOf(id);
+  if(!b)return false;
+  settings.size=b.size;settings.speed=b.speed;settings.ui=b.ui;
+  settings.ageBand=b.id;
+  applyUI();saveSettings();
+  if(typeof syncHud==="function")syncHud();
+  if(typeof onResize==="function")onResize();
+  return true;
 }
 
 /* The individual blip gains below are a balanced mix - a footstep is meant to

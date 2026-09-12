@@ -402,15 +402,52 @@ is the rule.
   into, folded into or crushed. A friendly obstacle would be a piece, a piece
   is a rule, and a rule the solver has not been told about is a level whose
   par is a lie.
-- **He stands on his OWN square, off the board**: a plinth two clear squares
-  past the level's `+x`/`+z` CORNER, drawn as a mesh rather than added as a
-  block (`guidePlinth()`). **A corner, not an edge**, and that is load-bearing:
-  screen-right is `±x` or `±z` depending on the view, so an offset along one
-  axis only is sideways in two views and straight at the camera in the other
-  two - which put him on top of the board. Offset on both, and one of the two
-  is the sideways one in all four. `recomputeBounds()` adds `guidePoint()` to
-  the extents it frames - the one line in the renderer that knows he exists -
-  or the camera would leave him past the edge of the screen.
+- **He FLOATS on a pedestal, out the back of the board** (`guideSpot()`): the
+  plinth off the `+x`/`+z` corner is gone, and he is `GUIDE_OUT` cells past
+  the far edge along the axis a swipe UP walks (`-d` of view 0, which every
+  level opens in). **Only on a `rotate:false` level** - that direction only
+  exists while the view is locked, so the four rotating levels keep him over
+  the middle, where no turn can swing him anywhere.
+  **How high is arithmetic**: screen-up is height PLUS depth away from the
+  camera, so a block gains `CAM_TILT` a cell for standing further back than he
+  does and LOSES it for standing nearer - which is why, behind the board, he
+  can sit at about its own height and still be clear over it. Per block, over
+  the views the level can actually be turned to, measured to the UNDERSIDE of
+  the pedestal, and clearing a whole cell over the top row because the things
+  that matter (the player, the goal's wireframe) STAND on it.
+  **He has a second height for the PLANE** (`flatY`, the 4th element of
+  `guideSpot()`), because `tilt` is `(1-flatT)*CAM_TILT`: fold the world and
+  depth stops paying, so without it he lands in the middle of the silhouette.
+  `guideFrame()` carries him between the two on the fold's own `ft`.
+- **`guidePoint()` is where he APPEARS, not where he is**, and that is what
+  makes the offset free. `recomputeBounds()` frames a world box and charges
+  the larger of the x and z spans as WIDTH, because screen-right is either -
+  true for a board that can be turned, wrong for a man behind one that cannot,
+  where his offset is pure depth and depth is height. So on a locked level the
+  camera is handed his x, the board's own depth, and his offset converted into
+  the height it draws at (and never below `flatY`). Measured: the board is
+  framed exactly as if he were not there. Hand over his raw position and the
+  early levels lose a whole step of zoom - the corner's bill, again.
+  **Never offset along ONE horizontal axis** on a level that can turn:
+  screen-right is `±x` or `±z` by view, so one axis is sideways in two views
+  and straight at the camera in the other two (`chrome.md`).
+- **The level NAME and HINT stay on every level, his included, and he waits to
+  be pressed.** Taking them off his boards and letting him say the line
+  instead (`body.gquiet`) was built, played and reversed on the owner's call
+  in one round - the hole it leaves is bigger than the chrome was, and an
+  unprompted bubble covers the board to say what is already written
+  (`chrome.md`). His one unprompted line is still the stuck one.
+- **THE BUBBLE IS ANCHORED TO A STILL POINT AND PROJECTED THROUGH A STILL
+  CAMERA.** Two separate sources of the same complaint, both fixed the same
+  way - type must not ride the world's juice. (1) He breathes, a sine of .035
+  of a cell: the bob is applied to the MESH only and the bubble reads
+  `GD.px/py/pz`. (2) The camera is thrown about - `shakeT` on a death, and a
+  fold lands with a SLAM about a cell deep - so `guideAnchor()` projects
+  through `gdCam`, a copy of the camera placed at `camSteady` (`10-render.js`,
+  the position with neither in it). Measured across a fold: worst
+  frame-to-frame jump 116px -> 28px, average 5.5px -> 1.0px. The CUBE still
+  shakes, because the cube is part of the world and the sentence is not.
+  His bubble flips BELOW him (`.down`) when there is no room over his head.
 - **Never on a `tutorial:true` level**, and that is the whole placement rule
   (plus no boss, no trial, section 1 only). In PROLOGUE he offered the fold to
   somebody the tutorial had not taught it to yet, and a teaching level already
@@ -434,6 +471,34 @@ is the rule.
   unprompted line, which is a button into `struggleOffer()`.
 
 **Settings and saves** (`systems.md`)
+- **A first run is asked ONE question: how old are you.** The intro card's
+  five bands ARE its start button (there is no BEGIN, and no PICK A LEVEL),
+  and each writes three settings at once - `size`, `speed`, `ui` - from
+  `AGE_BANDS` in `js/11-sound.js` through `applyAgeBand()`, the one writer.
+  Under 18 medium · fast · hidden, 18-25 medium · regular · hidden, 26-39
+  medium · slow · compact, 40-59 and 60+ large · slow · full. Nobody is given
+  SMALL.
+- **NOTHING ON THE CARD SAYS WHAT A BAND SETS**, on the owner's call. One easy
+  question, answered, and the game is set up; the rows in Settings are where
+  the details live for whoever goes looking. A card that prints what each row
+  does is the three settings again, in front of somebody who has not played.
+- **I'D RATHER NOT SAY is not a way out - it asks the other question.**
+  `DIFF_BANDS` beside `AGE_BANDS`: EASY large · slow · full, MEDIUM medium ·
+  regular · compact, HARD medium · fast · hidden. It replaces the bands in
+  place (`#intro.diff`), and `ageBandOf()` looks in both tables so a save can
+  carry either.
+- **It is a default, not a lock, and the way back is load-bearing**:
+  `nothingBehind()` means a save never sees that card again, so
+  **Menu > More > SET UP BY AGE** is the only door an existing player has -
+  and it opens THE SAME CARD (`introOpen(true)`, `#intro.setup`: CANCEL, and a
+  pick applies and closes instead of starting the game). There is no second
+  drawing of the question and there should not be. All three are also rows on **Menu > How it plays** - one card,
+  because the age card writes them together - and changing one by hand does
+  NOT re-pick a band.
+- **`settings.speed` is the old `pace`, under a new key on purpose.**
+  `paceScale()` is still one multiplication onto `dt` in both real-time loops
+  and nothing else. The numeric `pace` stays out of `loadSettings()`, or a
+  save from when that row existed would pin every clock at half speed.
 - `loadSettings()` is a **whitelist**. A key not read there does not exist
   after reload; a key whose feature is removed comes out of the list.
 - `noSlowOffer` keeps its name though nothing slow is left; it is persisted.
@@ -549,6 +614,14 @@ is the rule.
   the owner's decision. `FOLLOW=0`.
 - `fitViewSize()` fits the arena to the screen per axis; portrait and
   landscape convert differently, and the bar does not buy size in portrait.
+- **Menu > Board (`boardScale()`) is a wish, and `fitViewSize()` clamps it.**
+  Scaling that fit crops - the biggest arena is 12 cells inside a 14-cell
+  frustum - so the answer is held up by the whole arena plus `PAD_TIGHT`, and
+  the vertical requirement passes through untouched (those margins are the
+  level name and the control bar). LARGE can only win the margin on a board
+  that already fills the screen. No rule, par or solver knows it exists, and
+  it is **pinned at 1 while a cutscene runs** - a scene is shot, not surveyed,
+  and `stFrame()`'s boxes are composed against the default framing.
 - Nothing in a baked horizon texture moves; motion is drawn on top.
 - `edgeGeo` is cut from the .9 case; `repeat.set(2,1)` only for a band with
   no landmark in it.

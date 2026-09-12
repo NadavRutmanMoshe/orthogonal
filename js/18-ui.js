@@ -247,6 +247,19 @@ function syncHud(){
      it did, handing the whole document `display:none`. See the note in
      css/95-home.css. */
   document.body.classList.toggle("athome",homeUp());
+  /* THE LEVEL'S NAME AND HINT ARE ON EVERY LEVEL, INCLUDING HIS.
+
+     For one build they came off the boards the neighbour stands on
+     (`body.gquiet`) and he said the line instead, on the reading that people
+     look straight past the two lines at the top of the screen. Played, and
+     reversed on the owner's call: losing the name and the description is a
+     bigger hole than the chrome was, and a bubble that arrives by itself
+     covers the board to say something you can already read. He is back to
+     being the second opinion, pressed when it is wanted.
+
+     The record is in docs/design/chrome.md - it is worth knowing this was
+     tried, so that "nobody reads the hint" does not get solved this way
+     twice. */
   /* A CUTSCENE IS A SCREEN TOO, and the same rule applies: the chrome
      answers to it exactly as it answers to a panel, and this is the one
      place that decides. `instory` takes the HUD, the bar, the coach and the

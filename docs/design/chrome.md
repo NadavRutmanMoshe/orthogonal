@@ -831,8 +831,146 @@ onto it.
 
 `recomputeBounds()` adds `guidePoint()` to the extents it frames. That is the
 only line in the renderer that knows he exists, and without it the camera
-frames the board and leaves him past the edge of the screen; the cost is that
-the board is a little smaller on the levels he is on.
+frames the board and leaves him past the edge of the screen.
+
+**AND THAT COST IS WHY HE IS NOW IN THE AIR.** Everything above and below
+about the corner is the history of where he used to stand; what he does now is
+float on a pedestal, out the back of the board (`guideSpot()`).
+
+The corner was correct and it was expensive. Two cells of width and two of
+depth came out of the framed extents, and the levels he stands on are the
+small early boards where that is most of a third of the screen - reported by
+the owner as "the white cube is what is limiting our size in the first
+levels", which is exactly what it was. Over the CENTRE in x and z he is inside
+the board's own silhouette and costs no horizontal room at all; measured on
+six of his levels, `fitViewSize()` now returns the same number it would if he
+did not exist, where the corner cost a whole step of zoom on every one of
+them.
+
+How high he floats is arithmetic rather than taste. Screen-up in this
+projection is height PLUS depth away from the camera - the camera leans by
+`CAM_TILT`, which is why `arenaSH` adds `CAM_TILT*arenaSW` - so the block that
+draws highest is not the tallest one, it is the tallest one at the back. Depth
+away from the centre is `±(x-cx)` or `±(z-cz)` depending on the view, so each
+block can gain at most `CAM_TILT * max(|dx|,|dz|)` over its own height, and he
+clears the largest of that over the blocks plus `GUIDE_LIFT` of daylight. It
+is asked per block on purpose: "the tallest block plus half the board's span"
+is the same sum with the worst height and the worst depth taken off different
+blocks, and on a wide low board with one tower in it that parks him two cells
+up in empty sky which the camera then dutifully frames.
+
+**OUT THE BACK, ALONG THE SWIPE-UP AXIS**, on the owner's call, and over the
+middle was the version before it. A swipe up walks the player `-d` - away from
+the camera - and away from the camera is up and back on screen, so it is the
+one direction that reads as "out of the way" rather than "hovering over the
+puzzle": he is behind the level, over its shoulder, and the player walks
+towards him rather than under him.
+
+Only on a level that cannot turn. "Out along the swipe-up axis" names a
+direction that only exists while the view is locked - turn the camera ninety
+degrees and the same world offset is sideways, which is the trap this whole
+section is about - so the four rotating levels he stands on keep him over the
+middle, where no turn can swing him anywhere.
+
+**And the offset is free, which took one more idea.** Pushing him two cells
+out the back cost the early levels a whole step of zoom, measured: exactly the
+corner's old bill, because `recomputeBounds()` frames a box of world points
+and charges the larger of the x and z spans as WIDTH. That is the right
+question for a board that can be turned and the wrong one for a man behind one
+that cannot - his offset is pure DEPTH, and depth on a locked level is never
+width, it is height at `CAM_TILT` a cell. So `guidePoint()` hands the camera
+where he APPEARS rather than where he is: the same x, the board's own depth,
+and his depth offset converted into the height it draws at. Framed as the
+thing the player actually sees - a man up and behind the board - he costs the
+fit nothing, and the measurement says so: `fitViewSize()` returns the same
+number it would if he did not exist.
+
+**The pedestal is the wardrobe's stage: a plate on a column.** He floated on
+nothing for one build, on the reasoning that a cube plainly standing on air
+cannot be mistaken for a square of the puzzle. True, and it left a man hanging
+in the sky for no reason the picture gives. The shape is deliberately not a
+cube - a plate wider than he is, on a column narrower than he is, is furniture
+at a glance from any of the four views, where a half-height cube under him
+(which is what the old plinth beside the board was) reads as a block he is
+standing on. Nobody has ever tried to fold onto a display stand.
+
+**He has a second height for the plane, and it is not a detail.** `tilt` is
+`(1-flatT)*CAM_TILT`, so folding the world takes the lean away - and the lean
+is what he is standing on. Depth stops paying, the board collapses to its own
+heights, and the first build of this put a white cube and its pedestal in the
+middle of the silhouette the player is trying to read. So `guideSpot()`
+returns a flat height as well and `guideFrame()` carries him from one to the
+other on the fold's own `ft`: he rises as the world goes down. `guidePoint()`
+frames the higher of the two, because the camera is not re-framed when the
+world folds.
+
+Both heights clear a whole cell over the top row rather than half. Half a cell
+is the top of the BLOCK, and the things the player is looking at are the ones
+standing on it - their own cube, the goal's wireframe - which reach about a
+cell higher. Clearing the blocks alone put the pedestal a few pixels over the
+player's head on a narrow board.
+
+What does NOT change is the trap the corner was invented for: an offset along
+one horizontal axis only is sideways in two views and straight at the camera
+in the other two. If he ever comes down again, he comes down on a corner.
+
+**He was the level's description for one build, and it was reversed.** On the
+boards he stands on, `body.gquiet` took the level's NAME and HINT off the HUD
+and he said his line by himself when the board opened. The reasoning was
+sound and the owner's own: people look straight past the two lines at the top
+of the screen, because they are chrome in the place chrome lives, and a person
+standing over the level talking is not.
+
+Played, and back out in one round. Two things went wrong with it. The hole is
+bigger than the chrome was - a board with no name and no sentence under it is
+a board you have to work out from scratch, and "ignored" is not "useless":
+the hint is there for the moment you look for it, which is not the moment you
+arrive. And the replacement had to arrive by itself to replace anything, so a
+bubble opened over the puzzle on every single entry, including every restart,
+saying something the player could have read in a quarter of the space without
+anything being covered.
+
+So the name and the hint are on every level again, he is back to being pressed
+when he is wanted, and his one unprompted line is the stuck one. Worth knowing
+this was tried, so that "nobody reads the hint" is not solved this way twice:
+if it comes up again, the answer is to make the hint worth reading, not to
+take it away and put a person in front of it.
+
+One consequence of the height: his bubble no longer fits over his head near
+the top of the screen, so `guideFrame()` projects an anchor above him AND one
+below him and takes whichever fits, with `.down` flipping the tail to the top
+edge of the box.
+
+**And the bubble is anchored to a still point, which is a bug worth keeping in
+mind for anything else pinned to a moving object.** He BREATHES - a sine of
+.035 of a cell applied to the drawn mesh - and the bubble used to be projected
+from that mesh, so the text inherited the breath. On a cube two hundredths of
+a cell is life. On four lines of 11.5px mono it is a one-to-two pixel judder
+at 60fps, and it was reported as exactly that: the text wobbles and it is not
+easy on the eye. Rounding to whole pixels made it worse, not better - a value
+drifting across a pixel boundary snaps rather than eases. `GD.px/py/pz` is now
+the smoothed position WITHOUT the bob, the bob is added to the mesh at the
+last moment, and the bubble reads the still one. Measured across a walk: the
+anchor no longer changes at all.
+
+**And then the same complaint arrived again, from the other end of the same
+pipe: the text shook on every 2D/3D change.** The anchor was still; the CAMERA
+was not. A fold lands with a slam - one oscillation about a cell deep
+(`foldSlamT`) - and a death rattles the screen (`shakeT`), and the bubble is
+projected through that camera every frame, so a kick meant for the world went
+straight into four lines of 11.5px mono.
+
+So the projection uses `gdCam`, a copy of the camera placed at `camSteady`:
+where it would be with neither the shake nor the slam in it, written every
+frame by `animate()`. The cube still rattles, because the cube is part of the
+world and the sentence is not. Measured across a fold on `06 - The Illusion`:
+the worst frame-to-frame jump of the bubble drops from 116px to 28px and the
+average from 5.5px to 1.0px, and what is left is his own glide as he rises for
+the plane.
+
+The general rule, for the next thing pinned to a moving object: **the world
+may be thrown around, type may not.** Both halves of this bug were the same
+mistake - reading a position that had juice baked into it.
 
 **A corner, not an edge, and that took a photograph to find.** The first
 plinth was two squares past the `+x` end of the board, halfway along its
@@ -871,7 +1009,7 @@ starts where the teaching stops.
 
 The test is `L.tutorial`, not "is it PROLOGUE", because the second place this
 bites is inside I · NATURE and it took playing the game to find. `09 - The
-Rotation` is the level that hands rotation over, and `guidePlinth()` puts him
+Rotation` is the level that hands rotation over, and `guidePlinth()` (as it then was) put him
 two squares off the `+x` end of the board and nowhere else - which is out of
 the way in exactly one of the four views. Every level before `09` is
 `rotate:false` and cannot turn him into the shot; `09` is the level whose

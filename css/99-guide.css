@@ -77,6 +77,27 @@
     width:11px;height:11px;margin-left:-5.5px;transform:rotate(45deg);
     background:#e6ebf2;border-right:1px solid rgba(15,20,36,.25);
     border-bottom:1px solid rgba(15,20,36,.25)}
+  /* UNDER HIM INSTEAD, when there is no room over his head - which is most of
+     the time now that he floats above the board (guideSpot(), js/23-guide.js).
+     Three things flip together and they have to flip together: the box hangs
+     from the anchor rather than sitting on it, the tail moves to the top edge
+     with the two lit borders on the other two sides, and the pop grows from
+     the top rather than the bottom. `guideFrame()` writes the class and
+     projects the anchor under his feet rather than over his head. */
+  .gbub.down{transform:translateY(0)}
+  .gbub.down::after{bottom:auto;top:-5px;background:#fdfefe;
+    border-right:none;border-bottom:none;
+    border-left:1px solid rgba(15,20,36,.25);
+    border-top:1px solid rgba(15,20,36,.25)}
+  .gbub.down.on{transform-origin:var(--tail) 0;
+    animation:gbdown .28s cubic-bezier(.2,1.4,.4,1) both}
+  @keyframes gbdown{
+    0%  {opacity:0;transform:translateY(0) scale(.88)}
+    100%{opacity:1;transform:translateY(0) scale(1)}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .gbub.down.on{animation:gbfade .2s ease both}
+  }
   .gbub b{font-weight:600}
   /* THE ONE LINE HE SAYS WITHOUT BEING ASKED, and it is a button in all but
      name: pressing him again takes the offer. It wears the amber the game
@@ -104,6 +125,7 @@
      be: they sit at z-index 20 and cover him outright. */
   body.athome .gbub,body.instory .gbub,body.mapopen .gbub,
   body.replaying .gbub{display:none}
+
 
   /* HIS LINE ON A WIN CARD. Not a bubble - by the time a level is solved the
      card is what the player is looking at, and a bubble behind it is a line
