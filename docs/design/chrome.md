@@ -834,9 +834,8 @@ only line in the renderer that knows he exists, and without it the camera
 frames the board and leaves him past the edge of the screen.
 
 **AND THAT COST IS WHY HE IS NOW IN THE AIR.** Everything above and below
-about the corner is the history of where he used to stand; what he does now
-is float over the middle of the board (`guideSpot()`), and the plinth has gone
-with the slab that was under it.
+about the corner is the history of where he used to stand; what he does now is
+float on a pedestal, out the back of the board (`guideSpot()`).
 
 The corner was correct and it was expensive. Two cells of width and two of
 depth came out of the framed extents, and the levels he stands on are the
@@ -860,11 +859,56 @@ is the same sum with the worst height and the worst depth taken off different
 blocks, and on a wide low board with one tower in it that parks him two cells
 up in empty sky which the camera then dutifully frames.
 
-The slab went because in the air there is nothing to mistake him for. It
-existed so that a white cube parked beside the board could not be read as a
-piece of the level; a cube hovering over the board, bobbing, plainly standing
-on nothing, is not a square anybody will try to fold onto - and a floating
-plinth would be the confusing object.
+**OUT THE BACK, ALONG THE SWIPE-UP AXIS**, on the owner's call, and over the
+middle was the version before it. A swipe up walks the player `-d` - away from
+the camera - and away from the camera is up and back on screen, so it is the
+one direction that reads as "out of the way" rather than "hovering over the
+puzzle": he is behind the level, over its shoulder, and the player walks
+towards him rather than under him.
+
+Only on a level that cannot turn. "Out along the swipe-up axis" names a
+direction that only exists while the view is locked - turn the camera ninety
+degrees and the same world offset is sideways, which is the trap this whole
+section is about - so the four rotating levels he stands on keep him over the
+middle, where no turn can swing him anywhere.
+
+**And the offset is free, which took one more idea.** Pushing him two cells
+out the back cost the early levels a whole step of zoom, measured: exactly the
+corner's old bill, because `recomputeBounds()` frames a box of world points
+and charges the larger of the x and z spans as WIDTH. That is the right
+question for a board that can be turned and the wrong one for a man behind one
+that cannot - his offset is pure DEPTH, and depth on a locked level is never
+width, it is height at `CAM_TILT` a cell. So `guidePoint()` hands the camera
+where he APPEARS rather than where he is: the same x, the board's own depth,
+and his depth offset converted into the height it draws at. Framed as the
+thing the player actually sees - a man up and behind the board - he costs the
+fit nothing, and the measurement says so: `fitViewSize()` returns the same
+number it would if he did not exist.
+
+**The pedestal is the wardrobe's stage: a plate on a column.** He floated on
+nothing for one build, on the reasoning that a cube plainly standing on air
+cannot be mistaken for a square of the puzzle. True, and it left a man hanging
+in the sky for no reason the picture gives. The shape is deliberately not a
+cube - a plate wider than he is, on a column narrower than he is, is furniture
+at a glance from any of the four views, where a half-height cube under him
+(which is what the old plinth beside the board was) reads as a block he is
+standing on. Nobody has ever tried to fold onto a display stand.
+
+**He has a second height for the plane, and it is not a detail.** `tilt` is
+`(1-flatT)*CAM_TILT`, so folding the world takes the lean away - and the lean
+is what he is standing on. Depth stops paying, the board collapses to its own
+heights, and the first build of this put a white cube and its pedestal in the
+middle of the silhouette the player is trying to read. So `guideSpot()`
+returns a flat height as well and `guideFrame()` carries him from one to the
+other on the fold's own `ft`: he rises as the world goes down. `guidePoint()`
+frames the higher of the two, because the camera is not re-framed when the
+world folds.
+
+Both heights clear a whole cell over the top row rather than half. Half a cell
+is the top of the BLOCK, and the things the player is looking at are the ones
+standing on it - their own cube, the goal's wireframe - which reach about a
+cell higher. Clearing the blocks alone put the pedestal a few pixels over the
+player's head on a narrow board.
 
 What does NOT change is the trap the corner was invented for: an offset along
 one horizontal axis only is sideways in two views and straight at the camera

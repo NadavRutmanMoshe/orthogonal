@@ -402,21 +402,35 @@ is the rule.
   into, folded into or crushed. A friendly obstacle would be a piece, a piece
   is a rule, and a rule the solver has not been told about is a level whose
   par is a lie.
-- **He FLOATS over the middle of the board** (`guideSpot()`), and the plinth
-  off the `+x`/`+z` corner is gone with the slab that was under it. The corner
-  cost two cells of width and two of depth out of `recomputeBounds()`, which
-  on the small early boards is most of a third of the screen - measured, the
-  camera now frames those levels exactly as if he were not there at all.
+- **He FLOATS on a pedestal, out the back of the board** (`guideSpot()`): the
+  plinth off the `+x`/`+z` corner is gone, and he is `GUIDE_OUT` cells past
+  the far edge along the axis a swipe UP walks (`-d` of view 0, which every
+  level opens in). **Only on a `rotate:false` level** - that direction only
+  exists while the view is locked, so the four rotating levels keep him over
+  the middle, where no turn can swing him anywhere.
   **How high is arithmetic**: screen-up is height PLUS depth away from the
-  camera, so he clears `max over blocks of (y + CAM_TILT*max(|dx|,|dz|))` plus
-  `GUIDE_LIFT`, which puts him over the top of the board in all four views.
-  Asked per block, not as "tallest + half the span" - that takes the worst
-  height and the worst depth off different blocks and parks him in empty sky.
-  **Never offset along ONE horizontal axis** if he ever comes down again:
+  camera, so a block gains `CAM_TILT` a cell for standing further back than he
+  does and LOSES it for standing nearer - which is why, behind the board, he
+  can sit at about its own height and still be clear over it. Per block, over
+  the views the level can actually be turned to, measured to the UNDERSIDE of
+  the pedestal, and clearing a whole cell over the top row because the things
+  that matter (the player, the goal's wireframe) STAND on it.
+  **He has a second height for the PLANE** (`flatY`, the 4th element of
+  `guideSpot()`), because `tilt` is `(1-flatT)*CAM_TILT`: fold the world and
+  depth stops paying, so without it he lands in the middle of the silhouette.
+  `guideFrame()` carries him between the two on the fold's own `ft`.
+- **`guidePoint()` is where he APPEARS, not where he is**, and that is what
+  makes the offset free. `recomputeBounds()` frames a world box and charges
+  the larger of the x and z spans as WIDTH, because screen-right is either -
+  true for a board that can be turned, wrong for a man behind one that cannot,
+  where his offset is pure depth and depth is height. So on a locked level the
+  camera is handed his x, the board's own depth, and his offset converted into
+  the height it draws at (and never below `flatY`). Measured: the board is
+  framed exactly as if he were not there. Hand over his raw position and the
+  early levels lose a whole step of zoom - the corner's bill, again.
+  **Never offset along ONE horizontal axis** on a level that can turn:
   screen-right is `±x` or `±z` by view, so one axis is sideways in two views
   and straight at the camera in the other two (`chrome.md`).
-  `recomputeBounds()` adds `guidePoint()` to the extents it frames - the one
-  line in the renderer that knows he exists.
 - **The level NAME and HINT stay on every level, his included, and he waits to
   be pressed.** Taking them off his boards and letting him say the line
   instead (`body.gquiet`) was built, played and reversed on the owner's call

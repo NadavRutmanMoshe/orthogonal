@@ -72,11 +72,20 @@ var GUIDE_COL=0xf4f6fa;          // White, out of the catalogue: he is a neighbo
    size he wants. */
 var GUIDE_SIZE=1.15;
 var GUIDE_SAY_MS=6500;           // how long a line stays up on its own
-/* The daylight between the top of the board and his feet, in cells, on top
-   of the lean the projection already charges for depth - see guideSpot().
-   Enough to read as "he is above this", small enough that the camera does
-   not have to pull back to hold him. */
-var GUIDE_LIFT=1.3;
+/* WHERE HE STANDS, in three numbers - see guideSpot() for the geometry.
+
+   OUT is how far past the back edge of the board he is, along the axis a
+   swipe UP walks the player: away from the camera. LIFT is the daylight
+   between the highest thing on the board and the underside of his pedestal,
+   both measured on SCREEN rather than in world height, which is what lets
+   him sit at about the height of the board and still be clear above it.
+
+   The pedestal is a plate on a column, the shape the wardrobe's stage uses,
+   and DROP is how far under him its middle sits. */
+var GUIDE_OUT=2;
+var GUIDE_LIFT=.55;
+var GUIDE_PED_DROP=.80;
+var GUIDE_PED_H=.18;
 
 /* ============================================================
    WHAT HE KNOWS: ONE LINE PER LEVEL, KEYED BY NAME
@@ -207,46 +216,40 @@ function guideHere(idx){
     return idx>=2&&idx<=18;
   return mapSecOf(idx)===1;
 }
-/* WHERE HE IS: IN THE AIR, OVER THE MIDDLE OF THE BOARD.
+/* WHERE HE IS: IN THE AIR, OFF THE BACK OF THE BOARD.
 
    He used to stand on a plinth two squares past the `+x`/`+z` CORNER of the
    board, at its lowest level. That placement solved a real bug and its
    reasoning is kept in docs/design/chrome.md, because the trap it avoids is
    still a trap: an offset along ONE horizontal axis is sideways in two of the
-   four views and straight at the camera in the other two, which puts him on
-   top of the puzzle. A corner offset is sideways in all four.
+   four views and straight at the camera in the other two. What it cost is why
+   it went - `recomputeBounds()` frames him, so two squares of width and two
+   of depth came out of the board's share of the screen, on exactly the small
+   early boards he stands on.
 
-   What it cost is why it is gone. `recomputeBounds()` frames him, so two
-   squares of width and two of depth came out of the board's share of the
-   screen - on the small early boards, which are the ones he stands on, that
-   is most of a third of the width. Reported by the owner exactly that way:
-   the white cube is what is making the first levels small.
-
-   So he floats instead. Over the CENTRE in x and z, which costs no
-   horizontal room at all - he is inside the board's own silhouette - and
-   high enough that he is above everything drawn on it.
+   So he is in the air now, and OFF THE BACK: `GUIDE_OUT` cells past the far
+   edge along the axis a swipe UP walks the player, which is `-d` of the view
+   a level opens in (every level opens in view 0 - see the resets in
+   12-play.js). Away from the camera is up and back on screen, so that is the
+   one direction that reads as "out of the way" rather than "beside the
+   puzzle": he is behind the level, over its shoulder, and the player walks
+   towards him rather than past him.
 
    HOW HIGH IS ARITHMETIC, not taste. Screen-up in this projection is height
    PLUS depth away from the camera (the camera leans by `CAM_TILT`, which is
-   why `arenaSH` adds `CAM_TILT*arenaSW`), so the block that draws highest is
-   not the tallest one - it is the tallest one at the BACK. Depth away from
-   the centre is `±(x-cx)` or `±(z-cz)` depending on which of the four views
-   is up, so the most any given block can gain over its own height is
-   `CAM_TILT * max(|dx|,|dz|)` - and the height he has to clear is the
-   largest of THAT over the blocks, plus `GUIDE_LIFT` of daylight.
+   why `arenaSH` adds `CAM_TILT*arenaSW`), so a block gains `CAM_TILT` of
+   screen height for every cell it stands further back than he does - and
+   loses it for every cell it stands nearer. Standing behind the board, that
+   term is NEGATIVE for every block on it, which is why he can sit at about
+   the height of the board itself and still be clear over the top of it. The
+   requirement is per block, over the views the level can actually be turned
+   to, and it is measured to the UNDERSIDE of his pedestal rather than to him.
 
-   Asked per block rather than as "the tallest block plus half the board's
-   span", which is the same sum with the worst height and the worst depth
-   taken off different blocks. On a board that is wide and low with one tower
-   in the middle - which is most of I · NATURE - the loose version parks him
-   two or three cells further up than anything on screen needs, and the
-   camera frames that empty room as though it were part of the level.
-
-   The cost that replaces the old one is vertical, and it is cheaper twice
-   over: `recomputeBounds()` frames his height instead of his width, and in
-   PORTRAIT the vertical requirement is multiplied by the aspect (see
-   fitViewSize()) while the horizontal one is not. Losing two cells of width
-   and gaining three of height is a bigger board on a phone.
+   ONLY THE VIEWS THE LEVEL CAN BE TURNED TO. A `rotate:false` level is locked
+   to the view it opens in, so asking what he would look like from the side is
+   asking about a camera position the player cannot reach - and paying for it
+   in altitude. Every level he stands on before `09 - The Rotation` is locked;
+   the four after it are not, and those take the worst case over all four.
 
    Pure: it reads L and nothing else, so recomputeBounds() can ask for it
    before any mesh exists and guideSync() can ask for it again afterwards,
@@ -262,16 +265,114 @@ function guideSpot(){
     if(b[2]<loz)loz=b[2];
     if(b[2]>hiz)hiz=b[2];
   }
-  var cx=(lox+hix)/2, cz=(loz+hiz)/2;
-  var tilt=(typeof CAM_TILT==="number")?CAM_TILT:.62, top=-1e9, t;
+  /* The swipe-up direction in world space: press("up") walks `-d`, and `d`
+     points at the camera (js/01-coords.js, js/12-play.js). One of the two
+     components is zero, so `out` is half the board along whichever axis that
+     is, plus the gap. */
+  var d=AX[0].d, ax=-d[0], az=-d[2];
+  /* AND ONLY ON A LEVEL THAT CANNOT TURN. "Out along the swipe-up axis" names
+     a direction that only exists while the view is locked: turn the camera
+     ninety degrees and the same world offset is sideways, which is the trap
+     the corner placement was invented for. The four rotating levels he stands
+     on keep him over the middle, where no turn can swing him anywhere. */
+  var locked=(L.rotate===false);
+  var out=locked?(Math.abs(ax)*((hix-lox)/2)+
+                  Math.abs(az)*((hiz-loz)/2)+GUIDE_OUT):0;
+  var gx=(lox+hix)/2+ax*out, gz=(loz+hiz)/2+az*out;
+  var tilt=(typeof CAM_TILT==="number")?CAM_TILT:.62;
+  var views=locked?[AX[0]]:AX;
+  var top=-1e9,vi,v,away,need;
+  for(vi=0;vi<views.length;vi++){
+    v=views[vi];
+    for(i=0;i<L.blocks.length;i++){
+      b=L.blocks[i];
+      // how much further from the camera the block stands than he does
+      away=-((b[0]-gx)*v.d[0]+(b[2]-gz)*v.d[2]);
+      need=b[1]+tilt*away;
+      if(need>top)top=need;
+    }
+  }
+  /* CENTRES ARE NOT EDGES, and the first version of this compared centres and
+     sat him in the top row of the board. A cube is drawn as a hexagon: its
+     highest point is the FAR corner of its top face, half a cell up and half
+     a cell back, so it reaches `.5 + tilt*.5` over the centre the loop above
+     measured. His own lowest point is the NEAR bottom corner of the pedestal,
+     which hangs below him by the drop, its own half-height, and the tilt of
+     its half-width again. Both are constants of the projection, not taste;
+     GUIDE_LIFT is the only number here anybody should be tuning. */
+  /* A WHOLE CELL, not half. Half a cell is the top of the BLOCK, and the
+     things the player is looking at are the ones standing on it - their own
+     cube, the goal's wireframe - which reach about a cell over the top row.
+     Clearing the blocks alone put his pedestal a few pixels over the player's
+     head on a narrow board. The `tilt*.5` is the far corner of the top face,
+     which is the highest point a cube actually draws at. */
+  var blockTop=1+tilt*.5;
+  var pedUnder=GUIDE_PED_DROP+.57+tilt*.53;   // to the column's near bottom corner
+  /* AND A SECOND HEIGHT, FOR THE PLANE. Everything above is the arithmetic of
+     a LEANING camera, and the lean is what he is standing on: behind the board
+     he is high on screen because depth draws high. Fold the world and the lean
+     goes to zero - `tilt` is `(1-flatT)*CAM_TILT` in the render loop - so
+     depth stops paying, the whole board collapses to its own heights, and he
+     lands in the middle of the silhouette the player is trying to read. It was
+     exactly that in the first build of this: a white cube over the flattened
+     board.
+
+     So he has a flat height as well, and guideFrame() carries him from one to
+     the other with the fold itself, on the same `ft` that carries his depth.
+     He rises as the world goes down, which is a fair description of what the
+     fold does to everything else's screen position anyway. It needs no tilt
+     terms: in the plane nothing is behind anything. */
+  var hiy=-1e9;
+  for(i=0;i<L.blocks.length;i++)if(L.blocks[i][1]>hiy)hiy=L.blocks[i][1];
+  /* A whole cell rather than half for the block's top: in the plane the
+     things standing ON the top row - the goal's wireframe, the player - are
+     what he would land on, and they reach about a cell over it. */
+  var flatY=hiy+1+(GUIDE_PED_DROP+.57)+GUIDE_LIFT;
+  return [gx, top+blockTop+pedUnder+GUIDE_LIFT, gz, flatY];
+}
+/* WHAT THE CAMERA IS TOLD ABOUT HIM, which is not quite where he is.
+
+   `recomputeBounds()` frames a box of WORLD points and then asks for the
+   larger of the x and z spans, because screen-right is x or z depending on
+   the view. That is the right question for a board that can be turned and the
+   wrong one for a man standing behind a board that cannot: his offset is pure
+   DEPTH, and depth on a locked level is never width - it is height, at
+   `CAM_TILT` a cell (the same lean `arenaSH` already charges for).
+
+   Handing over his raw position therefore bought the board's width for
+   nothing: measured, pushing him two cells out the back cost the early levels
+   a whole step of zoom, which is exactly what taking him off the corner had
+   just won back. So on a locked level the camera is told where he APPEARS -
+   the same x, the board's own depth, and his depth offset converted into the
+   height it draws at. He is framed as the thing the player sees: a man up and
+   behind the board. On a level that can turn he has no offset to convert, so
+   this is his own position and the question does not arise. */
+function guidePoint(){
+  var g=guideSpot();
+  if(!g)return g;
+  // The same "hold both heights" rule where there is no offset to convert.
+  if(!L||L.rotate!==false||!L.blocks||!L.blocks.length)
+    return [g[0],Math.max(g[1],g[3]),g[2]];
+  var loz=1e9,hiz=-1e9,i,b;
   for(i=0;i<L.blocks.length;i++){
     b=L.blocks[i];
-    t=b[1]+tilt*Math.max(Math.abs(b[0]-cx),Math.abs(b[2]-cz));
-    if(t>top)top=t;
+    if(b[2]<loz)loz=b[2];
+    if(b[2]>hiz)hiz=b[2];
   }
-  return [cx, top+GUIDE_LIFT, cz];
+  var lox=1e9,hix=-1e9;
+  for(i=0;i<L.blocks.length;i++){
+    b=L.blocks[i];
+    if(b[0]<lox)lox=b[0];
+    if(b[0]>hix)hix=b[0];
+  }
+  var mx=(lox+hix)/2, mz=(loz+hiz)/2;
+  var d=AX[0].d, tilt=(typeof CAM_TILT==="number")?CAM_TILT:.62;
+  // how much further from the camera he stands than the middle of the board
+  var back=(mx-g[0])*d[0]+(mz-g[2])*d[2];
+  // ...and never below where the fold will put him: the camera is not
+  // re-framed when the world goes flat, so the box has to hold both heights.
+  return [mx, Math.max(g[1]+tilt*back,g[3]), mz];
 }
-function guidePoint(){return guideSpot();}
 /* Built, moved or taken away - called once per level load, from loadLevel. */
 function guideSync(){
   var p=guideSpot();
@@ -282,21 +383,46 @@ function guideSync(){
     var m=buildPlayerMesh("cube",GUIDE_COL,mat);
     m.scale.setScalar(GUIDE_SIZE);
     scene.add(m);
-    /* THE PLINTH IS GONE WITH THE GROUND UNDER IT. He stood on a half-height
-       slab of his own - furniture, drawn so that a white cube parked beside
-       the board could not be mistaken for a piece of it. In the air there is
-       nothing to mistake him for: a cube over the board, bobbing, plainly not
-       standing on anything, is not a square anybody is going to try to fold
-       onto. A floating slab under him would be the confusing object now. */
-    GD={mesh:m,mat:mat,x:0,y:0,z:0,px:0,py:0,pz:0,said:0,bob:Math.random()*6.283};
+    /* AND HIS PEDESTAL, which is the wardrobe's stage: a PLATE ON A COLUMN,
+       not a block. For one build he floated on nothing, on the reasoning that
+       a cube plainly standing on air cannot be mistaken for a square of the
+       puzzle - true, and it left a man hanging in the sky for no reason the
+       picture gives. A pedestal answers that without costing the first thing:
+       nobody has ever tried to fold onto a display stand.
+
+       The shape is deliberately NOT a cube. A plate wider than he is, on a
+       column narrower than he is, is furniture at a glance from any of the
+       four views - a half-height cube under him, which is what the old plinth
+       beside the board was, reads as a block he is standing on. The rim on
+       the plate is the same hairline the wardrobe's slab carries, and the
+       whole thing is one group so it folds and turns as a piece. */
+    var ped=new THREE.Group();
+    var plate=new THREE.Mesh(new THREE.BoxGeometry(1.06,GUIDE_PED_H,1.06),
+      new THREE.MeshLambertMaterial({color:0x8f9ab2}));
+    ped.add(plate);
+    /* The column is narrow and most of it hangs BELOW the plate, or the two
+       read as one grey slab from this camera: the plate hides whatever sits
+       directly under its own footprint, so the drop is what makes the
+       silhouette a stand rather than a brick. */
+    var col=new THREE.Mesh(new THREE.BoxGeometry(.44,.5,.44),
+      new THREE.MeshLambertMaterial({color:0x5a6580}));
+    col.position.y=-.32;ped.add(col);
+    var rim=new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.BoxGeometry(1.06,GUIDE_PED_H,1.06)),
+      new THREE.LineBasicMaterial({color:0xcdd6e8,transparent:true,opacity:.5}));
+    ped.add(rim);
+    scene.add(ped);
+    GD={mesh:m,mat:mat,ped:ped,x:0,y:0,z:0,fy:0,px:0,py:0,pz:0,said:0,
+        bob:Math.random()*6.283};
   }
-  GD.x=p[0];GD.y=p[1];GD.z=p[2];
+  GD.x=p[0];GD.y=p[1];GD.z=p[2];GD.fy=p[3];
   /* Snapped, not chased: a new board is a cut, and easing him across the
      screen from wherever he stood on the last one is a camera move nobody
      asked for. */
   GD.px=GD.x;GD.py=GD.y;GD.pz=GD.z;
   GD.mesh.visible=true;
   GD.mesh.position.set(GD.x,GD.y,GD.z);
+  if(GD.ped){GD.ped.visible=true;GD.ped.position.set(GD.x,GD.y-GUIDE_PED_DROP,GD.z);}
   guideHide();
   /* AND HE WAITS TO BE PRESSED AGAIN.
 
@@ -319,8 +445,15 @@ function guideSync(){
 }
 function guideDrop(){
   if(!GD)return;
-  if(typeof scene!=="undefined"&&scene&&GD.mesh)scene.remove(GD.mesh);
+  if(typeof scene!=="undefined"&&scene){
+    if(GD.mesh)scene.remove(GD.mesh);
+    if(GD.ped)scene.remove(GD.ped);
+  }
   if(GD.mesh&&GD.mesh.geometry&&GD.mesh.geometry.dispose)GD.mesh.geometry.dispose();
+  if(GD.ped)GD.ped.traverse(function(o){
+    if(o.geometry&&o.geometry.dispose)o.geometry.dispose();
+    if(o.material&&o.material.dispose)o.material.dispose();
+  });
   GD=null;
   guideHide();
 }
@@ -448,10 +581,17 @@ function guideFrame(dtMs,rx,rz,tdvx,tdvz,ft){
      guideAnchor() above. It is the same .3 chase the mesh position was doing,
      moved one step earlier so that only one thing breathes. */
   GD.px+=((GD.x+(fx-GD.x)*ft)-GD.px)*.3;
-  GD.py+=(GD.y-GD.py)*.3;
+  // and up, by the same `ft`, to the height the plane needs - see guideSpot()
+  GD.py+=((GD.y+(GD.fy-GD.y)*ft)-GD.py)*.3;
   GD.pz+=((GD.z+(fz-GD.z)*ft)-GD.pz)*.3;
   GD.mesh.position.set(GD.px, GD.py+Math.sin(GD.bob)*.035, GD.pz);
   GD.mesh.rotation.y=Math.atan2(tdvx,tdvz);
+  /* The pedestal rides the still position, one step lower and WITHOUT the
+     bob: he breathes, the thing he is standing on does not. */
+  if(GD.ped){
+    GD.ped.position.set(GD.px,GD.py-GUIDE_PED_DROP,GD.pz);
+    GD.ped.rotation.y=GD.mesh.rotation.y;
+  }
   if(typeof outlineFor==="function"&&scene)outlineFor(GD.mesh,scene.background);
   /* THE BUBBLE FOLLOWS HIM. Projected every frame rather than placed once,
      because the camera turns and the world folds underneath him and a line
