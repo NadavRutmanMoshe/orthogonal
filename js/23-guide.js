@@ -565,8 +565,38 @@ function guideCancel(){
    So the bob is applied to the mesh and to nothing else. `GD.px/py/pz` is the
    same smoothed position without it - the fold still carries the bubble,
    because the smoothing chases the same folded target the mesh does. */
-function guideAnchor(dy,w,h){
-  gdTmp.set(GD.px,GD.py+dy,GD.pz);gdTmp.project(camera);
+/* AND IT PROJECTS THROUGH A STEADY CAMERA, not the one on screen.
+
+   That is the second half of the wobble fix and it is the half the fold
+   needed. The camera is deliberately thrown about - `shakeT` rattles it on a
+   death, and a fold lands with a SLAM about a cell deep (`foldSlamT`, the
+   render loop) - and both are right on the world and wrong on type: the
+   bubble is projected every frame, so the slam went straight into four lines
+   of mono and the text shook on every 2D/3D change. Reported exactly that way.
+
+   `camSteady` (js/10-render.js) is where the camera would be with neither in
+   it. `gdCam` is a copy of the real camera put there and aimed at the same
+   point, so the bubble sits where it would if the world were not being
+   rattled - and the cube under it still rattles, because the cube is part of
+   the world and the sentence is not. r128: matrixWorldInverse is maintained by
+   the renderer for its own camera, so this one has to invert its own. */
+var gdCam=null;
+function guideCamSync(){
+  if(typeof camSteady==="undefined"||typeof center==="undefined")return camera;
+  if(!gdCam){
+    if(!camera||!camera.clone)return camera;
+    gdCam=camera.clone();
+  }
+  gdCam.projectionMatrix.copy(camera.projectionMatrix);
+  gdCam.position.copy(camSteady);
+  gdCam.up.copy(camera.up);
+  gdCam.lookAt(center);
+  gdCam.updateMatrixWorld();
+  gdCam.matrixWorldInverse.copy(gdCam.matrixWorld).invert();
+  return gdCam;
+}
+function guideAnchor(dy,w,h,cam){
+  gdTmp.set(GD.px,GD.py+dy,GD.pz);gdTmp.project(cam);
   return {x:(gdTmp.x*.5+.5)*w, y:(-gdTmp.y*.5+.5)*h};
 }
 function guideFrame(dtMs,rx,rz,tdvx,tdvz,ft){
@@ -613,7 +643,8 @@ function guideFrame(dtMs,rx,rz,tdvx,tdvz,ft){
          Projected rather than measured in pixels because the world-to-screen
          scale is whatever the board size and the level's own fit make it:
          .95 of a cell is not a fixed number of pixels on any two levels. */
-      var above=guideAnchor(.95,w,h), below=guideAnchor(-.95,w,h);
+      var cam=guideCamSync();
+      var above=guideAnchor(.95,w,h,cam), below=guideAnchor(-.95,w,h,cam);
       var bh=el.offsetHeight||44, down=(above.y-bh)<10;
       var at=down?below:above;
       el.classList.toggle("down",down);

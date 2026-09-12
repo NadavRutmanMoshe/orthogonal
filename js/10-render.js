@@ -2424,6 +2424,9 @@ function syncMeshes(){
   recomputeBounds();
 }
 var arenaLo=[0,0,0], arenaHi=[0,0,0];
+// The camera's position with neither shake nor fold-slam in it; written every
+// frame by animate(), read by anything that must not ride them.
+var camSteady=new THREE.Vector3();
 function recomputeBounds(){
   if(!L.blocks.length){centerT.set(0,0,0);viewSizeT=7;
     arenaLo=[0,0,0];arenaHi=[0,0,0];return;}
@@ -4177,6 +4180,17 @@ function animate(now){
      frame, which is a jump-cut rather than a slam. */
   var slam=Math.sin((1-foldSlamT)*Math.PI*1.6)*foldSlamT*foldSlamT*
            2.2*vsc*foldSlamDir;
+  /* WHERE THE CAMERA WOULD BE WITHOUT THE JUICE, kept for anything that has
+     to hold still while the world is being thrown around. The shake and the
+     slam are deliberate on the WORLD - a hit rattles the screen, a fold lands
+     hard - and they are wrong on TYPE: the neighbour's speech bubble is
+     projected through the camera every frame, so a fold put a whole cell of
+     camera kick into four lines of 11.5px mono and the text shook. See
+     guideAnchor() in js/23-guide.js, which projects through a copy of this
+     camera placed here instead. */
+  camSteady.set(center.x+dvx*40,
+                center.y+(tilt+peek*.22)*34,
+                center.z+dvz*40);
   camera.position.set(center.x+dvx*40+(Math.random()-.5)*sh,
                       center.y+(tilt+peek*.22)*34+(Math.random()-.5)*sh+slam,
                       center.z+dvz*40+(Math.random()-.5)*sh);

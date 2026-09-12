@@ -437,13 +437,17 @@ is the rule.
   in one round - the hole it leaves is bigger than the chrome was, and an
   unprompted bubble covers the board to say what is already written
   (`chrome.md`). His one unprompted line is still the stuck one.
-- **THE BUBBLE IS ANCHORED TO A STILL POINT, NOT TO HIS MESH** (`GD.px/py/pz`,
-  `guideAnchor()`). He breathes - a sine of .035 of a cell - and projecting
-  the bubble off the bobbing mesh put that breath into four lines of 11.5px
-  type, which reads as a judder rather than as life. The bob is applied to
-  the mesh and to nothing else. Anything anchored to him must read the still
-  position. His bubble flips BELOW him (`.down`) when there is no room over
-  his head.
+- **THE BUBBLE IS ANCHORED TO A STILL POINT AND PROJECTED THROUGH A STILL
+  CAMERA.** Two separate sources of the same complaint, both fixed the same
+  way - type must not ride the world's juice. (1) He breathes, a sine of .035
+  of a cell: the bob is applied to the MESH only and the bubble reads
+  `GD.px/py/pz`. (2) The camera is thrown about - `shakeT` on a death, and a
+  fold lands with a SLAM about a cell deep - so `guideAnchor()` projects
+  through `gdCam`, a copy of the camera placed at `camSteady` (`10-render.js`,
+  the position with neither in it). Measured across a fold: worst
+  frame-to-frame jump 116px -> 28px, average 5.5px -> 1.0px. The CUBE still
+  shakes, because the cube is part of the world and the sentence is not.
+  His bubble flips BELOW him (`.down`) when there is no room over his head.
 - **Never on a `tutorial:true` level**, and that is the whole placement rule
   (plus no boss, no trial, section 1 only). In PROLOGUE he offered the fold to
   somebody the tutorial had not taught it to yet, and a teaching level already

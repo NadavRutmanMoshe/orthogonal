@@ -951,8 +951,26 @@ easy on the eye. Rounding to whole pixels made it worse, not better - a value
 drifting across a pixel boundary snaps rather than eases. `GD.px/py/pz` is now
 the smoothed position WITHOUT the bob, the bob is added to the mesh at the
 last moment, and the bubble reads the still one. Measured across a walk: the
-anchor no longer changes at all, and the only thing that moves the text now is
-the death shake, which moves the whole screen.
+anchor no longer changes at all.
+
+**And then the same complaint arrived again, from the other end of the same
+pipe: the text shook on every 2D/3D change.** The anchor was still; the CAMERA
+was not. A fold lands with a slam - one oscillation about a cell deep
+(`foldSlamT`) - and a death rattles the screen (`shakeT`), and the bubble is
+projected through that camera every frame, so a kick meant for the world went
+straight into four lines of 11.5px mono.
+
+So the projection uses `gdCam`, a copy of the camera placed at `camSteady`:
+where it would be with neither the shake nor the slam in it, written every
+frame by `animate()`. The cube still rattles, because the cube is part of the
+world and the sentence is not. Measured across a fold on `06 - The Illusion`:
+the worst frame-to-frame jump of the bubble drops from 116px to 28px and the
+average from 5.5px to 1.0px, and what is left is his own glide as he rises for
+the plane.
+
+The general rule, for the next thing pinned to a moving object: **the world
+may be thrown around, type may not.** Both halves of this bug were the same
+mistake - reading a position that had juice baked into it.
 
 **A corner, not an edge, and that took a photograph to find.** The first
 plinth was two squares past the `+x` end of the board, halfway along its
