@@ -470,8 +470,11 @@ is the rule.
 - **The fold's motion is one beat; what teaches rule 5 is a MARK**
   (`foldHiBuild()`, `js/10-render.js`). While the fold runs, the block you
   would come back onto is lifted toward the goal's green and takes a bright
-  rim - up before the world moves (`FOLD_HI_IN`), gone by the plane, blooming
-  again on the way back. It is **one per LEDGE**: each screen-right column is
+  rim - up before the world moves (`FOLD_HI_IN`), gone by the plane. **Coming
+  back to 3D it runs on the landing rings' own clock** (`landFade()`, the one
+  source for that curve; the mark takes whichever of the two is louder), so
+  it holds for `LAND_MS` after the world has stood up rather than vanishing
+  with the 620ms tween. It is **one per LEDGE**: each screen-right column is
   walked from the top for a square that is filled with the square above it
   empty, because a block with something over it cannot be stood on once the
   world is flat, and the winner is asked for with the game's own

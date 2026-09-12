@@ -3756,6 +3756,22 @@ function tutLandMark(dtMs){
   landRingsDraw(.84+.16*(tutRingBreath*2-1));
   return true;
 }
+/* HOW STRONGLY THE LANDING RINGS ARE DRAWN THIS FRAME, 0 when there are none.
+
+   Pulled out of landFrame because the fold's mark on the winning block runs
+   on exactly this clock once the world is standing up - the owner asked for
+   the mark to last as long as the ring on the block you are stood on, and
+   "as long as" is a promise two copies of a curve cannot keep. One
+   expression, two things reading it. */
+function landFade(){
+  if(!landHint)return 0;
+  // The peek's rings belong to the finger, not to a clock.
+  if(landHint.live)return Math.max(0,Math.min(1,(planePeek-.05)/.35));
+  var p=landHint.t/LAND_MS;
+  // in over the first fifth - the world is still standing up before that -
+  // and out over the last third, so it never just vanishes
+  return Math.max(0,Math.min(1,p/.2)*Math.min(1,(1-p)/.34));
+}
 function landFrame(dtMs){
   var i;
   tutMarkSet=null;                            // rebuilt below, once, per frame
@@ -3764,10 +3780,7 @@ function landFrame(dtMs){
   if(!landLive()&&!landHint){
     for(i=0;i<landRings.length;i++)landRings[i].visible=false;return;
   }
-  if(landHint.live){
-    var lf=Math.min(1,(planePeek-.05)/.35);
-    landRingsDraw(lf);return;
-  }
+  if(landHint.live){landRingsDraw(landFade());return;}
   landHint.t+=dtMs;
   /* Cleared when the player FOLDS AGAIN, which is `flat` - not flatT. flatT
      is still near 1 on the first frames after standing up, because the world
@@ -3778,10 +3791,7 @@ function landFrame(dtMs){
     for(i=0;i<landRings.length;i++)landRings[i].visible=false;
     return;
   }
-  var p=landHint.t/LAND_MS;
-  // in over the first fifth - the world is still standing up before that -
-  // and out over the last third, so it never just vanishes
-  landRingsDraw(Math.min(1,p/.2)*Math.min(1,(1-p)/.34));
+  landRingsDraw(landFade());
 }
 /* Placed with the same interpolation the block loop uses, so a ring sits on
    its block through the whole rise rather than only at the ends of it. */
@@ -3901,13 +3911,6 @@ function animate(now){
   }
   flatT=ftWant;
   foldLast=flatT;               // see the external-write test above
-  /* Derived from flatT, so peek, the replay's closing fold and every
-     external snap to 0 keep working untouched. Nothing is rebuilt while the
-     world is standing up in the volume, which is most frames of most
-     sessions. */
-  foldHiT=foldStage(flatT,0,FOLD_HI_IN)*
-          (1-foldStage(flatT,FOLD_HI_OUT_A,FOLD_HI_OUT_B));
-  if(foldHiT>.01)foldHiBuild(); else foldHiSet={};
   viewAngle+=(viewAngleTarget-viewAngle)*.16;
   /* THE WEATHER. Driven off real frame time like the fight clocks, so it
      runs at the same rate on a 120Hz phone and a loaded one - and folded,
@@ -3932,6 +3935,36 @@ function animate(now){
   setSkyColors(skyWarm);
   layoutAtmosphere(dtMs);
   landFrame(dtMs);
+  /* THE MARK'S STRENGTH, and it has two clocks because the fold has two
+     directions.
+
+     GOING IN it rides `flatT` - up before the world moves, out before the
+     plane - which is also what keeps peek, the replay's closing fold and
+     every external snap to 0 working untouched.
+
+     COMING OUT that is not long enough. The world stands up in 620ms and the
+     mark went with it, so the answer to "which one did it pick" was gone
+     about the time the player finished reading the question. The rings that
+     appear on landing already hold for LAND_MS with a fade at each end, and
+     they are saying the same thing about the same block - so the mark simply
+     takes the LOUDER of the two, and the rings' own envelope carries it for
+     the rest of the second and a half. Same curve, one source (`landFade`),
+     so the block and the ring around it can never fade apart.
+
+     Whichever is louder rather than a third rule: on the way IN there are no
+     rings and flatT has it; on the way OUT the rings are still fading in over
+     their first fifth while flatT still has it, and they take over as it
+     drops. Neither has to know about the other.
+
+     Placed after landFrame so both read the same frame's `landHint`; nothing
+     between here and the block loop reads either. */
+  foldHiT=Math.max(
+    foldStage(flatT,0,FOLD_HI_IN)*
+      (1-foldStage(flatT,FOLD_HI_OUT_A,FOLD_HI_OUT_B)),
+    landFade());
+  // Nothing is rebuilt while the world is simply standing there in the
+  // volume, which is most frames of most sessions.
+  if(foldHiT>.01)foldHiBuild(); else foldHiSet={};
   lookCue();
   /* playerMesh rather than `player`, because the mesh is where the player is
      actually drawn - already eased, and already in plane coordinates when

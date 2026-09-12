@@ -60,8 +60,18 @@ exclusive - every gesture also has a key and, unless hidden, a button:
   highlight that marks everything marks nothing. And it **comes up over the
   first 22% of the fold, before the world moves** - a mark that arrives after
   the travel is a caption on something that has already happened - then goes
-  out again by .96, so the plane is clean and the mark blooms a second time
-  on the way back, exactly as the world stands up. It is a lift plus a rim
+  out again by .96, so the plane is clean. **On the way back it runs on the
+  LANDING RINGS' clock instead**, which is the owner's call and the right
+  one: the world stands up in 620ms and the mark went with it, so the answer
+  to "which one did it pick" was gone about the time the player finished
+  reading the question. The rings already hold for `LAND_MS` with a fade at
+  each end and are saying the same thing about the same block, so the mark
+  takes whichever of the two is LOUDER (`Math.max`) and their envelope
+  carries it for the rest of the second and a half. One source for that
+  curve, `landFade()`, or the block and the ring around it drift apart;
+  `Math.max` rather than a third rule, because on the way in there are no
+  rings and `flatT` has it, and on the way out they take over as `flatT`
+  drops without either having to know about the other. It is a lift plus a rim
   rather than a repaint, the same pair the tutorial's landing marker uses,
   and both PERIL and that marker outrank it - the marker for a sharp reason,
   since it draws its own loser in a dim version of this same green.
