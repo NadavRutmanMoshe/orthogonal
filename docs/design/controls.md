@@ -64,6 +64,25 @@ exclusive - every gesture also has a key and, unless hidden, a button:
   case: screen-right and height still travel on `flatT` (that is only where
   they end up), and **only the depth** goes through `foldPath`, so the piece
   rides forward onto the block it is about to be stood on.
+- **AND THE WINNER IS LIT WHILE IT HAPPENS** (`foldHiSet`, `FOLD_HI_IN` .22,
+  `colFoldHi`). The gather shows a column collapsing; it does not by itself
+  say that a CHOICE was made, and a player who has not been told what they
+  are looking at sees a pile. So the front block of each column is lifted
+  toward the goal's green and takes a bright rim for the length of the
+  transition - rule 5's answer, drawn on the block itself. Three decisions:
+  it comes up over the first 22% of the fold, **before** the travel, or it is
+  a caption on something that has already happened; it fades out over the
+  SHEET, so in the plane - where there is no depth and the mark would mean
+  nothing - it is gone, and on the way back it blooms again exactly as the
+  world stands up; and it marks only columns with **two or more** blocks in
+  them. That last one is the whole selectivity: a one-block column has a
+  front block trivially, nothing merged into it, and lighting it says only
+  "there is a block here". Lighting every front block was the first build,
+  and on a flat meadow that is the entire ground going green on every fold.
+  It is a lift plus a rim rather than a repaint, the same pair the tutorial's
+  landing marker uses, and both PERIL and that landing marker outrank it -
+  the marker for a sharp reason, since it draws its own loser in a dim
+  version of this same green.
 - **THE FOLD IS A TIMED TWEEN, NOT A LERP** (`FOLD_MS_IN` 760, `FOLD_MS_OUT`
   860, `FOLD_MS_CLOCK` 380, in `js/05-state.js`; the first two were 520/620
   and were raised to give the two beats above room - run together, the gather,

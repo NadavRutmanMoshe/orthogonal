@@ -477,8 +477,12 @@ is the rule.
   already a card. Everything that folds goes through it - blocks, crates, the
   pack, the goal, the rings, the player, the cutscene cast - and the player is
   the one split case: only its DEPTH goes through, its screen-right and height
-  still ride `flatT`. Unfolding is the same two beats in reverse for free
-  (`controls.md`).
+  still ride `flatT`. Unfolding is the same two beats in reverse for free.
+  **The front block of every column with TWO OR MORE blocks in it is lit**
+  while the transition runs (`foldHiSet`, `FOLD_HI_IN`): a lift toward the
+  goal's green plus a bright rim, up before the travel and gone by the plane.
+  Only contested columns, or a flat meadow turns green on every fold; peril
+  and the tutorial's landing marker both outrank it (`controls.md`).
 - `INK_SETTLE` .18 and `PAPER_LIFT` .20 are the whole 2D look; both have
   been raised and reverted. The paper is derived from the sky.
 - `DEPTH_STEP` .34 charges the first cell of depth outright; `CAM_TILT` .62

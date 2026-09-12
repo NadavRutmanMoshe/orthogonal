@@ -14,6 +14,11 @@ var trialSlab,trialEdge;
 // How high above its square a slice's block starts the beat.
 var FALL_H=4.2;
 var colPeril=new THREE.Color(0x8f3b52);
+/* The colour the winner of a silhouette column is lifted toward while the
+   fold runs - the goal's own green, which is what "this is the one" is said
+   in everywhere else in this game (the landing rings, the tutorial's landing
+   marker, the cued button). See foldHiSet. */
+var colFoldHi=new THREE.Color(0x6ff0d2);
 var perilSet=null,perilCleanup=[],perilPulse=0;
 /* The tutorial's landing marker, as the block loop sees it: cell key -> 1 for
    the block that will catch you, 2 for one that lost the tie. Built by
@@ -3344,7 +3349,18 @@ var DEPTH_STEP=.34, DEPTH_SLOPE=.09, DEPTH_CAP=.68;
    between them where nothing is moving.
    ============================================================ */
 var FOLD_GATHER_END=.58, FOLD_SHEET_START=.44, FOLD_GATHER_KEEP=.94;
-var foldGatherT=0, foldSheetT=0;
+/* HOW FAST THE WINNER LIGHTS UP, and it is not the gather's own curve.
+
+   The block everything is about to arrive at has to be marked BEFORE the
+   travel, or the mark is a caption on a thing that has already happened.
+   .22 is about a sixth of a second of a 760ms fold: long enough not to
+   snap on, early enough that the blocks are still where the player last
+   saw them when it says which one wins. It fades out over the SHEET, so in
+   the plane - where there is no depth and the mark would mean nothing -
+   it is gone, and on the way back it blooms again exactly as the world
+   stands up. */
+var FOLD_HI_IN=.22;
+var foldGatherT=0, foldSheetT=0, foldHiT=0;
 // smoothstep over a window of flatT, clamped at both ends
 function foldStage(t,a,b){
   var p=(t-a)/(b-a);
@@ -3362,15 +3378,31 @@ function foldStage(t,a,b){
    key is a float with noise on it and nothing ever matches. The two agree
    whenever a fold is running, because turning is refused in the plane and
    the fold is refused during a turn. */
-var foldFront={};
+/* THE WINNERS, as cell keys the block loop can test in O(1) - the front block
+   of every column that actually HAS a contest.
+
+   `n>=2` is the whole selectivity of this mark and it is worth stating. A
+   column with one block in it has a front block trivially: nothing merged
+   into it, no rule was applied, and lighting it up says only "there is a
+   block here", which the block already says. Lighting every front block in
+   the arena is what the first build did, and on a flat meadow that is the
+   entire ground going green on every fold - a highlight that marks
+   everything marks nothing. Restricted to columns where two or more blocks
+   are about to become one square, the green appears exactly where a choice
+   was made and names the one that won it. */
+var foldFront={}, foldHiSet={};
 function foldFrontBuild(){
-  foldFront={};
+  foldFront={};foldHiSet={};
   var ax=AX[view], r0=ax.r[0], r2=ax.r[2], d0=ax.d[0], d2=ax.d[2];
+  var win={}, n={}, key;
   for(var k in meshes){
     var b=meshes[k].userData.base;
-    var key=(b[0]*r0+b[2]*r2)+"|"+b[1], d=b[0]*d0+b[2]*d2;
-    if(!(key in foldFront)||d>foldFront[key])foldFront[key]=d;
+    key=(b[0]*r0+b[2]*r2)+"|"+b[1];
+    var d=b[0]*d0+b[2]*d2;
+    n[key]=(n[key]||0)+1;
+    if(!(key in foldFront)||d>foldFront[key]){foldFront[key]=d;win[key]=k;}
   }
+  for(key in win)if(n[key]>1)foldHiSet[win[key]]=1;
 }
 /* WHERE ALONG THE VIEW AXIS TO DRAW SOMETHING, THIS FRAME.
 
@@ -3906,7 +3938,8 @@ function animate(now){
   // Standing in the volume nothing reads the map - foldPath with both stages
   // at zero hands back the thing's own depth - so it is not rebuilt there,
   // which is most frames of most sessions.
-  if(flatT>0)foldFrontBuild();
+  foldHiT=foldStage(flatT,0,FOLD_HI_IN)*(1-foldSheetT);
+  if(flatT>0)foldFrontBuild(); else foldHiSet={};
   viewAngle+=(viewAngleTarget-viewAngle)*.16;
   /* THE WEATHER. Driven off real frame time like the fight clocks, so it
      runs at the same rate on a 120Hz phone and a loaded one - and folded,
@@ -4145,6 +4178,39 @@ function animate(now){
       m.material.color.copy(base).lerp(colInk,flatT*INK_SETTLE);
       applyDepth(m,b,pdepth,tdvx,tdvz,flatT);
     }
+    /* AND THE ONE EVERYTHING IS ARRIVING AT IS LIT WHILE IT HAPPENS.
+
+       The gather already shows the column collapsing onto its front block,
+       but a player who has not been told what they are looking at sees a
+       pile, not a choice. This names the winner: rule 5's answer, drawn on
+       the block itself, for the length of the transition and no longer.
+
+       ON TOP OF THE BLOCK'S IDENTITY, NOT INSTEAD OF IT - a lift toward
+       white and the goal's green on the rim, which is the same pair the
+       tutorial's landing marker uses a few branches up and the same green
+       the landing rings use on the way back. Repainting the winner outright
+       was tried there and rejected for a reason that applies here too: two
+       blocks swapping COLOUR at the same moment they swap screen position
+       leaves the player unable to say whether the blocks moved or the
+       marker did.
+
+       Peril outranks it, as it outranks everything: a warning that this
+       fold will crush you beats a lesson about which block wins. So does the
+       TUTORIAL'S landing marker, and for a sharper reason - it draws the
+       winner in this same green and the LOSER in a dim version of it, so a
+       bright rim laid over its loser would say both blocks won, on the one
+       level whose whole job is to say which. The rim is put back by the
+       perilCleanup sweep at the foot of the frame, which is already the one
+       place edge colours are restored from. */
+    if(foldHiT>.01&&foldHiSet[k]&&!(perilSet&&perilSet[k])&&
+       !(tutMarkSet&&tutMarkSet[k])){
+      m.material.color.lerp(colFoldHi,.46*foldHiT);
+      m.userData.edge.material.color.set(0x9dffe8);
+      m.userData.edge.material.opacity=Math.max(
+        m.userData.edge.material.opacity,.25+.75*foldHiT);
+      m.material.opacity=1;
+      if(perilCleanup.indexOf(k)<0)perilCleanup.push(k);
+    }
   }
 
   // crates fold like stone, and lerp toward their cell so a shove reads as a slide
@@ -4341,14 +4407,16 @@ function animate(now){
     for(var pc=0;pc<perilCleanup.length;pc++){
       var pm=meshes[perilCleanup[pc]];
       if(!pm||(perilSet&&perilSet[perilCleanup[pc]])||
-         (tutMarkSet&&tutMarkSet[perilCleanup[pc]]))continue;
+         (tutMarkSet&&tutMarkSet[perilCleanup[pc]])||
+         (foldHiT>.01&&foldHiSet[perilCleanup[pc]]))continue;
       var pk=pm.userData.kind;
       pm.userData.edge.material.color.set(
         pk===1?0xbdeaf7:pk===2?0xffd98a:pk===4?0xff8a72:0x0f1424);
       pm.userData.edge.material.opacity=pk===1?.95:(pk===2||pk===4?.85:.35);
     }
     perilCleanup=perilCleanup.filter(function(kk){
-      return (perilSet&&perilSet[kk])||(tutMarkSet&&tutMarkSet[kk]);});
+      return (perilSet&&perilSet[kk])||(tutMarkSet&&tutMarkSet[kk])||
+             (foldHiT>.01&&foldHiSet[kk]);});
   }
   var sealed=app==="play"&&keyMeshes.length&&keysLeft()>0;
   // Amber, not green, on anything with a clock: the colour is the promise
