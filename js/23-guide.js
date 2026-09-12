@@ -72,6 +72,11 @@ var GUIDE_COL=0xf4f6fa;          // White, out of the catalogue: he is a neighbo
    size he wants. */
 var GUIDE_SIZE=1.15;
 var GUIDE_SAY_MS=6500;           // how long a line stays up on its own
+/* The daylight between the top of the board and his feet, in cells, on top
+   of the lean the projection already charges for depth - see guideSpot().
+   Enough to read as "he is above this", small enough that the camera does
+   not have to pull back to hold him. */
+var GUIDE_LIFT=1.3;
 
 /* ============================================================
    WHAT HE KNOWS: ONE LINE PER LEVEL, KEYED BY NAME
@@ -202,62 +207,74 @@ function guideHere(idx){
     return idx>=2&&idx<=18;
   return mapSecOf(idx)===1;
 }
-/* HIS SQUARE, AND HIS PLINTH'S, DERIVED FROM THE BOARD.
+/* WHERE HE IS: IN THE AIR, OVER THE MIDDLE OF THE BOARD.
 
-   A CORNER, NOT AN EDGE, and that is the whole of this function's interest.
+   He used to stand on a plinth two squares past the `+x`/`+z` CORNER of the
+   board, at its lowest level. That placement solved a real bug and its
+   reasoning is kept in docs/design/chrome.md, because the trap it avoids is
+   still a trap: an offset along ONE horizontal axis is sideways in two of the
+   four views and straight at the camera in the other two, which puts him on
+   top of the puzzle. A corner offset is sideways in all four.
 
-   He used to stand two squares past the `+x` end of the board, halfway along
-   its depth: clear of the puzzle in the view the level opens in, and INSIDE
-   it in two of the other three. `09 - The Rotation` was reported first and
-   the reason was read off it wrongly - the level that teaches the turn is
-   not a special case, it is just the first level on which a turn is
-   possible. Every rotation-unlocked board he stands on had the same bug, and
-   `13 - Not a Simple Walk` is where the owner found it: one press of the
-   turn button and the neighbour is standing in the middle of the level,
-   in front of the goal.
+   What it cost is why it is gone. `recomputeBounds()` frames him, so two
+   squares of width and two of depth came out of the board's share of the
+   screen - on the small early boards, which are the ones he stands on, that
+   is most of a third of the width. Reported by the owner exactly that way:
+   the white cube is what is making the first levels small.
 
-   The cause: the offset was along `x`, and `x` is screen-right in only two
-   of the four views. In the other two it is DEPTH, so "two squares to the
-   side" becomes "two squares towards the camera", which is on top of the
-   board.
+   So he floats instead. Over the CENTRE in x and z, which costs no
+   horizontal room at all - he is inside the board's own silhouette - and
+   high enough that he is above everything drawn on it.
 
-   The fix is to offset him on BOTH horizontal axes at once - past the `+x`
-   end and past the `+z` end, at the corner. Screen-right is `AX[view].r`,
-   which is `±x` or `±z`, so in every one of the four views one of his two
-   offsets is the sideways one:
+   HOW HIGH IS ARITHMETIC, not taste. Screen-up in this projection is height
+   PLUS depth away from the camera (the camera leans by `CAM_TILT`, which is
+   why `arenaSH` adds `CAM_TILT*arenaSW`), so the block that draws highest is
+   not the tallest one - it is the tallest one at the BACK. Depth away from
+   the centre is `±(x-cx)` or `±(z-cz)` depending on which of the four views
+   is up, so the most any given block can gain over its own height is
+   `CAM_TILT * max(|dx|,|dz|)` - and the height he has to clear is the
+   largest of THAT over the blocks, plus `GUIDE_LIFT` of daylight.
 
-     view 0 (r = +x): two squares past the right-hand end
-     view 1 (r = -z): +z is screen-left, so two past the left-hand end
-     view 2 (r = -x): two past the left-hand end
-     view 3 (r = +z): two past the right-hand end
+   Asked per block rather than as "the tallest block plus half the board's
+   span", which is the same sum with the worst height and the worst depth
+   taken off different blocks. On a board that is wide and low with one tower
+   in the middle - which is most of I · NATURE - the loose version parks him
+   two or three cells further up than anything on screen needs, and the
+   camera frames that empty room as though it were part of the level.
 
-   He is off the side of the puzzle in all four, with one static cell and no
-   per-view placement to keep in step with the camera. The cost is that
-   `recomputeBounds()` now frames two cells of depth as well as two of width,
-   which is only a cost at all on a board deeper than it is wide.
+   The cost that replaces the old one is vertical, and it is cheaper twice
+   over: `recomputeBounds()` frames his height instead of his width, and in
+   PORTRAIT the vertical requirement is multiplied by the aspect (see
+   fitViewSize()) while the horizontal one is not. Losing two cells of width
+   and gaining three of height is a bigger board on a phone.
 
    Pure: it reads L and nothing else, so recomputeBounds() can ask for it
    before any mesh exists and guideSync() can ask for it again afterwards,
-   and neither has to run first.
-
-   `guidePoint()` answers with the PLINTH's cell rather than his, because
-   that is the lowest thing the camera has to keep on screen. */
-function guidePlinth(){
+   and neither has to run first. */
+function guideSpot(){
   if(!guideHere(typeof lvIndex==="number"?lvIndex:-1))return null;
   if(!L||!L.blocks||!L.blocks.length)return null;
-  var mx=-1e9,my=1e9,mz=-1e9,i,b;
+  var lox=1e9,loz=1e9,hix=-1e9,hiz=-1e9,i,b;
   for(i=0;i<L.blocks.length;i++){
     b=L.blocks[i];
-    if(b[0]>mx)mx=b[0];
-    if(b[1]<my)my=b[1];
-    if(b[2]>mz)mz=b[2];
+    if(b[0]<lox)lox=b[0];
+    if(b[0]>hix)hix=b[0];
+    if(b[2]<loz)loz=b[2];
+    if(b[2]>hiz)hiz=b[2];
   }
-  return [mx+2,my,mz+2];
+  var cx=(lox+hix)/2, cz=(loz+hiz)/2;
+  var tilt=(typeof CAM_TILT==="number")?CAM_TILT:.62, top=-1e9, t;
+  for(i=0;i<L.blocks.length;i++){
+    b=L.blocks[i];
+    t=b[1]+tilt*Math.max(Math.abs(b[0]-cx),Math.abs(b[2]-cz));
+    if(t>top)top=t;
+  }
+  return [cx, top+GUIDE_LIFT, cz];
 }
-function guidePoint(){return guidePlinth();}
+function guidePoint(){return guideSpot();}
 /* Built, moved or taken away - called once per level load, from loadLevel. */
 function guideSync(){
-  var p=guidePlinth();
+  var p=guideSpot();
   if(!p){guideDrop();return;}
   if(!GD){
     if(typeof THREE==="undefined"||typeof scene==="undefined"||!scene)return;
@@ -265,42 +282,49 @@ function guideSync(){
     var m=buildPlayerMesh("cube",GUIDE_COL,mat);
     m.scale.setScalar(GUIDE_SIZE);
     scene.add(m);
-    /* THE PLINTH IS A SLAB, NOT A BLOCK, and it is drawn half a block high
-       for exactly that reason: a full cube out there would look like a piece
-       of the level that had come loose, and somebody would try to fold onto
-       it. Half height, its own colour, no grain - it is furniture. */
-    var slab=new THREE.Mesh(new THREE.BoxGeometry(.92,.5,.92),
-      new THREE.MeshLambertMaterial({color:0x77809a}));
-    var edge=new THREE.LineSegments(
-      new THREE.EdgesGeometry(new THREE.BoxGeometry(.92,.5,.92)),
-      new THREE.LineBasicMaterial({color:0xaab4cc,transparent:true,opacity:.5}));
-    slab.add(edge);
-    scene.add(slab);
-    GD={mesh:m,mat:mat,slab:slab,x:0,y:0,z:0,said:0,bob:Math.random()*6.283};
+    /* THE PLINTH IS GONE WITH THE GROUND UNDER IT. He stood on a half-height
+       slab of his own - furniture, drawn so that a white cube parked beside
+       the board could not be mistaken for a piece of it. In the air there is
+       nothing to mistake him for: a cube over the board, bobbing, plainly not
+       standing on anything, is not a square anybody is going to try to fold
+       onto. A floating slab under him would be the confusing object now. */
+    GD={mesh:m,mat:mat,x:0,y:0,z:0,said:0,bob:Math.random()*6.283};
   }
-  GD.x=p[0];GD.y=p[1]+1;GD.z=p[2];
+  GD.x=p[0];GD.y=p[1];GD.z=p[2];
   GD.mesh.visible=true;
-  GD.slab.visible=true;
   GD.mesh.position.set(GD.x,GD.y,GD.z);
-  GD.slab.position.set(GD.x,GD.y-.75,GD.z);
   guideHide();
-  /* AND IF THIS LEVEL HAS BEATEN YOU TEN TIMES, HE SPEAKS FIRST. The game
-     has already offered a skip twice by then (struggleOffer fires on every
-     third loss); this is not a third offer, it is somebody saying out loud
-     that taking it is allowed. Pressing the bubble is what opens the card. */
+  /* AND NOW HE SPEAKS FIRST, EVERY TIME.
+
+     He used to wait to be pressed, because the level's name and its hint were
+     on screen saying what the board was about and he was the second opinion.
+     They are not any more - on a level he stands on, `body.gquiet` takes both
+     off (syncHud), on the owner's call: people were reading past them. So the
+     line he has for this level is the only description there is, and a
+     description nobody has tapped is not a description.
+
+     It says itself and then gets out of the way after GUIDE_SAY_MS, and
+     pressing him brings it back - which is the same bubble doing the same
+     job, now with a default. The delay is the level settling: the camera is
+     still moving into frame at 0ms.
+
+     AND IF THIS LEVEL HAS BEATEN YOU TEN TIMES, he says something else
+     instead. The game has already offered a skip twice by then
+     (struggleOffer fires on every third loss); this is not a third offer, it
+     is somebody saying out loud that taking it is allowed. Pressing the
+     bubble is what opens the card. */
   var n=(typeof fails!=="undefined"&&levelKey&&fails[levelKey])||0;
-  if(n>=GUIDE_STUCK_AT)setTimeout(function(){
-    if(GD&&app==="play")guideSay(GUIDE_STUCK,true);
-  },900);
+  var stuck=n>=GUIDE_STUCK_AT;
+  setTimeout(function(){
+    if(!GD||app!=="play")return;
+    if(stuck)guideSay(GUIDE_STUCK,true);
+    else guideSay(guideTip());
+  },stuck?900:700);
 }
 function guideDrop(){
   if(!GD)return;
-  if(typeof scene!=="undefined"&&scene){
-    if(GD.mesh)scene.remove(GD.mesh);
-    if(GD.slab)scene.remove(GD.slab);
-  }
+  if(typeof scene!=="undefined"&&scene&&GD.mesh)scene.remove(GD.mesh);
   if(GD.mesh&&GD.mesh.geometry&&GD.mesh.geometry.dispose)GD.mesh.geometry.dispose();
-  if(GD.slab&&GD.slab.geometry&&GD.slab.geometry.dispose)GD.slab.geometry.dispose();
   GD=null;
   guideHide();
 }
@@ -396,6 +420,15 @@ function guideCancel(){
    drawn with the maths the player is drawn with. The bubble is placed by
    projecting his position to the screen, so it follows him round a turn.
    ============================================================ */
+/* One end of the bubble's leash: his drawn position, lifted by `dy` cells
+   and projected to the screen. Reads GD.mesh.position rather than GD.x/y/z
+   because that is where he actually IS on this frame - he folds with the
+   world and lerps into place, and a bubble anchored to his cell would sit
+   off him for the whole of a fold. */
+function guideAnchor(dy,w,h){
+  gdTmp.copy(GD.mesh.position);gdTmp.y+=dy;gdTmp.project(camera);
+  return {x:(gdTmp.x*.5+.5)*w, y:(-gdTmp.y*.5+.5)*h};
+}
 function guideFrame(dtMs,rx,rz,tdvx,tdvz,ft){
   if(!GD)return;
   if(!gdTmp&&typeof THREE!=="undefined")gdTmp=new THREE.Vector3();
@@ -405,13 +438,6 @@ function guideFrame(dtMs,rx,rz,tdvx,tdvz,ft){
   gdTmp.set(GD.x+(fx-GD.x)*ft, GD.y+Math.sin(GD.bob)*.035, GD.z+(fz-GD.z)*ft);
   GD.mesh.position.lerp(gdTmp,.3);
   GD.mesh.rotation.y=Math.atan2(tdvx,tdvz);
-  // The plinth folds with him, one step lower and without the bob.
-  if(GD.slab){
-    var su=GD.x*rx+GD.z*rz;
-    var sx=su*rx+1.0*tdvx, sz=su*rz+1.0*tdvz;
-    GD.slab.position.set(GD.x+(sx-GD.x)*ft, GD.y-.75, GD.z+(sz-GD.z)*ft);
-    GD.slab.rotation.y=GD.mesh.rotation.y;
-  }
   if(typeof outlineFor==="function"&&scene)outlineFor(GD.mesh,scene.background);
   /* THE BUBBLE FOLLOWS HIM. Projected every frame rather than placed once,
      because the camera turns and the world folds underneath him and a line
@@ -421,9 +447,22 @@ function guideFrame(dtMs,rx,rz,tdvx,tdvz,ft){
   if(el&&el.classList.contains("on")){
     if(GD.said&&!GD.stuck&&Date.now()-GD.said>GUIDE_SAY_MS)guideHide();
     else{
-      gdTmp.copy(GD.mesh.position);gdTmp.y+=.95;
-      gdTmp.project(camera);
       var w=window.innerWidth,h=window.innerHeight;
+      /* ABOVE HIM, OR BELOW HIM IF THERE IS NO ROOM ABOVE.
+
+         He is over the top of the board now, which is near the top of the
+         screen, and a box that is always anchored by its bottom edge goes off
+         it. So both anchors are projected - a point over his head and one
+         under his feet - and the bubble takes the one that fits, with `.down`
+         flipping the tail to the top edge (css/99-guide.css).
+
+         Projected rather than measured in pixels because the world-to-screen
+         scale is whatever the board size and the level's own fit make it:
+         .95 of a cell is not a fixed number of pixels on any two levels. */
+      var above=guideAnchor(.95,w,h), below=guideAnchor(-.95,w,h);
+      var bh=el.offsetHeight||44, down=(above.y-bh)<10;
+      var at=down?below:above;
+      el.classList.toggle("down",down);
       /* KEPT ON SCREEN, AND STILL OVER HIS HEAD. Two separate jobs, and for
          a while one number did both, badly.
 
@@ -450,10 +489,10 @@ function guideFrame(dtMs,rx,rz,tdvx,tdvz,ft){
          which is what makes measuring against it work rather than feed back
          on itself. */
       var bw=el.offsetWidth||160, pad=10, TAIL_IN=16;
-      var cx=(gdTmp.x*.5+.5)*w;
+      var cx=at.x;
       var bx=Math.max(pad,Math.min(w-pad-bw,cx-bw/2));
       el.style.left=Math.round(bx)+"px";
-      el.style.top=Math.round((-gdTmp.y*.5+.5)*h)+"px";
+      el.style.top=Math.round(at.y)+"px";
       el.style.setProperty("--tail",
         Math.round(Math.max(TAIL_IN,Math.min(bw-TAIL_IN,cx-bx)))+"px");
     }

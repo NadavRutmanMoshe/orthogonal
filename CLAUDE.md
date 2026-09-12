@@ -402,15 +402,27 @@ is the rule.
   into, folded into or crushed. A friendly obstacle would be a piece, a piece
   is a rule, and a rule the solver has not been told about is a level whose
   par is a lie.
-- **He stands on his OWN square, off the board**: a plinth two clear squares
-  past the level's `+x`/`+z` CORNER, drawn as a mesh rather than added as a
-  block (`guidePlinth()`). **A corner, not an edge**, and that is load-bearing:
-  screen-right is `±x` or `±z` depending on the view, so an offset along one
-  axis only is sideways in two views and straight at the camera in the other
-  two - which put him on top of the board. Offset on both, and one of the two
-  is the sideways one in all four. `recomputeBounds()` adds `guidePoint()` to
-  the extents it frames - the one line in the renderer that knows he exists -
-  or the camera would leave him past the edge of the screen.
+- **He FLOATS over the middle of the board** (`guideSpot()`), and the plinth
+  off the `+x`/`+z` corner is gone with the slab that was under it. The corner
+  cost two cells of width and two of depth out of `recomputeBounds()`, which
+  on the small early boards is most of a third of the screen - measured, the
+  camera now frames those levels exactly as if he were not there at all.
+  **How high is arithmetic**: screen-up is height PLUS depth away from the
+  camera, so he clears `max over blocks of (y + CAM_TILT*max(|dx|,|dz|))` plus
+  `GUIDE_LIFT`, which puts him over the top of the board in all four views.
+  Asked per block, not as "tallest + half the span" - that takes the worst
+  height and the worst depth off different blocks and parks him in empty sky.
+  **Never offset along ONE horizontal axis** if he ever comes down again:
+  screen-right is `±x` or `±z` by view, so one axis is sideways in two views
+  and straight at the camera in the other two (`chrome.md`).
+  `recomputeBounds()` adds `guidePoint()` to the extents it frames - the one
+  line in the renderer that knows he exists.
+- **He is the level's description now, and that is an experiment**
+  (`body.gquiet`, set in `syncHud()` from `guideHere()`): on a level he stands
+  on, the level NAME and HINT come off the HUD and he says his line by himself
+  when the board opens, because people read past the chrome. Two declarations
+  in `css/99-guide.css`; deleting them puts the text back. His bubble flips
+  BELOW him (`.down`) when there is no room over his head.
 - **Never on a `tutorial:true` level**, and that is the whole placement rule
   (plus no boss, no trial, section 1 only). In PROLOGUE he offered the fold to
   somebody the tutorial had not taught it to yet, and a teaching level already
@@ -435,15 +447,27 @@ is the rule.
 
 **Settings and saves** (`systems.md`)
 - **A first run is asked ONE question: how old are you.** The intro card's
-  five bands ARE its start button (there is no BEGIN), and each writes three
-  settings at once - `size`, `speed`, `ui` - from `AGE_BANDS` in
-  `js/11-sound.js` through `applyAgeBand()`, the one writer. Under 18 medium ·
-  fast · hidden, 18-25 medium · regular · hidden, 26-39 medium · slow ·
-  compact, 40-59 and 60+ large · slow · full. Nobody is given SMALL.
+  five bands ARE its start button (there is no BEGIN, and no PICK A LEVEL),
+  and each writes three settings at once - `size`, `speed`, `ui` - from
+  `AGE_BANDS` in `js/11-sound.js` through `applyAgeBand()`, the one writer.
+  Under 18 medium · fast · hidden, 18-25 medium · regular · hidden, 26-39
+  medium · slow · compact, 40-59 and 60+ large · slow · full. Nobody is given
+  SMALL.
+- **NOTHING ON THE CARD SAYS WHAT A BAND SETS**, on the owner's call. One easy
+  question, answered, and the game is set up; the rows in Settings are where
+  the details live for whoever goes looking. A card that prints what each row
+  does is the three settings again, in front of somebody who has not played.
+- **I'D RATHER NOT SAY is not a way out - it asks the other question.**
+  `DIFF_BANDS` beside `AGE_BANDS`: EASY large · slow · full, MEDIUM medium ·
+  regular · compact, HARD medium · fast · hidden. It replaces the bands in
+  place (`#intro.diff`), and `ageBandOf()` looks in both tables so a save can
+  carry either.
 - **It is a default, not a lock, and the way back is load-bearing**:
   `nothingBehind()` means a save never sees that card again, so
-  **Menu > More > SET UP BY AGE** (`agePanel()`) is the only door an existing
-  player has. All three are also rows on **Menu > How it plays** - one card,
+  **Menu > More > SET UP BY AGE** is the only door an existing player has -
+  and it opens THE SAME CARD (`introOpen(true)`, `#intro.setup`: CANCEL, and a
+  pick applies and closes instead of starting the game). There is no second
+  drawing of the question and there should not be. All three are also rows on **Menu > How it plays** - one card,
   because the age card writes them together - and changing one by hand does
   NOT re-pick a band.
 - **`settings.speed` is the old `pace`, under a new key on purpose.**

@@ -247,6 +247,24 @@ function syncHud(){
      it did, handing the whole document `display:none`. See the note in
      css/95-home.css. */
   document.body.classList.toggle("athome",homeUp());
+  /* HE IS THE DESCRIPTION NOW, on the levels he stands on.
+
+     The level's name and its hint sit at the top of the screen on every
+     level, and the owner's reading of the playtests is that people look
+     straight past them - they are chrome, in the place chrome lives, and the
+     board is what everybody is looking at. So on a board the neighbour is
+     standing on, both come off and he says the line instead: a person over
+     the level, talking, in a bubble that arrives. Deliberately an experiment
+     and deliberately cheap to reverse - it is one class and two declarations
+     in css/99-guide.css.
+
+     `guideHere()` is the same predicate that decides whether he exists at
+     all, so the two can never disagree about which levels these are: no
+     tutorials, no fights, section I only. The name is still on the map, the
+     win card and the level sheet; this is the HUD copy only. */
+  document.body.classList.toggle("gquiet",
+    typeof guideHere==="function"&&
+    guideHere(typeof lvIndex==="number"?lvIndex:-1));
   /* A CUTSCENE IS A SCREEN TOO, and the same rule applies: the chrome
      answers to it exactly as it answers to a panel, and this is the one
      place that decides. `instory` takes the HUD, the bar, the coach and the

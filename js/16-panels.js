@@ -695,7 +695,7 @@ function menuPanel(){
       settings.foldmark=m;saveSettings();menuPanel();
     });
   });
-  bind("mAge",agePanel);
+  bind("mAge",function(){hidePanel();introOpen(true);});
   bind("mTut",function(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
   });
@@ -2274,48 +2274,19 @@ function mapHelp(){
    name of the thing in front of them. So each piece gets one sentence in
    those words, and the two that were still called by their old names are
    called what they are drawn as: water and fire. */
-/* ============================================================
-   SET UP BY AGE
+/* SET UP BY AGE opens THE INTRO CARD, not a sheet of its own.
 
-   The intro card's question, with a way back to it. On a first run the five
-   bands are the start button (index.html, #intro); afterwards they are this
-   sheet, reached from Menu > More, because nothingBehind() means a player
-   with a save never sees that card again.
+   There was an agePanel() here: the five bands as a list, with what each one
+   sets spelled out underneath. Both halves of it went on the owner's call.
+   The card a first run sees is the thing to look at - he wants to be able to
+   SEE the first screen without throwing a save away to reach it - and the
+   descriptions went with the same decision that took them off the card: one
+   easy question, not three settings to audit. `introOpen(true)` is in
+   js/19-bindings.js beside the card's own buttons.
 
-   It says what each band sets rather than only naming the band, which the
-   card does not have room for and does not need - a first run has no idea
-   what a compact control bar is, and somebody opening this sheet has played
-   and does. That is the whole difference between the two.
-
-   A short panel like legendPanel(), not a full-height one: it is five rows
-   and a way back, and the five tall panels wear a page shape (header, star
-   total, footer) that would be furniture round a list this short.
-   ============================================================ */
-var AGE_UI_WORD={full:"full buttons",compact:"compact buttons",
-                 none:"gestures"};
-function ageSets(b){
-  return b.size+" board · "+b.speed+" fights · "+AGE_UI_WORD[b.ui];
-}
-function agePanel(){
-  var rows="";
-  AGE_BANDS.forEach(function(b){
-    rows+="<button class='ageb"+(settings.ageBand===b.id?" on":"")+
-      "' id='agB_"+b.id+"'><b>"+b.label+"</b><i>"+ageSets(b)+"</i></button>";
-  });
-  showPanel("<h3>SET UP BY AGE</h3>"+
-    "<p class='agep'>One question instead of three. Each of the three is "+
-      "still its own row in Settings.</p>"+
-    "<div class='psub'>"+rows+"</div>"+
-    "<div class='prow'><button id='agBack'>BACK</button></div>");
-  AGE_BANDS.forEach(function(b){
-    bind("agB_"+b.id,function(){
-      applyAgeBand(b.id);
-      flash(b.label.toLowerCase()+" · "+ageSets(b));
-      menuPanel();
-    });
-  });
-  bind("agBack",menuPanel);
-}
+   It still has to exist. nothingBehind() means a player with a save never
+   sees that card again, so without this button every existing player would
+   have a game that had quietly decided their settings. */
 
 function legendPanel(){
   showPanel("<h3>THE PIECES</h3>"+

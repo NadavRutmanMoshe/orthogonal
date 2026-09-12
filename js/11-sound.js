@@ -178,7 +178,15 @@ function boardScale(){
   return BOARD_SCALE[settings.size]||1;
 }
 
-/* THE AGE CARD'S FIVE ANSWERS, and what each one sets.
+/* THE SETUP CARD'S ANSWERS, and what each one sets.
+
+   NOTHING ON THE CARD SAYS WHAT A BAND DOES, on the owner's call, and that is
+   the point rather than an omission. A card that prints "medium board · slow
+   fights · compact buttons" under every row is three settings again - it hands
+   a first-time player the whole control surface at a glance and asks them to
+   audit it, which is the thing asking an age was supposed to avoid. They
+   answer one easy question and the game is set up. The rows in Settings are
+   where the details live, for whoever goes looking.
 
    A first run is asked one question it can actually answer - how old are you -
    instead of three it cannot: a player who has never seen the game has no way
@@ -203,8 +211,33 @@ var AGE_BANDS=[
   {id:"a40", label:"40 - 59",  size:"large",  speed:"slow",    ui:"full"},
   {id:"a60", label:"60 +",     size:"large",  speed:"slow",    ui:"full"}
 ];
+/* AND THE ANSWER FOR SOMEBODY WHO WILL NOT GIVE ONE.
+
+   I'D RATHER NOT SAY is on the card, and it is not a way out - it asks the
+   other question instead. An age is a proxy for how much help somebody wants;
+   this is the same question asked directly, for a player who would rather
+   answer it directly (or would rather not hand over their age, which is a
+   perfectly ordinary thing to feel about a game asking).
+
+   The three are deliberately not the same rows as three of the bands. EASY is
+   the oldest band's setup - the big board, the slow clock, the buttons on
+   screen - because "easy" here means "make it easy to see and easy to react
+   to", which is what that band was already asking for. HARD is the youngest
+   band's. MEDIUM sits between them with the compact bar, so the middle answer
+   is the one that has both some help and most of the screen. */
+var DIFF_BANDS=[
+  {id:"deasy", label:"EASY",   size:"large",  speed:"slow",    ui:"full"},
+  {id:"dmed",  label:"MEDIUM", size:"medium", speed:"regular", ui:"compact"},
+  {id:"dhard", label:"HARD",   size:"medium", speed:"fast",    ui:"none"}
+];
+/* One lookup over both tables, because everything downstream - the card, the
+   whitelist, `settings.ageBand` - only ever needs "is this a band, and what
+   does it set". The ids do not collide, and a save carrying one from either
+   table is valid. */
 function ageBandOf(id){
-  for(var i=0;i<AGE_BANDS.length;i++)if(AGE_BANDS[i].id===id)return AGE_BANDS[i];
+  var i;
+  for(i=0;i<AGE_BANDS.length;i++)if(AGE_BANDS[i].id===id)return AGE_BANDS[i];
+  for(i=0;i<DIFF_BANDS.length;i++)if(DIFF_BANDS[i].id===id)return DIFF_BANDS[i];
   return null;
 }
 /* Writes the three, remembers which band said so, and re-runs everything a

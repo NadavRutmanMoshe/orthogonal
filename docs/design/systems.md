@@ -649,6 +649,25 @@ intro card asks an age instead, and writes all three. The five bands and what
 each sets are `AGE_BANDS` in `js/11-sound.js`; `applyAgeBand()` is the one
 writer, and the table is the only place the mapping exists.
 
+**Nothing on the card says what a band sets, and that is the point.** There
+was a line under the bands naming the three settings, and it went with the
+same decision that keeps the bands themselves silent: a card that prints
+"medium board · slow fights · compact buttons" under every row has handed a
+first-time player the whole control surface and asked them to audit it, which
+is the thing asking one question was supposed to avoid. They answer something
+easy and the game is set up. The rows in Settings are where the details live,
+for whoever goes looking.
+
+**I'D RATHER NOT SAY is not a way out - it asks the other question.** An age
+is a proxy for how much help somebody wants; `DIFF_BANDS` is that question
+asked directly, for a player who would rather answer it directly, or would
+rather not hand their age to a game (which is an ordinary thing to feel). It
+replaces the bands in place rather than opening a screen - the card has
+already said what the game is, and a declined question should be followed by
+the next one where the last one was. EASY is the oldest band's setup, HARD the
+youngest's, and MEDIUM sits between them on the compact bar, so the middle
+answer is the one with both some help and most of the screen.
+
 **The card IS the start button.** There is no BEGIN any more: the five bands
 are the way into the game, so the card asks one question rather than putting a
 question in front of a button somebody can walk past. Everything BEGIN did -
@@ -661,10 +680,13 @@ cutscene is the next thing drawn.
 `nothingBehind()` means a player with a save never sees the intro card again,
 so without a second door every existing player - the owner included - would
 have a game that had quietly decided their settings. That door is
-**Menu > More > SET UP BY AGE** (`agePanel()`), which is the same five bands
-with what each one sets spelled out underneath: the sheet is opened by
-somebody who has played, so the words that mean nothing on the intro card
-("compact buttons") are the reason to open it. Each of the three is also its
+**Menu > More > SET UP BY AGE**, and it opens THE CARD - the same one a first
+run sees, in `.setup`: CANCEL exists, and picking a band applies and closes
+instead of starting the game (`introOpen(true)`, js/19-bindings.js). There was
+an `agePanel()` here that drew the question a second way, as a list with
+descriptions; both halves of it went on the owner's call. He wants to be able
+to LOOK at the first screen without throwing a save away to reach it, and two
+drawings of one question is one drawing too many. Each of the three is also its
 own row in **Menu > How it plays**, and changing one by hand deliberately does
 NOT re-pick a band - that is the player disagreeing with the band about one
 thing, not asking for the other two to move.

@@ -173,8 +173,29 @@
      three settings are in the menu. */
   .won p.agesq{color:var(--fg);letter-spacing:.12em;text-transform:uppercase;
     font-size:12px;margin-top:6px}
-  .won p.agesw{font-size:10.5px;opacity:.62;max-width:min(80vw,34ch);
-    line-height:1.6;letter-spacing:.04em;margin-top:-4px}
+  /* WHAT A BAND SETS IS NOT ON THIS CARD, on the owner's call. There was a
+     line here saying "sets the board size, the speed of the fights and the
+     controls" and it is gone with the thing it described: the whole point of
+     asking one easy question is that the player does not have to read three
+     settings to start playing. See AGE_BANDS in js/11-sound.js.
+
+     I'D RATHER NOT SAY is quiet - it is the answer for somebody who does not
+     want to give one, not a fourth option competing with the bands - so it is
+     drawn like the old PICK A LEVEL was: no cap, no hue, a rule round it. */
+  .won button.agesno{height:32px;font-size:10.5px;letter-spacing:.1em;
+    padding:0 14px;--c:#8c9dc4;color:var(--fg-dim);
+    border-color:var(--rule);background:var(--panel);box-shadow:none}
+  .won button.agesno:active{transform:translateY(1px)}
+  /* The second question replaces the first in place. Three across, so it
+     cannot be mistaken for the five-band grid it stands in for; the span rule
+     below is turned off for the same reason. */
+  #introDiff{display:none}
+  #intro.diff #introAges,#intro.diff #bAgeNo{display:none}
+  #intro.diff #introDiff{display:grid;grid-template-columns:repeat(3,1fr)}
+  #introDiff button:last-child{grid-column:auto}
+  /* CANCEL is only there when the card was opened to be looked at. */
+  .agescan{display:none}
+  #intro.setup .agescan{display:flex}
   /* TWO COLUMNS WITH THE LAST ONE SPANNING, rather than a column of five.
      Five 46px buttons plus two paragraphs is taller than the owner's narrow
      phone once the premise above is wrapping, and a card that scrolls is a

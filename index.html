@@ -483,7 +483,7 @@
        The ids are read by AGE_BANDS in js/11-sound.js, which is also where
        the table of what each one sets lives; the bindings are in
        js/19-bindings.js. -->
-  <p class="agesq">How old are you?</p>
+  <p class="agesq" id="introQ">How old are you?</p>
   <div class="ages" id="introAges">
     <button id="bAge_u18">UNDER 18</button>
     <button id="bAge_a18">18 - 25</button>
@@ -491,9 +491,21 @@
     <button id="bAge_a40">40 - 59</button>
     <button id="bAge_a60">60 +</button>
   </div>
-  <p class="agesw">Sets the board size, the speed of the fights and the
-    controls. All three are in the menu.</p>
-  <button class="tiny" id="bSkipTo" style="height:30px;padding:0 14px">PICK A LEVEL</button>
+  <!-- THE SECOND QUESTION, for somebody who will not answer the first. It
+       replaces the row of bands in place rather than opening a screen: the
+       card has already said what the game is, and a player who declines a
+       question should get the next one where the last one was, not a new
+       page. `#intro.diff` is the swap; see css/70-cards.css. -->
+  <button class="agesno" id="bAgeNo">I'D RATHER NOT SAY</button>
+  <div class="ages agesd" id="introDiff">
+    <button id="bAge_deasy">EASY</button>
+    <button id="bAge_dmed">MEDIUM</button>
+    <button id="bAge_dhard">HARD</button>
+  </div>
+  <!-- Only on the way in from Menu > More > SET UP BY AGE, where the card is
+       being LOOKED at rather than answered, and closing it has to put the
+       game back exactly as it was. A first run has nothing to go back to. -->
+  <button class="tiny agescan" id="bAgeCancel" style="height:30px;padding:0 14px">CANCEL</button>
 </div>
 
 <!-- THE TUTORIAL'S EXPLANATION CARD. One rule in this game cannot be taught

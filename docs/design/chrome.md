@@ -831,8 +831,61 @@ onto it.
 
 `recomputeBounds()` adds `guidePoint()` to the extents it frames. That is the
 only line in the renderer that knows he exists, and without it the camera
-frames the board and leaves him past the edge of the screen; the cost is that
-the board is a little smaller on the levels he is on.
+frames the board and leaves him past the edge of the screen.
+
+**AND THAT COST IS WHY HE IS NOW IN THE AIR.** Everything above and below
+about the corner is the history of where he used to stand; what he does now
+is float over the middle of the board (`guideSpot()`), and the plinth has gone
+with the slab that was under it.
+
+The corner was correct and it was expensive. Two cells of width and two of
+depth came out of the framed extents, and the levels he stands on are the
+small early boards where that is most of a third of the screen - reported by
+the owner as "the white cube is what is limiting our size in the first
+levels", which is exactly what it was. Over the CENTRE in x and z he is inside
+the board's own silhouette and costs no horizontal room at all; measured on
+six of his levels, `fitViewSize()` now returns the same number it would if he
+did not exist, where the corner cost a whole step of zoom on every one of
+them.
+
+How high he floats is arithmetic rather than taste. Screen-up in this
+projection is height PLUS depth away from the camera - the camera leans by
+`CAM_TILT`, which is why `arenaSH` adds `CAM_TILT*arenaSW` - so the block that
+draws highest is not the tallest one, it is the tallest one at the back. Depth
+away from the centre is `±(x-cx)` or `±(z-cz)` depending on the view, so each
+block can gain at most `CAM_TILT * max(|dx|,|dz|)` over its own height, and he
+clears the largest of that over the blocks plus `GUIDE_LIFT` of daylight. It
+is asked per block on purpose: "the tallest block plus half the board's span"
+is the same sum with the worst height and the worst depth taken off different
+blocks, and on a wide low board with one tower in it that parks him two cells
+up in empty sky which the camera then dutifully frames.
+
+The slab went because in the air there is nothing to mistake him for. It
+existed so that a white cube parked beside the board could not be read as a
+piece of the level; a cube hovering over the board, bobbing, plainly standing
+on nothing, is not a square anybody will try to fold onto - and a floating
+plinth would be the confusing object.
+
+What does NOT change is the trap the corner was invented for: an offset along
+one horizontal axis only is sideways in two views and straight at the camera
+in the other two. If he ever comes down again, he comes down on a corner.
+
+**He is also the level's description now, and that is an experiment.** On a
+board he stands on, `body.gquiet` (set in `syncHud()` from the same
+`guideHere()` that decides whether he exists) takes the level's NAME and HINT
+off the HUD, and he says his line by himself when the board opens rather than
+waiting to be pressed. The owner's reading of the playtests is that people
+look straight past the two lines at the top of the screen - they are chrome,
+in the place chrome lives - and a person standing over the level talking is
+not. The line still goes away after `GUIDE_SAY_MS` and pressing him still
+brings it back; the name is still on the map, the level sheet and the win
+card. It is two declarations in `css/99-guide.css` and one class, so putting
+the text back is deleting them.
+
+One consequence of the height: his bubble no longer fits over his head near
+the top of the screen, so `guideFrame()` projects an anchor above him AND one
+below him and takes whichever fits, with `.down` flipping the tail to the top
+edge of the box.
 
 **A corner, not an edge, and that took a photograph to find.** The first
 plinth was two squares past the `+x` end of the board, halfway along its
@@ -871,7 +924,7 @@ starts where the teaching stops.
 
 The test is `L.tutorial`, not "is it PROLOGUE", because the second place this
 bites is inside I · NATURE and it took playing the game to find. `09 - The
-Rotation` is the level that hands rotation over, and `guidePlinth()` puts him
+Rotation` is the level that hands rotation over, and `guidePlinth()` (as it then was) put him
 two squares off the `+x` end of the board and nowhere else - which is out of
 the way in exactly one of the four views. Every level before `09` is
 `rotate:false` and cannot turn him into the shot; `09` is the level whose

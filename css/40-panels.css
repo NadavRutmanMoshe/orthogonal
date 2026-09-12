@@ -527,24 +527,4 @@
   .leg i{width:15px;height:15px;flex-shrink:0;border-radius:2px;margin-top:1px}
   .leg span{flex:1;line-height:1.55}
   button.mini{height:24px;padding:0 7px;font-size:11px;letter-spacing:.06em}
-  /* SET UP BY AGE. Five rows, and each one says what it sets underneath its
-     own name - the sheet is opened by somebody who has played, so the words
-     that mean nothing on the intro card ("compact buttons") are the reason
-     to open it here. Two lines, so the .psub height is overridden rather
-     than inherited; the standing band is marked the way a .seg button is,
-     in the player's own colour, so "which one am I on" reads the same on
-     this sheet as it does on the rows in Settings. */
-  .agep{margin:0 0 8px;color:var(--fg-dim);font-size:11.5px;line-height:1.6}
-  .psub button.ageb{height:auto;min-height:40px;flex-direction:column;
-    align-items:flex-start;gap:0;padding:5px 11px;text-align:left}
-  .ageb b{font-size:12px;letter-spacing:.12em;font-weight:600;color:var(--fg)}
-  /* No tracking and a size down on the second line: it is the longest string
-     on the sheet ("medium board · slow fights · compact buttons") and it has
-     to hold one line on the owner's narrow phone. Wrapped, five rows push
-     BACK off the bottom of a panel capped at 44vh. */
-  .ageb i{font-style:normal;font-size:10px;letter-spacing:0;line-height:1.5;
-    color:var(--fg-dim);text-transform:none}
-  .psub button.ageb.on{border-color:var(--player);
-    background:rgba(214,51,108,.13)}
-  .psub button.ageb.on b{color:var(--player)}
 
