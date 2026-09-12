@@ -70,8 +70,9 @@ var LEVELS=[
       strip is the whole level: it is nowhere near the gap in the world, and
       in the plane it is the bridge across it.
 
-      IT USED TO LIE BEHIND THE BOARD, at z=-3..-5, and the whole nature run
-      moved to the near side on the owner's call: a block four squares further
+      IT USED TO LIE BEHIND THE BOARD, at z=-3..-5, and this one, `01`, `02`
+      and `03` moved to the near side on the owner's call (`06` kept the far
+      side, and its own comment says why): a block four squares further
       from the camera is small, dim - `DEPTH_STEP` charges depth outright -
       and half hidden behind the slab the player is standing on. The bridge is
       the one thing the player has to NOTICE before the fold means anything,
@@ -113,11 +114,12 @@ var LEVELS=[
       player who has just crossed this floor safely meets the same floor with
       a reason to look up. */
    /* THE BRIDGE IS ON THE NEAR SIDE, at z=3..5 rather than z=-3..-5, and so
-      is every bridge from here to `06`. See `00 - First Fold` for the whole
-      reasoning; the short version is that the strip is the one thing the
-      player has to notice and it was the furthest, dimmest, most occluded
-      thing on the board. Free to move, because the plane throws `pos . d`
-      away and keeps u = x: same route, same eight moves, same landing. */
+      is `00 - First Fold`'s, `02`'s and `03`'s. `06` is the exception and its
+      own comment says why. See `00 - First Fold` for the whole reasoning; the
+      short version is that the strip is the one thing the player has to
+      notice and it was the furthest, dimmest, most occluded thing on the
+      board. Free to move, because the plane throws `pos . d` away and keeps
+      u = x: same route, same eight moves, same landing. */
    blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[1,0,1],
      [2,0,-1],[2,0,0],[2,0,1],[3,0,3],[3,0,4],[3,0,5],
      [4,0,-1],[4,0,0],[4,0,1],[5,0,-1],[5,0,0],[5,0,1],
@@ -188,29 +190,25 @@ var LEVELS=[
    hint:"Use the eye to see where you are going to land out of the 2D world.",
    /* THE PLANE IS NOT A TELEPORT, and this is where that is said. Every
       level so far has folded, crossed the whole gap and stood up on the far
-      side; here the far bank runs the full depth of the board, so where in
-      that depth you come out is a thing to work out before you press it.
-      The fold is a move you spend, not a ride you take.
-
-      THE LESSON MOVED WHEN THE BRIDGE MOVED, and this is the one level of
-      the six where mirroring z was not free. It used to exit the plane EARLY
-      - `right right FLAT right POP right up`, popping on the bridge itself
-      at u=3 and walking onto the far bank - because the far bank's arm lay
-      behind the board and its nearest-camera block was on the wrong end of
-      it. With the arm at z=3..5 the column at u=4 is six blocks deep and the
-      goal sits second from the front, so the optimal is `right right FLAT
-      right right POP up`: all the way across, out on the block nearest the
-      camera (rule 5), one step back. Seven moves either way.
-
-      So it now hardens `00 - First Fold`'s closing beat - you come back on
-      the FRONT one - against a column of six instead of three, which is what
-      its hint has always asked for: use the eye. What it no longer teaches is
-      leaving the plane before the far side. Nothing else in the section does
-      that, so if it is wanted it wants a level. */
+      side; here the far bank runs the full depth of the board and the goal
+      is on the near end of it, so the optimal comes back out of the plane
+      one square early and walks the rest: `right right FLAT right POP right
+      up`. The fold is a move you spend, not a ride you take. */
+   /* THE ONE LEVEL IN THE RUN WHOSE BRIDGE STAYED BEHIND THE BOARD, on the
+      owner's call, and the reason is this level's lesson rather than its
+      look. Mirroring the strip to z=3..5 is free everywhere else - the plane
+      throws `pos . d` away - but here the far bank has an ARM running back
+      in depth, and mirroring that arm moves which end of it is nearest the
+      camera. The optimal became `right right FLAT right right POP up`: all
+      the way across, out on the front block, one step back. Same seven
+      moves, but the early exit is gone, and the early exit is what this
+      level is for - nothing else in the section teaches it. So `06` reads a
+      little flatter than its neighbours and keeps the only lesson that only
+      it has. It was built the other way, played, and reverted. */
    blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[2,0,0],[2,0,1],
-     [3,0,3],[3,0,4],[3,0,5],[1,0,1],[2,0,-1],
-     [4,0,5],[4,0,4],[4,0,3],[4,0,1],[4,0,0],[4,0,-1]],
-   start:[0,1,0],goal:[4,1,4],rotate:false},
+     [3,0,-3],[3,0,-4],[3,0,-5],[1,0,1],[2,0,-1],
+     [4,0,-5],[4,0,-4],[4,0,-3],[4,0,1],[4,0,0],[4,0,-1]],
+   start:[0,1,0],goal:[4,1,-4],rotate:false},
 {name:"07 - The Block",
    hint:"Sometimes you need to think outside the block.",
    /* THE FIRST LEVEL THAT GOES BACKWARDS. Everything before it crosses left
