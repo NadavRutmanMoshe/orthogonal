@@ -673,9 +673,12 @@ projection, so the facade row carries the whole gable and the body behind it
 is built lower: one course at the row behind, two at the rows behind that,
 the amounts a block needs to sit under the gable's top edge (the working is
 in `house()`). The camera sees one clean gable end; the fold still projects
-the body inside the facade's silhouette. The facade's four corner blocks,
-the bottom two courses at each end, are out on the owner's call, and the
-body's own corners stand one row back, so the corner reads as set back. The
+the body inside the facade's silhouette. Four facade blocks are out on the
+owner's call, to see how it looks: the bottom two courses one in from each
+end, the blocks directly behind the parents in the first frame, so the
+middle three columns of the facade are a set-back porch with the door at
+the back of it. (The corner blocks came out first, on a misreading of which
+four, and went back.) The
 door and the two windows are cut through every
 row of depth: the first solid house painted the windows a night-glass blue
 and cut the door one block deep, and that was reported as off against the

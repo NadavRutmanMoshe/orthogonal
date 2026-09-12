@@ -293,12 +293,13 @@ function stHouseBoard(){
      with lit tops, and the fold still projects the whole body inside the
      facade's silhouette, so the plane draws the same house as before.
 
-     THE FACADE'S FOUR CORNER BLOCKS ARE OUT, on the owner's call: the
-     bottom two courses at each end, the blocks beside the parents in the
-     first frame. The body's own corners stand one row back, a step darker
-     and half a course higher, so the corner reads as set back rather than
-     missing, and in the plane they project into the gap and the facade is
-     whole.
+     FOUR FACADE BLOCKS ARE OUT, on the owner's call, to see how it looks:
+     the bottom two courses one in from each end, which are the blocks
+     directly behind the parents in the first frame. (The corner blocks
+     came out first, on a misreading, and went back.) The body's own blocks
+     stand one row back in those columns, a step darker and half a course
+     higher, so they read as set back rather than missing, and in the plane
+     they project into the gap and the facade is whole.
 
      THE DOOR AND THE WINDOWS ARE OPEN, ALL THE WAY THROUGH. The first solid
      house painted the windows a night-glass blue and cut the door one block
@@ -338,7 +339,7 @@ function stHouseBoard(){
     // The facade, a course taller, carrying the gable.
     for(i=x0;i<=x1;i++)for(y=1;y<=3;y++){
       if(hole(i,y))continue;
-      if((i===x0||i===x1)&&y<=2)continue;      // the four corner blocks
+      if((i===x0+1||i===x1-1)&&y<=2)continue;  // the four behind the parents
       put(i,y,3,ST_WALL);
     }
     for(i=x0;i<=x1;i++)put(i,4,3,ST_ROOF);

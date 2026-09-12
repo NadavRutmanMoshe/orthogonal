@@ -355,8 +355,10 @@ is the rule.
   behind it is built LOWER - one course at the row behind, two at the rows
   behind that - because a row one square back draws half a course higher
   and a roof run at full height was a staircase. The arithmetic is in
-  `house()`. The facade's four corner blocks (bottom two courses, both ends)
-  are out on the owner's call, and the door and both windows are cut
+  `house()`. Four facade blocks are out on the owner's call, to see how it
+  looks: the bottom two courses one in from each end, the ones behind the
+  parents in the first frame, so the middle of the facade is a set-back
+  porch. The door and both windows are cut
   THROUGH every row of depth -
   open in the volume, and still holes in the plane because nothing stands
   behind them along the view axis. Painted windows were tried and reported
