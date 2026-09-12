@@ -605,7 +605,10 @@ load-bearing per screen.
   nothing outside that table.
 - The owner is learning, not shipping. Explanations of *why* are wanted, not
   just working code.
-- Levels can be pasted in and out as JSON from the editor's ⋯ menu (`ioPanel`), and one at a time from MY LEVELS' SHARE.
+- A level leaves through MY LEVELS' SHARE, one at a time. **The editor's ⋯
+  button is gone** on the owner's call - it sat beside TEST and opened a box
+  of raw JSON - so `ioPanel()` is now reachable only from `libraryPanel()`,
+  like `legendPanel()`.
 
 ### How to work on this, agreed with the owner
 

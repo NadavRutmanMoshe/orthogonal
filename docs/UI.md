@@ -450,6 +450,17 @@ named). Undoing one of these needs the paragraph.
   diagram, and a renderer that is not up yet. Hand-drawn chips were tried
   twice - off the legend's swatches, then off the renderer's constants - and
   both were wrong pictures of something on screen beside them.
+- **There is no ⋯ on the editor bar** (`#eFile`, gone from `index.html` and
+  from `19-bindings.js`), on the owner's call. It opened `ioPanel()` - IMPORT
+  / EXPORT, a textarea of the level's raw JSON - and it sat on the second row
+  beside TEST, at the end that a thumb reaching for TEST arrives at. So the
+  button most likely to be pressed by accident was the one that answers a
+  question almost nobody asked, in the one vocabulary this screen otherwise
+  never uses. Nothing behind it was load-bearing once the editor started
+  writing every edit: a level leaves through SHARE on MY LEVELS, which is one
+  line of code rather than a screen of brackets. `ioPanel()` itself is intact
+  and still reached from `libraryPanel()`, which is where the designer's
+  tools live; `VERIFY` simply takes the width the ⋯ gave back.
 - **A tap has to be able to hit a crate.** `onCanvasTap()` raycasts against
   `meshes` - the static block table `syncMeshes()` keeps - and a crate is not
   in it: it is the one piece with state, so it moves in play and is drawn by

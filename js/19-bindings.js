@@ -188,7 +188,6 @@ bind("eRotL",function(){rotateView(-1);});
 bind("eRotR",function(){rotateView(1);});
 bind("eUndo",function(){undo();});
 bind("eVerify",runVerify);
-bind("eFile",ioPanel);
 bind("eTest",function(){
   var bad=validate();
   if(bad){showPanel("<h3>CAN'T TEST</h3><span class='bad'>"+bad+"</span>");return;}
