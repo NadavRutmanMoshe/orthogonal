@@ -11,29 +11,35 @@ var LEVELS=[
    /* THE OWNER'S OWN LEVEL, and the first of eleven that replaced a
       generated opening. A five-by-three slab with a step across the middle
       of it: room to walk in both directions, one block to climb, and a drop
-      on the far side of it down to the goal. Verified: four moves, and there
+      on the far side of it down to the goal. Verified: five moves, and there
       is no fold route through this geometry at all, so the walking lesson
       cannot be short-circuited even before lockFlat refuses the verb. */
-   /* THE START IS ONE SQUARE CLOSER TO THE STEP, on the owner's call, and
-      the first `tut` line asks for ONE press because of it.
+   /* THE START IS THE NEAR CORNER, on the owner's call: one square left of
+      the middle and one square toward the camera, at [0,1,1].
 
-      What this level exists to teach is the step up, and it was the LAST of
-      four lessons at the end of a two-square walk - so a first-time player
-      met the fold in the next level with the step still fresh from one
-      press. Starting at x=1 puts the ridge one press past the walk.
+      What the corner buys is the depth lesson. From the middle row a press
+      in either direction is a square of floor, so neither of them reads as
+      going anywhere in particular; from the front row {do:up} walks INTO
+      the slab and {do:down} comes back to the edge you started on, which is
+      the difference those two controls exist to show.
 
-      The pair has to move together, and that is not a style choice:
+      Whatever the start is, the first `tut` line must ask for ONE press and
+      the climb must not be reachable inside it. That is not a style choice:
       `tutStep()` returns the first step whose `done` is false, scanning from
-      the top every frame. Leave the first line asking for two presses and
-      the second of them IS the climb, so `c.climb>=1` is already true by the
-      time the scan reaches the fourth line - which means the one lesson this
-      level is for never appears on screen. The floor at x=0 stays: it is
-      somewhere to walk back to while the depth keys are being learned, and
-      the second lesson asks for exactly that. */
+      the top every frame, so if the first line's presses could include the
+      climb then `c.climb>=1` is already true by the time the scan reaches
+      the fourth line - and the one lesson this level is for never appears on
+      screen. From x=0 one press right lands on plain floor and the ridge at
+      x=3 is still two presses away, so the pair is safe. */
+   /* THE DEPTH PRESSES ARE STILL ONE EACH, and from the front row that is
+      forced rather than chosen: the slab is three deep, so {do:up} has two
+      squares behind it and {do:down} has none - and the guided lock accepts
+      only the control being asked for, so the step that asks for {do:down}
+      is the step that brings the player back to this edge, never off it. */
    blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[1,0,1],
      [2,0,-1],[2,0,0],[2,0,1],[3,0,-1],[3,0,0],[3,0,1],
      [4,0,1],[4,0,0],[4,0,-1],[3,1,0],[3,1,-1],[3,1,1]],
-   start:[1,1,0],goal:[4,1,0],rotate:false,tutorial:true,lockFlat:true,
+   start:[0,1,1],goal:[4,1,0],rotate:false,tutorial:true,lockFlat:true,
    /* Every step here names a control, so every step locks to it: the world
       dims and the named control is the only one that answers. See the guided
       lock in 15-tutorial.js - a step can opt out with lock:false, and none of
@@ -45,11 +51,6 @@ var LEVELS=[
       "Press <b>&#9654;</b>" or "<b>Swipe right</b>" accordingly. See TUT_SAY.
       A lesson that says "press the right arrow" over a swiping finger is the
       same bug {to2} exists to prevent, with a different subject. */
-   /* ONE STEP IN DEPTH, NOT TWO, and that is a fact about this floor rather
-      than a preference. The slab is three deep, so from the middle row a
-      second press away from the camera walks off the edge - and the guided
-      lock accepts only the control being asked for, so a step that asked for
-      two would be a step that asks a first-time player to fall. */
    tut:[
      {say:"You are the pink cube. The green square is where you are going.<br>{do:right} once.",
       cue:"bRight",done:function(c){return c.d.right>=1;}},
@@ -693,13 +694,26 @@ var LEVELS=[
            [1,1,0,1],[4,1,-1],[4,2,-1]],
    start:[0,1,0],goal:[4,3,-1],rotate:true},
 {name:"24 - Out Onto It",
-   hint:"It holds you up. Walk out before you fold.",
-   /* The shortest statement of the rule there is: from the bank the plane
-      has a hole you fall through, and two steps out onto the water that
-      hole is behind you. Nothing here is scenery - drop either water block
-      and the level is impossible. */
-   blocks:[[0,0,0],[1,0,0,1],[2,0,0,1],[3,0,-3],[4,0,-3]],
-   start:[0,1,0],goal:[4,1,-3],rotate:true},
+   hint:"Water casts nothing. Line up with the stone beside it, then fold.",
+   /* THE OWNER'S OWN LEVEL, replacing a five-block sketch of the same rule.
+      A three-wide bank, a gap nothing crosses, and a tower of water on the
+      far side with one block of stone at the back corner of it.
+
+      The lesson is the same one said from the other end. The water is the
+      only way UP once you are across, but it is not the way across: it
+      casts nothing, so folding while you face it collapses the world into
+      a plane the far side is missing from. The one stone at [4,0,-1] is
+      the whole crossing - walk back to that row, turn so the fold throws
+      away x, and the bank and that stone share one silhouette square. Pop
+      out and rule 5 puts you on the far one, because it is the block
+      nearest the camera. Then the water is a step up to the goal.
+
+      Five moves, and the rotation is load-bearing: fold facing the water
+      and there is nothing at x=4 in the plane to come back onto. */
+   blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[1,0,1],
+           [2,0,-1],[2,0,0],[2,0,1],
+           [4,0,-1],[4,0,0,1],[4,0,1,1],[4,1,0,1],[4,1,1,1]],
+   start:[0,1,0],goal:[4,2,0],rotate:true},
 {name:"25 - Clear Ground",
    hint:"Water holds you up, but leaves nothing in 2D.",
    blocks:[[0,0,0],[0,1,-1,1],[-1,2,-5],[-1,2,-3],[0,2,-3,1],[0,2,-4,1],[1,2,-4,1],[1,2,-5,1]],
