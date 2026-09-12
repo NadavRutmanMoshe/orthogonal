@@ -223,7 +223,7 @@ number in front of it. Three levels have one, and the text lives with the
 level in `js/02-levels.js`.
 
 **`00 - First Steps`** (`02-levels.js:37`)
-1. `You are the pink cube. The green square is where you are going.<br>{do:right} twice.`
+1. `You are the pink cube. The green square is where you are going.<br>{do:right} once.`
 2. `The other two move you away from the camera and back toward it.<br>{do:up} once.`
 3. `And {do:down} to come back.`
 4. `There is no jump. A block one high is a **step** - walk straight into it.`
@@ -231,7 +231,7 @@ level in `js/02-levels.js`.
 **`00 - First Fold`** (`02-levels.js:67`)
 1. `Walk to the edge.`
 2. `Too far to walk, and there is no jump.<br>{do:2d}: everything flattens along your line of sight, and depth stops existing.`
-3. `Depth is gone, so that strip far behind you is simply next to you now. Walk across.`
+3. `Depth is gone, so that strip out in front of you is simply next to you now. Walk across.`
 4. `{do:3d} to stand up.<br>Three blocks share that column, and you come back on the one at **the front** - nearest you. The green square is one step behind it.`
 
 **`09 - The Rotation`** (`02-levels.js:243`)

@@ -174,14 +174,14 @@ two sentences are the same:
 
 | | |
 |---|---|
-| `00 - First Steps` | walking, stepping up, stepping down. No fold route exists through the geometry at all, so the lesson cannot be short-circuited even before `lockFlat` refuses the verb. |
+| `00 - First Steps` | walking, stepping up, stepping down. No fold route exists through the geometry at all, so the lesson cannot be short-circuited even before `lockFlat` refuses the verb. The start sits one square from the ridge, so the step up is one press past the walk. |
 | `00 - First Fold` | fold, cross, stand up - **and the landing rule for free**: the far bank is three deep in one silhouette column, so you come back on the front block and the goal is one step behind it. |
 | `01 - On Your Own` | the tutorial's own shape one step longer, and the only level in the opening where nothing can kill you. The rest the section did not have. |
 | `02 - Beware of Walls` | some squares are lethal to fold from. 4 of 9, including the start square. |
 | `03 - A Real Challenge` | the same, hardened: 6 of 8, and the only safe square is one you step *down* onto. |
 | `04 - The Shortcut` | the fold as **distance**, not as a bridge. The first level whose gap runs into the screen rather than across it: the walkway is left in, so seven moves of walking and four moves of `FLAT POP right up` both work and the player is the one who notices. |
 | `05 - The Only Way` | the same board with `z=3` and `z=4` taken out of the floor, so the walk that solved the level before it now walks you off the world. Learn it for free, then need it. |
-| `06 - The Illusion` | the plane is a shortcut, not a delivery - pop partway and walk the rest. |
+| `06 - The Illusion` | the landing rule against a deep column: the far bank runs the whole depth of the board, so you come out on the block nearest the camera and the goal is one step behind it. Use the eye. |
 | `07 - The Block` | the plane has no preferred direction; the goal is behind you and above you. |
 | `08 - Limited` | the peril lesson at its limit: 8 of 9 squares are lethal to fold from, and the survivor is one you have to *climb* to. |
 | `09 - The Rotation` | **impossible without rotating**, proved by `solve()` both ways - and taught, so the player proves it too. |
@@ -189,6 +189,20 @@ two sentences are the same:
 | `12 - Simple Walk` | walking *is* par. The control half of the scoring pair. |
 | `13 - Not a Simple Walk` | one column wider, so walking is one move over and the fold is the shortcut. The star is the only thing that says you missed it. |
 | `14 - The Silence Before the Storm` | everything at once, into the boss. |
+
+- **THE BRIDGE STRIP IS ON THE NEAR SIDE OF THE BOARD.** `00 - First Fold`
+  and `01`, `02`, `03`, `06` all cross on a strip at `x=3`, and it used to lie
+  at `z=-3..-5`, behind the board. It is at `z=3..5` now - `AX[0].d` is `+z`,
+  so that is straight toward the camera - on the owner's call. The strip is the
+  one thing a player has to *notice* before the fold means anything, and behind
+  the board it was the furthest, dimmest (`DEPTH_STEP` charges the first cell
+  of depth outright) and most occluded thing on screen. The move is free in the
+  plane, which is why it could be made at all: folding throws `pos . d` away
+  and keeps `u = x`, so the route, the move count and the landing are the same
+  on four of the five. `06` is the exception and the paragraph in
+  `js/02-levels.js` says why - mirroring its far-bank arm moved which end of a
+  six-deep column is nearest the camera, and with it the level's lesson, from
+  "leave the plane early" to "look before you stand up".
 
 - **ROTATION DOES NOT EXIST UNTIL `09`, AND IT IS NEVER TAKEN BACK.** The
   locked run is contiguous and ends at the level that teaches the turn: the

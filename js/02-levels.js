@@ -14,10 +14,26 @@ var LEVELS=[
       on the far side of it down to the goal. Verified: four moves, and there
       is no fold route through this geometry at all, so the walking lesson
       cannot be short-circuited even before lockFlat refuses the verb. */
+   /* THE START IS ONE SQUARE CLOSER TO THE STEP, on the owner's call, and
+      the first `tut` line asks for ONE press because of it.
+
+      What this level exists to teach is the step up, and it was the LAST of
+      four lessons at the end of a two-square walk - so a first-time player
+      met the fold in the next level with the step still fresh from one
+      press. Starting at x=1 puts the ridge one press past the walk.
+
+      The pair has to move together, and that is not a style choice:
+      `tutStep()` returns the first step whose `done` is false, scanning from
+      the top every frame. Leave the first line asking for two presses and
+      the second of them IS the climb, so `c.climb>=1` is already true by the
+      time the scan reaches the fourth line - which means the one lesson this
+      level is for never appears on screen. The floor at x=0 stays: it is
+      somewhere to walk back to while the depth keys are being learned, and
+      the second lesson asks for exactly that. */
    blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[1,0,1],
      [2,0,-1],[2,0,0],[2,0,1],[3,0,-1],[3,0,0],[3,0,1],
      [4,0,1],[4,0,0],[4,0,-1],[3,1,0],[3,1,-1],[3,1,1]],
-   start:[0,1,0],goal:[4,1,0],rotate:false,tutorial:true,lockFlat:true,
+   start:[1,1,0],goal:[4,1,0],rotate:false,tutorial:true,lockFlat:true,
    /* Every step here names a control, so every step locks to it: the world
       dims and the named control is the only one that answers. See the guided
       lock in 15-tutorial.js - a step can opt out with lock:false, and none of
@@ -35,8 +51,8 @@ var LEVELS=[
       lock accepts only the control being asked for, so a step that asked for
       two would be a step that asks a first-time player to fall. */
    tut:[
-     {say:"You are the pink cube. The green square is where you are going.<br>{do:right} twice.",
-      cue:"bRight",done:function(c){return c.d.right>=2;}},
+     {say:"You are the pink cube. The green square is where you are going.<br>{do:right} once.",
+      cue:"bRight",done:function(c){return c.d.right>=1;}},
      {say:"The other two move you away from the camera and back toward it.<br>{do:up} once.",
       cue:"bUp",done:function(c){return c.d.up>=1;}},
      {say:"And {do:down} to come back.",
@@ -49,9 +65,19 @@ var LEVELS=[
    /* THE OWNER'S LEVEL, and it teaches the landing rule for free.
 
       The near slab ends at x=2 and the far bank stands at x=4, five wide and
-      three deep, with a strip at x=3 lying well behind both of them. That
+      three deep, with a strip at x=3 lying well in FRONT of both of them -
+      out at z=3..5, which is `AX[0].d`, straight toward the camera. That
       strip is the whole level: it is nowhere near the gap in the world, and
       in the plane it is the bridge across it.
+
+      IT USED TO LIE BEHIND THE BOARD, at z=-3..-5, and the whole nature run
+      moved to the near side on the owner's call: a block four squares further
+      from the camera is small, dim - `DEPTH_STEP` charges depth outright -
+      and half hidden behind the slab the player is standing on. The bridge is
+      the one thing the player has to NOTICE before the fold means anything,
+      so it is now the nearest thing on screen. The plane does not care which
+      way it went: folding throws away `pos . d` and keeps u = x, so the
+      route, the move count and the landing are all untouched.
 
       What makes it worth more than the level it replaced: the far bank holds
       three blocks in one silhouette column, so standing back up puts you on
@@ -62,14 +88,14 @@ var LEVELS=[
       costs less than it looks like it should. */
    blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[1,0,1],
      [2,0,-1],[2,0,0],[2,0,1],[4,0,1],[4,0,0],[4,0,-1],
-     [3,0,-3],[3,0,-4],[3,0,-5]],
+     [3,0,3],[3,0,4],[3,0,5]],
    start:[0,1,0],goal:[4,1,0],rotate:false,tutorial:true,
    tut:[
      {say:"Walk to the edge.",
       cue:"bRight",done:function(c){return c.d.right>=2;}},
      {say:"Too far to walk, and there is no jump.<br>{do:2d}: everything flattens along your line of sight, and depth stops existing.",
       cue:"bFlat",done:function(c){return c.flat>=1;}},
-     {say:"Depth is gone, so that strip far behind you is simply next to you now. Walk across.",
+     {say:"Depth is gone, so that strip out in front of you is simply next to you now. Walk across.",
       cue:"bRight",done:function(c){return c.m2>=2;}},
      {say:"{do:3d} to stand up.<br>Three blocks share that column, and you come back on the one at <b>the front</b> - nearest you. The green square is one step behind it.",
       cue:"bFlat",done:function(c){return c.unflat>=1;}}
@@ -86,8 +112,14 @@ var LEVELS=[
       against: `02` adds two blocks at head height and nothing else, so a
       player who has just crossed this floor safely meets the same floor with
       a reason to look up. */
+   /* THE BRIDGE IS ON THE NEAR SIDE, at z=3..5 rather than z=-3..-5, and so
+      is every bridge from here to `06`. See `00 - First Fold` for the whole
+      reasoning; the short version is that the strip is the one thing the
+      player has to notice and it was the furthest, dimmest, most occluded
+      thing on the board. Free to move, because the plane throws `pos . d`
+      away and keeps u = x: same route, same eight moves, same landing. */
    blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[1,0,1],
-     [2,0,-1],[2,0,0],[2,0,1],[3,0,-3],[3,0,-4],[3,0,-5],
+     [2,0,-1],[2,0,0],[2,0,1],[3,0,3],[3,0,4],[3,0,5],
      [4,0,-1],[4,0,0],[4,0,1],[5,0,-1],[5,0,0],[5,0,1],
      [4,1,-1],[4,1,0],[4,1,1]],
    start:[0,1,0],goal:[5,1,0],rotate:false},
@@ -106,7 +138,7 @@ var LEVELS=[
       puzzle, new thing to look at. */
    blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[1,0,1],
      [2,0,-1],[2,0,0],[2,0,1],[4,0,1],[4,0,0],[4,0,-1],
-     [3,0,-3],[3,0,-4],[3,0,-5],[2,1,-1],[0,1,-1]],
+     [3,0,3],[3,0,4],[3,0,5],[2,1,-1],[0,1,-1]],
    start:[0,1,0],goal:[4,1,0],rotate:false},
 {name:"03 - A Real Challenge",
    hint:"If you get stuck you can take a hint.",
@@ -116,7 +148,7 @@ var LEVELS=[
       the optimal opens `right, down, fold`, and a player who walks the
       straight line and folds dies. */
    blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[2,0,0],[2,0,1],
-     [4,0,1],[4,0,0],[4,0,-1],[3,0,-3],[3,0,-4],[3,0,-5],
+     [4,0,1],[4,0,0],[4,0,-1],[3,0,3],[3,0,4],[3,0,5],
      [1,0,1],[2,0,-1],[2,1,-1],[2,2,-1],[0,1,-1],[1,1,1]],
    start:[0,1,0],goal:[4,1,0],rotate:false},
 /* THE OWNER'S PAIR, and they are one lesson said twice. Everything before
@@ -156,14 +188,29 @@ var LEVELS=[
    hint:"Use the eye to see where you are going to land out of the 2D world.",
    /* THE PLANE IS NOT A TELEPORT, and this is where that is said. Every
       level so far has folded, crossed the whole gap and stood up on the far
-      side; here the far bank runs the full depth of the board and the goal
-      is on the near end of it, so the optimal comes back out of the plane
-      one square early and walks the rest: `right right FLAT right POP right
-      up`. The fold is a move you spend, not a ride you take. */
+      side; here the far bank runs the full depth of the board, so where in
+      that depth you come out is a thing to work out before you press it.
+      The fold is a move you spend, not a ride you take.
+
+      THE LESSON MOVED WHEN THE BRIDGE MOVED, and this is the one level of
+      the six where mirroring z was not free. It used to exit the plane EARLY
+      - `right right FLAT right POP right up`, popping on the bridge itself
+      at u=3 and walking onto the far bank - because the far bank's arm lay
+      behind the board and its nearest-camera block was on the wrong end of
+      it. With the arm at z=3..5 the column at u=4 is six blocks deep and the
+      goal sits second from the front, so the optimal is `right right FLAT
+      right right POP up`: all the way across, out on the block nearest the
+      camera (rule 5), one step back. Seven moves either way.
+
+      So it now hardens `00 - First Fold`'s closing beat - you come back on
+      the FRONT one - against a column of six instead of three, which is what
+      its hint has always asked for: use the eye. What it no longer teaches is
+      leaving the plane before the far side. Nothing else in the section does
+      that, so if it is wanted it wants a level. */
    blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[2,0,0],[2,0,1],
-     [3,0,-3],[3,0,-4],[3,0,-5],[1,0,1],[2,0,-1],
-     [4,0,-5],[4,0,-4],[4,0,-3],[4,0,1],[4,0,0],[4,0,-1]],
-   start:[0,1,0],goal:[4,1,-4],rotate:false},
+     [3,0,3],[3,0,4],[3,0,5],[1,0,1],[2,0,-1],
+     [4,0,5],[4,0,4],[4,0,3],[4,0,1],[4,0,0],[4,0,-1]],
+   start:[0,1,0],goal:[4,1,4],rotate:false},
 {name:"07 - The Block",
    hint:"Sometimes you need to think outside the block.",
    /* THE FIRST LEVEL THAT GOES BACKWARDS. Everything before it crosses left
