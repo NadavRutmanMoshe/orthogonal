@@ -212,14 +212,15 @@ function stHex(id){
    it covers, and anyone standing under it is behind it.
 
    THE IMPORTANT GEOMETRY IS TWO COLUMNS, x=2 AND x=4. The parents stand
-   either side of their door, the path is two wide so the census comes up
-   it side by side, and when the fold comes one officer is standing in front
-   of each parent: father and officer in x=2, mother and officer in x=4, two
-   silhouette squares with two cubes in each, taken in one fold. (It was one
-   column of four at x=3, in single file; the owner asked for them abreast,
-   and for one to take each parent at the same moment.) The son is at x=6 by
-   then, and there is nothing else anywhere in this world at x=6 above the
-   ground. That is why he lives, and it is on screen before it is in words. */
+   either side of their door. The census comes up the path in single file
+   on the door's line, x=3, and SPLITS at the door: one officer steps in
+   front of each parent, so when the fold comes it is father and officer in
+   x=2, mother and officer in x=4 - two silhouette squares with two cubes in
+   each, taken in one fold. (It was one column of four at x=3; the owner
+   asked for one to take each parent at the same moment, and for the walk up
+   to stay on the one line.) The son is at x=6 by then, and there is nothing
+   else anywhere in this world at x=6 above the ground. That is why he
+   lives, and it is on screen before it is in words. */
 /* THE ONE THING THAT MADE IT A HOUSE AND NOT A HILL: `L.tint`.
 
    Shape alone was not enough, and three versions proved it. Everything in
@@ -251,8 +252,8 @@ function stHex(id){
    violet or the trial's amber. */
 var ST_WALL=0xe9d6ae, ST_ROOF=0xa33d33;
 // The chimney is a brick between the wall and the roof; the path is pale
-// flagstone and the pond's rim a cool grey, both over plain stone.
-var ST_BRICK=0x6e4034, ST_PATH=0xd6c9ab, ST_RIM=0x8e969e;
+// flagstone. Both are tints over plain stone.
+var ST_BRICK=0x6e4034, ST_PATH=0xd6c9ab;
 function stHouseBoard(){
   var b=[],tint=[],x,z;
   function floor(x0,x1,z0,z1){
@@ -354,57 +355,33 @@ function stHouseBoard(){
   floor(1,5,0,3);      // our house
   floor(8,12,0,3);     // theirs
   floor(0,13,4,5);     // the strip across the front of both
-  /* THE PATH IS TWO WIDE AND PAVED. Two wide because the census walks up
-     it side by side (see the beats); paved because on grass it was a strip
-     of grass indistinguishable from the strip it joins, and a painted cell
-     wears plain stone, so a pale warm tint is flagstones. */
-  for(z=6;z<=9;z++){put(3,0,z,ST_PATH);put(4,0,z,ST_PATH);}
+  /* THE PATH IS THREE WIDE AND PAVED, centred on the door. Paved because
+     on grass it was a strip of grass indistinguishable from the strip it
+     joins, and a painted cell wears plain stone, so a pale warm tint is
+     flagstones. Three wide on the owner's call, one square either side of
+     the door's line, which is the line the census climbs it on. */
+  for(z=6;z<=9;z++)for(x=2;x<=4;x++)put(x,0,z,ST_PATH);
   house(1,5);
   house(8,12);
   /* ============================================================
-     AND THE POND, WHICH IS WHAT MAKES IT A PLACE RATHER THAN A SET. Two
-     houses on a strip is a diagram of a street; the strip having a pond at
-     the front of it is somewhere people live.
+     THE SCENERY THAT CAME OUT. Two houses on a strip is a diagram of a
+     street, and two things were added to make it a place; both are gone,
+     and the record is here so they are not added back by accident.
 
-     It is made of a piece the game already has, which is the rule everything
-     in these scenes follows: WATER - kind 1, the piece III · WATER teaches -
-     so it ripples and it is see-through because every water block is. A
-     player meets it here before the game teaches it, and that is deliberate
-     rather than sloppy: it is scenery in a cutscene that holds every verb -
-     nothing can be stepped on, folded or drowned in - so all a first-time
-     player takes from it is that this world has water in it. Two sections
-     later that turns out to have been true.
+     DUNES behind the houses: two rows of ochre-tinted stone with a ridge
+     on the back row, standing in for distance. They earned their place
+     while the whole street was fitted to the screen; once a painted cell
+     wore plain stone they were flat brown blocks, and once the scene was
+     shot house by house they stood either side of the house like a pair of
+     brown wings. The treeline the section draws behind every level is the
+     distance now.
 
-     THERE WERE DUNES BEHIND THE HOUSES, AND THE CAMERA RETIRED THEM. Two
-     rows of ochre-tinted stone with a ridge on the back row, standing in for
-     distance. They earned their place while the whole street was fitted to
-     the screen and the houses needed something behind them; once a painted
-     cell wore plain stone they became flat brown blocks, and once the scene
-     was shot house by house they stood either side of the house at the
-     height of its second course, like a pair of brown wings, with the ridge
-     poking out beside the roof as a stray block. The treeline the section
-     already draws behind every level is the distance now.
+     A POND in front of the strip, beside the path: real water (kind 1), at
+     ground level first and then sunk a course inside a ring of painted grey
+     stone. It went on the owner's call, rim and all. What is in front of
+     the houses now is the strip, the path, and nothing else - ground only
+     where somebody stands, which was the rule from the start.
      ============================================================ */
-  /* THE POND IS SUNK A COURSE AND RIMMED IN STONE. At ground level it was
-     a sheet of water lying on the lawn; a course down, with a ring of grey
-     stone round it at ground level, the rim's side faces show above the
-     water and it is a pond you could fall into. Rounder than it was: four
-     rows, the middle two wider. The rim is every ground cell touching the
-     water that is not already path, and the path runs along its west edge. */
-  var pond={}, rim={}, i;
-  var rows=[[7,6,9],[8,5,10],[9,5,10],[10,6,9]];          // [z, x0, x1]
-  for(i=0;i<rows.length;i++)for(x=rows[i][1];x<=rows[i][2];x++){
-    pond[x+","+rows[i][0]]=1;b.push([x,-1,rows[i][0],1]);
-  }
-  for(var pk in pond){
-    var px=+pk.split(",")[0], pz=+pk.split(",")[1];
-    for(var dx=-1;dx<=1;dx++)for(var dz=-1;dz<=1;dz++){
-      var nx=px+dx, nz=pz+dz, nk=nx+","+nz;
-      if(pond[nk]||rim[nk])continue;
-      if((nx===3||nx===4)&&nz>=6&&nz<=9)continue;      // the path keeps its cells
-      rim[nk]=1;put(nx,0,nz,ST_RIM);
-    }
-  }
   return {blocks:b, tint:tint};
 }
 /* THE PLANE.
@@ -509,7 +486,7 @@ var STORY={
       {id:"nMum", col:"white", size:1.4,  at:[11,1,5]},
       {id:"nKid", col:"white", size:1.0,  at:[10,1,4]},
       {id:"copA", body:ST_COP_BODY, rim:ST_COP_RIM, size:1.34, at:[3,1,9], hidden:true},
-      {id:"copB", body:ST_COP_BODY, rim:ST_COP_RIM, size:1.34, at:[4,1,9], hidden:true}
+      {id:"copB", body:ST_COP_BODY, rim:ST_COP_RIM, size:1.34, at:[3,1,9], hidden:true}
     ],
     beats:[
       /* THE THREE OF THEM, NAMED AND COUNTED, BEFORE ANYTHING HAPPENS.
@@ -546,18 +523,21 @@ var STORY={
          second one is let out a step later rather than started a square
          further back, because a square further back is a square of path that
          exists only to hold him. */
-      /* SIDE BY SIDE UP THE PATH, which is two wide for this. They were in
-         single file in one column; abreast they are a pair, which is what
-         the next beats need them to be. */
+      /* SINGLE FILE UP THE PATH, on the door's line. The second one is let
+         out a step later rather than started a square further back, because
+         a square further back is a square of path that exists only to hold
+         him. (They came up abreast for one version; the owner preferred the
+         one line, with the split saved for the door.) */
       {ms:2400, say:"The census came up the path.",
        at:function(){
          stFrame(ST_SHOT.path);
-         stShow("copA");stShow("copB");
-         stWalk("copA",[[3,8],[3,7],[3,6]]);
-         stWalk("copB",[[4,8],[4,7],[4,6]]);
+         stShow("copA");stWalk("copA",[[3,8],[3,7],[3,6]]);
+         stAfter(300,function(){
+           stShow("copB");stWalk("copB",[[3,8],[3,7]]);
+         });
        }},
-      // Onto the strip, still abreast, in front of the door.
-      {ms:700, at:function(){stWalk("copA",[[3,5]]);stWalk("copB",[[4,5]]);}},
+      // Up to the door, still in file: one on the strip, one on the path.
+      {ms:700, at:function(){stWalk("copA",[[3,5]]);stWalk("copB",[[3,6]]);}},
       // Two taps on a door, which in a world made of cubes is a cube
       // knocking itself against one. The camera closes on the door for
       // the rest of it: this shot holds both parents' columns and the
@@ -566,12 +546,13 @@ var STORY={
       // The parents answer, from where they stand either side of the door.
       {ms:2000, at:function(){stHop("dad");stHop("mum",220);},
        say:"They had questions about the house."},
-      /* ONE TAKES EACH. The first officer steps across to stand in front
-         of the father; the second is already in front of the mother. That
-         puts father and officer in column x=2 and mother and officer in
-         x=4 - two silhouette squares with two cubes in each - and the fold
-         takes both pairs at the same moment. */
-      {ms:1150, at:function(){stWalk("copA",[[2,5]]);}},
+      /* THE SPLIT, AND ONE TAKES EACH. The first officer steps across to
+         stand in front of the father, the second comes up and across to
+         stand in front of the mother. That puts father and officer in
+         column x=2 and mother and officer in x=4 - two silhouette squares
+         with two cubes in each - and the fold takes both pairs at the same
+         moment. */
+      {ms:1150, at:function(){stWalk("copA",[[2,5]]);stWalk("copB",[[4,6],[4,5]]);}},
       {ms:900,  at:function(){stHop("copA");stHop("copB",120);}, say:null},
       // THE FOLD IS THE ABDUCTION. No new verb, no effect nobody has seen:
       // the world does the one thing this game does, and four cubes standing
@@ -969,6 +950,14 @@ function stShow(id){var a=stFind(id);if(a){a.hidden=false;a.mesh.visible=true;}}
    every path out. */
 function stAfter(ms,fn){
   var mine=ST;
+  /* A SEEK RUNS IT NOW. storySeek() (the screenshot tool's way in) plays
+     every beat up to the one asked for in one synchronous pass, so a timer
+     set inside a beat would fire AFTER the seek had settled every walk -
+     and re-walk its actor from wherever the timer's beat left him. The
+     second officer was photographed back on the path after the fold for
+     exactly that reason. While a seek is running the delay is dropped and
+     the callback runs in line, so the seek's settle sees it too. */
+  if(ST&&ST.seeking){fn();return;}
   setTimeout(function(){if(ST&&ST===mine)fn();},ms);
 }
 /* A hop is how a cube waves. `hopIn` is a delay, so three of them can be
@@ -1192,6 +1181,7 @@ function storyFinish(){
    cell, which is near enough to the pose the beat holds. */
 function storySeek(n){
   if(!ST)return;
+  ST.seeking=true;                 // stAfter() runs its callbacks in line
   for(var i=0;i<=n&&i<ST.list.length;i++){
     var b=ST.list[i];
     if(b.at)b.at();
@@ -1202,6 +1192,7 @@ function storySeek(n){
     if(b.await&&i===n)stAsk(b.await);
     stSettle();
   }
+  ST.seeking=false;
   ST.i=Math.min(n,ST.list.length-1);ST.t=0;
 }
 function stSettle(){

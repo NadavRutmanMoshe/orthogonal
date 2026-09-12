@@ -362,10 +362,11 @@ is the rule.
   THROUGH every row of depth -
   open in the volume, and still holes in the plane because nothing stands
   behind them along the view axis. Painted windows were tried and reported
-  as off. The census comes up a two-wide paved path side by side and the
-  fold takes TWO columns at once - father and officer in `x=2`, mother and
-  officer in `x=4` - on the owner's call; the pond is sunk a course and
-  rimmed in painted stone.
+  as off. The census comes up the three-wide paved path in single file on
+  the door's line and SPLITS at the door, so the fold takes TWO columns at
+  once - father and officer in `x=2`, mother and officer in `x=4` - on the
+  owner's call. The pond and the dunes are gone (the record is in
+  `stHouseBoard()`); in front of the houses is the strip and the path.
 - **A speaker's line is in the speaker's colour, the narrator's in violet.**
   A cube too dark to set type in (Black) is lifted toward white, never
   swapped for the narrator's violet (`stSay()`).
