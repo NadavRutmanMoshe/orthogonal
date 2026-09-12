@@ -64,7 +64,34 @@ var SKIN_SHAPES=[
      the point of the tab: everything else in the catalogue is earned or
      watched, and this shelf is the one that is not. */
   {id:"rook",    name:"Rook",     cost:0, deal:true, usd:"2.99"},
-  {id:"pup",     name:"Pup",      cost:30},
+  /* THE CHARACTERS, AND THEY ARE ALL ON THE MONEY SHELF.
+
+     The Pup was 30 stars and the top of the star catalogue. It is here now on
+     the owner's call, and the two rows below it are the shelf it was moved to
+     make: a shape you play for is a reward, and a CHARACTER - a thing with a
+     face, that you pick because you like it rather than because it is the
+     next thing up - is what somebody is willing to pay for. Nobody loses the
+     Pup by this: `wardrobe.owned` is keyed by id, so a save that already
+     bought it still owns it, and `owns()` grants every `deal:true` shape to
+     the EVERYTHING pass by rule.
+
+     ONE PRICE FOR ALL OF THEM, deliberately. A ladder of prices on a shelf of
+     four characters asks the player which one is worth most, which is not a
+     question any of them can answer and not the question the shelf is for.
+     Flat, the only question left is which one you like. */
+  {id:"pup",     name:"Pup",      cost:0, deal:true, usd:"2.99"},
+  /* SAT DOWN, WHERE THE PUP STANDS. That is the whole separation between
+     them: the Pup is a body lying along the screen on four legs, the Cat is a
+     vertical stack with pricked ears and its tail up behind it. At 21px on a
+     tile, and at any of the four camera angles, the two silhouettes have
+     nothing in common - which is the test a second animal has to pass. */
+  {id:"cat",     name:"Cat",      cost:0, deal:true, usd:"2.99"},
+  /* AND ONE THAT IS NOT AN ANIMAL, so the shelf is not a pet shop. Boxes are
+     what this game is made of, so a robot is the one character here that is
+     drawn in the world's own material rather than in spite of it - and the
+     antenna gives it the only silhouette in the catalogue with something
+     sticking up off the top of it. */
+  {id:"robot",   name:"Robot",    cost:0, deal:true, usd:"2.99"},
   /* THE FOUR THAT CANNOT BE BOUGHT.
 
      One per numbered section, granted for taking every star in it, and each
@@ -254,7 +281,7 @@ function starsEarned(){
   return t;
 }
 // TESTING SWITCH - set back to false before shipping.
-// The catalogue totals 283 against 189 earnable by perfect play, so buying
+// The catalogue totals 253 against 189 earnable by perfect play, so buying
 // every item is normally impossible; this hands over enough to walk the whole
 // wardrobe. Buying still runs the real code path - it pushes to owned and
 // charges wardrobe.spent - so what gets tested is the actual purchase flow,
@@ -460,6 +487,47 @@ function buildPlayerMesh(shape,col,mat){
     [[-.16,.14],[-.16,-.14],[.16,.14],[.16,-.14]].forEach(function(o){
       bx(.09,.2,.09,o[0],-.24,o[1]);     // legs
     });
+  } else if(shape==="cat"){
+    /* A CAT IS A COLUMN AND A DOG IS A BEAM, and that is the only way to
+       tell two small box animals apart at this size. So this one sits:
+       haunches, chest and head stacked up one axis, the ears PRICKED off the
+       top of the head rather than hung off its sides, and the tail standing
+       up behind instead of poking out the back. Nothing here is longer than
+       it is tall, which is the opposite of every measurement in the Pup. */
+    /* WIDE, NARROW, WIDE. A stack of boxes of much the same width is a
+       staircase or a totem, which is what the first build of this was: the
+       silhouette has to have a WAIST. So the haunches are the broadest thing
+       on it, the chest is the narrowest, and the head is broad again - and
+       that alone is enough to read as an animal sat on its back legs before
+       any of the detail is picked out. */
+    g=new THREE.Group();
+    bx(.34,.24,.32,-.02,-.20,0);         // haunches, the widest thing here
+    bx(.22,.26,.24, .06, .02,0);         // chest, the waist
+    bx(.26,.20,.24, .06, .26,0);         // head, broad again
+    bx(.08,.13,.05,-.03, .42, .085);     // ears, up - the cat's whole tell
+    bx(.08,.13,.05,-.03, .42,-.085);
+    bx(.09,.07,.09, .21, .23,0);         // muzzle
+    bx(.08,.22,.08, .17,-.23, .09);      // forelegs, straight down
+    bx(.08,.22,.08, .17,-.23,-.09);
+    bx(.07,.28,.07,-.22,-.11,0);         // tail, up behind
+    bx(.10,.07,.07,-.28, .06,0);         // its tip flicking AWAY from the
+                                         // head, or it reads as an arm
+  } else if(shape==="robot"){
+    /* THE ONLY PIECE IN THE CATALOGUE WITH SOMETHING ON TOP OF IT. Everything
+       else here - solid or character - fits inside its own block; the antenna
+       deliberately does not, so the robot is identifiable from the top corner
+       of its silhouette alone, before any of the rest of it is read. */
+    g=new THREE.Group();
+    bx(.34,.28,.26,0,-.02,0);            // torso
+    bx(.26,.20,.24,0, .23,0);            // head
+    bx(.04,.08,.04,0, .375,0);           // antenna
+    bx(.08,.06,.08,0, .445,0);           // and its lamp
+    bx(.07,.22,.07, .21,-.03,0);         // arms, held straight
+    bx(.07,.22,.07,-.21,-.03,0);
+    bx(.10,.14,.11, .09,-.23,0);         // legs
+    bx(.10,.14,.11,-.09,-.23,0);
+    bx(.13,.05,.14, .09,-.325,0);        // feet
+    bx(.13,.05,.14,-.09,-.325,0);
   } else {
     g=new THREE.Mesh(playerGeometry(shape),mat);
   }

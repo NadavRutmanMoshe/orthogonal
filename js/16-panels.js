@@ -439,7 +439,21 @@ var SHAPE_SVG={
   pup:"M4.6 9.1c0-1 .5-1.6 1.3-1.6.6 0 1 .3 1.4.9l.5.8h4.3c1.4 0 2.6.5 3.5 "+
       "1.5l1.6 1.7h2.3c.7 0 1.3.6 1.3 1.3 0 .6-.4 1.1-1 1.2l-1.4.3-.6 1.4v2.6"+
       "h-1.9v-2.2l-1.5.5-.3 1.7h-1.9l.3-2h-3.2l.3 2H7.7l-.4-2.4a4.9 4.9 0 0 1-"+
-      "2.3-4.1Zm1.9.7v1.7c0 .8.3 1.5.8 2v-3.7Z"
+      "2.3-4.1Zm1.9.7v1.7c0 .8.3 1.5.8 2v-3.7Z",
+  /* SAT DOWN AND FACING RIGHT: two ear peaks cut straight out of the top of
+     the head, a body that widens to the floor, and the tail stood up beside
+     it. Straight lines only, like the rook and the domino - a curve at 21px
+     is a smudge, and the ears are the whole identification. */
+  cat:"M6.4 2.4 9.4 6.4H14.6L17.6 2.4 18.4 8.8 16.4 11.8H7.6L5.6 8.8Z"+
+      "M9.2 12.4H14.8L17 21.4H6.2Z"+
+      "M17.4 21.4V19.2H19.6V14.2H21.6V21.4Z",
+  /* Eyes are HOLES, wound the other way round so the one fill leaves them
+     open - the same trick the domino's pips use. Two lit squares in a dark
+     head is what says robot before the antenna is even read. */
+  robot:"M10.3 .4H13.7V1.9H10.3ZM11.4 1.9H12.6V3.6H11.4Z"+
+        "M7.2 3.6H16.8V9.4H7.2ZM9.1 7.7H11.1V5.5H9.1ZM12.9 7.7H14.9V5.5H12.9Z"+
+        "M8 10.6H16V16.6H8ZM5.2 10.8H7.2V16H5.2ZM16.8 10.8H18.8V16H16.8Z"+
+        "M8.8 17.8H11V22H8.8ZM13 17.8H15.2V22H13Z"
 };
 // The reward characters wear their section's own emblem, read from the same
 // table the chooser's tiles read.

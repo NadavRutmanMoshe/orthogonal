@@ -404,8 +404,12 @@ is the rule.
 - `migrateWorlds()` and the `v_`/`p_` id prefixes keep old wardrobe saves
   valid. Do not remove while any old save might exist.
 - **The DEALS tab is `PASSES` then `deal:true` in `SKIN_SHAPES`**: the money
-  shelf, priced in `usd`, no stars and no ads. The Rook is the only paid
-  shape and is still a shape everywhere else in the code. The two **passes**
+  shelf, priced in `usd`, no stars and no ads. Four shapes are on it: the Rook
+  and the three CHARACTERS (Pup, Cat, Robot), all at one price, so the only
+  question the shelf asks is which one you like. The Pup was 30 stars and
+  moved here on the owner's call - a save that already bought it keeps it,
+  because `wardrobe.owned` is keyed by id. Each is still a shape everywhere
+  else in the code. The two **passes**
   are not shapes and do not equip: `NO LIMITS` ends the hint pool, the ad on
   a skip and the star balance (`noLimits()`, `hintsUnlimited()`, `shards()`);
   `EVERYTHING` is that plus every paid shape, granted by rule inside `owns()`
