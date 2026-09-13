@@ -21,7 +21,7 @@
    chrome.md beside the sentence it replaces.
 
    What makes it safe is that the story did not change - it acquired a
-   subject. The census was always coming to count you; now the reader has met
+   subject. The police were always coming for you; now the reader has met
    two of the people it already counted. The intro card's line -
    "Everything this world has ever flattened is still in there" - is
    untouched, and is said again as the last caption of the first scene, where
@@ -37,7 +37,7 @@
    his mother is standing in the silhouette. Every other approach fakes the
    one moment the whole game has been building the vocabulary for.
 
-   The same argument runs backwards through the first scene. The census does
+   The same argument runs backwards through the first scene. The police do
    not take the parents away in a puff of light - it FOLDS THE WORLD, and
    they are standing in a column with two of its officers, which is rule 4
    and the boss kill rule and the only way anything in this game dies at
@@ -212,7 +212,7 @@ function stHex(id){
    it covers, and anyone standing under it is behind it.
 
    THE IMPORTANT GEOMETRY IS TWO COLUMNS, x=2 AND x=4. The parents stand
-   either side of their door. The census comes up the path in single file
+   either side of their door. The police come up the path in single file
    on the door's line, x=3, and SPLITS at the door: one officer steps in
    front of each parent, so when the fold comes it is father and officer in
    x=2, mother and officer in x=4 - two silhouette squares with two cubes in
@@ -317,7 +317,7 @@ function stHouseBoard(){
      the whole depth onto the facade, nothing stands behind them along the
      view axis, so they stay holes and the folded house is the one the
      cutaway drew. `x0+2` is the middle of the five: the door, the ridge,
-     and the column the census folds.
+     and the column the police fold.
 
      The chimney is two bricks at the eave end of the body, one row behind
      the gable, starting a course above the eave so it stands clear of the
@@ -359,7 +359,7 @@ function stHouseBoard(){
      on grass it was a strip of grass indistinguishable from the strip it
      joins, and a painted cell wears plain stone, so a pale warm tint is
      flagstones. Three wide on the owner's call, one square either side of
-     the door's line, which is the line the census climbs it on. */
+     the door's line, which is the line the police climb it on. */
   for(z=6;z<=9;z++)for(x=2;x<=4;x++)put(x,0,z,ST_PATH);
   house(1,5);
   house(8,12);
@@ -430,7 +430,7 @@ function stFireBoard(){
    stArrive() outright.
    ============================================================ */
 var ST_ARRIVE=[
-  {ms:1500, say:"The count is closed."},
+  {ms:1500, say:"The case is closed."},
   {ms:1250, at:function(){stFold();}},
   {ms:750,  at:function(){stFadeTo(1,700);stSay(null);}},
   {ms:300,  at:function(){stArrive();}},
@@ -444,7 +444,7 @@ var ST_ARRIVE=[
 
    HOME    our house alone, for the goodbyes
    STREET  both houses and the strip, for the hello and the neighbours' walk
-   PATH    our house and the path, for the census climbing it
+   PATH    our house and the path, for the police climbing it
    DOOR    our house, the door column and the son's square at x=6 - the two
            columns the fold is about, and nothing else */
 var ST_SHOT={
@@ -528,7 +528,7 @@ var STORY={
          a square further back is a square of path that exists only to hold
          him. (They came up abreast for one version; the owner preferred the
          one line, with the split saved for the door.) */
-      {ms:2400, say:"The census came up the path.",
+      {ms:2400, say:"The dimension police came up the path.",
        at:function(){
          stFrame(ST_SHOT.path);
          stShow("copA");stWalk("copA",[[3,8],[3,7],[3,6]]);

@@ -317,7 +317,7 @@ is the rule.
   behind the black and fades up. `ST_ARRIVE` is those five beats and
   `stArrive()` is the swap; a menu replay skips them.
 - **The pack wears the officers' look and does not spin.** `huntMesh()` is the
-  same cube with the same red rim the census wears in the opening, squared to
+  same cube with the same red rim the police wear in the opening, squared to
   the camera. The spin was quietly making them FINDABLE, so three things
   replace it: the body is lifted off black, the rim is near-solid, and an
   AURA (a larger box of the hunter's colour, low opacity, `depthWrite:false`)
@@ -362,7 +362,7 @@ is the rule.
   THROUGH every row of depth -
   open in the volume, and still holes in the plane because nothing stands
   behind them along the view axis. Painted windows were tried and reported
-  as off. The census comes up the three-wide paved path in single file on
+  as off. The police come up the three-wide paved path in single file on
   the door's line and SPLITS at the door, so the fold takes TWO columns at
   once - father and officer in `x=2`, mother and officer in `x=4` - on the
   owner's call. The pond and the dunes are gone (the record is in

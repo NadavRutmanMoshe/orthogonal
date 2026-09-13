@@ -946,8 +946,8 @@ var LEVELS=[
    blocks:[[0,0,0],[1,0,0],[2,0,0,4],[1,1,0,3],
            [3,1,-7],[3,1,-4,1],[6,1,-5],[6,1,-6]],
    start:[0,1,0],goal:[6,2,-6],rotate:true},
-{name:"BOSS IV - The Census",
-   won:"The count is closed, and you are not in it.",
+{name:"BOSS IV - The Dimension Police",
+   won:"The case is closed, and you are not in it.",
    /* AND THE STORY ENDS HERE. `ending:true` is what storyEndDue() reads to
       turn this fight's win card into the way into the second cutscene - a
       field rather than a name match in 22-story.js, because levels get
@@ -1405,7 +1405,7 @@ var LEVELS=[
    section. So no section is violet or amber - `V · EXTRA` used to be violet
    and had to move, because a whole shelf the colour of a boss makes the one
    thing on it that is a boss unreadable. */
-/* The `story` line is the Census, one sentence per section - see the note
+/* The `story` line is the narrator, one sentence per section - see the note
    above SECTIONS' colours and CLAUDE.md. It is deliberately a second field
    rather than an extension of `sub`: `sub` says what the section teaches and
    is the thing a player needs, the story is the thing a player enjoys, and
@@ -1604,7 +1604,7 @@ var LEVEL_RENAMES={
   "08 — The Last Step":"51 - The Last Step",
   "09 — Six Across":"52 - Six Across",
   "10 — Fold After Climbing":"53 - Fold After Climbing",
- /* THE CENSUS RENAMED ALL FOUR BOSSES. Composed, not rewritten: the three
+ /* ALL FOUR BOSSES WERE RENAMED. Composed, not rewritten: the three
     keys that used to land on "BOSS I - The Hunt" are re-pointed at its new
     name in the same edit that makes "The Hunt" itself a key, which is what
     keeps the no-value-is-also-a-key invariant true. Bosses II-IV had never
@@ -1615,7 +1615,7 @@ var LEVEL_RENAMES={
  "BOSS I — The Hunt": "BOSS I - Catch Me If You Can!",
  "BOSS II — Sharp Ground": "BOSS II - The Record",
  "BOSS III — Through Glass": "BOSS III - The Search",
- "BOSS IV — The Orthogon": "BOSS IV - The Census",
+ "BOSS IV — The Orthogon": "BOSS IV - The Dimension Police",
  "02 — Turn to see": "46 - Turn to See",
  "03 — Two Windows": "14 - The Silence Before the Storm",
  "04 — The Long Way Round": "49 - The Long Way Round",
@@ -2092,7 +2092,13 @@ var LEVEL_RENAMES={
  "36 — Fill the Hole": "36 - Fill the Hole",
  "37 — Move the Wall": "37 - Move the Wall",
  "38 — Two Folds and a Shove": "38 - Two Folds and a Shove",
- "BOSS IV — The Census": "BOSS IV - The Census",
+ "BOSS IV — The Census": "BOSS IV - The Dimension Police",
+ /* The Census became the Dimension Police on the owner's call, so the name
+    that was live on the published link needs its own entry: a save written
+    under it is somebody who has already beaten this fight. Composed, not
+    rewritten - the two keys above were re-pointed rather than left chaining
+    through this one. */
+ "BOSS IV - The Census": "BOSS IV - The Dimension Police",
  "39 — The Same Column": "39 - The Same Column",
  "40 — Around the Fire": "40 - Around the Fire",
  "41 — Cast a Shadow": "41 - Cast a Shadow",

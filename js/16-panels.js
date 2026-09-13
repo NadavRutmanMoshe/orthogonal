@@ -946,7 +946,7 @@ function bossesLeft(){
   return out;
 }
 // "BOSS II" - the numeral is what a player looks for on the map, and the
-// subtitle after the dash is the Census's, not a label.
+// subtitle after the dash is the story's, not a label.
 function bossShort(l){return l.name.split(" \u2014 ")[0];}
 function bossesLeftSay(){
   var n=bossesLeft().map(function(i){return bossShort(LEVELS[i]);});
@@ -1889,7 +1889,7 @@ function mapDraw(spans){
   $("mCard").className="mcard"+(mast?" mst":"");
   $("mCard").innerHTML="<b>"+esc(sec.name)+
     (mast?"<em class='mmast'>ALL STARS</em>":"")+"</b><i>"+esc(sec.sub)+"</i>"+
-    /* The Census, one sentence per section. Under `sub` rather than instead
+    /* The story line, one sentence per section. Under `sub` rather than instead
        of it: `sub` is the description a player needs to choose a section and
        the story is the reason they want to. Emitted only when a section
        carries one, so a section with no line simply has no line. */

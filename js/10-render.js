@@ -2557,7 +2557,7 @@ function fitViewSize(){
 
    It was an octahedron - a spiky, abstract thing that did not belong to
    anybody. It is now the same near-black cube with the same red rim that the
-   census wears in the opening cutscene, at the same values (`ST_COP_BODY`
+   police wear in the opening cutscene, at the same values (`ST_COP_BODY`
    and `ST_COP_RIM` in js/22-story.js are the pair; these are the numbers,
    duplicated deliberately rather than reached for across a file that loads
    after this one). Nothing says the pack and the officers are the same

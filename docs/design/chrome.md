@@ -466,7 +466,7 @@ things you do not own with what they cost, and a way into the wardrobe.
 
 ---
 
-## The story - the Census
+## The story - the dimension police
 
 **The plane is not empty.** Everything this world has ever flattened is still
 in the silhouette, and folding is not passing *through* 2D - it is standing in
@@ -494,7 +494,7 @@ one scene:
 | section card on the map | one line per section | `SECTIONS[].story` → `mapDraw` |
 | boss win card | one line per fight | `LEVELS[].won` → `win()` |
 | boss names | the four stages of being counted | `LEVELS[].name` |
-| the opening cutscene | the house, and who the census took | `STORY.open` in `js/22-story.js` |
+| the opening cutscene | the house, and who the police took | `STORY.open` in `js/22-story.js` |
 | the fire, after BOSS II | the father, and what the plane did to him | `STORY.fire` |
 | the closing cutscene | the plane, and who is still in it | `STORY.end` |
 
@@ -503,7 +503,7 @@ REVERSED, on the owner's call.** Worth being precise about what changed,
 because the reasoning behind the old line is still good. It was never an
 argument that cutscenes are bad; it was an argument that a story slice with
 no subject should be small enough to delete in one edit. What the two scenes
-add is the subject. The census was always coming to count you; now you have
+add is the subject. The police were always coming for you; now you have
 watched it count two people, and every line already in the table above means
 something it did not mean before - the intro card's "Everything this world
 has ever flattened is still in there" is a fact about nobody until you have
@@ -523,8 +523,8 @@ artifact link points at.
   says what the section teaches and is what a player needs to choose one; the
   story is why they want to. Kept apart, the fiction can be cut without taking
   the description with it - which is the point of a slice this small.
-- **The bosses are named for the census, not the arena.** `The Sighting`,
-  `The Record`, `The Search`, `The Census` - you are seen, written down,
+- **The bosses are named for the police, not the arena.** `The Sighting`,
+  `The Record`, `The Search`, `The Dimension Police` - you are seen, written down,
   looked for, and finally counted. The old names said which arena it was
   (`Sharp Ground`, `Through Glass`), which the section header already says.
   They cost four `LEVEL_RENAMES` entries and renaming them again costs four
@@ -574,7 +574,7 @@ rides `flatT` and whose `u` is one square from his. Any other renderer fakes
 the one moment the whole game has been building the vocabulary for.
 
 **The abduction is the fold, and that is the rule, not a flourish.** The
-census does not take the parents away in a puff of light. The parents stand
+police do not take the parents away in a puff of light. The parents stand
 either side of their door, the two officers come up the path in single file
 on the door's line and split at the door, one stepping in front of each:
 father and officer in `x=2`, mother and officer in `x=4` - and the world
@@ -692,7 +692,7 @@ and a painted square is a decal on a box. Cut through, they are openings into
 a dark interior in the volume and, because nothing stands behind them along
 the view axis, still holes in the plane, so the folded house is the one the
 cutaway drew. The chimney is two bricks beside the ridge so it stands above
-the roof rather than level with it. The census still folds column `x=3`, which is now the doorstep, the foot
+the roof rather than level with it. The police still fold column `x=3`, which is now the doorstep, the foot
 of the strip and two squares of path rather than the doorway, the step and
 the path. One thing bit: `foldPeril()`, the crush warning, tints the blocks
 in the player's silhouette column his own colour, and in front of a solid
@@ -709,7 +709,7 @@ box instead (`storyFrameBox()`, guarded with `typeof` like `guidePoint()`,
 because the story file loads after the renderer). The opening has four shots
 in `ST_SHOT`: our house alone for the goodbyes, the whole street for the
 hello and for the neighbours' walk at the end, the house and the path for the
-census climbing it, and the door - our house, the door column and the son's
+police climbing it, and the door - our house, the door column and the son's
 square at x=6, which is everything the fold is about - from the knock through
 the fold. The renderer's own lerp toward `centerT` and `viewSizeT` carries
 each change over about half a second, so a reframe is a camera move rather
@@ -1109,7 +1109,7 @@ Photographed, the glimpse was perfect and invisible.
 ## The pack are the officers
 
 `huntMesh()` was an octahedron: spiky, abstract, belonging to nobody. It is
-the same near-black cube with the same red rim the census wears in the opening
+the same near-black cube with the same red rim the police wear in the opening
 cutscene, at the same values. Nothing says the hunters and the officers are
 the same thing; the shape says it, from the first fight. **What the spin was quietly doing was making them findable.** Taking it away
 left a near-black cube with a hairline rim on a dark board, and that came

@@ -306,7 +306,7 @@ walk into a wall.
   exactly when the player had done the thing it exists to reward. At .46 it
   is a bar end-on and still a plane broadside, because it stays far longer
   than it is wide and still flattens onto the floor as the charge lands.
-  The Census was already saying it too: they live in the plane. A hunter that
+  The fiction was already saying it too: they live in the plane. A hunter that
   can genuinely fold is a sixth design and a different question; see
   `docs/HISTORY.md`.
 - **THE REPLAY: the last seconds, played back from the other side.** A charge
@@ -658,7 +658,7 @@ worth running to tune a number the owner is about to feel out anyway.
 
 ## The last fight sweeps
 
-`BOSS IV - The Census` is the only fight where the arena attacks as well as the
+`BOSS IV - The Dimension Police` is the only fight where the arena attacks as well as the
 pack. Each of its phases carries a `sweep` - `{period,fire,beats}`, the trial's
 own data shape - and the plane tightens as the phases rise: two slices at a
 walk, then four, then five and faster.

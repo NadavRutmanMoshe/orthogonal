@@ -1339,7 +1339,7 @@ function bossFoldCrush(){
        down" would be a lie about a thing that has two halves and three
        hearts. The news is under it, like everywhere else. */
     bossSting("kill","CORE DOWN",
-      bossHp<=0?"the census is closed":
+      bossHp<=0?"the case is closed":
         (bossHp+(bossHp===1?" core left":" cores left")));
     if(bossHp<=0){hunters=[];buildGrid();win();return;}
     /* A core goes, and the centre moves. Leaving it where it was would mean
@@ -1410,7 +1410,7 @@ function bossFoldCrush(){
   if(n>=2)slowMoMs=SLOWMO_MS*2;
   bossSting("kill",killWord(n,!left),
     left?(left+" left"):
-      ((bossPhase>=B.phases.length-1)?"the census is closed":"phase clear"));
+      ((bossPhase>=B.phases.length-1)?"the case is closed":"phase clear"));
   /* What the survivors get for surviving. A fold that kills nothing is now
      worse than free, and a fold that kills one of three leaves the other two
      angrier - so the fight accelerates toward its own end rather than
@@ -2377,7 +2377,7 @@ function win(){
     $("bNextT").textContent=last?"PLAY AGAIN":"NEXT LEVEL";
     $("bRetry").style.display=stb>=3?"none":"flex";
     /* THE ONE PLACE A FIGHT CAN SAY ANYTHING. A boss has no goal to stand on
-       and no room for prose while it is running, so the Census's four
+       and no room for prose while it is running, so the fiction's four
        sentences land here, after the score, on the card the player is
        already reading. Appended rather than substituted: "never hit · 31
        moves" is what they came for and the story is the footnote.
@@ -2418,7 +2418,7 @@ function win(){
     var sn=mapSecOf(lvIndex), spn=sn>=0?sectionSpans()[sn]:null;
     if(spn&&spn.max>0&&spn.got===spn.max){
       var sub2=$("wonSub");
-      /* The boss branch above may already have appended the Census line as
+      /* The boss branch above may already have appended the story line as
          markup, and re-escaping textContent would flatten it back into the
          score with no separator - so read innerHTML once there is an element
          in there. Everywhere else wonSub is still a bare text node set with

@@ -10,7 +10,7 @@
    WHO HE IS
 
    The white father from the house next door - the one who walked over to the
-   boy after the census took his parents, in the opening cutscene. He stands
+   boy after the police took his parents, in the opening cutscene. He stands
    beside every ordinary board of I · NATURE - not the tutorials, not the
    trial, not the fights - and pressing him gets you a piece of advice about
    the level you are looking at.

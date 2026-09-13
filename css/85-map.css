@@ -203,7 +203,7 @@
     font-size:17px;font-weight:700;letter-spacing:-.02em;color:var(--sec)}
   .mcard i{display:block;font-style:normal;font-size:13.5px;color:var(--fg-dim);
     margin-top:4px;line-height:1.45}
-  /* THE CENSUS, ONE LINE PER SECTION. Deliberately quieter than `i` above
+  /* THE STORY, ONE LINE PER SECTION. Deliberately quieter than `i` above
      it, and not in the section colour: `sub` is instruction and the story is
      an aside, so it reads at a glance as the optional half. It is an <s>
      purely because .mcard already owns bare b / i / u selectors and this is
