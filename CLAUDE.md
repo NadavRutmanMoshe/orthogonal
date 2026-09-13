@@ -20,6 +20,7 @@ default:
 | `docs/design/systems.md` | legibility, hints, stars, the economy, the wardrobe, sound |
 | `docs/design/composer.md` | solution-first level generation |
 | `docs/ROADMAP.md` | known limitations, agreed next steps, what mobile still needs |
+| `docs/SHIPPING.md` | **taking it to Android, iOS and Steam**: the store clocks that set the calendar, what a mixed child-and-adult audience costs, the seven IAP products, the Steam grant, the asset sizes |
 | `docs/HISTORY.md` | every version of a mechanic that was tried and dropped. Read before *redesigning* something, not before editing it. |
 
 Each of those is the previous `CLAUDE.md` text, moved verbatim. Nothing was

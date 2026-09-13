@@ -193,7 +193,10 @@
    could still take a real teaching level. The lesson from the three that are
    finished: **a card is what you reach for when the picture cannot be made to
    say it - not before.**
-9. **Ad integration.** Nothing is wired. When wrapped with Capacitor the
+9. **Ad integration.** Nothing is wired. **The plan for it, and for the two
+   app stores and Steam, is now `docs/SHIPPING.md`** - read that first; what
+   follows is the design rule it is built on.
+   Nothing is wired. When wrapped with Capacitor the
    rewarded-video callback should call `grantShards(n)`, `grantAdView(id)`,
    `grantSkip(name)` or `grantHints(n)` - four hooks, one per thing an ad can
    buy. Rewarded-only
