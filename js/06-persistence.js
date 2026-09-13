@@ -92,8 +92,11 @@ function loadSettings(){
            pointing at a row that is not there. */
         if(typeof o.ageBand==="string"&&ageBandOf(o.ageBand))
           settings.ageBand=o.ageBand;
-        if(o.killcam&&["full","plain"].indexOf(o.killcam)>=0)
-          settings.killcam=o.killcam;
+        /* `killcam` is deliberately NOT read any more. The row that set it
+           is gone and FULL won, so a save carrying "plain" would pin the
+           plain version on with nothing left to change it - exactly the trap
+           `pace` is in below. A key whose feature is removed comes out of
+           this whitelist with it. */
         if(o.foldmark&&["on","off"].indexOf(o.foldmark)>=0)
           settings.foldmark=o.foldmark;
         /* `pace` is deliberately NOT read any more. The row that set it is

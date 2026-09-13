@@ -95,15 +95,9 @@ var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false
                  preferences back, and whether you have watched the opening
                  is not a preference. REPLAY STORY is how you ask for it. */
               seenStory1:false, seenStory2:false, seenStory3:false,
-              /* HOW MUCH KILL CAM. "full" is the whole conceit - the signal
-                 drops to television snow, a camcorder is walked up to the
-                 screen and pushed through it, and the film plays behind its
-                 lens. "plain" keeps the sting and the film and cuts the
-                 wind-up out of the middle, which is the version to compare it
-                 against; the two are a genuine question about how much
-                 ceremony a death deserves, and it is the owner's to answer by
-                 playing both rather than mine to answer by picking one. */
-              killcam:"full",
+              /* `killcam` is gone. The owner played both and kept the
+                 television, so kcFull() is a constant now and there is no key
+                 to store. */
               /* THE GREEN BLOCK, on or off. Coming back to 3D the block you
                  land on is lit for as long as the landing rings hold; this
                  is the switch that stops it. On by default because it is the

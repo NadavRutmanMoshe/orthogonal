@@ -588,24 +588,23 @@ function menuPanel(){
           seg("mSpd","slow","SLOW",settings.speed)+
           seg("mSpd","regular","REGULAR",settings.speed)+
           seg("mSpd","fast","FAST",settings.speed)+"</span></div></div>"+
-      /* THE KILL CAM, AS A ROW, because it is a genuine question about how
-         much ceremony a death deserves and the only way to answer it is to
-         play both. FULL is the television: the signal drops to snow, a
-         camcorder is pushed through the screen, and the film plays behind its
-         lens. PLAIN keeps the sting and the film and cuts that out of the
-         middle. It is on this card rather than under More because it is a
-         preference about what the game does, not a tool. */
-      "<div class='pcard'><h4>Kill cam</h4>"+
-        "<div class='crow bare'><span class='seg'>"+
-          seg("mKcam","full","FULL",settings.killcam)+
-          seg("mKcam","plain","PLAIN",settings.killcam)+"</span></div></div>"+
+      /* THE KILL CAM ROW IS GONE AND FULL WON. It was a genuine question -
+         the snow and the camcorder are two extra seconds of ceremony on every
+         death - and it was put on the sheet to be answered by playing both.
+         The owner played both and picked the television, so the question came
+         off with the switch: `kcFull()` is now a constant true.
+
+         `settings.killcam` went out of loadSettings()'s whitelist with it. A
+         key whose feature is removed comes out of the list, or a save
+         carrying killcam:"plain" would pin the plain version on with nothing
+         left to change it - the same trap `pace` is in. */
       /* WHERE YOU LAND, AS A ROW. Coming back to 3D puts you on the block
          nearest the camera among the ones you can actually reach, and that
          block goes green while the landing rings hold. It is the only
          drawing rule 5 has, so it is on by default - but it is a teaching
          aid, and once the rule is learned it is a colour on the board that
          answers a question the player has stopped asking. Named for what it
-         marks rather than for how it looks, the same way Kill cam is.
+         marks rather than for how it looks, the way the kill-cam row was.
          The RINGS are not on this switch: they sit beside the block rather
          than on it, and they are the older statement. */
       "<div class='pcard'><h4>Where you land</h4>"+
@@ -619,32 +618,28 @@ function menuPanel(){
          the settings sheet fit on one screen with nothing to scroll to.
          `legendPanel()` is untouched and still one bind away. */
       "<div class='pcard'><h4>More</h4><div class='psub'>"+
-        /* THE AGE CARD, REOPENED. It is here and not on the card above
-           because it is not a fourth setting - it is the shortcut that
-           writes the three, and the rows above are the long way round.
+        /* SET UP BY AGE AND THE THREE WATCH THE ... BUTTONS ARE GONE, on
+           the owner's call, and both removals are worth writing down because
+           each of them had a reason that still reads well.
 
-           It also has to exist for a reason that is easy to miss: the card
-           only ever shows on a FIRST RUN, because nothingBehind() puts the
-           home screen in front of anybody with a save. Without this button
-           every existing player - the owner included - would have a game
-           that had silently decided their settings and no way to ask the
-           question again. */
-        "<button id='mAge'>SET UP BY AGE</button>"+
+           SET UP BY AGE was the only door an existing player had to the age
+           card: nothingBehind() puts the home screen in front of anybody with
+           a save, so the card itself is a first-run screen and this was the
+           way to ask the question again. What it cost is a row on the sheet
+           that re-asks a question already answered by the three rows above
+           it - Controls, Board and Fights are the whole of what a band
+           writes, and they are right there. `introOpen(true)` and `#intro.setup`
+           are left standing and are now reached by nothing; putting the row
+           back is one button and one bind.
+
+           THE THREE SCENES came off for the same reason from the other end.
+           A scene plays once and is then gone, and filing the way back to it
+           under More was the argument for having them - but three buttons
+           naming three cutscenes is half of this card, and two of the three
+           name things a player may not have reached. `storyPlay(id,replay)`
+           keeps its replay flag: it is what stops a menu watch consuming
+           FIND THEM on BOSS IV, and it is the seam any future door uses. */
         "<button id='mTut'>REPLAY TUTORIAL</button>"+
-        /* AND THE WAY BACK TO THE STORY, beside the way back to the lesson,
-           because they are the same kind of thing: something that plays once
-           and is then gone, filed where a player would go looking for it.
-
-           BOTH SCENES ARE ALWAYS OFFERED, on the owner's call. The ending
-           used to appear only once it had been reached, on the reasoning
-           that a button naming it is a spoiler - and that is true, but the
-           owner wants to be able to watch it, and a door that is there only
-           after you no longer need it is not a door. It is under More, next
-           to RESET SETTINGS, which is about as far from an accident as a
-           button gets. */
-        "<button id='mStory'>WATCH THE OPENING</button>"+
-        "<button id='mStoryFire'>WATCH THE FIRE</button>"+
-        "<button id='mStoryEnd'>WATCH THE ENDING</button>"+
         /* LEVEL EDITOR MOVED TO THE HOME SCREEN as MY LEVELS. It is not a
            setting - it is a place you go, like LEVELS and the wardrobe are -
            and filing it under More next to RESET SETTINGS is what made it
@@ -707,41 +702,18 @@ function menuPanel(){
       settings.speed=m;saveSettings();menuPanel();
     });
   });
-  ["full","plain"].forEach(function(m){
-    bind("mKcam_"+m,function(){
-      settings.killcam=m;saveSettings();menuPanel();
-    });
-  });
   // Nothing to apply: the render loop asks foldMarkOn() every frame.
   ["on","off"].forEach(function(m){
     bind("mMark_"+m,function(){
       settings.foldmark=m;saveSettings();menuPanel();
     });
   });
-  bind("mAge",function(){hidePanel();introOpen(true);});
   bind("mTut",function(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
   });
-  /* `true` is the replay flag: watching a scene from here does not count as
-     having reached it, so somebody who looks at the ending early still gets
-     FIND THEM on BOSS IV's card - and it hands back to whatever screen this
-     panel was opened over rather than to the scene's own destination. */
-  bind("mStory",function(){
-    hidePanel();
-    if(typeof storyPlay==="function")storyPlay("open",true);
-  });
-  bind("mStoryFire",function(){
-    hidePanel();
-    if(typeof storyPlay==="function")storyPlay("fire",true);
-  });
-  bind("mStoryEnd",function(){
-    hidePanel();
-    if(typeof storyPlay==="function")storyPlay("end",true);
-  });
   bind("mReset",function(){
     settings.volume=defaultVolume();settings.volTouched=false;
-    settings.brightness=1;settings.ui=UI_DEFAULT;settings.killcam="full";
-    settings.foldmark="on";
+    settings.brightness=1;settings.ui=UI_DEFAULT;settings.foldmark="on";
     /* The other two thirds of the age card go back to a fresh install too,
        and so does the memory of which band was picked: a reset that left the
        age sheet showing a band it had just overwritten would be lying about

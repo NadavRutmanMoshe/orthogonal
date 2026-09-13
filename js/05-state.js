@@ -237,14 +237,14 @@ var kcBonus=0;
 function kcHold(mode){
   return (mode==="death"?KC_HOLD_DEATH:KC_HOLD_KILL)+kcBonus;
 }
-/* IS THE OLD TELEVISION IN OR OUT. `Menu > Kill cam` picks, and it is a real
-   question rather than a debug switch: the snow and the camcorder are two
-   extra seconds of ceremony on every death, and whether that reads as a kill
-   cam or as a wait is not something you can settle by reading the code. Both
-   halves keep the sting and the film; "plain" simply cuts the middle out. */
-function kcFull(){
-  return typeof settings==="undefined"||settings.killcam!=="plain";
-}
+/* THE OLD TELEVISION IS ALWAYS IN. It was `Menu > Kill cam`, a real question
+   asked on the sheet - the snow and the camcorder are two extra seconds of
+   ceremony on every death, and whether that reads as a kill cam or as a wait
+   is not something you can settle by reading the code. The owner played both
+   and kept the television, so the switch came off and this is what is left of
+   it: one predicate, still asked in the four places that stage a death, so
+   putting the question back is this function and a row. */
+function kcFull(){return true;}
 function kcLead(mode){
   return kcHold(mode)+(kcFull()?KC_SNOW_MS+KC_CAM_MS:0);
 }
