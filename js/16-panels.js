@@ -154,6 +154,45 @@ function wardrobePanel(tab){
     wardPreview();
   });
 }
+/* THE WARDROBE, OPENED ON ONE PARTICULAR THING.
+
+   The win card names a shape the moment it is earned - every star in a
+   section, or two of the pack in one fold - and the line is a button that
+   lands here. Selecting rather than equipping is deliberate: the shape stands
+   in the case with its own EQUIP under it, so the player sees what they won
+   and then chooses to wear it, which is one press more and the whole point of
+   the moment.
+
+   IT HAS TO COME UP IN FRONT OF THE WIN CARD. `.won` is z-index 20 and
+   `#panel` is 12, because a card is normally the outermost thing on screen -
+   so without `.overcard` the wardrobe would open silently behind it. The
+   class is cleared by showPanel() on the way into every panel, so it cannot
+   be left behind on the next one, and closing the wardrobe puts the player
+   back on the card with NEXT LEVEL still under their thumb.
+
+   `wardSel.shape` is the selection wardSelected() validates against the
+   shelf, so an id that is not on it falls back to the first tile rather than
+   opening on a name with nothing behind it. */
+function wardrobeAt(id){
+  if(id)wardSel.shape=id;
+  wardrobePanel("shape");
+  $("panel").classList.add("overcard");
+  /* AND THE TILE IS SCROLLED TO. The case shows the piece, but the shelf is
+     thirty tiles deep and a reward is near the bottom of it - so without this
+     the grid opens on Cube and the thing the player was just told they had
+     won is off screen under the fold. A frame late for the same reason the
+     case is: the grid has no measurable height until the panel is laid out.
+
+     Measured through getBoundingClientRect rather than offsetTop, because
+     `.wlist` is the scroller and is not necessarily the offsetParent. */
+  requestAnimationFrame(function(){
+    var grid=$("wGrid"), el=grid&&grid.querySelector(".item.sel"),
+        box=$("panel").querySelector(".wlist");
+    if(!el||!box)return;
+    box.scrollTop+=el.getBoundingClientRect().top-box.getBoundingClientRect().top
+                   -Math.max(0,(box.clientHeight-el.offsetHeight)/2);
+  });
+}
 function wardTabTo(t){
   wardTab=(t==="color"||t==="deal")?t:"shape";buyArmed=null;
   wardRefresh();wardPreview();

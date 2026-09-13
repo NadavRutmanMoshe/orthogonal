@@ -10,6 +10,13 @@
      picker turned into 10px monospace ruled across a metre of glass. Capping
      the width changes nothing at phone size - 100% - 32px is exactly what
      left:16px/right:16px gave - and makes every panel behave on a desktop. */
+  /* IN FRONT OF A FULL-BLEED CARD, and only when a caller says so. A panel
+     sits UNDER the cards on purpose - `.won` and `#intro` are 20, and a card
+     is normally the outermost thing on screen - but the win card's unlocked
+     line opens the wardrobe over itself, so that one press raises the panel
+     for as long as it is up. Set by wardrobeAt() and cleared by showPanel()
+     on the way into every panel, so it cannot be inherited by the next one. */
+  .panel.overcard{z-index:21}
   .panel{position:fixed;left:50%;transform:translateX(-50%);
     width:calc(100% - 32px);max-width:560px;bottom:196px;z-index:12;
     background:var(--panel);border:1px solid var(--rule);border-radius:3px;

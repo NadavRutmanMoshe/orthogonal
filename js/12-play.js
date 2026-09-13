@@ -125,7 +125,7 @@ function bossReset(){
   bossPause=0;phaseNoteEnd();
   bossHp=B?B.hp:0;bossFlash=0;bossHitFlash=0;bossCreepMs=0;bossGraceMs=0;
   shieldMs=0;deathPending=false;slowMoMs=0;
-  rep=null;bossPendingAdvance=false;bossPendingDeath=false;featNews=null;
+  rep=null;bossPendingAdvance=false;bossPendingDeath=false;featNews=featCard=null;
   replayClear();
   document.body.classList.remove("replaying");
   bossStingHide();killCamHide();repSfxInstall();
@@ -300,7 +300,7 @@ var BOSS_PAUSE=1900;   // how long the board is yours to read. A feel number.
    and the rarer of the two is the one that would be lost. */
 function featAnnounce(){
   if(!featNews)return false;
-  var it=featNews;featNews=null;
+  var it=featNews;featNews=null;featCard=it;
   flash(it.name+" unlocked · "+(it.say||"a feat"));
   if(SFX.mastery)SFX.mastery();
   return true;
@@ -1403,7 +1403,10 @@ function bossFoldCrush(){
      already owned, so it is news exactly once. The twin's branch above is
      deliberately not included: a twin core is ALWAYS both halves, so it
      would pay out on the first fold of BOSS III and mean nothing. */
-  if(n>=2&&typeof grantShape==="function")featNews=grantShape("domino")||featNews;
+  if(n>=2&&typeof grantShape==="function"){
+    var dom=grantShape("domino");
+    if(dom){featNews=dom;featCard=dom;}
+  }
   /* Two or more in one square is the rarest sentence this fight has and it
      was going by too fast to read. The extra beat is spent by the wind-up. */
   kcBonus=(n>=2)?700:0;
@@ -2437,9 +2440,15 @@ function win(){
          save by the time it gets here. */
       var got=typeof rewardShapeFor==="function"
         ? grantShape((rewardShapeFor(sn)||{}).id) : null;
-      if(got)sub2.innerHTML+="<em class='wonwear' style='--sec:"+
-        (SECTIONS[sn].col||"#35c2a5")+"'>"+esc(got.name)+
-        " unlocked \u00b7 in the wardrobe</em>";
+      /* AND THE LINE IS THE DOOR. It used to be an `<em>` saying the shape
+         was "in the wardrobe", which is a sentence telling the player to go
+         and find something - two screens away, on a shelf of thirty tiles,
+         with nothing saying which one it meant. It is a button now and it
+         opens the wardrobe with that shape already selected and standing in
+         the case. See wardrobeAt(). */
+      if(got)sub2.innerHTML+="<button class='wonwear' data-ward='"+
+        esc(got.id)+"' style='--sec:"+(SECTIONS[sn].col||"#35c2a5")+"'>"+
+        esc(got.name)+" unlocked \u00b7 wear it \u203a</button>";
       setTimeout(function(){if(SFX.mastery)SFX.mastery();},520);
     }
   }
@@ -2449,12 +2458,15 @@ function win(){
      bossAdvance() into this. Same `.wonwear` line the section payout uses,
      in the star's gold rather than a section's colour: it is not a shelf
      that paid for it. */
-  if(featNews){
-    var fw=featNews;featNews=null;
+  /* `featCard` rather than `featNews`, so a double kill on phase one - which
+     is toasted mid-fight and never reaches here - still gets its line and its
+     way into the wardrobe on the card at the end of that fight. */
+  if(featNews||featCard){
+    var fw=featNews||featCard;featNews=featCard=null;
     var sub3=$("wonSub");
     sub3.innerHTML=(sub3.children.length?sub3.innerHTML:esc(sub3.textContent))+
-      "<em class='wonwear wonfeat'>"+esc(fw.name)+" unlocked · "+
-      esc(fw.say||"a feat")+"</em>";
+      "<button class='wonwear wonfeat' data-ward='"+esc(fw.id)+"'>"+
+      esc(fw.name)+" unlocked \u00b7 "+esc(fw.say||"a feat")+" \u203a</button>";
     setTimeout(function(){if(SFX.mastery)SFX.mastery();},520);
   }
   /* AND IF THE NEXT LEVEL IS BEHIND A LOCK, SAY SO HERE.
@@ -2495,6 +2507,13 @@ function win(){
         "<em class='wonguide'>"+esc(gline)+"</em>";
     }
   }
+  /* AND EVERY UNLOCKED LINE ON THE CARD IS ARMED. Bound once, here, after
+     everything above has finished writing into `wonSub` - there are two
+     writers of a `[data-ward]` line (the section payout and the feat) and a
+     bind inside each of them would be the same three lines twice. */
+  $("wonSub").querySelectorAll("[data-ward]").forEach(function(el){
+    tap(el,function(){wardrobeAt(el.getAttribute("data-ward"));});
+  });
   /* The picker only lists the campaign, so offering it after a library level
      or an editor test would land you somewhere you did not come from. */
   if(fromEditor||playSource!=="builtin"){

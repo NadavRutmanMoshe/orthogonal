@@ -269,6 +269,15 @@ var bossPendingDeath=false;
    note, or the win card. Cleared by bossReset(), so it can never be
    announced on a fight it was not earned in. */
 var featNews=null;
+/* AND THE SAME ITEM AGAIN, KEPT FOR THE WIN CARD. `featNews` is consumed by
+   whichever of the toast, the phase note or the card gets there first, which
+   is right - two announcements of one thing is one announcement, because the
+   second overwrites the first. But the toast is a second and a half in the
+   middle of a fight and it is not somewhere a button can live, so the card
+   at the end of that same fight names it again with the way into the
+   wardrobe on it. Cleared by bossReset() with featNews, so losing the fight
+   you earned it in does not carry the line onto the next card. */
+var featCard=null;
 /* Trials. T is null on every level that isn't one, and like B every check is
    guarded on it. It deliberately spends the same `lives` a boss does: a level
    is either on a clock or it isn't, never both, and one counter means the HUD,

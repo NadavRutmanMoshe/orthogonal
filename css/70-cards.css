@@ -61,17 +61,31 @@
   /* AND WHAT THAT PAID OUT. Under the mastery pill, quieter than it and in
      an outline rather than a fill, because the pill is the achievement and
      this is the consequence of it. Lands a beat later on the same curve. */
-  .wonwear{display:block;font-style:normal;margin-top:6px;
+  /* IT IS A BUTTON, and it opens the wardrobe with that shape standing in
+     the case (wardrobeAt(), js/16-panels.js). It was an `<em>` saying the
+     shape was "in the wardrobe", which is a sentence sending the player two
+     screens away to a shelf of thirty tiles with nothing saying which one.
+
+     The shape it wears is the pill's, not a button's: no cap, no fill, the
+     outline it already had - because it has to stay quieter than the mastery
+     pill above it, and a third capped rectangle under the win card's own two
+     would rival NEXT. `margin-inline:auto` because a button is a flex item
+     here and the `<em>` it replaces was centred by the paragraph. */
+  #won button.wonwear{display:block;font-style:normal;margin:6px auto 0;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
     font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
     color:var(--sec);border:1px solid color-mix(in srgb,var(--sec) 46%,transparent);
-    padding:4px 11px;border-radius:99px;
+    background:transparent;box-shadow:none;
+    padding:4px 11px;border-radius:99px;height:auto;
     animation:wmast .6s cubic-bezier(.2,1.5,.4,1) .72s both}
+  #won button.wonwear:active{transform:scale(.96);
+    background:color-mix(in srgb,var(--sec) 14%,transparent)}
   /* A FEAT IS NOT A SHELF, so it does not borrow `--sec`. Two of the pack in
      one fold is paid in the star's own gold - the colour this game already
      uses for the thing a star cannot be spent on (see `.wearn` in
      40-panels.css) - and it is the only `.wonwear` that can appear without a
      mastery pill above it, so it carries its own top margin. */
-  .wonfeat{--sec:var(--star);margin-top:9px}
+  #won button.wonfeat{--sec:var(--star);margin-top:9px}
   @keyframes wmast{0%{opacity:0;transform:scale(.8)}100%{opacity:1;transform:scale(1)}}
   /* WHY THE NEXT THING IS SHUT. Only ever seen on BOSS IV with a boss still
      standing, and it is the amber the game already uses for "a landmark on a

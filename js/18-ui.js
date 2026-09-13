@@ -57,6 +57,11 @@ function showPanel(html,kind){
   $("panel").innerHTML=html;
   $("panel").classList.add("on");
   $("panel").classList.toggle("ward",kind==="wardrobe");
+  /* Cleared on the way into every panel, and set again by wardrobeAt() alone
+     - the one caller that has to stand in front of a full-bleed card. Left
+     on, it would raise the next panel over a card that was meant to be in
+     front of it. */
+  $("panel").classList.remove("overcard");
   /* The offer cards, and only them: they are the one panel that is a
      decision rather than a place, so they get their own shape, their own
      type scale and a scrim over the board. See `.panel.offer` in
