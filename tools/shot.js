@@ -76,10 +76,12 @@ const SCREENS={
   trial:    {what:"TRIAL I, a second in", js:"lv(10);", wait:1200},
   tutorial: {what:"00 - First Steps with the ghost hand", js:"lv(0);", wait:2500},
   editor:   {what:"the level editor", js:"enterEditor();"},
-  hintoffer:{what:"the card that explains the bulb", js:"lv(2);settings.hintAsked=false;setTimeout(hintOffer,50);"},
+  /* `hintoffer` is gone: the card that explained the bulb was removed (see
+     the note beside starsOffer() in js/12-play.js) and the target went on
+     pointing at a function that no longer exists, which aborted --all. */
   starsoffer:{what:"the card that explains stars", js:"lv(14);settings.starAsked=false;setTimeout(starsOffer,50);"},
   refill:   {what:"the out-of-hints card", js:"lv(2);setTimeout(hintRefillOffer,50);"},
-  struggle: {what:"the skip offer after repeated losses", js:"lv(18);settings.noSlowOffer=false;setTimeout(struggleOffer,600);", wait:1400},
+  struggle: {what:"the out-of-lives card, TRY AGAIN and the skip", js:"lv(18);settings.noSlowOffer=false;setTimeout(struggleOffer,600);", wait:1400},
   tutcard:  {what:"a full-bleed explanation card", js:"lv(2);cardPut('A heading','Two lines of body text, with {to2} named the way the button names it.','brief');"},
   toast:    {what:"a toast and a spoken cue", js:"lv(2);flash('a toast');flashCue('go right','hint · 2 left');", wait:400},
   guide:    {what:"the neighbour standing in a level, mid-sentence",
