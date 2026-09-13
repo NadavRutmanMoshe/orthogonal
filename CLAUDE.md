@@ -594,9 +594,10 @@ is the rule.
   under `OUTLINE_PALE`) so they are black on every skin and white only on
   Black, and `userData.keepColor` so `playerChar()` - which writes the
   equipped hex into every mesh in the group - leaves them alone.
-- **`UNLIMITED_SHARDS` in `js/09-wardrobe.js` is `true` for playtesting.**
-  Set it back to `false` before shipping. `AMB_MUTED` in `js/11-sound.js`
-  is `true`: the ambient beds are built but muted, on the owner's call.
+- **`UNLIMITED_SHARDS` in `js/09-wardrobe.js` is `false`, and ships that
+  way.** It was the playtesting switch; the star economy is live again.
+  `AMB_MUTED` in `js/11-sound.js` is `true`: the ambient beds are built but
+  muted, on the owner's call.
 
 **Rendering** (`look.md`, `controls.md`)
 - **`outlineFor()` reads the PIECE, not the background: white lines on

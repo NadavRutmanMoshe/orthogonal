@@ -280,14 +280,16 @@ function starsEarned(){
   }
   return t;
 }
-// TESTING SWITCH - set back to false before shipping.
+// TESTING SWITCH - OFF, and it ships off.
 // The catalogue totals 253 against 189 earnable by perfect play, so buying
-// every item is normally impossible; this hands over enough to walk the whole
+// every item is normally impossible; true hands over enough to walk the whole
 // wardrobe. Buying still runs the real code path - it pushes to owned and
 // charges wardrobe.spent - so what gets tested is the actual purchase flow,
-// not a bypass of it. Flip this to false and the true balance returns, since
-// starsEarned() and wardrobe.spent are both untouched by it.
-var UNLIMITED_SHARDS=true;
+// not a bypass of it. That is why flipping it back is free: starsEarned() and
+// wardrobe.spent are untouched by it, so the true balance simply returns.
+// A save made while it was true keeps whatever it bought, because
+// wardrobe.owned is keyed by id and was written for real.
+var UNLIMITED_SHARDS=false;
 function shards(){
   if(UNLIMITED_SHARDS)return 9999;
   // NO LIMITS: the shop stops being a balance. Buying still runs the real
