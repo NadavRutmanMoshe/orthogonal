@@ -26,8 +26,17 @@
   /* A group of settings, with a label that says what the group is for. */
   .pcard{margin-top:12px;padding:11px 12px 12px;border:1px solid var(--rule);
     border-radius:4px;background:rgba(255,255,255,.018)}
-  .pcard>h4{margin:0 0 8px;font-size:11px;letter-spacing:.16em;font-weight:500;
+  /* THE HEADING IS A ROW NOW, because it carries a glyph. Four headings in
+     11px letter-spaced grey down one sheet are four identical rules, and the
+     icon is what lets the eye find the card it wants without reading. */
+  .pcard>h4{display:flex;align-items:center;gap:8px;
+    margin:0 0 8px;font-size:11px;letter-spacing:.16em;font-weight:500;
     color:var(--fg-dim);text-transform:uppercase}
+  /* Slightly brighter than the words beside it: the glyph is the thing being
+     scanned for, and at 14px in `--fg-dim` on a translucent card it
+     disappeared into the rule under it. */
+  .pcard>h4 .pci{width:14px;height:14px;flex:none;fill:currentColor;
+    opacity:.75}
   .pcard .note{margin-top:9px}
 
   /* Two weights of button, so a panel has a shape. The primary one lifts. */
@@ -72,8 +81,14 @@
 
   .psub{display:flex;flex-direction:column;gap:6px;margin-top:2px}
   .psub button{height:38px;font-size:12px;letter-spacing:.1em;color:var(--fg-dim);
-    justify-content:flex-start;padding:0 12px}
+    justify-content:flex-start;padding:0 12px;gap:10px}
   .psub button:active{color:var(--fg)}
+  .psub button .pci{width:15px;height:15px;flex:none;fill:currentColor;
+    opacity:.8}
+  /* Beats `.psub button` above on specificity, which the bare `.pdanger` did
+     not - so the one row in this game that cannot be undone had been the
+     same grey as the one above it. */
+  .psub button.pdanger{color:#e0455f}
   .pdanger{color:#e0455f}
 
   /* Sliders. `accent-color` gives the browser's own chunky control, which is

@@ -449,6 +449,46 @@ function penIcon(){
    the arrowhead that closes it. Duplicated rather than shared because that
    one is static markup in the page and this one is built into a string; if a
    third caller ever appears, move #bRetry onto this. */
+/* THE SETTINGS SHEET'S OWN GLYPHS, one per card heading and one per row in
+   More. A heading in 11px letter-spaced grey is the quietest line on a card,
+   and four of them down a sheet of switches read as four identical rules -
+   the icon is what lets the eye find the card it wants without reading. They
+   are `.pci`, sized and coloured by `.pcard>h4 .pci` in 80-panel-tall.css.
+
+   Solid single paths, like every other icon in this game: `.ln` is the one
+   class that makes a path stroked, and nothing here needs it. */
+var PANEL_ICONS={
+  // a speaker with two waves off it - sound, and the brightness slider under it
+  sound:"M4 9.4h3.1L11.4 6a.8.8 0 0 1 1.3.6v10.8a.8.8 0 0 1-1.3.6L7.1 14.6H4"+
+        "a1 1 0 0 1-1-1V10.4a1 1 0 0 1 1-1Zm11.6-.9a1 1 0 0 1 1.4.2 5.6 5.6 "+
+        "0 0 1 0 6.6 1 1 0 1 1-1.6-1.2 3.6 3.6 0 0 0 0-4.2 1 1 0 0 1 .2-1.4Z"+
+        "m2.6-2.8a1 1 0 0 1 1.4.1 9.4 9.4 0 0 1 0 12 1 1 0 1 1-1.5-1.3 7.4 "+
+        "7.4 0 0 0 0-9.4 1 1 0 0 1 .1-1.4Z",
+  // the d-pad, which is the thing the Controls row turns on and off
+  play:"M9.4 3h5.2c.6 0 1 .4 1 1v4.4h4.4c.6 0 1 .4 1 1v5.2c0 .6-.4 1-1 1h-4.4"+
+       "V20c0 .6-.4 1-1 1H9.4c-.6 0-1-.4-1-1v-4.4H4c-.6 0-1-.4-1-1V9.4c0-.6."+
+       "4-1 1-1h4.4V4c0-.6.4-1 1-1Z",
+  // a square with an arrow coming down onto it - where you land
+  land:"M12 2.2a1 1 0 0 1 1 1v5.1l1.7-1.7a1 1 0 0 1 1.4 1.4l-3.4 3.4a1 1 0 0 "+
+       "1-1.4 0L7.9 8a1 1 0 0 1 1.4-1.4L11 8.3V3.2a1 1 0 0 1 1-1ZM4.4 14h15.2"+
+       "c.8 0 1.4.6 1.4 1.4v4.2c0 .8-.6 1.4-1.4 1.4H4.4c-.8 0-1.4-.6-1.4-1.4"+
+       "v-4.2c0-.8.6-1.4 1.4-1.4Zm.6 2.4v2.2h14v-2.2H5Z",
+  // three dots, which is what More is called everywhere else
+  more:"M6 9.8a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4Zm6 0a2.2 2.2 0 1 1 0 "+
+       "4.4 2.2 2.2 0 0 1 0-4.4Zm6 0a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4Z",
+  // a mortar board: the tutorial is the one thing here that teaches
+  teach:"M11.6 3.1a1 1 0 0 1 .8 0l9 3.9a1 1 0 0 1 0 1.8l-9 3.9a1 1 0 0 1-.8 "+
+        "0l-9-3.9a1 1 0 0 1 0-1.8ZM6 11.5l5.6 2.4a1 1 0 0 0 .8 0L18 11.5v3.9"+
+        "c0 .5-.3 1-.8 1.2a13 13 0 0 1-10.4 0c-.5-.2-.8-.7-.8-1.2Z",
+  // an arrow going back round to where it started
+  reset:"M12 4a8 8 0 1 1-7.6 10.5 1.1 1.1 0 1 1 2.1-.7A5.8 5.8 0 1 0 12 6.2"+
+        "c-1.7 0-3.2.7-4.2 1.9h2a1.1 1.1 0 0 1 0 2.2H5.1A1.1 1.1 0 0 1 4 9.2"+
+        "V6.4a1.1 1.1 0 0 1 2.2 0v.5A8 8 0 0 1 12 4Z"
+};
+function panelIcon(k){
+  return "<svg class='pci' viewBox='0 0 24 24' aria-hidden='true'><path d='"+
+    PANEL_ICONS[k]+"'/></svg>";
+}
 function retryIcon(){
   return "<svg class='oai' viewBox='0 0 24 24' aria-hidden='true'>"+
     "<path d='M20 12a8 8 0 1 1-2.6-5.9'/><path d='M20 4v4.5h-4.5'/></svg>";
@@ -593,7 +633,7 @@ function menuPanel(){
          particular one, because the particular one is only there on a
          campaign level and a row that comes and goes must not be the one
          that moves the other. */
-      "<div class='pcard'><h4>Sound &amp; light</h4>"+
+      "<div class='pcard'><h4>"+panelIcon("sound")+"Sound &amp; light</h4>"+
         "<div class='srow'><label>Volume</label>"+
           "<input type='range' id='mVol' min='0' max='100' value='"+vol+"'>"+
           "<span id='mVolV'>"+vol+"%</span></div>"+
@@ -619,12 +659,12 @@ function menuPanel(){
          Board and Speed both matter to the fit of the level: the buttons and
          the board size are two of the three things fitViewSize() reads, so
          all three handlers below end in the same onResize(). */
-      "<div class='pcard'><h4>How it plays</h4>"+
+      "<div class='pcard'><h4>"+panelIcon("play")+"How it plays</h4>"+
         "<div class='crow'><label>Controls</label><span class='seg'>"+
           seg("mUi","full","FULL",settings.ui)+
           seg("mUi","compact","COMPACT",settings.ui)+
           seg("mUi","none","HIDDEN",settings.ui)+"</span></div>"+
-        "<div class='crow'><label>Board</label><span class='seg'>"+
+        "<div class='crow'><label>Level size</label><span class='seg'>"+
           seg("mSize","small","SMALL",settings.size)+
           seg("mSize","medium","MEDIUM",settings.size)+
           seg("mSize","large","LARGE",settings.size)+"</span></div>"+
@@ -632,7 +672,7 @@ function menuPanel(){
            real-time things in the game are the bosses and the trials, and a
            row called Speed on a settings sheet in a turn-based puzzle would
            read as the speed of everything. */
-        "<div class='crow bare'><label>Fights</label><span class='seg'>"+
+        "<div class='crow bare'><label>Fights speed</label><span class='seg'>"+
           seg("mSpd","slow","SLOW",settings.speed)+
           seg("mSpd","regular","REGULAR",settings.speed)+
           seg("mSpd","fast","FAST",settings.speed)+"</span></div></div>"+
@@ -655,7 +695,7 @@ function menuPanel(){
          marks rather than for how it looks, the way the kill-cam row was.
          The RINGS are not on this switch: they sit beside the block rather
          than on it, and they are the older statement. */
-      "<div class='pcard'><h4>Where you land</h4>"+
+      "<div class='pcard'><h4>"+panelIcon("land")+"Where you land</h4>"+
         "<div class='crow bare'><span class='seg'>"+
           seg("mMark","on","SHOW",settings.foldmark)+
           seg("mMark","off","OFF",settings.foldmark)+"</span></div></div>"+
@@ -665,7 +705,7 @@ function menuPanel(){
          pushed this card past the fold on a phone. Losing it is what makes
          the settings sheet fit on one screen with nothing to scroll to.
          `legendPanel()` is untouched and still one bind away. */
-      "<div class='pcard'><h4>More</h4><div class='psub'>"+
+      "<div class='pcard'><h4>"+panelIcon("more")+"More</h4><div class='psub'>"+
         /* SET UP BY AGE AND THE THREE WATCH THE ... BUTTONS ARE GONE, on
            the owner's call, and both removals are worth writing down because
            each of them had a reason that still reads well.
@@ -687,12 +727,13 @@ function menuPanel(){
            name things a player may not have reached. `storyPlay(id,replay)`
            keeps its replay flag: it is what stops a menu watch consuming
            FIND THEM on BOSS IV, and it is the seam any future door uses. */
-        "<button id='mTut'>REPLAY TUTORIAL</button>"+
+        "<button id='mTut'>"+panelIcon("teach")+"REPLAY TUTORIAL</button>"+
         /* LEVEL EDITOR MOVED TO THE HOME SCREEN as MY LEVELS. It is not a
            setting - it is a place you go, like LEVELS and the wardrobe are -
            and filing it under More next to RESET SETTINGS is what made it
            feel like a developer switch rather than a thing to play with. */
-        "<button id='mReset' class='pdanger'>RESET SETTINGS</button>"+
+        "<button id='mReset' class='pdanger'>"+panelIcon("reset")+
+        "RESET SETTINGS</button>"+
       "</div>"+
       /* THE BUILD STAMP IS OFF THE PANEL, on the owner's call, and this is a
          reversal worth writing down. It was put here because a published
