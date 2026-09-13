@@ -522,11 +522,15 @@ is the rule.
 - `loadSettings()` is a **whitelist**. A key not read there does not exist
   after reload; a key whose feature is removed comes out of the list.
 - **A clock level's loss screen is `struggleOffer()`**, and it is put up on
-  every out-of-lives, not on a counter: TRY AGAIN in the goal's green (it
-  only closes - `die()` has already reset the board) and the skip in the ad
-  button's blue under it. `settings.noSlowOffer` and `STRUGGLE_OFFER` are
-  gone with the opt-out; nothing suppresses the card. `fails[]` is still
-  kept, for the card's own sentence and for the neighbour's line at ten.
+  every out-of-lives, not on a counter. It wears **the win card's button
+  row** (`offerShell()`'s `actClass:"pair"`): TRY AGAIN in the goal's green
+  with `#bRetry`'s own arrow - it only closes, `die()` has already reset the
+  board - and where NEXT LEVEL stands on that card, SKIP over WATCH AN AD in
+  the ad button's blue. Losing a fight and finishing short of three stars
+  are the same moment, so they are the same drawing.
+  `settings.noSlowOffer` and `STRUGGLE_OFFER` are gone with the opt-out;
+  nothing suppresses the card. `fails[]` is still kept, for the card's own
+  sentence and for the neighbour's line at ten.
 - **`SFX.die(kind)` dispatches five deaths** and none of them is a setting:
   "kapoosh" for a hunter's hit, "plack" for a crush, "kshhh" for the sweep,
   "ssss" for fire, and the fall's own voice for everything unnamed. The
