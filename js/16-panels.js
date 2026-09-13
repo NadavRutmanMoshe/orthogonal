@@ -377,8 +377,12 @@ function homeIcon(){
     "1.11 1.11h3.6v-5.3h4.58v5.3h3.6c.61 0 1.11-.5 1.11-1.11v-9.3h1.68c.66 0 "+
     ".92-.82.42-1.24L12.65 2.6a1 1 0 0 0-1.3 0Z'/></svg>";
 }
-function gridIcon(){
-  return "<svg class='pfi' viewBox='0 0 24 24' aria-hidden='true'>"+
+/* The four squares LEVELS wears everywhere: the home screen, the win card's
+   cap, the map's footer and now the top of the settings sheet. `cls` because
+   the settings sheet hangs it on a `.psec` row, where the emblem is sized by
+   `.secem` rather than by the footer's `.pfi`. */
+function gridIcon(cls){
+  return "<svg class='"+(cls||"pfi")+"' viewBox='0 0 24 24' aria-hidden='true'>"+
     "<rect x='3.2' y='3.2' width='7.4' height='7.4' rx='1.7'/>"+
     "<rect x='13.4' y='3.2' width='7.4' height='7.4' rx='1.7'/>"+
     "<rect x='3.2' y='13.4' width='7.4' height='7.4' rx='1.7'/>"+
@@ -506,6 +510,25 @@ function menuPanel(){
       (SECTIONS[secN].col||"#35c2a5")+"'>"+secEmblem(SECTIONS[secN])+
       "<span><i>back to</i><b>"+esc(SECTIONS[secN].name)+"</b></span>"+
       "<u class='psecgo' aria-hidden='true'>\u203a</u></button>";
+  /* WORLDS, AT THE TOP OF THE SHEET, and this reverses the note below on the
+     owner's call.
+
+     The argument against it still stands as written - LEVELS is on the home
+     screen, on the HUD's way out of a level and on the win card, and a fourth
+     copy is a fourth thing to scroll past. What it missed is where a player
+     actually is when they want it: standing in a level, with the game's only
+     menu open, and every other door out of here goes DOWN (home, close) or
+     SIDEWAYS (back to this shelf). There was no way from here to another
+     world without leaving to the home screen first.
+
+     It wears the same cyan and the same four squares the chooser's other
+     doors wear, so it is recognisable before it is read, and it is a `.psec`
+     row rather than a card because it is navigation - the same shape as the
+     shelf row under it, which is the other place this sheet can take you. */
+  var worldsBtn=
+    "<button class='psec pworlds' id='mWorlds'>"+gridIcon("secem")+
+      "<span><i>go to</i><b>WORLDS</b></span>"+
+      "<u class='psecgo' aria-hidden='true'>\u203a</u></button>";
   showPanel(
     /* NO SUBTITLE. The header used to print the level you were standing on
        under the word Settings. It answered a question nobody asks with the
@@ -516,12 +539,12 @@ function menuPanel(){
     "<div class='phead'><div class='pt'><b>Settings</b></div>"+
       "<div class='mtot'>"+starsEarned()+" ★</div>"+
       "<button class='mq mx' id='mClose' aria-label='Back to the level'>✕</button></div>"+
-    "<div class='pbody'>"+secBtn+
-      /* NO NAVIGATION ROW AT ALL. HOME went to the footer with every other
-         panel's way up, and LEVELS went with it on the owner's call: this is
-         the settings panel, and LEVELS is on the home screen, on the HUD's
-         way out of a level, and on the win card. A fourth copy at the top of
-         a settings sheet is a fourth thing to scroll past. */
+    "<div class='pbody'>"+worldsBtn+secBtn+
+      /* WORLDS first, then the shelf you are standing on. Both are
+         navigation and both are `.psec`; the general door is above the
+         particular one, because the particular one is only there on a
+         campaign level and a row that comes and goes must not be the one
+         that moves the other. */
       "<div class='pcard'><h4>Sound &amp; light</h4>"+
         "<div class='srow'><label>Volume</label>"+
           "<input type='range' id='mVol' min='0' max='100' value='"+vol+"'>"+
@@ -738,6 +761,10 @@ function menuPanel(){
     flash("settings reset");menuPanel();
   });
   bind("mHome",function(){hidePanel();homeShow();});
+  /* Out through the chooser, which is what WORLDS means everywhere else in
+     the game: one world per visit, and the way to another is out and back
+     in (`sectionPicker()`, not the map). */
+  bind("mWorlds",function(){sectionPicker();});
   /* Straight onto the trail, not out through the chooser: the point of the
      button is that it knows which shelf you are on. */
   if(secN>=0)bind("mSec",function(){levelPicker(secN);});

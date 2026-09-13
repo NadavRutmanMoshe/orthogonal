@@ -63,6 +63,12 @@
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .psec .psecgo{flex:none;font-style:normal;text-decoration:none;
     font-size:19px;line-height:1;opacity:.6}
+  /* WORLDS wears the chooser's own cyan rather than a section's colour - the
+     same `#4ec8e0` the win card's cap and the home screen's LEVELS wear -
+     because it does not lead to one shelf, it leads to the list of them. */
+  .pworlds{--sec:#4ec8e0}
+  .pworlds .secem{fill:none;stroke:none}
+  .pworlds .secem rect{fill:var(--sec)}
 
   .psub{display:flex;flex-direction:column;gap:6px;margin-top:2px}
   .psub button{height:38px;font-size:12px;letter-spacing:.1em;color:var(--fg-dim);
