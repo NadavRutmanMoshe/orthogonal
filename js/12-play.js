@@ -2754,12 +2754,15 @@ function starsOffer(){
    offer is a decision, and a decision wants the board behind it turned
    down. Every other panel is unaffected, because the class is what carries
    it and only this function sets it. */
-function offerShell(kick,title,lead,acts,note,tone){
+/* `actClass` is a modifier on the action row and there is exactly one so far:
+   `pair`, which turns the stacked column into the win card's side-by-side
+   row. See struggleOffer(). */
+function offerShell(kick,title,lead,acts,note,tone,actClass){
   // An empty note draws no rule: a card with two lines in it should be two
   // lines tall, not two lines and a hairline under nothing.
   showPanel("<div class='okick'>"+kick+"</div><h3>"+title+"</h3>"+
             "<div class='olead'>"+lead+"</div>"+
-            "<div class='ma'>"+acts+"</div>"+
+            "<div class='ma"+(actClass?" "+actClass:"")+"'>"+acts+"</div>"+
             (note?"<div class='mn'>"+note+"</div>":""),"offer");
   $("panel").style.setProperty("--ok",tone||"var(--goal)");
 }
@@ -2774,17 +2777,24 @@ function struggleOffer(){
   var n=fails[levelKey]||1;
   var beat=n===1?"beaten you once":"beaten you "+n+" times";
 
-  /* TRY AGAIN IS THE GREEN ONE AND IT IS FIRST. The board behind this card
-     is already back at the start - die() resets before it offers - so this
-     button does nothing but close, and that is the point: the card is not
-     standing between the player and another attempt, it is standing beside
-     it. Green is the goal's colour and it is what every confirm in the game
-     wears.
+  /* IT IS THE WIN CARD'S ROW, on the owner's call, and that is the whole
+     design of this card: losing a fight and finishing a level short of three
+     stars are the same moment - the run is over, and there are two ways on.
+     So they are drawn as one thing. Side by side, TRY AGAIN on the left
+     wearing the win card's own circular arrow, and where NEXT LEVEL stands
+     on that card the other door stands here.
 
-     THE SKIP IS THE BLUE ONE. Blue is the ad button's colour and nothing
-     else's - it is the one thing on a card that has to mean "this plays a
-     video" - and with a green button above it the shape of the decision is
-     readable before a word of it is.
+     TRY AGAIN IS GREEN. On the win card it is the quiet grey one, because
+     NEXT LEVEL is the thing you came for; here it is the thing you came for,
+     so it takes the goal's colour and `.go` gives it to it. It does nothing
+     but close - die() has already put the board back - which is the point:
+     the card is not standing between the player and another attempt, it is
+     standing beside it.
+
+     THE SKIP IS TWO LINES: what it does, then what it costs. Blue is the ad
+     button's colour and nothing else's - it is the one thing on a card that
+     has to mean "this plays a video" - and the video mark is on it for the
+     same reason.
 
      ONE AD, NOT THREE (owner's call). Three was priced against the section
      unlock on the map, which opens a whole shelf and is still three. This
@@ -2794,27 +2804,23 @@ function struggleOffer(){
      collecting anything.
 
      NO LIMITS SKIPS WITHOUT THE VIDEO. Same call, same rule underneath, but
-     the price line comes off and with it the ad screen - so it drops to the
-     quiet outline rather than borrowing the green, which belongs to TRY
-     AGAIN on this card. */
+     the second line comes off and with it the ad screen - and the button
+     drops to the quiet outline rather than borrowing the green, which
+     belongs to TRY AGAIN on this card. */
   offerShell(kind+" \u00b7 OUT OF LIVES",esc(L.name),
     "All three hearts gone. The board is back at the start - this one has "+
     beat+".",
-    "<button class='go' id='sgNo'>TRY AGAIN</button>"+
-    /* The owner's own wording, off the pop-ups sheet. "1 AD" rather than "AN
-       AD" because the number is the thing that changed and a numeral says it
-       at a glance; the label keeps naming the fight because that is what was
-       asked for. It is long enough to wrap on a narrow phone at the ad
-       button's ordinary tracking, so `.panel.offer .ma .ad` tightens its type
-       instead of the label losing words - see css/85-map.css. */
+    "<button class='go oagain' id='sgNo'>"+retryIcon()+
+      "<span>TRY AGAIN</span></button>"+
     (noLimits()
-      ? "<button class='qt' id='sgAd'>SKIP THIS "+kind+"</button>"
-      : "<button class='ad' id='sgAd'>"+adIcon()+"SKIP THIS "+kind+
-        " \u00b7 WATCH 1 AD</button>"),
+      ? "<button class='qt oskip' id='sgAd'>"+
+        "<span class='two'><b>SKIP</b></span></button>"
+      : "<button class='ad oskip' id='sgAd'>"+adIcon()+
+        "<span class='two'><b>SKIP</b><i>WATCH AN AD</i></span></button>"),
     // The rule holds either way; what changes is what bought the skip.
     noLimits()?"A skip awards <b>no stars</b>. Nothing sold in this game does."
              :"A skip awards <b>no stars</b>. Ads buy progress, never score.",
-    B?"var(--vio)":"var(--amb)");
+    B?"var(--vio)":"var(--amb)","pair");
   bind("sgNo",function(){hidePanel();});
   /* Not gated on an ad here, for the same reason grantSkip() is not: there
      is no provider yet, and a button that silently did nothing would be

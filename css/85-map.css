@@ -547,6 +547,43 @@ L96 14 L0 14 Z' fill='%23fff'/></svg>");
      carries today. */
   .panel.offer .ma .ad{font-size:clamp(10.5px,3.2vw,12.5px);
     letter-spacing:.09em;gap:7px}
+  /* THE OUT-OF-LIVES CARD WEARS THE WIN CARD'S ROW (owner's call).
+
+     Losing a fight and finishing a level short of three stars are the same
+     moment - the run is over and there are two ways on - so they are drawn
+     as one thing: two caps side by side, TRY AGAIN on the left with the win
+     card's own circular arrow, and the other door where NEXT LEVEL stands.
+     `.ma` is a column everywhere else and stays one; only this row opts in.
+
+     They WRAP rather than squeeze: `flex:1 1 42%` with a floor, so on a
+     phone narrow enough that two 132px caps and the gap will not fit, the
+     skip drops under TRY AGAIN in the order it already reads in - exactly
+     what `.wonrow` does on the win card. */
+  .panel.offer .ma.pair{flex-direction:row;flex-wrap:wrap;
+    justify-content:center;gap:8px}
+  .panel.offer .ma.pair button{flex:1 1 42%;min-width:132px;
+    min-height:52px;padding:9px 12px;gap:8px}
+  /* TRY AGAIN takes the goal's green from `.go` - on the win card it is the
+     quiet grey one because NEXT LEVEL is what you came for; here it is what
+     you came for. The glyph is drawn in the same hairline #bRetry uses, so
+     the two buttons are the same object on both cards. */
+  .panel.offer .ma .oai{width:15px;height:15px;flex:none;fill:none;
+    stroke:currentColor;stroke-width:1.8;stroke-linecap:round;
+    stroke-linejoin:round}
+  /* THE SKIP IS TWO LINES: what it does over what it costs. Stacked rather
+     than run together, because "SKIP THIS BOSS \u00b7 WATCH 1 AD" was one long
+     line that had to have its type shrunk to survive a narrow phone - and
+     the two halves are different kinds of fact. The second line is missing
+     outright when a pass has paid for it, which is why the stack is a
+     container and not a ::after. */
+  .panel.offer .ma .two{display:flex;flex-direction:column;gap:2px;
+    align-items:center;justify-content:center;line-height:1.15}
+  .panel.offer .ma .two b{font-weight:700;font-size:12.5px;letter-spacing:.14em}
+  .panel.offer .ma .two i{font-style:normal;font-size:9.5px;
+    letter-spacing:.1em;opacity:.78}
+  /* Undoes the clamp that squeezed the one-line label: the stack has room
+     now, so the words are set at the size the rest of the card is. */
+  .panel.offer .ma.pair .ad{font-size:12.5px;letter-spacing:.13em}
   /* The note is a footnote, so it sits below a hairline rather than floating
      under the buttons at the same weight as the sentence above them. */
   .panel.offer .mn{margin-top:14px;padding-top:11px;font-size:11px;

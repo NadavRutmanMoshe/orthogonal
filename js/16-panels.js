@@ -444,6 +444,15 @@ function penIcon(){
     "<path d='M3.4 17.3 14.9 5.8l3.3 3.3L6.7 20.6l-4 .7Zm13.1-13 1.7-1.7a1.4 "+
     "1.4 0 0 1 2 0l1.3 1.3a1.4 1.4 0 0 1 0 2l-1.7 1.7Z'/></svg>";
 }
+/* The win card's TRY AGAIN glyph, so the out-of-lives card can wear the same
+   one. The paths are #bRetry's, from index.html - a three-quarter circle and
+   the arrowhead that closes it. Duplicated rather than shared because that
+   one is static markup in the page and this one is built into a string; if a
+   third caller ever appears, move #bRetry onto this. */
+function retryIcon(){
+  return "<svg class='oai' viewBox='0 0 24 24' aria-hidden='true'>"+
+    "<path d='M20 12a8 8 0 1 1-2.6-5.9'/><path d='M20 4v4.5h-4.5'/></svg>";
+}
 function playIcon(){
   return "<svg class='mli' viewBox='0 0 24 24' aria-hidden='true'>"+
     "<path d='M7.4 4.6 19 11.3a.8.8 0 0 1 0 1.4L7.4 19.4a.8.8 0 0 1-1.2-.7V5.3"+
