@@ -1781,8 +1781,44 @@ function trialHurt(){
 // is answered per frame by the render loop rather than by foldPeril().
 function trialFoldPeril(){
   if(!TR||flat||dying||app!=="play")return false;
+  /* NOT WHILE IT IS DOWN. Once the slice has landed it cannot claim this
+     fold - trialFoldSpend() sees to that - so lighting the button through
+     the whole of the strike would be warning about a death that can no
+     longer happen, which is the half of the old bug the player could see.
+     The cue is on for the charge and off the instant it hits. */
+  if(TR.live(trialMs))return false;
   var sw=TR.beatAt(trialMs);
   return TR.hits(sw,view,"2",R.uOf(view,player.x,player.z),player.y,0);
+}
+/* A STRIKE THAT HAS ALREADY LANDED DOES NOT GET THE FOLD AS WELL.
+
+   Reported as: the spikes have hit the floor, you press GO 2D, and you lose
+   a life - "the window of death is bigger than the animation window". Both
+   halves of that are true and they are the same fact. `live()` is the last
+   `fire` milliseconds of a beat, and for all of them the slice is lethal;
+   the block, meanwhile, snaps to the floor on the first of those frames and
+   sits there. So the falling stopped and the killing did not, and the way
+   that showed up was through the fold - because folding into a slice down
+   the view axis is lethal EVERYWHERE, so a strike that landed harmlessly
+   across the board took you anyway the moment you changed dimension.
+
+   Standing in it when it lands still costs a life: that is the strike, and
+   it is drawn. What is refused is the second bite. The beat is marked spent
+   the instant either fold commits, exactly as trialFrame() marks it when it
+   actually hits somebody, so it cannot come back for a player who has
+   changed dimension after it was over.
+
+   What it turns the beat into is a rhythm rather than a cliff: charge, hit,
+   and then a window as long as the strike in which folding is free. That is
+   the shape a player can learn, and it is the one the drawing was already
+   promising.
+
+   Called from both folds, so it covers coming back as well: flat and out of
+   the slice, the beat lands, and standing up into its row is the same
+   already-spent strike from the other side. */
+function trialFoldSpend(){
+  if(!TR||!TR.live(trialMs))return;
+  trialBeat=TR.beatNo(trialMs);
 }
 
 function liveCrates(){
@@ -2105,6 +2141,7 @@ function doFlatten(){
      something in the volume - afterwards there is only a silhouette. */
   if(typeof markWaterTrace==="function")markWaterTrace();
   flat=true;flatTarget=1;SFX.fold();foldJolt(true);
+  trialFoldSpend();       // an already-landed strike does not also claim this
   /* The water spilling out of the plane. Only on a level that has any, so
      it is a fact about this world rather than a flourish on every fold -
      and layered over fold() rather than replacing it, because the fold is
@@ -2148,6 +2185,7 @@ function doUnflatten(){
   player.x=b.x;player.z=b.z;player.y=flatPos.y;
   trailHere();
   flat=false;flatTarget=0;SFX.unfold();foldJolt(false);
+  trialFoldSpend();       // and it does not claim the way back either
   /* RULE 5, SHOWN, and the two halves have different triggers on purpose.
 
      THE MARK on the block itself starts on every landing: "where did I come
