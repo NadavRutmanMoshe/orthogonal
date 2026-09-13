@@ -13,7 +13,11 @@
 const fs=require("fs"), vm=require("vm"), path=require("path");
 const JS=path.join(__dirname,"..","js");
 const ctx=vm.createContext({console,Set,Map,Math,JSON});
-["01-coords.js","02-levels.js","03-rules.js","04-solver.js"].forEach(f=>{
+/* 23-guide.js is loaded for GUIDE_LINES alone. It only declares - every
+ * function in it is `typeof`-guarded and none of them runs here - so it costs
+ * nothing to have, and without it a rename could silently mute the neighbour
+ * on a board he is still standing on. */
+["01-coords.js","02-levels.js","03-rules.js","04-solver.js","23-guide.js"].forEach(f=>{
   vm.runInContext(fs.readFileSync(path.join(JS,f),"utf8"),ctx,{filename:f});
 });
 const {LEVELS,solve,makeRules,resolveStep,AX,bossSafety,bossArena,trialSafety,
@@ -89,6 +93,38 @@ function checkRenames(){
   return fails.length?1:0;
 }
 
+/* THE NEIGHBOUR'S LINES ARE KEYED BY LEVEL NAME (js/23-guide.js), which makes
+ * them survive an insertion and not a rename - so the rename is what gets
+ * asserted. Two ways the table can rot, and both are silent in the game:
+ *
+ *   - a key that is not a level any more. He falls back to a general tip,
+ *     which looks fine and is the level's own lesson gone missing.
+ *   - a key that IS a level but one he never stands on (a boss, a trial, a
+ *     teaching level, or anything outside I · NATURE). The line is written
+ *     and can never be said.
+ */
+function checkGuideLines(){
+  const LINES=ctx.GUIDE_LINES;
+  if(!LINES)return 0;
+  const fails=[], by={};
+  LEVELS.forEach((l,i)=>{by[l.name]=i;});
+  const SEC=ctx.SECTIONS;
+  Object.keys(LINES).forEach(k=>{
+    const i=by[k];
+    if(i===undefined){fails.push('"'+k+'" is not a level');return;}
+    const lv=LEVELS[i];
+    // The same three tests guideHere() applies, minus the ones about state.
+    const sec=SEC.filter(s=>s.at<=i).length-1;
+    if(lv.boss||lv.trial||lv.tutorial||sec!==1)
+      fails.push('"'+k+'" is a level he never stands on');
+  });
+  if(fails.length){
+    console.log("  GUIDE    "+fails.length+" stale line(s):");
+    fails.forEach(f=>console.log("    "+f));
+  }
+  return fails.length?1:0;
+}
+
 const only=process.argv[2];
 let bad=0, checked=0;
 LEVELS.forEach((lv,i)=>{
@@ -100,7 +136,9 @@ LEVELS.forEach((lv,i)=>{
        checkable is the stage: that it can reach you, that there are enough
        crates you can actually swing, and that no sweep ever corners you. */
     const a=bossArena(lv), safe=bossSafety(lv);
-    const why=(a.fail||[]).concat(safe.ok?[]:[safe.trapped.length+" cells cornered by a sweep"]);
+    const why=(a.fail||[]).concat(safe.ok?[]:
+      [].concat(safe.trapped.length?[safe.trapped.length+" cells cornered by a sweep"]:[],
+                safe.born?["you respawn inside the first beat"]:[]));
     if(why.length){
       bad++;
       console.log("  ARENA ["+i+"] "+lv.name+"  ->  "+why.join("; "));
@@ -162,6 +200,7 @@ LEVELS.forEach((lv,i)=>{
 if(only===undefined){
   bad+=checkRenames();
   bad+=checkSections();
+  bad+=checkGuideLines();
   console.log("");
   bad+=require("./bosssim.js").run();
 }

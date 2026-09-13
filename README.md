@@ -1,4 +1,4 @@
-# Orthogonal
+# I'm Just A Cube
 
 [![verify](https://github.com/NadavRutmanMoshe/orthogonal/actions/workflows/verify.yml/badge.svg)](https://github.com/NadavRutmanMoshe/orthogonal/actions/workflows/verify.yml)
 

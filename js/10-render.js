@@ -1,5 +1,5 @@
 "use strict";
-/* Orthogonal — 10-render.js
+/* I'm Just A Cube - 10-render.js
    three.js scene, meshes, depth shading, the animation loop.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
@@ -14,6 +14,11 @@ var trialSlab,trialEdge;
 // How high above its square a slice's block starts the beat.
 var FALL_H=4.2;
 var colPeril=new THREE.Color(0x8f3b52);
+/* The colour the winner of a silhouette column is lifted toward while the
+   fold runs - the goal's own green, which is what "this is the one" is said
+   in everywhere else in this game (the landing rings, the tutorial's landing
+   marker, the cued button). See foldHiSet. */
+var colFoldHi=new THREE.Color(0x6ff0d2);
 var perilSet=null,perilCleanup=[],perilPulse=0;
 /* The tutorial's landing marker, as the block loop sees it: cell key -> 1 for
    the block that will catch you, 2 for one that lost the tie. Built by
@@ -58,7 +63,7 @@ var repFade=0, repFollow=new THREE.Vector3();
 var viewSize=10,viewSizeT=10;
 
 /* ============================================================
-   THE FOLLOW CAMERA — an experiment, and easy to take out
+   THE FOLLOW CAMERA - an experiment, and easy to take out
 
    The camera has always been centred on the *arena*: it frames the whole
    level and never moves while you play. That is clean, and it costs the one
@@ -782,6 +787,13 @@ function playerChar(t){
   var base=findBy(SKIN_COLORS,wardrobe.color).hex;
   playerMesh.traverse(function(c){
     if(!c.isMesh||!c.material||!c.material.color)return;
+    /* EXCEPT THE PARTS THAT ARE NOT THE PIECE'S COLOUR. This writes the
+       equipped hex into every mesh in the group, which is right for a body
+       and wrong for anything printed on one - the Domino's pips are ink
+       (see PIP_DARK in js/09-wardrobe.js), and one burn would have repainted
+       them in the body's colour and left them there, because playerCharT
+       latches and the return to 0 writes `base` just the same. */
+    if(c.userData.keepColor)return;
     c.material.color.setHex(base).lerp(charCol.setHex(PLAYER_CHAR),t);
   });
 }
@@ -1999,10 +2011,27 @@ function trailClear(){
   trailSet={};
 }
 
+/* A PAINTED CELL WEARS PLAIN STONE, NOT THE SECTION'S SURFACE.
+
+   `L.tint` multiplies a colour into the block's texture, and for four
+   versions of the opening's house that texture was the meadow's grass - so
+   every course of wall carried a bright green lid, and a wall of green-lidded
+   blocks five high is a terraced hill whatever colour its sides are. The
+   tint could darken the sides and could do nothing about the lids, because a
+   multiply cannot remove a band the texture draws.
+
+   So a cell that is in the tint table is built on `TEX.stone` - the plain,
+   near-white grain the prologue wears - and the tint lands on that: warm over
+   white is plaster, red over white is tile. Nothing else changes: the tint
+   still rides material.color in the block loop, still takes the depth fade
+   and the settle toward ink. It is a texture choice at build time, which is
+   why the mesh remembers it (`userData.painted`) and syncMeshes rebuilds a
+   cell whose painted-ness changed, exactly as it does for a changed kind. */
+function paintedCell(k){return !!(tintSet&&tintSet[k]!==undefined);}
 function addMesh(x,y,z,kind){
   var k=K(x,y,z);
   if(meshes[k])return;
-  var m=makeBlockMesh(kind);
+  var m=makeBlockMesh(kind,paintedCell(k));
   m.position.set(x,y,z);
   m.userData.base=[x,y,z];
   scene.add(m);meshes[k]=m;
@@ -2013,7 +2042,7 @@ function addMesh(x,y,z,kind){
    is a function rather than the body of addMesh(). The chips used to be
    hand-drawn SVG approximations of these, and an approximation of a thing the
    player is looking at on the same screen is just a wrong picture. */
-function makeBlockMesh(kind){
+function makeBlockMesh(kind,painted){
   var glass=kind===1, anchor=kind===2, spike=kind===4;
   var mat=glass
     /* Water reads through a warm section, which is where it is taught, so it
@@ -2023,7 +2052,7 @@ function makeBlockMesh(kind){
     ? new THREE.MeshLambertMaterial({color:colGlass.clone(),transparent:true,
         opacity:.78,vertexColors:true,map:TEX.water})
     : new THREE.MeshLambertMaterial({vertexColors:true,
-        map:spike?TEX.lava:(anchor?TEX.stone:stoneSurface()),
+        map:spike?TEX.lava:((anchor||painted)?TEX.stone:stoneSurface()),
         color:(anchor?colAnchor:spike?colSpike:colBlock).clone()});
   /* THE FORM IS THE LABEL. Stone keeps the case-and-rim; water and fire are
      full cells with a surface plate, so they are told apart in silhouette
@@ -2032,6 +2061,7 @@ function makeBlockMesh(kind){
   m.userData.glass=glass;
   m.userData.anchor=anchor;
   m.userData.kind=kind||0;
+  m.userData.painted=!!painted;
   var edge=new THREE.LineSegments((glass||spike)?liquidEdgeGeo:edgeGeo,
     new THREE.LineBasicMaterial({
       color:glass?0xbdeaf7:(anchor?0xffd98a:(spike?0xff8a72:0x0f1424)),
@@ -2084,7 +2114,7 @@ function makeBlockMesh(kind){
   return m;
 }
 /* ============================================================
-   PIECE PORTRAITS — the real mesh, photographed small
+   PIECE PORTRAITS - the real mesh, photographed small
 
    The editor's tool chips are pictures of the pieces they place. They were
    drawn by hand in SVG first, twice: once off the legend's flat swatch
@@ -2344,6 +2374,12 @@ function buildDynamic(){
     var m=makeCrateMesh();
     scene.add(m);crateMeshes.push(m);
     m.position.set(gCrates[i][0],gCrates[i][1],gCrates[i][2]);
+    // The cell it stands in, the way a key mesh carries its own: the editor
+    // raycasts against these too, and a hit has to name a square (hitCell(),
+    // js/14-editor.js). In play the animation loop moves the mesh and this
+    // goes stale - which is why nothing but the editor reads it, and why the
+    // editor rebuilds these on every edit (initDynamic).
+    m.userData.cell=gCrates[i];
   }
   var keys=(L.keys||[]);
   for(var j=0;j<keys.length;j++){
@@ -2368,9 +2404,11 @@ function syncMeshes(){
     var b=L.blocks[i],k=K(b[0],b[1],b[2]);
     if(isCrate(b))continue;                  // crates are drawn separately
     want[k]=b;
-    // a block that changed material has to be rebuilt, not just kept
+    // a block that changed material has to be rebuilt, not just kept -
+    // its kind, or whether it is painted (see paintedCell above addMesh)
     var kind=b[3]||0;
-    if(meshes[k]&&meshes[k].userData.kind!==kind){
+    if(meshes[k]&&(meshes[k].userData.kind!==kind||
+                   !!meshes[k].userData.painted!==paintedCell(k))){
       scene.remove(meshes[k]);meshes[k].material.dispose();delete meshes[k];
     }
     addMesh(b[0],b[1],b[2],kind);
@@ -2386,11 +2424,36 @@ function syncMeshes(){
   recomputeBounds();
 }
 var arenaLo=[0,0,0], arenaHi=[0,0,0];
+// The camera's position with neither shake nor fold-slam in it; written every
+// frame by animate(), read by anything that must not ride them.
+var camSteady=new THREE.Vector3();
 function recomputeBounds(){
   if(!L.blocks.length){centerT.set(0,0,0);viewSizeT=7;
     arenaLo=[0,0,0];arenaHi=[0,0,0];return;}
   var a=[1e9,1e9,1e9],b=[-1e9,-1e9,-1e9];
   var pts=L.blocks.concat(L.keys||[]);
+  /* AND THE NEIGHBOUR'S OWN SQUARE, if he has one. He stands on a plinth
+     two clear squares off the side of the board (js/23-guide.js) - which is
+     outside `L.blocks` by construction, because he must never be part of the
+     level - so without this the camera frames the board and leaves him past
+     the edge of the screen. It is the one place the framing knows about him,
+     and it costs the board a little size on the levels he is on. */
+  if(typeof guidePoint==="function"){
+    var gp=guidePoint();
+    if(gp)pts=pts.concat([gp]);
+  }
+  /* AND A CUTSCENE MAY FRAME LESS THAN THE BOARD. The fit below takes the
+     whole arena, which is right for a puzzle - every block is a move - and
+     wrong for a scene, where a fourteen-wide street fitted to a phone leaves
+     the family a quarter of the screen high. storyFrameBox() (js/22-story.js,
+     loaded after this file, hence the guard) hands back a [lo,hi] box when
+     the running beat wants one, and this function fits THAT instead. The
+     render loop's own lerp toward centerT and viewSizeT carries the change,
+     so a beat that reframes reads as a camera move rather than a cut. */
+  if(typeof storyFrameBox==="function"){
+    var fb=storyFrameBox();
+    if(fb)pts=[fb[0],fb[1]];
+  }
   for(var i=0;i<pts.length;i++)for(var j=0;j<3;j++){
     a[j]=Math.min(a[j],pts[i][j]);b[j]=Math.max(b[j],pts[i][j]);
   }
@@ -2417,6 +2480,10 @@ function recomputeBounds(){
    requirement is multiplied by the aspect because in portrait the frustum's
    half-height is vs/a, so a vertical need of H means vs >= H*a. */
 var arenaSW=8, arenaSH=8;
+/* The margin LARGE is allowed to squeeze the ordinary one down to, in cells.
+   Not zero: a board whose outer column is flush with the edge of the screen
+   reads as cropped even when every block is on it. */
+var PAD_TIGHT=.25;
 function fitViewSize(){
   var w=window.innerWidth||430,h=window.innerHeight||760,a=w/h;
   /* Margins in cells. The top always carries the level name and its hint;
@@ -2424,14 +2491,54 @@ function fitViewSize(){
      default layout is now GESTURES with no bar at all - which is most of
      why there is room to do this. */
   var padW=1.0, padH=barIsUp()?3.0:1.7;
+  /* MENU > BOARD SIZE. Guarded because 11-sound.js loads after this file; by
+     the time this is first called it is there, and the guard is the same one
+     barIsUp() takes above.
+
+     AND IT IS PINNED WHILE A CUTSCENE RUNS, because a scene is shot, not
+     surveyed. The beats hand `stFrame()` two corners of the board and this
+     function frames THAT - so the sizes would re-frame a composed shot, and
+     they do it in the direction that hurts: the opening's first beat is the
+     house with sky over it and the treeline under it, and LARGE pushes in
+     until the horizon is off the bottom. The player asked for a bigger BOARD,
+     which is a thing they have to read and act on. A scene is a thing they
+     watch, and its framing is the author's. */
+  var k=(typeof boardScale==="function")?boardScale():1;
+  if(typeof storyOn==="function"&&storyOn())k=1;
   /* updateFrustum sets half-width = vs and half-height = vs/a in PORTRAIT,
      and half-width = vs*a, half-height = vs in LANDSCAPE - so the two
      requirements convert into vs differently in each. Getting this backwards
      is silent: it only shows as a badly framed level on one orientation. */
-  var needW,needH;
-  if(a>=1){ needW=(arenaSW/2+padW)/a; needH=arenaSH/2+padH; }
-  else    { needW=arenaSW/2+padW;     needH=(arenaSH/2+padH)*a; }
-  return Math.max(3.2,needW,needH);
+  var needW,needH,tightW;
+  if(a>=1){ needW=(arenaSW/2+padW)/a; needH=arenaSH/2+padH;
+            tightW=(arenaSW/2+PAD_TIGHT)/a; }
+  else    { needW=arenaSW/2+padW;     needH=(arenaSH/2+padH)*a;
+            tightW=arenaSW/2+PAD_TIGHT; }
+  /* THE SIZE IS WHAT IS WANTED; THE TWO BELOW ARE WHAT IS POSSIBLE.
+
+     `want` is the ordinary fit scaled - SMALL pulls back, LARGE pushes in -
+     and on its own it CROPS, which is worth writing down because the first
+     version of this did exactly that and it is not obvious from the
+     arithmetic. There is no "spare" room in a fit that already touches the
+     edges: BOSS IV's arena is 12 cells across inside a 14-cell frustum, so
+     any multiplier under about .86 puts its outer columns off the screen,
+     and a fight you cannot see the edge of is not a legibility setting.
+
+     So the answer is clamped up by two things that are not negotiable. The
+     whole arena has to be on screen with a hairline of margin (`tightW`),
+     which is what LARGE actually converges to on the biggest boards - they
+     are already nearly screen-filling, so the most LARGE can win there is
+     the margin. And the VERTICAL requirement is passed through untouched
+     (`needH`): those margins are not slack either, they are the level name
+     and its hint at the top and the control bar at the bottom, and eating
+     them is how a board ends up under the d-pad.
+
+     The floor stays 3.2 and is scaled with everything else. It stops a
+     four-block tutorial board filling the screen; unscaled it would also
+     stop LARGE doing anything at all on the small boards, which are the ones
+     a player who asked for LARGE is most likely to be standing on. */
+  var want=Math.max(3.2,needW,needH)*k;
+  return Math.max(want,tightW,needH);
 }
 /* The pack.
 
@@ -2446,19 +2553,256 @@ function fitViewSize(){
    you are one button from will crush it. The player's own peril highlight
    uses the same red the blocks do, so the board reads as one sentence: green
    is what you do to them, red is what the world does to you. */
+/* A HUNTER IS THE OFFICER THAT CAME TO THE DOOR.
+
+   It was an octahedron - a spiky, abstract thing that did not belong to
+   anybody. It is now the same near-black cube with the same red rim that the
+   police wear in the opening cutscene, at the same values (`ST_COP_BODY`
+   and `ST_COP_RIM` in js/22-story.js are the pair; these are the numbers,
+   duplicated deliberately rather than reached for across a file that loads
+   after this one). Nothing says the pack and the officers are the same
+   thing; the shape says it, every fight, from the first one.
+
+   AND IT DOES NOT TURN. The octahedron span - slowly while hunting, hard
+   when doomed - and the cube inherited it for one build before it went on
+   the owner's call: a thing that is now recognisably a PERSON must not
+   rotate on the spot. It is squared to the camera like the player, so it is
+   always seen face-on.
+
+   WHAT THE SPIN WAS QUIETLY DOING, THOUGH, WAS MAKING THEM FINDABLE. Taking
+   it away left a near-black cube with a hairline rim on a dark board, and
+   that was reported straight back. Three things replace it and none of them
+   is motion of the piece: the body is lifted off black to something that
+   actually has a value, the rim is nearly solid instead of half, and there
+   is an AURA - a slightly larger box of the hunter's own colour at low
+   opacity, depth-write off - putting a soft halo round it. The only movement
+   left is the halo breathing, which is a scale and not a turn.
+
+   The parts keep their names. `core` sits inside an opaque shell and is
+   never seen - it was never seen on the octahedron either - and `cage` is
+   the rim, which is the piece that carries the state: red normally, the
+   goal's green when the fold would kill it. */
 function huntMesh(){
   var g=new THREE.Group();
-  var shell=new THREE.Mesh(new THREE.OctahedronGeometry(.46),
-    new THREE.MeshLambertMaterial({color:0x24141c}));
-  var core=new THREE.Mesh(new THREE.OctahedronGeometry(.22),
+  /* NOT PURE BLACK. The officers read in the opening because they stand on a
+     bright meadow; an arena is basalt or night grass, and 0x241820 on that
+     is a hole in the board rather than a thing on it. Lifted far enough to
+     have a value and kept cold enough to still read as black. */
+  var shell=new THREE.Mesh(new THREE.BoxGeometry(.72,.72,.72),
+    new THREE.MeshLambertMaterial({color:0x46323e}));
+  var core=new THREE.Mesh(new THREE.OctahedronGeometry(.2),
     new THREE.MeshBasicMaterial({color:0xff4d5e}));
+  /* THE AURA IS WHAT REPLACED THE SPIN. A dark cube with a one-pixel rim is
+     hard to find on a dark board, and the spin was doing that job by moving.
+     A slightly larger box of its own colour at low opacity, drawn without
+     writing depth, puts a soft halo round it instead - so it is found by
+     CONTRAST rather than by motion, which is the right way for a thing the
+     player has to locate in a second. It takes the same colour the cage
+     does, so doom turns the whole piece green rather than only its wire. */
+  var aura=new THREE.Mesh(new THREE.BoxGeometry(.94,.94,.94),
+    new THREE.MeshBasicMaterial({color:0xff4d5e,transparent:true,opacity:.16,
+      depthWrite:false}));
+  aura.renderOrder=-1;
   var cage=new THREE.LineSegments(
-    new THREE.EdgesGeometry(new THREE.OctahedronGeometry(.5)),
-    new THREE.LineBasicMaterial({color:0xff6b7a,transparent:true,opacity:.85}));
-  g.add(shell);g.add(core);g.add(cage);
-  g.userData.core=core;g.userData.cage=cage;
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(.78,.78,.78)),
+    new THREE.LineBasicMaterial({color:0xff6b7a,transparent:true,opacity:.95}));
+  g.add(aura);g.add(shell);g.add(core);g.add(cage);
+  g.userData.core=core;g.userData.cage=cage;g.userData.aura=aura;
   scene.add(g);
   return g;
+}
+/* ============================================================
+   GOING TO ASH - the only death animation in the game
+
+   Until now nothing actually died on screen. A hunter you killed was spliced
+   out of the array and its mesh simply stopped being drawn; the player losing
+   a life was teleported home between two frames. The sting said what had
+   happened and the board never showed it, which is the one thing a kill cam
+   exists to be about.
+
+   So a piece that dies comes apart: it breaks into a cloud of specks that
+   lift, drift and thin out to nothing.
+
+   WHAT MAKES IT READ AS COMING APART RATHER THAN AS AN EXPLOSION is the
+   staggered release. Every speck carries a delay taken from how high up the
+   body it started, so the top of the piece leaves first and the bottom is
+   still solid a third of a second later; until its delay is up a speck sits
+   exactly where it started, which is to say it is still part of the piece.
+   Released all at once this is a firework, and a firework is something that
+   happens TO a thing rather than something the thing does.
+
+   IT IS CUBES IN ONE GEOMETRY, NOT `THREE.Points`. Points were the obvious
+   answer - one vertex per speck, one buffer write, no index - and they do not
+   draw at all in the three.js this game vendors (r128, a trimmed build): a
+   deliberately enormous plain-coloured Points placed on top of a hunter
+   rendered nothing, so the Points path is simply not in the bundle. Do not
+   reach for it again without testing it first.
+
+   What is here instead is the thing this game is already made of: little
+   cubes. One BufferGeometry holds all of them, 8 vertices and 36 indices
+   each, and a burst moves whole cubes by writing their 8 vertices - so it is
+   still one mesh and one draw call, which is what matters at the most
+   expensive instant the game has (a hit, a shake, a slow-mo and a kill cam
+   winding up, with up to four clouds overlapping on a double kill). It is
+   also the better picture: a world of cubes should come apart into cubes.
+
+   The colour is per-vertex, each speck mixed some way from the piece's own
+   colour toward a pale ash, so the cloud reads as a thing turning to dust
+   rather than as coloured confetti. Opacity is per-cloud rather than per
+   speck - the stagger already supplies the texture that would have bought. */
+var ashPool=[], ASH_N=110, ASH_MS=1400, ASH_SPREAD=.9, ASH_SIZE=.05;
+// The eight corners of a unit cube, and the six faces over them. Built once.
+var ASH_CORNER=[[-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],
+                [-1,-1, 1],[1,-1, 1],[1,1, 1],[-1,1, 1]];
+var ASH_FACE=[4,5,6, 4,6,7,  1,0,3, 1,3,2,  5,1,2, 5,2,6,
+              0,4,7, 0,7,3,  7,6,2, 7,2,3,  0,1,5, 0,5,4];
+function ashMake(){
+  var g=new THREE.BufferGeometry(), V=ASH_N*8;
+  g.setAttribute("position",new THREE.BufferAttribute(new Float32Array(V*3),3));
+  g.setAttribute("color",new THREE.BufferAttribute(new Float32Array(V*3),3));
+  var idx=new Uint16Array(ASH_N*36);
+  for(var i=0;i<ASH_N;i++)
+    for(var f=0;f<36;f++)idx[i*36+f]=i*8+ASH_FACE[f];
+  g.setIndex(new THREE.BufferAttribute(idx,1));
+  var p=new THREE.Mesh(g,new THREE.MeshBasicMaterial({
+    vertexColors:true,transparent:true,opacity:1,depthWrite:false,
+    side:THREE.DoubleSide}));
+  /* Never culled: the bounding sphere is computed once from an empty buffer
+     and the cloud then travels outside it, so three.js would drop the whole
+     cloud mid-burst on some camera angles. */
+  p.frustumCulled=false;p.renderOrder=880;p.visible=false;
+  p.userData={ms:0,live:false,
+    st:new Float32Array(ASH_N*3),vel:new Float32Array(ASH_N*3),
+    dly:new Float32Array(ASH_N)};
+  scene.add(p);ashPool.push(p);
+  return p;
+}
+var ASH_COL=new THREE.Color(0xd8d2c6);
+// Write one speck's cube: its 8 corners around (x,y,z).
+function ashPut(pos,i,x,y,z){
+  for(var v=0;v<8;v++){
+    var o=(i*8+v)*3, c=ASH_CORNER[v];
+    pos[o]=x+c[0]*ASH_SIZE;
+    pos[o+1]=y+c[1]*ASH_SIZE;
+    pos[o+2]=z+c[2]*ASH_SIZE;
+  }
+}
+function ashBurst(x,y,z,hex){
+  if(typeof THREE==="undefined"||!scene)return;
+  var p=null,i,v;
+  for(i=0;i<ashPool.length;i++)if(!ashPool[i].userData.live){p=ashPool[i];break;}
+  // Four at once is a double kill plus the player; past that the oldest is
+  // taken over, because a fifth cloud nobody can pick out is not worth a
+  // fifth buffer.
+  if(!p)p=(ashPool.length>=4)?ashPool[0]:ashMake();
+  var u=p.userData, base=new THREE.Color(hex===undefined?0xff4d5e:hex);
+  var pos=p.geometry.attributes.position.array;
+  var col=p.geometry.attributes.color.array;
+  var tmpc=new THREE.Color();
+  for(i=0;i<ASH_N;i++){
+    var ox=(Math.random()-.5)*ASH_SPREAD,
+        oy=(Math.random()-.5)*ASH_SPREAD,
+        oz=(Math.random()-.5)*ASH_SPREAD;
+    u.st[i*3]=x+ox; u.st[i*3+1]=y+oy; u.st[i*3+2]=z+oz;
+    ashPut(pos,i,x+ox,y+oy,z+oz);
+    // Top first. The random factor keeps the edge of the crumble ragged;
+    // a clean sweep down the body reads as a wipe, not as a collapse.
+    u.dly[i]=(.5-oy/ASH_SPREAD)*.34*(.55+Math.random()*.8);
+    // Outward from the middle, and up. The upward bias is what says the
+    // pieces are being taken rather than thrown.
+    var sp=1.35+Math.random()*1.15;
+    u.vel[i*3]=ox*sp+(Math.random()-.5)*.3;
+    u.vel[i*3+1]=.8+Math.random()*1.15;
+    u.vel[i*3+2]=oz*sp+(Math.random()-.5)*.3;
+    tmpc.copy(base).lerp(ASH_COL,Math.random()*.8);
+    for(v=0;v<8;v++){
+      var o=(i*8+v)*3;
+      col[o]=tmpc.r;col[o+1]=tmpc.g;col[o+2]=tmpc.b;
+    }
+  }
+  p.geometry.attributes.position.needsUpdate=true;
+  p.geometry.attributes.color.needsUpdate=true;
+  p.material.opacity=1;
+  u.ms=0;u.live=true;p.visible=true;
+}
+/* The two things that die, in the colours they are drawn in. The renderer
+   owns this rather than the caller: what a piece looks like is its business.
+
+   AND WHERE IT IS DRAWN, WHICH IS NOT WHERE IT IS. `huntMeshes[i].position`
+   eases toward the logical cell (`lerp` .35 a frame in drawBoss), so a hunter
+   that is mid-step is a third of a square behind `h.x/h.z` - and the cloud
+   came off empty air beside it, which is exactly what the first version did.
+   Pass the hunter's index and the ash starts on the thing the player can see;
+   the cell is the fallback, and the only caller without an index is the
+   replay, where the mesh has been re-posed to the recorded square anyway. */
+function ashHunter(x,y,z,idx){
+  var m=(idx!==undefined&&huntMeshes&&huntMeshes[idx]);
+  if(m&&m.visible)ashBurst(m.position.x,m.position.y,m.position.z,0xff4d5e);
+  else ashBurst(x,y,z,0xff4d5e);
+}
+function ashPlayer(x,y,z){
+  var hex=0xd6336c;
+  try{ hex=findBy(SKIN_COLORS,wardrobe.color).hex; }catch(e){}
+  // Same argument as ashHunter: the player's mesh is where the player looks
+  // to be, and on the frame a charge lands it is still arriving.
+  if(playerMesh&&playerMesh.visible)
+    ashBurst(playerMesh.position.x,playerMesh.position.y,playerMesh.position.z,hex);
+  else ashBurst(x,y,z,hex);
+}
+/* Real time, not fight time: a cloud must keep drifting through the slow-mo
+   and through the frozen board a kill cam holds, exactly like the film does. */
+function ashFrame(dt){
+  for(var k=0;k<ashPool.length;k++){
+    var p=ashPool[k],u=p.userData;
+    if(!u.live)continue;
+    u.ms+=dt;
+    var a=u.ms/1000, pos=p.geometry.attributes.position.array;
+    for(var i=0;i<ASH_N;i++){
+      var t=a-u.dly[i];
+      if(t<=0)continue;                    // still part of the body
+      // Drifting, not flying: the quadratic term is drag, so the cloud slows
+      // as it thins instead of leaving the screen at speed.
+      var d=t-.3*t*t;
+      ashPut(pos,i,u.st[i*3]  +u.vel[i*3]  *d,
+                   u.st[i*3+1]+u.vel[i*3+1]*d,
+                   u.st[i*3+2]+u.vel[i*3+2]*d);
+    }
+    p.geometry.attributes.position.needsUpdate=true;
+    var f=u.ms/ASH_MS;
+    p.material.opacity=f<.18?1:Math.max(0,1-(f-.18)/.82);
+    if(u.ms>=ASH_MS){u.live=false;p.visible=false;}
+  }
+}
+function ashClear(){
+  for(var k=0;k<ashPool.length;k++){
+    ashPool[k].userData.live=false;ashPool[k].visible=false;
+  }
+}
+/* BUILT BEFORE IT IS NEEDED, on the owner's report that a double kill
+   stuttered hard enough to eat the word.
+
+   The pool was built lazily, which put four BufferGeometry allocations, four
+   index arrays and four first-time GPU buffer uploads on the exact frame the
+   game can least afford them - the frame that also runs a hit, a shake, a
+   slow-mo, a sting and the start of a kill cam, and on a double kill needs
+   TWO clouds at once. Building them at level load costs nothing anybody is
+   looking at.
+
+   renderer.compile() is the second half: it walks the scene and builds the
+   shader programs, so the first burst does not pay for a program link either.
+   Guarded because it is the kind of call that changes shape between three.js
+   versions and a throw here would take the level load with it. */
+function ashPrime(){
+  if(typeof THREE==="undefined"||!scene)return;
+  var k;
+  while(ashPool.length<4)ashMake();
+  /* Shown for the compile and hidden straight after: compile() walks the
+     scene with traverseVisible, so a pool that is hidden - which is its
+     resting state - is exactly the pool it would skip. It initialises
+     materials without drawing anything, so this is invisible to the player. */
+  for(k=0;k<ashPool.length;k++)ashPool[k].visible=true;
+  try{ if(renderer&&renderer.compile)renderer.compile(scene,camera); }catch(e){}
+  for(k=0;k<ashPool.length;k++)ashPool[k].visible=false;
 }
 /* The telegraph. A charge you cannot see coming is not a fight, so a planted
    hunter draws the line it is about to come down, brightening as the beat
@@ -2486,12 +2830,37 @@ function huntMesh(){
    happens along that row whichever way you are looking, and the whole tension
    is that the axis you must fold along to answer it may not be the one you
    are facing. */
+/* HOW WIDE THE PANE IS ACROSS ITS OWN LINE, and it is the whole of this
+   drawing's answer to "am I lined up with it".
+
+   It was .06 of a cell, which is a pane you can only see from the side. The
+   side is the wrong place: the view a player is in when the line matters most
+   is the one looking straight DOWN it - that is what being aligned means, and
+   it is the view the fold is taken from - and edge-on a .06 pane is two
+   pixels of red. So the one drawing that says "this row is about to be
+   folded onto you" disappeared exactly when the player had done the thing it
+   was there to reward.
+
+   Nothing else changed: it is the same pane, the same collapse, the same
+   beat. It simply has a width now, so end-on it is a bar you can see, and it
+   still reads as a plane rather than a beam because it is far longer than it
+   is wide and it flattens onto the floor as the charge lands.
+
+   .46 is measured rather than felt: at .25 it was still thin against a
+   1-wide hunter at the far end of BOSS IV's floor, and at .7 it starts
+   reading as a block standing in the row rather than as a plane through it. */
+var RAY_W=.46;
 function lineMesh(){
-  var g=new THREE.Mesh(new THREE.BoxGeometry(1,1,.06),
+  /* A unit box, scaled on all three axes by drawLines(): length along the
+     line, height falling with the beat, and RAY_W across. The width used to
+     be baked into the geometry, which is why it could not be changed in one
+     place - and the rim is a child, so it takes the same scale and cannot
+     drift out of register with the pane it outlines. */
+  var g=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),
     new THREE.MeshBasicMaterial({color:0xff4d5e,transparent:true,opacity:.5,
       depthWrite:false,side:THREE.DoubleSide}));
   var e=new THREE.LineSegments(
-    new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,.06)),
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,1)),
     new THREE.LineBasicMaterial({color:0xff8a94,transparent:true,opacity:.7}));
   g.add(e);g.userData.edge=e;
   g.renderOrder=880;
@@ -2516,21 +2885,30 @@ function drawLines(){
     /* The pane stands along the line and comes down onto it. Height falls
        with the beat, so what the player watches is the row being flattened -
        and it lands as a bar at floor level exactly when the charge fires.
-       The box is 1x1x.06, so the thin axis has to be turned to lie along the
-       line: scaled on x it is a pane facing down z, and a line running in z
-       needs it turned a quarter turn. */
+       The box is a unit cube, so the narrow axis has to be turned to lie
+       along the line: scaled on x it is a pane facing down z, and a line
+       running in z needs it turned a quarter turn. RAY_W is the width across
+       it, and it is what makes the pane visible end-on - see above. */
     var run=1-Math.min(1,h.lock/bossAim());
     var hgt=Math.max(.07,1.15*(1-run*run));
     if(Math.abs(tz-h.z)>Math.abs(tx-h.x)){
-      m.rotation.y=Math.PI/2; m.scale.set(lz,hgt,1);
+      m.rotation.y=Math.PI/2; m.scale.set(lz,hgt,RAY_W);
     } else {
-      m.rotation.y=0;         m.scale.set(lx,hgt,1);
+      m.rotation.y=0;         m.scale.set(lx,hgt,RAY_W);
     }
     m.position.set(mx,h.y-.5+hgt/2,mz);
     // full bright as the beat closes: this is the last thing you see before
     // it is standing on you
+    /* IT ARRIVES AT FULL VOLUME AND THEN GETS LOUDER, rather than fading in
+       from nothing. The pane used to open at .28 and spend the first third of
+       the beat too faint to notice against the arena's own floor - so the
+       warning existed for the whole of `aim` and was only legible for the
+       last of it, which is the same thing as arriving late. Reported as the
+       ray needing to come up earlier. The ramp is still here, because the
+       ramp is the countdown; it just no longer starts below the threshold at
+       which the drawing does its job. */
     var t=1-Math.min(1,h.lock/bossAim());
-    m.material.opacity=.28+t*t*.62;
+    m.material.opacity=.46+t*t*.44;
     /* The line is always the charge colour, even when you could answer it.
        It used to turn green whenever the hunter was foldable, and green is
        this game's colour for the goal - for safe - so the one drawing that
@@ -2548,7 +2926,7 @@ function drawLines(){
     m.material.opacity=Math.min(1,m.material.opacity+(h.doom?perilPulse*.32:0));
     // The rim is what carries the pane's shape while the fill is still faint,
     // and it is what is left when the pane has closed to a bar.
-    if(m.userData.edge)m.userData.edge.material.opacity=.45+t*t*.55;
+    if(m.userData.edge)m.userData.edge.material.opacity=.68+t*t*.32;
     m.visible=true;
   }
   for(var k=n;k<lineMeshes.length;k++)lineMeshes[k].visible=false;
@@ -2559,7 +2937,7 @@ function drawLines(){
    through that point, so they share a silhouette column exactly when one of
    them stands on the arm the current view is about to collapse. That arm is
    drawn bright and the other faint, and both re-label themselves when you
-   rotate — which is the moment the whole board changes meaning, and it
+   rotate - which is the moment the whole board changes meaning, and it
    should be visible as one.
 
    The tether says the two bodies are one animal, and goes green the instant
@@ -2632,14 +3010,32 @@ function drawBoss(rx,rz,tdvx,tdvz){
     // Snapped rather than eased when it is a long way off: a hunter thrown
     // back to its spawn should arrive there, not glide across the arena.
     m.position.lerp(tmp, m.position.distanceTo(tmp)>2.5?1:.35);
-    // Planted, so it stops turning: the stillness is the tell, before the
-    // line has even brightened.
-    m.rotation.y+=h.lock>0?.004:(h.doom?.09:.035);
+    /* THEY DO NOT TURN. They used to - slowly while hunting, hard when
+       doomed, almost still when planted - and the spin was doing a job: it
+       was a second tell for the state. It is gone on the owner's call and
+       nothing is lost, because the state was never carried by the spin
+       alone: the cage is red or the goal's green, the telegraph draws the
+       line before a charge, and the scale still swells. What the spin cost
+       was the thing these are now FOR - an officer standing in your level
+       is a person, and a person does not rotate on the spot. Squared to the
+       camera like the player is, so they are always seen face-on. */
+    m.rotation.y=Math.atan2(tdvx,tdvz);
     m.userData.core.material.color.setHex(h.doom?0x35c2a5:0xff4d5e);
     m.userData.cage.material.color.setHex(h.doom?0x35c2a5:0xff6b7a);
-    m.userData.cage.material.opacity=h.doom?(.7+perilPulse*.3):(.5+bossFlash*.4);
+    m.userData.cage.material.opacity=h.doom?(.85+perilPulse*.15):(.8+bossFlash*.2);
     m.userData.core.scale.setScalar(h.doom?1.35:1);
-    m.scale.setScalar((1+bossHitFlash*.3)*(h.doom?1.06:(h.lock>0?1.12:1)));
+    /* The halo breathes, and that is the only motion left on them. It is a
+       scale rather than a turn: it says "here" without saying "spinning
+       object", and it reads at the edge of vision, which is where a hunter
+       usually is when you need to find it. Doubled and greened on doom,
+       because that is the one second in the fight worth shouting about. */
+    if(m.userData.aura){
+      m.userData.aura.material.color.setHex(h.doom?0x35c2a5:0xff4d5e);
+      m.userData.aura.material.opacity=h.doom?(.24+perilPulse*.20)
+        :(.15+.05*Math.sin(Date.now()*.004+i));
+    }
+    m.scale.setScalar((1+bossHitFlash*.3)*(h.doom?1.06:(h.lock>0?1.12:1))
+      *(1+.028*Math.sin(Date.now()*.004+i*1.7)));
   }
   drawLines();
   drawTwin(rx,rz);
@@ -2812,19 +3208,58 @@ function planeFall(i){
   }
   return planeFalls[i];
 }
+/* Both ends of the u range the board spans at this view, so a slice down the
+   axis you are looking along can lay its rank across the whole plane. */
+function uSpan(){
+  var uA=arenaLo[0]*AX[view].r[0]+arenaLo[2]*AX[view].r[2];
+  var uB=arenaHi[0]*AX[view].r[0]+arenaHi[2]*AX[view].r[2];
+  return [Math.min(uA,uB)-1,Math.max(uA,uB)+1];
+}
 function drawFallRank(sw,ph,live,rx,rz){
-  var n=0, i;
-  if(TR&&app==="play"&&sw.axis!=="y"&&!dying){
+  var n=0, i, u, sp;
+  if(TR&&app==="play"&&!dying){
     var cells=[], y;
-    if(flatT>.5&&flatPos){
+    /* A HEIGHT IS A SLICE TOO, and for one build it was the only kind that
+       dropped nothing.
+
+       `axis:"y"` is a horizontal plane: it takes everybody standing at that
+       height, whatever their x and z, and TRIAL IV is the only level in the
+       game that has one. The tiles lit correctly - they read the same hits()
+       the rule does - but this function excluded the case outright, so the
+       desert trial marked half its catwalks red and then killed the player
+       with nothing falling on them. Reported exactly that way.
+
+       IN THE VOLUME IT IS DRAWN ON THE STANDABLE SQUARES AT THAT HEIGHT,
+       which is a deliberate exception to the rank's own rule. Every other
+       slice runs the whole length of itself, floor or no floor, because the
+       plane draws a row straight across and the two pictures have to agree.
+       A height has no length to run - it is the entire footprint of the
+       arena - and a sheet of red cubes over every square of the board is not
+       a telegraph, it is a curtain. The squares are asked for by walking
+       `trialMarks`, which IS the set of squares the tiles light, so the
+       blocks land exactly on the marks rather than near them.
+
+       IN THE PLANE it is the whole row, at that height: folded you are at
+       every depth at once, so there is no square of it you could be off. */
+    if(sw.axis==="y"){
+      y=sw.at;
+      if(flatT>.5&&flatPos){
+        sp=uSpan();
+        for(u=sp[0];u<=sp[1];u++)cells.push([u*rx,u*rz]);
+      } else {
+        for(i=0;i<trialMarks.length;i++){
+          var tc=trialMarks[i].userData.cell;
+          if(tc[1]===sw.at)cells.push([tc[0],tc[2]]);
+        }
+      }
+    }
+    else if(flatT>.5&&flatPos){
       y=flatPos.y;
       var comp=sw.axis==="x"?AX[view].r[0]:AX[view].r[2];
       if(comp!==0)cells.push([sw.at*comp*rx,sw.at*comp*rz]);
       else{
-        var uA=arenaLo[0]*AX[view].r[0]+arenaLo[2]*AX[view].r[2];
-        var uB=arenaHi[0]*AX[view].r[0]+arenaHi[2]*AX[view].r[2];
-        for(var u=Math.min(uA,uB)-1;u<=Math.max(uA,uB)+1;u++)
-          cells.push([u*rx,u*rz]);
+        sp=uSpan();
+        for(u=sp[0];u<=sp[1];u++)cells.push([u*rx,u*rz]);
       }
     } else {
       y=player.y;
@@ -2991,6 +3426,152 @@ function onResize(){
    visibly receded, which is a categorical statement rather than a gradient
    the eye has to measure. */
 var DEPTH_STEP=.34, DEPTH_SLOPE=.09, DEPTH_CAP=.68;
+/* ============================================================
+   THE FOLD, AND THE ONE BLOCK IT HANDS YOU BACK
+
+   The fold itself is a straight slide to the plane: every block travels
+   along its own line of sight and arrives together. A two-beat version was
+   built and played - the whole world gathering into the front block of each
+   column first, then flattening - and dropped on the owner's call. What
+   survived it is the part that was actually doing the teaching, and it is
+   cheaper: MARK THE BLOCK, and leave the motion alone (docs/HISTORY.md).
+
+   Rule 5 is the one rule of this game nobody reads off the screen, and it
+   has two halves. Coming back to 3D puts you on the supporting block nearest
+   the camera - but only among the blocks you can actually REACH, and in the
+   plane you reach the TOP of a silhouette stack and nothing under it. A
+   block with another block over it, at any depth, is behind a wall once the
+   world is flat. So the mark goes on the top ledge's winner, and it is asked
+   for with the game's own `R.landings()` / `R.pick()` pair rather than
+   re-derived here - which is what makes the anchor's override of rule 5
+   correct for free, and what stops the drawing and the rule ever drifting.
+   ============================================================ */
+var foldHiT=0;
+/* THE MARK'S OWN CLOCK, and it needs one - this is the bug that shipped.
+
+   It used to read `landFade()` outright, on the reasoning that the mark and
+   the landing rings say the same thing about the same block and should fade
+   as one. They do, but the rings have a TRIGGER as well as a clock, and it
+   is deliberately narrow: `doUnflatten()` only calls `showLanding()` when
+   the column held MORE THAN ONE candidate, because rings drawn round a
+   single block announce a choice nobody made. Reading their fade inherited
+   that trigger, so on `03 - A Real Challenge` - where every square you
+   actually climb to has exactly one candidate - coming back to 3D lit
+   nothing at all. Reported in exactly those words.
+
+   So the mark starts on EVERY unfold and runs for LAND_MS on its own count.
+   Same envelope (`landEnvelope`), so where the rings do appear the two still
+   fade as one thing; different trigger, because "where did I land" is a
+   question every landing raises and "which one did it pick" is not.
+
+   Pinned to the level it started on: a level that loads inside the second
+   and a half - winning on the unfold, say - would otherwise inherit a
+   running mark and flash its own blocks. */
+/* AND IT BREATHES, which is the half of this that colour cannot do.
+
+   A tint alone is only ever as loud as the difference between it and the
+   ground under it, and on the NATURE world the ground is green - so a mark
+   in the goal's green was nearly invisible on exactly the levels where the
+   teaching happens. Both reports of this came from grass.
+
+   Brightness plus a breath is the answer the tutorial's own landing marker
+   already reached, for the same reason and in the same words: "a block that
+   is visibly alive is unmistakable". Motion does not care what colour it is
+   over. Two breaths across the mark's life, counted off its own clock rather
+   than off the wall, so every mark looks the same from its own first frame
+   instead of catching the sine wherever it happened to be. */
+var FOLD_BREATH_MS=780;
+var foldMarkT=-1, foldMarkL=null, foldMarkPh=0, foldMarkBreath=.5;
+function foldMarkStart(){
+  foldMarkT=0;foldMarkPh=0;foldMarkL=(typeof L!=="undefined")?L:null;
+}
+function foldMarkFade(dtMs){
+  if(typeof L!=="undefined"&&foldMarkL&&foldMarkL!==L)foldMarkT=-1;
+  foldMarkPh+=dtMs;
+  foldMarkBreath=.5+.5*Math.sin(foldMarkPh/FOLD_BREATH_MS*Math.PI*2);
+  // Flat: no landing to mark, but a peek is a preview of one and lights the
+  // same block. Folding again ends the count, the way it ends the rings'.
+  if(flat){foldMarkT=-1;return planePeek>.05?peekFade():0;}
+  if(foldMarkT<0)return 0;
+  foldMarkT+=dtMs;
+  if(foldMarkT>=LAND_MS){foldMarkT=-1;return 0;}
+  return landEnvelope(foldMarkT/LAND_MS);
+}
+/* THE PLAYER'S OWN SWITCH (`settings.foldmark`, Menu > Where you land).
+
+   The mark is a teaching aid, and a teaching aid that cannot be turned off
+   is decoration everybody has to keep looking at. Off means off: no tint, no
+   rim, and nothing rebuilt per frame either, because `foldHiT` is what gates
+   that work. The landing RINGS are deliberately not on this switch - they
+   are the older statement, they sit beside the block rather than on it, and
+   the sentence under them names them; this is only the block going green. */
+function foldMarkOn(){
+  return !(typeof settings!=="undefined"&&settings.foldmark==="off");
+}
+/* THE BLOCKS THE FOLD HANDS YOU, as cell keys the block loop can test in
+   O(1). Rebuilt once a frame while the fold is running, and not at all when
+   it is not.
+
+   ONE PER LEDGE, NOT ONE PER SILHOUETTE SQUARE, and that is the correction
+   the owner made after playing the first build: it lit the front block of
+   every square, including squares buried under other squares, and a block
+   with something on top of it is not somewhere you can stand once the world
+   is flat. So this walks each screen-right column from the top down, finds
+   every square that is filled with the square above it empty - a LEDGE - and
+   asks the rules what standing there would put you on.
+
+   `n>1` is the selectivity. A column holding one block has a winner
+   trivially: nothing merged, no rule was applied, and lighting it says only
+   "there is a block here", which the block already says. Without the test a
+   flat meadow turns entirely green on every fold, and a highlight that marks
+   everything marks nothing.
+
+   Built off `AX[view]`, the SNAPPED basis, rather than off the eased
+   `viewAngle` the drawing uses: u has to come out an exact integer or the
+   keys are floats with noise on them and nothing ever matches. The two agree
+   whenever a fold is running, because turning is refused in the plane and
+   the fold is refused during a turn. */
+var foldHiSet={};
+function foldHiBuild(){
+  foldHiSet={};
+  if(!R||typeof R.landings!=="function")return;
+  var ax=AX[view], r0=ax.r[0], r2=ax.r[2];
+  var silh={}, n={}, u, y, k, b;
+  for(k in meshes){
+    b=meshes[k].userData.base;
+    u=b[0]*r0+b[2]*r2;
+    silh[u+"|"+b[1]]=1;
+    n[u]=(n[u]||0)+1;
+  }
+  // A crate casts a silhouette exactly like stone, so it can be the thing
+  // standing over a block - but it is not in `meshes` and cannot be lit.
+  var cr=(typeof liveCrates==="function")?liveCrates():null, ci;
+  if(cr)for(ci=0;ci<cr.length;ci++)
+    silh[(cr[ci][0]*r0+cr[ci][2]*r2)+"|"+cr[ci][1]]=1;
+  for(u in n){
+    if(n[u]<2)continue;
+    var uu=+u;
+    for(y=arenaHi[1]+1;y>=arenaLo[1];y--){
+      if(!silh[uu+"|"+y]||silh[uu+"|"+(y+1)])continue;   // not a ledge
+      var land=R.landings(view,uu,y+1,cr);
+      if(!land.length)continue;
+      var w=R.pick(land);
+      foldHiSet[K(w.x,y,w.z)]=1;
+    }
+  }
+  /* AND THE BLOCK UNDER YOUR OWN FEET, whatever the rules above decided.
+
+     Those rules are about columns where something was chosen, and they are
+     right to be - but the one block the player is actually asking about is
+     the one they are standing on, and a column holding a single block would
+     leave it out. "I came back, show me where" must never come up empty. */
+  if(flat){
+    var lp=(typeof peekLanding==="function")?peekLanding():null;
+    if(lp&&flatPos)foldHiSet[K(lp.win.x,flatPos.y-1,lp.win.z)]=1;
+  } else if(app==="play"&&!dying){
+    foldHiSet[K(player.x,player.y-1,player.z)]=1;
+  }
+}
 
 /* HOW FAR THE CAMERA LEANS - the one structural lever on depth ambiguity.
 
@@ -3349,6 +3930,26 @@ function tutLandMark(dtMs){
   landRingsDraw(.84+.16*(tutRingBreath*2-1));
   return true;
 }
+/* HOW STRONGLY THE LANDING RINGS ARE DRAWN THIS FRAME, 0 when there are none.
+
+   Pulled out of landFrame because the fold's mark on the winning block runs
+   on exactly this clock once the world is standing up - the owner asked for
+   the mark to last as long as the ring on the block you are stood on, and
+   "as long as" is a promise two copies of a curve cannot keep. One
+   expression, two things reading it. */
+/* The shape both of them fade with: in over the first fifth - the world is
+   still standing up before that - and out over the last third, so neither
+   ever just vanishes. `p` is 0..1 through LAND_MS. */
+function landEnvelope(p){
+  return Math.max(0,Math.min(1,p/.2)*Math.min(1,(1-p)/.34));
+}
+// A peek belongs to the finger, not to a clock.
+function peekFade(){return Math.max(0,Math.min(1,(planePeek-.05)/.35));}
+function landFade(){
+  if(!landHint)return 0;
+  if(landHint.live)return peekFade();
+  return landEnvelope(landHint.t/LAND_MS);
+}
 function landFrame(dtMs){
   var i;
   tutMarkSet=null;                            // rebuilt below, once, per frame
@@ -3357,10 +3958,7 @@ function landFrame(dtMs){
   if(!landLive()&&!landHint){
     for(i=0;i<landRings.length;i++)landRings[i].visible=false;return;
   }
-  if(landHint.live){
-    var lf=Math.min(1,(planePeek-.05)/.35);
-    landRingsDraw(lf);return;
-  }
+  if(landHint.live){landRingsDraw(landFade());return;}
   landHint.t+=dtMs;
   /* Cleared when the player FOLDS AGAIN, which is `flat` - not flatT. flatT
      is still near 1 on the first frames after standing up, because the world
@@ -3371,10 +3969,7 @@ function landFrame(dtMs){
     for(i=0;i<landRings.length;i++)landRings[i].visible=false;
     return;
   }
-  var p=landHint.t/LAND_MS;
-  // in over the first fifth - the world is still standing up before that -
-  // and out over the last third, so it never just vanishes
-  landRingsDraw(Math.min(1,p/.2)*Math.min(1,(1-p)/.34));
+  landRingsDraw(landFade());
 }
 /* Placed with the same interpolation the block loop uses, so a ring sits on
    its block through the whole rise rather than only at the ends of it. */
@@ -3476,9 +4071,18 @@ function animate(now){
      uses, so the fold at the end costs the board nothing. */
   if(typeof replayFrame==="function")replayFrame(dtMs);
   if(rep){
-    viewAngleTarget=rep.angle;
-    if(rep.fold>0)ftWant=Math.max(ftWant,rep.fold);
-    repFade=1;
+    /* THE CAMERA WAITS FOR THE FILM. `rep` is set the instant the hit lands -
+       that is what freezes the fight - but the film does not start for
+       another second and a half, and swinging the camera to the replay's
+       angle straight away meant the board tilted away underneath the word
+       still being read. The sting is about the board it happened on, so the
+       board has to stay the one the player was looking at; `rolling` is set
+       by replayFrame() on the first frame it actually plays. */
+    if(rep.rolling){
+      viewAngleTarget=rep.angle;
+      if(rep.fold>0)ftWant=Math.max(ftWant,rep.fold);
+      repFade=1;
+    }
   } else if(repFade>0){
     // the fold unwinds after the film ends rather than snapping back
     repFade=Math.max(0,repFade-dtMs/420);
@@ -3509,6 +4113,31 @@ function animate(now){
   setSkyColors(skyWarm);
   layoutAtmosphere(dtMs);
   landFrame(dtMs);
+  /* THE MARK'S STRENGTH, and it is the landing rings' own, exactly.
+
+     IT USED TO LIGHT GOING INTO 2D AS WELL, off `flatT`, and that half is
+     gone on the owner's call: reported as "it disappeared super fast", which
+     it did and could not help doing. The fold in is 520ms end to end, so a
+     mark that comes up before the world moves and is out before the plane
+     lands has a few hundred milliseconds to be seen - and it is answering a
+     question ("which one will it pick?") the player has not asked yet,
+     because nothing has happened. It is a flash, and a flash on the board is
+     read as something going wrong.
+
+     COMING BACK is where the question is live, and there the rings already
+     answer it: they appear on the landing, hold for LAND_MS and fade at both
+     ends. So the mark simply IS them - same clock, same curve, one source
+     (`landFade`), so the block and the ring around it can never fade apart -
+     and it is on the block itself, which is the only marker that survives
+     being stood on. The peek's live rings light it too, and should: a peek
+     is a preview of coming back, not of going away.
+
+     Placed after landFrame so both read the same frame's `landHint`; nothing
+     between here and the block loop reads either. */
+  foldHiT=foldMarkOn()?foldMarkFade(dtMs):0;
+  // Nothing is rebuilt while the world is simply standing there in the
+  // volume, which is most frames of most sessions.
+  if(foldHiT>.01)foldHiBuild(); else foldHiSet={};
   lookCue();
   /* playerMesh rather than `player`, because the mesh is where the player is
      actually drawn - already eased, and already in plane coordinates when
@@ -3590,6 +4219,17 @@ function animate(now){
      frame, which is a jump-cut rather than a slam. */
   var slam=Math.sin((1-foldSlamT)*Math.PI*1.6)*foldSlamT*foldSlamT*
            2.2*vsc*foldSlamDir;
+  /* WHERE THE CAMERA WOULD BE WITHOUT THE JUICE, kept for anything that has
+     to hold still while the world is being thrown around. The shake and the
+     slam are deliberate on the WORLD - a hit rattles the screen, a fold lands
+     hard - and they are wrong on TYPE: the neighbour's speech bubble is
+     projected through the camera every frame, so a fold put a whole cell of
+     camera kick into four lines of 11.5px mono and the text shook. See
+     guideAnchor() in js/23-guide.js, which projects through a copy of this
+     camera placed here instead. */
+  camSteady.set(center.x+dvx*40,
+                center.y+(tilt+peek*.22)*34,
+                center.z+dvz*40);
   camera.position.set(center.x+dvx*40+(Math.random()-.5)*sh,
                       center.y+(tilt+peek*.22)*34+(Math.random()-.5)*sh+slam,
                       center.z+dvz*40+(Math.random()-.5)*sh);
@@ -3716,6 +4356,48 @@ function animate(now){
              : colBlock;
       m.material.color.copy(base).lerp(colInk,flatT*INK_SETTLE);
       applyDepth(m,b,pdepth,tdvx,tdvz,flatT);
+    }
+    /* AND THE BLOCK THE FOLD HANDS YOU IS LIT WHILE THE FOLD RUNS.
+
+       The motion says the world is collapsing. It does not, and on the
+       owner's call now will not, say which of the blocks in a column you
+       will be standing on when you come back - so this does, on the block
+       itself, for the length of the transition and no longer. See
+       foldHiBuild() for which block that is and why it is the top one.
+
+       ON TOP OF THE BLOCK'S IDENTITY, NOT INSTEAD OF IT - a lift toward
+       the goal's green and a bright rim, which is the same pair the
+       tutorial's landing marker uses a few branches up and the same green
+       the landing rings use on the way back. Repainting the winner outright
+       was tried there and rejected for a reason that applies here too: two
+       blocks swapping COLOUR at the same moment they swap screen position
+       leaves the player unable to say whether the blocks moved or the
+       marker did.
+
+       Peril outranks it, as it outranks everything: a warning that this
+       fold will crush you beats a lesson about which block wins. So does the
+       TUTORIAL'S landing marker, and for a sharper reason - it draws the
+       winner in this same green and the LOSER in a dim version of it, so a
+       bright rim laid over its loser would say both blocks won, on the one
+       level whose whole job is to say which. The rim is put back by the
+       perilCleanup sweep at the foot of the frame, which is already the one
+       place edge colours are restored from. */
+    if(foldHiT>.01&&foldHiSet[k]&&!(perilSet&&perilSet[k])&&
+       !(tutMarkSet&&tutMarkSet[k])){
+      /* WHITE FIRST, THEN THE TEAL, AND ALL OF IT BREATHING. A tint straight
+         to the goal's green is nearly invisible on the nature world - green
+         on green - which is where both reports of this came from. A lift
+         toward white brightens any surface the game has; the teal on top of
+         it names the colour; the breath is what carries it when neither is
+         enough. Same three things the tutorial's landing marker uses, in the
+         same order and for the same reason. */
+      var hk=foldHiT*(.58+.42*foldMarkBreath);
+      m.material.color.lerp(colWhite,.50*hk).lerp(colFoldHi,.26*hk);
+      m.userData.edge.material.color.set(0x9dffe8);
+      m.userData.edge.material.opacity=Math.max(
+        m.userData.edge.material.opacity,.30+.70*hk);
+      m.material.opacity=1;
+      if(perilCleanup.indexOf(k)<0)perilCleanup.push(k);
     }
   }
 
@@ -3845,6 +4527,23 @@ function animate(now){
     playerMesh.scale.set(1+squash*.55,1-squash,1+squash*.55);
   }
   playerMesh.rotation.y=a;
+  /* THE CUTSCENE'S CAST, placed with the camera basis this loop has already
+     worked out. It goes HERE rather than earlier because the son is not an
+     actor - he is playerMesh, which the block above has just moved - and a
+     cutscene that wants him to hop or shake has to write that on top of the
+     position the game gave him.
+
+     flatT is handed over rather than read. Nothing outside this file reads
+     flatT, which is what lets peek and the replay borrow it, and one
+     cutscene is not a reason to make that untrue. */
+  if(typeof storyFrame==="function")storyFrame(dtMs,rx,rz,tdvx,tdvz,flatT);
+  /* And the neighbour, placed the same way and for the same reason: he folds
+     with the world because he is drawn with the maths the player is drawn
+     with. He is scenery - nothing in the rules or the solver knows he is
+     there - so this is the only place in the game that touches him. */
+  if(typeof guideFrame==="function")guideFrame(dtMs,rx,rz,tdvx,tdvz,flatT);
+  // And the father, once in a while, behind a fire level. See ghostHere().
+  if(typeof ghostFrame==="function")ghostFrame(dtMs);
   /* Blinking through the beat of grace after a trial hit. Invulnerability
      you cannot see is invulnerability you will not use.
 
@@ -3855,12 +4554,25 @@ function animate(now){
      both meant a bubble around a player flickering in and out of existence,
      which reads as a rendering fault rather than as protection. When the
      bubble goes, the blink is still there for the rest of the beat. */
-  playerMesh.visible=shieldMs>0||
-    !(trialGrace>0&&Math.floor(Date.now()/85)%2===0);
+  /* AND A DEATH FILM TAKES THE PLAYER OFF THE PICTURE ONCE THEY HAVE GONE TO
+     ASH. It has to be part of THIS expression rather than a write from
+     12-play.js, and that is the whole lesson: this line owns the channel and
+     runs every frame, so replayGone()'s `playerMesh.visible=false` was
+     overwritten before it was ever drawn and the player sat there inside
+     their own dust cloud. Reported with a screenshot. Same rule as the block
+     loop owning material.color. */
+  playerMesh.visible=!(rep&&rep.gone&&rep.mode==="death")&&
+    (shieldMs>0||
+     !(trialGrace>0&&Math.floor(Date.now()/85)%2===0));
 
   // A boss arena has no goal square - the target is the boss itself, which
   // draws itself in drawBoss() - so the marker is simply hidden there.
-  goalMesh.visible=goalGhost.visible=!B;
+  /* A cutscene has no goal either, and for a stronger reason than a boss
+     does: its board is a house or a night platform, and a green wireframe
+     standing in the doorway is the game's HUD leaking into a scene that is
+     trying to be a place. */
+  goalMesh.visible=goalGhost.visible=
+    !B&&!(typeof storyOn==="function"&&storyOn());
   var g=((typeof liveGoal==="function"&&L.goal)?liveGoal():L.goal)||[0,0,0];
   var gu=g[0]*rx+g[2]*rz, gd=g[0]*tdvx+g[2]*tdvz;
   var gx=gu*rx+gd*.012*tdvx, gz=gu*rz+gd*.012*tdvz;
@@ -3876,14 +4588,16 @@ function animate(now){
     for(var pc=0;pc<perilCleanup.length;pc++){
       var pm=meshes[perilCleanup[pc]];
       if(!pm||(perilSet&&perilSet[perilCleanup[pc]])||
-         (tutMarkSet&&tutMarkSet[perilCleanup[pc]]))continue;
+         (tutMarkSet&&tutMarkSet[perilCleanup[pc]])||
+         (foldHiT>.01&&foldHiSet[perilCleanup[pc]]))continue;
       var pk=pm.userData.kind;
       pm.userData.edge.material.color.set(
         pk===1?0xbdeaf7:pk===2?0xffd98a:pk===4?0xff8a72:0x0f1424);
       pm.userData.edge.material.opacity=pk===1?.95:(pk===2||pk===4?.85:.35);
     }
     perilCleanup=perilCleanup.filter(function(kk){
-      return (perilSet&&perilSet[kk])||(tutMarkSet&&tutMarkSet[kk]);});
+      return (perilSet&&perilSet[kk])||(tutMarkSet&&tutMarkSet[kk])||
+             (foldHiT>.01&&foldHiSet[kk]);});
   }
   var sealed=app==="play"&&keyMeshes.length&&keysLeft()>0;
   // Amber, not green, on anything with a clock: the colour is the promise
@@ -3906,10 +4620,21 @@ function animate(now){
     $("bFlat").classList.toggle("peril",pk);
     $("bFlat").classList.toggle("strike",!!hit&&!pk);
   }
+  /* And the checklist, for the same reason and with the same discipline: what
+     it describes changes without the player touching anything - a hunter
+     plants its line on its own clock - so the marks are re-judged here rather
+     than at the last keypress. It only toggles classes, and only when they
+     have actually changed. BEFORE bossFrame, deliberately: primerLast is what
+     a death is explained against, and it has to be the board the player was
+     last shown rather than the one the charge has already landed on. */
+  if(typeof primerMarks==="function")primerMarks();
 
   if(bossFlash>0)bossFlash=Math.max(0,bossFlash-.055);
   bossFrame(dtMs);trialFrame(dtMs);
   if(typeof replayTick==="function")replayTick(dtMs);
+  // The death line holds while the film runs, so it is counted down here,
+  // beside the film. See deathSayTick().
+  if(typeof deathSayTick==="function")deathSayTick(dtMs);
   amb.intensity=.45+.55*flatT;
   dir1.intensity=.85*(1-flatT);
   dir2.intensity=.35*(1-flatT);
@@ -3926,6 +4651,9 @@ function animate(now){
      overlay across a meadow was the one thing left that looked like a
      diagram rather than a place. Raise the second term to bring it back. */
   if(gridLines) gridLines.material.opacity=(app==="edit"?.09+.16*flatT:0);
+
+  // The ash drifts on real time, like the film it plays under. See ashFrame().
+  ashFrame(dtMs);
 
   renderer.render(scene,camera);
 }

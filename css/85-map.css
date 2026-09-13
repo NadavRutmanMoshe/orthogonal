@@ -1,9 +1,9 @@
-/* Orthogonal — css/85-map.css
+/* I'm Just A Cube - css/85-map.css
    The map: tabs, section card, trail, nodes, fill, sheet, help, legend, mastery.
    Loaded in the order listed in index.html; see docs/UI.md for the map of
    screens to files.
 
-     THE MAP — the level picker as a path
+     THE MAP - the level picker as a path
 
      A run of levels, a trial partway in, a boss at the end, drawn as a trail
      you walk down. The list it replaced was honest and unreadable: seventy-two
@@ -59,8 +59,9 @@
     border-bottom:1px solid var(--rule);flex-shrink:0}
   .mhead .mt{flex:1;min-width:0}
   /* 13px, not 15: the header now carries the SECTION's name rather than the
-     game's, and "I · FUNDAMENTALS" at 15px wrapped to two lines beside the
-     back chevron. */
+     game's, and the longest one at the time - "I · FUNDAMENTALS", since
+     renamed to "I · NATURE" - wrapped to two lines at 15px beside the back
+     chevron. Kept at 13, because the next long name costs nothing here. */
   .mhead .mt b{display:block;font-family:'Space Grotesk',system-ui,sans-serif;
     font-size:13px;font-weight:700;letter-spacing:-.02em;color:var(--fg);
     line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -129,13 +130,14 @@
     border:1px solid color-mix(in srgb,var(--tabc) 46%,transparent)}
   .secem{width:22px;height:22px;flex:none;fill:var(--tabc);
     filter:drop-shadow(0 0 7px color-mix(in srgb,var(--tabc) 44%,transparent))}
-  /* Wraps rather than truncates: "I · FUNDAMENTALS" does not fit one column
-     at any size worth reading, and a section whose name is cut off is a
-     section you have to open to identify. */
+  /* Wraps rather than truncates: a section whose name is cut off is a
+     section you have to open to identify. "I · FUNDAMENTALS" was the name
+     that did not fit one column at any size worth reading; it is "I · NATURE"
+     now and fits, and the rule stays because the next one may not. */
   .secname{display:block;font-family:'Space Grotesk',system-ui,sans-serif;
     font-size:12px;font-weight:700;letter-spacing:-.03em;line-height:1.15;
     min-width:0;margin-top:-1px;
-    /* FUNDAMENTALS is one word wider than a column on a 327px phone, and a
+    /* FUNDAMENTALS was one word wider than a column on a 327px phone, and a
        word that cannot break simply runs out of the tile. */
     overflow-wrap:anywhere}
   .secsub{flex:1;font-size:11px;line-height:1.45;color:var(--fg-dim);
@@ -201,7 +203,7 @@
     font-size:17px;font-weight:700;letter-spacing:-.02em;color:var(--sec)}
   .mcard i{display:block;font-style:normal;font-size:13.5px;color:var(--fg-dim);
     margin-top:4px;line-height:1.45}
-  /* THE CENSUS, ONE LINE PER SECTION. Deliberately quieter than `i` above
+  /* THE STORY, ONE LINE PER SECTION. Deliberately quieter than `i` above
      it, and not in the section colour: `sub` is instruction and the story is
      an aside, so it reads at a glance as the optional half. It is an <s>
      purely because .mcard already owns bare b / i / u selectors and this is
@@ -385,7 +387,7 @@ L96 14 L0 14 Z' fill='%23fff'/></svg>");
   .mnode.mboss.here:active{box-shadow:0 1px 0 var(--vio-lip);animation:none}
 
   /* ============================================================
-     A MASTERED SECTION — every level in it on three stars.
+     A MASTERED SECTION - every level in it on three stars.
      The trail is redrawn as one continuous stroke and the colour climbs it
      from the first level to the boss, lighting each node as it arrives.
      See sectionMastered() and mapLayout() in js/16-panels.js.
@@ -545,6 +547,43 @@ L96 14 L0 14 Z' fill='%23fff'/></svg>");
      carries today. */
   .panel.offer .ma .ad{font-size:clamp(10.5px,3.2vw,12.5px);
     letter-spacing:.09em;gap:7px}
+  /* THE OUT-OF-LIVES CARD WEARS THE WIN CARD'S ROW (owner's call).
+
+     Losing a fight and finishing a level short of three stars are the same
+     moment - the run is over and there are two ways on - so they are drawn
+     as one thing: two caps side by side, TRY AGAIN on the left with the win
+     card's own circular arrow, and the other door where NEXT LEVEL stands.
+     `.ma` is a column everywhere else and stays one; only this row opts in.
+
+     They WRAP rather than squeeze: `flex:1 1 42%` with a floor, so on a
+     phone narrow enough that two 132px caps and the gap will not fit, the
+     skip drops under TRY AGAIN in the order it already reads in - exactly
+     what `.wonrow` does on the win card. */
+  .panel.offer .ma.pair{flex-direction:row;flex-wrap:wrap;
+    justify-content:center;gap:8px}
+  .panel.offer .ma.pair button{flex:1 1 42%;min-width:132px;
+    min-height:52px;padding:9px 12px;gap:8px}
+  /* TRY AGAIN takes the goal's green from `.go` - on the win card it is the
+     quiet grey one because NEXT LEVEL is what you came for; here it is what
+     you came for. The glyph is drawn in the same hairline #bRetry uses, so
+     the two buttons are the same object on both cards. */
+  .panel.offer .ma .oai{width:15px;height:15px;flex:none;fill:none;
+    stroke:currentColor;stroke-width:1.8;stroke-linecap:round;
+    stroke-linejoin:round}
+  /* THE SKIP IS TWO LINES: what it does over what it costs. Stacked rather
+     than run together, because "SKIP THIS BOSS \u00b7 WATCH 1 AD" was one long
+     line that had to have its type shrunk to survive a narrow phone - and
+     the two halves are different kinds of fact. The second line is missing
+     outright when a pass has paid for it, which is why the stack is a
+     container and not a ::after. */
+  .panel.offer .ma .two{display:flex;flex-direction:column;gap:2px;
+    align-items:center;justify-content:center;line-height:1.15}
+  .panel.offer .ma .two b{font-weight:700;font-size:12.5px;letter-spacing:.14em}
+  .panel.offer .ma .two i{font-style:normal;font-size:9.5px;
+    letter-spacing:.1em;opacity:.78}
+  /* Undoes the clamp that squeezed the one-line label: the stack has room
+     now, so the words are set at the size the rest of the card is. */
+  .panel.offer .ma.pair .ad{font-size:12.5px;letter-spacing:.13em}
   /* The note is a footnote, so it sits below a hairline rather than floating
      under the buttons at the same weight as the sentence above them. */
   .panel.offer .mn{margin-top:14px;padding-top:11px;font-size:11px;

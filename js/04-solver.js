@@ -1,11 +1,11 @@
 "use strict";
-/* Orthogonal — 04-solver.js
+/* I'm Just A Cube - 04-solver.js
    Breadth-first search over game states. Shared with the game.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
 
 /* ============================================================
-   SOLVER — breadth-first search over game states.
+   SOLVER - breadth-first search over game states.
 
    A state is where you are, which way you're facing, whether
    you're folded, where every crate sits and which keys you've
@@ -42,7 +42,7 @@ function solve(level,allowRotate,cap,from){
   var allKeys=(1<<nKeys)-1;
 
   // Keys are collected in the *plane*, at the square the key projects to. So
-  // which axis you fold along decides which keys you can even reach — that ties
+  // which axis you fold along decides which keys you can even reach - that ties
   // them to the one verb the game has, instead of being a separate errand.
   var keyCells=R.keys.map(function(k){var p=k.split(",");return [+p[0],+p[1],+p[2]];});
   function collect2(v,u,y,kb){

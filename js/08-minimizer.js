@@ -1,11 +1,11 @@
 "use strict";
-/* Orthogonal — 08-minimizer.js
+/* I'm Just A Cube - 08-minimizer.js
    Which blocks in a level are load-bearing.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
 
 /* ============================================================
-   MINIMIZER — delete each block, re-solve, and see whether the
+   MINIMIZER - delete each block, re-solve, and see whether the
    level notices. Blocks the level doesn't miss aren't carrying
    any of the puzzle. Greedy, so it finds one small core, not
    necessarily the only one.

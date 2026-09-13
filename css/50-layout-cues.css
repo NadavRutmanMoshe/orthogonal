@@ -1,4 +1,4 @@
-/* Orthogonal — css/50-layout-cues.css
+/* I'm Just A Cube - css/50-layout-cues.css
    Control layouts (ui-compact / ui-none / norot / tut), the coach line, .crow, the cue pulse, toasts.
    Loaded in the order listed in index.html; see docs/UI.md for the map of
    screens to files. */
@@ -41,7 +41,11 @@
   body.tut.ui-none .coach{bottom:176px}
   .crow{display:flex;align-items:center;gap:7px;padding:8px 0;
     border-bottom:1px solid var(--rule)}
-  .crow label{width:74px;flex-shrink:0;color:var(--fg-dim)}
+  /* 92px, not 74: the rows are called "Level size" and "Fights speed" now
+     rather than Board and Fights, and the longest is twelve monospace
+     characters. The three option buttons absorb it - at the owner's 327px
+     they come out about 54px each, which still holds COMPACT and REGULAR. */
+  .crow label{width:92px;flex-shrink:0;color:var(--fg-dim)}
   /* A row whose card heading already names it: the three options take the
      whole width rather than leaving a label-shaped hole. */
   .crow.bare{border-bottom:0;padding-bottom:2px}
@@ -49,6 +53,19 @@
   .crow .seg button{flex:1;height:27px;font-size:10.5px;letter-spacing:.05em}
   .crow .seg button.on{border-color:var(--player);color:var(--player);
     background:rgba(214,51,108,.13)}
+  /* AND ON A NARROW PHONE THE LABEL GOES ABOVE THE ROW.
+
+     The two longest labels are twelve monospace characters, and 92px of
+     label plus its gap leaves the three options about 54px each on the
+     owner's 327px screen - COMPACT and REGULAR then fill their caps rim to
+     rim, which reads as text that did not quite fit. Stacked, the options
+     get the card's whole width and come out near 87px, and nothing else on
+     the row moves. The label keeps its own line's height, so the card grows
+     by three lines on the narrowest screens only. */
+  @media (max-width:360px){
+    .crow{flex-direction:column;align-items:stretch;gap:5px}
+    .crow label{width:auto}
+  }
 
   @keyframes cuePulse{
     0%,100%{box-shadow:0 3px 0 var(--lip),0 0 0 0 rgba(53,194,165,0);

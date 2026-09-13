@@ -1,4 +1,4 @@
-/* Orthogonal — css/75-bossbar.css
+/* I'm Just A Cube - css/75-bossbar.css
    The lives/cores bar on a clock level, the running star total, the flying star.
    Loaded in the order listed in index.html; see docs/UI.md for the map of
    screens to files. */
@@ -45,6 +45,24 @@
     color:var(--player);transition:color .25s ease,transform .25s ease;
     text-shadow:0 0 10px color-mix(in srgb,var(--player) 45%,transparent)}
   .blives i.gone{color:var(--rule);transform:scale(.86)}
+  /* THE HEART GOING OUT. One run of it, added by syncBossBar() only on the
+     frame a heart CHANGES to spent - see there for why the row is updated in
+     place rather than rewritten, which is what made an animation possible at
+     all. It swells, tips, and drops back to the dim outline: the transition
+     on `.blives i` above carries the colour, so this only has to carry the
+     motion. Kept short - a life is spent in the middle of a clock and the
+     player has somewhere to be. */
+  .blives i.out{animation:heartout .5s cubic-bezier(.3,1.5,.5,1) both}
+  @keyframes heartout{
+    0%  {transform:scale(1.34) rotate(-8deg);color:var(--player);
+         text-shadow:0 0 16px color-mix(in srgb,var(--player) 80%,transparent)}
+    38% {transform:scale(.72) rotate(5deg)}
+    100%{transform:scale(.86) rotate(0);color:var(--rule);text-shadow:none}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .blives i.out{animation:heartfade .3s linear both}
+    @keyframes heartfade{from{opacity:.5}to{opacity:1}}
+  }
   /* The right side is the opposition, and it wears the opposition's colour:
      a boss's phases in the hunters' own red, a trial's cores in the amber
      its cores are actually drawn in. The map keeps violet for a boss node,

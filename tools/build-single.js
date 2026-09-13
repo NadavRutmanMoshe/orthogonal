@@ -31,7 +31,7 @@ const inlineVendor=process.argv.includes("--vendor");
  * from the wrong branch precisely because nothing in either file said what
  * it was. See docs/HISTORY.md.
  *
- * Deliberately the commit and nothing else — no timestamp, no build number.
+ * Deliberately the commit and nothing else - no timestamp, no build number.
  * Rebuilding a given commit has to produce byte-identical output, because
  * that determinism is what turns "restore the old version" from a promise
  * into a diff you can check. A clock in the header would destroy it for no

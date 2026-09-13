@@ -1,11 +1,11 @@
 "use strict";
-/* Orthogonal — 11-sound.js
+/* I'm Just A Cube - 11-sound.js
    Web Audio blips. No assets.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
 
 /* ============================================================
-   SOUND — a few oscillator blips, no assets. The audio context
+   SOUND - a few oscillator blips, no assets. The audio context
    can only start after a gesture, so it's created lazily.
    ============================================================ */
 var actx=null, masterGain=null, limiter=null, postGain=null, shaper=null;
@@ -52,40 +52,82 @@ function defaultVolume(){
    `ctlAsked` sat here too, for a card at the end of the tutorial that
    offered the buttons back, and `hintAsked` for the card that explained the
    bulb; the buttons are a setting, and both of those cards are gone. */
-/* noSlowOffer is the player saying stop to the help the game offers after a
-   run of losses. It is global rather than per level: somebody who does not
-   want to be offered help does not want it again on the next boss either. It
-   keeps its name now that the offer it was born for - slowing the clock - has
-   gone, because it is persisted and renaming it would silently un-silence
-   everyone who has already pressed the button. */
-var settings={volume:defaultVolume(),brightness:1,ui:"none",volTouched:false,
-              /* pace is retired and pinned at 1; see paceScale() below. */
-              pace:1,
-              noSlowOffer:false,landHints:0,
-              starAsked:false};
+/* `noSlowOffer` was the player saying stop to a card that arrived unbidden
+   offering a skip. That card is the out-of-lives screen now and leads with
+   TRY AGAIN, so there is nothing to refuse; the key is gone from here and
+   from loadSettings()'s whitelist. */
+/* The one place the buttons default lives. RESET SETTINGS reads it too,
+   so the reset cannot drift away from a fresh install the way it had:
+   it put the buttons back to "full" while a first run starts hidden. */
+var UI_DEFAULT="none";
+/* The other two thirds of the setup question, and their defaults live here
+   beside the buttons for the same reason: RESET SETTINGS reads all three, so
+   a reset cannot drift away from a fresh install. MEDIUM and REGULAR are the
+   middle of each scale and the answer three of the five age bands get. */
+var SIZE_DEFAULT="medium";
+var SPEED_DEFAULT="regular";
+var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false,
+              /* HOW BIG THE BOARD IS DRAWN - small, medium, large. A camera
+                 setting and nothing else: boardScale() multiplies the arena
+                 term in fitViewSize(), so the whole level still fits on the
+                 screen at every value and only the margin round it changes.
+                 No rule, no par and no solver knows about it. */
+              size:SIZE_DEFAULT,
+              /* HOW FAST THE CLOCKS RUN - slow, regular, fast. One number
+                 multiplied onto `dt` in both real-time loops; see
+                 paceScale() below for why it is one number and not a set of
+                 dials. Word values rather than the retired numeric `pace`,
+                 which is deliberately not read by loadSettings() any more. */
+              speed:SPEED_DEFAULT,
+              /* WHICH AGE BAND WAS PICKED, or "" if the question has not
+                 been answered. It is remembered rather than derived so the
+                 menu can show which row is standing, and so SET UP BY AGE
+                 opens on the answer you gave; nothing else reads it, because
+                 the three settings it wrote are the whole of its effect. */
+              ageBand:"",
+              landHints:0,
+              starAsked:false,
+              /* The three cutscenes, each played once. Declared here so the
+                 shape of a fresh settings object is the whole truth, and
+                 deliberately NOT reset by RESET SETTINGS: that button puts
+                 preferences back, and whether you have watched the opening
+                 is not a preference. REPLAY STORY is how you ask for it. */
+              seenStory1:false, seenStory2:false, seenStory3:false,
+              /* `killcam` is gone. The owner played both and kept the
+                 television, so kcFull() is a constant now and there is no key
+                 to store. */
+              /* THE GREEN BLOCK, on or off. Coming back to 3D the block you
+                 land on is lit for as long as the landing rings hold; this
+                 is the switch that stops it. On by default because it is the
+                 one drawing of rule 5 there is, but a teaching aid nobody can
+                 turn off is decoration - and a player who has learned the
+                 rule is entitled to want their board back. */
+              foldmark:"on"};
 /* How many times the landing rule is spelled out in words. The rings keep
    drawing forever - they are free and they answer the question faster than a
    sentence does - but a line of text on every fold would be nagging. */
 var LAND_HINT_TIMES=3;
 
-/* PACE — how fast the two real-time things run. RETIRED AS A SETTING, and
-   the multiplier is kept.
+/* SPEED - how fast the two real-time things run. This is the seam the old
+   `pace` setting was kept open for, and it is now a row again: Menu > Fight
+   speed, SLOW / REGULAR / FAST.
 
-   `Menu > Real time > Pace` let a player slow every clock in the game to 75%
-   or 50%. It went on the owner's call, and the reason is the one that was
-   always written under it: a menu row asking a new player to diagnose their
-   own difficulty is standing in for a fight that is not tuned properly, and
-   the fights are tuned per fight now - the first boss is slow enough to
-   think in and the ramp does the rest. What is left for somebody genuinely
-   stuck is the skip, which struggleOffer() puts up on the fifth loss.
+   What went before, and why it is not simply back: `Menu > Real time > Pace`
+   asked a new player to diagnose their own difficulty in percentages, in the
+   middle of a settings sheet, and it was standing in for fights that were
+   not tuned. The fights are tuned per fight now. What is different this time
+   is that NOBODY IS ASKED COLD: the age card on a first run picks a value,
+   and this row is where that answer is changed afterwards rather than a
+   question put to somebody who has not played yet.
 
-   paceScale() stays, still multiplied onto `dt` in both fight loops, because
-   that one multiplication is the seam it would come back through. `pace` is
-   deliberately no longer read by loadSettings(), so a save written while
-   somebody was on SLOW cannot pin every clock in the game at half speed with
-   no row left to change it.
+   The key is `speed` with word values, NOT the old numeric `pace`, and that
+   is deliberate. `pace` came out of loadSettings()'s whitelist when its row
+   was cut, exactly so a save carrying 0.5 could not pin every clock in the
+   game at half speed with no row left to change it. Reading it again now
+   would spring that trap on every save written back then. A new key with a
+   new shape cannot.
 
-   It was deliberately *one number applied to dt*, not a set of eased dials.
+   It is deliberately *one number applied to dt*, not a set of eased dials.
    Every interval in a fight is derived from the clock - the step, the aim
    window, the creep, the rage multiplier, the trial's period and its fire
    window, the beat of grace after a hit - so scaling the clock scales all of
@@ -93,12 +135,118 @@ var LAND_HINT_TIMES=3;
    `step` by hand would not: it would change how many steps a hunter gets per
    telegraph, which is the fight's whole shape.
 
-   It was free and did not touch stars, and if it ever comes back it should
-   stay that way: a slower clock hands you nothing you did not already have
-   to work out, it only gives you longer to say it. */
+   The two ends are gentle on purpose. SLOW is a quarter longer to read a
+   telegraph in, which is the difference between seeing the line and reacting
+   to being hit; FAST is a fifth quicker, enough to feel urgent and not
+   enough to make a phase that was authored as solvable unsolvable. A fight
+   is hand-tuned, so these are a lean on it rather than a redesign of it.
+
+   It is free and does not touch stars, and it must stay that way: a slower
+   clock hands you nothing you did not already have to work out, it only
+   gives you longer to say it. */
+var SPEED_SCALE={slow:.75,regular:1,fast:1.2};
 function paceScale(){
-  var p=settings.pace;
-  return (typeof p==="number"&&p>0&&p<=1)?p:1;
+  return SPEED_SCALE[settings.speed]||1;
+}
+
+/* SIZE - how big the board is drawn, and nothing else.
+
+   fitViewSize() frames the arena and returns the frustum's half-size, so a
+   BIGGER number is MORE world on screen and therefore SMALLER blocks. That
+   inversion is the whole of the arithmetic here: LARGE is the value under 1.
+
+   It is a WISH, not the answer. fitViewSize() clamps it back up so the whole
+   arena is always on screen and the vertical margins - which are the level
+   name at the top and the control bar at the bottom, not slack - are never
+   eaten. The consequence is worth knowing before tuning these numbers: on the
+   biggest boards, which are already nearly screen-filling, LARGE can only win
+   the margin, and it is SMALL that has room to move. The comment in
+   fitViewSize() has the arithmetic and the board that proves it.
+
+   The ends are about a fifth either way, which is plainly a different size
+   without turning a two-block tutorial into a wall. */
+var BOARD_SCALE={small:1.2,medium:1,large:.82};
+function boardScale(){
+  return BOARD_SCALE[settings.size]||1;
+}
+
+/* THE SETUP CARD'S ANSWERS, and what each one sets.
+
+   NOTHING ON THE CARD SAYS WHAT A BAND DOES, on the owner's call, and that is
+   the point rather than an omission. A card that prints "medium board · slow
+   fights · compact buttons" under every row is three settings again - it hands
+   a first-time player the whole control surface at a glance and asks them to
+   audit it, which is the thing asking an age was supposed to avoid. They
+   answer one easy question and the game is set up. The rows in Settings are
+   where the details live, for whoever goes looking.
+
+   A first run is asked one question it can actually answer - how old are you -
+   instead of three it cannot: a player who has never seen the game has no way
+   to know whether they want the buttons, and the three settings that decide
+   how it feels are exactly the three nobody goes looking for. So the card
+   asks the one thing that predicts all three and writes them together.
+
+   The values are the owner's, and the shape of them is worth reading in one
+   go: the board grows with the band and the clock slows with it, and the
+   controls go the other way - the youngest band gets the screen (gestures,
+   no bar) and the oldest gets the buttons. Nobody is given SMALL by default.
+   SMALL exists for a player who wants to see more of the board at once and
+   goes and asks for it.
+
+   This is a DEFAULT, not a lock. Every one of the three is a row in the
+   menu, and picking a band again from SET UP BY AGE is the only thing that
+   ever overwrites all three at once. */
+var AGE_BANDS=[
+  {id:"u18", label:"UNDER 18", size:"medium", speed:"fast",    ui:"none"},
+  {id:"a18", label:"18 - 25",  size:"medium", speed:"regular", ui:"none"},
+  {id:"a26", label:"26 - 39",  size:"medium", speed:"slow",    ui:"compact"},
+  {id:"a40", label:"40 - 59",  size:"large",  speed:"slow",    ui:"full"},
+  {id:"a60", label:"60 +",     size:"large",  speed:"slow",    ui:"full"}
+];
+/* AND THE ANSWER FOR SOMEBODY WHO WILL NOT GIVE ONE.
+
+   I'D RATHER NOT SAY is on the card, and it is not a way out - it asks the
+   other question instead. An age is a proxy for how much help somebody wants;
+   this is the same question asked directly, for a player who would rather
+   answer it directly (or would rather not hand over their age, which is a
+   perfectly ordinary thing to feel about a game asking).
+
+   The three are deliberately not the same rows as three of the bands. EASY is
+   the oldest band's setup - the big board, the slow clock, the buttons on
+   screen - because "easy" here means "make it easy to see and easy to react
+   to", which is what that band was already asking for. HARD is the youngest
+   band's. MEDIUM sits between them with the compact bar, so the middle answer
+   is the one that has both some help and most of the screen. */
+var DIFF_BANDS=[
+  {id:"deasy", label:"EASY",   size:"large",  speed:"slow",    ui:"full"},
+  {id:"dmed",  label:"MEDIUM", size:"medium", speed:"regular", ui:"compact"},
+  {id:"dhard", label:"HARD",   size:"medium", speed:"fast",    ui:"none"}
+];
+/* One lookup over both tables, because everything downstream - the card, the
+   whitelist, `settings.ageBand` - only ever needs "is this a band, and what
+   does it set". The ids do not collide, and a save carrying one from either
+   table is valid. */
+function ageBandOf(id){
+  var i;
+  for(i=0;i<AGE_BANDS.length;i++)if(AGE_BANDS[i].id===id)return AGE_BANDS[i];
+  for(i=0;i<DIFF_BANDS.length;i++)if(DIFF_BANDS[i].id===id)return DIFF_BANDS[i];
+  return null;
+}
+/* Writes the three, remembers which band said so, and re-runs everything a
+   change to any of them needs: applyUI() for the body class, syncHud() for
+   the bar, onResize() because both the buttons and the board size change how
+   much room fitViewSize() is fitting the arena into. The same three calls the
+   menu's own rows make, in one place, so the card and the rows cannot
+   disagree about what applying a setting means. */
+function applyAgeBand(id){
+  var b=ageBandOf(id);
+  if(!b)return false;
+  settings.size=b.size;settings.speed=b.speed;settings.ui=b.ui;
+  settings.ageBand=b.id;
+  applyUI();saveSettings();
+  if(typeof syncHud==="function")syncHud();
+  if(typeof onResize==="function")onResize();
+  return true;
 }
 
 /* The individual blip gains below are a balanced mix - a footstep is meant to
@@ -845,6 +993,35 @@ function noiseFall(c,at,dur,vol){
   src.connect(bp);bp.connect(g);g.connect(out(c));
   src.start(at);src.stop(at+dur+.14);
 }
+/* NOISE WITH A SHAPE, for the four named deaths.
+
+   noiseFall() is one fixed gesture - a bandpass swept 3800 to 320 - which is
+   the right sound for a crate scraping and is the only noise this file had.
+   The deaths need four different ones ("plack", "poof", "kshhh", "ssss") and
+   they differ in exactly four things: where the filter starts, where it ends,
+   how tight it is, and whether the envelope opens sharply or eases in. So
+   this is that gesture with those four as arguments rather than four more
+   copies of the same fifteen lines.
+
+   `q` IS THE WHOLE CHARACTER. At 1 it is air, at 6 it is a whistle, and the
+   difference between "kshhh" and "ssss" is mostly that number. `soft` eases
+   the attack over a fifth of the sound instead of a fiftieth, which is what
+   separates a hiss that starts from a burst that hits. */
+function noiseAt(c,at,dur,vol,f0,f1,q,soft){
+  var len=Math.floor(c.sampleRate*(dur+.2));
+  var buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);
+  for(var i=0;i<len;i++)d[i]=Math.random()*2-1;
+  var src=c.createBufferSource();src.buffer=buf;
+  var bp=c.createBiquadFilter();bp.type="bandpass";bp.Q.value=q||1.1;
+  bp.frequency.setValueAtTime(f0,at);
+  bp.frequency.exponentialRampToValueAtTime(f1,at+dur);
+  var g=c.createGain();
+  g.gain.setValueAtTime(.0001,at);
+  g.gain.exponentialRampToValueAtTime(vol,at+dur*(soft?.22:.04));
+  g.gain.exponentialRampToValueAtTime(.0001,at+dur+.10);
+  src.connect(bp);bp.connect(g);g.connect(out(c));
+  src.start(at);src.stop(at+dur+.12);
+}
 function noiseRise(c,at,dur,vol){
   var len=Math.floor(c.sampleRate*(dur+.2));
   var buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);
@@ -859,6 +1036,75 @@ function noiseRise(c,at,dur,vol){
   g.gain.exponentialRampToValueAtTime(.0001,at+dur+.16);
   src.connect(bp);bp.connect(g);g.connect(out(c));
   src.start(at);src.stop(at+dur+.18);
+}
+/* THE CROWD - the room the fight is being watched in
+
+   A boss is the only thing in this game with an audience implied by its
+   shape: three phases, a clock, lives, a replay. The kill cam puts that room
+   on the soundtrack, and it is the one voice here that is a bed rather than
+   an event, so it is built rather than blipped.
+
+   IT ONLY CHEERS. There was a groan for deaths and it was cut: a bandpassed
+   noise bed swept down to 155Hz is a fair drawing of a crowd going "ohhh",
+   and on a phone speaker under a screenful of television snow it is
+   indistinguishable from the snow having a soundtrack. Reported exactly that
+   way. So the room reacts to the thing worth reacting to and is silent for
+   the other, which is also what a room does.
+
+   WHAT MAKES NOISE SOUND LIKE PEOPLE is not the filter, it is the envelope -
+   and, more than either, THE HANDS. Flat noise through a bandpass is wind;
+   the same noise with a slow random walk multiplied into it is a room,
+   because a crowd is hundreds of voices whose sum wanders. But the bed alone
+   is ambiguous, which is what the groan proved, so the bed is now the quiet
+   half and the claps carry it: applause is the one crowd sound nothing else
+   in this game could be mistaken for.
+
+   Deliberately quiet (.026 against a blip's .05). It fires on the same beat
+   as SFX.strike() and must sit UNDER it: the hit is the event, this is the
+   room reacting to it. */
+function crowdBed(c,at,dur,vol){
+  var len=Math.floor(c.sampleRate*(dur+.3));
+  var buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);
+  var env=0;
+  for(var i=0;i<len;i++){
+    env+=(Math.random()-.5)*.055;
+    if(env>1)env=1; else if(env<-1)env=-1;
+    d[i]=(Math.random()*2-1)*(.5+.5*Math.abs(env));
+  }
+  var src=c.createBufferSource();src.buffer=buf;
+  var bp=c.createBiquadFilter();bp.type="bandpass";bp.Q.value=.85;
+  bp.frequency.setValueAtTime(620,at);
+  bp.frequency.exponentialRampToValueAtTime(1600,at+dur*.42);
+  bp.frequency.exponentialRampToValueAtTime(980,at+dur);
+  var g=c.createGain();
+  g.gain.setValueAtTime(.0001,at);
+  g.gain.exponentialRampToValueAtTime(vol,at+.16);
+  g.gain.setValueAtTime(vol,at+dur*.5);
+  g.gain.exponentialRampToValueAtTime(.0001,at+dur+.22);
+  src.connect(bp);bp.connect(g);g.connect(out(c));
+  src.start(at);src.stop(at+dur+.28);
+}
+/* One pair of hands. Scattered rather than metrical, because applause that
+   lands on a grid is a drum machine. */
+function crowdClap(c,at,vol){
+  var len=Math.floor(c.sampleRate*.09);
+  var buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);
+  for(var i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,7);
+  var src=c.createBufferSource();src.buffer=buf;
+  var hp=c.createBiquadFilter();hp.type="highpass";hp.frequency.value=1500;
+  var g=c.createGain();g.gain.value=vol;
+  src.connect(hp);hp.connect(g);g.connect(out(c));
+  src.start(at);src.stop(at+.12);
+}
+/* WHERE THE HANDS FALL. Real applause is not evenly spread: it arrives in a
+   rush and thins out, so the times are the square of a uniform draw, which
+   piles them at the front and leaves a tail. Uniform times sounded like a
+   machine ticking, which is the same failure a metrical clap would be. */
+function crowdClaps(c,at,n,dur){
+  for(var i=0;i<n;i++){
+    var u=Math.random();
+    crowdClap(c,at+.06+u*u*dur,.009+Math.random()*.009);
+  }
 }
 /* HAPTICS - the same event, felt.
 
@@ -907,7 +1153,72 @@ var SFX={
     setTimeout(function(){blip(660,.12,"sine",.013,247);},90);
   },
   turn:function(){blip(420,.07,"triangle",.03);},
-  die:function(){blip(220,.5,"sawtooth",.05,55);},
+  /* DYING, WITHOUT THE BUZZER. It was one sawtooth at 220Hz sliding to 55
+     over half a second. A sawtooth is the harshest voice in this file - it
+     is what a door buzzer is made of - and it fired on the one event the
+     player is already unhappy about, several times a level on a hard one.
+     Reported as disturbing, and that reading is right: the sound was not
+     sad, it was abrasive.
+
+     The replacement says the same sentence with no edge on it. A triangle
+     sinking an octave carries the fall, which was the whole of the old
+     sound's meaning; a sine underneath gives it the weight a body has; and
+     one short noise breath keeps a front edge on it, so it still reads as an
+     event on a phone speaker rather than as a fade. Quieter in total than
+     the old single voice, and it lands rather than buzzes. */
+  /* FIVE DEATHS, FOUR OF THEM NAMED BY THE OWNER. One sound for all of them
+     was the first note; a softer one was the second; the third was that each
+     death should sound like the thing that did it, and these are those words
+     built out of the two ingredients this file has - a filtered noise burst
+     and a tone. The word is in the comment because the word is the spec. */
+  die:function(kind){
+    var c=audio();if(!c)return;
+    var t=c.currentTime;
+    /* "SSSS" - fire. A long narrow hiss that eases in rather than hitting,
+       held high and closing only a little, because a gas escaping does not
+       thump. Q of 5 is what makes it a hiss and not just air; the tiny tone
+       under it is the body of the thing going out, at the edge of hearing. */
+    if(kind==="spike"){
+      noiseAt(c,t,.62,.020,5200,2600,5,true);
+      blip(120,.5,"sine",.012,74);
+    /* "PLACK" - the world closing on you. Flat and over immediately: a very
+       short burst up at board level and one mid tone with almost no decay,
+       which is two pieces of something hard meeting and stopping. Anything
+       longer than about a tenth of a second stops being a clack and starts
+       being a hit. */
+    } else if(kind==="crush"){
+      noiseAt(c,t,.055,.034,2400,900,2.2,false);
+      blip(392,.075,"triangle",.036,300);
+      blip(138,.16,"sine",.028,104);
+    /* "KSHHH" - the sweep. A bright burst with a hard front that opens
+       downward and wide: the front is the edge arriving, the spread is it
+       going through. Deliberately brighter than the fire hiss and much
+       shorter, so the two noises are never mistaken for each other. */
+    } else if(kind==="trial"){
+      noiseAt(c,t,.34,.030,7000,900,1.5,false);
+      blip(240,.2,"sine",.016,120);
+    /* "KAPOOSH" - a hunter's hit, and the winner of the three that shipped as
+       a setting for one round (poof, kapoosh, thud - owner's call, and the
+       switch is gone with the question). Two parts: a 30ms click with no body
+       at all, then the poof opening out behind it. The click is what makes it
+       read as being STRUCK rather than as ceasing to exist, which is what
+       plain "poof" gave and what a charge landing is not. */
+    } else if(kind==="boss"){
+      // the "ka": a click with no body, 30ms and gone
+      noiseAt(c,t,.03,.036,4200,1800,2.4,false);
+      blip(520,.05,"triangle",.030,260);
+      // and the "poosh" opening out behind it
+      noiseAt(c,t+.035,.40,.028,2600,420,.9,true);
+      blip(96,.40,"sine",.032,52);
+    /* FALLING OUT OF THE WORLD, and the default for anything unnamed. The
+       one the owner kept: a triangle sinking an octave for the fall, a sine
+       under it for weight, a short breath for the front edge. */
+    } else {
+      blip(196,.46,"triangle",.030,98);
+      blip(98,.54,"sine",.026,62);
+      noiseFall(c,t,.13,.008);
+    }
+  },
   undo:function(){blip(260,.07,"sine",.03);},
   hint:function(){blip(700,.12,"sine",.035,1050);},
   /* A CRATE SLIDING. It was one square wave at 140Hz falling to 105, which
@@ -944,6 +1255,45 @@ var SFX={
   strike:function(){
     blip(150,.22,"square",.055,70);
     blip(900,.3,"sine",.04,1400);
+  },
+  /* THE ROOM, ON A KILL. Hands first and loudest, a bright bed under them,
+     and two voices going up over the top - one crowd sound this game could
+     not be mistaken for, one that says how many people, and one that says
+     they are people. There is deliberately no death half; see crowdBed(). */
+  cheer:function(){
+    var c=audio();if(!c)return;
+    var t=c.currentTime;
+    crowdBed(c,t,2.4,.026);
+    crowdClaps(c,t,20,1.5);
+    blip(430,.5,"sine",.012,690);
+    setTimeout(function(){blip(520,.45,"triangle",.010,810);},170);
+  },
+  /* THE RECORD LIGHT COMING ON. Two short high chirps, the noise every
+     camcorder ever made when the button went down - it lands on the beat the
+     viewfinder appears, so the picture and the sound say the same thing at
+     the same moment. Tiny: it is a click on a device, not an event in the
+     fight. */
+  rec:function(){
+    blip(1760,.045,"sine",.020);
+    setTimeout(function(){blip(2200,.055,"sine",.018);},95);
+  },
+  /* THE HIT, LANDING AGAIN, on the film's closing fold - the beat where the
+     world drops onto the thing you caught. Nothing new is synthesised: it is
+     the game's own strike, at half gain, because reliving it should sound
+     like it did one remove away.
+
+     IT NO LONGER PLAYS THE FOLD. It used to open with SFX.fold(), and once
+     the replay grew a soundtrack that became a duplicate: the fold the player
+     actually made is on the tape at the moment they made it (see repSfx in
+     js/12-play.js) and plays itself. Only the strike is here, and only
+     because it is deliberately kept OFF the tape - it fires on the last
+     instant of the recorded window, and the closing fold takes another half
+     second after that, so recorded it would land before its own picture. */
+  relive:function(ms){
+    setTimeout(function(){
+      blip(150,.22,"square",.030,70);
+      blip(900,.3,"sine",.022,1400);
+    },Math.max(0,ms|0));
   },
   // One per star landing on the counter, climbing as they arrive, so three
   // stars resolve upward instead of repeating the same note three times.

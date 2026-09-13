@@ -1,11 +1,11 @@
 "use strict";
-/* Orthogonal — 07-difficulty.js
+/* I'm Just A Cube - 07-difficulty.js
    Par, stars and difficulty tiers, derived from solver output.
    Loaded as a classic script: everything here shares one global scope,
    in the order listed in index.html. */
 
 /* ============================================================
-   DIFFICULTY — derived from what the solver actually found,
+   DIFFICULTY - derived from what the solver actually found,
    not from a guess. Longer optimal paths, forced rotations and
    extra flattens all mean more for the player to hold in mind.
    ============================================================ */
