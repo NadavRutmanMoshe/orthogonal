@@ -434,10 +434,10 @@ function guideSync(){
      covers the puzzle to do it.
 
      AND IF THIS LEVEL HAS BEATEN YOU TEN TIMES, he still speaks first. The
-     game has already offered a skip twice by then (struggleOffer fires on
-     every third loss); this is not a third offer, it is somebody saying out
-     loud that taking it is allowed. Pressing the bubble is what opens the
-     card. */
+     game has already put the skip in front of you on every one of those
+     losses (struggleOffer is the out-of-lives card); this is not another
+     offer, it is somebody saying out loud that taking it is allowed.
+     Pressing the bubble is what opens the card. */
   var n=(typeof fails!=="undefined"&&levelKey&&fails[levelKey])||0;
   if(n>=GUIDE_STUCK_AT)setTimeout(function(){
     if(GD&&app==="play")guideSay(GUIDE_STUCK,true);

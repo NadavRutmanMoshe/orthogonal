@@ -44,9 +44,12 @@ function die(kind){
     /* A REAL LOSS on a clock, counted. Offered after the reset rather than
        instead of it, so the board is back and the player can simply carry on
        if they would rather - the offer is a door, not a wall. */
+    /* EVERY TIME THE HEARTS RUN OUT, not every third time. See
+       struggleOffer(): the card is the out-of-lives card now rather than a
+       suggestion the game makes occasionally, so it is not on a counter. */
     if(kind==="boss"||kind==="trial"){
-      var n=noteFail(levelKey);
-      if(n%STRUGGLE_OFFER===0)setTimeout(struggleOffer,520);
+      noteFail(levelKey);
+      setTimeout(struggleOffer,520);
     }
   },kind==="crush"?1050:820);
 }
@@ -2578,30 +2581,29 @@ function resetLevel(){
   if(typeof trailClear==="function"){trailClear();trailHere();}
   playerMesh.position.set(player.x,player.y,player.z);
 }
-/* HELP, OFFERED ON EVERY FIFTH LOSS ON A CLOCK LEVEL, AND IT IS THE SKIP.
+/* THE OUT-OF-LIVES CARD. It used to be a SUGGESTION the game made every third
+   full loss on a clock level, and its only button was "give up on this one";
+   it is the loss screen now, on the owner's call, and it fires every time the
+   three hearts run out.
 
-   There used to be two rungs: slow the clock down first, and only offer the
-   way past once slowing had run out. The Pace setting has gone - a fight is
-   tuned per fight now, and asking a player to diagnose their own difficulty
-   in a menu was the thing that setting was always standing in for - so the
-   first rung went with it and there is one offer left.
+   The change is really about which of the two buttons is the offer. A card
+   that arrives unbidden saying SKIP THIS BOSS is the game telling you to stop
+   playing, and it needed an opt-out for exactly that reason - DON'T SHOW ME
+   AGAIN, backed by `settings.noSlowOffer`, which then had to survive a
+   reload. Put TRY AGAIN on it in the goal's green and the card is the thing
+   that was going to happen anyway: you lost, here is the board again, and
+   here is the other door if you want it.
 
-   Every third loss went with it too. Three is right when the first card is
-   cheap advice you can act on and keep playing; it is too eager for a card
-   whose only button is "give up on this one". Five losses is a player who is
-   genuinely stuck rather than one who is still learning the beat.
+   So the opt-out is gone with the thing it was opting out of, and
+   `noSlowOffer` came out of loadSettings()'s whitelist with it - a key whose
+   feature is removed comes out of the list. Nothing suppresses this card:
+   an old save that had pressed DON'T SHOW ME AGAIN would otherwise lose its
+   loss screen forever, which is the trap that whitelist exists to make
+   visible.
 
-   The opt-out stays and is still global: each card carries DON'T SHOW ME
-   AGAIN, read at the top of struggleOffer() before it has decided anything.
-   `settings.noSlowOffer` keeps its name even though there is nothing slow
-   left to refuse - it is a persisted key, and renaming it would silently
-   un-silence every player who has already pressed it. */
-function bindNever(){
-  bind("sgNever",function(){
-    settings.noSlowOffer=true;saveSettings();hidePanel();
-    flash("no more suggestions");
-  });
-}
+   The skip itself is unchanged and so is the rule under it: grantSkip() and
+   nothing else, a skip is not in `progress`, so it awards no stars by
+   construction and the level stays on the map, still playable. */
 /* THE CONTROLS QUESTION IS GONE, AND SO IS THE CARD THAT ASKED IT.
 
    The tutorial used to end by taking the bar off and putting up a card
@@ -2711,55 +2713,52 @@ function struggleOffer(){
      ordinary level a TRIAL if this is ever called from somewhere new. */
   if(!B&&!TR)return;
   if(typeof skips!=="undefined"&&skips[levelKey])return;
-  /* THE PLAYER SAID STOP, AND STOP MEANS EVERY OFFER.
-
-     `noSlowOffer` used to be read one line lower, as the argument to
-     paceSlower() only - so pressing DON'T SHOW ME AGAIN silenced the *slow*
-     offer and then fell straight through to the skip offer underneath it,
-     and from then on every third loss put up a card asking to skip the
-     level. Reported from a playtest as the button not working, which is
-     exactly what it looked like: the card kept coming. It is one preference
-     - "stop suggesting things" - so it is asked once, here, before the
-     function has decided which suggestion it was going to make. */
-  if(settings.noSlowOffer)return;
   var kind=B?"BOSS":"TRIAL";
-  var beat=(fails[levelKey]||STRUGGLE_OFFER)+" times";
+  var n=fails[levelKey]||1;
+  var beat=n===1?"beaten you once":"beaten you "+n+" times";
 
-  /* The one offer. It reaches grantSkip() and nothing else, which is what
-     keeps the rule the map keeps: ADS BUY PROGRESS, NEVER SCORE. A skip is
-     not in `progress`, so it awards no stars by construction and the level
-     stays on the map, still playable. */
-  /* ONE AD, NOT THREE (owner's call). Three was priced against the section
+  /* TRY AGAIN IS THE GREEN ONE AND IT IS FIRST. The board behind this card
+     is already back at the start - die() resets before it offers - so this
+     button does nothing but close, and that is the point: the card is not
+     standing between the player and another attempt, it is standing beside
+     it. Green is the goal's colour and it is what every confirm in the game
+     wears.
+
+     THE SKIP IS THE BLUE ONE. Blue is the ad button's colour and nothing
+     else's - it is the one thing on a card that has to mean "this plays a
+     video" - and with a green button above it the shape of the decision is
+     readable before a word of it is.
+
+     ONE AD, NOT THREE (owner's call). Three was priced against the section
      unlock on the map, which opens a whole shelf and is still three. This
-     opens one level you have already lost at repeatedly, and it is offered
-     at the exact moment somebody is deciding whether to keep playing at all
-     - a price that reads as a wall there is a price that closes the game
-     instead of collecting anything. */
-  offerShell(kind+" \u00b7 STUCK",esc(L.name),
-    "This one has beaten you "+beat+". You can come back to it whenever you "+
-    "like.",
+     opens one level you have already lost at, and it is offered at the exact
+     moment somebody is deciding whether to keep playing at all - a price
+     that reads as a wall there is a price that closes the game instead of
+     collecting anything.
+
+     NO LIMITS SKIPS WITHOUT THE VIDEO. Same call, same rule underneath, but
+     the price line comes off and with it the ad screen - so it drops to the
+     quiet outline rather than borrowing the green, which belongs to TRY
+     AGAIN on this card. */
+  offerShell(kind+" \u00b7 OUT OF LIVES",esc(L.name),
+    "All three hearts gone. The board is back at the start - this one has "+
+    beat+".",
+    "<button class='go' id='sgNo'>TRY AGAIN</button>"+
     /* The owner's own wording, off the pop-ups sheet. "1 AD" rather than "AN
        AD" because the number is the thing that changed and a numeral says it
        at a glance; the label keeps naming the fight because that is what was
        asked for. It is long enough to wrap on a narrow phone at the ad
        button's ordinary tracking, so `.panel.offer .ma .ad` tightens its type
        instead of the label losing words - see css/85-map.css. */
-    /* NO LIMITS SKIPS WITHOUT THE VIDEO. Same button, same call, same rule
-       underneath - a skip still awards no stars - but the price line comes
-       off and with it the ad screen, because the blue and the screen mean
-       "this plays a video" and this one no longer does. */
     (noLimits()
-      ? "<button class='go' id='sgAd'>SKIP THIS "+kind+"</button>"
+      ? "<button class='qt' id='sgAd'>SKIP THIS "+kind+"</button>"
       : "<button class='ad' id='sgAd'>"+adIcon()+"SKIP THIS "+kind+
-        " \u00b7 WATCH 1 AD</button>")+
-    "<button class='qt' id='sgNo'>KEEP TRYING</button>"+
-    "<button class='qt' id='sgNever'>DON'T SHOW ME AGAIN</button>",
+        " \u00b7 WATCH 1 AD</button>"),
     // The rule holds either way; what changes is what bought the skip.
     noLimits()?"A skip awards <b>no stars</b>. Nothing sold in this game does."
              :"A skip awards <b>no stars</b>. Ads buy progress, never score.",
     B?"var(--vio)":"var(--amb)");
   bind("sgNo",function(){hidePanel();});
-  bindNever();
   /* Not gated on an ad here, for the same reason grantSkip() is not: there
      is no provider yet, and a button that silently did nothing would be
      worse than one that plainly works. When the SDK is wired, its completion

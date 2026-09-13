@@ -112,11 +112,14 @@ function loadSettings(){
         /* THE COUNTERS HAVE TO BE ON THIS LIST OR THEY DO NOT EXIST. This
            function is a whitelist, deliberately - see the volume note above -
            so a key that is written by saveSettings() and not read here is
-           silently forgotten on every reload. `noSlowOffer` is the one that
-           matters: it is the player saying stop, and it has to still be true
-           tomorrow. Bounded rather than trusted, because a hand-edited save
-           should not be able to switch help off with a nonsense value. */
-        if(o.noSlowOffer===true)settings.noSlowOffer=true;
+           silently forgotten on every reload.
+
+           `noSlowOffer` is deliberately NOT read any more. It was the player
+           saying stop to a card that arrived unbidden offering a skip; that
+           card is the out-of-lives screen now, with TRY AGAIN on it, and
+           nothing suppresses it. A save that had pressed DON'T SHOW ME AGAIN
+           would otherwise lose its loss screen forever - which is exactly the
+           trap this whitelist exists to make visible. */
         /* `hintAsked` is NOT read here any more: the card it gated is gone,
            and a key not read here does not exist after a reload. An old save
            may still carry it; it is ignored rather than migrated, because
@@ -254,25 +257,24 @@ function progSave(){
 /* HOW MANY TIMES A CLOCK LEVEL HAS BEATEN YOU, kept per level and persisted.
 
    A boss or a trial is the only place in the game where losing costs the
-   whole attempt, and it is where the first real playtester got stuck. After
-   STRUGGLE_OFFER full losses the game offers a way past rather than waiting
-   to be asked - the map already allows a skip on a landmark, and this is the
-   same door opened at the moment it is actually wanted.
+   whole attempt, and it is where the first real playtester got stuck.
 
-   THREE, ON THE OWNER'S CALL, AND IT HAS BEEN BOTH. It was three while the
-   first card was cheap advice you could act on and carry on playing - slow
-   the clock down - then five once the only card left was the one whose
-   button says "give up on this one", on the reasoning that three losses is
-   a player still learning the beat. Back to three because the door is not a
-   wall: the card offers a skip and KEEP TRYING side by side, and a player
-   who is still learning presses KEEP TRYING and loses nothing by having been
-   asked. Waiting until the fifth loss is how somebody puts the game down on
-   the fourth.
+   IT IS NO LONGER A THRESHOLD, and the constant that was one has gone with
+   it. The count used to decide WHETHER the game offered a way past - three
+   losses, then five, then three again - and every setting of it was wrong in
+   one direction or the other, because the card it gated was the game telling
+   you to stop playing. struggleOffer() shows on every full loss now and
+   leads with TRY AGAIN, so there is nothing to threshold: what is left of
+   this number is the one sentence the card reads off it, "this one has
+   beaten you n times".
+
+   The neighbour still reads it too - ten losses is when he says out loud
+   that taking the skip is allowed (GUIDE_STUCK_AT in js/23-guide.js).
 
    Counted only on a REAL loss - lives run out - not on a life spent, and
-   cleared when the level is finally beaten, so the offer follows the current
-   run of failures rather than a lifetime total. */
-var FAIL_KEY="orthogonal:fails", fails={}, STRUGGLE_OFFER=3;
+   cleared when the level is finally beaten, so it follows the current run of
+   failures rather than a lifetime total. */
+var FAIL_KEY="orthogonal:fails", fails={};
 function failLoad(){
   if(!window.storage)return Promise.resolve();
   return window.storage.get(FAIL_KEY).then(function(r){

@@ -52,12 +52,10 @@ function defaultVolume(){
    `ctlAsked` sat here too, for a card at the end of the tutorial that
    offered the buttons back, and `hintAsked` for the card that explained the
    bulb; the buttons are a setting, and both of those cards are gone. */
-/* noSlowOffer is the player saying stop to the help the game offers after a
-   run of losses. It is global rather than per level: somebody who does not
-   want to be offered help does not want it again on the next boss either. It
-   keeps its name now that the offer it was born for - slowing the clock - has
-   gone, because it is persisted and renaming it would silently un-silence
-   everyone who has already pressed the button. */
+/* `noSlowOffer` was the player saying stop to a card that arrived unbidden
+   offering a skip. That card is the out-of-lives screen now and leads with
+   TRY AGAIN, so there is nothing to refuse; the key is gone from here and
+   from loadSettings()'s whitelist. */
 /* The one place the buttons default lives. RESET SETTINGS reads it too,
    so the reset cannot drift away from a fresh install the way it had:
    it put the buttons back to "full" while a first run starts hidden. */
@@ -87,7 +85,7 @@ var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false
                  opens on the answer you gave; nothing else reads it, because
                  the three settings it wrote are the whole of its effect. */
               ageBand:"",
-              noSlowOffer:false,landHints:0,
+              landHints:0,
               starAsked:false,
               /* The three cutscenes, each played once. Declared here so the
                  shape of a fresh settings object is the whole truth, and

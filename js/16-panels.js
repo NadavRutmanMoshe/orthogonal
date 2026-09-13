@@ -718,11 +718,10 @@ function menuPanel(){
        and so does the memory of which band was picked: a reset that left the
        age sheet showing a band it had just overwritten would be lying about
        what the game is set to. The question is not re-asked - RESET SETTINGS
-       is not a first run, and SET UP BY AGE is one button away. */
+       is not a first run, and nothing in the menu opens that card any more. */
     settings.size=SIZE_DEFAULT;settings.speed=SPEED_DEFAULT;settings.ageBand="";
 
-    // including "stop suggesting things": a reset is a reset
-    settings.noSlowOffer=false;settings.landHints=0;
+    settings.landHints=0;
     settings.starAsked=false;
     muted=false;
     applyVolume();
