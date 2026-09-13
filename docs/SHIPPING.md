@@ -24,6 +24,13 @@ set the shape of the fortnight rather than sitting at the end of it.
   goes up on day 2 with no ads and no shop in it, and the monetization is
   built on top of a clock that is already running. Start it on day 8 instead
   and production access lands in October.
+  **It must be the CLOSED track, and this is the trap.** Internal testing
+  does not count towards the 14 days however many people are on it, and worse:
+  somebody opted into the internal test is **not eligible** for the closed one
+  until they opt out of internal first. Put the build straight into closed
+  testing and send the 12 people the closed opt-in link. Do not use internal
+  testing at all this fortnight - it is the faster track and it buys nothing
+  here.
 - **Steam: 30 days between paying and releasing.** The $100 Steam Direct fee
   starts a mandatory wait. Paid Mon 14 Sep, the earliest possible release is
   **Tue 13 Oct**. Valve also wants a public "coming soon" page up for about
@@ -47,11 +54,18 @@ you count the ones that are out of your hands.
 - **Audience: children and adults both.** Not the Kids Category, which would
   ban third-party ads outright on iOS, but a mixed audience, which puts the
   Android build in Google Play's Families programme.
-- **Steam is $4.99 and carries the NO LIMITS pass**, so there are no ads in
-  the Steam build at all. See **The Steam grant** below for the one thing this
-  leaves dangling.
+- **Anyone who does not say they are 18 or over is treated as a child.**
+  `UNDER 18` and I'D RATHER NOT SAY both mean child, for ad purposes only.
+  The owner's call, and it is the conservative one: see below for why it also
+  means the intro card does not change at all.
+- **Steam is $5.99 and grants everything.** No ads, no shop, the whole
+  catalogue open. This supersedes the earlier $4.99 NO LIMITS reading, which
+  left four paid characters locked behind a shop Steam does not have.
 - **The shop is wired for v1.0.** StoreKit 2 and Play Billing, real products,
   not a shelf with disabled buttons on it.
+- **The upgrade discount is three products showing two.** The owner's
+  workaround for something no store does natively; written up under
+  **The shop** below.
 
 ---
 
@@ -93,7 +107,7 @@ And two that are not ready:
 Choosing "children and adults" rather than "13+" is four pieces of work, and
 the first one is the interesting one.
 
-### 1. The age card becomes the neutral age screen, by splitting one band
+### 1. The age card is already the neutral age screen, and does not change
 
 Google Play requires a **neutral age screen** on a mixed-audience app: it must
 ask age in a way that does not encourage misrepresentation, must not be
@@ -106,22 +120,37 @@ not played yet, and it is also exactly what makes the screen neutral: a player
 who wants the big board cannot know which band to lie into. The answer
 persists too, in the band id that `ageBandOf()` reads back.
 
-**What is missing is one band.** `AGE_BANDS` opens `UNDER 18`, and the line
-that matters to every ad network and every privacy regime is **13**, not 18.
-So:
+**The obvious gap is that `AGE_BANDS` opens at `UNDER 18` while the line
+every ad network and every privacy regime cares about is 13.** The first plan
+here was to split that band into `UNDER 13` and `13 - 17`. The owner took the
+simpler call instead: **treat the whole `UNDER 18` band as a child, and
+I'D RATHER NOT SAY with it.**
 
-- Split `u18` into **UNDER 13** and **13 - 17**. Both keep the same three
-  settings, so nothing about how the game plays changes and the card stays one
-  question.
-- **I'D RATHER NOT SAY means under 13**, for ad purposes only. Unknown age is
-  treated as a child everywhere in this area, and the difficulty bands it
-  swaps in carry no age at all, so there is nothing else it could honestly
-  mean.
-- One predicate, `adChild()`, over the stored band. It is read by the ad
-  initialisation and by nothing else.
+That is better than the split, for three reasons.
 
-This is the whole compliance change to the game itself, and it is small
-because the card was already right.
+- **The intro card does not change.** No new band, no re-tuned copy, no
+  screenshot to re-take, and the first run is still the one question it was
+  designed to be. The entire compliance change becomes a single predicate:
+
+      function adChild(){ var b=settings.ageband;
+        return b!=="a18" && b!=="a26" && b!=="a40" && b!=="a60"; }
+
+  Read by the ad initialisation and by nothing else in the game. Anything
+  that is not an explicitly adult band - `u18`, the three `DIFF_BANDS`, a
+  save with no band at all - falls to the child side by construction, which
+  is the right direction for a default to fail in.
+- **It is stricter than the rule asks for.** A 13 to 17 year old is legally a
+  teen, not a child, and could be served personalised ads. Serving them
+  non-personalised ones is over-compliance, and over-compliance is never the
+  thing that gets an app pulled.
+- **Unknown age has to mean child anyway.** I'D RATHER NOT SAY swaps in the
+  difficulty bands, which carry no age at all, so there is nothing else it
+  could honestly resolve to.
+
+**What it costs**: 13 to 17 year olds see non-personalised ads, which earn
+perhaps a third to a half of what personalised ones do. On a rewarded-video-
+only puzzle game that is a small number on a small number, and it buys the
+card staying exactly as designed.
 
 ### 2. Ads: rewarded only, certified SDK, child-directed when in doubt
 
@@ -154,11 +183,32 @@ later deselected.
 
 Seven products, not five: four shapes at $2.99 (`rook`, `pup`, `cat`,
 `robot`), `pass_nolimits` at $4.99, `pass_all` at $9.99, and **a seventh SKU
-for the $5.49 upgrade**. Neither store has a native "cheaper if you already
-own that one" for non-consumables, so `dealPrice()`'s answer has to map to a
-different product id rather than a different price on the same one. The
-pricing logic is already correct and already single-sourced; it needs one
-more id beside the number.
+for the $5.49 upgrade**.
+
+**Three products, two of them ever visible at once.** Neither store has a
+native "cheaper if you already own that one" for non-consumables, so the
+discount is done by swapping which product the shelf offers - the owner's
+workaround, and it is the right one:
+
+| Owns | Shelf shows | Product id behind it |
+|---|---|---|
+| nothing | NO LIMITS $4.99 **and** EVERYTHING $9.99 | `pass_nolimits`, `pass_all` |
+| `pass_nolimits` | EVERYTHING $5.49 only | `pass_all_upgrade` |
+| `pass_all` or the upgrade | neither | - |
+
+The third product is real and priced on both stores; it is simply never shown
+to somebody who has not already bought the first. **Half of this is already
+built**: `PASSES` carries `usdUp:"5.49"` and `needs:"pass_nolimits"`, and
+`dealPrice()` already returns the right number from one place. What it needs
+is for that answer to carry a product **id** as well as a price, and for
+`hasPass("pass_all")` to also be satisfied by owning `pass_all_upgrade` -
+otherwise somebody who took the discount does not own what they paid for.
+That second half is the part worth writing a test for.
+
+One consequence to accept: a store's own "you already bought this" receipt
+list will show `pass_all_upgrade` rather than EVERYTHING, so the two products
+want names a player would recognise on a receipt - "Everything (upgrade)"
+rather than an internal id.
 
 Two things the stores force that the code does not have yet:
 
@@ -174,27 +224,27 @@ Two things the stores force that the code does not have yet:
 
 ---
 
-## The Steam grant, and the thing it leaves dangling
+## The Steam grant
 
-$4.99 buying NO LIMITS is coherent and it is what the pass costs today. Two
-consequences worth being deliberate about rather than discovering:
+**$5.99, and it grants `pass_all` at boot.** Settled. The first reading of
+this was $4.99 carrying NO LIMITS, which was coherent right up until you
+notice that `owns()` grants the four paid characters from `pass_all` and not
+from `pass_nolimits` - so that build would have shown four locked characters
+with a BUY button behind a shop Steam does not have. The dead shelf, on the
+one platform with no way to fix it. Granting everything removes it, and
+`owns()` needs no new case at all.
 
-- **`noLimits()` sends `shards()` to 9999**, so the star economy is not a
-  balance on Steam. Stars are still earned and the reward shapes are still
-  earned by play, but the star shop stops being a thing you choose within. The
-  catalogue costing 253 against 189 earnable was a choice mechanic; on Steam
-  it will not be one. That is a fair trade for a paid game and it should be a
-  decision rather than a surprise.
-- **NO LIMITS does not include the four paid shapes.** `owns()` grants those
-  from `pass_all`, not from `pass_nolimits`. So a Steam build granted only NO
-  LIMITS shows four locked characters with a BUY button behind no shop - the
-  dead shelf, on the one platform that has no way to fix it.
+One consequence to accept rather than discover: **`noLimits()` sends
+`shards()` to 9999**, so the star economy is not a balance on Steam. Stars are
+still earned and the five reward shapes are still earned by play - money never
+buys those, on any platform - but the star shop stops being something you
+choose *within*. The catalogue costing 253 against 189 earnable is a choice
+mechanic on mobile and will not be one here.
 
-  **Recommendation: grant `pass_all` and keep the $4.99 price.** What a store
-  charges and what the build grants are separate decisions, the generous one
-  removes the dead shelf entirely, and `owns()` needs no new case. The
-  alternative is selling the shapes as Steam DLC, which is a second storefront
-  product for four cosmetics and is not worth the paperwork.
+If that turns out to matter when the Steam build is played, the fix is one
+predicate: give `shards()` its own question instead of asking `noLimits()`,
+so a Steam player gets every shape unlocked and a real star balance. Worth
+knowing it is that cheap; not worth doing before anyone has played it.
 
 ### The other Steam tweaks
 
@@ -259,6 +309,33 @@ afternoon by a script.
 
 ---
 
+## What Monday actually needs
+
+Two of the three accounts ask for more than a card number, and finding that
+out on the day is how a clock starts late.
+
+- **Apple: individual or organization, and it is not a small choice.** An
+  individual enrolment needs no D-U-N-S number and is the fast path, but the
+  App Store then lists the developer under the owner's own legal name.
+  An organization enrolment shows a company name and **requires a D-U-N-S
+  number registered to the legal entity** - free, but Dun & Bradstreet take up
+  to 5 business days to issue one, which is most of week one. **If the game
+  should ship under a studio name rather than a person's name, request the
+  D-U-N-S number first thing Monday**, before anything else on this list,
+  because it is the only item here with a queue in front of it.
+- **All three want banking and tax details before they will pay out.** A
+  non-US developer files a W-8BEN with Apple and with Valve, and Play wants a
+  payments profile. None of it blocks *submitting*, all of it blocks being
+  paid, and all of it is faster to do while waiting for a review than to
+  discover at launch.
+- **The privacy policy has to exist before the listings do**, not after: both
+  stores ask for the URL in the listing form, and Play's Data Safety
+  declaration is checked against what it says.
+- **Steam's $100 is per app and recoupable** - Valve credits it back once the
+  game has earned $1,000. It is a deposit more than a fee.
+
+---
+
 ## The fortnight
 
 Ordered so that the three clocks start on day one and the deferrable work is
@@ -268,11 +345,11 @@ deferred to the platform that cannot use it early anyway.
 
 | Day | |
 |---|---|
-| Mon 14 | **All three accounts, before anything else.** Play ($25), Apple ($99), Steam Direct ($100, starts the 30-day wait). Draft and host the privacy policy. |
+| Mon 14 | **All three accounts, before anything else.** Play ($25), Apple ($99), Steam Direct ($100, starts the 30-day wait). Draft and host the privacy policy. See **What Monday actually needs** below - two of the three ask for more than a card number. |
 | Mon 14 | Capacitor wrap around `build-single.js`'s output. One HTML file and three.js is genuinely a day's work. |
-| Tue 15 | **Signed Android build into closed testing, ads and shop absent.** This is the move that saves a week: the 14-day clock starts now and the build keeps updating under it. Recruit the 12 testers the same day. |
+| Tue 15 | **Signed Android build into the CLOSED track, ads and shop absent.** The move that saves a week: the clock starts now and the build keeps updating under it. Recruit the 12 testers the same day, and send them the closed opt-in link - internal testing does not count and actively blocks a tester from the closed test. |
 | Tue 15 - Thu 17 | The device gauntlet: safe areas, audio unlock, the two-finger turn, the back button. Needs a phone in hand. |
-| Thu 17 | The age band split and `adChild()`. Half a day. |
+| Thu 17 | `adChild()`. One predicate; the intro card does not change. An hour. |
 | Thu 17 - Fri 18 | AdMob behind the four hooks, rewarded only, child-directed from `adChild()`. |
 | Fri 18 - Sun 20 | IAP: seven products, one `purchase()` seam, RESTORE PURCHASES, and `owns()` reading the store's entitlements rather than localStorage. |
 
