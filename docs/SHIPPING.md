@@ -268,7 +268,58 @@ knowing it is that cheap; not worth doing before anyone has played it.
 
 ---
 
+## No Mac, and why that turns out not to matter
+
+The hardware is an Android phone, an iPhone, and a Windows/Linux PC. No Mac.
+There is a Mac belonging to a brother in Italy.
+
+**Building for iOS requires macOS - that part is real and has no workaround.**
+Capacitor produces an Xcode project and Xcode does not run anywhere else.
+But building is the half that can be rented, and **testing is the half that
+cannot** - and that is the half already owned. So the answer is a cloud Mac
+for the build and the iPhone in the pocket for everything else.
+
+- **Build on CI, not on a borrowed desk.** `Codemagic` runs the build on a
+  Mac mini in a data centre, handles the certificates and provisioning
+  profiles from an App Store Connect API key, and uploads straight to
+  TestFlight. It has a free tier and it supports Capacitor directly.
+  `GitHub Actions` macOS runners are the alternative and the repo is already
+  on GitHub: 2000 free minutes a month on a private repo, but **macOS burns
+  them at 10x**, so that is about 200 real macOS minutes - call it 16 to 25
+  iOS builds a month, free, with overage at about \$0.062/minute. Either is
+  fine. Codemagic first, because automatic code signing is the genuinely
+  painful part of this and it is the part Codemagic does for you.
+- **Then TestFlight onto the iPhone that is already here.** Once CI can
+  produce a signed build, the whole device gauntlet happens on the owner's own
+  phone with no Mac anywhere in the loop.
+- **The brother's Mac is an escape hatch, not the pipeline.** It works once.
+  What it cannot be is the thing every future hotfix depends on - a
+  resubmission then needs another person, in another country, in another
+  timezone, awake. Keep it for the one thing CI genuinely cannot do (below),
+  and do not build the release process on it. Flying out to compile a build
+  is not a plan.
+- **The one thing a Mac is still wanted for**: Safari Web Inspector, which is
+  how a WKWebView is debugged, and it only runs on macOS. See the gauntlet
+  below for why this is smaller than it sounds.
+
+### Steam is a Windows build, and that is normal
+
+Electron cross-builds fine for Windows from the Windows PC. A macOS Steam
+build would need a Mac again and the macOS share of Steam is tiny; skip it.
+**Steam Deck runs the Windows build through Proton**, so Deck support costs
+nothing extra. Linux native is optional and can wait for a v1.1.
+
+---
+
 ## Before mobile: the device gauntlet
+
+**Most of this can be done tonight, on the published URL, before any wrapper
+exists.** The game is one HTML file served over https, so mobile Safari on
+the owner's own iPhone answers the safe-area question, the two-finger turn
+question and the audio-unlock question immediately and for free. What is left
+for the WKWebView afterwards is small, which is what shrinks the Safari Web
+Inspector problem down to something that can wait for a visit, an on-screen
+debug overlay written into the game, or a paid Windows-side inspector.
 
 From `ROADMAP.md`, and all of it needs a real phone rather than a simulator.
 
@@ -346,7 +397,9 @@ deferred to the platform that cannot use it early anyway.
 | Day | |
 |---|---|
 | Mon 14 | **All three accounts, before anything else.** Play ($25), Apple ($99), Steam Direct ($100, starts the 30-day wait). Draft and host the privacy policy. See **What Monday actually needs** below - two of the three ask for more than a card number. |
+| Sun 13 | **Tonight, free**: open the published artifact on the iPhone and the Android phone and walk the gauntlet in the browser. Safe areas, the two-finger turn, the audio unlock. No wrapper, no account, no build - and it de-risks the least-known part of the fortnight before it starts. |
 | Mon 14 | Capacitor wrap around `build-single.js`'s output. One HTML file and three.js is genuinely a day's work. |
+| Mon 14 | Codemagic connected to the repo, building the iOS target on a cloud Mac. No Mac is needed for this or for anything after it. |
 | Tue 15 | **Signed Android build into the CLOSED track, ads and shop absent.** The move that saves a week: the clock starts now and the build keeps updating under it. Recruit the 12 testers the same day, and send them the closed opt-in link - internal testing does not count and actively blocks a tester from the closed test. |
 | Tue 15 - Thu 17 | The device gauntlet: safe areas, audio unlock, the two-finger turn, the back button. Needs a phone in hand. |
 | Thu 17 | `adChild()`. One predicate; the intro card does not change. An hour. |
