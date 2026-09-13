@@ -98,7 +98,7 @@ buttons at the end of its builder.
 | Toast / spoken cue | `#toast` | `flash()`, `flashCue()` | `50-layout-cues` | `toast` |
 | The sting | `#splash` | `20-splash.js` | `60-splash` | `splash` |
 | Intro card | `#intro` (static) | `nothingBehind()` decides it shows; the age buttons (`#introAges`) are its start button, bound in `19-bindings.js` from `AGE_BANDS`+`DIFF_BANDS` and applied by `applyAgeBand()` (`11-sound.js`). I'D RATHER NOT SAY swaps in the difficulty question in place (`#intro.diff`). Nothing on the card says what a band sets | `70-cards` (`.ages`, `.agesq`, `.agesw`) | `intro` |
-| SET UP BY AGE | `#intro` again | `introOpen(true)` (`19-bindings.js`), from Menu > More: the SAME card a first run sees, in `.setup` (CANCEL, and picking applies and closes instead of starting the game). There is no panel version | `70-cards` | `age` |
+| The setup card, reopened | `#intro` again | `introOpen(true)` (`19-bindings.js`): the SAME card a first run sees, in `.setup` (CANCEL, and picking applies and closes instead of starting the game). **Nothing opens it any more** - SET UP BY AGE came off Menu > More - so `tools/shot.js age` is its only caller. There is no panel version | `70-cards` | `age` |
 | Tutorial / explanation card | `#tutcard` | `cardPut(h,p,owner)` | `70-cards` | `tutcard` |
 | Win card | `#won` | `win()` (`12-play.js`): title, `.bigstars`, `#wonSub`, mastery/lock/story lines, buttons | `70-cards` | `win:2` |
 | Cutscene caption / skip / fade | `#story` (static) | `stSay()`, `stFadeTo()`, `storySkip()` (`22-story.js`); the scene itself is a level in the game's own renderer, placed by `storyFrame()` and framed shot by shot with `stFrame()` (`ST_SHOT`) | `98-story` | `story1:0`, `story1:14`, `story3:3`, `story2:1`, `reunion` |
@@ -106,7 +106,7 @@ buttons at the end of its builder.
 | The neighbour's speech bubble | `#guideBub` (static) | `guideSay()` / `guideHide()` (`23-guide.js`); moved every frame by `guideFrame()` to sit over the cube it belongs to, and flipped BELOW him (`.down`) when there is no room above - he floats on a pedestal out the back of the board now (`guideSpot()`, and `guidePoint()` frames where he APPEARS so it costs the fit nothing). The CUBE is the button, not the bubble. Anchored to `GD.px/py/pz`, the smoothed position WITHOUT his bob - projecting it off the bobbing mesh put a pixel of judder into the type | `99-guide` | `guide`, `guidestuck` |
 | The last card, after the last fold | `#storyend` (static) | `storyEndCard()` / `storyEndOk()` (`22-story.js`); answers `screenUp()` | `98-story`, `70-cards` (`.won`) | `storyend` |
 | Home screen | `#home` (static shell) | `homeShow`, `homeSync`, `homeCase` | `95-home` | `home` |
-| Menu | `#panel` | `menuPanel()` (`16-panels.js`); rows via `seg()`. **How it plays** is one card of three rows - Controls, Board, Fights - because the age card writes all three together | `80-panel-tall`, `40-panels` (`.srow`), `50-layout-cues` (`.crow .seg`) | `menu` |
+| Menu | `#panel` | `menuPanel()` (`16-panels.js`); rows via `seg()`. **WORLDS is the first thing in the body** - a `.psec`/`.pworlds` row into `sectionPicker()`, above the back-to-this-shelf row. **How it plays** is one card of three rows - Controls, Board, Fights - because the age card writes all three together | `80-panel-tall` (`.psec`, `.pworlds`), `40-panels` (`.srow`), `50-layout-cues` (`.crow .seg`) | `menu` |
 | Wardrobe | `#panel.ward` | `wardrobePanel(tab)` (`shape` / `color` / `deal`), `wardRefresh`, `wardMeta` | `40-panels`, `80-panel-tall` | `wardrobe`, `wardrobe:color` |
 | DEALS shelf | same | `wardList("deal")` = `PASSES` + `deal:true` shapes; prices via `dealPrice()` / `dealPriceSay()`, the `.wgives` list and `.wwas` struck price in `wardMeta` | `40-panels` | `--eval "wardrobePanel('deal')"` |
 | Section chooser | `#panel.map.secs` | `sectionPicker()` → `secGridDraw`, `secEmblem`, `secChains`, `secLock` | `85-map` | `sections` |
@@ -230,12 +230,15 @@ named). Undoing one of these needs the paragraph.
   940ms, so anything under a second cuts the word off mid-read and the snow
   arrives on top of the news. What it buys is *one thing at a time*: the word
   lands, it is read, the board it happened on is seen, then the picture drops.
-- **`Menu > Kill cam` is FULL or PLAIN** (`settings.killcam`, whitelisted in
-  `loadSettings`, reset by RESET SETTINGS). PLAIN keeps the sting and the film
-  and cuts the television out of the middle - `kcFull()` gates both
-  `killCamStart()`'s beats and the `kcLead()` the film waits on, so PLAIN is
-  genuinely shorter and not just hidden. It is a real open question about how
-  much ceremony a death deserves, not a debug switch; both halves ship.
+- **The kill cam has no switch: `kcFull()` is a constant true.** It was
+  `Menu > Kill cam`, FULL or PLAIN, put on the sheet because "how much
+  ceremony does a death deserve" is a real question and the only way to
+  settle it is to play both. PLAIN kept the sting and the film and cut the
+  television out of the middle - `kcFull()` gates both `killCamStart()`'s
+  beats and the `kcLead()` the film waits on, so it was genuinely shorter and
+  not just hidden. The owner played both and kept the television, so the row
+  came off and `settings.killcam` went out of `loadSettings()` with it.
+  Putting the question back is one row and one line.
 - **The whole screen is a skip while a film is up.** `#repSkip` (`.rskip`,
   z-index 17) is a full-bleed catcher that is `pointer-events:auto` only under
   `body.replaying`; it is the deliberate exception to `.replayui` and
@@ -525,23 +528,19 @@ named). Undoing one of these needs the paragraph.
   is on the project file's own panel, where the button says so. **Nothing
   that could read before stops reading**: an OL1 code and a JSON level are
   both still in somebody's chat history.
-- **`LOAD A LEVEL` also copies the campaign in**, one button per world you
-  have stood in (`sectionCopies()` / `addSectionLevels()`, `js/16-panels.js`).
-  It is here rather than on MY LEVELS because this is the screen that means
-  "bring levels in"; MY LEVELS is two actions and a list on the owner's call.
-  A copy arrives under the campaign's own name, number and all, on that
-  section's ground (`theme` is the `SECTIONS` index), and is re-scored by
-  `adoptLevel()` like anything else from outside. Three things it deliberately
-  will not do: no boss and no trial, because the editor has no field for a
-  pack or a sweep and a copy of `BOSS I` would be its arena with the fight
-  silently missing; no PROLOGUE, gated by `secPickable()`, because that is the
-  tutorial and not a world; and no second copy of a name you already have, so
-  pressing it twice is safe and a copy you have *renamed* is a level of your
-  own. Which levels belong to a world is asked of `mapSecOf()` rather than
-  written down as a range - `SECTIONS[].at` are indices and an insertion
-  shifts them.
+- **`LOAD A LEVEL` is a paste box and nothing else.** It carried one button
+  per world you had stood in, copying the campaign's ordinary puzzles into
+  your levels (`sectionCopies()` / `addSectionLevels()`), on the argument that
+  this is the screen that means "bring levels in". It came off on the owner's
+  call: a bulk import that lands thirty rows in MY LEVELS in one press is not
+  something to have under your thumb on the way to pasting a code a friend
+  sent you. Its two load-bearing rules are recorded in `docs/HISTORY.md` in
+  case it comes back.
 - **Win card**: `.wonmast` is the section-finished pill and `.wonwear` under
-  it names the shape that finished section just paid out (`grantShape()`);
+  it names the shape that finished section just paid out (`grantShape()`).
+  **`.wonwear` is a `<button>`**, not an `<em>`: it opens `wardrobeAt(id)`,
+  which selects that shape, stands it in the case, scrolls its tile into view
+  and adds `.panel.overcard` so the panel clears `.won`'s z-index 20;
   `won` story line is `esc()`d innerHTML; only newly gained stars fly; `NEXT LEVEL` becomes `WHAT'S LEFT` when the next level is
   behind the boss gate.
 - **Cards** (`.won` family) are full-bleed and answer `screenUp()`; the win

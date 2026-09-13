@@ -1649,3 +1649,103 @@ rows still climbed out over the ridge, because the amount depends on the
 row: half a course per square of depth, so one course at the row behind and
 two at the rows behind that. **When a thing must be hidden behind another in
 this projection, do the arithmetic per row; "lower" is not a number.**
+
+---
+
+## The final pass: five things taken off, four fixed
+
+A batch the owner asked for in one go. Most of it is subtraction, and the
+reasoning that put each thing there is worth keeping, because every one of
+these will look attractive again.
+
+**The Census became the Dimension Police.** A name, not a mechanic: the boss
+title, the opening cutscene's line, and the two "the census is closed" phase
+notes. Two more strings carried the *counting* rather than the word - "The
+count is closed." on the way out of a fight, and BOSS IV's own win line - and
+with the census gone they had nothing to point at, so both read "the case is
+closed" now. `LEVEL_RENAMES` was composed, not rewritten: the two keys that
+pointed at the old title were re-pointed and one new entry was added for the
+title that was live on the published link.
+
+**The kill cam's switch.** FULL and PLAIN were put on the settings sheet
+precisely so the question could be answered by playing both, which is the
+right way to settle "how much ceremony does a death deserve". It was answered:
+the television stays. `kcFull()` is a constant true and `settings.killcam` is
+out of the whitelist. Putting the question back is one row and one line.
+
+**SET UP BY AGE.** It was the only door an existing player had to the age card
+- `nothingBehind()` puts the home screen in front of anybody with a save, so
+that card is a first-run screen - and losing it means a save can no longer
+re-answer the one question the game asks. What it cost was a row re-asking a
+question the three rows directly above it already answer one at a time.
+`introOpen(true)` and `#intro.setup` still work and are reached by nothing.
+
+**WATCH THE OPENING / THE FIRE / THE ENDING.** Filed under More on the
+argument that a scene plays once and is then gone, so the way back to it
+belongs where a player would look. Three buttons naming three cutscenes were
+half that card, and two of them name things a player may not have reached.
+`storyPlay(id,replay)` keeps its replay flag, which is what stops a menu watch
+consuming `FIND THEM` on BOSS IV - the seam any future door uses.
+
+**COPY THE `<WORLD>` LEVELS, off LOAD A LEVEL.** The argument for it was
+sound: this is the screen that means "bring levels in", and the campaign is
+somewhere a level can come from. What it did in practice was put a bulk import
+on a paste box - one press and thirty rows arrive in MY LEVELS - on the way to
+pasting a code a friend sent you. `sectionCopies()` and `addSectionLevels()`
+went with it; their two rules, if they are ever wanted back, were that the
+blocks are DEEP-COPIED (the editor mutates `custom.blocks` in place, and a
+shallow copy let a player's edit rewrite the campaign under them for the rest
+of the session) and that membership comes from `mapSecOf()` rather than a
+written-down range, because `SECTIONS[].at` are indices and an insertion
+shifts every later one.
+
+**The skip stopped arriving on its own.** It used to be a card the game put up
+every third full loss on a clock level, and its only real button said "give up
+on this one" - which is why it needed DON'T SHOW ME AGAIN, and why the
+threshold behind it had been three, then five, then three again. Every setting
+of that number was wrong in one direction or the other, and the reason is that
+the number was never the problem: an unbidden card offering to skip is the
+game telling you to stop playing, and there is no good moment for it.
+
+It is the out-of-lives card now. Same card, same skip, same rule underneath -
+but it fires on every out-of-lives, and TRY AGAIN is on it in the goal's
+green. Nothing suppresses it, so `settings.noSlowOffer` and `STRUGGLE_OFFER`
+are both gone. **A card that offers only the exit needs an opt-out; a card
+that leads with the thing you were going to do anyway does not.**
+
+**An unlocked shape is a button.** The win card named the reward and said it
+was "in the wardrobe", which is a sentence sending the player two screens away
+to a shelf of thirty tiles with nothing saying which one. `wardrobeAt(id)`
+opens the wardrobe with the piece in the case and its tile scrolled to. Two
+things it needed and the next one like it will need too: `.panel.overcard`,
+because a panel sits UNDER the full-bleed cards on purpose and would otherwise
+open silently behind the win card, and `featCard` beside `featNews`, because
+a double kill on phase one is toasted mid-fight and a 1.1s toast is not
+somewhere a button can live.
+
+**The desert trial's height slice dropped nothing.** `axis:"y"` is a
+horizontal plane and TRIAL IV is the only level with one; `drawFallRank()`
+excluded the case outright, so the trial marked its catwalks red, killed the
+player on them, and nothing fell. The tiles were always right - they read the
+same `hits()` the rule does. Worth remembering as a shape of bug: **the rule
+had three axes and the drawing had two, and the level that used the third was
+the last one in the game.** The volume branch is a deliberate exception to the
+rank's "run the whole slice, floor or no floor" rule, because a height's whole
+slice is the entire board and a sheet of red cubes over it is a curtain.
+
+**And the strike kept killing after it had landed.** Reported as "the spikes
+already hit the floor, but if you go 2D you still lose a life - the window of
+death is bigger than the animation window", which is exactly what it was.
+`live()` is the last `fire` ms of a beat and the slice is lethal for all of
+them; the block snaps to the floor on the first of those frames and sits
+there. So the falling stopped and the killing did not, and it showed up
+through the fold because folding into a view-axis slice is lethal EVERYWHERE -
+a strike that landed harmlessly across the board took you anyway the moment
+you changed dimension. `trialFoldSpend()` marks the beat spent when either
+fold commits.
+
+What the fix is really doing is turning the beat into a rhythm instead of a
+cliff: charge, hit, then a window as long as the strike in which folding is
+free. **A telegraph promises a shape; if the rule's shape and the drawing's
+shape differ by a few hundred milliseconds, the drawing is what the player
+learned and the rule is the bug.**

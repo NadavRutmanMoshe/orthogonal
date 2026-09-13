@@ -676,17 +676,20 @@ unlock audio, drop the card, play the opening - is `introBegin()` in
 control bar up changes how much room the arena is fitted into and the opening
 cutscene is the next thing drawn.
 
-**It is a default, not a lock, and the way back matters more than the card.**
-`nothingBehind()` means a player with a save never sees the intro card again,
-so without a second door every existing player - the owner included - would
-have a game that had quietly decided their settings. That door is
-**Menu > More > SET UP BY AGE**, and it opens THE CARD - the same one a first
-run sees, in `.setup`: CANCEL exists, and picking a band applies and closes
-instead of starting the game (`introOpen(true)`, js/19-bindings.js). There was
-an `agePanel()` here that drew the question a second way, as a list with
-descriptions; both halves of it went on the owner's call. He wants to be able
-to LOOK at the first screen without throwing a save away to reach it, and two
-drawings of one question is one drawing too many. Each of the three is also its
+**It is a default, not a lock - and the way back is gone now too.**
+`nothingBehind()` means a player with a save never sees the intro card again.
+The second door was **Menu > More > SET UP BY AGE**, which opened THE CARD -
+the same one a first run sees, in `.setup`: CANCEL exists, and picking a band
+applies and closes instead of starting the game (`introOpen(true)`,
+js/19-bindings.js). The argument for it was that without it every existing
+player, the owner included, has a game that quietly decided their settings.
+It came off on the owner's call anyway: it is a row re-asking a question the
+three rows directly above it already answer one at a time. The card and
+`#intro.setup` still work and are reached by nothing but `tools/shot.js age`,
+so putting the row back is one button and one bind. (There was an `agePanel()`
+here too, drawing the question a second way as a list with descriptions; that
+went earlier, because two drawings of one question is one too many.) Each of
+the three is also its
 own row in **Menu > How it plays**, and changing one by hand deliberately does
 NOT re-pick a band - that is the player disagreeing with the band about one
 thing, not asking for the other two to move.

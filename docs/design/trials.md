@@ -124,6 +124,47 @@ the same curve, so the shadow darkening and the block arriving are one event.
   which survives the fold as a single column) drops one block, on that
   column. The wash stays but comes down to .30: it is the ground the row is
   read against now, not the message.
+- **AND A HEIGHT IS A SLICE TOO, which the rank did not know for a long
+  time.** `axis:"y"` is a horizontal plane - it takes everybody standing at
+  that height, whatever their x and z - and TRIAL IV is the only level in the
+  game that has one. `drawFallRank()` excluded the case outright, so the
+  desert trial lit its catwalk tiles red, killed the player on them, and
+  nothing ever fell. Reported in exactly those words. The tiles were always
+  right: they read the same `hits()` the rule does, and only the rank was
+  missing. The shape of the bug is worth remembering - **the rule had three
+  axes and the drawing had two, and the level that used the third is the last
+  one in the game.**
+
+  Its volume branch is a **deliberate exception** to ONE RANK, BOTH PICTURES
+  above: it drops on the *standable* squares at that height rather than on
+  the whole slice. Every other slice can run its full length because its full
+  length is a line; a height's full length is the entire footprint of the
+  arena, and a sheet of red cubes over every square of the board is a curtain
+  rather than a telegraph. The squares are walked off `trialMarks`, which IS
+  the set the tiles light, so the blocks land on the marks rather than near
+  them. The plane still drops the whole row: folded you are at every depth at
+  once, so there is no square of it you could be off.
+- **A STRIKE THAT HAS ALREADY LANDED DOES NOT ALSO CLAIM THE FOLD.**
+  Reported as "the spikes already hit the floor, but if you go 2D you still
+  lose a life - the window of death is bigger than the animation window",
+  and that is precisely what it was. `live()` is the last `fire` ms of a beat
+  and the slice is lethal for all of them; the block snaps to the floor on
+  the first of those frames and sits there squashed. So the *falling* stopped
+  and the *killing* did not - and the place it showed was the fold, because
+  folding into a slice down the view axis is lethal everywhere, so a strike
+  that landed harmlessly across the board took you anyway the moment you
+  changed dimension.
+
+  `trialFoldSpend()` marks the beat spent when either fold commits, exactly
+  as `trialFrame()` marks it when it actually hits somebody, and
+  `trialFoldPeril()` stops lighting `GO 2D` once the slice is down. Standing
+  in it when it lands still costs a life - that is the strike, and it is
+  drawn; folding into one that has not landed yet still kills when it
+  arrives, so the mechanic the sweep exists for is untouched. What the beat
+  becomes is a rhythm rather than a cliff: charge, hit, then a window as long
+  as the strike in which folding is free. **A telegraph promises a shape; if
+  the rule's shape and the drawing's differ by a few hundred milliseconds,
+  the drawing is what the player learned and the rule is the bug.**
 - **The blocks have teeth.** Four points on the underside, so a falling cube
   reads as a thing that crushes rather than as one being delivered.
   Deliberately *not* the fire block's orange, which was the first idea: that

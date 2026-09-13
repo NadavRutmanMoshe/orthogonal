@@ -263,13 +263,16 @@ there the camera is a real thing.
   rise, so testing it threw the hint away on the frame it was created.
 
 **`loadSettings()` is a whitelist and a key that is not read there does not
-exist.** `settings.landHints`, `slowOffers` and `noSlowOffer` are all written
-by `saveSettings()` and were silently forgotten on every reload until they
-were added to it - which mattered most for `noSlowOffer`, since that one is
-the player saying *stop*. **A key whose feature is removed comes out of the
+exist.** `settings.landHints`, `slowOffers` and `noSlowOffer` were all written
+by `saveSettings()` and silently forgotten on every reload until they were
+added to it - which mattered most for `noSlowOffer`, since that one was the
+player saying *stop*. **A key whose feature is removed comes out of the
 whitelist with it**, or the trap runs the other way and the list slowly fills
-with settings nothing reads. `trialBriefs` and `bossBriefs` went that way
-when the brief cards did.
+with settings nothing reads. `trialBriefs` and `bossBriefs` went that way when
+the brief cards did, and `noSlowOffer` and `killcam` have since gone the same
+way with DON'T SHOW ME AGAIN and the kill-cam row. `noSlowOffer` is the one to
+keep in mind: a save that had pressed that button would have lost its
+out-of-lives card forever if the key had been left on the list.
 
 ## How big the world is drawn
 

@@ -227,12 +227,20 @@ level data changed to make it.
 - **`mapReach()` counts solved levels only, never skips.** Counting a skip
   would drag the rolling window forward with it and quietly hand over
   everything in between - the exact levels the skip exists to leave for later.
-- **THE GAME OFFERS THE SKIP EVERY THIRD LOSS ON A CLOCK LEVEL.** `fails`
-  counts full losses per level - lives run out, not a life spent - persisted
-  beside `skips`, moved by `LEVEL_RENAMES` like everything else, and cleared
-  the moment the level is beaten, so it tracks the *current* run of failures
-  rather than a lifetime total. Every `STRUGGLE_OFFER` (3) losses,
-  `struggleOffer()` puts up the way past.
+- **THE SKIP IS ON THE OUT-OF-LIVES CARD, AND THAT CARD IS EVERY LOSS.**
+  `fails` counts full losses per level - lives run out, not a life spent -
+  persisted beside `skips`, moved by `LEVEL_RENAMES` like everything else, and
+  cleared the moment the level is beaten, so it tracks the *current* run of
+  failures rather than a lifetime total. `struggleOffer()` puts up the card
+  every time the hearts run out; the count is only the sentence it reads off.
+- **IT LEADS WITH TRY AGAIN, AND THAT IS WHY THERE IS NO THRESHOLD LEFT.**
+  Everything below this line is the history of a number that had to exist
+  while the card was a suggestion: an unbidden card whose only real button
+  says "give up on this one" is the game telling you to stop playing, and
+  there is no good cadence for that. TRY AGAIN in the goal's green - it only
+  closes, because `die()` has already reset the board - with the skip in the
+  ad button's blue under it makes the card the thing that was going to happen
+  anyway. `STRUGGLE_OFFER` and `settings.noSlowOffer` are both gone.
 - **It used to escalate, and the first rung went with the Pace setting.**
   The old order was the order a person would actually try: slow the clock
   first, offer the skip only once slowing had run out. That reasoning was
@@ -782,12 +790,12 @@ go through `settings`, which means they must be read back in
 opening plays on every launch, which is the worst version of a cutscene there
 is. Skipping counts as seeing. `RESET SETTINGS` deliberately does not clear
 them: it puts preferences back, and whether you have watched the opening is
-not a preference. `REPLAY STORY` in the settings panel is the way back, and
-`WATCH THE ENDING` sits beside it - always, on the owner's call. It is a
-spoiler with a button on it, and that was the argument for hiding it until
-the ending had been reached; a door that appears only once you no longer need
-it is not a door, and it is under More next to `RESET SETTINGS`, about as far
-from an accident as a button gets. **A replay is not a first watch**, and
+not a preference. `WATCH THE OPENING` / `THE FIRE` / `THE ENDING` were the way back, under More
+next to `RESET SETTINGS`; all three came off the sheet on the owner's call -
+three buttons naming three cutscenes were half that card, and two of them name
+things a player may not have reached. **Nothing opens a scene from the menu
+now.** The replay path is intact and is the seam any future door uses:
+**a replay is not a first watch**, and
 `storyPlay(id, replay)` is what keeps that true: it does not mark the scene
 seen, so somebody who looks at the ending early still gets `FIND THEM` on
 BOSS IV's card and still gets the scene at the moment it is worth something;

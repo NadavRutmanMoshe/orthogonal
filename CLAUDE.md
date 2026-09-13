@@ -203,12 +203,11 @@ Block format `[x,y,z,k]`: 0 stone, 1 water (code says `glass`), 2 anchor,
   rest. It is not a hash and cannot be one: nothing here can look an id up.
   `LOAD A LEVEL` still reads `OL1` codes, `orthogonal-level-1` JSON, a bare
   level and a whole project file (`shareCode()`, `js/16-panels.js`).
-- **`LOAD A LEVEL` also copies the campaign into your levels**, one button per
-  world you have stood in (`sectionCopies()`/`addSectionLevels()`). Ordinary
-  levels only - no boss, no trial, no PROLOGUE (`secPickable()`) - under the
-  campaign's own names, on that section's ground, re-scored by `adoptLevel()`,
-  and a name you already have is skipped. Membership comes from `mapSecOf()`,
-  never a written-down range.
+- **`LOAD A LEVEL` is a paste box and nothing else.** It offered the
+  campaign's own puzzles as something to copy, one button per world; a bulk
+  import on a paste box is not a thing to press on the way to pasting a code
+  somebody sent you, and it is gone with `sectionCopies()` and
+  `addSectionLevels()` (`docs/HISTORY.md`).
 
 ## Invariants that bite
 
@@ -223,6 +222,20 @@ is the rule.
 - Every death on a clock spends a life, not the level. A spent life buys
   `SHIELD_MS` of shield; `shielded()` is the single predicate; `deathPending`
   freezes the shield at the moment a fatal move is *committed*.
+- **A strike that has already landed does not also claim the fold.**
+  `TR.live()` is the last `fire` ms of a beat and the slice is lethal for all
+  of it, while the block snaps to the floor on the first frame of it - so the
+  falling stopped and the killing did not, and folding into a view-axis slice
+  is lethal everywhere. `trialFoldSpend()` marks the beat spent from both
+  folds, and `trialFoldPeril()` stops lighting `GO 2D` once the slice is
+  down. Standing in it when it lands still costs a life; folding into one
+  that has NOT landed yet still kills when it arrives.
+- **A sweep may be a HEIGHT** (`axis:"y"`, TRIAL IV only), and
+  `drawFallRank()` has a branch for it: the volume drops on the standable
+  squares at that height (walked off `trialMarks`, so the blocks land on the
+  marks) and the plane drops the whole row. Every other slice runs its full
+  length, floor or no floor; a height's full length is the whole board, which
+  is a curtain rather than a telegraph.
 - `saveSession()` refuses to write while `dying`; `respawn()` and
   `trialHurt()` write afterwards. The trial's cores and lives are in the
   session; a boss resumes fresh.
@@ -299,6 +312,11 @@ is the rule.
   `?` · star total · `✕`; footer (`.pfoot`) is up-one-level · `CLOSE`. Adding
   a control to one of them means adding it to all five or to none. MY LEVELS
   is the fifth, and every screen under it goes through `mlScreen()`.
+- **WORLDS is at the top of the settings sheet**, a `.psec` row above the
+  back-to-this-shelf row, wearing the chooser's `#4ec8e0` and `gridIcon()`.
+  It opens `sectionPicker()`, not the map. It reverses the note in
+  `menuPanel()` that said a fourth copy of LEVELS is one too many: every
+  other door out of that sheet goes down or sideways.
 - The running star total is hidden by any open panel and while a clock runs.
 - `nothingBehind()` decides intro-card versus home screen and START versus
   CONTINUE; `NEXT LEVEL` is always the next level, except into a locked shelf
@@ -391,10 +409,10 @@ is the rule.
   once he is gone, via `stFrame(null)`) and the ending's, which is close from
   the first frame. `def.frame` is applied in `stArrive()`, not `storyPlay()`,
   so a travelling scene does not fit the arena it is leaving to its own box.
-- **`WATCH THE OPENING` / `THE FIRE` / `THE ENDING` are always in the menu**, and a
-  replay is not a first watch: `storyPlay(id,replay)` does not mark the scene
-  seen and hands back where it came from, so looking at the ending early does
-  not consume `FIND THEM` on BOSS IV.
+- **Nothing in the menu opens a scene any more.** The three `WATCH THE ...`
+  buttons came off the settings sheet on the owner's call. `storyPlay(id,replay)`
+  keeps its replay flag - a replay does not mark the scene seen and hands back
+  where it came from, so a future door cannot consume `FIND THEM` on BOSS IV.
 
 **The neighbour** (`chrome.md`)
 - **He is decoration, and that is forced.** Nothing in `resolveStep()`,
@@ -468,7 +486,8 @@ is the rule.
   pointing at nothing.
 - His tips render through `tutWords()`, his cheer goes on the **win card**
   (`guideWinLine()`, every third level), and ten losses opens his one
-  unprompted line, which is a button into `struggleOffer()`.
+  unprompted line, which is a button into `struggleOffer()` - the same
+  out-of-lives card the fight itself puts up.
 
 **Settings and saves** (`systems.md`)
 - **A first run is asked ONE question: how old are you.** The intro card's
@@ -487,12 +506,13 @@ is the rule.
   regular · compact, HARD medium · fast · hidden. It replaces the bands in
   place (`#intro.diff`), and `ageBandOf()` looks in both tables so a save can
   carry either.
-- **It is a default, not a lock, and the way back is load-bearing**:
-  `nothingBehind()` means a save never sees that card again, so
-  **Menu > More > SET UP BY AGE** is the only door an existing player has -
-  and it opens THE SAME CARD (`introOpen(true)`, `#intro.setup`: CANCEL, and a
-  pick applies and closes instead of starting the game). There is no second
-  drawing of the question and there should not be. All three are also rows on **Menu > How it plays** - one card,
+- **It is a default, not a lock, and there is no longer a way back to the
+  card.** `nothingBehind()` means a save never sees it again, and
+  **Menu > More > SET UP BY AGE** - the one door that reopened it - came off
+  on the owner's call. `introOpen(true)` and `#intro.setup` (CANCEL, and a
+  pick applies and closes instead of starting the game) still work and are
+  reached by nothing; `tools/shot.js age` is the only thing that opens them.
+  What is left is the three rows on **Menu > How it plays** - one card,
   because the age card writes them together - and changing one by hand does
   NOT re-pick a band.
 - **`settings.speed` is the old `pace`, under a new key on purpose.**
@@ -501,7 +521,12 @@ is the rule.
   save from when that row existed would pin every clock at half speed.
 - `loadSettings()` is a **whitelist**. A key not read there does not exist
   after reload; a key whose feature is removed comes out of the list.
-- `noSlowOffer` keeps its name though nothing slow is left; it is persisted.
+- **A clock level's loss screen is `struggleOffer()`**, and it is put up on
+  every out-of-lives, not on a counter: TRY AGAIN in the goal's green (it
+  only closes - `die()` has already reset the board) and the skip in the ad
+  button's blue under it. `settings.noSlowOffer` and `STRUGGLE_OFFER` are
+  gone with the opt-out; nothing suppresses the card. `fails[]` is still
+  kept, for the card's own sentence and for the neighbour's line at ten.
 - **`SFX.die(kind)` dispatches five deaths** and none of them is a setting:
   "kapoosh" for a hunter's hit, "plack" for a crush, "kshhh" for the sweep,
   "ssss" for fire, and the fall's own voice for everything unnamed. The
@@ -509,8 +534,11 @@ is the rule.
   the owner picked, and the switch came out with the question.
 - **`settings.foldmark` is `"on"`/`"off"`** - Menu > Where you land, the
   switch on the green block the fold marks. Whitelisted in `loadSettings()`
-  and reset by RESET SETTINGS, like `killcam`. Nothing applies it: the render
-  loop asks `foldMarkOn()` every frame.
+  and reset by RESET SETTINGS. Nothing applies it: the render loop asks
+  `foldMarkOn()` every frame.
+- **The kill cam has no switch: `kcFull()` is a constant true.** The owner
+  played FULL and PLAIN and kept the television, so `settings.killcam` came
+  out of the defaults, out of RESET SETTINGS and out of `loadSettings()`.
 - The buttons default is `UI_DEFAULT` (`js/11-sound.js`, `"none"`). The fresh
   `settings` object and `RESET SETTINGS` both read it, so a reset cannot drift
   away from a first run; any other default belongs next to it, not inlined.
@@ -539,7 +567,14 @@ is the rule.
   The fifth is a **feat** (`feat`, no `sec`): the **Domino**, paid by two of
   the pack in one silhouette column (`n>=2` in `bossFoldCrush()`), granted the
   instant it happens. `featNews` carries only the NEWS, to whichever of the
-  toast, the phase note or the win card gets there first. The twin's branch is
+  toast, the phase note or the win card gets there first; `featCard` is the
+  same item kept for the win card, so a double kill toasted mid-fight still
+  gets its line at the end of that fight. **Both unlocked lines on the win
+  card are buttons** into `wardrobeAt(id)`, which opens the wardrobe on that
+  shape, scrolls its tile into view and selects rather than equips - and adds
+  `.panel.overcard` (z-index 21), because a panel normally sits UNDER a
+  full-bleed card. `showPanel()` clears that class on the way into every
+  panel. The twin's branch is
   deliberately not included - a twin core is always both halves. A feat's tile
   label (`short`) must be three words at most: `.item span.wlock` is `nowrap`
   and a long one widens the grid column and pushes the list under the case.
