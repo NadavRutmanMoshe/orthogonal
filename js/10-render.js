@@ -3208,19 +3208,58 @@ function planeFall(i){
   }
   return planeFalls[i];
 }
+/* Both ends of the u range the board spans at this view, so a slice down the
+   axis you are looking along can lay its rank across the whole plane. */
+function uSpan(){
+  var uA=arenaLo[0]*AX[view].r[0]+arenaLo[2]*AX[view].r[2];
+  var uB=arenaHi[0]*AX[view].r[0]+arenaHi[2]*AX[view].r[2];
+  return [Math.min(uA,uB)-1,Math.max(uA,uB)+1];
+}
 function drawFallRank(sw,ph,live,rx,rz){
-  var n=0, i;
-  if(TR&&app==="play"&&sw.axis!=="y"&&!dying){
+  var n=0, i, u, sp;
+  if(TR&&app==="play"&&!dying){
     var cells=[], y;
-    if(flatT>.5&&flatPos){
+    /* A HEIGHT IS A SLICE TOO, and for one build it was the only kind that
+       dropped nothing.
+
+       `axis:"y"` is a horizontal plane: it takes everybody standing at that
+       height, whatever their x and z, and TRIAL IV is the only level in the
+       game that has one. The tiles lit correctly - they read the same hits()
+       the rule does - but this function excluded the case outright, so the
+       desert trial marked half its catwalks red and then killed the player
+       with nothing falling on them. Reported exactly that way.
+
+       IN THE VOLUME IT IS DRAWN ON THE STANDABLE SQUARES AT THAT HEIGHT,
+       which is a deliberate exception to the rank's own rule. Every other
+       slice runs the whole length of itself, floor or no floor, because the
+       plane draws a row straight across and the two pictures have to agree.
+       A height has no length to run - it is the entire footprint of the
+       arena - and a sheet of red cubes over every square of the board is not
+       a telegraph, it is a curtain. The squares are asked for by walking
+       `trialMarks`, which IS the set of squares the tiles light, so the
+       blocks land exactly on the marks rather than near them.
+
+       IN THE PLANE it is the whole row, at that height: folded you are at
+       every depth at once, so there is no square of it you could be off. */
+    if(sw.axis==="y"){
+      y=sw.at;
+      if(flatT>.5&&flatPos){
+        sp=uSpan();
+        for(u=sp[0];u<=sp[1];u++)cells.push([u*rx,u*rz]);
+      } else {
+        for(i=0;i<trialMarks.length;i++){
+          var tc=trialMarks[i].userData.cell;
+          if(tc[1]===sw.at)cells.push([tc[0],tc[2]]);
+        }
+      }
+    }
+    else if(flatT>.5&&flatPos){
       y=flatPos.y;
       var comp=sw.axis==="x"?AX[view].r[0]:AX[view].r[2];
       if(comp!==0)cells.push([sw.at*comp*rx,sw.at*comp*rz]);
       else{
-        var uA=arenaLo[0]*AX[view].r[0]+arenaLo[2]*AX[view].r[2];
-        var uB=arenaHi[0]*AX[view].r[0]+arenaHi[2]*AX[view].r[2];
-        for(var u=Math.min(uA,uB)-1;u<=Math.max(uA,uB)+1;u++)
-          cells.push([u*rx,u*rz]);
+        sp=uSpan();
+        for(u=sp[0];u<=sp[1];u++)cells.push([u*rx,u*rz]);
       }
     } else {
       y=player.y;
