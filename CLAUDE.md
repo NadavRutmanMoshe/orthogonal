@@ -285,7 +285,12 @@ is the rule.
   clock (`.strike`/`.peril`), the eye (`lookCue()`) and the primer's
   checklist (`primerMarks()`).
 - Anything animated inside markup that `syncHud()` rewrites restarts on
-  every redraw. The live star row is its own element for that reason.
+  every redraw. The live star row is its own element for that reason, and
+  **the heart row is updated in place** (`syncBossBar()`) for the same one:
+  rewritten, every heart arrived already spent and the going-out could not
+  be drawn. `.out` is added only on the frame a heart CHANGES to gone.
+  Both fatal paths call `syncBossBar()` before `die()`, or the last heart is
+  never painted at all - the level resets first.
 - `L.primer` is the **checklist** of rules under a level's hint (one level has
   one), and it is **not** the retired `brief`, which was a card and whose name
   is still taken. Each step is a predicate over `killState()`, never a step
@@ -527,10 +532,13 @@ is the rule.
   with `#bRetry`'s own arrow - it only closes, `die()` has already reset the
   board - and where NEXT LEVEL stands on that card, SKIP over WATCH AN AD in
   the ad button's blue. Losing a fight and finishing short of three stars
-  are the same moment, so they are the same drawing.
+  are the same moment, so they are the same drawing. It is a kicker, the
+  level's name and the two buttons and **nothing else**: the lead and the
+  footnote both came off, so `offerShell()` skips an empty lead the way it
+  already skipped an empty note.
   `settings.noSlowOffer` and `STRUGGLE_OFFER` are gone with the opt-out;
-  nothing suppresses the card. `fails[]` is still kept, for the card's own
-  sentence and for the neighbour's line at ten.
+  nothing suppresses the card. `fails[]` is still kept, for the neighbour's
+  line at ten.
 - **`SFX.die(kind)` dispatches five deaths** and none of them is a setting:
   "kapoosh" for a hunter's hit, "plack" for a crush, "kshhh" for the sweep,
   "ssss" for fire, and the fall's own voice for everything unnamed. The

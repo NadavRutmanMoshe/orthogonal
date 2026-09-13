@@ -494,20 +494,43 @@ function syncBossBar(){
   // underneath belongs to whatever is opposing you, and takes that thing's
   // own colour rather than a third one the player has to learn.
   bar.classList.toggle("tr",!!TR&&!B);
-  var lv="",co="";
-  // A heart rather than a dot, because a dot is a countable token and a
-  // heart is a life - and this row is the one thing on a clock the player
-  // checks between every move.
-  for(var i=0;i<BOSS_LIVES;i++)
-    lv+="<i class='"+(i<lives?"":"gone")+"'>"+
-        (i<lives?"\u2665":"\u2661")+"</i>";
+  var co="";
+  /* A heart rather than a dot, because a dot is a countable token and a
+     heart is a life - and this row is the one thing on a clock the player
+     checks between every move.
+
+     THE ROW IS UPDATED IN PLACE, NOT REWRITTEN, and that is what buys the
+     animation. This whole bar used to be one innerHTML per redraw, so every
+     heart was a brand new element that arrived already in its final state -
+     the `transition` on `.blives i` below could never fire, because there
+     was never a value to transition FROM. It is the rule in CLAUDE.md, in
+     the one place it was still being paid: anything animated inside markup
+     that syncHud() rewrites restarts on every redraw.
+
+     So the slots are built once and only their class changes after that,
+     and the heart that has just gone out gets `.out` for one run of the
+     burst. Off a CHANGE rather than off the state, or every redraw while
+     you are down a life would pop the same heart again. */
+  var box=$("bossLives"), i, el, gone;
+  if(box.children.length!==BOSS_LIVES){
+    var lv="";
+    for(i=0;i<BOSS_LIVES;i++)lv+="<i>\u2665</i>";
+    box.innerHTML=lv;
+  }
+  for(i=0;i<BOSS_LIVES;i++){
+    el=box.children[i];gone=i>=lives;
+    if(gone===el.classList.contains("gone"))continue;
+    el.textContent=gone?"\u2661":"\u2665";
+    el.classList.toggle("gone",gone);
+    el.classList.remove("out");
+    if(gone){void el.offsetWidth;el.classList.add("out");}
+  }
   if(B)for(var j=0;j<B.hp;j++)co+="<i class='"+(j<bossHp?"":"gone")+"'></i>";
   // A trial's cores count down as you reach them, so the row empties from
   // the left as you go - the same shape as a boss losing hit points.
   else if(TR&&TR.cores)
     for(var k=0;k<TR.cores.length;k++)
       co+="<i class='"+(k<TR.cores.length-trialCore?"":"gone")+"'></i>";
-  $("bossLives").innerHTML=lv;
   $("bossCores").innerHTML=co;
 }
 /* The pool, on the bulb. Asked from syncHud rather than kept in sync by a

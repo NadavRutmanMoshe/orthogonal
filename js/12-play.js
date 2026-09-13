@@ -78,6 +78,11 @@ function spendLife(){
     return;
   }
   lives--;
+  /* THE LAST HEART IS DRAWN BEFORE THE LEVEL ENDS. Both fatal paths used to
+     go straight into die() and return, and nothing between here and the
+     reset calls syncHud() - so the third heart was never once painted as
+     spent. It went out by disappearing along with the board. */
+  syncBossBar();
   // The fight wins the naming: BOSS IV carries a sweep, so TR is set on it too
   // and asking TR first would show the trial's loss card at the end of a boss.
   if(lives<=0){die(B?"boss":"trial");return;}
@@ -1748,8 +1753,10 @@ function trialHurt(){
   shieldMs=SHIELD_MS;
   var bar=$("bossBar");
   if(bar){bar.classList.remove("hurt");void bar.offsetWidth;bar.classList.add("hurt");}
-  // See spendLife(): on a boss that sweeps, TR is set and B is what names the
-  // death, so the fight's own loss card is the one that comes up.
+  // See spendLife(): the last heart has to be painted before the level ends.
+  syncBossBar();
+  // On a boss that sweeps, TR is set and B is what names the death, so the
+  // fight's own loss card is the one that comes up.
   if(lives<=0){die(B?"boss":"trial");return;}
   flash((flat?"flat in the slice":"caught by the sweep")+" · "+
         lives+" "+(lives===1?"life":"lives")+" left");
@@ -2760,8 +2767,11 @@ function starsOffer(){
 function offerShell(kick,title,lead,acts,note,tone,actClass){
   // An empty note draws no rule: a card with two lines in it should be two
   // lines tall, not two lines and a hairline under nothing.
+  // An empty lead is the same bargain as an empty note: the out-of-lives
+  // card is a kicker, a name and two buttons, and a lead div with nothing in
+  // it is a margin between them for no reason.
   showPanel("<div class='okick'>"+kick+"</div><h3>"+title+"</h3>"+
-            "<div class='olead'>"+lead+"</div>"+
+            (lead?"<div class='olead'>"+lead+"</div>":"")+
             "<div class='ma"+(actClass?" "+actClass:"")+"'>"+acts+"</div>"+
             (note?"<div class='mn'>"+note+"</div>":""),"offer");
   $("panel").style.setProperty("--ok",tone||"var(--goal)");
@@ -2774,8 +2784,6 @@ function struggleOffer(){
   if(!B&&!TR)return;
   if(typeof skips!=="undefined"&&skips[levelKey])return;
   var kind=B?"BOSS":"TRIAL";
-  var n=fails[levelKey]||1;
-  var beat=n===1?"beaten you once":"beaten you "+n+" times";
 
   /* IT IS THE WIN CARD'S ROW, on the owner's call, and that is the whole
      design of this card: losing a fight and finishing a level short of three
@@ -2807,9 +2815,17 @@ function struggleOffer(){
      the second line comes off and with it the ad screen - and the button
      drops to the quiet outline rather than borrowing the green, which
      belongs to TRY AGAIN on this card. */
-  offerShell(kind+" \u00b7 OUT OF LIVES",esc(L.name),
-    "All three hearts gone. The board is back at the start - this one has "+
-    beat+".",
+  /* NO SENTENCE AND NO FOOTNOTE, on the owner's call, and the card is three
+     things now: which fight, its name, and the two ways on. Both lines that
+     came off were true and neither was being read at that moment - the
+     hearts on the HUD have just gone out, so "all three hearts gone" is the
+     screen describing itself, and counting the losses out loud ("this one
+     has beaten you 4 times") is the game keeping score of your failures on
+     the card offering to help. The rule the footnote carried - a skip awards
+     no stars - is still true, still enforced by grantSkip() writing to
+     `skips` and never to `progress`, and still said on the map, which is
+     where somebody wondering about it will be. */
+  offerShell(kind+" \u00b7 OUT OF LIVES",esc(L.name),"",
     "<button class='go oagain' id='sgNo'>"+retryIcon()+
       "<span>TRY AGAIN</span></button>"+
     (noLimits()
@@ -2817,10 +2833,7 @@ function struggleOffer(){
         "<span class='two'><b>SKIP</b></span></button>"
       : "<button class='ad oskip' id='sgAd'>"+adIcon()+
         "<span class='two'><b>SKIP</b><i>WATCH AN AD</i></span></button>"),
-    // The rule holds either way; what changes is what bought the skip.
-    noLimits()?"A skip awards <b>no stars</b>. Nothing sold in this game does."
-             :"A skip awards <b>no stars</b>. Ads buy progress, never score.",
-    B?"var(--vio)":"var(--amb)","pair");
+    "",B?"var(--vio)":"var(--amb)","pair");
   bind("sgNo",function(){hidePanel();});
   /* Not gated on an ad here, for the same reason grantSkip() is not: there
      is no provider yet, and a button that silently did nothing would be
