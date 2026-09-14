@@ -76,7 +76,7 @@ listed in `index.html`. `21-boot.js` is the only file that *runs* anything.
 | File | What it holds |
 |---|---|
 | `index.html` | all static markup: corners, HUD, boss bar, coach, ghost hand, bars, splash, home, `#panel`, `#toast`, the cutscene overlay (`#story`), and the four full-bleed cards (`#intro`, `#tutcard`, `#won`, `#storyend`) |
-| `css/*.css` | **one stylesheet per screen**, linked in numeric order; the cascade depends on that order. `docs/UI.md` maps each screen to its file. |
+| `css/*.css` | **one stylesheet per screen**, linked in numeric order; the cascade depends on that order. `docs/UI.md` maps each screen to its file. `05-fonts.css` is the one exception: no screen, just the two typefaces inline. |
 | `js/00-storage.js` | `window.storage` over `localStorage`; in-memory fallback when storage is denied |
 | `js/01-coords.js` | `AX[]`, the four camera views (`r` screen-right, `d` depth toward camera); `K()`, `box()` |
 | `js/02-levels.js` | `LEVELS`, `SECTIONS`, `LEVEL_RENAMES` |
@@ -104,6 +104,7 @@ listed in `index.html`. `21-boot.js` is the only file that *runs* anything.
 | `tools/verify.js` | every level machine-checked: BFS, `trialSafety()`, `bossArena()`, `bosssim`, the `SECTIONS`/`LEVEL_RENAMES` invariants |
 | `tools/shot.js` | **headless screenshots of any screen** (`node tools/shot.js --list`). The eyes for UI work. A cutscene is seekable by beat (`story1:12`), and an explicit `--wait` now beats the screen's own default. |
 | `tools/build-single.js` | inlines everything into one file for itch.io / the artifact |
+| `tools/fonts.js` | rebuilds `css/05-fonts.css` from Google Fonts, one request per weight |
 | `tools/curve.js`, `tools/legible.js` | the difficulty curve; squares that draw where ground is not |
 
 A top-level `var` must not be a `window` property name (`history` became
@@ -304,6 +305,21 @@ is the rule.
   through `tutWords()` so it names the player's own controls, and it is filled
   before `syncBossBar()` measures `.hud`.
 - `.hud` chrome follows `paperIsLight()`, not the verb.
+- **The two typefaces are IN the file** - `css/05-fonts.css`, base64 woff2,
+  latin only - and the page now makes NO outbound request of any kind. Keep it
+  that way: it is what lets the Android manifest drop the INTERNET permission.
+  Refresh with `tools/fonts.js`, which asks **one weight per request** and
+  throws if two come back sharing a URL: a combined request returns the
+  family's VARIABLE file and every weight then renders at the lightest,
+  silently.
+- **Anything anchored to a screen edge reads a safe-area token** - `--sat`
+  `--sar` `--sab` `--sal` in `00-base.css`, each an `env()` with a `0px`
+  fallback, so every `calc()` using one is exactly the old constant off a
+  phone. **So does every rule that RE-STATES that edge**, and six do (the
+  coach in three layouts, the cue in two, the map and the wardrobe as tall
+  panels, the caption in two) - missing one pins the thing at the old number
+  and nothing says so. `viewport-fit=cover` in the viewport meta is what makes
+  the insets non-zero at all.
 - **Class names collide silently**: `.boss` (HUD bar, `pointer-events:none`)
   vs `.mboss` (map node); `.home` (overlay) vs `body.athome`; `.st` (star
   price) vs `.ln` (stroked icon path). Grep `css/` for a class before
@@ -691,6 +707,13 @@ is the rule.
 - Peek is the fourth verb: in the plane it previews the unfold by lowering
   the `flatT` target; `peekLanding()` makes the same two calls
   `doUnflatten()` makes.
+- **`backOut()` is the phone's back button** (`js/19-bindings.js`), and it is
+  Escape's order with two rungs the keyboard does not need: the editor (out to
+  MY LEVELS) and the home screen, the one screen where the press may leave the
+  app, on a second press inside two seconds. A full-bleed card SWALLOWS it -
+  backing out of the win card would skip a level. It returns whether it
+  handled the press; the Capacitor listener is the only native line in the
+  file and is one `typeof` from nothing in a browser.
 - **`tap()` fires on pointerdown, except inside something that scrolls -
   there it fires on the lift.** `tapScroller()` (`js/18-ui.js`) looks for an
   ancestor with `overflow-y:auto|scroll`; inside one the press waits for

@@ -205,8 +205,23 @@
 
 ### Before mobile
 
-- Safe-area insets: the bar sits at `bottom: 18px` and will collide with the
-  iPhone home indicator. Needs `env(safe-area-inset-bottom)`.
+The plan for the wrapper itself is `docs/ANDROID.md`. What is left here is
+what only a real device can answer.
+
+- ~~Safe-area insets~~ **done.** Four tokens in `css/00-base.css`
+  (`--sat`/`--sar`/`--sab`/`--sal`), `viewport-fit=cover` in the viewport
+  meta, and every edge-anchored rule reading a `calc()`. The trap, recorded
+  because it was walked into: an override that RE-STATES an edge value needs
+  its own inset, and six rules do.
+- ~~The fonts are a progressive enhancement~~ **no longer true.** Both
+  typefaces are inline woff2 in `css/05-fonts.css` and the page makes no
+  outbound request at all. Refreshed by `tools/fonts.js`, one request per
+  weight.
+- ~~The hardware back button~~ **done.** `backOut()` in `js/19-bindings.js`,
+  Escape's order plus a rung for the editor and a two-press exit from the
+  home screen. The Capacitor listener is typeof-guarded and inert in a
+  browser, so it is unproven until there IS a wrapper - the logic under it is
+  not.
 - The audio context unlock now hangs off the sting's tap surface - a
   full-bleed div, so a touch anywhere counts, which is the best chance this
   has of working inside a WebView. Still unverified on a device, and `BEGIN`

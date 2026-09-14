@@ -69,25 +69,19 @@ one of them is weeks long.
 Each of these is a real defect on a phone that does not show in a desktop
 browser. They are worth doing in this order, and they are all small.
 
-1. **Bundle the fonts.** `index.html` pulls IBM Plex Mono and Space Grotesk
-   from `fonts.googleapis.com`. Inside the app there is no network on first
-   run, so every screen silently falls back to system faces and the layout the
-   screenshots were tuned against is not what ships. Self-host the two
-   families as base64 `@font-face` rules in a stylesheet, or drop them and
-   retune. This also removes the only outbound request the game makes, which
-   matters again in step 6.
-2. **Safe-area insets.** `docs/ROADMAP.md` already flags it: the control bar
-   sits at `bottom:18px` and will collide with the gesture bar on a modern
-   Android phone. `css/98-story.css` is the only file using
-   `env(safe-area-inset-*)` today. The bar, the HUD corners and the full-bleed
-   cards all need the same treatment.
-3. **The hardware back button.** Untouched today, so back exits the game and
-   loses the level. Capacitor's App plugin exposes a `backButton` listener;
-   it should close whatever is up, in the same order Escape does - a panel via
-   `hidePanel()`, a card, then the menu - and only offer to leave from the home
-   screen. `screenUp()` is already the single "a full-bleed screen is in front
-   of the game" predicate, so the handler asks it rather than inventing a
-   second answer.
+1. ~~**Bundle the fonts.**~~ **Done.** `css/05-fonts.css` carries both
+   families as base64 woff2, latin only, and the page now makes no outbound
+   request at all. `tools/fonts.js` rebuilds it, one request per weight -
+   a combined request returns the variable file and every weight then renders
+   at the lightest, silently, which is worth knowing before anyone "tidies"
+   that script.
+2. ~~**Safe-area insets.**~~ **Done.** Four tokens in `css/00-base.css` and
+   `viewport-fit=cover` in the viewport meta. The trap: an override that
+   re-states an edge value needs its own inset, and six rules do.
+3. ~~**The hardware back button.**~~ **Done, but unproven.** `backOut()` in
+   `js/19-bindings.js` is Escape's order plus a rung for the editor and a
+   two-press exit from the home screen. The logic is tested; the Capacitor
+   listener that calls it cannot be until there is a wrapper.
 4. **Flip the two playtest switches.** `UNLIMITED_SHARDS` in
    `js/09-wardrobe.js` is `true` and hands over 9999 stars; it must be `false`
    in any build that reaches a tester, or the entire star economy is invisible
@@ -141,6 +135,14 @@ shim and to nothing else.
 Nothing is wired. Both of these are optional for a first release and the
 recommendation is to **ship v1 with neither** - see step 6 for why that is
 worth real time.
+
+**THE OWNER'S CALL: v1 SHIPS WITH BOTH.** The argument in step 6 for a clean
+first release was heard and overruled - the shelf and the rewarded videos are
+part of the game being finished, and testers should see the real thing rather
+than a version of it. What follows from that, and is not optional: the Data
+safety form declares the advertising id and the app keeps its INTERNET
+permission, so both need wiring BEFORE the closed test rather than after, and
+the privacy policy is a real one rather than four sentences.
 
 **In-app purchases.** The DEALS tab is a live shelf with real prices in
 `SKIN_SHAPES` and `PASSES` (`js/09-wardrobe.js`): four shapes at $2.99, the
@@ -232,14 +234,15 @@ nothing needs splitting.
 
 One job per session, as ever:
 
-1. Fonts bundled and safe-area insets, with screenshots. Repo only, no
-   wrapper. (Steps 2.1, 2.2.)
+1. ~~Fonts, insets, back button.~~ **Done**, repo only, no wrapper.
+   (Steps 2.1, 2.2, 2.3.)
 2. The Capacitor project, `tools/build-app.js`, and a debug APK that opens.
-   (Step 3.)
-3. Back button, orientation, playtest switches off, then an internal-track
-   build on a real phone. (Steps 2.3, 2.4, 2.6, 7.1.)
-4. Icon, screenshots, descriptions, and the Console forms. (Steps 5, 6.)
-5. Closed testing opens. Everything after this is waiting and fixing.
+   (Step 3.) Needs Android Studio on the owner's machine.
+3. Orientation, playtest switches off, then an internal-track build on a real
+   phone. This is where 2.5 gets answered. (Steps 2.4, 2.6, 7.1.)
+4. Play Billing and AdMob, since v1 ships with both. (Step 4.)
+5. Icon, screenshots, descriptions, and the Console forms. (Steps 5, 6.)
+6. Closed testing opens. Everything after this is waiting and fixing.
 
 iOS is the same wrapper with `npx cap add ios`, and the extra work there is
 the notch, the home indicator and Apple's own review. Steam is a different

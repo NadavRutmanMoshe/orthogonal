@@ -18,6 +18,7 @@ rather than guessing the file.
 | File | Holds |
 |---|---|
 | `00-base.css` | `:root` tokens, `body`, the `body.flat` token swap, `.hud` text (`.title`, `.hint`, `.axis`) |
+| `05-fonts.css` | **not a screen**: the two typefaces, base64 woff2, inline. Nothing else belongs in it. Rebuilt by `tools/fonts.js`, ONE REQUEST PER WEIGHT (a combined request returns the variable file and every weight renders at the lightest) |
 | `10-buttons.css` | the button skin (`button`, `:active`, `:disabled`), `.bar`, `.dpad`, `.rot`, `.corner`, `button.rnd` and its five hues, the hint badge `.hn`, icon classes `.ln .lite .dim .ar .tn` |
 | `20-hud.css` | the live star row `.stars`, `.moves`, `.flatbtn` and its `.peril` / `.strike` states, the eye's `.look` pulse, `.tiny` |
 | `30-editor.css` | `#editBar`, `#composeBar`, `.chip`, `.verify` |
@@ -49,6 +50,7 @@ Set in `css/00-base.css` on `:root`, swapped by `body.flat`:
 | `--vio` / `--amb` (+ `-lip`) | boss violet, trial amber | in `85-map.css`; no section may use either |
 | `--c` / `--lip` | a button's hue and its shadow | set per button family; the fill, rim, glyph and lip all follow |
 | `--sec` | the current section's colour | on `.mcard`, `.mnode`, `.hcont`; written by JS from `SECTIONS[].col` |
+| `--sat` / `--sar` / `--sab` / `--sal` | the notch and the gesture bar | `env(safe-area-inset-*)` with a 0px fallback, so every `calc()` using one is inert off a phone. **Anything anchored to a screen edge reads one**, and so does every rule that RE-STATES that edge - six do (the coach in three layouts, the cue in two, the map and wardrobe as tall panels, the caption in two). Needs `viewport-fit=cover`, which is in the viewport meta |
 | `--tabc` | a map tab's colour | |
 
 Fonts: `'Space Grotesk'` for titles, `'IBM Plex Mono'` for everything else,
