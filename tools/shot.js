@@ -205,7 +205,11 @@ async function main(){
     const errors=[];
     page.on("pageerror",e=>errors.push(String(e)));
     page.on("console",m=>{ if(m.type()==="error")errors.push(m.text()); });
-    // No network in the sandbox and none needed: fonts fall back to system faces.
+    // No network in the sandbox, and since css/05-fonts.css the game asks for
+    // none: both typefaces are inline woff2, so a shot is set in the faces
+    // that ship rather than in whatever the machine had. Left aborting on
+    // purpose - it is the cheapest guard there is against a request creeping
+    // back in, and a screen that needs one will come out visibly wrong here.
     await page.route(/^https?:/,r=>r.abort());
     await page.addInitScript(seed=>{
       for(const k in seed){ try{ localStorage.setItem(k,seed[k]); }catch(e){} }

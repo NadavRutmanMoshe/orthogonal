@@ -400,7 +400,8 @@ body.tut.tutgest #playBar,body.tut.tutgest #playBar.on{display:none}
 /* The hand has moved to the middle of the screen, so the coach goes back to
    the foot of it - low, where a line of instruction sits when there is no
    bar under it, and well clear of the demonstration. */
-body.tut.tutgest .coach,body.tut.tutgest.ui-none .coach{bottom:44px}
+body.tut.tutgest .coach,body.tut.tutgest.ui-none .coach{
+  bottom:calc(var(--sab) + 44px)}
 
 @media (prefers-reduced-motion:reduce){
   /* A looping hand is the whole point, so it is not removed - but it is

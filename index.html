@@ -2,7 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<!-- viewport-fit=cover lets the page draw into the notch and under the gesture
+     bar, WHICH IS THE POINT: without it the browser keeps the page inside the
+     safe box, every env(safe-area-inset-*) reports 0, and the game is letter-
+     boxed by black strips it did not ask for. With it, the background reaches
+     the glass and css/00-base.css's --sat/--sar/--sab/--sal tokens hold the
+     readable, pressable chrome off the edges. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <!-- THE GAME'S NAME IS "I'm Just A Cube". It was Orthogonal, which named the
      mechanic; this one names the character, and the story is now about him.
      The rename is four player-visible strings - here, the home screen's

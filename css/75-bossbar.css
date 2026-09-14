@@ -85,7 +85,10 @@
      z-index 30 puts it over the win overlay (20) on purpose - the count has
      to be visible at the moment it goes up, or the flight has nothing to
      arrive at. Sits to the left of the two round buttons in that corner. */
-  .startotal{position:fixed;top:14px;right:104px;z-index:30;height:42px;
+  /* Level with the round buttons it sits beside, so it takes the same two
+     insets they do. */
+  .startotal{position:fixed;top:calc(var(--sat) + 14px);
+    right:calc(var(--sar) + 104px);z-index:30;height:42px;
     display:none;align-items:center;gap:5px;padding:0 13px;
     border:1.5px solid color-mix(in srgb,var(--star) 34%,transparent);
     border-radius:21px;

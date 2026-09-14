@@ -45,7 +45,9 @@
     radial-gradient(126% 62% at 50% -6%,#1d2745,transparent 68%),
     radial-gradient(90% 70% at 50% 118%,#141a30,transparent 70%),
     #080b16;
-  padding:22px 16px;overflow:auto;touch-action:pan-y}
+  padding:calc(var(--sat) + 22px) calc(var(--sar) + 16px)
+          calc(var(--sab) + 22px) calc(var(--sal) + 16px);
+  overflow:auto;touch-action:pan-y}
 .home.on{display:flex}
 .hwrap{width:100%;max-width:340px;display:flex;flex-direction:column;
   align-items:center}

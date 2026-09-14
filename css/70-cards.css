@@ -3,8 +3,14 @@
    Loaded in the order listed in index.html; see docs/UI.md for the map of
    screens to files. */
 
+  /* The card COVERS the whole screen, notch included - a full-bleed wash
+     that stopped short of the corners would read as a box, not as the game
+     going away - but its contents live inside the safe box. Padding rather
+     than inset, so the centring is unchanged on every device that has no
+     insets to speak of. */
   .won{position:fixed;inset:0;display:none;flex-direction:column;z-index:20;
     align-items:center;justify-content:center;gap:16px;
+    padding:var(--sat) var(--sar) var(--sab) var(--sal);
     background:rgba(15,20,36,.86)}
   body.flat .won{background:rgba(230,225,211,.88)}
   .won.on{display:flex}
@@ -122,7 +128,11 @@
      and a trial's brief is four paragraphs, and .won is a centred fixed
      overlay with no scroll of its own - so on a short phone the longest card
      would have run its OK button off the bottom edge with no way to reach it. */
-  .tutcard{gap:20px;overflow-y:auto;padding:24px 0;
+  /* Re-states the insets because it re-states the padding: a shorthand here
+     would otherwise wipe the safe box `.won` just set up, and this is the one
+     card that scrolls, so its content can reach both ends. */
+  .tutcard{gap:20px;overflow-y:auto;
+    padding:calc(var(--sat) + 24px) var(--sar) calc(var(--sab) + 24px) var(--sal);
     justify-content:safe center}
   .tutcard h2{max-width:min(84vw,24ch);text-align:center;line-height:1.3}
   .tutcard p{max-width:min(84vw,42ch);font-size:13px;line-height:1.85;

@@ -349,7 +349,12 @@
   body.replaying .rskip{pointer-events:auto;opacity:1}
   /* In the lower bar, where there is nothing else - the REPLAY label sits
      above it and the timecode and REC are in the upper one. */
+  /* The letterbox bar itself keeps reaching the glass - a cinematic bar that
+     stopped short of the edge would not be one - but the word inside it is
+     lifted off the gesture bar by padding, which moves the text within the
+     strip instead of moving the strip. */
   .rskip i{position:absolute;left:0;right:0;bottom:0;height:8.5vh;
+    padding-bottom:var(--sab);
     display:flex;align-items:center;justify-content:center;
     font-family:'IBM Plex Mono',ui-monospace,monospace;font-style:normal;
     font-size:10px;letter-spacing:.3em;text-transform:uppercase;

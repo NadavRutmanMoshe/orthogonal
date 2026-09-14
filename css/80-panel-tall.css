@@ -12,7 +12,11 @@
      important than anything else and the sliders were whatever the browser
      drew. These are the map's parts, factored out so every panel wears them.
      ============================================================ */
-  .panel.tall{top:8px;bottom:8px;max-height:none;overflow:hidden;
+  /* 8px off the safe box at both ends: this is the one shape that reaches
+     the top of the screen AND the bottom, so it meets the notch and the
+     gesture bar in the same breath. Its footer is the row a thumb uses. */
+  .panel.tall{top:calc(var(--sat) + 8px);bottom:calc(var(--sab) + 8px);
+    max-height:none;overflow:hidden;
     display:none;flex-direction:column;padding:0}
   .panel.tall.on{display:flex}
   .phead{display:flex;align-items:center;gap:10px;padding:12px 13px 10px;

@@ -21,7 +21,8 @@
 
   /* Near full-height, but still a panel: hidePanel, Esc and the WebGL
      teardown rules all keep working exactly as they did. */
-  .panel.map{top:8px;bottom:8px;max-height:none;overflow:hidden;
+  .panel.map{top:calc(var(--sat) + 8px);bottom:calc(var(--sab) + 8px);
+    max-height:none;overflow:hidden;
     display:none;flex-direction:column;padding:0;
     background:
       radial-gradient(118% 54% at 50% -6%, rgba(53,194,165,.10), transparent 62%),

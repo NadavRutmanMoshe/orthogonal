@@ -28,7 +28,8 @@
      and every path that writes it are untouched, so putting the line back is
      this one declaration. */
   .coach{display:none;
-    position:fixed;left:16px;right:16px;bottom:176px;z-index:11;
+    position:fixed;left:calc(var(--sal) + 16px);right:calc(var(--sar) + 16px);
+    bottom:calc(var(--sab) + 176px);z-index:11;
     pointer-events:none;text-align:center;
     font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13.5px;
     line-height:1.65;letter-spacing:.02em;color:var(--fg);
@@ -37,8 +38,11 @@
   .coach i{display:block;font-style:normal;font-size:10.5px;letter-spacing:.18em;
     color:var(--goal);margin-bottom:5px}
   .coach b{color:var(--player);font-weight:500}
-  body.ui-none .coach{bottom:28px}
-  body.tut.ui-none .coach{bottom:176px}
+  /* Both of these RE-STATE the bottom the base rule set, so both re-state
+     its inset too. Every override of an edge-anchored value is its own
+     safe-area decision; there is no way to write it once. */
+  body.ui-none .coach{bottom:calc(var(--sab) + 28px)}
+  body.tut.ui-none .coach{bottom:calc(var(--sab) + 176px)}
   .crow{display:flex;align-items:center;gap:7px;padding:8px 0;
     border-bottom:1px solid var(--rule)}
   /* 92px, not 74: the rows are called "Level size" and "Fights speed" now
@@ -75,7 +79,8 @@
   }
   button.cue{animation:cuePulse 1s ease-in-out infinite;
     border-color:var(--goal) !important;color:var(--goal) !important}
-  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:auto;top:76px;
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:auto;
+    top:calc(var(--sat) + 76px);
     z-index:15;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12.5px;
     letter-spacing:.05em;color:var(--player);opacity:0;transition:opacity .25s;
     pointer-events:none;text-align:center;padding:0 20px}
@@ -83,7 +88,8 @@
   /* The spoken cue: green because green already means "do this" on the
      button pulse, and down by the controls because that is where the eye and
      the thumb are - at the top it landed across the level's own hint. */
-  .toast.cuesay{top:auto;bottom:176px;color:var(--goal);line-height:1.5}
+  .toast.cuesay{top:auto;bottom:calc(var(--sab) + 176px);
+    color:var(--goal);line-height:1.5}
   .toast.cuesay b{display:block;font-size:15px;font-weight:600;
     letter-spacing:.12em;text-transform:uppercase}
   .toast.cuesay i{display:block;font-style:normal;font-size:11px;
@@ -93,4 +99,4 @@
      is - but not the shout: there is no instruction here, only a footnote to
      one that is being drawn a few centimetres above it. */
   .toast.cuesay.noteonly i{font-size:12px;color:var(--fg-dim);margin-top:0}
-  body.ui-none .toast.cuesay{bottom:28px}
+  body.ui-none .toast.cuesay{bottom:calc(var(--sab) + 28px)}

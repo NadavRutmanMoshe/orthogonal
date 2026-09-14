@@ -18,7 +18,8 @@
      on the way into every panel, so it cannot be inherited by the next one. */
   .panel.overcard{z-index:21}
   .panel{position:fixed;left:50%;transform:translateX(-50%);
-    width:calc(100% - 32px);max-width:560px;bottom:196px;z-index:12;
+    width:calc(100% - 32px);max-width:560px;
+    bottom:calc(var(--sab) + 196px);z-index:12;
     background:var(--panel);border:1px solid var(--rule);border-radius:3px;
     padding:12px 13px;font-family:'IBM Plex Mono',ui-monospace,monospace;
     font-size:12.5px;line-height:1.65;color:var(--fg);display:none;
@@ -247,7 +248,8 @@
   .panel.ward{padding-left:0;padding-right:0}
   /* Beats .panel.ward.on's own cap. At 56vh the tile list was clipped through
      the middle of a row and the case's note ran under the BACK button. */
-  .panel.ward.tall.on{top:8px;bottom:8px;max-height:none}
+  .panel.ward.tall.on{top:calc(var(--sat) + 8px);
+    bottom:calc(var(--sab) + 8px);max-height:none}
   /* The case's buttons get the same lift the map's nodes have. */
   .wact .wgo{background:rgba(53,194,165,.10);box-shadow:0 3px 0 rgba(20,112,93,.5);
     font-weight:600;transition:transform .12s ease,box-shadow .12s ease}

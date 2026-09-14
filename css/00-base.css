@@ -20,6 +20,25 @@
        translucent sheet. Still translucent, because the blur behind it is
        what says the world is still there; just no longer see-through. */
     --panel:rgba(15,20,36,.93);
+    /* THE PHONE'S OWN EDGES. A notch, a punch-hole and the gesture bar are
+       parts of the screen the page is allowed to draw on and must not put
+       anything readable or pressable in. `env()` reports each one, and is
+       0px everywhere else - a desktop browser, a phone with square corners,
+       the artifact - so every calc() below is inert until it is not.
+
+       TWO THINGS MAKE THEM WORK. `viewport-fit=cover` in index.html's
+       viewport meta, or the page stops at the safe box and every inset
+       reports 0. And the fallback in each env() call, because a browser that
+       has never heard of it drops the whole declaration otherwise and the
+       thing lands at `top:0` instead of where it was.
+
+       Held as tokens rather than written at each site so there is one place
+       to find them, and because the four names read better in a calc than
+       the function does. */
+    --sat:env(safe-area-inset-top,0px);
+    --sar:env(safe-area-inset-right,0px);
+    --sab:env(safe-area-inset-bottom,0px);
+    --sal:env(safe-area-inset-left,0px);
   }
   body.flat{ --fg:#1a1c2b; --fg-dim:#7d7666; --rule:rgba(26,28,43,.24);
     --star:#c07d09; --star-glow:rgba(192,125,9,.4);
@@ -38,8 +57,12 @@
   /* A tutorial drops the text down the screen: with the coach line gone this
      is the only prose left, and it reads better clear of the corner buttons
      than tucked under them. */
-  body.tut .hud{top:104px}
-  .hud{position:fixed;top:60px;left:0;right:0;padding:0 16px;z-index:10;
+  body.tut .hud{top:calc(var(--sat) + 104px)}
+  /* The level name and hint clear the notch, and the boss bar follows them
+     without being told: syncBossBar() measures `.hud`'s own offsetTop rather
+     than repeating the number. */
+  .hud{position:fixed;top:calc(var(--sat) + 60px);left:0;right:0;
+    padding:0 calc(var(--sar) + 16px) 0 calc(var(--sal) + 16px);z-index:10;
     display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
     pointer-events:none;color:var(--fg);transition:color .5s ease}
   .title{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;

@@ -38,7 +38,8 @@
 
      Monospace, at the size the win card says things at: this is the voice
      that says `Poisoned Column`, not a film subtitle. */
-  .scap{position:absolute;left:0;right:0;bottom:58px;margin:0 auto;
+  .scap{position:absolute;left:0;right:0;bottom:calc(var(--sab) + 58px);
+    margin:0 auto;
     padding:0 22px;max-width:min(90vw,44ch);
     font-family:'IBM Plex Mono',ui-monospace,monospace;
     font-size:12.5px;line-height:1.7;letter-spacing:.05em;text-align:center;
@@ -97,7 +98,7 @@
   body.instory.storyask #playBar{display:flex;justify-content:flex-end}
   body.instory.storyask .dpad,body.instory.storyask .rot{display:none}
   /* And the line moves up out of the bar's way when there is a bar. */
-  body.instory.storyask .scap{bottom:122px}
+  body.instory.storyask .scap{bottom:calc(var(--sab) + 122px)}
   /* Lit, the way the tutorial lights the control it is asking for. */
   body.instory.storyask .flatbtn{
     box-shadow:0 0 0 2px color-mix(in srgb,#35c2a5 60%,transparent),

@@ -51,7 +51,12 @@
     background:var(--panel);border-color:var(--rule)}
   button:focus-visible{outline:2px solid var(--player);outline-offset:2px}
 
-  .bar{position:fixed;bottom:18px;left:0;right:0;padding:0 16px;z-index:10;
+  /* 18px OFF THE BOTTOM OF THE SAFE BOX, not off the glass. On a phone with
+     a gesture bar the old number put the d-pad's bottom row under the strip
+     the system swipes on, which is the single worst place to put the control
+     a player presses most. */
+  .bar{position:fixed;bottom:calc(var(--sab) + 18px);left:0;right:0;
+    padding:0 calc(var(--sar) + 16px) 0 calc(var(--sal) + 16px);z-index:10;
     pointer-events:none;display:none}
   .bar.on{display:block}
 
@@ -68,9 +73,12 @@
   .rot button{width:58px;height:38px;font-size:15px;--c:#c3a8ff;
     color:var(--c);border-color:color-mix(in srgb,var(--c) 30%,transparent);
     --lip:color-mix(in srgb,var(--c) 26%,#04070d)}
-  .corner{position:fixed;top:14px;z-index:12;display:flex;gap:7px}
-  .corner.tl{left:14px}
-  .corner.tr{right:14px}
+  /* Both sides get their own inset: in landscape the notch is on one edge
+     only, and which edge depends on which way the phone was turned. */
+  .corner{position:fixed;top:calc(var(--sat) + 14px);z-index:12;
+    display:flex;gap:7px}
+  .corner.tl{left:calc(var(--sal) + 14px)}
+  .corner.tr{right:calc(var(--sar) + 14px)}
   /* A HUE EACH, so the five round buttons are told apart by colour before a
      glyph is read - which is what you want on a row of circles a thumb is
      reaching for without looking. They are the colours those things already
