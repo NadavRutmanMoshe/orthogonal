@@ -312,3 +312,92 @@ window.addEventListener("keydown",function(e){
     e.preventDefault();
   }
 });
+
+/* ===========================================================================
+   THE PHONE'S OWN BACK BUTTON.
+
+   Android has a system back - a gesture from the edge, or a third button on
+   older phones - and an app that ignores it is broken in a way no amount of
+   on-screen chrome makes up for. Ignored, it does the WebView's default,
+   which with no history to pop is "leave the game", mid-level, with no
+   warning. That is the single worst thing this button can do and it is what
+   it does until something says otherwise.
+
+   backOut() is that something, and it is deliberately not a Capacitor
+   function: it is ordinary code that answers "what does backing out mean on
+   the screen that is up", so it can be read, called and tested in a browser
+   with no wrapper anywhere near it. Only the listener at the bottom is
+   native, and it is typeof-guarded into nothing when Capacitor is absent.
+
+   IT IS ESCAPE'S ORDER, because Escape is already this game's back and the
+   thinking is written above it: close what is open before opening anything,
+   never dismiss a card that is asking for a choice. The two differences are
+   both forced by the platform. A phone has no keyboard, so the editor needs
+   a rung of its own rather than being left out. And the home screen is the
+   root of the app: there IS no further out, so that is where leaving is
+   allowed, on the second press.
+
+   RETURNS true IF IT HANDLED THE PRESS. The caller only gets a say when the
+   answer is false, which happens on exactly one screen. */
+function backOut(){
+  /* A cutscene: skip, the same thing Escape does. A settings panel is not
+     what the reflex is reaching for mid-scene. */
+  if(typeof storyOn==="function"&&storyOn()){
+    if(typeof storySkip==="function")storySkip();
+    return true;
+  }
+  /* Whatever is open closes first, or back becomes the one press that cannot
+     get you out of the wardrobe. */
+  if(panelOpen()){hidePanel();return true;}
+  /* A full-bleed card has its own buttons and is asking a question - the
+     age bands, the win card's NEXT LEVEL, a tutorial card's OK. Backing out
+     of one would skip a level or a lesson, so the press is SWALLOWED rather
+     than passed on: doing nothing is correct here, and leaving the game
+     would be the alternative. */
+  if(!$("intro").classList.contains("gone"))return true;
+  if($("won").classList.contains("on"))return true;
+  if($("storyend").classList.contains("on"))return true;
+  if(typeof tutCardUp==="function"&&tutCardUp())return true;
+  /* The editor's own way out, which is a button on its bar rather than a
+     panel: the same two calls #eLevels makes. Nothing is lost by leaving -
+     every edit has already been written (autosave(), js/14-editor.js) - so
+     this needs no confirmation. Called directly and not through the button,
+     because tap() binds pointerdown and a synthetic click would miss it. */
+  if(app==="edit"){
+    if(typeof saveNow==="function")saveNow();
+    myLevelsPanel();
+    return true;
+  }
+  /* In a level: the menu, which is where every door out of one is. */
+  if(!homeUp()){menuPanel();return true;}
+  /* The home screen. Nothing left to back out of, so the caller decides. */
+  return false;
+}
+
+/* Press back twice to leave, and the second press has two seconds to arrive.
+   The convention every Android user already has, and the alternative is a
+   dialog nobody reads or an app that quits on a stray edge swipe. Uses the
+   game's own toast so it is said where everything else is said. */
+var backArmed=false, backArmT=0;
+function backExitAsk(){
+  if(backArmed){return true;}           // caller may now exit
+  backArmed=true;
+  flash("press back again to leave");
+  clearTimeout(backArmT);
+  backArmT=setTimeout(function(){backArmed=false;},2000);
+  return false;
+}
+
+/* The only native line in the file, and it costs nothing when there is no
+   Capacitor: in a browser this is one `typeof` and an early return. The
+   plugin is reached through the global rather than an import because these
+   are classic scripts sharing one scope and there is no build step to have
+   an import mean anything. */
+(function(){
+  var C=window.Capacitor;
+  if(!C||!C.Plugins||!C.Plugins.App)return;
+  C.Plugins.App.addListener("backButton",function(){
+    if(backOut())return;
+    if(backExitAsk())C.Plugins.App.exitApp();
+  });
+})();
