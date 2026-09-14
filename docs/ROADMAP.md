@@ -193,7 +193,10 @@
    could still take a real teaching level. The lesson from the three that are
    finished: **a card is what you reach for when the picture cannot be made to
    say it - not before.**
-9. **Ad integration.** Nothing is wired. When wrapped with Capacitor the
+9. **Ad integration.** Nothing is wired. **The plan for it, and for the two
+   app stores and Steam, is now `docs/SHIPPING.md`** - read that first; what
+   follows is the design rule it is built on.
+   Nothing is wired. When wrapped with Capacitor the
    rewarded-video callback should call `grantShards(n)`, `grantAdView(id)`,
    `grantSkip(name)` or `grantHints(n)` - four hooks, one per thing an ad can
    buy. Rewarded-only
@@ -205,8 +208,9 @@
 
 ### Before mobile
 
-The plan for the wrapper itself is `docs/ANDROID.md`. What is left here is
-what only a real device can answer.
+The plan for all three stores is `docs/SHIPPING.md`, and its "device
+gauntlet" section is the live version of this list. What is left here is what
+only a real device can answer.
 
 - ~~Safe-area insets~~ **done.** Four tokens in `css/00-base.css`
   (`--sat`/`--sar`/`--sab`/`--sal`), `viewport-fit=cover` in the viewport

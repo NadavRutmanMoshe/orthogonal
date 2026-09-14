@@ -387,12 +387,14 @@
 
   `rewardShapeFor()` and `sweepSectionRewards()` walk `sec`, so neither can
   ever reach it - only the fold can pay it.
-- **`UNLIMITED_SHARDS` in `js/09-wardrobe.js` is currently `true`** so the whole
-  wardrobe can be walked during playtesting - the catalogue costs more than
-  perfect play earns, so it is otherwise unreachable. It short-circuits
-  `shards()` only; `starsEarned()` and `wardrobe.spent` still do their real
-  work, so buying exercises the true purchase path. **Set it back to `false`
-  before shipping.**
+- **`UNLIMITED_SHARDS` in `js/09-wardrobe.js` is `false`.** It was `true` for
+  playtesting, so the whole wardrobe could be walked - the catalogue costs
+  more than perfect play earns, so it is otherwise unreachable. It
+  short-circuited `shards()` only; `starsEarned()` and `wardrobe.spent` kept
+  doing their real work, so buying exercised the true purchase path and
+  turning it off was one word. **It ships off**, and the catalogue being
+  bigger than the purse is the point: the shelf is a place to choose from,
+  not a checklist to finish.
 - **A DEATH IS SOFT, AND THAT IS A REVERSAL.** `SFX.die()` was one sawtooth
   at 220Hz sliding to 55 over half a second, and it was reported as
   disturbing. The reading is right and it is the same diagnosis the crate's
