@@ -1,0 +1,27 @@
+/* I'm Just A Cube - 05-fonts.css
+   THE TWO TYPEFACES, CARRIED IN THE FILE. Nothing here is a screen; this is
+   the one stylesheet that holds no rules, only the faces the other sixteen
+   name.
+
+   They used to come from fonts.googleapis.com, with a comment calling them a
+   progressive enhancement: offline, the game fell back to system mono and
+   sans. That was true and harmless on the web and is neither in an app. A
+   WebView opens with no network on a first run, so every screen would have
+   been set in whatever the phone had, and the layout each screenshot was
+   tuned against is not the layout that shipped.
+
+   So the faces are base64 woff2, inline, latin subset only: 70KB of font in
+   94KB of CSS, and the game now makes NO outbound request of any kind. That
+   is worth more than the bytes - it is what lets the Android manifest drop
+   the INTERNET permission and the Play Data safety form say "collects
+   nothing", which is a claim a reviewer can check rather than a promise.
+
+   ONE WEIGHT PER REQUEST when refreshing these. Asking Google for
+   wght@500;700 in a single URL hands back the VARIABLE file with two
+   @font-face blocks pointing at it, and the weight axis is not honoured
+   everywhere - both weights then render at 500 and nothing says so. Asking
+   for wght@500 and wght@700 separately gives two static instances, which
+   cannot be ambiguous anywhere. Five faces: Plex Mono 400/500/600 and Space
+   Grotesk 500/700, which is every weight the other stylesheets ask for.
+
+   Refreshed by tools/fonts.js. */
