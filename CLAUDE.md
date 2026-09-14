@@ -20,6 +20,7 @@ default:
 | `docs/design/systems.md` | legibility, hints, stars, the economy, the wardrobe, sound |
 | `docs/design/composer.md` | solution-first level generation |
 | `docs/ROADMAP.md` | known limitations, agreed next steps, what mobile still needs |
+| `docs/ANDROID.md` | shipping this as an app: the Capacitor wrapper, the Play Console gates, the fixes a phone needs, what money is still unwired |
 | `docs/HISTORY.md` | every version of a mechanic that was tried and dropped. Read before *redesigning* something, not before editing it. |
 
 Each of those is the previous `CLAUDE.md` text, moved verbatim. Nothing was
