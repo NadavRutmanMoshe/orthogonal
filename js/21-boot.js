@@ -16,6 +16,13 @@
    screen beyond the one it is here for. */
 initGL();
 applyUI();applyText();
+/* Build and upload every world's scenery before anybody crosses into one.
+   Off the critical path on purpose: idle if the browser offers it, otherwise
+   a second in, which is after the sting has cleared. See warmScenery(). */
+if(typeof warmScenery==="function"){
+  if(window.requestIdleCallback)requestIdleCallback(warmScenery,{timeout:3000});
+  else setTimeout(warmScenery,1200);
+}
 playSource="builtin";
 enterPlay(LEVELS[0],0,false);
 

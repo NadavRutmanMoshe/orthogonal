@@ -339,7 +339,13 @@ function makeAir(spec){
    orthographic abstraction and a rendered forest behind it would be a
    different picture with the puzzle sitting on top; a dark band reads as
    distance and stays out of the way of the one thing that has to be read. */
+/* One band per kind, built on first use and kept - see texOnce() above.
+   The wrapper is separate from the drawing so the drawing stays exactly as
+   it was written and reads top to bottom. */
 function sceneryTex(kind){
+  return texOnce("scene:"+kind,function(){return sceneryDraw(kind);});
+}
+function sceneryDraw(kind){
   var W=512,H=160,c=document.createElement("canvas");
   c.width=W;c.height=H;
   var x=c.getContext("2d");
@@ -701,6 +707,9 @@ function sceneryTex(kind){
    hunter, and a shape a player could mistake for one would be a lie the
    fight has to pay for. */
 function demonTex(){
+  return texOnce("demon",demonDraw);
+}
+function demonDraw(){
   var S=64,c=document.createElement("canvas");c.width=S;c.height=S;
   var x=c.getContext("2d");
   x.clearRect(0,0,S,S);
@@ -719,7 +728,7 @@ function demonTex(){
    the mountain throwing something up are one event rather than two things
    that happen near each other. Additive, so it reads as light rather than as
    a grey shape pasted on a dark ridge. */
-function makePlume(){
+function plumeTex(){
   var c=document.createElement("canvas");c.width=128;c.height=128;
   var x=c.getContext("2d");
   /* Centred, and the falloff reaches zero at 0.44 of the canvas - well
@@ -733,8 +742,11 @@ function makePlume(){
   g.addColorStop(.70,"rgba(255,90,32,.10)");
   g.addColorStop(1,"rgba(255,80,30,0)");
   x.fillStyle=g;x.fillRect(0,0,128,128);
+  return new THREE.CanvasTexture(c);
+}
+function makePlume(){
   var m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),
-    new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,
+    new THREE.MeshBasicMaterial({map:texOnce("plume",plumeTex),transparent:true,
       opacity:0,depthWrite:false,fog:false,blending:THREE.AdditiveBlending}));
   m.renderOrder=-975;m.position.z=-244;
   return m;
@@ -810,6 +822,39 @@ var seaT=4, seaFired=false, foamP=1;
 function windAt(t){
   return Math.sin(t*.55)*.6+Math.sin(t*.23+1.7)*.4;
 }
+/* WARM THE SET WHILE NOBODY IS LOOKING.
+
+   Caching the textures stops a world being rebuilt every time you cross into
+   it, but the FIRST visit still pays for building and uploading them, and it
+   pays in the one frame the world opens on - which is exactly the frame the
+   player is watching. This builds every kind up front and hands each texture
+   to renderer.initTexture(), which is three.js's way of saying "upload this
+   now" without drawing it.
+
+   Called once, off the critical path, after the sting has had its moment.
+   The sprite sheets live inside their builders as closures, so the only way
+   to reach them is to build one of each and throw the meshes away; the
+   geometries and materials are disposed on the spot and the TEXTURES stay in
+   TEX_ONCE, which is what we came for. */
+function warmScenery(){
+  if(typeof renderer==="undefined"||!renderer)return;
+  ["trees","hell","ocean","desert","shards"].forEach(sceneryTex);
+  var junk=[];
+  try{
+    junk=[makeBirds(1),makeSing(),makeMeteors(1),makeBooms(1),makeBoats(1),
+          makeTumble(1),makeFoam(),makeDevil(),makeDemons(1),makePlume()];
+  }catch(e){}
+  junk.forEach(function(o){
+    if(!o)return;
+    o.traverse(function(c){
+      if(c.geometry)c.geometry.dispose();
+      if(c.material)c.material.dispose();   // never c.material.map: shared
+    });
+  });
+  for(var k in TEX_ONCE){
+    try{renderer.initTexture(TEX_ONCE[k]);}catch(e){}
+  }
+}
 function makeScenery(kind){
   var m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),
     new THREE.MeshBasicMaterial({map:sceneryTex(kind),transparent:true,
@@ -846,13 +891,47 @@ function makeDemons(n){
    and the band do. All of them fade out with the fold: there is no distance
    in a silhouette, so there is nowhere for a bird to be.
    ============================================================ */
-function spriteTex(w,h,draw){
-  var c=document.createElement("canvas");
-  c.width=w;c.height=h;
-  draw(c.getContext("2d"),w,h);
-  var t=new THREE.CanvasTexture(c);
-  t.magFilter=THREE.LinearFilter;
+/* ============================================================
+   THE SCENERY TEXTURES ARE BUILT ONCE AND KEPT
+
+   Entering a world used to cost a frame of about 140ms over the running
+   average, measured by comparing a theme change against re-entering the same
+   world (which takes applyTheme's `same` early return and rebuilds nothing).
+   The JS in the builders is not the cost - every one of them is under a
+   millisecond, and the whole set is about 4ms. The rest is the GPU: a dozen
+   fresh CanvasTextures are uploaded on the first frame that draws them, all
+   in the same frame, and that is the hitch the player sees as the background
+   arriving late.
+
+   So a texture is built once per kind and never disposed. They are small and
+   there are few: five horizon bands at 512x160 plus eight sprite sheets, on
+   the order of two megabytes of VRAM for the whole game, against rebuilding
+   and re-uploading them every time somebody crosses between worlds.
+
+   NOTHING MAY DISPOSE THESE. applyTheme() used to call .dispose() on the
+   scenery map and on each group's `userData.tex` as it tore the old world
+   down; a disposed texture that is then handed to the next mesh is a blank
+   quad, so those three calls came out with this change. The MESHES and
+   GEOMETRIES are still disposed, because those are per-world and cheap.
+   ============================================================ */
+var TEX_ONCE={};
+function texOnce(key,build){
+  var t=TEX_ONCE[key];
+  if(!t){t=TEX_ONCE[key]=build();}
   return t;
+}
+/* `key` names the drawing, because the shape cannot: `draw` is a fresh
+   closure on every call so its identity is useless as a cache key, and w/h
+   collide - four different sprites in this file are 64x64. */
+function spriteTex(key,w,h,draw){
+  return texOnce("sprite:"+key,function(){
+    var c=document.createElement("canvas");
+    c.width=w;c.height=h;
+    draw(c.getContext("2d"),w,h);
+    var t=new THREE.CanvasTexture(c);
+    t.magFilter=THREE.LinearFilter;
+    return t;
+  });
 }
 function spriteGroup(n,tex,order,init){
   var g=new THREE.Group();
@@ -873,7 +952,7 @@ function spriteGroup(n,tex,order,init){
    each one keeps its own speed and its own height, so they string out and
    bunch up the way birds do rather than flying in formation. */
 function makeBirds(n){
-  var tex=spriteTex(64,40,function(x,w,h){
+  var tex=spriteTex("birds",64,40,function(x,w,h){
     x.strokeStyle="#0d1512";x.lineCap="round";
     [[1,3.4],[0,0]].forEach(function(p,i){
       x.lineWidth=i?3.0:5.2;
@@ -905,7 +984,7 @@ function makeBirds(n){
    the cue belong to that bird rather than float beside it. */
 var singGrp=null, singBird=-1, singT=0, singLen=1;
 function makeSing(){
-  var tex=spriteTex(64,64,function(x,w,h){
+  var tex=spriteTex("sing",64,64,function(x,w,h){
     x.strokeStyle="rgba(150,240,205,.9)";x.lineCap="round";
     // two arcs, opening rightward, thinning as they go out
     [[16,4.4],[27,2.8]].forEach(function(a){
@@ -936,7 +1015,7 @@ function birdSing(len){
    seconds after it lands, so the sky is mostly empty and a streak is an
    event. A continuous rain of them reads as a screensaver. */
 function makeMeteors(n){
-  var tex=spriteTex(128,24,function(x,w,h){
+  var tex=spriteTex("meteor",128,24,function(x,w,h){
     var g=x.createLinearGradient(0,0,w,0);
     g.addColorStop(0,"rgba(255,120,30,0)");
     g.addColorStop(.55,"rgba(255,150,60,.30)");
@@ -954,7 +1033,14 @@ function makeMeteors(n){
     x.beginPath();x.arc(w*.90,h*.5,11,0,Math.PI*2);x.fill();
   });
   return spriteGroup(n,tex,-967,function(i){
-    return {t:1, wait:i*2.2+Math.random()*2.5, sp:.55+Math.random()*.5,
+    /* THE FIRST ONE DOES NOT WAIT. The spacing below is the whole point of
+       this effect - a streak is an event and a continuous rain reads as a
+       screensaver - but applied to meteor 0 as well it meant the world
+       OPENED on an empty sky for up to two and a half seconds, which is what
+       the owner saw and called the background arriving late. So the first is
+       in flight almost immediately and the others keep their spacing. */
+    return {t:1, wait:i?i*2.2+Math.random()*2.5:.25+Math.random()*.55,
+            sp:.55+Math.random()*.5,
             sc:.7+Math.random()*.8, ang:0, ex:0};
   });
 }
@@ -962,7 +1048,7 @@ function makeMeteors(n){
    that went somewhere else; one that hits the ground is an event with a
    place and a moment, which is what the boom is then the sound of. */
 function makeBooms(n){
-  var tex=spriteTex(64,64,function(x,w,h){
+  var tex=spriteTex("boom",64,64,function(x,w,h){
     var g=x.createRadialGradient(32,32,1,32,32,32);
     g.addColorStop(0,"rgba(255,252,238,.95)");
     g.addColorStop(.25,"rgba(255,206,124,.6)");
@@ -977,7 +1063,7 @@ function makeBooms(n){
    drawn anywhere but the waterline gives the wrong one. They bob on the same
    phase clock the crests use, so the sea and the things on it agree. */
 function makeBoats(n){
-  var tex=spriteTex(64,64,function(x,w,h){
+  var tex=spriteTex("boat",64,64,function(x,w,h){
     x.fillStyle="#101c26";
     // hull
     x.beginPath();
@@ -1004,7 +1090,7 @@ function makeBoats(n){
    the whole read: a ragged ball sliding sideways is litter, one turning at
    the rate it travels is a tumbleweed. */
 function makeTumble(n){
-  var tex=spriteTex(64,64,function(x,w,h){
+  var tex=spriteTex("tumble",64,64,function(x,w,h){
     var q2=rnd(41);
     x.strokeStyle="#5c4a2c";x.lineCap="round";
     for(var i=0;i<26;i++){
@@ -1029,7 +1115,7 @@ function makeTumble(n){
    the part drawn over it. Wide and very short, because at this distance a
    breaking wave is a line and not a shape. */
 function makeFoam(){
-  var tex=spriteTex(128,32,function(x,w,h){
+  var tex=spriteTex("foam",128,32,function(x,w,h){
     var g=x.createLinearGradient(0,0,0,h);
     g.addColorStop(0,"rgba(236,250,255,0)");
     g.addColorStop(.45,"rgba(236,250,255,.85)");
@@ -1052,7 +1138,7 @@ function makeFoam(){
    particles - a hundred grains at this distance is a smudge that costs a
    hundred draw calls to be. */
 function makeDevil(){
-  var tex=spriteTex(64,128,function(x,w,h){
+  var tex=spriteTex("devil",64,128,function(x,w,h){
     var g=x.createLinearGradient(0,h,0,0);
     g.addColorStop(0,"rgba(214,186,132,0)");
     g.addColorStop(.25,"rgba(222,196,142,.34)");
@@ -1480,13 +1566,13 @@ function applyTheme(th){
     starField=null;}
   if(th.stars){starField=makeStars(th.stars);camera.add(starField);}
   if(sceneQuad){camera.remove(sceneQuad);
-    sceneQuad.geometry.dispose();sceneQuad.material.map.dispose();
+    sceneQuad.geometry.dispose();   // NOT the map: it is shared, see texOnce()
     sceneQuad.material.dispose();sceneQuad=null;}
   if(demonGrp){camera.remove(demonGrp);
     demonGrp.traverse(function(o){if(o.geometry)o.geometry.dispose();
       if(o.material)o.material.dispose();});demonGrp=null;}
   if(plumeQuad){camera.remove(plumeQuad);plumeQuad.geometry.dispose();
-    plumeQuad.material.map.dispose();plumeQuad.material.dispose();plumeQuad=null;}
+    plumeQuad.material.dispose();plumeQuad=null;}   // the map is shared
   if(sparkGrp){camera.remove(sparkGrp);sparkGrp.traverse(function(o){
     if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});
     sparkGrp=null;}
@@ -1494,7 +1580,8 @@ function applyTheme(th){
     .forEach(function(g){
     if(!g)return;
     camera.remove(g);
-    if(g.userData.tex)g.userData.tex.dispose();
+    /* g.userData.tex is shared and cached - disposing it here is what
+       made the next world's sprites blank. */
     g.traverse(function(o){
       if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});
   });

@@ -670,6 +670,17 @@ is the rule.
   at that section's fire and water.
 - `applyTheme()` runs once per level and drops block meshes when the surface
   changes; `syncMeshes` reuses meshes by cell otherwise.
+- **Every scenery texture is built ONCE and kept** (`texOnce()` / `TEX_ONCE`,
+  `js/10-render.js`): the five horizon bands, the eight sprite sheets, the
+  demon and the plume. `warmScenery()` builds and uploads the set at boot, in
+  an idle callback, so the first crossing into a world draws none of them.
+  **NOTHING MAY DISPOSE ONE.** `applyTheme()` used to call `.dispose()` on the
+  scenery map and on each group's `userData.tex` as it tore the old world
+  down; against a shared texture that is a blank quad in the next world, so
+  those three calls are gone. Meshes, geometries and materials are still
+  disposed - they are per-world and cheap. `spriteTex()` takes a KEY as its
+  first argument because its `draw` closure is new on every call and four
+  sprites in that file are 64x64, so neither identity nor size can key it.
 - `RAY_W` .46 is the width of the charge telegraph across its own row. It was
   a .06 pane, invisible end-on - which is the view you are in when you are
   lined up, and the one the fold is taken from. It opens at **.46 opacity**,
