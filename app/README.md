@@ -62,10 +62,13 @@ does not on the one in the store.
 
 ## Still open
 
-- **Orientation is not locked.** The activity handles rotation itself
-  (`configChanges` includes `orientation`), so both work and neither has been
-  seen on a real phone. Locking is one `android:screenOrientation="portrait"`
-  in `AndroidManifest.xml` and is the owner's call once he has looked.
+- ~~Orientation is not locked.~~ **Settled: it is portrait, locked.** The owner
+  turned a real phone sideways and every screen was wrong - the level, the home
+  screen and the panels are all laid out down a tall screen. It is
+  `android:screenOrientation="portrait"` on the activity in
+  `AndroidManifest.xml`. `configChanges` still lists `orientation`, which is
+  correct and not a leftover: it is what stops the activity being destroyed and
+  rebuilt by any rotation the system still hands it.
 - **The INTERNET permission stays**, because v1 ships with ads. The game
   itself requests nothing over the network (see `css/05-fonts.css`), so
   anything on the wire is the ad SDK.
