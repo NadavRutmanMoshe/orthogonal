@@ -362,6 +362,13 @@ is the rule.
   `menuPanel()` that said a fourth copy of LEVELS is one too many: every
   other door out of that sheet goes down or sideways.
 - The running star total is hidden by any open panel and while a clock runs.
+- **The map's ambient cubes are NOT parked during the mastery celebration**,
+  and that reverses the frame-budget note that used to sit in `mapDraw()`.
+  Stopping them for `MAP_PAINT_LEAD+MAP_PAINT_MS+700` meant **1890ms of dead
+  background on exactly the worlds a player has finished**, every time they
+  opened that map - the reward for three-starring a world was two seconds of
+  nothing behind the celebration. Reported as the animation loading before
+  the background, which is what it was.
 - `nothingBehind()` decides intro-card versus home screen and START versus
   CONTINUE; `NEXT LEVEL` is always the next level, except into a locked shelf
   where it becomes `WHAT'S LEFT` and opens the map.

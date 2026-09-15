@@ -2179,17 +2179,29 @@ function mapDraw(spans){
   mapFill(fillPct);
   if(mast){
     if(SFX.mastery)SFX.mastery();
-    /* The ambient cubes are a canvas redrawing every frame behind all of
-       this, and they are the one cost here that is buying nothing during a
-       celebration - nobody is looking at the wallpaper while the section
-       fills. Parked for the length of it and handed back afterwards, which
-       is a frame budget the paint, fourteen node pops and the rising water
-       are all sharing. */
-    mapBgStop();
+    /* THE WALLPAPER IS NOT PARKED ANY MORE, and this reverses the note that
+       used to sit here on the owner's call.
+
+       The old argument: the ambient cubes are a canvas redrawing every frame,
+       they buy nothing during a celebration, and nobody is looking at the
+       wallpaper while the section fills - so they were stopped and handed
+       back MAP_PAINT_LEAD + MAP_PAINT_MS + 700 later, a frame budget shared
+       with the paint, fourteen node pops and the rising water.
+
+       What it missed is what that adds up to and who it happens to: 1890ms
+       of DEAD BACKGROUND, on exactly the worlds a player has finished, every
+       single time they open that map. The reward for three-starring a world
+       was two seconds of nothing behind the celebration. Reported as the
+       animation loading before the background, which is precisely what it
+       was.
+
+       It is also a cheaper trade than it was when it was written: the 63ms
+       lump of solver that used to land on this same frame is gone
+       (warmStats(), js/07-difficulty.js), so the budget this was protecting
+       is no longer the scarce thing. The cubes stay up and the celebration
+       plays over them. */
     clearTimeout(mapBgHold);
-    mapBgHold=setTimeout(function(){
-      if(panelKind==="map"&&panelOpen())mapBgStart();
-    },MAP_PAINT_LEAD+MAP_PAINT_MS+700);
+    if(panelKind==="map"&&panelOpen())mapBgStart();
   }
   trail.querySelectorAll("[data-node]").forEach(function(el){
     tap(el,function(){mapSheet(+el.getAttribute("data-node"));});
