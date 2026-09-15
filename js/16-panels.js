@@ -480,6 +480,12 @@ var PANEL_ICONS={
   teach:"M11.6 3.1a1 1 0 0 1 .8 0l9 3.9a1 1 0 0 1 0 1.8l-9 3.9a1 1 0 0 1-.8 "+
         "0l-9-3.9a1 1 0 0 1 0-1.8ZM6 11.5l5.6 2.4a1 1 0 0 0 .8 0L18 11.5v3.9"+
         "c0 .5-.3 1-.8 1.2a13 13 0 0 1-10.4 0c-.5-.2-.8-.7-.8-1.2Z",
+  // two bars, short and tall, standing on the same line: the one picture
+  // that says "how big" for both of the rows under it
+  access:"M4.6 12.8h4.8c.9 0 1.6.7 1.6 1.6v4.8c0 .9-.7 1.6-1.6 1.6H4.6c-.9 0"+
+         "-1.6-.7-1.6-1.6v-4.8c0-.9.7-1.6 1.6-1.6Zm9.6-9.6h5.2c.9 0 1.6.7 "+
+         "1.6 1.6v14.4c0 .9-.7 1.6-1.6 1.6h-5.2c-.9 0-1.6-.7-1.6-1.6V4.8c0"+
+         "-.9.7-1.6 1.6-1.6Z",
   // an arrow going back round to where it started
   reset:"M12 4a8 8 0 1 1-7.6 10.5 1.1 1.1 0 1 1 2.1-.7A5.8 5.8 0 1 0 12 6.2"+
         "c-1.7 0-3.2.7-4.2 1.9h2a1.1 1.1 0 0 1 0 2.2H5.1A1.1 1.1 0 0 1 4 9.2"+
@@ -664,26 +670,51 @@ function menuPanel(){
           seg("mUi","full","FULL",settings.ui)+
           seg("mUi","compact","COMPACT",settings.ui)+
           seg("mUi","none","HIDDEN",settings.ui)+"</span></div>"+
-        /* THE TWO ACCESSIBILITY ROWS SIT TOGETHER AND OFFER THE SAME TWO
-           WORDS. Level size lost SMALL when Text size arrived: no age band
-           ever wrote it, and two adjacent rows reading MEDIUM / LARGE are one
-           idea - how big do you want this - where MEDIUM / LARGE beside
-           SMALL / MEDIUM / LARGE would read as two unrelated dials that
-           happen to be neighbours. */
-        "<div class='crow'><label>Level size</label><span class='seg'>"+
-          seg("mSize","medium","MEDIUM",settings.size)+
-          seg("mSize","large","LARGE",settings.size)+"</span></div>"+
-        "<div class='crow'><label>Text size</label><span class='seg'>"+
-          seg("mText","medium","MEDIUM",settings.text)+
-          seg("mText","large","LARGE",settings.text)+"</span></div>"+
         /* Named for what it is measured against, not for the clock: the two
            real-time things in the game are the bosses and the trials, and a
            row called Speed on a settings sheet in a turn-based puzzle would
            read as the speed of everything. */
-        "<div class='crow bare'><label>Fights speed</label><span class='seg'>"+
+        "<div class='crow'><label>Fights speed</label><span class='seg'>"+
           seg("mSpd","slow","SLOW",settings.speed)+
           seg("mSpd","regular","REGULAR",settings.speed)+
-          seg("mSpd","fast","FAST",settings.speed)+"</span></div></div>"+
+          seg("mSpd","fast","FAST",settings.speed)+"</span></div>"+
+        /* WHERE YOU LAND IS A ROW HERE, not a card of its own. It had its own
+           heading and one unlabelled row under it, which is a heading saying
+           the same thing as a label would - and it is plainly one of the
+           things that governs how the game plays, which is what this card is
+           for. Labelled now, because a row in a card of rows needs to say
+           which one it is.
+
+           "Landing mark", not "Where you land", and the length is the reason:
+           the label column is 98px, which holds twelve monospace characters -
+           "Fights speed" exactly - and fourteen wrapped onto a second line and
+           knocked the row out of alignment. Widening the column is the wrong
+           trade, because the same width feeds the three-option rows above and
+           they are the ones with no slack. It says what the switch does
+           anyway: it marks the block you land on. */
+        "<div class='crow bare'><label>Landing mark</label><span class='seg'>"+
+          seg("mMark","on","SHOW",settings.foldmark)+
+          seg("mMark","off","OFF",settings.foldmark)+"</span></div></div>"+
+      /* ACCESSIBILITY IS ITS OWN CARD, under How it plays. The two size rows
+         were inside that card and they do not belong to it: everything else
+         there is a choice about the GAME - which controls, how fast a fight
+         runs, whether the landing is marked - and these two are a choice
+         about the PERSON. Under one heading they stop being two settings
+         somebody has to find among five and become the answer to one
+         question, which is the same question the age card asked.
+
+         Both offer MEDIUM and LARGE and nothing else. Level size lost SMALL
+         when Text size arrived beside it: no age band ever wrote it, and two
+         adjacent rows offering the same two words read as one idea, where
+         two-against-three would read as unrelated dials that happen to be
+         neighbours. */
+      "<div class='pcard'><h4>"+panelIcon("access")+"Accessibility</h4>"+
+        "<div class='crow'><label>Level size</label><span class='seg'>"+
+          seg("mSize","medium","MEDIUM",settings.size)+
+          seg("mSize","large","LARGE",settings.size)+"</span></div>"+
+        "<div class='crow bare'><label>Text size</label><span class='seg'>"+
+          seg("mText","medium","MEDIUM",settings.text)+
+          seg("mText","large","LARGE",settings.text)+"</span></div></div>"+
       /* THE KILL CAM ROW IS GONE AND FULL WON. It was a genuine question -
          the snow and the camcorder are two extra seconds of ceremony on every
          death - and it was put on the sheet to be answered by playing both.
@@ -694,19 +725,15 @@ function menuPanel(){
          key whose feature is removed comes out of the list, or a save
          carrying killcam:"plain" would pin the plain version on with nothing
          left to change it - the same trap `pace` is in. */
-      /* WHERE YOU LAND, AS A ROW. Coming back to 3D puts you on the block
-         nearest the camera among the ones you can actually reach, and that
-         block goes green while the landing rings hold. It is the only
-         drawing rule 5 has, so it is on by default - but it is a teaching
-         aid, and once the rule is learned it is a colour on the board that
-         answers a question the player has stopped asking. Named for what it
-         marks rather than for how it looks, the way the kill-cam row was.
-         The RINGS are not on this switch: they sit beside the block rather
-         than on it, and they are the older statement. */
-      "<div class='pcard'><h4>"+panelIcon("land")+"Where you land</h4>"+
-        "<div class='crow bare'><span class='seg'>"+
-          seg("mMark","on","SHOW",settings.foldmark)+
-          seg("mMark","off","OFF",settings.foldmark)+"</span></div></div>"+
+      /* Where you land used to be a card here, with a heading and one
+         unlabelled row. It is a labelled row inside How it plays now - see
+         above. What it switches is unchanged: coming back to 3D puts you on
+         the block nearest the camera among the ones you can reach, and that
+         block goes green while the landing rings hold. It is the only drawing
+         rule 5 has, so it is on by default, but it is a teaching aid and once
+         the rule is learned it answers a question the player has stopped
+         asking. The RINGS are not on this switch: they sit beside the block
+         rather than on it, and they are the older statement. */
       /* WHAT THE PIECES DO IS OFF THE PANEL, on the owner's call. The pieces
          are taught where they are first met - the tutorial cards and the
          level briefs - and a reference list under More was a fourth row that

@@ -336,6 +336,13 @@ is the rule.
   `?` · star total · `✕`; footer (`.pfoot`) is up-one-level · `CLOSE`. Adding
   a control to one of them means adding it to all five or to none. MY LEVELS
   is the fifth, and every screen under it goes through `mlScreen()`.
+- **The settings sheet is five cards**: WORLDS and the shelf row, Sound &
+  light, **How it plays** (Controls, Fights speed, Landing mark),
+  **Accessibility** (Level size, Text size) and More. The split is by what a
+  setting is ABOUT - the game, or the person - so the two size rows are not
+  buried among five rows about the game. `.crow label` is 98px, which holds
+  TWELVE monospace characters and no more: "Where you land" is fourteen and
+  wrapped, which is why that row is called "Landing mark".
 - **WORLDS is at the top of the settings sheet**, a `.psec` row above the
   back-to-this-shelf row, wearing the chooser's `#4ec8e0` and `gridIcon()`.
   It opens `sectionPicker()`, not the map. It reverses the note in
@@ -592,7 +599,8 @@ is the rule.
   since `05-fonts.css` landed: the real IBM Plex Mono is wider than the
   substitute it was measured in, and it needs 96px. It is 98px now. Re-check
   any hand-tuned width after a font change.
-- **`settings.foldmark` is `"on"`/`"off"`** - Menu > Where you land, the
+- **`settings.foldmark` is `"on"`/`"off"`** - Menu > How it plays > Landing
+  mark (it was a card of its own called "Where you land"), the
   switch on the green block the fold marks. Whitelisted in `loadSettings()`
   and reset by RESET SETTINGS. Nothing applies it: the render loop asks
   `foldMarkOn()` every frame.
@@ -699,7 +707,7 @@ is the rule.
   plus the block under your own feet, always, or "show me where I landed" can
   come up empty.
   Peril and the tutorial's landing marker both outrank it. `foldMarkOn()`
-  (`settings.foldmark`, Menu > Where you land) turns it off; the RINGS are
+  (`settings.foldmark`, Menu > How it plays > Landing mark) turns it off; the RINGS are
   deliberately not on that switch. A two-beat fold that gathered the world
   into the front block was built, played and dropped for this
   (`controls.md`, `HISTORY.md`).
