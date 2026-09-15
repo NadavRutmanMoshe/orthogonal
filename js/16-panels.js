@@ -664,10 +664,18 @@ function menuPanel(){
           seg("mUi","full","FULL",settings.ui)+
           seg("mUi","compact","COMPACT",settings.ui)+
           seg("mUi","none","HIDDEN",settings.ui)+"</span></div>"+
+        /* THE TWO ACCESSIBILITY ROWS SIT TOGETHER AND OFFER THE SAME TWO
+           WORDS. Level size lost SMALL when Text size arrived: no age band
+           ever wrote it, and two adjacent rows reading MEDIUM / LARGE are one
+           idea - how big do you want this - where MEDIUM / LARGE beside
+           SMALL / MEDIUM / LARGE would read as two unrelated dials that
+           happen to be neighbours. */
         "<div class='crow'><label>Level size</label><span class='seg'>"+
-          seg("mSize","small","SMALL",settings.size)+
           seg("mSize","medium","MEDIUM",settings.size)+
           seg("mSize","large","LARGE",settings.size)+"</span></div>"+
+        "<div class='crow'><label>Text size</label><span class='seg'>"+
+          seg("mText","medium","MEDIUM",settings.text)+
+          seg("mText","large","LARGE",settings.text)+"</span></div>"+
         /* Named for what it is measured against, not for the clock: the two
            real-time things in the game are the bosses and the trials, and a
            row called Speed on a settings sheet in a turn-based puzzle would
@@ -780,9 +788,17 @@ function menuPanel(){
      by hand is the player disagreeing with the band on that one thing, and
      overwriting `ageBand` here would either lie about which row is lit on the
      age sheet or drag the other two settings along with it. */
-  ["small","medium","large"].forEach(function(m){
+  ["medium","large"].forEach(function(m){
     bind("mSize_"+m,function(){
       settings.size=m;saveSettings();onResize();menuPanel();
+    });
+  });
+  /* applyText() writes the body class; onResize() because the chrome it
+     scales is what fitViewSize() leaves room for, and menuPanel() to redraw
+     the sheet at its new size under your thumb. */
+  ["medium","large"].forEach(function(m){
+    bind("mText_"+m,function(){
+      settings.text=m;applyText();saveSettings();onResize();menuPanel();
     });
   });
   // Nothing to apply: both real-time loops ask paceScale() every frame.
@@ -809,6 +825,7 @@ function menuPanel(){
        what the game is set to. The question is not re-asked - RESET SETTINGS
        is not a first run, and nothing in the menu opens that card any more. */
     settings.size=SIZE_DEFAULT;settings.speed=SPEED_DEFAULT;settings.ageBand="";
+    settings.text=TEXT_DEFAULT;applyText();
 
     settings.landHints=0;
     settings.starAsked=false;

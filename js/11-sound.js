@@ -66,6 +66,9 @@ var UI_DEFAULT="none";
    middle of each scale and the answer three of the five age bands get. */
 var SIZE_DEFAULT="medium";
 var SPEED_DEFAULT="regular";
+/* And the fourth, for the same reason. Medium is what the screen was tuned
+   at; large is the accessibility step. */
+var TEXT_DEFAULT="medium";
 var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false,
               /* HOW BIG THE BOARD IS DRAWN - small, medium, large. A camera
                  setting and nothing else: boardScale() multiplies the arena
@@ -79,6 +82,13 @@ var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false
                  dials. Word values rather than the retired numeric `pace`,
                  which is deliberately not read by loadSettings() any more. */
               speed:SPEED_DEFAULT,
+              /* HOW BIG THE WORDS ARE - medium, large. A multiplier on the
+                 chrome's type AND on the boxes that hold it, applied as one
+                 body class and read by `--ts` in css/00-base.css. It is the
+                 sibling of `size` above: that one scales the board, this one
+                 scales everything you read. Nothing in the rules, the par or
+                 the solver knows about either. */
+              text:TEXT_DEFAULT,
               /* WHICH AGE BAND WAS PICKED, or "" if the question has not
                  been answered. It is remembered rather than derived so the
                  menu can show which row is standing, and so SET UP BY AGE
@@ -165,7 +175,14 @@ function paceScale(){
 
    The ends are about a fifth either way, which is plainly a different size
    without turning a two-block tutorial into a wall. */
-var BOARD_SCALE={small:1.2,medium:1,large:.82};
+/* SMALL IS GONE from both of the accessibility rows. No age band ever
+   assigned it - it existed only as a third button on a row whose two useful
+   answers are "normal" and "bigger" - and with Text size beside it, two rows
+   offering the same two words read as one idea rather than as two unrelated
+   sliders. A save carrying "small" is simply not read (loadSettings()), so it
+   lands back on medium rather than pinning a value with no button to change
+   it. */
+var BOARD_SCALE={medium:1,large:.82};
 function boardScale(){
   return BOARD_SCALE[settings.size]||1;
 }
@@ -196,12 +213,17 @@ function boardScale(){
    This is a DEFAULT, not a lock. Every one of the three is a row in the
    menu, and picking a band again from SET UP BY AGE is the only thing that
    ever overwrites all three at once. */
+/* TEXT FOLLOWS SIZE, and that is not laziness - it is the same question.
+   A band that asks for a bigger board is a band that wants the screen easier
+   to read, and splitting the two would mean the card quietly setting a large
+   board with small type on it. So the two bands that already got `large`
+   boards get `large` text, and nobody else does. */
 var AGE_BANDS=[
-  {id:"u18", label:"UNDER 18", size:"medium", speed:"fast",    ui:"none"},
-  {id:"a18", label:"18 - 25",  size:"medium", speed:"regular", ui:"none"},
-  {id:"a26", label:"26 - 39",  size:"medium", speed:"slow",    ui:"compact"},
-  {id:"a40", label:"40 - 59",  size:"large",  speed:"slow",    ui:"full"},
-  {id:"a60", label:"60 +",     size:"large",  speed:"slow",    ui:"full"}
+  {id:"u18", label:"UNDER 18", size:"medium", speed:"fast",    ui:"none",    text:"medium"},
+  {id:"a18", label:"18 - 25",  size:"medium", speed:"regular", ui:"none",    text:"medium"},
+  {id:"a26", label:"26 - 39",  size:"medium", speed:"slow",    ui:"compact", text:"medium"},
+  {id:"a40", label:"40 - 59",  size:"large",  speed:"slow",    ui:"full",    text:"large"},
+  {id:"a60", label:"60 +",     size:"large",  speed:"slow",    ui:"full",    text:"large"}
 ];
 /* AND THE ANSWER FOR SOMEBODY WHO WILL NOT GIVE ONE.
 
@@ -218,9 +240,9 @@ var AGE_BANDS=[
    band's. MEDIUM sits between them with the compact bar, so the middle answer
    is the one that has both some help and most of the screen. */
 var DIFF_BANDS=[
-  {id:"deasy", label:"EASY",   size:"large",  speed:"slow",    ui:"full"},
-  {id:"dmed",  label:"MEDIUM", size:"medium", speed:"regular", ui:"compact"},
-  {id:"dhard", label:"HARD",   size:"medium", speed:"fast",    ui:"none"}
+  {id:"deasy", label:"EASY",   size:"large",  speed:"slow",    ui:"full",    text:"large"},
+  {id:"dmed",  label:"MEDIUM", size:"medium", speed:"regular", ui:"compact", text:"medium"},
+  {id:"dhard", label:"HARD",   size:"medium", speed:"fast",    ui:"none",    text:"medium"}
 ];
 /* One lookup over both tables, because everything downstream - the card, the
    whitelist, `settings.ageBand` - only ever needs "is this a band, and what
@@ -242,8 +264,11 @@ function applyAgeBand(id){
   var b=ageBandOf(id);
   if(!b)return false;
   settings.size=b.size;settings.speed=b.speed;settings.ui=b.ui;
+  /* Defaulted rather than assumed: a band from an older save read back
+     through ageBandOf() has no `text` on it. */
+  settings.text=b.text||TEXT_DEFAULT;
   settings.ageBand=b.id;
-  applyUI();saveSettings();
+  applyUI();applyText();saveSettings();
   if(typeof syncHud==="function")syncHud();
   if(typeof onResize==="function")onResize();
   return true;
@@ -836,6 +861,17 @@ function applyUI(){
   var b=document.body.classList;
   b.remove("ui-full");b.remove("ui-compact");b.remove("ui-none");
   b.add("ui-"+(settings.ui||"full"));
+}
+/* ONE BODY CLASS, AND THE CSS DOES THE REST. `body.tx-large` sets `--ts`,
+   which every scaled declaration multiplies by; medium sets no class at all,
+   so the default path through the stylesheet is the one that was tuned by
+   eye and `--ts` is 1 with nothing to compute. Same shape as applyUI(), and
+   it is called from the same three places: boot, the menu row, and
+   applyAgeBand(). */
+function applyText(){
+  var b=document.body.classList;
+  b.remove("tx-large");
+  if((settings.text||TEXT_DEFAULT)==="large")b.add("tx-large");
 }
 function audio(){
   if(muted)return null;

@@ -83,10 +83,20 @@ function loadSettings(){
            is not one of the three would fall through boardScale() and
            paceScale() to 1 anyway, but it would sit in the menu with no row
            lit, which is a setting nobody can see to change. */
-        if(o.size&&["small","medium","large"].indexOf(o.size)>=0)
+        /* "small" IS NOT READ ANY MORE, and that is the whole migration.
+           The row offered SMALL / MEDIUM / LARGE and no age band ever wrote
+           SMALL; it came off when Text size arrived beside it, so a save
+           carrying it falls through to SIZE_DEFAULT rather than pinning a
+           board scale with no button left to change it - the trap `pace` and
+           `killcam` are in above. */
+        if(o.size&&["medium","large"].indexOf(o.size)>=0)
           settings.size=o.size;
         if(o.speed&&["slow","regular","fast"].indexOf(o.speed)>=0)
           settings.speed=o.speed;
+        /* The fourth thing the age card writes. Bounded like the rest; a key
+           that is not read here does not exist after a reload. */
+        if(o.text&&["medium","large"].indexOf(o.text)>=0)
+          settings.text=o.text;
         /* And which band wrote them, if any. Bounded by the table itself -
            `ageBandOf` is the list - so a renamed band cannot leave a save
            pointing at a row that is not there. */
@@ -143,7 +153,7 @@ function loadSettings(){
       }catch(e){}
     }
     muted=settings.volume<=0;
-    applyVolume();applyBrightness();applyUI();syncHud();
+    applyVolume();applyBrightness();applyUI();applyText();syncHud();
   }).catch(function(){});
 }
 // Resume where you stopped, mid-level, not just at the last level you finished.

@@ -15,7 +15,7 @@
    they are still reading a wordmark, which is the one honest use for a splash
    screen beyond the one it is here for. */
 initGL();
-applyUI();
+applyUI();applyText();
 playSource="builtin";
 enterPlay(LEVELS[0],0,false);
 

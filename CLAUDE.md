@@ -76,7 +76,7 @@ listed in `index.html`. `21-boot.js` is the only file that *runs* anything.
 | File | What it holds |
 |---|---|
 | `index.html` | all static markup: corners, HUD, boss bar, coach, ghost hand, bars, splash, home, `#panel`, `#toast`, the cutscene overlay (`#story`), and the four full-bleed cards (`#intro`, `#tutcard`, `#won`, `#storyend`) |
-| `css/*.css` | **one stylesheet per screen**, linked in numeric order; the cascade depends on that order. `docs/UI.md` maps each screen to its file. `05-fonts.css` is the one exception: no screen, just the two typefaces inline. |
+| `css/*.css` | **one stylesheet per screen**, linked in numeric order; the cascade depends on that order. `docs/UI.md` maps each screen to its file. **Two files are not screens**: `05-fonts.css` (the typefaces) and `97-textsize.css` (the LARGE half of Menu > Text size, every rule prefixed `body.tx-large`). |
 | `js/00-storage.js` | `window.storage` over `localStorage`; in-memory fallback when storage is denied |
 | `js/01-coords.js` | `AX[]`, the four camera views (`r` screen-right, `d` depth toward camera); `K()`, `box()` |
 | `js/02-levels.js` | `LEVELS`, `SECTIONS`, `LEVEL_RENAMES` |
@@ -574,6 +574,24 @@ is the rule.
   "ssss" for fire, and the fall's own voice for everything unnamed. The
   hunter's was POOF / KAPOOSH / THUD in `settings.bossdie` for one round;
   the owner picked, and the switch came out with the question.
+- **`settings.text` is `"medium"`/`"large"` - Menu > Text size**, applied by
+  `applyText()` as one body class and nothing else. **MEDIUM WRITES NOTHING**:
+  there is no multiplier on the default path, and `css/97-textsize.css` holds
+  a second, hand-checked value for each declaration under a `body.tx-large`
+  prefix - which also means the file is safe at any point in the cascade,
+  since the prefix buys a class of specificity over the original. It scales
+  the HUD text, the home screen, panels, rows and cards; **deliberately not**
+  the d-pad, the turn buttons, GO 2D or the map's nodes - those are controls
+  and drawings, and two of them are what `fitViewSize()` measures.
+- **SMALL is gone from Level size**, so both accessibility rows offer MEDIUM
+  and LARGE and read as one question. No band ever wrote it; `loadSettings()`
+  simply stops reading `"small"`, so an old save lands on medium rather than
+  pinning a value with no button left to change it.
+- **A bundled typeface invalidates every width measured against a fallback.**
+  `.crow label` was 92px "to hold Fights speed" and had been quietly wrapping
+  since `05-fonts.css` landed: the real IBM Plex Mono is wider than the
+  substitute it was measured in, and it needs 96px. It is 98px now. Re-check
+  any hand-tuned width after a font change.
 - **`settings.foldmark` is `"on"`/`"off"`** - Menu > Where you land, the
   switch on the green block the fold marks. Whitelisted in `loadSettings()`
   and reset by RESET SETTINGS. Nothing applies it: the render loop asks

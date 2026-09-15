@@ -45,11 +45,20 @@
   body.tut.ui-none .coach{bottom:calc(var(--sab) + 176px)}
   .crow{display:flex;align-items:center;gap:7px;padding:8px 0;
     border-bottom:1px solid var(--rule)}
-  /* 92px, not 74: the rows are called "Level size" and "Fights speed" now
-     rather than Board and Fights, and the longest is twelve monospace
-     characters. The three option buttons absorb it - at the owner's 327px
-     they come out about 54px each, which still holds COMPACT and REGULAR. */
-  .crow label{width:92px;flex-shrink:0;color:var(--fg-dim)}
+  /* 98px, and the number moved for a reason worth writing down: it was 92,
+     measured when the mono was whatever face the machine happened to
+     substitute. Since css/05-fonts.css the game carries the REAL IBM Plex
+     Mono, which is wider - "Fights speed" needs 96px in it - so the label
+     that used to fit had been quietly wrapping to two lines, taking its row
+     out of alignment with the three above it. Nobody saw it because the
+     screenshots that would have shown it were taken before the fonts landed.
+     Bundling a typeface changes every measurement taken against a fallback.
+
+     The option buttons absorb the 6px. Below 361px the media query at the
+     foot of this file stacks the label above its row anyway, so the case
+     this width has to serve is 361px and up, where the three options still
+     come out near 64px each - enough for COMPACT and REGULAR. */
+  .crow label{width:98px;flex-shrink:0;color:var(--fg-dim)}
   /* A row whose card heading already names it: the three options take the
      whole width rather than leaving a label-shaped hole. */
   .crow.bare{border-bottom:0;padding-bottom:2px}

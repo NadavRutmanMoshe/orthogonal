@@ -1,0 +1,95 @@
+/* I'm Just A Cube - css/97-textsize.css
+   MENU > TEXT SIZE, the LARGE half of it. Like 05-fonts.css this is not a
+   screen; it is one setting, gathered in one place.
+
+   MEDIUM WRITES NOTHING. There is no `body.tx-medium` and no multiplier on
+   the default path: every size in the other sixteen stylesheets is the value
+   it was tuned at, and this file is a set of second values that apply only
+   when `applyText()` has put `tx-large` on the body. So the setting cannot
+   change the screen it was not asked to change, and "what does medium look
+   like" is answered by deleting this file rather than by doing arithmetic.
+
+   EVERY RULE CARRIES THE `body.tx-large` PREFIX, which is what makes the
+   file safe to load anywhere in the cascade: the prefix buys a class of
+   specificity, so these beat their originals even where a later stylesheet
+   (98-story, 99-guide) would otherwise win on order alone.
+
+   THE NUMBERS ARE WRITTEN OUT, NOT COMPUTED. A single `--ts` multiplied
+   through every declaration is tidier to read and wrong in practice: type
+   scales about 1.2 here, but a BOX only has to grow enough to hold its
+   contents, and the two that collide first - MULTIPLAYER against its
+   gamepad, the settings rows' option pills - need their own answers rather
+   than the same one. Each value below was checked at 327px, the narrow
+   phone, in the state that uses it.
+
+   WHAT IS DELIBERATELY NOT HERE: the d-pad, the turn buttons, the round
+   corner buttons and GO 2D. Those are controls rather than reading, their
+   glyphs are drawings rather than words, and their sizes are two of the
+   three things fitViewSize() reads - scaling them would move the board on a
+   setting that claims to be about text. The map's nodes, the wardrobe's
+   price tags and the editor's chips are out for the same reason: they are
+   pictures with words in them. */
+
+/* ---- The HUD: the level's name, its hint, the primer, the axis, the count */
+body.tx-large .title{font-size:20px}
+/* The hint gets width with its size, or the same sentence simply becomes a
+   taller column in the same 54vw and costs the board the space it just
+   gained. */
+body.tx-large .hint{font-size:14.5px;max-width:64vw}
+body.tx-large .primer{font-size:13px;max-width:74vw}
+body.tx-large .primer li{padding-left:22px}
+body.tx-large .primer li::before{width:13px;height:13px;
+  font-size:10.5px;line-height:12px}
+body.tx-large .axis{font-size:14px}
+body.tx-large .moves{font-size:14px}
+body.tx-large .moves b{font-size:20px}
+
+/* ---- The home screen */
+body.tx-large .htitle{font-size:40px}
+body.tx-large .hsub{font-size:11.5px}
+body.tx-large .hstars{font-size:13px}
+body.tx-large .hstars b{font-size:14px}
+body.tx-large .home button{font-size:17px;height:52px}
+body.tx-large .hcont{height:66px}
+body.tx-large .hcont b{font-size:17px}
+body.tx-large .hcont i{font-size:13.5px}
+/* The width grows with the word for the reason measured in 95-home.css: the
+   gamepad is pinned at a fixed left offset and the label is CENTRED, so a
+   bigger word closes on the icon from both sides at once. 208px keeps the
+   air it has at medium. */
+body.tx-large .home .tiny{font-size:14px;width:208px;height:38px}
+
+/* ---- Panels: the sheet, its headings, its rows */
+body.tx-large .panel{font-size:14.5px}
+body.tx-large .panel h3{font-size:14px}
+body.tx-large .panel .prow button{font-size:14px;height:38px}
+body.tx-large .lrow .mono{font-size:12.5px}
+body.tx-large .phead .pt{font-size:19px}
+body.tx-large .phead .pt span{font-size:12.5px}
+body.tx-large .prow2 button{font-size:15px;height:52px}
+body.tx-large .psec b{font-size:15px}
+body.tx-large .psec i{font-size:11.5px}
+body.tx-large .psub button{font-size:14px;height:44px}
+body.tx-large .pfoot button{font-size:14px;height:42px}
+
+/* ---- MY LEVELS' rows */
+body.tx-large .mlbtn{font-size:15px;height:52px}
+body.tx-large .mlrow .lname{font-size:15px}
+body.tx-large .mlmeta{font-size:12px}
+body.tx-large .mlhero b{font-size:17px}
+body.tx-large .mlrow button.mini{font-size:12.5px;height:35px}
+
+/* ---- The settings rows themselves, which have to hold their own labels */
+body.tx-large .crow label{width:108px}
+body.tx-large .crow .seg button{font-size:12px;height:32px}
+body.tx-large .coach{font-size:15.5px}
+body.tx-large .coach i{font-size:12px}
+body.tx-large .toast{font-size:14.5px}
+body.tx-large .toast.cuesay b{font-size:17px}
+body.tx-large .toast.cuesay i{font-size:12.5px}
+
+/* ---- The full-bleed cards. `.bigstars` is deliberately untouched: it is
+   already 42px and it is a score being drawn, not a line being read. */
+body.tx-large .won h2{font-size:28px}
+body.tx-large .won p{font-size:14.5px}
+body.tx-large .tutcard p{font-size:15px}
