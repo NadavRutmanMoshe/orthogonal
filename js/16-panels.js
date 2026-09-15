@@ -767,6 +767,8 @@ function menuPanel(){
            setting - it is a place you go, like LEVELS and the wardrobe are -
            and filing it under More next to RESET SETTINGS is what made it
            feel like a developer switch rather than a thing to play with. */
+        /* TEMPORARY, and it goes out with soundTestPanel(). */
+        "<button id='mSfx'>"+panelIcon("sound")+"SOUND TEST</button>"+
         "<button id='mReset' class='pdanger'>"+panelIcon("reset")+
         "RESET SETTINGS</button>"+
       "</div>"+
@@ -843,6 +845,8 @@ function menuPanel(){
   bind("mTut",function(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
   });
+  /* TEMPORARY, and it goes out with soundTestPanel(). */
+  bind("mSfx",soundTestPanel);
   bind("mReset",function(){
     settings.volume=defaultVolume();settings.volTouched=false;
     settings.brightness=1;settings.ui=UI_DEFAULT;settings.foldmark="on";
@@ -2466,6 +2470,98 @@ function mapHelp(){
    sees that card again, so without this button every existing player would
    have a game that had quietly decided their settings. */
 
+/* ============================================================
+   SOUND TEST - TEMPORARY, AND BUILT TO BE DELETED
+
+   One button per voice in SFX, because "the sound is distorted when I kill
+   the enemy" is a kill that fires four or five of them inside 200ms and no
+   amount of measuring from this end says WHICH. The owner taps them one at
+   a time on the phone that has the problem, which is the only instrument
+   that can hear it.
+
+   Everything it needs is in this one function plus two lines elsewhere: the
+   `mSfx` button in menuPanel()'s More card, and its bind. Styles are inline
+   rather than in css/ for the same reason - deleting the feature is deleting
+   this block and those two lines, with nothing left behind in a stylesheet.
+
+   The list is written out rather than taken from Object.keys(SFX) because
+   five of these voices take an argument, and a test button that plays
+   die(undefined) is testing a sound the game never makes.
+   ============================================================ */
+function soundTestPanel(){
+  var V=[
+    ["step",function(){SFX.step();}],
+    ["bump",function(){SFX.bump();}],
+    ["fold",function(){SFX.fold();}],
+    ["unfold",function(){SFX.unfold();}],
+    ["spill",function(){SFX.spill();}],
+    ["turn",function(){SFX.turn();}],
+    ["shove",function(){SFX.shove();}],
+    ["undo",function(){SFX.undo();}],
+    ["hint",function(){SFX.hint();}],
+    ["key",function(){SFX.key();}],
+    ["tick",function(){SFX.tick();}],
+    ["die fall",function(){SFX.die("fall");}],
+    ["die crush",function(){SFX.die("crush");}],
+    ["die fire",function(){SFX.die("spike");}],
+    ["die sweep",function(){SFX.die("trial");}],
+    ["die hunter",function(){SFX.die("boss");}],
+    ["shot",function(){SFX.shot();}],
+    ["strike",function(){SFX.strike();}],
+    ["sweep",function(){SFX.sweep();}],
+    ["cheer",function(){SFX.cheer();}],
+    ["rec",function(){SFX.rec();}],
+    ["relive",function(){SFX.relive(600);}],
+    ["win",function(){SFX.win();}],
+    ["mastery",function(){SFX.mastery();}],
+    ["star",function(){SFX.star(0);}],
+    ["drop",function(){SFX.drop(0);}],
+    ["starLost",function(){SFX.starLost();}],
+    ["sting",function(){SFX.sting();}]
+  ];
+  /* THE KILL, WHOLE. The four voices a hunter going down actually fires,
+     on the beats the fight fires them, because a pile may be the problem
+     even when every voice in it is clean on its own. */
+  var kill=function(){
+    SFX.strike();
+    setTimeout(function(){SFX.die("boss");},90);
+    setTimeout(function(){SFX.cheer();},260);
+  };
+  var h="<h3>SOUND TEST</h3>"+
+    "<p style='font-size:12px;opacity:.72;margin:0 0 10px'>"+
+      "Tap each one. Tell me which are wrong.</p>"+
+    "<button id='sfxKill' style='width:100%;margin:0 0 12px;padding:11px;"+
+      "font-size:13px;letter-spacing:.06em'>THE WHOLE KILL</button>"+
+    "<div style='display:grid;grid-template-columns:repeat(3,1fr);gap:6px'>";
+  for(var i=0;i<V.length;i++)
+    h+="<button id='sfx"+i+"' style='padding:9px 2px;font-size:11px;"+
+       "letter-spacing:.02em;text-transform:none'>"+V[i][0]+"</button>";
+  /* THE CHEER, AFTER THE CLAPS CAME OUT. The dissection did its job - the
+     hands were the problem and they are gone - so what is left here is the
+     level, which is the one thing about the bed that is still a guess. */
+  var A=function(){return audio();};
+  var C=[
+    ["cheer, as shipped",function(){SFX.cheer();}],
+    ["quieter still",function(){var c=A();if(c)crowdBed(c,c.currentTime,2.4,.007);}],
+    ["a touch louder",function(){var c=A();if(c)crowdBed(c,c.currentTime,2.4,.014);}],
+    ["shorter, 1.6s",function(){var c=A();if(c)crowdBed(c,c.currentTime,1.6,.010);}]
+  ];
+  h+="</div>"+
+    "<p style='font-size:12px;opacity:.72;margin:14px 0 8px'>"+
+      "THE CHEER. Claps are gone. Is the level right?</p>"+
+    "<div style='display:grid;grid-template-columns:repeat(2,1fr);gap:6px'>";
+  for(var q=0;q<C.length;q++)
+    h+="<button id='chr"+q+"' style='padding:10px 2px;font-size:11px;"+
+       "letter-spacing:.02em;text-transform:none'>"+C[q][0]+"</button>";
+  h+="</div><div class='prow'><button id='sfxBack'>BACK</button></div>";
+  showPanel(h,"sfxtest");
+  bind("sfxKill",kill);
+  bind("sfxBack",menuPanel);
+  for(var j=0;j<V.length;j++)
+    (function(k){bind("sfx"+k,V[k][1]);})(j);
+  for(var p=0;p<C.length;p++)
+    (function(k){bind("chr"+k,C[k][1]);})(p);
+}
 function legendPanel(){
   showPanel("<h3>THE PIECES</h3>"+
     "<div class='leg'><i style='background:#5a6d94'></i><span><b>Stone</b> \u2014 "+
