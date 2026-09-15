@@ -17,6 +17,74 @@ function statsCached(level){
   statsCache[k]=r;
   return r;
 }
+/* WARM THE PARS WHILE NOBODY IS LOOKING.
+
+   statsCached() is cheap the second time and expensive the first: statsFor()
+   runs the SOLVER TWICE per level, once with rotation and once without. The
+   bill arrives all at once, because starsForRecord() only asks for it when a
+   level HAS a record - so a fresh save pays almost nothing and a COMPLETED
+   save pays for every level in the game the first time anything wants the
+   star total. Measured on a completed save: starsEarned() cold was 63ms and
+   388 solver runs over 97 scored levels, and 0.3ms once warm. That is the
+   whole of the "the map takes a moment to come up when a world is fully
+   cleared" report, and it is why an empty world opened three times faster
+   than a finished one.
+
+   So the pars are computed up front, in the browser's idle time, a few at a
+   time, and the answer is already in statsCache by the time a panel asks.
+   It is the same shape as warmScenery() in js/10-render.js and it is done
+   for the same reason: the work is not avoidable, but the FRAME it lands on
+   is a choice.
+
+   Clock levels are skipped because starsForRecord() returns before reaching
+   statsCached() for them - a boss has no goal, and statsCached() would throw
+   on one. */
+function warmStats(){
+  if(typeof LEVELS==="undefined")return;
+  var list=[],i;
+  for(i=0;i<LEVELS.length;i++){
+    var l=LEVELS[i];
+    if(l.tutorial)continue;
+    if(typeof onTheClock==="function"&&onTheClock(l))continue;
+    list.push(l);
+  }
+  var n=0;
+  function now(){
+    return (typeof performance!=="undefined"?performance.now():Date.now());
+  }
+  function slice(dl){
+    /* ALWAYS DO AT LEAST ONE, and that is not a detail - it is the whole
+       difference between this working and this spinning forever. An idle
+       callback that fires because its TIMEOUT expired reports
+       timeRemaining() === 0, so a loop that checks the budget before doing
+       any work breaks out immediately, re-schedules, and breaks out again.
+       Written that way first, it left the cache empty after three seconds
+       while looking perfectly reasonable. A do/while guarantees progress,
+       and one level is 2.2ms at worst, so a slice can never hold a frame.
+
+       After the first, keep going while there is budget: the browser's own
+       where it gave us one, a 6ms slice where it did not. */
+    var end=now()+5;
+    do{
+      try{statsCached(list[n]);}catch(e){}
+      n++;
+    }while(n<list.length&&(dl&&!dl.didTimeout&&dl.timeRemaining
+             ? dl.timeRemaining()>1 : now()<end));
+    if(n<list.length)next();
+  }
+  /* A PLAIN TIMER, NOT requestIdleCallback, and that is the second thing
+     this function got wrong. A game paints every frame, so the browser is
+     never idle and the callback only ever fired on its timeout - once - and
+     then stopped: twelve pars cached after three seconds and the rest never
+     computed. An idle API is the right tool for a page that sits still, and
+     this page does not.
+
+     So: a 5ms slice every 40ms, which always fires, works the same in a
+     WebView with no idle API at all, and finishes 97 levels in well under a
+     second without ever holding a frame. */
+  function next(){ setTimeout(function(){slice(null);},40); }
+  next();
+}
 function statsFor(level){
   var full=solve(level,true);
   if(full.status!=="solved")return {ok:false,status:full.status};

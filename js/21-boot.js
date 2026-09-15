@@ -23,6 +23,10 @@ if(typeof warmScenery==="function"){
   if(window.requestIdleCallback)requestIdleCallback(warmScenery,{timeout:3000});
   else setTimeout(warmScenery,1200);
 }
+/* And the pars, which is the one that actually hurt: on a completed save the
+   first thing to ask for the star total ran the solver 388 times. See
+   warmStats() in js/07-difficulty.js - it chunks itself. */
+if(typeof warmStats==="function")warmStats();
 playSource="builtin";
 enterPlay(LEVELS[0],0,false);
 

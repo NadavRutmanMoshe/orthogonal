@@ -280,6 +280,19 @@ is the rule.
   only safe where nothing is scored.
 - `solve()` obeys `lockFlat`. Its answer is cached on state **and** level
   identity, because all tutorials start from the same state.
+- **A COMPLETED SAVE USED TO PAY 388 SOLVER RUNS THE FIRST TIME ANYTHING
+  ASKED FOR A STAR TOTAL.** `starsForRecord()` only reaches `statsCached()`
+  when a level HAS a record, and `statsFor()` runs `solve()` TWICE - so a
+  fresh save cost nothing and a finished one cost 63ms in one lump, on
+  whichever frame first drew the home screen or a map. It is why a fully
+  cleared world's map opened three times slower than an empty one.
+  `warmStats()` (`js/07-difficulty.js`, called from boot) now computes every
+  par in 5ms slices 40ms apart, finishing in about 600ms. Two traps it was
+  written into first, both worth knowing: an idle callback that fires on its
+  TIMEOUT reports `timeRemaining()===0`, so a loop that checks the budget
+  before doing any work never does any - it must be a do/while. And
+  `requestIdleCallback` is the wrong API for a game at all, because a page
+  that paints every frame is never idle: it fired once and stopped.
 - `tutStepView()` is the one answer to "what is being asked"; the coach, the
   green, the lock, the hand and `tutPoke` all read it.
 
