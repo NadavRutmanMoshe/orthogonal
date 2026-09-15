@@ -217,25 +217,28 @@ var STING_MS=940;
    snow arrives on top of the news rather than after it - the first version
    cut at 520ms and did exactly that. What it is buying is ONE THING AT A
    TIME: the word lands, it is read, the board it happened on is seen, and
-   only then does the picture drop. A death gets a little more than a kill,
-   because losing a life is the one that has to be understood rather than
-   enjoyed. Both are long enough that skipping has to be possible - see
-   replaySkip(). Owner's call, twice. */
-var KC_HOLD_DEATH=1750;        // the death is watched, board frozen
-var KC_HOLD_KILL=1550;         // and so is the word over the kill
+   only then does the picture drop. Long enough that skipping has to be
+   possible - see replaySkip(). Owner's call, twice.
+
+   ONE NUMBER, AND THAT IS THE POINT OF IT. This beat used to be three
+   different lengths: 1550 for a kill, 1750 for a death, and 2250 when the
+   fold took two hunters at once, on the argument that a death needs longer
+   to understand and a double kill is rare enough to earn a held frame. The
+   owner played it and reported the opposite: what you actually feel is that
+   the wait before the television is never the same twice, and a beat that
+   varies reads as the game hesitating rather than as emphasis. So it is
+   flat now, and the two arguments it used to make are gone with it -
+   `kcBonus` and `KC_HOLD_DEATH` do not exist any more. 1600 because the two
+   old numbers sat either side of it, so neither a kill nor a death moves by
+   more than a frame and a half from what shipped. */
+var KC_HOLD=1600;              // the board is held, the word is read
 var KC_SNOW_MS=470;            // no signal
 var KC_CAM_MS=820;             // raised, held against the glass, pushed in
-/* A KILL THAT TOOK MORE THAN ONE GETS LONGER TO BE READ. "DOUBLE CRUSH" is
-   the rarest thing this fight can say - two hunters are only ever in one
-   square because the player put them there - and it was going by too fast to
-   read. Set by bossFoldCrush() at the moment it knows the count, spent by the
-   next kcHold(), and cleared with the film; it is one number rather than a
-   parameter threaded through replayStart() and killCamStart() because every
-   one of those already takes `mode` and none of them should have to know
-   about kill counts. */
-var kcBonus=0;
+/* `mode` is still taken, and still ignored, because every caller has one to
+   hand and a future difference between a kill and a death belongs here
+   rather than at four call sites. */
 function kcHold(mode){
-  return (mode==="death"?KC_HOLD_DEATH:KC_HOLD_KILL)+kcBonus;
+  return KC_HOLD;
 }
 /* THE OLD TELEVISION IS ALWAYS IN. It was `Menu > Kill cam`, a real question
    asked on the sheet - the snow and the camcorder are two extra seconds of
