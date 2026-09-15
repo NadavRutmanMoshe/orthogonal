@@ -880,10 +880,12 @@ load-bearing per screen.
   anybody and bumps the shared version himself when it is ready. So a publish
   from here reaches HIM and nobody else, which is the intent - say the version
   went up, and leave the sharing to him.
-- **The running build is visible in the menu**, at the foot of the panel, as
-  `build <sha> (<branch>)`. It says `unbuilt · running from source` when
-  `index.html` is opened directly, and `+UNCOMMITTED CHANGES` when it cannot
-  be re-derived from a commit.
+- **`BUILD` is a global, and it is not on any screen.** The stamp came off the
+  foot of the settings panel on the owner's call (the reasoning is at the
+  string in `menuPanel()`); `build-single.js` and `build-app.js` both still
+  write it into the page, and the artifact's version picker carries the commit
+  as each version's label. On the phone the tell is the game itself: the owner
+  knows which build he is on because he knows what changed in it.
 - **One job per session where possible.** Unrelated work in one pass re-reads
   the same files several times over. **A batch of small UI fixes is one
   job**: they share the files, the screenshots and the build.

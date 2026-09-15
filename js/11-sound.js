@@ -940,12 +940,46 @@ function out(c){return masterGain||c.destination;}
    - the state re-check inside go(), because resume() resolving is not itself
      a promise that the context is running. */
 var AUDIO_WAIT=350;
+/* AND THE HELD BUFFERS ARE FILLED BEFORE ANYTHING ASKS FOR THEM.
+
+   Holding them (sfxNoiseBuf, crowdBedBuffer) took the cheer from
+   17.6ms to 4.8ms, but "built once" was still being built ON THE KILL FRAME
+   the first time: 31.1ms measured for that one cheer, and the first cheer a
+   save ever plays is the first boss it ever kills. Nobody gets the fast path
+   on the moment that matters most.
+
+   So it is warmScenery()'s lesson in the other half of the game, and it wears
+   warmScenery()'s shape: a ONE-SHOT idle callback. Never a chain - a page
+   that paints every frame is never idle twice, which is written up over
+   warmStats() and cost a morning there.
+
+   It hangs off audioReady() because a buffer needs a context to be built in
+   and there is no context until a gesture has unlocked one. That gesture is
+   this. */
+var audioWarmed=false;
+function warmAudio(c){
+  if(audioWarmed||!c)return;
+  audioWarmed=true;
+  var go=function(){
+    try{
+      sfxNoiseBuf(c);
+      crowdBedBuffer(c,Math.floor(c.sampleRate*3));
+    }catch(e){}
+  };
+  if(window.requestIdleCallback)requestIdleCallback(go,{timeout:2000});
+  else setTimeout(go,300);
+}
 function audioReady(cb){
   var c=audio();
   if(!c){cb(null);return;}
-  if(c.state==="running"){cb(c);return;}
+  if(c.state==="running"){warmAudio(c);cb(c);return;}
   var done=false;
-  function go(){if(done)return;done=true;cb(c.state==="running"?c:null);}
+  function go(){
+    if(done)return;done=true;
+    var ok=c.state==="running"?c:null;
+    if(ok)warmAudio(ok);
+    cb(ok);
+  }
   try{
     var b=c.createBuffer(1,1,c.sampleRate),src=c.createBufferSource();
     src.buffer=b;src.connect(c.destination);src.start(0);
@@ -1014,11 +1048,41 @@ function toneAt(c,f,at,dur,type,vol,slideTo){
 
    Deliberately quiet (.03 against the riser's .042): it is a texture under
    the fold, not an event competing with it. */
-function noiseFall(c,at,dur,vol){
-  var len=Math.floor(c.sampleRate*(dur+.2));
-  var buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);
+/* ONE WHITE-NOISE BUFFER FOR EVERY BURST IN THIS FILE, and it is the lesson
+   ambNoiseBuf() already learned one screen up: noise is noise. What makes a
+   sound a "plack" or a "ssss" is the bandpass and the envelope, never which
+   random numbers are in the buffer.
+
+   The three helpers below used to allocate an AudioBuffer and fill it sample
+   by sample ON EVERY PLAY - 12,000 samples for a crush, 40,000 for the fire -
+   synchronously, on the main thread, on the exact frame the player was
+   killed. Measured on the owner's phone (Mali-G68, 90Hz, 11.1ms a frame):
+   SFX.die("boss") cost 13.2ms, which is a dropped frame on its own, and it
+   fires on the beat the hunter lands its charge. Reported as the death
+   animation being laggy just as it starts, which is exactly what it was.
+
+   THE OFFSET IS WHAT KEEPS TWO PLAYS FROM BEING IDENTICAL. Three seconds
+   held, read from somewhere in the first second, so the longest burst in the
+   file (the fold's riser, 1.16s to its own stop()) always has buffer left. */
+var sfxNoise=null;
+function sfxNoiseBuf(c){
+  if(sfxNoise)return sfxNoise;
+  var len=Math.floor(c.sampleRate*3),
+      b=c.createBuffer(1,len,c.sampleRate), d=b.getChannelData(0);
   for(var i=0;i<len;i++)d[i]=Math.random()*2-1;
-  var src=c.createBufferSource();src.buffer=buf;
+  sfxNoise=b;
+  return b;
+}
+/* A source on it, and the offset to start it at. Returned together because
+   every caller needs both and start(at,offset) is the only place it goes. */
+function sfxNoiseSrc(c){
+  var s=c.createBufferSource();
+  s.buffer=sfxNoiseBuf(c);
+  return s;
+}
+function sfxNoiseOff(){return Math.random();}
+function noiseFall(c,at,dur,vol){
+  var src=sfxNoiseSrc(c), off=sfxNoiseOff();
   var bp=c.createBiquadFilter();bp.type="bandpass";bp.Q.value=1.1;
   bp.frequency.setValueAtTime(3800,at);
   bp.frequency.exponentialRampToValueAtTime(320,at+dur);
@@ -1027,7 +1091,7 @@ function noiseFall(c,at,dur,vol){
   g.gain.exponentialRampToValueAtTime(vol,at+dur*.18);
   g.gain.exponentialRampToValueAtTime(.0001,at+dur+.12);
   src.connect(bp);bp.connect(g);g.connect(out(c));
-  src.start(at);src.stop(at+dur+.14);
+  src.start(at,off);src.stop(at+dur+.14);
 }
 /* NOISE WITH A SHAPE, for the four named deaths.
 
@@ -1044,10 +1108,7 @@ function noiseFall(c,at,dur,vol){
    the attack over a fifth of the sound instead of a fiftieth, which is what
    separates a hiss that starts from a burst that hits. */
 function noiseAt(c,at,dur,vol,f0,f1,q,soft){
-  var len=Math.floor(c.sampleRate*(dur+.2));
-  var buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);
-  for(var i=0;i<len;i++)d[i]=Math.random()*2-1;
-  var src=c.createBufferSource();src.buffer=buf;
+  var src=sfxNoiseSrc(c), off=sfxNoiseOff();
   var bp=c.createBiquadFilter();bp.type="bandpass";bp.Q.value=q||1.1;
   bp.frequency.setValueAtTime(f0,at);
   bp.frequency.exponentialRampToValueAtTime(f1,at+dur);
@@ -1056,13 +1117,10 @@ function noiseAt(c,at,dur,vol,f0,f1,q,soft){
   g.gain.exponentialRampToValueAtTime(vol,at+dur*(soft?.22:.04));
   g.gain.exponentialRampToValueAtTime(.0001,at+dur+.10);
   src.connect(bp);bp.connect(g);g.connect(out(c));
-  src.start(at);src.stop(at+dur+.12);
+  src.start(at,off);src.stop(at+dur+.12);
 }
 function noiseRise(c,at,dur,vol){
-  var len=Math.floor(c.sampleRate*(dur+.2));
-  var buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);
-  for(var i=0;i<len;i++)d[i]=Math.random()*2-1;
-  var src=c.createBufferSource();src.buffer=buf;
+  var src=sfxNoiseSrc(c), off=sfxNoiseOff();
   var bp=c.createBiquadFilter();bp.type="bandpass";bp.Q.value=1.5;
   bp.frequency.setValueAtTime(220,at);
   bp.frequency.exponentialRampToValueAtTime(5400,at+dur);
@@ -1071,7 +1129,7 @@ function noiseRise(c,at,dur,vol){
   g.gain.exponentialRampToValueAtTime(vol,at+dur*.92);
   g.gain.exponentialRampToValueAtTime(.0001,at+dur+.16);
   src.connect(bp);bp.connect(g);g.connect(out(c));
-  src.start(at);src.stop(at+dur+.18);
+  src.start(at,off);src.stop(at+dur+.18);
 }
 /* THE CROWD - the room the fight is being watched in
 
@@ -1098,16 +1156,35 @@ function noiseRise(c,at,dur,vol){
    Deliberately quiet (.026 against a blip's .05). It fires on the same beat
    as SFX.strike() and must sit UNDER it: the hit is the event, this is the
    room reacting to it. */
-function crowdBed(c,at,dur,vol){
-  var len=Math.floor(c.sampleRate*(dur+.3));
-  var buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);
-  var env=0;
+/* THE BED IS BUILT ONCE, and the swell stays IN it.
+
+   Its one caller asks for 2.4 seconds: 129,600 samples, each carrying two
+   Math.random() calls and a step of a random walk, and it was built from
+   scratch on the frame a boss died. SFX.cheer() measured 35.7ms cold and
+   17.6ms warm on the owner's phone, against an 11.1ms frame at 90Hz - so the
+   room cheering cost two or three dropped frames at the exact moment the
+   kill lands, which is the moment nobody should be dropping frames.
+
+   The wobble cannot move to a gain node, because a crowd's swell is
+   per-sample amplitude rather than an envelope over the whole sound. So the
+   buffer is KEPT instead, three seconds of it, which is over the 2.7 the
+   cheer needs. A longer request builds its own; nothing asks for one. */
+var crowdBedBuf=null, crowdBedLen=0;
+function crowdBedBuffer(c,need){
+  if(crowdBedBuf&&crowdBedLen>=need)return crowdBedBuf;
+  var len=Math.max(need,Math.floor(c.sampleRate*3));
+  var b=c.createBuffer(1,len,c.sampleRate),d=b.getChannelData(0),env=0;
   for(var i=0;i<len;i++){
     env+=(Math.random()-.5)*.055;
     if(env>1)env=1; else if(env<-1)env=-1;
     d[i]=(Math.random()*2-1)*(.5+.5*Math.abs(env));
   }
-  var src=c.createBufferSource();src.buffer=buf;
+  crowdBedBuf=b;crowdBedLen=len;
+  return b;
+}
+function crowdBed(c,at,dur,vol){
+  var src=c.createBufferSource();
+  src.buffer=crowdBedBuffer(c,Math.floor(c.sampleRate*(dur+.3)));
   var bp=c.createBiquadFilter();bp.type="bandpass";bp.Q.value=.85;
   bp.frequency.setValueAtTime(620,at);
   bp.frequency.exponentialRampToValueAtTime(1600,at+dur*.42);
@@ -1120,28 +1197,11 @@ function crowdBed(c,at,dur,vol){
   src.connect(bp);bp.connect(g);g.connect(out(c));
   src.start(at);src.stop(at+dur+.28);
 }
-/* One pair of hands. Scattered rather than metrical, because applause that
-   lands on a grid is a drum machine. */
-function crowdClap(c,at,vol){
-  var len=Math.floor(c.sampleRate*.09);
-  var buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);
-  for(var i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,7);
-  var src=c.createBufferSource();src.buffer=buf;
-  var hp=c.createBiquadFilter();hp.type="highpass";hp.frequency.value=1500;
-  var g=c.createGain();g.gain.value=vol;
-  src.connect(hp);hp.connect(g);g.connect(out(c));
-  src.start(at);src.stop(at+.12);
-}
-/* WHERE THE HANDS FALL. Real applause is not evenly spread: it arrives in a
-   rush and thins out, so the times are the square of a uniform draw, which
-   piles them at the front and leaves a tail. Uniform times sounded like a
-   machine ticking, which is the same failure a metrical clap would be. */
-function crowdClaps(c,at,n,dur){
-  for(var i=0;i<n;i++){
-    var u=Math.random();
-    crowdClap(c,at+.06+u*u*dur,.009+Math.random()*.009);
-  }
-}
+/* The hands are gone. crowdClap() and crowdClaps() built twenty short
+   noise bursts scattered over a second and a half, and on a phone speaker
+   that read as popcorn rather than as applause - the owner's word, from the
+   sound test. SFX.cheer() is the bed alone now, so nothing calls them and
+   they are out rather than left sitting unused. See cheer(). */
 /* HAPTICS - the same event, felt.
 
    The fold is the game's one verb and on a phone it is a tap on glass with
@@ -1292,17 +1352,25 @@ var SFX={
     blip(150,.22,"square",.055,70);
     blip(900,.3,"sine",.04,1400);
   },
-  /* THE ROOM, ON A KILL. Hands first and loudest, a bright bed under them,
-     and two voices going up over the top - one crowd sound this game could
-     not be mistaken for, one that says how many people, and one that says
-     they are people. There is deliberately no death half; see crowdBed(). */
+  /* THE ROOM, ON A KILL - AND IT IS NOW ONE THING, QUIETLY.
+
+     It was four: twenty claps, a bed of filtered noise under them, and two
+     voices going up over the top. The owner named this as the sound that was
+     distorted, and taking it apart in the sound test said what was wrong -
+     THE HANDS. Twenty short noise bursts scattered over a second and a half
+     do not read as applause on a phone speaker, they read as popcorn, which
+     is exactly what was reported. Density, not level: the chain measured
+     clean through all of it.
+
+     So the claps are gone, and crowdClap()/crowdClaps() went with them. What
+     is left is the bed alone at .010 rather than .026, which is the version
+     the owner picked out of six. The two rising voices came off with the
+     hands - they were the top of a pile that no longer exists, and the bed on
+     its own is a room, which is all this beat was ever for. Putting them back
+     is two lines and they are in the history. */
   cheer:function(){
     var c=audio();if(!c)return;
-    var t=c.currentTime;
-    crowdBed(c,t,2.4,.026);
-    crowdClaps(c,t,20,1.5);
-    blip(430,.5,"sine",.012,690);
-    setTimeout(function(){blip(520,.45,"triangle",.010,810);},170);
+    crowdBed(c,c.currentTime,2.4,.010);
   },
   /* THE RECORD LIGHT COMING ON. Two short high chirps, the noise every
      camcorder ever made when the button went down - it lands on the beat the

@@ -9,7 +9,14 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
+        <!-- PORTRAIT, LOCKED, on the owner's call after looking at it on a real
+             phone. Landscape was never designed: the level, the home screen and
+             the panels are all laid out down a tall screen, and sideways every
+             one of them is wrong. An orientation nobody has designed for is not
+             a feature you leave switched on because the activity can survive
+             the rotation. configChanges keeps handling the rest. -->
         <activity
+            android:screenOrientation="portrait"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation"
             android:name=".MainActivity"
             android:label="@string/title_activity_main"
