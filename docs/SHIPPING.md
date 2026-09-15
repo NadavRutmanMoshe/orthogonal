@@ -348,9 +348,12 @@ From `ROADMAP.md`, and all of it needs a real phone rather than a simulator.
 - **The audio unlock inside a WebView.** It hangs off the sting's full-bleed
   tap surface with `BEGIN` as a second chance behind it, which is the best
   shape this can have, and it has never run on a device.
-- **The two-finger turn on real glass.** iOS ignores `user-scalable=no`;
-  `touch-action:none` on the body is what should hold it. This is the one
-  gesture that asks iOS to keep its hands off, and it is unproven.
+- ~~**The two-finger turn on real glass.**~~ **Answered: it works.** Tested
+  on an iPhone in mobile Safari - the camera turned and nothing zoomed, and
+  the game ran smoothly. That was the riskiest of the three, because it is the
+  one gesture that asks iOS to keep its hands off. The app is the easier case
+  again: `zoomEnabled:false` in `capacitor.config.json` switches pinch-zoom off
+  outright, which Safari would not let us do.
 - ~~**Android's back button**~~ **Done in logic, unproven in a wrapper.**
   `backOut()` in `js/19-bindings.js` is Escape's order - close what is open
   before opening anything, never dismiss a card that is asking a question -

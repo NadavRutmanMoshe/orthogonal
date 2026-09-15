@@ -388,16 +388,31 @@ function backExitAsk(){
   return false;
 }
 
-/* The only native line in the file, and it costs nothing when there is no
-   Capacitor: in a browser this is one `typeof` and an early return. The
-   plugin is reached through the global rather than an import because these
-   are classic scripts sharing one scope and there is no build step to have
-   an import mean anything. */
+/* The only native code in the file, and it costs nothing when there is no
+   Capacitor: in a browser it is one property read and an early return.
+
+   `Capacitor.registerPlugin("App")` IS THE CALL, and `Capacitor.Plugins.App`
+   is not - which is worth the paragraph, because the wrong one fails by doing
+   nothing at all. The native bridge injected into the WebView creates
+   `Capacitor.Plugins` as an EMPTY object (`r.Plugins = r.Plugins || {}` in
+   @capacitor/core) and it is each plugin's own JS module that fills it, by
+   calling registerPlugin as it loads. These are classic scripts with no
+   bundler, so @capacitor/app's module never runs, so `Plugins.App` is
+   undefined however correctly the plugin is installed - and a guard that
+   tests for it returns quietly and leaves the back button doing the WebView
+   default, which is to quit the game mid-level.
+
+   registerPlugin is on the bridge itself and builds the proxy on demand, so
+   it is the path that works without a build step. Plugins.App is still read
+   first, for the day this is bundled and the module has filled it in. */
 (function(){
   var C=window.Capacitor;
-  if(!C||!C.Plugins||!C.Plugins.App)return;
-  C.Plugins.App.addListener("backButton",function(){
+  if(!C)return;
+  var App=(C.Plugins&&C.Plugins.App)||
+          (typeof C.registerPlugin==="function"&&C.registerPlugin("App"));
+  if(!App||typeof App.addListener!=="function")return;
+  App.addListener("backButton",function(){
     if(backOut())return;
-    if(backExitAsk())C.Plugins.App.exitApp();
+    if(backExitAsk()&&typeof App.exitApp==="function")App.exitApp();
   });
 })();

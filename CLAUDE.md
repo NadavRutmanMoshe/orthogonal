@@ -103,7 +103,9 @@ listed in `index.html`. `21-boot.js` is the only file that *runs* anything.
 | `js/23-guide.js` | the neighbour who stands on the I · NATURE levels and gives a tip written for the one he is standing on. **Pure decoration** - no rule, no solver, never solid. Also loaded after boot and `typeof`-guarded |
 | `tools/verify.js` | every level machine-checked: BFS, `trialSafety()`, `bossArena()`, `bosssim`, the `SECTIONS`/`LEVEL_RENAMES` invariants |
 | `tools/shot.js` | **headless screenshots of any screen** (`node tools/shot.js --list`). The eyes for UI work. A cutscene is seekable by beat (`story1:12`), and an explicit `--wait` now beats the screen's own default. |
+| `app/` | **the Capacitor shell**: `capacitor.config.json`, the generated `android/` project, and `README.md` for why each non-default setting is set. `app/www/` is generated and gitignored. |
 | `tools/build-single.js` | inlines everything into one file for itch.io / the artifact |
+| `tools/build-app.js` | copies the game into `app/www/` for the wrapper; a copy, not a bundle |
 | `tools/fonts.js` | rebuilds `css/05-fonts.css` from Google Fonts, one request per weight |
 | `tools/curve.js`, `tools/legible.js` | the difficulty curve; squares that draw where ground is not |
 
@@ -713,8 +715,13 @@ is the rule.
   MY LEVELS) and the home screen, the one screen where the press may leave the
   app, on a second press inside two seconds. A full-bleed card SWALLOWS it -
   backing out of the win card would skip a level. It returns whether it
-  handled the press; the Capacitor listener is the only native line in the
-  file and is one `typeof` from nothing in a browser.
+  handled the press; the Capacitor listener is the only native code in the
+  file and is one property read from nothing in a browser. **It reaches the
+  plugin through `Capacitor.registerPlugin("App")`, never
+  `Capacitor.Plugins.App`** - the injected bridge creates `Plugins` EMPTY and
+  each plugin's own JS module fills it, and with no bundler that module never
+  runs, so a guard on `Plugins.App` returns quietly and leaves back quitting
+  the game mid-level. Tested against a faked bridge shaped like the real one.
 - **`tap()` fires on pointerdown, except inside something that scrolls -
   there it fires on the lift.** `tapScroller()` (`js/18-ui.js`) looks for an
   ancestor with `overflow-y:auto|scroll`; inside one the press waits for

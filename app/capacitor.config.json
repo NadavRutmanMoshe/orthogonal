@@ -1,0 +1,12 @@
+{
+  "appId": "com.nadazgames.imjustacube",
+  "appName": "I'm Just A Cube",
+  "webDir": "www",
+  "backgroundColor": "#0f1424",
+  "zoomEnabled": false,
+  "android": {
+    "backgroundColor": "#0f1424",
+    "zoomEnabled": false,
+    "adjustMarginsForEdgeToEdge": "disable"
+  }
+}
