@@ -74,10 +74,16 @@ function warmStats(){
   }
   /* A PLAIN TIMER, NOT requestIdleCallback, and that is the second thing
      this function got wrong. A game paints every frame, so the browser is
-     never idle and the callback only ever fired on its timeout - once - and
-     then stopped: twelve pars cached after three seconds and the rest never
-     computed. An idle API is the right tool for a page that sits still, and
-     this page does not.
+     never idle: the callback only ever fired on its TIMEOUT, which is once,
+     and then the chain stopped - twelve pars cached after three seconds and
+     the rest never computed.
+
+     The precise lesson is about CHAINS, not about the API. warmScenery()
+     (js/10-render.js) uses requestIdleCallback quite happily because it is
+     ONE shot that does everything: a single callback still fires on its
+     timeout, so it always runs. It is work that has to reschedule itself
+     that starves here, because every link after the first is waiting for an
+     idle that never comes.
 
      So: a 5ms slice every 40ms, which always fires, works the same in a
      WebView with no idle API at all, and finishes 97 levels in well under a

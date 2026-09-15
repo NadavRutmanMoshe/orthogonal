@@ -290,9 +290,11 @@ is the rule.
   par in 5ms slices 40ms apart, finishing in about 600ms. Two traps it was
   written into first, both worth knowing: an idle callback that fires on its
   TIMEOUT reports `timeRemaining()===0`, so a loop that checks the budget
-  before doing any work never does any - it must be a do/while. And
-  `requestIdleCallback` is the wrong API for a game at all, because a page
-  that paints every frame is never idle: it fired once and stopped.
+  before doing any work never does any - it must be a do/while. And a CHAIN
+  of `requestIdleCallback`s starves in a game, because a page that paints
+  every frame is never idle - only the first fired, on its timeout, and the
+  rest never came. A ONE-SHOT idle callback is fine and `warmScenery()` uses
+  one; it is rescheduling that does not survive here.
 - `tutStepView()` is the one answer to "what is being asked"; the coach, the
   green, the lock, the hand and `tutPoke` all read it.
 
