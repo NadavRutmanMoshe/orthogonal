@@ -391,6 +391,30 @@ afternoon by a script.
 Two of the three accounts ask for more than a card number, and finding that
 out on the day is how a clock starts late.
 
+**THE NAME IS SETTLED: `Nadaz Games` wherever it is free, the owner's own
+legal name where it is not.** He does not mind his name being on it, so no
+paperwork gets bought just to hide it. What that means per store:
+
+- **Steam: free.** Developer and Publisher are per-app text fields in
+  Steamworks. `Nadaz Games` costs nothing and needs no entity.
+- **Apple: not free.** The App Store shows the enrolment's name, so a studio
+  name means an **organization** enrolment, which needs a D-U-N-S number
+  registered to a legal entity. So Apple ships under his own name unless he
+  decides to register a business for its own reasons - and the D-U-N-S queue
+  below stops being the first thing on Monday.
+- **Play: check it on the day.** The developer display name is a field, but
+  Google verifies developer identity and what a personal account may display
+  has moved more than once. Worth five minutes in the Console rather than a
+  guess here.
+- **The bundle id is free everywhere and permanent, so it carries the name
+  whatever the stores decide**: `com.nadazgames.imjustacube`, the same string
+  as the Android `applicationId` and the iOS bundle id. Decide nothing else
+  about it later; it cannot be changed after the first upload.
+- **The game itself says the studio name nowhere.** The sting is the cube and
+  `tap to fold`, and there is no logotype anywhere in `index.html`. If
+  `NADAZ GAMES` should appear on the sting, that is a UI job and a cheap one -
+  it is the one place in the game a studio name belongs.
+
 - **Apple: individual or organization, and it is not a small choice.** An
   individual enrolment needs no D-U-N-S number and is the fast path, but the
   App Store then lists the developer under the owner's own legal name.

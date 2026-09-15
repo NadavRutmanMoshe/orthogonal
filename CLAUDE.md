@@ -798,9 +798,11 @@ load-bearing per screen.
     makes "put it back" checkable rather than hopeful.
 - **Publishing updates the artifact; it does not update what other people
   see.** Each publish becomes a version, and the share is pinned to one of
-  them. The permanent fix is the **Always share latest version** toggle in
-  the artifact's Share menu. Until it is confirmed on, remind the owner to
-  bump the shared version every few publishes.
+  them. **Always share latest version is deliberately OFF** and is not a
+  thing to nag about: the owner plays a build before he hands the link to
+  anybody and bumps the shared version himself when it is ready. So a publish
+  from here reaches HIM and nobody else, which is the intent - say the version
+  went up, and leave the sharing to him.
 - **The running build is visible in the menu**, at the foot of the panel, as
   `build <sha> (<branch>)`. It says `unbuilt · running from source` when
   `index.html` is opened directly, and `+UNCOMMITTED CHANGES` when it cannot
