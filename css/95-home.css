@@ -83,11 +83,14 @@
    so the longest string on the screen decided the size of every word on it,
    and at 12.5px that line wrapped inside a 56px button. It says "Level 22"
    now (levelShort(), js/16-panels.js) and the ceiling went with it: measured
-   at 327px, the owner's narrow phone, nothing overflows even at 18.5px. So
-   this is a judgement and not a limit, and 16 is where the words are big
-   without the 44px buttons looking packed. */
+   at 327px, the owner's narrow phone, nothing overflows even at 18.5px.
+
+   SO THE NUMBER IS TASTE, NOT FIT, AND 16 WAS TOO MUCH. It was built, shown
+   and reported as too big; 14.5 is the step the owner picked by eye. Worth
+   remembering if this is ever raised again: the room is there, it was tried,
+   and the answer was no. */
 .hbtns{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:12px}
-.home button{width:100%;height:44px;font-size:16px;letter-spacing:.14em}
+.home button{width:100%;height:44px;font-size:14.5px;letter-spacing:.14em}
 /* EVERY ICON ON THIS SCREEN SITS IN ONE COLUMN.
 
    Each button used to centre its own icon-and-label pair, so the icons
@@ -144,8 +147,8 @@
    smallest word on the screen. The level name below it is the line that caps
    the whole screen's type size - it is the only string here that can be 33
    characters long. */
-.hcont b{font-size:16px;letter-spacing:.16em;font-weight:600}
-.hcont i{font-style:normal;font-size:12.5px;letter-spacing:.08em;
+.hcont b{font-size:14.5px;letter-spacing:.16em;font-weight:600}
+.hcont i{font-style:normal;font-size:11.5px;letter-spacing:.08em;
   color:var(--fg-dim);text-transform:none}
 .hcont i:empty{display:none}
 
@@ -222,7 +225,7 @@
    from both sides at once. Measured at 327px: 12px leaves 10.3px of air,
    12.5px leaves 4.4px, and 13.5px leaves 3.6px and reads as a collision.
    These two are settings and a locked promise, not places to go, so they
-   stay the second rank at 12 against the doors' 16. */
+   stay the second rank at 12 against the doors' 14.5. */
 .home .tiny{width:178px;height:32px;padding:0;margin-top:13px;
   font-size:12px;border-color:var(--rule);color:var(--fg-dim)}
 .home .tiny svg{position:absolute;left:15px;top:50%;
