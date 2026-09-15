@@ -32,11 +32,17 @@
   /* The blow itself: one bloom out of the middle of the screen, gone in a
      third of a second. Anything longer than that stops being an impact and
      starts being a filter over the board. */
-  .bsflash{width:190vmax;height:190vmax;border-radius:50%;
+  /* 120vmax, NOT 190, AND THE STOPS MOVED TO MATCH. The bloom only ever
+     showed out to 58% of its own radius, so at 190vmax (4560px on a 1080x2400
+     phone) two thirds of a 20-megapixel gradient was being rasterised
+     completely off screen on the frame a boss dies. The visible edge sat at
+     1322px; at 120vmax the radius is 1440px, so the same edge is 92% of it and
+     the 22% stop becomes 35%. Same picture, 2.5x less of it to paint. */
+  .bsflash{width:120vmax;height:120vmax;border-radius:50%;
     background:radial-gradient(circle,
       color-mix(in srgb,var(--k) 92%,#fff) 0%,
-      color-mix(in srgb,var(--k) 62%,transparent) 22%,
-      transparent 58%);
+      color-mix(in srgb,var(--k) 62%,transparent) 35%,
+      transparent 92%);
     animation:bsflash .34s cubic-bezier(.1,.7,.3,1) forwards}
   @keyframes bsflash{
     0%{opacity:0;scale:.12}
@@ -46,27 +52,29 @@
      everything leaving the point of impact at once; the radial mask keeps
      the middle of the screen clear so the word lands on the board, not on a
      starburst. */
-  .bsray{width:200vmax;height:200vmax;
+  /* AND THE SAME ARITHMETIC ON THE RAYS, which were the more expensive half:
+     a masked repeating-conic-gradient at 200vmax is 4800x4800, and a conic is
+     the costliest gradient there is to rasterise. The mask only ever let
+     through 12% to 62% of the radius - 288px to 1488px - so the wedges reach
+     the corners of the screen and no further. At 120vmax the radius is 1440px
+     and those same two rings are 20% and 100%, with the solid point moving
+     34% -> 57%. The rays end 48px shorter than they used to, which is off the
+     edge of the glass either way, and it is 2.8x less to paint. */
+  .bsray{width:120vmax;height:120vmax;
     background:repeating-conic-gradient(from 0deg,
       color-mix(in srgb,var(--k) 85%,#fff) 0deg .8deg,
       transparent .8deg 7.5deg);
-    -webkit-mask:radial-gradient(circle,transparent 12%,#000 34%,transparent 62%);
-    mask:radial-gradient(circle,transparent 12%,#000 34%,transparent 62%);
+    -webkit-mask:radial-gradient(circle,transparent 20%,#000 57%,transparent 100%);
+    mask:radial-gradient(circle,transparent 20%,#000 57%,transparent 100%);
     animation:bsray .58s cubic-bezier(.15,.75,.25,1) forwards}
   @keyframes bsray{
     0%{opacity:0;scale:.16;rotate:-9deg}
     14%{opacity:.85}
     100%{opacity:0;scale:1;rotate:5deg}}
-  /* Two rings, the second half a beat behind, because one ring is a circle
-     and two rings are a shockwave. */
-  .bsring{width:34vmax;height:34vmax;border-radius:50%;
-    border:3px solid color-mix(in srgb,var(--k) 88%,#fff);
-    animation:bsring .72s cubic-bezier(.1,.75,.25,1) forwards}
-  .bsring.two{border-width:1.5px;animation-delay:.11s}
-  @keyframes bsring{
-    0%{opacity:0;scale:.05}
-    12%{opacity:.9}
-    100%{opacity:0;scale:5.2}}
+  /* The two shockwave rings were here. They are gone on the owner's call:
+     over a flash and a screenful of speed-lines you caught them some kills
+     and not others, and a thing you half see reads as inconsistency rather
+     than as a shockwave. Their markup went out of index.html with them. */
   /* THE WORD, and it is the whole reason this exists. It arrives far too big
      and lands on 1 - the reverse of a thing growing at you, which reads as a
      hit rather than as an animation - then holds still long enough to be
@@ -78,31 +86,70 @@
      327px - because a sting that runs off both edges of the screen is a
      mistake, not a big word. The padding is the second half of that: it keeps
      the glow off the edge even when the type fits. */
+  /* THE GLOW ARRIVES AFTER THE SLAM DOES, AND THAT IS A FRAME-RATE FIX.
+
+     A BLURRED text-shadow on text that is being SCALED is the single most
+     expensive thing this file ever did. The browser re-rasterises the glyphs
+     at every step of the scale, and re-blurs every shadow with them; at
+     scale 3.1 on a 56px word that is a lot of gaussian per frame. Measured
+     on the owner's phone, worst frame during the sting:
+
+       glow blurring all the way down    312ms
+       glow held until the word lands    112ms
+       no blurred glow at all            112ms
+
+     So the flat shadow (0 5px 0, no blur, free) carries the slam, and the
+     two coloured glows switch on at 16% - the exact keyframe the scale
+     finishes on. The word is glowing the whole time anybody is READING it,
+     which is the part of the effect that was ever visible; the 147ms it
+     spends arriving is too fast to miss it. Do not put a blur back into the
+     moving part of this animation. */
   .bsword b{display:block;padding:0 14px;
     font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;
     font-size:clamp(26px,10vw,56px);line-height:1.02;letter-spacing:.02em;
     text-transform:uppercase;color:#fff;
-    text-shadow:0 0 24px color-mix(in srgb,var(--k) 80%,transparent),
+    text-shadow:0 5px 0 color-mix(in srgb,var(--k) 55%,#04070d);
+    animation:bswordGlow .92s cubic-bezier(.12,.8,.2,1) forwards}
+  @keyframes bswordGlow{
+    0%,15%{text-shadow:0 5px 0 color-mix(in srgb,var(--k) 55%,#04070d)}
+    16%,100%{text-shadow:0 0 24px color-mix(in srgb,var(--k) 80%,transparent),
       0 0 4px color-mix(in srgb,var(--k) 90%,transparent),
-      0 5px 0 color-mix(in srgb,var(--k) 55%,#04070d)}
+      0 5px 0 color-mix(in srgb,var(--k) 55%,#04070d)}}
   /* The second line lands on the arena as often as not - the sting is centred
      on the board, which is where the hit was - so it carries its own ground
      rather than trusting the sky behind it. */
+  /* The second line rides the same clock for the same reason: it is small
+     type, but it carries TWO blurred shadows and it is inside the element
+     being scaled, so it was costing as much as the big word was. */
   .bsword i{display:block;margin-top:9px;padding:0 14px;font-style:normal;
     font-family:'IBM Plex Mono',ui-monospace,monospace;
     font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;
     color:color-mix(in srgb,var(--k) 62%,#fff);
-    text-shadow:0 1px 6px #04070d,0 0 14px #04070d}
+    text-shadow:none;
+    animation:bswordSubGlow .92s cubic-bezier(.12,.8,.2,1) forwards}
+  @keyframes bswordSubGlow{
+    0%,15%{text-shadow:none}
+    16%,100%{text-shadow:0 1px 6px #04070d,0 0 14px #04070d}}
   .bsword i:empty{display:none}
+  /* NO BLUR IN HERE, AND IT IS THE SINGLE MOST EXPENSIVE THING THAT WAS.
+     `filter:blur(9px)` animating to 0 has to RE-RASTERISE the layer on every
+     frame of the arrival, and this layer is a word at scale 3.1 carrying
+     three text-shadows, one of them a 24px bloom. Measured on the owner's
+     phone at the moment SMASHED lands: worst frame 633ms with the blur,
+     187ms with it taken out, on otherwise identical 11ms frames. Scale and
+     opacity are compositor-only and cost nothing, and they were always what
+     sold the arrival - the word still comes in three times too big and snaps
+     down. If a soft edge is ever wanted back, it has to be a static blur on
+     a still layer, never an animated one. */
   @keyframes bswordIn{
-    0%{opacity:0;scale:3.1;filter:blur(9px)}
-    16%{opacity:1;scale:1;filter:blur(0)}
+    0%{opacity:0;scale:3.1}
+    16%{opacity:1;scale:1}
     24%{scale:1.06}
     32%{scale:1}
     76%{opacity:1;translate:0 -50%}
     100%{opacity:0;translate:0 -76%}}
   @media (prefers-reduced-motion: reduce){
-    .bsflash,.bsray,.bsring{display:none}
+    .bsflash,.bsray{display:none}
     .bsword{animation:bswordFade .92s linear forwards}
     @keyframes bswordFade{0%{opacity:0}12%{opacity:1}80%{opacity:1}100%{opacity:0}}
   }

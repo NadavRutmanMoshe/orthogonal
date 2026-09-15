@@ -230,10 +230,14 @@
      .bsting in css/65-replay.css, and bossSting() in js/12-play.js, which is
      the only thing that writes it. -->
 <div class="bsting" id="bossSting" aria-hidden="true">
+  <!-- THE TWO SHOCKWAVE RINGS ARE GONE, on the owner's call. They expanded
+       from nothing to five times the screen in .72s, which on a board that
+       already has a flash and speed-lines over it meant you saw them
+       sometimes and not others - and an effect you only half catch reads as
+       the game being inconsistent rather than as a shockwave. `.bsring` went
+       out of css/65-replay.css with them. -->
   <i class="bsflash"></i>
   <i class="bsray"></i>
-  <i class="bsring one"></i>
-  <i class="bsring two"></i>
   <div class="bsword"><b id="bossStingWord"></b><i id="bossStingSub"></i></div>
 </div>
 
