@@ -269,9 +269,33 @@
     58%{transform:translate(0,0) scale(1.02) rotate(0deg)}
     100%{opacity:1;transform:translate(0,0) scale(13) rotate(0deg)}}
   .kccam>i{position:absolute;display:block}
+  /* NO BLURRED DROP SHADOW, AND THIS ONE COST A LOOK TO BUY A FRAME RATE.
+
+     kcfly takes this rig from scale .13 to scale 13, about a hundredfold. The
+     drop shadow that used to be here was `0 10px 26px`: twenty-six pixels of
+     blur at the start and THREE HUNDRED AND THIRTY-EIGHT at the end, re-blurred
+     every frame of the flight, by which point the camera is several screens
+     wide and every pixel of that shadow is off the glass.
+
+     KEYFRAMING IT OFF AT 58% WAS TRIED FIRST AND DID NOTHING - that is the
+     trick that worked on the sting's glow one screen up, and it fails here.
+     Measured, worst frame during the push-in:
+
+       shadow blurred all the way up          301ms
+       same shadow animated away at 58%       312ms
+       shadow gone outright                   189ms
+
+     Animating box-shadow keeps the element on a repaint path for the whole
+     animation, so the browser pays for it even on the frames the value is not
+     changing. The only thing that pays is not having it.
+
+     What is left is the inset highlight, which has no blur radius and so costs
+     nothing, and it is most of what made the body read as a solid object. The
+     camera is flatter for the half second it is small. That is the trade, and
+     the owner took it. */
   .kcbody{left:0;top:22px;width:152px;height:96px;border-radius:11px;
     background:linear-gradient(158deg,#3b4256,#171b28 62%,#0d1018);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 10px 26px rgba(0,0,0,.6)}
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
   .kchandle{left:30px;top:0;width:86px;height:24px;border-radius:7px 7px 2px 2px;
     background:linear-gradient(#394054,#1b2030)}
   .kcmic{left:6px;top:4px;width:24px;height:15px;border-radius:4px;
@@ -301,8 +325,13 @@
         transparent 17%),
       radial-gradient(circle at 68% 76%,rgba(120,190,255,.16),transparent 30%),
       radial-gradient(circle,transparent 54%,rgba(90,150,255,.14) 80%,
-        rgba(10,14,24,.46));
-    box-shadow:inset 0 0 22px rgba(0,0,0,.8)}
+        rgba(10,14,24,.46));}
+  /* The coating's `inset 0 0 22px` went for the same reason as the body's drop
+     shadow, and it is the cheaper loss of the two: the third radial gradient
+     above already darkens the rim, so the glass still reads as glass. The
+     record light KEEPS its 9px glow - it is ten pixels across, the glow is
+     small enough to survive the blow-up, and it is the one bit of colour on
+     the whole rig. */
   /* AND IT HAS TO GO as the lens arrives. The coating and its specular are
      drawn at 58px; at the end of the push-in they are 13 times that, and a
      highlight the size of half the screen is not glass, it is a white blob
