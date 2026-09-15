@@ -345,6 +345,17 @@ is the rule.
 - `nothingBehind()` decides intro-card versus home screen and START versus
   CONTINUE; `NEXT LEVEL` is always the next level, except into a locked shelf
   where it becomes `WHAT'S LEFT` and opens the map.
+- **CONTINUE's second line is `levelShort()`, not the level's name** -
+  "Level 22", "Boss IV", "Trial III", "Tutorial". The name was the longest
+  string on the home screen (33 characters) and so capped the type size of
+  every button on it. Bosses and trials are matched separately because they
+  carry a NUMERAL and no number; anything unrecognised keeps its own name, so
+  a custom level is never mislabelled.
+- **The home screen's type sizes are measured, and the icons are why.** Every
+  icon there is `position:absolute`, so a label can run into one with no
+  overflow to detect it - `.home .tiny` (SETTINGS, MULTIPLAYER) is capped at
+  12px by the gamepad, not by its box, because the label is CENTRED and grows
+  toward the icon from both sides. The doors are 16px and the title 34px.
 
 **The story** (`chrome.md`)
 - **There are three cutscenes**, and this reverses `chrome.md`'s old "there

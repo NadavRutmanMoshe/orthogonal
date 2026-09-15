@@ -51,8 +51,14 @@
 .home.on{display:flex}
 .hwrap{width:100%;max-width:340px;display:flex;flex-direction:column;
   align-items:center}
+/* 34px, NOT 27. This is the game's name on the screen the game opens on and
+   it was the quietest thing in front of the player - smaller than the cube,
+   out-shouted by four lit buttons under it. Reported as "the title is a bit
+   small", and it was. Space Grotesk carries the size: the tighter tracking
+   at -.03em is what keeps a 34px line of it from running the width of a
+   327px phone. */
 .htitle{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;
-  font-size:27px;letter-spacing:-.03em;color:var(--fg);line-height:1}
+  font-size:34px;letter-spacing:-.03em;color:var(--fg);line-height:1}
 .hsub{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
   letter-spacing:.28em;text-transform:uppercase;color:var(--fg-dim);
   margin-top:7px}
@@ -65,8 +71,23 @@
 .hstars b{color:var(--star);font-weight:600;font-size:12px}
 .hstars i{font-style:normal;color:var(--star);margin:0 4px 0 1px}
 
+/* THE DOOR LABELS ARE 16px, not 12.5, and the tracking is untouched at
+   .14em. Wide-tracked mono caps were tried at .06em to make the words read
+   as words rather than as rows of characters; the owner could not see the
+   difference, which is the honest verdict on a change that subtle - so the
+   letters keep the spacing every other button in the game uses and the type
+   simply got bigger, which is what was actually asked for.
+
+   WHAT USED TO CAP THIS WAS THE LEVEL NAME. CONTINUE's second line carried
+   the whole title - "14 - The Silence Before the Storm" is 33 characters -
+   so the longest string on the screen decided the size of every word on it,
+   and at 12.5px that line wrapped inside a 56px button. It says "Level 22"
+   now (levelShort(), js/16-panels.js) and the ceiling went with it: measured
+   at 327px, the owner's narrow phone, nothing overflows even at 18.5px. So
+   this is a judgement and not a limit, and 16 is where the words are big
+   without the 44px buttons looking packed. */
 .hbtns{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:12px}
-.home button{width:100%;height:44px;font-size:12.5px;letter-spacing:.14em}
+.home button{width:100%;height:44px;font-size:16px;letter-spacing:.14em}
 /* EVERY ICON ON THIS SCREEN SITS IN ONE COLUMN.
 
    Each button used to centre its own icon-and-label pair, so the icons
@@ -118,8 +139,13 @@
    time - inside .hci, which is itself absolute - and CONTINUE's icon landed
    18px right of everybody else's. It is already where it needs to be. */
 .hci .secem{position:static;transform:none;width:22px;height:22px}
-.hcont b{font-size:12px;letter-spacing:.16em;font-weight:600}
-.hcont i{font-style:normal;font-size:10.5px;letter-spacing:.08em;
+/* CONTINUE matches the doors under it rather than undercutting them: it was
+   12px against their 12.5, so the one button the player presses most was the
+   smallest word on the screen. The level name below it is the line that caps
+   the whole screen's type size - it is the only string here that can be 33
+   characters long. */
+.hcont b{font-size:16px;letter-spacing:.16em;font-weight:600}
+.hcont i{font-style:normal;font-size:12.5px;letter-spacing:.08em;
   color:var(--fg-dim);text-transform:none}
 .hcont i:empty{display:none}
 
@@ -187,8 +213,18 @@
    goes back to being pinned rather than inline, at the same offset in both,
    and the labels stay centred on the button as if the icon were not there -
    the same arrangement the four doors above use, for the same reason. */
+/* Up one step and NO FURTHER, and the reason is not the text width: the
+   icons on this screen are `position:absolute`, so a label can run straight
+   into one without any overflow check noticing. MULTIPLAYER is the longest
+   word on the screen sitting in the narrowest button (178px) with a gamepad
+   pinned at its left and a padlock after it, and because the label is
+   CENTRED on the button, growing it pushes its left edge toward that icon
+   from both sides at once. Measured at 327px: 12px leaves 10.3px of air,
+   12.5px leaves 4.4px, and 13.5px leaves 3.6px and reads as a collision.
+   These two are settings and a locked promise, not places to go, so they
+   stay the second rank at 12 against the doors' 16. */
 .home .tiny{width:178px;height:32px;padding:0;margin-top:13px;
-  font-size:11px;border-color:var(--rule);color:var(--fg-dim)}
+  font-size:12px;border-color:var(--rule);color:var(--fg-dim)}
 .home .tiny svg{position:absolute;left:15px;top:50%;
   transform:translateY(-50%);width:15px;height:15px;margin:0}
 

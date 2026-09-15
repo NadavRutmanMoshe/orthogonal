@@ -885,6 +885,41 @@ function homeTarget(){
    title screen. The wardrobe button below the plinth is the way in now, and
    it wears the hanger so it looks like the door it is. The reasoning for the
    strip, and why it was live rather than a drawing, is in docs/HISTORY.md. */
+/* WHERE CONTINUE IS SENDING YOU, IN TWO WORDS: "Level 7", "Boss IV",
+   "Trial III".
+
+   It used to be the level's whole name, and that was two bugs in one line.
+   The visible one: the name is the longest string on the home screen - "14 -
+   The Silence Before the Storm" is 33 characters - so it was what capped the
+   type size of every button on the screen. Nothing else there can be long,
+   so nothing else was allowed to be big.
+
+   The silent one: the line said `name.replace(/^\d+ — /,"")`, stripping
+   "NN " and an EM DASH. Every title in the game was `NN — Name` until they
+   were de-dashed to `NN - Name`, and that regex was never updated - so it
+   had quietly stopped matching anything and the number was being shown after
+   all. A replace that no longer replaces looks exactly like one that does.
+
+   The number is what a player actually navigates by, and it is what the map
+   labels a node with. The name is on the level itself, a tap away.
+
+   Bosses and trials carry a NUMERAL and no number on purpose (see CLAUDE.md:
+   a landmark must never renumber a section), so they are matched separately
+   and keep the numeral. A tutorial says "Tutorial" rather than "Level 0",
+   which is what `00 - First Steps` would otherwise produce on the screen a
+   first-time player is looking at - and it covers SPARRING, which is
+   tutorial:true and has no number at all. Anything unrecognised keeps its
+   own name, so a custom level is never mislabelled as a numbered one. */
+function levelShort(lv){
+  if(!lv||!lv.name)return "";
+  if(lv.tutorial)return "Tutorial";
+  var m=lv.name.match(/^0*(\d+)\s*-/);
+  if(m)return "Level "+m[1];
+  m=lv.name.match(/^(BOSS|TRIAL)\s+([IVXLC]+)\b/i);
+  if(m)return m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase()+
+              " "+m[2].toUpperCase();
+  return lv.name;
+}
 function homeSync(){
   if(!$("home"))return;
   var t=homeTarget(), lv=LEVELS[t.i];
@@ -893,7 +928,7 @@ function homeSync(){
   // "START" only when there is genuinely nothing behind you - see above.
   var fresh=nothingBehind();
   b.querySelector("b").textContent=fresh?"START":"CONTINUE";
-  b.querySelector("i").textContent=lv?lv.name.replace(/^\d+ \u2014 /,""):"";
+  b.querySelector("i").textContent=levelShort(lv);
   /* The button takes the colour of the section it opens - see .hcont. The
      section's UI colour rather than its sky: `col` is the value picked to
      read as a tab on a dark panel, which is the same job a button has. */

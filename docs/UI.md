@@ -31,7 +31,7 @@ rather than guessing the file.
 | `80-panel-tall.css` | full-height panel furniture shared by menu, wardrobe, chooser and map: `.panel.tall .phead .pbody .pcard .prow2 .pgo .psub .pdanger .pfoot`, the range slider skin |
 | `85-map.css` | `--vio --amb` tokens, the section chooser (`.secgrid .sectile .secem .secnum .secname .secsub .secpb .secf .seccap .secchain .seclock .secad`), `.panel.map .mhead .mcard .mbar #mtrail .mfill .mnode` (+ `.mboss .mtrial .solved .here .locked .skipped .mst`), `.mstars .mcap .msheet .mlegend`, the offer-card buttons `.ma .go .ad .qt .mn`, `.adicon`, the global reduced-motion rule |
 | `90-tutorial.css` | the guided lock (`body.tutlock`, `.tutlive`, `.tutsoft`), `.phasenote`, the ghost hand (`.ghost .gfinger .ghand .gtrack .gsay`) |
-| `95-home.css` | `.home` overlay, `.hcont` (CONTINUE, `--sec`), `.hshop`, `.hward` / `.hward.hmine` (WARDROBE, MY LEVELS), `.tiny` (SETTINGS) and `.tiny.hmulti` + `.hlock` (the locked MULTIPLAYER under it), `body.athome` |
+| `95-home.css` | `.home` overlay, `.hcont` (CONTINUE, `--sec`), `.hshop`, `.hward` / `.hward.hmine` (WARDROBE, MY LEVELS), `.tiny` (SETTINGS) and `.tiny.hmulti` + `.hlock` (the locked MULTIPLAYER under it), `body.athome`. **Type: title 34px, doors 16px, `.tiny` 12px and capped there by its absolutely-positioned gamepad rather than by its box.** CONTINUE's second line is `levelShort()` |
 | `98-story.css` | the three cutscenes: `.story` overlay, `.sfade`, `.scap` (+ `--say`), `.sskip`, `body.instory` / `body.storyask`, `.storyend` |
 | `99-guide.css` | the neighbour's speech bubble: `.gbub` (+ `.on`, `.stuck`), and `.wonguide`, his line on a win card |
 
