@@ -684,12 +684,12 @@ is the rule.
   way.** It was the playtesting switch; the star economy is live again.
   `AMB_MUTED` in `js/11-sound.js` is `true`: the ambient beds are built but
   muted, on the owner's call.
-- **`TEST_PURCHASES` in `js/16-panels.js` is `true` and MUST BE `false` IN A
-  STORE BUILD.** It puts TEST PURCHASES under Menu > More: an ON/OFF per
-  DEALS item (the four paid shapes and both passes), written straight into
-  `wardrobe.owned` - the list a real purchase writes, so every screen answers
-  to it with no second path. OFF really removes the item, even one a save
-  bought, and takes the worn shape off with it (`buyTestPanel()`).
+- **`buyTestPanel()` (`js/16-panels.js`) is reached by nothing.** Its TEST
+  PURCHASES row under Menu > More came off on the owner's call when testing
+  was done, and the `TEST_PURCHASES` switch with it. It is an ON/OFF per
+  DEALS item written straight into `wardrobe.owned`; OFF really removes the
+  item. Putting it back is one button and one bind, and it must never ship
+  reachable - it is a free shop.
 - **`wardEquip()` treats the `deal` tab as a shape.** It did not, and EQUIP
   on a DEALS shape wrote it into `wardrobe.world2`. `wardRepair()`
   (`js/06-persistence.js`, run on load) puts any slot holding an id from the

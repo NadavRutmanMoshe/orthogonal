@@ -587,7 +587,10 @@ function shapeGlyph(id){
 function seg(pre,val,label,cur){
   return "<button id='"+pre+"_"+val+"'"+(cur===val?" class='on'":"")+">"+label+"</button>";
 }
-/* TEST PURCHASES - OWNER'S SWITCH, and it must be false before a store build.
+/* TEST PURCHASES - REACHED BY NOTHING. Its row came off Menu > More on the
+   owner's call once the testing was done; the panel is left standing, so
+   putting it back is one button and one bind in menuPanel() (or
+   `buyTestPanel()` from a console). Nothing in a shipped build opens it.
 
    Every paid thing on the DEALS tab, each with an ON/OFF, so the game can be
    looked at as a player who bought exactly that: the hint badge and the skip
@@ -601,7 +604,6 @@ function seg(pre,val,label,cur){
    the reason it is not in a shipped build. If the shape being taken away is
    the one being worn, the default cube goes back on, because a player can
    never be wearing a thing they do not own. */
-var TEST_PURCHASES=true;
 function buyTestPanel(){
   var items=SKIN_SHAPES.filter(function(s){return s.deal;}).concat(PASSES);
   var rows=items.map(function(it,i){
@@ -821,8 +823,6 @@ function menuPanel(){
            keeps its replay flag: it is what stops a menu watch consuming
            FIND THEM on BOSS IV, and it is the seam any future door uses. */
         "<button id='mTut'>"+panelIcon("teach")+"REPLAY TUTORIAL</button>"+
-        (TEST_PURCHASES?"<button id='mBuyTest'>"+panelIcon("more")+
-          "TEST PURCHASES</button>":"")+
         /* LEVEL EDITOR MOVED TO THE HOME SCREEN as MY LEVELS. It is not a
            setting - it is a place you go, like LEVELS and the wardrobe are -
            and filing it under More next to RESET SETTINGS is what made it
@@ -903,7 +903,6 @@ function menuPanel(){
   bind("mTut",function(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
   });
-  if(TEST_PURCHASES)bind("mBuyTest",buyTestPanel);
   bind("mReset",function(){
     settings.volume=defaultVolume();settings.volTouched=false;
     settings.brightness=1;settings.ui=UI_DEFAULT;settings.foldmark="on";
