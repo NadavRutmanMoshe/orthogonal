@@ -335,6 +335,14 @@ named). Undoing one of these needs the paragraph.
   rectangle comes straight back. The pool of `--player` under the piece stays,
   because the light is not the box. **The home screen's plinth shares all of
   this** and is frameless now too.
+- **The frame's GLOW came back as a halo** (`.wglass::before`), because taking
+  the frame off had taken its coloured shadow with it and the owner asked where
+  "the cool lights around the player" went. A round blurred disc behind the
+  transparent canvas, `overflow` visible so it fades into the panel, sized by
+  `--halo` (84% on the stage, 96% on the 196px home plinth), plus `.wfloor`
+  back at .6. Both read **`--glow`, the colour ON THE STAND**, which
+  `previewShow()` writes on the canvas's parent - not `--player`, which is the
+  colour you are wearing and is wrong on the COLOUR tab while browsing.
 - **`previewSize()` owns the framing and both terms are aspect-driven.** The
   preview camera's FOV is VERTICAL, so on a stage wider than it is tall the
   height is the tight dimension: it pulls back past 1.25:1 (or the pedestal

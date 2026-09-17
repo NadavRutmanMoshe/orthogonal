@@ -370,20 +370,42 @@
      of the player's own colour under the piece, mixed from `--player` so it
      is lit in whatever is standing on it. Capped at 400px so the desktop's
      560px panel does not stretch the stage into a letterbox. */
+  /* THE LIGHT CAME BACK, AND WITHOUT THE BOX. Taking the frame off also took
+     its glow - a 26px halo and a deep drop shadow, both in `--player` - and
+     what was left was a 15% wash nobody could see. Reported as "the cool
+     lights around the player in the colour he chose, where did they go".
+     So the glow is a HALO now rather than a frame's shadow: a blurred disc of
+     the piece's own colour standing behind it (`::before`, under the
+     canvas, which is transparent), round rather than rectangular so nothing
+     about it draws a box. `overflow` is visible so its edge fades into the
+     panel instead of stopping at one. `--halo` is its size, because the home
+     plinth is a small square and wants it larger in proportion. `--glow` is
+     the colour on the stand, written by previewShow(); `--player` is only
+     the fallback before the first piece is built. */
   .wglass{width:100%;max-width:400px;margin-inline:auto;
-    position:relative;border-radius:16px;overflow:hidden;
-    background:radial-gradient(72% 56% at 50% 76%,
-      color-mix(in srgb,var(--player) 15%,transparent),transparent 72%)}
+    position:relative;border-radius:16px;--halo:84%}
+  .wglass::before{content:"";position:absolute;left:50%;top:50%;
+    width:var(--halo);aspect-ratio:1;transform:translate(-50%,-50%);
+    border-radius:50%;pointer-events:none;z-index:0;
+    background:radial-gradient(closest-side,
+      color-mix(in srgb,var(--glow,var(--player)) 60%,transparent),
+      color-mix(in srgb,var(--glow,var(--player)) 24%,transparent) 55%,
+      transparent);
+    filter:blur(14px)}
+  .wglass>canvas{position:relative;z-index:1}
   /* INSIDE the bottom edge, not below it: the box clips its corners, so a
      glow hung underneath was clipped away entirely. On the lip it is a strip
      of footlights, which is the thing being drawn anyway. */
   /* The spill, under the pedestal. Quieter than it was: with no box around
      it there is nothing for it to be contained by, and at .6 it read as a
      smear on the panel rather than as light coming off a lit object. */
-  .wfloor{position:absolute;left:22%;right:22%;bottom:4px;height:18px;
-    border-radius:50%;pointer-events:none;
-    background:color-mix(in srgb,var(--player) 72%,transparent);
-    filter:blur(13px);opacity:.34}
+  /* Back up to the strength it had inside the frame (.6), now that the halo
+     gives it something to belong to: over the pedestal's foot, the colour
+     coming off the piece and pooling where it stands. */
+  .wfloor{position:absolute;left:16%;right:16%;bottom:2px;height:22px;
+    border-radius:50%;pointer-events:none;z-index:2;
+    background:color-mix(in srgb,var(--glow,var(--player)) 72%,transparent);
+    filter:blur(14px);opacity:.6}
   /* THE GLASS IS GLASS. A vignette over the render darkens the four corners
      of the box and leaves the middle - where the piece stands - alone, so
      the case reads as a lit alcove rather than as a flat square of `--void`

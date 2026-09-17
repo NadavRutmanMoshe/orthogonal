@@ -590,11 +590,15 @@ is the rule.
   row** (`offerShell()`'s `actClass:"pair"`): TRY AGAIN in the goal's green
   with `#bRetry`'s own arrow - it only closes, `die()` has already reset the
   board - and where NEXT LEVEL stands on that card, SKIP over WATCH AN AD in
-  the ad button's blue. **Under No Limits, or on a fight already in `skips`,
-  it is SKIP alone in the SAME blue** with no video mark (it was the grey
-  outline, and a paid skip got the dimmest button), and **a skipped fight
-  still gets the card** - it used to return early, so losing there showed
-  nothing. Losing a fight and finishing short of three stars
+  the ad button's blue. **Under No Limits it is SKIP alone in the SAME blue**
+  with no video mark (it was the grey outline). **What it costs answers to
+  `noLimits()` and nothing else** - a fight already in `skips` got the free
+  button for one build, and turning the pass off then looked like it had not
+  come off. **A skipped fight still gets the card** (it used to return early,
+  so losing there showed nothing). **SKIP starts the next level**
+  (`playNextLevel()`, NEXT LEVEL's own path in `js/19-bindings.js`, lock and
+  all), not the map. Under No Limits the wardrobe drops its WATCH N ADS row
+  too. Losing a fight and finishing short of three stars
   are the same moment, so they are the same drawing. It is a kicker, the
   level's name and the two buttons and **nothing else**: the lead and the
   footnote both came off, so `offerShell()` skips an empty lead the way it

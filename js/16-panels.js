@@ -313,7 +313,12 @@ function wardMeta(){
   else if(buyArmed===id)
                       s+="<button id='wBuy' class='wsure'>SURE? \u00b7 "+it.cost+" <u class='st'>\u2605</u></button>";
   else                s+="<button id='wBuy' class='wgo'>BUY \u00b7 "+it.cost+" <u class='st'>\u2605</u></button>";
-  if(!have&&!it.reward&&!isDeal(it)){
+  /* NO AD ROW UNDER A PASS. No Limits makes the star balance bottomless, so
+     every star item is a BUY away and a WATCH 2 ADS beside it is a toll on
+     a road that is already free - the same rule the map's OPEN buttons and
+     the out-of-lives SKIP already follow. */
+  var adRow=!have&&!it.reward&&!isDeal(it)&&!noLimits();
+  if(adRow){
     var need=adsFor(it.cost), got=adsWatched(id);
     s+="<button id='wAd' class='ad' disabled>"+adIcon()+"WATCH "+need+" AD"+(need===1?"":"S")+
        (got?" ("+got+"/"+need+")":"")+"</button>";
@@ -324,7 +329,7 @@ function wardMeta(){
   if(!have&&isDeal(it))
     s+="<div class='note'>No store yet - nothing can be charged until "+
        "the game is wrapped for one. The button is dead on purpose.</div>";
-  else if(!have&&!it.reward)s+="<div class='note'>No ad provider yet - the button is "+
+  else if(adRow)s+="<div class='note'>No ad provider yet - the button is "+
     "dead until the game is wrapped for a store.</div>";
   $("wMeta").innerHTML=s;
   bind("wEquip",function(){wardEquip(t,id);SFX.key();wardRefresh();});

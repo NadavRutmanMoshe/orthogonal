@@ -2781,9 +2781,15 @@ function struggleOffer(){
      the one fight a player had skipped was the one fight where running out
      of hearts put up nothing at all: the board reset under them with no
      word. Reported that way, after a No Limits skip on BOSS I. The card is
-     "the run is over, here are the two ways on", and both ways still exist:
-     TRY AGAIN, and a SKIP that is already paid for, so it plays no video. */
-  var paid=noLimits()||(typeof skips!=="undefined"&&!!skips[levelKey]);
+     "the run is over, here are the two ways on", and both ways still exist.
+
+     THE SKIP IS PRICED BY THE PASS AND NOTHING ELSE. For one build a fight
+     already in `skips` got the free button too, on the reasoning that it had
+     been paid for once - and the owner turned No Limits off, lost to a boss
+     he had skipped under it, and was still offered the free skip, which read
+     as the pass not having come off. What the button costs has to answer to
+     the pass that is in force now, not to a skip taken under an old one. */
+  var paid=noLimits();
   var kind=B?"BOSS":"TRIAL";
 
   /* IT IS THE WIN CARD'S ROW, on the owner's call, and that is the whole
@@ -2817,7 +2823,7 @@ function struggleOffer(){
      IT KEEPS THE BLUE, on the owner's call: it dropped to the quiet grey
      outline, and a player who PAID to skip was handed the dimmest button on
      the card. The blue is the skip's colour here, and the video mark is what
-     says "this plays an ad". A fight already skipped gets the same button. */
+     says "this plays an ad". */
   /* NO SENTENCE AND NO FOOTNOTE, on the owner's call, and the card is three
      things now: which fight, its name, and the two ways on. Both lines that
      came off were true and neither was being read at that moment - the
@@ -2842,12 +2848,17 @@ function struggleOffer(){
      is no provider yet, and a button that silently did nothing would be
      worse than one that plainly works. When the SDK is wired, its completion
      callback calls grantSkip() and nothing else on this path changes. */
+  /* AND IT STARTS THE NEXT LEVEL, on the owner's call. It opened the map,
+     which made the skip a detour: the player said "get me past this" and was
+     handed a trail to find the next node on and press. playNextLevel() is
+     NEXT LEVEL's own path, lock and all, so a skip past BOSS IV with a boss
+     still standing lands on the map saying why, exactly as winning would. */
   bind("sgAd",function(){
     grantSkip(levelKey);
     clearFails(levelKey);
     hidePanel();
     flash("skipped \u00b7 no stars for a skip");
-    levelPicker();
+    if(playSource==="builtin")playNextLevel(); else levelPicker();
   });
 }
 

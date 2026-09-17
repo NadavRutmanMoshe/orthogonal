@@ -824,6 +824,12 @@ function previewShow(shape,colorId,w3,w2,plane){
      cheapest way to make a single-colour object read as solid. Both are
      eased off on a light ground, where a coloured lamp on near-white paper
      is a stain rather than a light. */
+  /* And the page's half of the light (the halo and the spill in
+     css/40-panels.css) takes the colour ON THE STAND, not `--player`: on the
+     COLOUR tab those differ, and a rose piece glowing sky blue because sky is
+     what you are wearing says the preview is wrong. */
+  if(pv.canvas&&pv.canvas.parentNode)
+    pv.canvas.parentNode.style.setProperty("--glow",hexCss(col));
   if(pv.lampA){
     pv.lampA.color.setHex(col);
     pv.lampA.intensity=plane?.24:.62;
