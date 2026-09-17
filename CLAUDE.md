@@ -107,6 +107,7 @@ listed in `index.html`. `21-boot.js` is the only file that *runs* anything.
 | `tools/build-single.js` | inlines everything into one file for itch.io / the artifact |
 | `tools/build-app.js` | copies the game into `app/www/` for the wrapper; a copy, not a bundle |
 | `tools/fonts.js` | rebuilds `css/05-fonts.css` from Google Fonts, one request per weight |
+| `tools/icon.js` | **the app icon, drawn**: a voxel scene projected 3D left of a seam and flat right of it, the Rose cube on the seam. Writes `app/icon/` (1024, 512, a preview sheet) and, with `--android`, the launcher mipmaps. The one place a PNG is checked in, and it is a store asset, not a game asset |
 | `tools/curve.js`, `tools/legible.js` | the difficulty curve; squares that draw where ground is not |
 
 A top-level `var` must not be a `window` property name (`history` became

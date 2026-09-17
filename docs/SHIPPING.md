@@ -383,6 +383,17 @@ trial, the map, the wardrobe, a cutscene beat and the neighbour mid-sentence.
 - **Play**: 1080x1920, at least two and ideally eight. Icon 512x512.
 - **Steam**: 1920x1080, at least five.
 
+**The icon is done**: `node tools/icon.js` draws it from the game's own
+palette - the Rose cube standing on a glowing seam, 3D on the left and
+pressed flat on the right, with the far tower merging into the platform the
+way the fold merges depth - and writes `app/icon/icon-1024.png` (iOS),
+`app/icon/icon-512.png` (Play) and `app/icon/preview.png` (how it reads at
+256, 128, 64 and 48, rounded). `--android` writes the launcher mipmaps into
+the Android project, the adaptive foreground drawn full-bleed with the scene
+at 2/3 so any mask lands on sky. Two other compositions are in the script as
+`--variant B` (the seam leaning the other way) and `--variant C` (one huge
+cube, no world), regenerable in a second.
+
 **What the tool cannot make** is the artwork carrying a logotype: Play's
 1024x500 feature graphic, which is mandatory, and Steam's capsule set
 (460x215, 231x87, 616x353, 374x448, 600x900 and the 3840x1240 library hero).
