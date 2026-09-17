@@ -32,6 +32,7 @@ function loadWardrobe(){
         if(typeof o.spent==="number")wardrobe.spent=o.spent;
         if(o.ads)wardrobe.ads=o.ads;
         migrateWorlds(o);
+        wardRepair();
       }catch(e){}
     }
     applyPalette();applySkin();
@@ -60,6 +61,21 @@ function migrateWorlds(o){
   if(ids.length)saveWardrobe();
 }
 var PALETTE_IDS=["indigo","blueprint","newsprint","moss","nocturne","rust"];
+/* EVERY SLOT HOLDS AN ID FROM ITS OWN CATALOGUE, or it goes back to the
+   default. wardEquip() used to write a DEALS shape into `world2` (see the
+   note there), so a save can say its 2D world is "robot". findBy() falls back
+   to the first entry, so it drew - but the wardrobe then showed no 2D world
+   as equipped, and the bad id stayed in the save for good. Run after
+   migrateWorlds(), which is what turns the older palette ids into these. */
+function wardRepair(){
+  var fix=false;
+  function ok(list,id){for(var i=0;i<list.length;i++)if(list[i].id===id)return true;return false;}
+  if(!ok(SKIN_SHAPES,wardrobe.shape)){wardrobe.shape="cube";fix=true;}
+  if(!ok(SKIN_COLORS,wardrobe.color)){wardrobe.color="rose";fix=true;}
+  if(!ok(WORLDS3D,wardrobe.world3)){wardrobe.world3="v_indigo";fix=true;}
+  if(!ok(WORLDS2D,wardrobe.world2)){wardrobe.world2="p_indigo";fix=true;}
+  if(fix)saveWardrobe();
+}
 function saveSettings(){
   if(!window.storage)return;
   window.storage.set(SET_KEY,JSON.stringify(settings)).catch(function(){});

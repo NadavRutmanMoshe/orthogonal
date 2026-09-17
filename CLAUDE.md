@@ -590,7 +590,11 @@ is the rule.
   row** (`offerShell()`'s `actClass:"pair"`): TRY AGAIN in the goal's green
   with `#bRetry`'s own arrow - it only closes, `die()` has already reset the
   board - and where NEXT LEVEL stands on that card, SKIP over WATCH AN AD in
-  the ad button's blue. Losing a fight and finishing short of three stars
+  the ad button's blue. **Under No Limits, or on a fight already in `skips`,
+  it is SKIP alone in the SAME blue** with no video mark (it was the grey
+  outline, and a paid skip got the dimmest button), and **a skipped fight
+  still gets the card** - it used to return early, so losing there showed
+  nothing. Losing a fight and finishing short of three stars
   are the same moment, so they are the same drawing. It is a kicker, the
   level's name and the two buttons and **nothing else**: the lead and the
   footnote both came off, so `offerShell()` skips an empty lead the way it
@@ -682,6 +686,10 @@ is the rule.
   `wardrobe.owned` - the list a real purchase writes, so every screen answers
   to it with no second path. OFF really removes the item, even one a save
   bought, and takes the worn shape off with it (`buyTestPanel()`).
+- **`wardEquip()` treats the `deal` tab as a shape.** It did not, and EQUIP
+  on a DEALS shape wrote it into `wardrobe.world2`. `wardRepair()`
+  (`js/06-persistence.js`, run on load) puts any slot holding an id from the
+  wrong catalogue back to its default.
 
 **Rendering** (`look.md`, `controls.md`)
 - **`outlineFor()` reads the PIECE, not the background: white lines on

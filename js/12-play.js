@@ -2776,7 +2776,14 @@ function struggleOffer(){
      trusting the call site is what stops the header confidently calling an
      ordinary level a TRIAL if this is ever called from somewhere new. */
   if(!B&&!TR)return;
-  if(typeof skips!=="undefined"&&skips[levelKey])return;
+  /* A FIGHT ALREADY SKIPPED STILL GETS THE CARD. It returned here, on the
+     reading that a skip already bought has nothing left to offer - and so
+     the one fight a player had skipped was the one fight where running out
+     of hearts put up nothing at all: the board reset under them with no
+     word. Reported that way, after a No Limits skip on BOSS I. The card is
+     "the run is over, here are the two ways on", and both ways still exist:
+     TRY AGAIN, and a SKIP that is already paid for, so it plays no video. */
+  var paid=noLimits()||(typeof skips!=="undefined"&&!!skips[levelKey]);
   var kind=B?"BOSS":"TRIAL";
 
   /* IT IS THE WIN CARD'S ROW, on the owner's call, and that is the whole
@@ -2806,9 +2813,11 @@ function struggleOffer(){
      collecting anything.
 
      NO LIMITS SKIPS WITHOUT THE VIDEO. Same call, same rule underneath, but
-     the second line comes off and with it the ad screen - and the button
-     drops to the quiet outline rather than borrowing the green, which
-     belongs to TRY AGAIN on this card. */
+     the second line comes off and with it the ad screen and the video mark.
+     IT KEEPS THE BLUE, on the owner's call: it dropped to the quiet grey
+     outline, and a player who PAID to skip was handed the dimmest button on
+     the card. The blue is the skip's colour here, and the video mark is what
+     says "this plays an ad". A fight already skipped gets the same button. */
   /* NO SENTENCE AND NO FOOTNOTE, on the owner's call, and the card is three
      things now: which fight, its name, and the two ways on. Both lines that
      came off were true and neither was being read at that moment - the
@@ -2822,8 +2831,8 @@ function struggleOffer(){
   offerShell(kind+" \u00b7 OUT OF LIVES",esc(L.name),"",
     "<button class='go oagain' id='sgNo'>"+retryIcon()+
       "<span>TRY AGAIN</span></button>"+
-    (noLimits()
-      ? "<button class='qt oskip' id='sgAd'>"+
+    (paid
+      ? "<button class='ad oskip' id='sgAd'>"+
         "<span class='two'><b>SKIP</b></span></button>"
       : "<button class='ad oskip' id='sgAd'>"+adIcon()+
         "<span class='two'><b>SKIP</b><i>WATCH AN AD</i></span></button>"),

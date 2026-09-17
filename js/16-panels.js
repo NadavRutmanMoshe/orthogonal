@@ -338,8 +338,13 @@ function wardMeta(){
     wardRefresh();
   });
 }
+/* THE DEALS TAB EQUIPS A SHAPE. It said `t==="shape"` only, so EQUIP on a
+   deal fell through the chain to the last branch and wrote the Rook into
+   `wardrobe.world2` - the piece never changed, the button kept saying EQUIP,
+   and the 2D world quietly became "rook". Nobody could see it until TEST
+   PURCHASES made a deal ownable; see wardRepair() for the saves it left. */
 function wardEquip(t,id){
-  if(t==="shape")wardrobe.shape=id;
+  if(t==="shape"||t==="deal")wardrobe.shape=id;
   else if(t==="color")wardrobe.color=id;
   else if(t==="world3")wardrobe.world3=id;
   else wardrobe.world2=id;
