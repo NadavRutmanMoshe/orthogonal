@@ -3584,79 +3584,90 @@ function foldMarkFade(dtMs){
   if(foldMarkT>=LAND_MS){foldMarkT=-1;return 0;}
   return landEnvelope(foldMarkT/LAND_MS);
 }
-/* THE PLAYER'S OWN SWITCH (`settings.foldmark`, Menu > Where you land).
+/* THE PLAYER'S OWN SWITCH (`settings.foldmark`, Menu > How it plays >
+   Landing mark).
 
    The mark is a teaching aid, and a teaching aid that cannot be turned off
    is decoration everybody has to keep looking at. Off means off: no tint, no
    rim, and nothing rebuilt per frame either, because `foldHiT` is what gates
-   that work. The landing RINGS are deliberately not on this switch - they
-   are the older statement, they sit beside the block rather than on it, and
-   the sentence under them names them; this is only the block going green. */
+   that work. */
 function foldMarkOn(){
   return !(typeof settings!=="undefined"&&settings.foldmark==="off");
 }
-/* THE BLOCKS THE FOLD HANDS YOU, as cell keys the block loop can test in
-   O(1). Rebuilt once a frame while the fold is running, and not at all when
-   it is not.
+/* AND NEVER IN A FIGHT, whatever the switch says. A boss is played at the
+   speed of the pack - there is no moment to read a board lighting up, and a
+   breathing block is one more moving thing on a screen where the hunters are
+   the ones that must be found. A trial keeps it: the clock there is a
+   rhythm you plan around, and where you will land is the plan. `B` is the
+   test and not `TR`, because BOSS IV runs a sweep too (see CLAUDE.md). */
+function foldMarkWanted(){
+  return foldMarkOn()&&!B;
+}
+/* THE BLOCKS THIS FOLD COULD HAND YOU, as cell keys the block loop can test
+   in O(1). Rebuilt while the mark is showing, and not at all when it is not.
 
-   ONE PER LEDGE, NOT ONE PER SILHOUETTE SQUARE, and that is the correction
-   the owner made after playing the first build: it lit the front block of
-   every square, including squares buried under other squares, and a block
-   with something on top of it is not somewhere you can stand once the world
-   is flat. So this walks each screen-right column from the top down, finds
-   every square that is filled with the square above it empty - a LEDGE - and
-   asks the rules what standing there would put you on.
+   EVERY LANDING THE FOLD OFFERED, AND ONLY THOSE - asked of the rules, never
+   read off the drawing. This used to walk the MESHES for ledges, and a mesh
+   is not the plane: water is a block you can see and stand on in the volume
+   and a HOLE in the plane, because it casts nothing. So a water block with
+   nothing over it was lit as somewhere you could stand when flat, which it
+   is not, and a stone under a sheet of water was skipped as buried, when in
+   the plane the water is not there and the stone is exactly where you stand.
+   Reported as the mark "not highlighting well with water".
 
-   `n>1` is the selectivity. A column holding one block has a winner
-   trivially: nothing merged, no rule was applied, and lighting it says only
-   "there is a block here", which the block already says. Without the test a
-   flat meadow turns entirely green on every fold, and a highlight that marks
-   everything marks nothing.
+   So it now plays the plane. From the square the fold began on (`foldOrigin`,
+   js/05-state.js) it walks left and right with the game's own step -
+   `resolveStep()` over `R.siloSolid()`, the same call `move2()` makes -
+   refusing a fall out of the world and a square of fire, and collects every
+   square it can reach. For each, `R.landings()` and `R.pick()` - the two
+   calls `doUnflatten()` makes - say which block standing up there would put
+   you on, and that block is lit. A landing onto fire is left dark: it is
+   where you would land, but it is not a place to go.
 
-   Built off `AX[view]`, the SNAPPED basis, rather than off the eased
-   `viewAngle` the drawing uses: u has to come out an exact integer or the
-   keys are floats with noise on them and nothing ever matches. The two agree
-   whenever a fold is running, because turning is refused in the plane and
-   the fold is refused during a turn. */
-var foldHiSet={};
+   THE `n>1` TEST IS GONE, and it is why world I never lit at all. It lit a
+   column only if it held two blocks or more, on the reasoning that one block
+   decides nothing - and world I's boards are one block deep, so every column
+   failed it and the only thing left was the block under your own feet,
+   under your own cube. A landing with one candidate is still a landing.
+
+   THE BLOCK UNDER YOUR FEET IS NOT A SPECIAL CASE ANY MORE. The square you
+   stood up from is a square the fold could reach, so it is lit by the rule,
+   and nothing that is not a landing gets lit by an exception.
+
+   Built off `AX[v]`, the SNAPPED basis of the fold's own view, rather than
+   off the eased `viewAngle` the drawing uses: u has to come out an exact
+   integer or the keys are floats with noise on them and nothing ever
+   matches. The view is the fold's and not the current one, so turning in
+   the second and a half after standing up does not relight a different
+   board. */
+var foldHiSet={}, foldHiKey="";
 function foldHiBuild(){
-  foldHiSet={};
-  if(!R||typeof R.landings!=="function")return;
-  var ax=AX[view], r0=ax.r[0], r2=ax.r[2];
-  var silh={}, n={}, u, y, k, b;
-  for(k in meshes){
-    b=meshes[k].userData.base;
-    u=b[0]*r0+b[2]*r2;
-    silh[u+"|"+b[1]]=1;
-    n[u]=(n[u]||0)+1;
-  }
-  // A crate casts a silhouette exactly like stone, so it can be the thing
-  // standing over a block - but it is not in `meshes` and cannot be lit.
-  var cr=(typeof liveCrates==="function")?liveCrates():null, ci;
-  if(cr)for(ci=0;ci<cr.length;ci++)
-    silh[(cr[ci][0]*r0+cr[ci][2]*r2)+"|"+cr[ci][1]]=1;
-  for(u in n){
-    if(n[u]<2)continue;
-    var uu=+u;
-    for(y=arenaHi[1]+1;y>=arenaLo[1];y--){
-      if(!silh[uu+"|"+y]||silh[uu+"|"+(y+1)])continue;   // not a ledge
-      var land=R.landings(view,uu,y+1,cr);
-      if(!land.length)continue;
+  if(!R||app!=="play"||typeof resolveStep!=="function"){foldHiSet={};foldHiKey="";return;}
+  var o=foldOrigin;
+  // A resumed save, or an undo into a fold from before this one was recorded:
+  // the square you are on is the best origin there is.
+  if(!o||(flat&&o.v!==view))o={u:flatPos.u,y:flatPos.y,v:view};
+  var key=(L&&L.name)+"|"+o.v+"|"+o.u+"|"+o.y+"|"+gCrates.join(";");
+  if(key===foldHiKey)return;
+  foldHiKey=key;foldHiSet={};
+  var v=o.v, cr=liveCrates(), seen={}, q=[[o.u,o.y]], c, s, nu, ny, k;
+  seen[o.u+"|"+o.y]=1;
+  function at(u){return function(h){return R.siloSolid(v,u,h,cr);};}
+  while(q.length){
+    c=q.shift();
+    var land=R.landings(v,c[0],c[1],cr);
+    if(land.length){
       var w=R.pick(land);
-      foldHiSet[K(w.x,y,w.z)]=1;
+      if(!R.deadly3(w.x,c[1],w.z))foldHiSet[K(w.x,c[1]-1,w.z)]=1;
     }
-  }
-  /* AND THE BLOCK UNDER YOUR OWN FEET, whatever the rules above decided.
-
-     Those rules are about columns where something was chosen, and they are
-     right to be - but the one block the player is actually asking about is
-     the one they are standing on, and a column holding a single block would
-     leave it out. "I came back, show me where" must never come up empty. */
-  if(flat){
-    var lp=(typeof peekLanding==="function")?peekLanding():null;
-    if(lp&&flatPos)foldHiSet[K(lp.win.x,flatPos.y-1,lp.win.z)]=1;
-  } else if(app==="play"&&!dying){
-    foldHiSet[K(player.x,player.y-1,player.z)]=1;
+    for(s=-1;s<=1;s+=2){
+      nu=c[0]+s;
+      ny=resolveStep(at(nu),c[1],at(c[0]));
+      if(ny===null||ny===FELL||R.deadly2(v,nu,ny))continue;
+      k=nu+"|"+ny;
+      if(seen[k])continue;
+      seen[k]=1;q.push([nu,ny]);
+    }
   }
 }
 
@@ -4221,10 +4232,10 @@ function animate(now){
 
      Placed after landFrame so both read the same frame's `landHint`; nothing
      between here and the block loop reads either. */
-  foldHiT=foldMarkOn()?foldMarkFade(dtMs):0;
+  foldHiT=foldMarkWanted()?foldMarkFade(dtMs):0;
   // Nothing is rebuilt while the world is simply standing there in the
   // volume, which is most frames of most sessions.
-  if(foldHiT>.01)foldHiBuild(); else foldHiSet={};
+  if(foldHiT>.01)foldHiBuild(); else if(foldHiKey){foldHiSet={};foldHiKey="";}
   lookCue();
   /* playerMesh rather than `player`, because the mesh is where the player is
      actually drawn - already eased, and already in plane coordinates when

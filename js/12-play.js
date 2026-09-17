@@ -2135,6 +2135,7 @@ function doFlatten(){
   lastSolidDepth=R.dOf(view,player.x,player.z);
   pushHistory();moveCount++;
   flatPos={u:pu,y:player.y};
+  foldOrigin={u:pu,y:player.y,v:view};    // the landing mark's starting square
   // The column you just merged - see trailColumn(). Taken before the fold
   // resolves, for the same reason everything else on this line is.
   trailColumn();
@@ -2187,29 +2188,28 @@ function doUnflatten(){
   trailHere();
   flat=false;flatTarget=0;SFX.unfold();foldJolt(false);
   trialFoldSpend();       // and it does not claim the way back either
-  /* RULE 5, SHOWN, and the two halves have different triggers on purpose.
+  /* RULE 5, SHOWN, by the mark: every block this fold could have put you
+     on, lit on every landing (foldMarkStart(), js/10-render.js).
 
-     THE MARK on the block itself starts on every landing: "where did I come
-     back?" is a question every unfold raises. THE RINGS only appear when the
-     column actually held a choice - see showLanding() - because rings drawn
-     round a single block announce a decision nobody made. Tying the mark to
-     the rings' trigger is what left it dark on the levels whose squares have
-     one candidate each; see foldMarkStart() in js/10-render.js. */
+     THE RINGS ARE GONE from a landing, on the owner's call. They circled the
+     block you came back on and, dimmer, the ones you did not, and once the
+     mark lights every landing the fold offered they were a second drawing of
+     the same answer on top of it. `showLanding()` is left standing and is
+     reached by nothing; the eye's peek and the tutorial still draw their own
+     rings, which are a preview and a lesson rather than a landing. The words
+     below are not the rings and stay: the first few times a column held a
+     choice, it is still said once. */
   if(typeof foldMarkStart==="function")foldMarkStart();
-  if(typeof showLanding==="function"&&land.length>1){
-    b.yStand=flatPos.y;
-    showLanding(land,b,!!b.anchor);
+  if(land.length>1){
     var seen=settings.landHints||0;
     if(seen<LAND_HINT_TIMES){
       settings.landHints=seen+1;saveSettings();
       /* flashCue's note slot, not flash(): a toast lands at the top of the
          screen across the level's own hint text, which is exactly the
-         collision that slot was made to fix. Down by the controls it also
-         sits where the rings are, rather than at the opposite end of the
-         screen from the thing it is describing. */
+         collision that slot was made to fix. */
       setTimeout(function(){
         flashCue(null,b.anchor
-          ?"the anchor held you \u2014 an anchor beats the front block"
+          ?"the anchor held you - an anchor beats the front block"
           :"you come back on the block at the front");
       },340);
     }
@@ -2628,7 +2628,7 @@ function initDynamic(){
   nKeysTotal=(L.keys||[]).length;
 }
 function resetLevel(){
-  moveHistory=[];moveCount=0;hintsUsed=0;levelDone=false;tutReset();
+  moveHistory=[];foldOrigin=null;moveCount=0;hintsUsed=0;levelDone=false;tutReset();
   bossReset();trialReset();
   initDynamic();buildDynamic();
   player={x:L.start[0],y:L.start[1],z:L.start[2]};
@@ -2863,7 +2863,7 @@ function loadLevel(level,idx){
   $("won").classList.remove("on");
   player={x:L.start[0],y:L.start[1],z:L.start[2]};
   flat=false;flatTarget=0;flatT=0;view=0;viewAngle=0;viewAngleTarget=0;
-  moveHistory=[];moveCount=0;hintsUsed=0;dying=null;levelDone=false;tutReset();
+  moveHistory=[];foldOrigin=null;moveCount=0;hintsUsed=0;dying=null;levelDone=false;tutReset();
   /* THE TRIAL FIRST, THEN THE FIGHT, and the order is load-bearing now that a
      boss phase can install a sweep of its own: bossReset() ends in
      bossEnterPhase(), which writes TR from the phase it is entering, so

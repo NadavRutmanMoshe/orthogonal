@@ -1749,3 +1749,28 @@ cliff: charge, hit, then a window as long as the strike in which folding is
 free. **A telegraph promises a shape; if the rule's shape and the drawing's
 shape differ by a few hundred milliseconds, the drawing is what the player
 learned and the rule is the bug.**
+
+## The landing mark read the drawing, and the drawing is not the plane
+
+Three reports in one list: the mark "doesn't highlight well with water", it
+"doesn't show in world I at all even though it's on", and it should be "the
+actual where you are gonna land if you are there". They were one bug.
+
+The mark found its blocks by walking the MESHES for ledges - a filled
+silhouette square with an empty one over it - and filtered to columns
+holding two blocks or more, plus the block under the player's feet. A mesh is
+what is drawn, and water is drawn; but water casts nothing, so in the plane
+it is a hole. The walk lit water nobody could stand over and passed over
+stone under water, which is exactly where you do stand. And world I is one
+block deep, so the `n>1` filter dropped every column there and left the
+block under the player, under the player's own cube, as the only thing lit.
+
+**Dropped:** the mesh walk, the `n>1` filter and the under-your-feet
+exception. **Kept:** the clock, the breath, the colours, the switch.
+**Replaced by:** a walk of the plane from the fold's own origin with
+`move2()`'s own step, and `R.landings()`/`R.pick()` on every square it
+reaches. **Also dropped on the owner's call in the same round:** the landing
+rings on an unfold, which drew the mark's answer a second time; and the mark
+in bosses, where nobody has time to read a board. The shape to remember is
+the same as the desert trial's: **a drawing that re-derives a rule will find
+the case the rule has and the drawing does not.** Ask the rule.

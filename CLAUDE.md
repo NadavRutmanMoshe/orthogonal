@@ -725,23 +725,28 @@ is the rule.
   land on is lifted toward white, leans teal, takes a bright rim and
   **breathes** - colour alone is invisible on the nature world, green on
   green. It runs for `LAND_MS` on **its own clock, started by every unfold**
-  (`foldMarkStart()` in `doUnflatten`), sharing the rings' envelope
-  (`landEnvelope`) but not their trigger: the rings only appear when the
-  column held more than one candidate, and reading their fade outright left
-  the mark dark on every level whose squares have one. A peek lights it too. It lit on the way INTO 2D as well, off
+  (`foldMarkStart()` in `doUnflatten`), `landEnvelope` for its fade. A peek
+  lights it too. It lit on the way INTO 2D as well, off
   `flatT`, and that half came out on the owner's call: a 520ms fold gives it
   a few hundred milliseconds, so it read as a flash, and it was answering a
-  question the player had not asked yet. It is **one per LEDGE**: each
-  screen-right column is walked from the top for a square that is filled with
-  the square above it empty, because a block with something over it cannot be
-  stood on once the world is flat, and the winner is asked for with the
-  game's own `R.landings()`/`R.pick()` so the anchor's override of rule 5 is
-  free. Only columns holding two or more blocks, or a flat meadow goes green -
-  plus the block under your own feet, always, or "show me where I landed" can
-  come up empty.
+  question the player had not asked yet.
+  **It lights EVERY LANDING THE FOLD OFFERED, asked of the rules, never of
+  the meshes.** From `foldOrigin` (the square and view `doFlatten()` started
+  from; in the history, so undo carries it) it walks the plane with
+  `resolveStep()` over `R.siloSolid()` exactly as `move2()` does, and every
+  square it reaches is handed to `R.landings()`/`R.pick()`; a landing onto
+  fire stays dark. Walking MESHES for ledges was the water bug - water is a
+  block you see and a hole in the plane - and its `n>1` column filter is why
+  world I, one block deep, never lit. No special case for the block under
+  your feet: the square you stood up from is reached, so it lights by rule.
+  **Never in a boss** (`foldMarkWanted()` asks `!B`), **on in a trial**.
+  **The landing RINGS are gone from a landing** on the owner's call - the
+  mark now says the same thing on every block. `showLanding()` is reached by
+  nothing; the peek's live rings and the tutorial's rings (`tutLandMark()`)
+  stay.
   Peril and the tutorial's landing marker both outrank it. `foldMarkOn()`
-  (`settings.foldmark`, Menu > How it plays > Landing mark) turns it off; the RINGS are
-  deliberately not on that switch. A two-beat fold that gathered the world
+  (`settings.foldmark`, Menu > How it plays > Landing mark) turns it off.
+  A two-beat fold that gathered the world
   into the front block was built, played and dropped for this
   (`controls.md`, `HISTORY.md`).
 - `INK_SETTLE` .18 and `PAPER_LIFT` .20 are the whole 2D look; both have
