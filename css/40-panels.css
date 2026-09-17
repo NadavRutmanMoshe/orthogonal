@@ -432,9 +432,8 @@
      that there are no boxes on it. Bottom right, quiet, out of the piece's
      way. */
   /* Bottom right now, as the note above always said: the top of the stage is
-     where the projector rig hangs (previewRig), and at `top` the label sat
-     on the right-hand fixtures. z-index over the canvas, which is raised to
-     sit over the halo. */
+     where the ring light stands (previewRing), and at `top` the label sat on
+     it. z-index over the canvas, which is raised to sit over the halo. */
   .wturn{position:absolute;right:10px;bottom:6px;pointer-events:none;z-index:3;
     font-size:9px;letter-spacing:.12em;color:var(--fg-dim);opacity:.55}
   /* THE PLAQUE UNDER THE STAGE: the name in the display face at a size

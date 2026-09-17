@@ -343,16 +343,22 @@ named). Undoing one of these needs the paragraph.
   back at .6. Both read **`--glow`, the colour ON THE STAND**, which
   `previewShow()` writes on the canvas's parent - not `--player`, which is the
   colour you are wearing and is wrong on the COLOUR tab while browsing.
-- **The stage has a projector rig** (`previewRig()`, `js/09-wardrobe.js`), on
-  the owner's call: two bars at the top, three small stage lights hung from
-  each, every one a dark can with a lit lens, a soft additive beam and a real
-  `SpotLight` aimed at the piece. **Hung BEHIND the piece** (z<0) so the lens
-  faces the camera - in front, all you saw was six dark backs. The slab and
-  the piece are **Phong** on the stand only (Lambert lights a box at its
-  corners, so a spot's pool landed nowhere); ambient and key were eased for
-  the rig. Beams and spots take the piece's colour halfway to white. Shared by
-  the wardrobe and the home plinth, framed for the square plinth, so
-  `.wturn` (DRAG TO TURN) moved to the bottom right out of the rig's way.
+- **The stage has a RING LIGHT** (`previewRing()`, `js/09-wardrobe.js`), on
+  the owner's call: an LED ring standing behind the piece, the kind a phone
+  is clipped into. A dark torus housing, a diffuser band with `RING_LEDS` dots
+  on it (basic materials, so they read as sources), and an additive glow
+  behind. It is the light as well as the look: `RING_LIGHTS` point lights on
+  the circle rim the piece, and `face`, a directional light from the camera's
+  side in the ring's colour, is the ring a real setup has in front of the
+  subject. **Everything else in the case is dimmed hard for it** (ambient .2,
+  key .1, fill .05, footlights .2/.1) - "make the added light more
+  noticeable". The ring takes the piece's colour toward white, and a piece
+  darker than `PIP_DARK` (Black) gets a white ring, because additive black is
+  no glow. The slab and the piece are **Phong** on the stand only (Lambert
+  lights a box at its corners). Sized for the square home plinth, where the
+  ring's top is 15 degrees off-axis against a 17-degree half field of view,
+  and `.wturn` (DRAG TO TURN) sits bottom right out of its way. A projector
+  rig came first and was dropped (`docs/HISTORY.md`).
 - **`previewSize()` owns the framing and both terms are aspect-driven.** The
   preview camera's FOV is VERTICAL, so on a stage wider than it is tall the
   height is the tight dimension: it pulls back past 1.25:1 (or the pedestal

@@ -622,72 +622,77 @@ function previewStop(){
   pv.renderer.dispose();
   pv=null;
 }
-/* THE PROJECTORS - three small stage lights hung at the top on each side,
-   aimed at the piece, and actually lighting it. On the owner's call: the
-   stand "used to be display lights", and a halo says colour without saying
-   where it comes from. A lamp you can see, a beam leaving it, and a pool
-   where the beam lands is a display case; any one of the three alone is not.
+/* THE RING LIGHT - a round LED ring standing behind the piece, the one a
+   phone is clipped into to film yourself. On the owner's call, and it
+   replaces a projector rig that was built first and "felt off": six stage
+   cans on two bars read as a theatre, and this is a showcase.
 
-   ON THE SCENE, NOT ON THE ROOT, like the footlights: the piece turns under
-   fixed lights, so the highlights travel over it as it spins. Each fixture
-   is a dark can with a lit lens (a basic material, so it reads as a light
-   source rather than as something being lit), a rod up to a bar, a soft
-   cone of additive light fading from the lens, and a real SpotLight on the
-   same line. The spots need per-pixel materials to leave a pool - Lambert
-   lights a box at its eight corners, and a cone that lands between corners
-   lands nowhere - which is why previewShow() builds the slab and the piece
-   in Phong.
+   What makes it read as a ring light rather than as a hoop is three layers
+   and the lighting, all on the SCENE, not the spinning root, so the piece
+   turns in front of a light that stays put:
+   - a dark HOUSING (a torus) so the ring has a body,
+   - a DIFFUSER band on its face and a row of bright LED dots on the band -
+     basic materials, so they are the brightest thing in the frame and read
+     as sources rather than as surfaces being lit,
+   - a soft additive GLOW behind it, the bloom a camera sees round an LED.
+   And it is the light: RING_LIGHTS point lights sit on the circle, so the
+   piece is rimmed from the top and both sides and the pedestal's top catches
+   it, plus `face`, a soft light from the camera's side in the same colour -
+   the ring a real setup has in front of the subject, whose light is the
+   reason anybody owns one. Everything else in the scene was dimmed to make
+   this the light you notice (see previewStart()).
 
-   Framed for both stages: the home plinth is square and the tightest, so the
-   rig sits inside its top corners and the wide wardrobe stage simply shows
-   it with more air round it. Colours are written per item by previewShow(). */
-var PV_AIM=new THREE.Vector3(0,-.14,0);
-function previewRig(sc){
-  var out={spots:[],beams:[],lenses:[]};
-  var bodyMat=new THREE.MeshLambertMaterial({color:0x1b2030});
-  var trimMat=new THREE.MeshLambertMaterial({color:0x485068});
-  var canGeo=new THREE.CylinderGeometry(.046,.058,.13,14);
-  canGeo.rotateX(Math.PI/2);                 // its axis along z, so lookAt aims it
-  var lensGeo=new THREE.CircleGeometry(.04,18);
-  var rodGeo=new THREE.CylinderGeometry(.006,.006,.07,6);
-  var beamTex=pvGradTex("beam",function(x,n){
-    // the top of the canvas is the cone's apex (v=1), so bright at the lens
-    var g=x.createLinearGradient(0,0,0,n);
-    g.addColorStop(0,"rgba(255,255,255,.95)");
-    g.addColorStop(.3,"rgba(255,255,255,.38)");
-    g.addColorStop(1,"rgba(255,255,255,0)");
-    x.fillStyle=g;x.fillRect(0,0,n,n);
-  });
-  /* HUNG BEHIND THE PIECE, not in front of it (z<0). In front, every can
-     aimed down and AWAY from the camera, so all you saw was six dark backs;
-     from behind they aim forward and the lit lens faces you. Lower than the
-     frame's top for the same camera reason: the view looks down, so a thing
-     further back draws higher, and at the home plinth's size the bars were
-     touching the edge. */
-  [-1,1].forEach(function(side){
-    var bar=new THREE.Mesh(new THREE.BoxGeometry(.5,.02,.02),trimMat);
-    bar.position.set(side*.54,.62,-.3);sc.add(bar);
-    for(var i=0;i<3;i++){
-      var x=side*(.34+i*.2), y=.52, z=-.3;
-      var rod=new THREE.Mesh(rodGeo,trimMat);
-      rod.position.set(x,y+.075,z);sc.add(rod);
-      var head=new THREE.Group();head.position.set(x,y,z);sc.add(head);
-      head.lookAt(PV_AIM);
-      head.add(new THREE.Mesh(canGeo,bodyMat));
-      var lens=new THREE.Mesh(lensGeo,new THREE.MeshBasicMaterial({color:0xffffff}));
-      lens.position.z=.066;head.add(lens);out.lenses.push(lens);
-      var len=head.position.distanceTo(PV_AIM)*1.02;
-      var beam=new THREE.Mesh(new THREE.ConeGeometry(.2,len,24,1,true),
-        new THREE.MeshBasicMaterial({map:beamTex,color:0xffffff,transparent:true,
-          opacity:.13,blending:THREE.AdditiveBlending,depthWrite:false,
-          side:THREE.DoubleSide}));
-      beam.rotation.x=-Math.PI/2;            // apex (+y) back to the lens
-      beam.position.z=.066+len/2;head.add(beam);out.beams.push(beam);
-      var spot=new THREE.SpotLight(0xffffff,.34,4.5,.30,.65,1);
-      spot.position.set(x,y,z);spot.target.position.copy(PV_AIM);
-      sc.add(spot);sc.add(spot.target);out.spots.push(spot);
-    }
-  });
+   Centred on the piece and behind the pedestal, so the pedestal hides the
+   ring's foot the way a table hides a stand. Sized for the square home
+   plinth, the tightest frame, where the top of the ring is 15 degrees off
+   the camera's axis against a 17-degree half field of view.
+
+   Per-pixel lighting is still why the slab and the piece are Phong on the
+   stand: Lambert lights a box at its corners, and light arriving between
+   them is lost. Colours are written per item by previewShow(). */
+var RING_R=.7, RING_Y=-.02, RING_Z=-.64, RING_LEDS=44, RING_LIGHTS=8;
+function previewRing(sc){
+  var out={leds:[],band:null,glow:null,lights:[],face:null};
+  var house=new THREE.Mesh(new THREE.TorusGeometry(RING_R,.05,10,80),
+    new THREE.MeshLambertMaterial({color:0x151a26}));
+  house.position.set(0,RING_Y,RING_Z);sc.add(house);
+  var band=new THREE.Mesh(new THREE.TorusGeometry(RING_R,.03,8,96),
+    new THREE.MeshBasicMaterial({color:0xffffff}));
+  band.position.set(0,RING_Y,RING_Z+.03);sc.add(band);out.band=band;
+  var ledGeo=new THREE.CircleGeometry(.016,10);
+  var ledMat=new THREE.MeshBasicMaterial({color:0xffffff});
+  for(var i=0;i<RING_LEDS;i++){
+    var a=i/RING_LEDS*Math.PI*2;
+    var led=new THREE.Mesh(ledGeo,ledMat);
+    led.position.set(Math.cos(a)*RING_R,RING_Y+Math.sin(a)*RING_R,RING_Z+.062);
+    sc.add(led);
+  }
+  out.leds=ledMat;
+  var glow=new THREE.Mesh(new THREE.PlaneGeometry(2.4,2.4),
+    new THREE.MeshBasicMaterial({
+      map:pvGradTex("ring",function(x,n){
+        // RING_R on a 2.4 plane is .58 of the half-width: the peak sits there
+        var g=x.createRadialGradient(n/2,n/2,0,n/2,n/2,n/2);
+        g.addColorStop(0,"rgba(255,255,255,0)");
+        g.addColorStop(.40,"rgba(255,255,255,0)");
+        g.addColorStop(.58,"rgba(255,255,255,.85)");
+        // gone by .70: the home plinth's frame is only a little above the
+        // ring's top, and a glow that reached it was cut off in a straight line
+        g.addColorStop(.64,"rgba(255,255,255,.2)");
+        g.addColorStop(.70,"rgba(255,255,255,0)");
+        x.fillStyle=g;x.fillRect(0,0,n,n);
+      }),
+      color:0xffffff,transparent:true,opacity:.55,depthWrite:false,
+      blending:THREE.AdditiveBlending}));
+  glow.position.set(0,RING_Y,RING_Z-.02);sc.add(glow);out.glow=glow;
+  for(var k=0;k<RING_LIGHTS;k++){
+    var b=k/RING_LIGHTS*Math.PI*2+Math.PI/RING_LIGHTS;
+    var p=new THREE.PointLight(0xffffff,.42,3.2,1);
+    p.position.set(Math.cos(b)*RING_R,RING_Y+Math.sin(b)*RING_R,RING_Z+.2);
+    sc.add(p);out.lights.push(p);
+  }
+  out.face=new THREE.DirectionalLight(0xffffff,.62);
+  out.face.position.set(0,.9,3);sc.add(out.face);
   return out;
 }
 function previewStart(cv){
@@ -709,13 +714,16 @@ function previewStart(cv){
      footlights below: with the old flat rig plus two coloured lamps the
      front of the piece washed out to near-white and the slab took the
      player's hue as paint rather than as light. */
-  /* And eased again for the projector rig (previewRig): six spots were
-     landing on top of a scene that was already fully lit, and light added to
-     a lit scene reads as grey, not as a beam arriving. */
-  sc.add(new THREE.AmbientLight(0xffffff,.44));
-  var key=new THREE.DirectionalLight(0xffffff,.26);
+  /* AND DIMMED HARD FOR THE RING LIGHT (previewRing), on the owner's call:
+     "make the added light more noticeable, dim the lights that are not from
+     it". Light added to a scene that is already fully lit reads as grey,
+     not as a light arriving - so the room goes dark enough that the ring's
+     rim on the piece and its pool on the pedestal are what you see. Ambient
+     stays above zero so a Black piece still has a shape. */
+  sc.add(new THREE.AmbientLight(0xffffff,.2));
+  var key=new THREE.DirectionalLight(0xffffff,.1);
   key.position.set(2.4,3.2,2.6);sc.add(key);
-  var fill=new THREE.DirectionalLight(0xffffff,.16);
+  var fill=new THREE.DirectionalLight(0xffffff,.05);
   fill.position.set(-2.2,.6,-1.8);sc.add(fill);
   /* THE FOOTLIGHTS, on the scene rather than on the root so the item turns
      under them. Their colour is written per item by previewShow(); they are
@@ -725,12 +733,12 @@ function previewStart(cv){
   lampA.position.set(-1.15,-.42,1.35);sc.add(lampA);
   var lampB=new THREE.PointLight(0x6fa8ff,.36,4.2);
   lampB.position.set(1.15,-.42,1.35);sc.add(lampB);
-  var rig=previewRig(sc);
+  var ring=previewRing(sc);
   var root=new THREE.Group();sc.add(root);
   var reduce=window.matchMedia&&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   pv={renderer:r,scene:sc,camera:cam,root:root,canvas:cv,
-      lampA:lampA,lampB:lampB,rig:rig,
+      lampA:lampA,lampB:lampB,ring:ring,
       yaw:-0.62,pitch:0.13,vel:0,raf:0,idle:reduce?0:PV_IDLE,drag:false};
   previewSize();
   previewDrag(cv);
@@ -862,7 +870,7 @@ function previewShow(shape,colorId,w3,w2,plane){
      and still used by the pool below. */
   pv.scene.background=null;
 
-  // Phong, for the projectors' pools - see previewRig().
+  // Phong, so the ring light lands between corners - see previewRing().
   var slabMat=new THREE.MeshPhongMaterial({color:blockCol,shininess:8,
     specular:0x111111});
   var slab=new THREE.Mesh(new THREE.BoxGeometry(1,.5,1),slabMat);
@@ -906,21 +914,32 @@ function previewShow(shape,colorId,w3,w2,plane){
     pv.canvas.parentNode.style.setProperty("--glow",hexCss(col));
   if(pv.lampA){
     pv.lampA.color.setHex(col);
-    pv.lampA.intensity=plane?.24:.62;
-    pv.lampB.intensity=plane?.14:.38;
+    // Dimmed with the rest of the room, for the ring light - see previewStart.
+    pv.lampA.intensity=plane?.1:.2;
+    pv.lampB.intensity=plane?.05:.1;
   }
-  /* The projectors take the piece's colour halfway to white: stage light
-     with the piece's tint in it, so a coloured beam on a coloured piece does
-     not simply paint it darker in its own hue, and a Black piece still gets
-     light it can show. The lens is nearer white again - it is the source. */
-  if(pv.rig){
-    var beamCol=new THREE.Color(col).lerp(new THREE.Color(0xffffff),.5);
-    var lensCol=new THREE.Color(col).lerp(new THREE.Color(0xffffff),.78);
-    for(var ri=0;ri<pv.rig.spots.length;ri++){
-      pv.rig.spots[ri].color.copy(beamCol);
-      pv.rig.beams[ri].material.color.copy(beamCol);
-      pv.rig.lenses[ri].material.color.copy(lensCol);
-    }
+  /* The ring takes the piece's colour: its LEDs nearly white with the tint
+     in them (they are the source, and a source is near white however it is
+     gelled), the diffuser band and the light it throws halfway to white, and
+     the glow at the piece's own colour, which is what a camera sees round a
+     coloured light. Halfway rather than pure, so a coloured light on a piece
+     of the same colour does not just paint it darker in its own hue, and a
+     Black piece still gets light it can show. */
+  if(pv.ring){
+    var white=new THREE.Color(0xffffff);
+    /* A piece too dark to tint a light with (Black, and only Black - the
+       same PIP_DARK line the Domino's pips use) gets a plain white ring. Its
+       own colour made a grey ring with a black glow, and additive black is
+       no glow at all. */
+    var tint=pipLum(col)<PIP_DARK?0xffffff:col;
+    var ledCol=new THREE.Color(tint).lerp(white,.8);
+    var lightCol=new THREE.Color(tint).lerp(white,.5);
+    pv.ring.leds.color.copy(ledCol);
+    pv.ring.band.material.color.copy(new THREE.Color(tint).lerp(white,.55));
+    pv.ring.glow.material.color.setHex(tint);
+    for(var ri=0;ri<pv.ring.lights.length;ri++)
+      pv.ring.lights[ri].color.copy(lightCol);
+    pv.ring.face.color.copy(lightCol);
   }
   var item=buildPlayerMesh(shape,col,new THREE.MeshPhongMaterial({color:col,
     shininess:22,specular:0x2a2a2a}));

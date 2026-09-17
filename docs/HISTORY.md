@@ -1774,3 +1774,24 @@ rings on an unfold, which drew the mark's answer a second time; and the mark
 in bosses, where nobody has time to read a board. The shape to remember is
 the same as the desert trial's: **a drawing that re-derives a rule will find
 the case the rule has and the drawing does not.** Ask the rule.
+
+## The display case's lights: a frame's glow, a halo, projectors, a ring
+
+The wardrobe's stage and the home plinth had a lit FRAME with a glow in the
+player's colour. The frame came off (a box is a thumbnail) and its glow went
+with it, unnoticed until the owner asked where "the cool lights around the
+player" had gone. **A halo** came back first - a blurred disc of the colour on
+the stand behind the piece - and stayed.
+
+**A projector rig** was built next, for "display lights": two bars at the top,
+three stage cans hung from each, a lit lens, an additive beam and a real
+SpotLight apiece. Its first draft hung the cans in front of the piece, so they
+aimed away from the camera and showed six dark backs; hung behind, the lenses
+faced out and it worked. Played and dropped: "the projectors feel off". Six
+theatre cans over a showcase read as a stage production, not a display.
+
+**Replaced by a ring light** behind the piece, with the rest of the case's
+lighting dimmed so the ring's light is the one you notice. Two lessons carried
+over from the rig: the stand's slab and piece stay Phong (a light that lands
+between a box's corners is lost on Lambert), and DRAG TO TURN stays at the
+bottom right, out of whatever stands at the top of the stage.
