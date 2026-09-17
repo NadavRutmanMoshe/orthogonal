@@ -2135,6 +2135,7 @@ function doFlatten(){
   lastSolidDepth=R.dOf(view,player.x,player.z);
   pushHistory();moveCount++;
   flatPos={u:pu,y:player.y};
+  foldOrigin={u:pu,y:player.y,v:view};    // the landing mark's starting square
   // The column you just merged - see trailColumn(). Taken before the fold
   // resolves, for the same reason everything else on this line is.
   trailColumn();
@@ -2187,29 +2188,28 @@ function doUnflatten(){
   trailHere();
   flat=false;flatTarget=0;SFX.unfold();foldJolt(false);
   trialFoldSpend();       // and it does not claim the way back either
-  /* RULE 5, SHOWN, and the two halves have different triggers on purpose.
+  /* RULE 5, SHOWN, by the mark: every block this fold could have put you
+     on, lit on every landing (foldMarkStart(), js/10-render.js).
 
-     THE MARK on the block itself starts on every landing: "where did I come
-     back?" is a question every unfold raises. THE RINGS only appear when the
-     column actually held a choice - see showLanding() - because rings drawn
-     round a single block announce a decision nobody made. Tying the mark to
-     the rings' trigger is what left it dark on the levels whose squares have
-     one candidate each; see foldMarkStart() in js/10-render.js. */
+     THE RINGS ARE GONE from a landing, on the owner's call. They circled the
+     block you came back on and, dimmer, the ones you did not, and once the
+     mark lights every landing the fold offered they were a second drawing of
+     the same answer on top of it. `showLanding()` is left standing and is
+     reached by nothing; the eye's peek and the tutorial still draw their own
+     rings, which are a preview and a lesson rather than a landing. The words
+     below are not the rings and stay: the first few times a column held a
+     choice, it is still said once. */
   if(typeof foldMarkStart==="function")foldMarkStart();
-  if(typeof showLanding==="function"&&land.length>1){
-    b.yStand=flatPos.y;
-    showLanding(land,b,!!b.anchor);
+  if(land.length>1){
     var seen=settings.landHints||0;
     if(seen<LAND_HINT_TIMES){
       settings.landHints=seen+1;saveSettings();
       /* flashCue's note slot, not flash(): a toast lands at the top of the
          screen across the level's own hint text, which is exactly the
-         collision that slot was made to fix. Down by the controls it also
-         sits where the rings are, rather than at the opposite end of the
-         screen from the thing it is describing. */
+         collision that slot was made to fix. */
       setTimeout(function(){
         flashCue(null,b.anchor
-          ?"the anchor held you \u2014 an anchor beats the front block"
+          ?"the anchor held you - an anchor beats the front block"
           :"you come back on the block at the front");
       },340);
     }
@@ -2628,7 +2628,7 @@ function initDynamic(){
   nKeysTotal=(L.keys||[]).length;
 }
 function resetLevel(){
-  moveHistory=[];moveCount=0;hintsUsed=0;levelDone=false;tutReset();
+  moveHistory=[];foldOrigin=null;moveCount=0;hintsUsed=0;levelDone=false;tutReset();
   bossReset();trialReset();
   initDynamic();buildDynamic();
   player={x:L.start[0],y:L.start[1],z:L.start[2]};
@@ -2776,7 +2776,20 @@ function struggleOffer(){
      trusting the call site is what stops the header confidently calling an
      ordinary level a TRIAL if this is ever called from somewhere new. */
   if(!B&&!TR)return;
-  if(typeof skips!=="undefined"&&skips[levelKey])return;
+  /* A FIGHT ALREADY SKIPPED STILL GETS THE CARD. It returned here, on the
+     reading that a skip already bought has nothing left to offer - and so
+     the one fight a player had skipped was the one fight where running out
+     of hearts put up nothing at all: the board reset under them with no
+     word. Reported that way, after a No Limits skip on BOSS I. The card is
+     "the run is over, here are the two ways on", and both ways still exist.
+
+     THE SKIP IS PRICED BY THE PASS AND NOTHING ELSE. For one build a fight
+     already in `skips` got the free button too, on the reasoning that it had
+     been paid for once - and the owner turned No Limits off, lost to a boss
+     he had skipped under it, and was still offered the free skip, which read
+     as the pass not having come off. What the button costs has to answer to
+     the pass that is in force now, not to a skip taken under an old one. */
+  var paid=noLimits();
   var kind=B?"BOSS":"TRIAL";
 
   /* IT IS THE WIN CARD'S ROW, on the owner's call, and that is the whole
@@ -2806,9 +2819,11 @@ function struggleOffer(){
      collecting anything.
 
      NO LIMITS SKIPS WITHOUT THE VIDEO. Same call, same rule underneath, but
-     the second line comes off and with it the ad screen - and the button
-     drops to the quiet outline rather than borrowing the green, which
-     belongs to TRY AGAIN on this card. */
+     the second line comes off and with it the ad screen and the video mark.
+     IT KEEPS THE BLUE, on the owner's call: it dropped to the quiet grey
+     outline, and a player who PAID to skip was handed the dimmest button on
+     the card. The blue is the skip's colour here, and the video mark is what
+     says "this plays an ad". */
   /* NO SENTENCE AND NO FOOTNOTE, on the owner's call, and the card is three
      things now: which fight, its name, and the two ways on. Both lines that
      came off were true and neither was being read at that moment - the
@@ -2822,8 +2837,8 @@ function struggleOffer(){
   offerShell(kind+" \u00b7 OUT OF LIVES",esc(L.name),"",
     "<button class='go oagain' id='sgNo'>"+retryIcon()+
       "<span>TRY AGAIN</span></button>"+
-    (noLimits()
-      ? "<button class='qt oskip' id='sgAd'>"+
+    (paid
+      ? "<button class='ad oskip' id='sgAd'>"+
         "<span class='two'><b>SKIP</b></span></button>"
       : "<button class='ad oskip' id='sgAd'>"+adIcon()+
         "<span class='two'><b>SKIP</b><i>WATCH AN AD</i></span></button>"),
@@ -2833,12 +2848,17 @@ function struggleOffer(){
      is no provider yet, and a button that silently did nothing would be
      worse than one that plainly works. When the SDK is wired, its completion
      callback calls grantSkip() and nothing else on this path changes. */
+  /* AND IT STARTS THE NEXT LEVEL, on the owner's call. It opened the map,
+     which made the skip a detour: the player said "get me past this" and was
+     handed a trail to find the next node on and press. playNextLevel() is
+     NEXT LEVEL's own path, lock and all, so a skip past BOSS IV with a boss
+     still standing lands on the map saying why, exactly as winning would. */
   bind("sgAd",function(){
     grantSkip(levelKey);
     clearFails(levelKey);
     hidePanel();
     flash("skipped \u00b7 no stars for a skip");
-    levelPicker();
+    if(playSource==="builtin")playNextLevel(); else levelPicker();
   });
 }
 
@@ -2863,7 +2883,7 @@ function loadLevel(level,idx){
   $("won").classList.remove("on");
   player={x:L.start[0],y:L.start[1],z:L.start[2]};
   flat=false;flatTarget=0;flatT=0;view=0;viewAngle=0;viewAngleTarget=0;
-  moveHistory=[];moveCount=0;hintsUsed=0;dying=null;levelDone=false;tutReset();
+  moveHistory=[];foldOrigin=null;moveCount=0;hintsUsed=0;dying=null;levelDone=false;tutReset();
   /* THE TRIAL FIRST, THEN THE FIGHT, and the order is load-bearing now that a
      boss phase can install a sweep of its own: bossReset() ends in
      bossEnterPhase(), which writes TR from the phase it is entering, so

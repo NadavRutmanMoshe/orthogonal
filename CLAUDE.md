@@ -590,7 +590,15 @@ is the rule.
   row** (`offerShell()`'s `actClass:"pair"`): TRY AGAIN in the goal's green
   with `#bRetry`'s own arrow - it only closes, `die()` has already reset the
   board - and where NEXT LEVEL stands on that card, SKIP over WATCH AN AD in
-  the ad button's blue. Losing a fight and finishing short of three stars
+  the ad button's blue. **Under No Limits it is SKIP alone in the SAME blue**
+  with no video mark (it was the grey outline). **What it costs answers to
+  `noLimits()` and nothing else** - a fight already in `skips` got the free
+  button for one build, and turning the pass off then looked like it had not
+  come off. **A skipped fight still gets the card** (it used to return early,
+  so losing there showed nothing). **SKIP starts the next level**
+  (`playNextLevel()`, NEXT LEVEL's own path in `js/19-bindings.js`, lock and
+  all), not the map. Under No Limits the wardrobe drops its WATCH N ADS row
+  too. Losing a fight and finishing short of three stars
   are the same moment, so they are the same drawing. It is a kicker, the
   level's name and the two buttons and **nothing else**: the lead and the
   footnote both came off, so `offerShell()` skips an empty lead the way it
@@ -676,6 +684,16 @@ is the rule.
   way.** It was the playtesting switch; the star economy is live again.
   `AMB_MUTED` in `js/11-sound.js` is `true`: the ambient beds are built but
   muted, on the owner's call.
+- **`buyTestPanel()` (`js/16-panels.js`) is reached by nothing.** Its TEST
+  PURCHASES row under Menu > More came off on the owner's call when testing
+  was done, and the `TEST_PURCHASES` switch with it. It is an ON/OFF per
+  DEALS item written straight into `wardrobe.owned`; OFF really removes the
+  item. Putting it back is one button and one bind, and it must never ship
+  reachable - it is a free shop.
+- **`wardEquip()` treats the `deal` tab as a shape.** It did not, and EQUIP
+  on a DEALS shape wrote it into `wardrobe.world2`. `wardRepair()`
+  (`js/06-persistence.js`, run on load) puts any slot holding an id from the
+  wrong catalogue back to its default.
 
 **Rendering** (`look.md`, `controls.md`)
 - **`outlineFor()` reads the PIECE, not the background: white lines on
@@ -725,23 +743,28 @@ is the rule.
   land on is lifted toward white, leans teal, takes a bright rim and
   **breathes** - colour alone is invisible on the nature world, green on
   green. It runs for `LAND_MS` on **its own clock, started by every unfold**
-  (`foldMarkStart()` in `doUnflatten`), sharing the rings' envelope
-  (`landEnvelope`) but not their trigger: the rings only appear when the
-  column held more than one candidate, and reading their fade outright left
-  the mark dark on every level whose squares have one. A peek lights it too. It lit on the way INTO 2D as well, off
+  (`foldMarkStart()` in `doUnflatten`), `landEnvelope` for its fade. A peek
+  lights it too. It lit on the way INTO 2D as well, off
   `flatT`, and that half came out on the owner's call: a 520ms fold gives it
   a few hundred milliseconds, so it read as a flash, and it was answering a
-  question the player had not asked yet. It is **one per LEDGE**: each
-  screen-right column is walked from the top for a square that is filled with
-  the square above it empty, because a block with something over it cannot be
-  stood on once the world is flat, and the winner is asked for with the
-  game's own `R.landings()`/`R.pick()` so the anchor's override of rule 5 is
-  free. Only columns holding two or more blocks, or a flat meadow goes green -
-  plus the block under your own feet, always, or "show me where I landed" can
-  come up empty.
+  question the player had not asked yet.
+  **It lights EVERY LANDING THE FOLD OFFERED, asked of the rules, never of
+  the meshes.** From `foldOrigin` (the square and view `doFlatten()` started
+  from; in the history, so undo carries it) it walks the plane with
+  `resolveStep()` over `R.siloSolid()` exactly as `move2()` does, and every
+  square it reaches is handed to `R.landings()`/`R.pick()`; a landing onto
+  fire stays dark. Walking MESHES for ledges was the water bug - water is a
+  block you see and a hole in the plane - and its `n>1` column filter is why
+  world I, one block deep, never lit. No special case for the block under
+  your feet: the square you stood up from is reached, so it lights by rule.
+  **Never in a boss** (`foldMarkWanted()` asks `!B`), **on in a trial**.
+  **The landing RINGS are gone from a landing** on the owner's call - the
+  mark now says the same thing on every block. `showLanding()` is reached by
+  nothing; the peek's live rings and the tutorial's rings (`tutLandMark()`)
+  stay.
   Peril and the tutorial's landing marker both outrank it. `foldMarkOn()`
-  (`settings.foldmark`, Menu > How it plays > Landing mark) turns it off; the RINGS are
-  deliberately not on that switch. A two-beat fold that gathered the world
+  (`settings.foldmark`, Menu > How it plays > Landing mark) turns it off.
+  A two-beat fold that gathered the world
   into the front block was built, played and dropped for this
   (`controls.md`, `HISTORY.md`).
 - `INK_SETTLE` .18 and `PAPER_LIFT` .20 are the whole 2D look; both have

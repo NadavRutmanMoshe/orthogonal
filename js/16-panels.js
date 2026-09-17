@@ -313,7 +313,12 @@ function wardMeta(){
   else if(buyArmed===id)
                       s+="<button id='wBuy' class='wsure'>SURE? \u00b7 "+it.cost+" <u class='st'>\u2605</u></button>";
   else                s+="<button id='wBuy' class='wgo'>BUY \u00b7 "+it.cost+" <u class='st'>\u2605</u></button>";
-  if(!have&&!it.reward&&!isDeal(it)){
+  /* NO AD ROW UNDER A PASS. No Limits makes the star balance bottomless, so
+     every star item is a BUY away and a WATCH 2 ADS beside it is a toll on
+     a road that is already free - the same rule the map's OPEN buttons and
+     the out-of-lives SKIP already follow. */
+  var adRow=!have&&!it.reward&&!isDeal(it)&&!noLimits();
+  if(adRow){
     var need=adsFor(it.cost), got=adsWatched(id);
     s+="<button id='wAd' class='ad' disabled>"+adIcon()+"WATCH "+need+" AD"+(need===1?"":"S")+
        (got?" ("+got+"/"+need+")":"")+"</button>";
@@ -324,7 +329,7 @@ function wardMeta(){
   if(!have&&isDeal(it))
     s+="<div class='note'>No store yet - nothing can be charged until "+
        "the game is wrapped for one. The button is dead on purpose.</div>";
-  else if(!have&&!it.reward)s+="<div class='note'>No ad provider yet - the button is "+
+  else if(adRow)s+="<div class='note'>No ad provider yet - the button is "+
     "dead until the game is wrapped for a store.</div>";
   $("wMeta").innerHTML=s;
   bind("wEquip",function(){wardEquip(t,id);SFX.key();wardRefresh();});
@@ -338,8 +343,13 @@ function wardMeta(){
     wardRefresh();
   });
 }
+/* THE DEALS TAB EQUIPS A SHAPE. It said `t==="shape"` only, so EQUIP on a
+   deal fell through the chain to the last branch and wrote the Rook into
+   `wardrobe.world2` - the piece never changed, the button kept saying EQUIP,
+   and the 2D world quietly became "rook". Nobody could see it until TEST
+   PURCHASES made a deal ownable; see wardRepair() for the saves it left. */
 function wardEquip(t,id){
-  if(t==="shape")wardrobe.shape=id;
+  if(t==="shape"||t==="deal")wardrobe.shape=id;
   else if(t==="color")wardrobe.color=id;
   else if(t==="world3")wardrobe.world3=id;
   else wardrobe.world2=id;
@@ -576,6 +586,56 @@ function shapeGlyph(id){
 
 function seg(pre,val,label,cur){
   return "<button id='"+pre+"_"+val+"'"+(cur===val?" class='on'":"")+">"+label+"</button>";
+}
+/* TEST PURCHASES - REACHED BY NOTHING. Its row came off Menu > More on the
+   owner's call once the testing was done; the panel is left standing, so
+   putting it back is one button and one bind in menuPanel() (or
+   `buyTestPanel()` from a console). Nothing in a shipped build opens it.
+
+   Every paid thing on the DEALS tab, each with an ON/OFF, so the game can be
+   looked at as a player who bought exactly that: the hint badge and the skip
+   under NO LIMITS, the shapes EVERYTHING grants, the discounted upgrade price
+   when NO LIMITS is already owned. It writes `wardrobe.owned` and nothing
+   else, which is the same list a real purchase writes, so every screen that
+   answers to a purchase answers to this with no second code path to drift.
+
+   OFF REALLY TAKES IT AWAY, including a shape a real save earned with stars
+   before it moved to the DEALS shelf. That is the point of a test switch and
+   the reason it is not in a shipped build. If the shape being taken away is
+   the one being worn, the default cube goes back on, because a player can
+   never be wearing a thing they do not own. */
+function buyTestPanel(){
+  var items=SKIN_SHAPES.filter(function(s){return s.deal;}).concat(PASSES);
+  var rows=items.map(function(it,i){
+    var on=wardrobe.owned.indexOf(it.id)>=0;
+    return "<div class='crow"+(i===items.length-1?" bare":"")+"'><label>"+
+      esc(it.name)+"</label><span class='seg'>"+
+      seg("bt"+i,"on","ON",on?"on":"off")+
+      seg("bt"+i,"off","OFF",on?"on":"off")+"</span></div>";
+  }).join("");
+  showPanel(
+    "<div class='phead'><div class='pt'><b>Test purchases</b></div>"+
+      "<div class='mtot'>"+shards()+" ★</div>"+
+      "<button class='mq mx' id='btClose' aria-label='Close'>✕</button></div>"+
+    "<div class='pbody'>"+
+      "<div class='pcard'><h4>"+panelIcon("more")+"As if bought</h4>"+rows+"</div>"+
+    "</div>"+
+    "<div class='pfoot'><button id='btBack'>‹ SETTINGS</button>"+
+      "<button id='btFClose'>CLOSE</button></div>","menu");
+  items.forEach(function(it,i){
+    ["on","off"].forEach(function(m){
+      bind("bt"+i+"_"+m,function(){
+        var at=wardrobe.owned.indexOf(it.id);
+        if(m==="on"&&at<0)wardrobe.owned.push(it.id);
+        if(m==="off")while((at=wardrobe.owned.indexOf(it.id))>=0)wardrobe.owned.splice(at,1);
+        if(!owns(wardrobe.shape)){wardrobe.shape="cube";applySkin();}
+        saveWardrobe();syncHud();buyTestPanel();
+      });
+    });
+  });
+  bind("btBack",menuPanel);
+  bind("btClose",hidePanel);
+  bind("btFClose",hidePanel);
 }
 function menuPanel(){
   var vol=Math.round(settings.volume*100), bri=Math.round(settings.brightness*100);

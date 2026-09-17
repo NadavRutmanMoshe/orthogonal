@@ -59,6 +59,32 @@ exclusive - every gesture also has a key and, unless hidden, a button:
   does not run either. The landing RINGS are deliberately not on the switch -
   they are the older statement, they sit beside the block rather than on it,
   and the sentence under them names them.
+  **WHICH BLOCKS, REBUILT (Sep 17): every landing the fold offered, from the
+  plane's own walk.** The owner reported three things at once - the mark
+  "doesn't highlight well with water", it "doesn't show in world I at all
+  even though it's on", and it should be "the actual where you are gonna
+  land if you are there ... all the possible landing spots". All three were
+  the ledge walk described below, which read the MESHES. Water is drawn and
+  is solid in the volume, but it casts nothing, so in the plane it is a
+  hole: the walk lit water you cannot stand over and skipped stone under
+  water that is exactly where you stand. And `n>1` dropped every column of
+  world I, whose boards are one block deep, leaving only the block under the
+  player's own cube. So `foldHiBuild()` now starts at `foldOrigin` (written
+  by `doFlatten()`, carried in the undo history), walks left and right with
+  `resolveStep()` over `R.siloSolid()` - `move2()`'s own call, so falls,
+  steps up, crates and water all behave as they do under a finger - refuses
+  fire and falling out, and asks `R.landings()`/`R.pick()` of every square it
+  reaches. A landing onto fire is left dark. The set is cached on level,
+  origin and crate positions, so it is rebuilt when a shove changes it and
+  not on every frame. The block-under-your-feet exception went with it: that
+  square is always reached, so it lights by the rule. **Not in a boss**
+  (`foldMarkWanted()`, `!B`) - the fight is too fast to read a board lighting
+  up and the hunters are what must be found - **and on in a trial**, where
+  the clock is a rhythm to plan around. **The landing rings came off a
+  landing** in the same round, on the owner's call: a ring round the block
+  you landed on is the mark's answer drawn twice. The peek keeps its live
+  rings and the tutorial its own.
+  The paragraphs below are the version this replaced, kept for the reasoning.
   Four things are load-bearing. **It is asked for with the game's own
   `R.landings()` / `R.pick()`** rather than re-derived, so the anchor's
   override of rule 5 is correct for free and the drawing cannot drift from
@@ -190,8 +216,9 @@ cannot see and no wording fixes that. Three things answer it together:
    return reads as a journey to the front of the stack rather than a cut.
    Not on a clock: there half a second is a real cost.
 
-**And the rings.** Standing up rings the block you landed on, and dimmer, the
-ones you did not; peeking draws the same rings live, placed with the same
+**And the rings.** Standing up rang the block you landed on, and dimmer, the
+ones you did not - **no longer, since the mark lights every landing** (see
+above); peeking still draws the same rings live, placed with the same
 interpolation the block loop uses so they sit on their blocks through the
 whole rise.
 

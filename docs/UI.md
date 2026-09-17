@@ -335,6 +335,30 @@ named). Undoing one of these needs the paragraph.
   rectangle comes straight back. The pool of `--player` under the piece stays,
   because the light is not the box. **The home screen's plinth shares all of
   this** and is frameless now too.
+- **The frame's GLOW came back as a halo** (`.wglass::before`), because taking
+  the frame off had taken its coloured shadow with it and the owner asked where
+  "the cool lights around the player" went. A round blurred disc behind the
+  transparent canvas, `overflow` visible so it fades into the panel, sized by
+  `--halo` (84% on the stage, 96% on the 196px home plinth), plus `.wfloor`
+  back at .6. Both read **`--glow`, the colour ON THE STAND**, which
+  `previewShow()` writes on the canvas's parent - not `--player`, which is the
+  colour you are wearing and is wrong on the COLOUR tab while browsing.
+- **The stage has a RING LIGHT** (`previewRing()`, `js/09-wardrobe.js`), on
+  the owner's call: an LED ring standing behind the piece, the kind a phone
+  is clipped into. A dark torus housing, a diffuser band with `RING_LEDS` dots
+  on it (basic materials, so they read as sources), and an additive glow
+  behind. It is the light as well as the look: `RING_LIGHTS` point lights on
+  the circle rim the piece, and `face`, a directional light from the camera's
+  side in the ring's colour, is the ring a real setup has in front of the
+  subject. **Everything else in the case is dimmed hard for it** (ambient .2,
+  key .1, fill .05, footlights .2/.1) - "make the added light more
+  noticeable". The ring takes the piece's colour toward white, and a piece
+  darker than `PIP_DARK` (Black) gets a white ring, because additive black is
+  no glow. The slab and the piece are **Phong** on the stand only (Lambert
+  lights a box at its corners). Sized for the square home plinth, where the
+  ring's top is 15 degrees off-axis against a 17-degree half field of view,
+  and `.wturn` (DRAG TO TURN) sits bottom right out of its way. A projector
+  rig came first and was dropped (`docs/HISTORY.md`).
 - **`previewSize()` owns the framing and both terms are aspect-driven.** The
   preview camera's FOV is VERTICAL, so on a stage wider than it is tall the
   height is the tight dimension: it pulls back past 1.25:1 (or the pedestal

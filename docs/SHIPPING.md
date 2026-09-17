@@ -61,6 +61,9 @@ you count the ones that are out of your hands.
 - **Steam is $5.99 and grants everything.** No ads, no shop, the whole
   catalogue open. This supersedes the earlier $4.99 NO LIMITS reading, which
   left four paid characters locked behind a shop Steam does not have.
+- **`buyTestPanel()` (`js/16-panels.js`) must stay reached by nothing.** It
+  was the owner's ON/OFF per paid item under Menu > More and its row is off
+  the sheet now; reachable in a shipped build, it is a free shop.
 - **The shop is wired for v1.0.** StoreKit 2 and Play Billing, real products,
   not a shelf with disabled buttons on it.
 - **The upgrade discount is three products showing two.** The owner's

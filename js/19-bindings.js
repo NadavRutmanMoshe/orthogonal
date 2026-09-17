@@ -170,6 +170,11 @@ bind("bNext",function(){
     playLibraryLevel(s[libIndex]);
     return;
   }
+  playNextLevel();
+});
+/* Pulled out of bNext so the out-of-lives SKIP (struggleOffer()) goes where
+   NEXT LEVEL goes, by the same path, locked shelf included. */
+function playNextLevel(){
   var n=lvIndex>=LEVELS.length-1?0:lvIndex+1;
   /* NEXT LEVEL is the next level, with no exceptions - including out of the
      tutorial, where it is 01.
@@ -202,7 +207,7 @@ bind("bNext",function(){
   }
   playSource="builtin";
   enterPlay(LEVELS[n],n,false);
-});
+}
 
 bind("cL",function(){pushMove("←");});
 bind("cR",function(){pushMove("→");});

@@ -170,6 +170,11 @@ body.flat.bosshold::before{background:rgba(90,84,68,.34)}
   width:190px;height:118px;margin:-59px 0 0 -95px;
   pointer-events:none;opacity:0;transition:opacity .35s ease}
 body.tutgest .ghost{top:82%}
+/* COMPACT's move steps show the hand with the bar still up (tutGestFor), but
+   a bar with no d-pad in it: only GO 2D and the turn pair, down at the right.
+   So the band is deeper than a hint's and shallower than the bar-off lesson's,
+   and at 72% the label sat on the arena's bottom row. */
+body.tut.ui-compact .ghost{top:78%}
 /* Landscape gives the arena the whole height of a short screen, so the band
    under it is thinner and the hand has to sit lower to stay out of it. */
 @media (orientation:landscape){body.tutgest .ghost{top:86%}}

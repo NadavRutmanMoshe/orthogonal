@@ -422,7 +422,9 @@ function syncPrimer(){
   var st=primerSteps();
   el.hidden=!st;
   if(!st){primerRows=null;primerShown=null;return;}
-  var key=L.name+"|"+((typeof tutGestures==="function"&&tutGestures())?"g":"b");
+  // Keyed on the layout itself: COMPACT words a move one way and a fold the
+  // other (tutGestFor), so a yes/no key cannot tell it from either neighbour.
+  var key=L.name+"|"+settings.ui;
   if(key!==primerShown){
     primerShown=key;primerMarked="";
     var out="<i>"+tutWords(L.primer.lead||"")+"</i><ol>";

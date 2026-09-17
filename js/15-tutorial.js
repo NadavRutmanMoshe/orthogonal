@@ -141,6 +141,29 @@ function tutGestures(){
 function tutGestureLesson(){
   return app==="play" && !!L && !!L.tut && tutGestures();
 }
+/* COMPACT TEACHES BOTH, BECAUSE COMPACT HAS BOTH. It takes the d-pad off and
+   keeps GO 2D and the turn buttons, so the only way to walk is a swipe and
+   the fold is still a button on screen. The lesson used to be all-or-nothing
+   on `tutGestures()`, which put COMPACT in the button lesson - and the button
+   lesson forces the d-pad back on (`body.tut .dpad` used to), so a player who
+   had chosen no arrows got arrows in exactly the three levels that teach them
+   how to move. Reported on First Steps and on The Rotation.
+
+   So the question is asked PER CONTROL: is this control, on this layout, a
+   gesture? HIDDEN says yes to all of them and is `tutGestures()` above, which
+   still owns the bar-off lesson (`body.tutgest`). COMPACT says yes to the
+   four moves and no to the rest. A move step shows the hand; a fold or a turn
+   step pulses the real button, with the guided lock, as the button lesson
+   always did. */
+var TUT_MOVES={bUp:1,bDown:1,bLeft:1,bRight:1};
+function tutGestFor(id){
+  var u=settings.ui;
+  return u==="none"||(u==="compact"&&TUT_MOVES[id]===1);
+}
+// The same question, inside a tutorial level: what the hand and the lock ask.
+function tutLessonGest(id){
+  return app==="play" && !!L && !!L.tut && !!id && tutGestFor(id);
+}
 /* How far the finger travels, in pixels, per direction, and the track in the
    CSS is drawn to match by the same gx / gy class.
 
@@ -243,7 +266,7 @@ function ghostTo(id,held){
 }
 // The tutorial's. The gesture-lesson test lives here rather than inside
 // ghostTo, because a hint is not a lesson and must not be gated on one.
-function tutGhost(id){ ghostTo(tutGestureLesson()?id:null,true); }
+function tutGhost(id){ ghostTo(tutLessonGest(id)?id:null,true); }
 /* A hint's. Times itself out, and the timeout clears only its own - if the
    player has walked into a tutorial in the meantime, the refusal above is
    what stops it taking the lesson's hand away. */
@@ -295,6 +318,9 @@ var TUT_SAY={
     "do:turnl":"<b>Swipe two fingers right</b>"
   }
 };
+// Which control each token names, so tutWords() can ask tutGestFor().
+var TUT_WORD_ID={right:"bRight",left:"bLeft",up:"bUp",down:"bDown",
+                 "2d":"bFlat","3d":"bFlat",turnr:"bRotR",turnl:"bRotL"};
 
 /* The verb has one player-facing name and it lives in VERBS, reached through
    VB() - but the tutorial's prose is data in 02-levels.js, which loads before
@@ -311,8 +337,10 @@ function tutWords(s){
   // Controls first, verb names second: a control phrase can itself contain
   // {to2}, which the second pass then resolves. One pass in the other order
   // would leave those braces on screen.
-  var tbl=TUT_SAY[tutGestures()?"gesture":"buttons"];
-  s=s.replace(/\{((?:do|it):[a-z0-9]+)\}/g,function(m,k){
+  // Per token, not per line: on COMPACT one sentence can name a swipe and a
+  // button (see tutGestFor).
+  s=s.replace(/\{((?:do|it):([a-z0-9]+))\}/g,function(m,k,w){
+    var tbl=TUT_SAY[tutGestFor(TUT_WORD_ID[w])?"gesture":"buttons"];
     return tbl[k]!==undefined?tbl[k]:m;
   });
   return s.replace(/\{to2\}/g,v.to2).replace(/\{to3\}/g,v.to3)
@@ -383,6 +411,7 @@ function tutBlocks(id){
   if(tutLock!==null)return tutLock!==id;
   var g=tutGuide();
   if(!g||!g.hold||!g.cue||id===g.cue)return false;
+  if(tutLessonGest(g.cue))return false;   // a swipe step on COMPACT: the hand guides
   tutEngage();                 // say why, rather than swallowing the press
   return true;
 }
@@ -635,7 +664,7 @@ function tutSync(){
        tutorial it never is - so every step would open by announcing itself in
        words directly over a coach line and a hand that are both already
        saying it. The hand *is* the cue there. */
-    if(g.cue&&!tutGestureLesson())cue(g.cue);
+    if(g.cue&&!tutLessonGest(g.cue))cue(g.cue);
     tutRelease();
     tutArm();
   }
@@ -807,6 +836,7 @@ function tutEngage(){
   if(tutGestureLesson())return;      // see tutBlocks: the hand is the guide
   var g=tutGuide(); if(!g)return;
   if(g.lock===false||!g.cue)return;
+  if(tutLessonGest(g.cue))return;    // COMPACT's move steps: the hand, again
   tutCueTo(g.cue);
   tutLock=g.cue;
   document.body.classList.add("tutlock");
@@ -840,7 +870,7 @@ function showHint(){
   if(L&&L.tut){
     var ti=tutStep();
     if(ti>=0){
-      if(tutGestureLesson()){flash("follow the line and the hand");return;}
+      if(tutLessonGest(L.tut[ti].cue)){flash("follow the line and the hand");return;}
       if(L.tut[ti].cue)cue(L.tut[ti].cue);
       flash("follow the line above the bar");return;
     }

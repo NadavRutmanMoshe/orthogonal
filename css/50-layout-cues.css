@@ -14,8 +14,11 @@
      while it is running. Hiding the controls during the lesson about the
      controls would be a joke at the player's expense. */
   body.tut.ui-none #playBar.on{display:flex}
-  body.tut .dpad{display:grid}
-  body.tut.ui-compact #playBar{justify-content:space-between}
+  /* THE D-PAD IS NO LONGER FORCED BACK IN A TUTORIAL. `body.tut .dpad` put the
+     arrows on screen for COMPACT, whose whole difference from FULL is having
+     no arrows; the lesson now teaches COMPACT's moves as swipes and its fold
+     as the button it has (tutGestFor, js/15-tutorial.js), so the bar here is
+     COMPACT's own bar. */
 
   /* The coach line. Tutorial levels talk to you here instead of in the
      small hint slot, because a first-time player is looking at the world,
