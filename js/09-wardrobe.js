@@ -622,6 +622,74 @@ function previewStop(){
   pv.renderer.dispose();
   pv=null;
 }
+/* THE PROJECTORS - three small stage lights hung at the top on each side,
+   aimed at the piece, and actually lighting it. On the owner's call: the
+   stand "used to be display lights", and a halo says colour without saying
+   where it comes from. A lamp you can see, a beam leaving it, and a pool
+   where the beam lands is a display case; any one of the three alone is not.
+
+   ON THE SCENE, NOT ON THE ROOT, like the footlights: the piece turns under
+   fixed lights, so the highlights travel over it as it spins. Each fixture
+   is a dark can with a lit lens (a basic material, so it reads as a light
+   source rather than as something being lit), a rod up to a bar, a soft
+   cone of additive light fading from the lens, and a real SpotLight on the
+   same line. The spots need per-pixel materials to leave a pool - Lambert
+   lights a box at its eight corners, and a cone that lands between corners
+   lands nowhere - which is why previewShow() builds the slab and the piece
+   in Phong.
+
+   Framed for both stages: the home plinth is square and the tightest, so the
+   rig sits inside its top corners and the wide wardrobe stage simply shows
+   it with more air round it. Colours are written per item by previewShow(). */
+var PV_AIM=new THREE.Vector3(0,-.14,0);
+function previewRig(sc){
+  var out={spots:[],beams:[],lenses:[]};
+  var bodyMat=new THREE.MeshLambertMaterial({color:0x1b2030});
+  var trimMat=new THREE.MeshLambertMaterial({color:0x485068});
+  var canGeo=new THREE.CylinderGeometry(.046,.058,.13,14);
+  canGeo.rotateX(Math.PI/2);                 // its axis along z, so lookAt aims it
+  var lensGeo=new THREE.CircleGeometry(.04,18);
+  var rodGeo=new THREE.CylinderGeometry(.006,.006,.07,6);
+  var beamTex=pvGradTex("beam",function(x,n){
+    // the top of the canvas is the cone's apex (v=1), so bright at the lens
+    var g=x.createLinearGradient(0,0,0,n);
+    g.addColorStop(0,"rgba(255,255,255,.95)");
+    g.addColorStop(.3,"rgba(255,255,255,.38)");
+    g.addColorStop(1,"rgba(255,255,255,0)");
+    x.fillStyle=g;x.fillRect(0,0,n,n);
+  });
+  /* HUNG BEHIND THE PIECE, not in front of it (z<0). In front, every can
+     aimed down and AWAY from the camera, so all you saw was six dark backs;
+     from behind they aim forward and the lit lens faces you. Lower than the
+     frame's top for the same camera reason: the view looks down, so a thing
+     further back draws higher, and at the home plinth's size the bars were
+     touching the edge. */
+  [-1,1].forEach(function(side){
+    var bar=new THREE.Mesh(new THREE.BoxGeometry(.5,.02,.02),trimMat);
+    bar.position.set(side*.54,.62,-.3);sc.add(bar);
+    for(var i=0;i<3;i++){
+      var x=side*(.34+i*.2), y=.52, z=-.3;
+      var rod=new THREE.Mesh(rodGeo,trimMat);
+      rod.position.set(x,y+.075,z);sc.add(rod);
+      var head=new THREE.Group();head.position.set(x,y,z);sc.add(head);
+      head.lookAt(PV_AIM);
+      head.add(new THREE.Mesh(canGeo,bodyMat));
+      var lens=new THREE.Mesh(lensGeo,new THREE.MeshBasicMaterial({color:0xffffff}));
+      lens.position.z=.066;head.add(lens);out.lenses.push(lens);
+      var len=head.position.distanceTo(PV_AIM)*1.02;
+      var beam=new THREE.Mesh(new THREE.ConeGeometry(.2,len,24,1,true),
+        new THREE.MeshBasicMaterial({map:beamTex,color:0xffffff,transparent:true,
+          opacity:.13,blending:THREE.AdditiveBlending,depthWrite:false,
+          side:THREE.DoubleSide}));
+      beam.rotation.x=-Math.PI/2;            // apex (+y) back to the lens
+      beam.position.z=.066+len/2;head.add(beam);out.beams.push(beam);
+      var spot=new THREE.SpotLight(0xffffff,.34,4.5,.30,.65,1);
+      spot.position.set(x,y,z);spot.target.position.copy(PV_AIM);
+      sc.add(spot);sc.add(spot.target);out.spots.push(spot);
+    }
+  });
+  return out;
+}
 function previewStart(cv){
   previewStop();
   /* TRANSPARENT, so the piece stands on the panel rather than in a box.
@@ -641,8 +709,11 @@ function previewStart(cv){
      footlights below: with the old flat rig plus two coloured lamps the
      front of the piece washed out to near-white and the slab took the
      player's hue as paint rather than as light. */
-  sc.add(new THREE.AmbientLight(0xffffff,.58));
-  var key=new THREE.DirectionalLight(0xffffff,.40);
+  /* And eased again for the projector rig (previewRig): six spots were
+     landing on top of a scene that was already fully lit, and light added to
+     a lit scene reads as grey, not as a beam arriving. */
+  sc.add(new THREE.AmbientLight(0xffffff,.44));
+  var key=new THREE.DirectionalLight(0xffffff,.26);
   key.position.set(2.4,3.2,2.6);sc.add(key);
   var fill=new THREE.DirectionalLight(0xffffff,.16);
   fill.position.set(-2.2,.6,-1.8);sc.add(fill);
@@ -654,11 +725,12 @@ function previewStart(cv){
   lampA.position.set(-1.15,-.42,1.35);sc.add(lampA);
   var lampB=new THREE.PointLight(0x6fa8ff,.36,4.2);
   lampB.position.set(1.15,-.42,1.35);sc.add(lampB);
+  var rig=previewRig(sc);
   var root=new THREE.Group();sc.add(root);
   var reduce=window.matchMedia&&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   pv={renderer:r,scene:sc,camera:cam,root:root,canvas:cv,
-      lampA:lampA,lampB:lampB,
+      lampA:lampA,lampB:lampB,rig:rig,
       yaw:-0.62,pitch:0.13,vel:0,raf:0,idle:reduce?0:PV_IDLE,drag:false};
   previewSize();
   previewDrag(cv);
@@ -790,7 +862,9 @@ function previewShow(shape,colorId,w3,w2,plane){
      and still used by the pool below. */
   pv.scene.background=null;
 
-  var slabMat=new THREE.MeshLambertMaterial({color:blockCol});
+  // Phong, for the projectors' pools - see previewRig().
+  var slabMat=new THREE.MeshPhongMaterial({color:blockCol,shininess:8,
+    specular:0x111111});
   var slab=new THREE.Mesh(new THREE.BoxGeometry(1,.5,1),slabMat);
   slab.position.y=-.62;root.add(slab);
   // The pool, lying on the slab's top face (-.62 + .25) with a hair of
@@ -835,7 +909,21 @@ function previewShow(shape,colorId,w3,w2,plane){
     pv.lampA.intensity=plane?.24:.62;
     pv.lampB.intensity=plane?.14:.38;
   }
-  var item=buildPlayerMesh(shape,col,new THREE.MeshLambertMaterial({color:col}));
+  /* The projectors take the piece's colour halfway to white: stage light
+     with the piece's tint in it, so a coloured beam on a coloured piece does
+     not simply paint it darker in its own hue, and a Black piece still gets
+     light it can show. The lens is nearer white again - it is the source. */
+  if(pv.rig){
+    var beamCol=new THREE.Color(col).lerp(new THREE.Color(0xffffff),.5);
+    var lensCol=new THREE.Color(col).lerp(new THREE.Color(0xffffff),.78);
+    for(var ri=0;ri<pv.rig.spots.length;ri++){
+      pv.rig.spots[ri].color.copy(beamCol);
+      pv.rig.beams[ri].material.color.copy(beamCol);
+      pv.rig.lenses[ri].material.color.copy(lensCol);
+    }
+  }
+  var item=buildPlayerMesh(shape,col,new THREE.MeshPhongMaterial({color:col,
+    shininess:22,specular:0x2a2a2a}));
   item.position.y=-.06;
   // No argument: outlineFor() reads the PIECE, not the background (see its
   // own note), and the background it used to be handed was the stage's void -

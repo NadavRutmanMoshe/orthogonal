@@ -343,6 +343,16 @@ named). Undoing one of these needs the paragraph.
   back at .6. Both read **`--glow`, the colour ON THE STAND**, which
   `previewShow()` writes on the canvas's parent - not `--player`, which is the
   colour you are wearing and is wrong on the COLOUR tab while browsing.
+- **The stage has a projector rig** (`previewRig()`, `js/09-wardrobe.js`), on
+  the owner's call: two bars at the top, three small stage lights hung from
+  each, every one a dark can with a lit lens, a soft additive beam and a real
+  `SpotLight` aimed at the piece. **Hung BEHIND the piece** (z<0) so the lens
+  faces the camera - in front, all you saw was six dark backs. The slab and
+  the piece are **Phong** on the stand only (Lambert lights a box at its
+  corners, so a spot's pool landed nowhere); ambient and key were eased for
+  the rig. Beams and spots take the piece's colour halfway to white. Shared by
+  the wardrobe and the home plinth, framed for the square plinth, so
+  `.wturn` (DRAG TO TURN) moved to the bottom right out of the rig's way.
 - **`previewSize()` owns the framing and both terms are aspect-driven.** The
   preview camera's FOV is VERTICAL, so on a stage wider than it is tall the
   height is the tight dimension: it pulls back past 1.25:1 (or the pedestal
