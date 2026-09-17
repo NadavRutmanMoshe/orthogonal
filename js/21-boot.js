@@ -46,8 +46,13 @@ enterPlay(LEVELS[0],0,false);
    failure and resolves - so a denied storage lands on the first-run path,
    which is the correct reading of "there is nothing saved". */
 Promise.all([progLoad(),skipLoad(),failLoad(),hintLoad(),loadSettings(),
-             loadWardrobe(),loadSession()])
+             loadWardrobe(),loadSession(),adTallyLoad()])
   .then(function(){
+    /* THE STORE AND THE ADS, once the saves are in: the shop has to write
+       into a wardrobe that has been loaded, and the ads need the age band.
+       Both return at once in a browser - see js/24-ads.js, js/25-shop.js. */
+    shopBoot();
+    adBoot();
     /* A SAVE MAY ALREADY HAVE EARNED SOMETHING. The four section rewards
        were added after people had finished sections, and the payout in win()
        only fires on the star that completes one - so an existing save would

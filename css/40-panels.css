@@ -275,6 +275,10 @@
   .wact .wbuyusd{border-color:color-mix(in srgb,var(--star) 54%,transparent);
     color:var(--star);gap:8px;opacity:1}
   .wact .wbuyusd .tagicon{width:14px;height:14px;fill:currentColor;flex:none}
+  /* RESTORE PURCHASES has to be findable (Apple checks), not loud: it is for
+     the one visit on a new phone, and it must never look like a second BUY. */
+  .wact .wrestore{height:32px;font-size:10.5px;letter-spacing:.08em;
+    color:var(--fg-dim);border-color:transparent;background:none}
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
   /* THE CATALOGUE TILE IS A CAP, like everything else you press in this game
      (see "buttons are lit caps" in docs/UI.md). It was a flat outlined box

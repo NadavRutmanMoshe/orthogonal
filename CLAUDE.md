@@ -101,6 +101,9 @@ listed in `index.html`. `21-boot.js` is the only file that *runs* anything.
 | `js/21-boot.js` | startup order; runs last |
 | `js/22-story.js` | the three cutscenes: `STORY`, `storyPlay()`, `storyFrame()`, `storyHolds()`. Loaded *after* boot; every call into it is `typeof`-guarded |
 | `js/23-guide.js` | the neighbour who stands on the I · NATURE levels and gives a tip written for the one he is standing on. **Pure decoration** - no rule, no solver, never solid. Also loaded after boot and `typeof`-guarded |
+| `js/24-ads.js` | rewarded video: `adChild()`, consent, preloading, `adWatch(done)`, and the per-unlock count `adToward()`. **Loaded BEFORE boot**, out of numeric order like 20, so boot starts it and nothing needs a typeof guard |
+| `js/25-shop.js` | the DEALS shelf charged for real: `shopBuy()`, `shopRestore()`, the launch sync from the store, store prices. Loaded before boot, like 24 |
+| `tools/storetest.js` | the ads and the shop driven through a FAKE Capacitor bridge, every path (a video closed early, a pending payment, the upgrade). Needs Playwright, like `shot.js` |
 | `tools/verify.js` | every level machine-checked: BFS, `trialSafety()`, `bossArena()`, `bosssim`, the `SECTIONS`/`LEVEL_RENAMES` invariants |
 | `tools/shot.js` | **headless screenshots of any screen** (`node tools/shot.js --list`). The eyes for UI work. A cutscene is seekable by beat (`story1:12`), and an explicit `--wait` now beats the screen's own default. |
 | `app/` | **the Capacitor shell**: `capacitor.config.json`, the generated `android/` project, and `README.md` for why each non-default setting is set. `app/www/` is generated and gitignored. |
@@ -694,6 +697,32 @@ is the rule.
   on a DEALS shape wrote it into `wardrobe.world2`. `wardRepair()`
   (`js/06-persistence.js`, run on load) puts any slot holding an id from the
   wrong catalogue back to its default.
+
+**Ads and the shop** (`SHIPPING.md`, "As built: ads and the shop")
+- **Every ad button is `adWatch(function(ok){ if(ok) grant...(); })`.** Never
+  a `grant*()` straight from a button. In a browser `adWatch` pays at once, so
+  the artifact plays exactly as it did before there were ads.
+- **`adWatch` settles on the DISMISSED event, never on
+  `showRewardVideoAd()`**, whose promise never settles when a video is closed
+  early. A close with no reward waits 700ms: iOS can send the reward after.
+- **Ads start only once the age band is known** - `adBoot()` for a save,
+  `applyAgeBand()` for a first run - because the child flags go to Google once,
+  at `initialize`. `adChild()` is true for everything but an adult band.
+- **`AD_TEST` is `true` until the AdMob account exists**, with Google's test
+  ids; `tools/build-app.js` warns on every build. Going live is the real ids
+  in `AD_UNITS`, the app id in `AndroidManifest.xml` and Info.plist, and the
+  switch - together.
+- **Store product ids ARE the game's ids**, plus `pass_all_upgrade`, which
+  `shopUnlocks()` turns into `pass_all`: the upgrade id never enters
+  `wardrobe.owned`, so `owns()` and `hasPass()` know nothing about it.
+- **The launch sync only ever ADDS.** Android answers a failed query with an
+  empty list, the same as "owns nothing".
+- **A multi-video unlock is counted** in `adTally` (`orthogonal:adtally`),
+  keyed `world:` or `level:` plus the level NAME. A counting label may not be
+  longer than the one it replaces (`adsWatchSay()`): the map's buttons already
+  wrap on a 327px phone.
+- **The plugins are pinned at 7.x** (`app/package.json`, exact): their 8.x
+  lines need Capacitor 8.
 
 **Rendering** (`look.md`, `controls.md`)
 - **`outlineFor()` reads the PIECE, not the background: white lines on

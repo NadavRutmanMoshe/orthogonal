@@ -145,8 +145,8 @@
   The skip opens one level, is offered only after repeated losses, and lands
   at the moment somebody is deciding whether to keep playing at all - a
   price that reads as a wall there collects nothing and closes the game.
-  Nothing in the code counts ads on this path (`grantSkip()` is called
-  directly, awaiting an SDK), so this was the label.
+  It was only a label while there was no SDK; since 17 Sep `adWatch()` plays
+  the one video before `grantSkip()` runs.
 - **The star cap it replaced was the wrong currency, and that reverses an
   older call.** A hint used to lower what you could score - 0 → 3★, 1–2 →
   2★, 3–4 → 1★, 5+ → 0★, with `win()` writing an *effective* move count so
