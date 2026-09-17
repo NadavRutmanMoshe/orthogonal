@@ -60,6 +60,21 @@ enables WebView debugging for debug builds and not for release ones, which is
 exactly the split you want: `chrome://inspect` works on your test build and
 does not on the one in the store.
 
+## Android 16 (API 36), because Play refuses anything lower
+
+**Since 31 Aug 2026 Google Play only accepts a NEW app that targets API 36.**
+Capacitor 7 ships targeting 35, so `variables.gradle` says 36 for
+`compileSdkVersion` and `targetSdkVersion`, and the build tools were moved up
+to what Capacitor 8 uses for the same reason: Android Gradle Plugin 8.13.0
+(`build.gradle`) and Gradle 8.14.3 (`gradle-wrapper.properties`). Capacitor
+itself stays on 7, because Capacitor 8's CLI needs Node 22 and this machine
+has 20 - that migration is its own job, done once, later.
+
+Targeting 36 changes two things worth checking on a phone: edge-to-edge can
+no longer be switched off (the safe-area tokens already expect it), and the
+back gesture goes through Android's predictive-back system, which
+`@capacitor/app`'s listener uses - press back once in a level to be sure.
+
 ## The two money plugins
 
 `@capacitor-community/admob` 7.2.0 and `@capgo/native-purchases` 7.19.3,
