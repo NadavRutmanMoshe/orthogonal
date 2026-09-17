@@ -577,6 +577,54 @@ function shapeGlyph(id){
 function seg(pre,val,label,cur){
   return "<button id='"+pre+"_"+val+"'"+(cur===val?" class='on'":"")+">"+label+"</button>";
 }
+/* TEST PURCHASES - OWNER'S SWITCH, and it must be false before a store build.
+
+   Every paid thing on the DEALS tab, each with an ON/OFF, so the game can be
+   looked at as a player who bought exactly that: the hint badge and the skip
+   under NO LIMITS, the shapes EVERYTHING grants, the discounted upgrade price
+   when NO LIMITS is already owned. It writes `wardrobe.owned` and nothing
+   else, which is the same list a real purchase writes, so every screen that
+   answers to a purchase answers to this with no second code path to drift.
+
+   OFF REALLY TAKES IT AWAY, including a shape a real save earned with stars
+   before it moved to the DEALS shelf. That is the point of a test switch and
+   the reason it is not in a shipped build. If the shape being taken away is
+   the one being worn, the default cube goes back on, because a player can
+   never be wearing a thing they do not own. */
+var TEST_PURCHASES=true;
+function buyTestPanel(){
+  var items=SKIN_SHAPES.filter(function(s){return s.deal;}).concat(PASSES);
+  var rows=items.map(function(it,i){
+    var on=wardrobe.owned.indexOf(it.id)>=0;
+    return "<div class='crow"+(i===items.length-1?" bare":"")+"'><label>"+
+      esc(it.name)+"</label><span class='seg'>"+
+      seg("bt"+i,"on","ON",on?"on":"off")+
+      seg("bt"+i,"off","OFF",on?"on":"off")+"</span></div>";
+  }).join("");
+  showPanel(
+    "<div class='phead'><div class='pt'><b>Test purchases</b></div>"+
+      "<div class='mtot'>"+shards()+" ★</div>"+
+      "<button class='mq mx' id='btClose' aria-label='Close'>✕</button></div>"+
+    "<div class='pbody'>"+
+      "<div class='pcard'><h4>"+panelIcon("more")+"As if bought</h4>"+rows+"</div>"+
+    "</div>"+
+    "<div class='pfoot'><button id='btBack'>‹ SETTINGS</button>"+
+      "<button id='btFClose'>CLOSE</button></div>","menu");
+  items.forEach(function(it,i){
+    ["on","off"].forEach(function(m){
+      bind("bt"+i+"_"+m,function(){
+        var at=wardrobe.owned.indexOf(it.id);
+        if(m==="on"&&at<0)wardrobe.owned.push(it.id);
+        if(m==="off")while((at=wardrobe.owned.indexOf(it.id))>=0)wardrobe.owned.splice(at,1);
+        if(!owns(wardrobe.shape)){wardrobe.shape="cube";applySkin();}
+        saveWardrobe();syncHud();buyTestPanel();
+      });
+    });
+  });
+  bind("btBack",menuPanel);
+  bind("btClose",hidePanel);
+  bind("btFClose",hidePanel);
+}
 function menuPanel(){
   var vol=Math.round(settings.volume*100), bri=Math.round(settings.brightness*100);
   /* THE WAY BACK TO THE SHELF YOU ARE STANDING ON.
@@ -763,6 +811,8 @@ function menuPanel(){
            keeps its replay flag: it is what stops a menu watch consuming
            FIND THEM on BOSS IV, and it is the seam any future door uses. */
         "<button id='mTut'>"+panelIcon("teach")+"REPLAY TUTORIAL</button>"+
+        (TEST_PURCHASES?"<button id='mBuyTest'>"+panelIcon("more")+
+          "TEST PURCHASES</button>":"")+
         /* LEVEL EDITOR MOVED TO THE HOME SCREEN as MY LEVELS. It is not a
            setting - it is a place you go, like LEVELS and the wardrobe are -
            and filing it under More next to RESET SETTINGS is what made it
@@ -843,6 +893,7 @@ function menuPanel(){
   bind("mTut",function(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
   });
+  if(TEST_PURCHASES)bind("mBuyTest",buyTestPanel);
   bind("mReset",function(){
     settings.volume=defaultVolume();settings.volTouched=false;
     settings.brightness=1;settings.ui=UI_DEFAULT;settings.foldmark="on";

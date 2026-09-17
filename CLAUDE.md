@@ -676,6 +676,12 @@ is the rule.
   way.** It was the playtesting switch; the star economy is live again.
   `AMB_MUTED` in `js/11-sound.js` is `true`: the ambient beds are built but
   muted, on the owner's call.
+- **`TEST_PURCHASES` in `js/16-panels.js` is `true` and MUST BE `false` IN A
+  STORE BUILD.** It puts TEST PURCHASES under Menu > More: an ON/OFF per
+  DEALS item (the four paid shapes and both passes), written straight into
+  `wardrobe.owned` - the list a real purchase writes, so every screen answers
+  to it with no second path. OFF really removes the item, even one a save
+  bought, and takes the worn shape off with it (`buyTestPanel()`).
 
 **Rendering** (`look.md`, `controls.md`)
 - **`outlineFor()` reads the PIECE, not the background: white lines on
