@@ -160,6 +160,13 @@ const VARIANTS={
   /* C: no world, one enormous cube half folded. The most legible at 48px,
      and the least about the puzzle. */
   C:{seam:0.55, tilt:0, hunters:false, glow:true, solo:true},
+  /* E: A with the seam a quarter-cell LEFT of centre, which is where it sat
+     before it was centred. Both are inside the safe gap (1.5 to 2.0), so
+     nothing is cut either way and the only difference is where the line
+     falls: E leaves a little more page and a little less volume, and puts
+     the cube nearer the middle of its own half. Kept so the two can be
+     looked at side by side rather than argued about. */
+  E:{seam:1.75, tilt:-9, flip:true, hunters:true, glow:true},
   /* D: A's arrangement unflipped, with the hunter mid-charge - the telegraph
      pane pointed at the cube, plus speed lines. A lot of picture for an icon,
      kept because the drawing of it is the expensive part. */

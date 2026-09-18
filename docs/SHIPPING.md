@@ -462,6 +462,11 @@ solid field of lids, the same trap `chrome.md` records for the cutscene's
 lawn), and the framing centres the CAST rather than the scene, or the wide
 arena drags the picture off-centre.
 
+`--variant E` is A with the seam a quarter-cell LEFT of centre, which is
+where it sat before it was centred; both positions are inside the safe gap so
+nothing is cut either way, and it is kept so the two can be looked at rather
+than argued about.
+
 Three other compositions are in the script: `--variant B` puts the seam
 through the cube, unflipped, so he is half a cube and half a square;
 `--variant C` is one huge half-folded cube with no world (most legible tiny,
