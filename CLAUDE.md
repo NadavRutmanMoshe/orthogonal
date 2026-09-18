@@ -107,7 +107,7 @@ listed in `index.html`. `21-boot.js` is the only file that *runs* anything.
 | `tools/build-single.js` | inlines everything into one file for itch.io / the artifact |
 | `tools/build-app.js` | copies the game into `app/www/` for the wrapper; a copy, not a bundle |
 | `tools/fonts.js` | rebuilds `css/05-fonts.css` from Google Fonts, one request per weight |
-| `tools/icon.js` | **the app icon, drawn**: a boss arena (one tall, three deep) with a seam down it - 3D and countably deep on the left, folded to one strip on the right, the cube in the volume and two hunters on the page. Writes `app/icon/` (1024, 512, a preview sheet) and, with `--android`, the launcher mipmaps. The one place a PNG is checked in, and it is a store asset, not a game asset |
+| `tools/icon.js` | **the app icon, drawn**: a boss arena with a seam down it - folded to one strip on the page side, countably deep on the volume side, the cube on one and a hunter on the other. **Four colours only** (rose, night, teal, red); no world's surface, because a surface sells one world. Writes `app/icon/` (1024, 512, a preview sheet) and, with `--android`, the launcher mipmaps. The one place a PNG is checked in, and it is a store asset, not a game asset |
 | `tools/curve.js`, `tools/legible.js` | the difficulty curve; squares that draw where ground is not |
 
 A top-level `var` must not be a `window` property name (`history` became

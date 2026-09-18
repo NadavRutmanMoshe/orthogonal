@@ -383,40 +383,61 @@ trial, the map, the wardrobe, a cutscene beat and the neighbour mid-sentence.
 - **Play**: 1080x1920, at least two and ideally eight. Icon 512x512.
 - **Steam**: 1920x1080, at least five.
 
-**The icon is done**: `node tools/icon.js` draws it from the game's own
-palette and writes `app/icon/icon-1024.png` (iOS), `app/icon/icon-512.png`
-(Play) and `app/icon/preview.png` (how it reads at 256, 128, 64 and 48,
-rounded). `--android` writes the launcher mipmaps into the Android project,
-the adaptive foreground drawn full-bleed with the scene at 2/3 so any mask
-lands on sky.
+**The icon is done**: `node tools/icon.js` writes `app/icon/icon-1024.png`
+(iOS), `app/icon/icon-512.png` (Play) and `app/icon/preview.png` (how it
+reads at 256, 128, 64 and 48, rounded). `--android` writes the launcher
+mipmaps, the adaptive foreground drawn full-bleed with the scene at 2/3 so
+any mask lands on sky.
 
-**What it shows, and why that shape.** A boss arena, because a boss arena in
-this game is one block tall and several deep - `box(0,9,0,0,0,6,[])` is
-BOSS I - which means the fold has something visible to do to it. A seam runs
-down the icon. Left of it the arena keeps its depth and you can count the
-rows receding; right of it the same arena is folded and those rows have
-become a single strip. One object, both states. The cube stands in the
-volume and two hunters stand on the page, so the picture also says the thing
-the fights are about: fold the world and what was far away in depth is
-suddenly on your row.
+**Four colours, and the surface is not one of them.** Rose `#d6336c` is the
+cube, night `#12233f` is the void a board hangs in, teal `#5ff2d0` is the
+fold, red `#ff4d5e` is the pack. World I's grass and earth were in the icon
+for four builds and they are a LIE about the game: the next world is basalt,
+then desert, then shards. The ground is the one thing that changes every
+world, so an icon wearing one world's ground sells one world. The arena is
+slate instead - the block, not the skin on it - which leaves rose, red and
+teal the only saturated things in the square, and that is why they survive
+at 48px.
 
-Four numbers carry the composition and each was arrived at by looking:
-`ARENA` is an ISLAND with sky around it rather than a floor running off the
-edges (that filled the world side with a wall of green, the same trap
-`chrome.md` records for the cutscene's lawn); `x0` reaches out to -2 because
-the wedge left of the cube is the ONLY place the depth rows can be counted,
-being hidden by him in the middle and cut by the seam beyond it; the framing
-centres the CAST rather than the scene, or the wide arena drags the picture
-off-centre; and `V.seam` is measured in cells from the cube's own left edge,
-so it keeps its place against the cast at any cell size.
+**What it shows.** A boss arena, because a boss arena here is one block tall
+and several deep, so the fold has something visible to do to it. A seam runs
+down the icon: on the page side the arena is one strip, on the volume side
+the rows recede and can be counted. One object, both states.
+
+**The page is on the LEFT and the volume on the right**, which is the
+opposite of where it started and is the whole reason the picture works. A
+solid cube has a lid and a side; a flat square has neither, so whichever
+piece stands in the volume is the bigger thing on the screen. With the
+volume on the left the CUBE was the big one and the hunter was a small dark
+square - the hero out-weighing the threat. Flipped, the hunter is the solid
+one and the cube is a small bright square on paper, which is the right way
+round for a game about being chased. `V.flip` is that swap and it is one
+line, because each half is built as content and the clip decides which side
+gets it.
+
+**The gap the seam sits in is forced.** Every piece is drawn in BOTH
+projections and the clip decides which you see, so a piece the seam crosses
+shows half solid and half flat - deliberate in variant B, a mess anywhere
+else, because a cube is 1.5 cells wide on screen and its flat square is 1 and
+the straddle does not line up. With the hunter one cell from the cube there
+is NO seam position that misses both: the cube's solid form reaches 1.5 and
+the hunter's flat form starts at 1.0. Two cells out opens a gap from 1.5 to
+2.0, and the seam sits at 1.75. That is why they stand where they stand.
+
+Two more numbers arrived by looking: `ARENA` is an ISLAND with sky around it
+rather than a floor running off the edges (that filled the volume side with a
+solid field of lids, the same trap `chrome.md` records for the cutscene's
+lawn), and the framing centres the CAST rather than the scene, or the wide
+arena drags the picture off-centre.
 
 Three other compositions are in the script: `--variant B` puts the seam
-through the cube so he is half a cube and half a square, `--variant C` is one
-huge half-folded cube with no world (most legible tiny, least about the
-puzzle) and `--variant D` adds the charge telegraph, which is a lot of
-picture for an icon. `HUNT_SCALE` is the hunter's size in cells and is 1: at
-1.3 it overhung its square and a piece that does not sit in a cell stops
-reading as a piece on a grid.
+through the cube, unflipped, so he is half a cube and half a square;
+`--variant C` is one huge half-folded cube with no world (most legible tiny,
+least about the puzzle); `--variant D` adds the charge telegraph, which is a
+lot of picture for an icon. `HUNT_SCALE` is the hunter's size in cells and is
+1: at 1.3 it overhung its square, and a piece that does not sit in a cell
+stops reading as a piece on a grid. Size was never how the hunter got its
+weight - which side of the seam it stands on is.
 
 ---
 
