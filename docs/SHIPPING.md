@@ -395,10 +395,13 @@ the fold (the goal's jade and the landing mark's lean, the only colour that
 means "this is the verb") and red `#ff4d5e` is the pack. Those never change.
 
 The rest is the world, and `--world night|fire|water|desert` switches it from
-a table of the game's own `theme.sky` values. It ships as **water**: III's
-sky is the best in the game, plum overhead and rust at the horizon, and
-`levels.md` says that warm sky is what "makes cyan sing" - which is a promise
-about the teal seam, collected here.
+a table of the game's own `theme.sky` values. It ships as **fire** on the
+owner's call: II's maroon-and-ember is the boldest of the four, and the worry
+that its red would swallow the hunter did not survive looking, because the
+hunter is a DARK body with a bright rim and on a dark warm sky that rim is
+still the only hard edge in the square. Water is the runner-up and the one
+the argument favoured - `levels.md` says III's warm sky is what "makes cyan
+sing", which is a promise about the teal seam - and it is one word away.
 
 Two dead ends worth keeping. First, an icon in ONE world's surface sells one
 world - that is why world I's grass and earth came off, and it still holds;
@@ -427,14 +430,31 @@ round for a game about being chased. `V.flip` is that swap and it is one
 line, because each half is built as content and the clip decides which side
 gets it.
 
-**The gap the seam sits in is forced.** Every piece is drawn in BOTH
+**The gap the seam sits in is forced, and the seam is centred in it.** Every piece is drawn in BOTH
 projections and the clip decides which you see, so a piece the seam crosses
 shows half solid and half flat - deliberate in variant B, a mess anywhere
 else, because a cube is 1.5 cells wide on screen and its flat square is 1 and
 the straddle does not line up. With the hunter one cell from the cube there
 is NO seam position that misses both: the cube's solid form reaches 1.5 and
 the hunter's flat form starts at 1.0. Two cells out opens a gap from 1.5 to
-2.0, and the seam sits at 1.75. That is why they stand where they stand.
+2.0, and the seam sits at 2.0 - the right-hand end of it, which is also
+exactly the middle of the icon: the framing centres a cast box running from
+the cube's left edge to the hunter's right, four cells wide, so `ox` is
+`(W-4s)/2` and a seam two cells along lands on `W/2`. That is why they stand
+where they stand.
+
+**Two bugs that only a small render shows.** First, THE STAR RADIUS WAS IN
+PIXELS, a flat 1.1 to 3.0, which is right at 1024 and enormous at 48: the
+icon scales and the dots did not, so a home screen showed a boss arena behind
+a handful of golf balls. It is a fraction of `W` now, and anything drawn here
+that is not measured in `W` has the same bug waiting in it. Second, A PIECE
+IS DRAWN IN ONE STATE, NOT BOTH. The arena spans the seam so it is drawn
+twice and the clip picks; a piece is not - it stands on one side and is
+either solid or flat. Drawing both and trusting the clip put a red crescent
+of the hunter's aura on the page, because the seam LEANS: a flat edge sitting
+exactly on the seam at the middle of the icon is a little to the left of it
+lower down. Only a piece the seam actually crosses wants both, and `cut` says
+so - variant B, where that straddle is the whole point.
 
 Two more numbers arrived by looking: `ARENA` is an ISLAND with sky around it
 rather than a floor running off the edges (that filled the volume side with a

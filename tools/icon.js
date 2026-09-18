@@ -50,9 +50,8 @@ function loadPlaywright(){
    grass sells world I) but a world picked for the PICTURE. So each world's
    own `theme.sky` is in the table below, and `--world <name>` switches it.
 
-   The sky is a two-stop gradient, as it is in the game, and the paper is
-   that sky lifted toward white - which is why a warm world gives a warm
-   page and the grey went away by itself. `theme.sky` is [top, bottom]. */
+   The sky is a two-stop gradient, as it is in the game, and the page is a
+   second one. `theme.sky` is [top, bottom]. */
 const WORLDS={
   /* Each world is its `theme.sky` as a two-stop gradient for the volume, and
      a SECOND two-stop gradient for the page.
@@ -95,8 +94,12 @@ const PIECES={
   huntRed:"#ff4d5e", huntRim:"#ff6b7a", huntEdge:"#ff8a94",
   ink:"#0e1626", white:"#ffffff", seam:"#5ff2d0"
 };
-/* The world the icon is set in. One word, and every colour follows. */
-var WORLD="water";
+/* The world the icon is set in. One word, and every colour follows. FIRE on
+   the owner's call: II's maroon-and-ember is the boldest of them, and the
+   worry that its red would swallow the hunter did not survive looking - the
+   hunter is a DARK body with a bright rim, so on a dark warm sky the rim is
+   still the only hard edge in the square. */
+var WORLD="fire";
 function palette(name){
   const w=WORLDS[name]||WORLDS.water;
   return Object.assign({},PIECES,w);
@@ -126,7 +129,7 @@ const PLAYER=[0,1,0];
    so the straddle does not line up. With the hunter one cell out there is no
    seam position that misses both pieces: the cube's solid form reaches 1.5
    and the hunter's flat form starts at 1.0. At two cells out the gap is 1.5
-   to 2.0, and 1.75 sits in it. */
+   to 2.0, and the seam sits at its right-hand end. */
 const HUNTERS=[[2,1,1]];
 /* How many cells tall a hunter stands. 1 is the player's own size. It was
    1.3 for a build and looked wrong for a reason worth keeping: a piece that
@@ -140,12 +143,20 @@ const VARIANTS={
      cube is the flat square and the HUNTER is the solid cube. A cube has a
      lid and a side and a flat square has neither, so whichever piece stands
      in the volume is the bigger thing on the screen - and it should not be
-     the one being hunted. This is the one that ships. */
-  A:{seam:1.75, tilt:-9, flip:true, hunters:true, glow:true},
+     the one being hunted. This is the one that ships.
+
+     seam 2.0 puts the line through the MIDDLE OF THE ICON, and that is
+     arithmetic rather than taste: the framing centres a cast box that runs
+     from the cube's left edge to the hunter's right, which is 4 cells wide,
+     so ox is (W-4s)/2 and a seam 2 cells along lands exactly on W/2. It is
+     also still inside the safe gap - the cube's solid form ends at 1.5 and
+     the hunter's flat form begins at 2.0 - so nothing is cut. 1.75 was
+     inside that gap too and sat a quarter-cell left of centre. */
+  A:{seam:2.0, tilt:-9, flip:true, hunters:true, glow:true},
   /* B: the seam through the cube, volume on the left, so he is half a cube
      and half a square. The loudest of them, and the only one where the fold
      happens to a PIECE rather than to the board. */
-  B:{seam:0.58, tilt:-9, hunters:true, glow:true, arena:ARENA_WIDE},
+  B:{seam:0.58, tilt:-9, hunters:true, glow:true, arena:ARENA_WIDE, cut:true},
   /* C: no world, one enormous cube half folded. The most legible at 48px,
      and the least about the puzzle. */
   C:{seam:0.55, tilt:0, hunters:false, glow:true, solo:true},
@@ -283,12 +294,27 @@ function scene(V, W, id){
   const leftClip=`M -10 -10 L ${sx+lean} -10 L ${sx-lean} ${W+10} L -10 ${W+10} Z`;
   const rightClip=`M ${sx+lean} -10 L ${W+10} -10 L ${W+10} ${W+10} L ${sx-lean} ${W+10} Z`;
 
-  const stars=(()=>{ let o="", r=7; for(let i=0;i<16;i++){ r=(r*16807)%2147483647; const x=(r%1000)/1000*W; r=(r*16807)%2147483647; const y=(r%1000)/1000*W; r=(r*16807)%2147483647; const q=1.1+(r%1000)/1000*1.9; o+=`<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${q.toFixed(1)}" fill="#ffffff" opacity="${(0.3+q/10).toFixed(2)}"/>`; } return o; })();
+  /* Stars. THE RADIUS IS A FRACTION OF W, NOT A NUMBER OF PIXELS. It was a
+     flat 1.1-3.0px, which is right at 1024 and enormous at 48: the icon
+     scales down and the dots do not, so a home screen showed a boss arena
+     behind a handful of golf balls. Anything drawn here that is not measured
+     in W has the same bug waiting in it. */
+  const stars=(()=>{ let o="", r=7; for(let i=0;i<16;i++){ r=(r*16807)%2147483647; const x=(r%1000)/1000*W; r=(r*16807)%2147483647; const y=(r%1000)/1000*W; r=(r*16807)%2147483647; const q=W*(0.0012+(r%1000)/1000*0.0018); o+=`<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${q.toFixed(1)}" fill="#ffffff" opacity="${(0.3+q/10).toFixed(2)}"/>`; } return o; })();
 
   /* The two halves as content, so `flip` is one swap rather than a second
      copy of the drawing. */
-  const volume=`<rect width="${W}" height="${W}" fill="url(#${id}sky)"/>${stars}${world3}${hunters3}${player3}`;
-  const page=`<rect width="${W}" height="${W}" fill="url(#${id}pap)"/>${world2}${hunters2}${player2}`;
+  /* A PIECE IS DRAWN IN ONE STATE, NOT BOTH. The arena spans the seam so it
+     is drawn twice and the clip picks; a piece does not - it stands on one
+     side and is either solid or flat. Drawing both and trusting the clip is
+     what put a sliver of the hunter's aura on the page: the seam LEANS, so a
+     piece whose flat edge sits exactly on the seam at the middle of the icon
+     is a little to the left of it lower down, and a red crescent appeared out
+     of nowhere below the fold. Only a piece the seam actually crosses wants
+     both, and `cut` says so (B, where that straddle is the whole point). */
+  const volPieces=(V.flip?hunters3:player3)+((V.cut&&V.flip)?player3:"");
+  const pagPieces=(V.flip?player2:hunters2)+((V.cut&&!V.flip)?player2:"");
+  const volume=`<rect width="${W}" height="${W}" fill="url(#${id}sky)"/>${stars}${world3}${volPieces}`;
+  const page=`<rect width="${W}" height="${W}" fill="url(#${id}pap)"/>${world2}${pagPieces}`;
   const left=V.flip?page:volume, right=V.flip?volume:page;
 
   const glow=V.glow?`
@@ -314,11 +340,12 @@ async function main(){
   const args=process.argv.slice(2);
   const arg=n=>{ const i=args.indexOf(n); return i>=0?args[i+1]:null; };
   const vname=arg("--variant")||"A";
+  const DEFAULT_WORLD=WORLD;                 // captured before any override
   if(arg("--world")) WORLD=arg("--world");
   const V=VARIANTS[vname]; if(!V){ console.error("variants: "+Object.keys(VARIANTS).join(", ")); process.exit(1); }
   /* A world other than the shipping one writes its own files, so three can
      be looked at side by side without one overwriting the next. */
-  const wsuf=(arg("--world")&&arg("--world")!=="water")?"-"+arg("--world"):"";
+  const wsuf=(arg("--world")&&arg("--world")!==DEFAULT_WORLD)?"-"+arg("--world"):"";
   const suffix=(vname==="A"?"":"-"+vname)+wsuf;
   fs.mkdirSync(OUT,{recursive:true});
   const svg=scene(V,1024);
