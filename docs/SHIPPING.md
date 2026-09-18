@@ -386,7 +386,8 @@ trial, the map, the wardrobe, a cutscene beat and the neighbour mid-sentence.
 **The icon is done**: `node tools/icon.js` draws it from the game's own
 palette - the Rose cube standing on a glowing seam, 3D on the left and
 pressed flat on the right, with the far tower merging into the platform the
-way the fold merges depth - and writes `app/icon/icon-1024.png` (iOS),
+way the fold merges depth and a hunter waiting on it, one square from the
+cube on the same row - and writes `app/icon/icon-1024.png` (iOS),
 `app/icon/icon-512.png` (Play) and `app/icon/preview.png` (how it reads at
 256, 128, 64 and 48, rounded). `--android` writes the launcher mipmaps into
 the Android project, the adaptive foreground drawn full-bleed with the scene

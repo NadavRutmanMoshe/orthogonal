@@ -16,7 +16,7 @@
    blocks at different depths merge into one silhouette - which is the whole
    game, and the reason the two columns that stand apart on the left are one
    platform on the right. The Rose cube stands on the seam, half a cube and
-   half a square.
+   half a square, and a hunter waits on the page beside it.
 
    Rendering goes through the same headless Chromium tools/shot.js uses. */
 const fs=require("fs"), path=require("path");
@@ -35,16 +35,17 @@ function loadPlaywright(){
 /* ---- the palette, lifted from the game --------------------------------
    Sky: world I's night (js/02-levels.js). Rose: SKIN_COLORS[0]. Grass and
    earth: the grass texture's own greens and browns, flattened to one value
-   each. Goal: the wireframe's jade. Paper: what the sky becomes when the
-   world is folded - lifted toward white and greyed, PAPER_LIFT in the
-   renderer. */
+   each. Hunter: huntMesh()'s plum shell, red core, red cage and red aura.
+   Paper: what the sky becomes when the world is folded - lifted toward
+   white and greyed, PAPER_LIFT in the renderer. */
 const C={
   skyTop:"#1f4a70", skyBot:"#0d1b2e",
   paperTop:"#6d8aa8", paperBot:"#4c627e",
   rose:"#d6336c", roseTop:"#ee5a8c", roseSide:"#a8244f",
   grass:"#7fc63f", grassLid:"#a5e04a", grassSide:"#5f9e2c",
   earth:"#6f4a2a", earthSide:"#4e3218", earthFlat:"#7a5533",
-  ink:"#14172a", white:"#ffffff", goal:"#35c2a5",
+  ink:"#14172a", white:"#ffffff",
+  huntBody:"#46323e", huntTop:"#5a4250", huntSide:"#33242d", huntRed:"#ff4d5e", huntRim:"#ff6b7a",
   seam:"#5ff2d0"
 };
 
@@ -52,9 +53,9 @@ const C={
    [x,y,z]: x right, y up, z depth AWAY from the camera. Two towers, one
    near and one two cells back, one square apart in x. In 3D the far one
    draws higher and to the right, so there is air between them; flat, they
-   are one platform three wide. The player stands on the near tower, the
-   goal on the far one: the fold is the only way across, and the icon says so
-   without a word. */
+   are one platform three wide. The player stands on the near tower and a
+   hunter on the far one: apart in the volume, on the page they share a row,
+   which is the whole of a fight in one picture. */
 const BLOCKS=[
   [-1,0,0],
   [0,0,0],[0,1,0],
@@ -62,18 +63,18 @@ const BLOCKS=[
   [2,0,2],[2,1,2]
 ];
 const PLAYER=[0,2,0];
-const GOAL=[2,2,2];
+const HUNTER=[2,2,2];
 
 const VARIANTS={
   /* A: the seam runs through the player. Left of it, the world; right of it,
      the page. The hero is the half-folded cube. */
-  A:{seam:0.58, tilt:9, showGoal:true, glow:true},
+  A:{seam:0.58, tilt:9, showHunter:true, glow:true},
   /* B: the same, but the seam leans the other way and sits further right,
      so more of the world is 3D and the cube is mostly a cube. */
-  B:{seam:0.58, tilt:-9, showGoal:true, glow:true},
+  B:{seam:0.58, tilt:-9, showHunter:true, glow:true},
   /* C: no world, one enormous cube half folded. The most legible at 48px,
      and the least about the puzzle. */
-  C:{seam:0.55, tilt:0, showGoal:false, glow:true, solo:true}
+  C:{seam:0.55, tilt:0, showHunter:false, glow:true, solo:true}
 };
 
 function scene(V, W, id){
@@ -102,7 +103,7 @@ function scene(V, W, id){
   let ox=0, oy=0;
   const pts=[];
   for(const b of [...blocks.filter(b=>b[2]===0),player]){ const [x,y]=p3(b); pts.push([x,y-t],[x+s+k,y+s]); }
-  for(const b of [...blocks,...(V.showGoal?[GOAL]:[])]){ const [x,y]=p2(b); pts.push([x,y],[x+s,y+s]); }
+  for(const b of [...blocks,...(V.showHunter?[HUNTER]:[])]){ const [x,y]=p2(b); pts.push([x,y],[x+s,y+s]); }
   const minX=Math.min(...pts.map(p=>p[0])), maxX=Math.max(...pts.map(p=>p[0]));
   const minY=Math.min(...pts.map(p=>p[1])), maxY=Math.max(...pts.map(p=>p[1]));
   ox=(W-(maxX-minX))/2-minX; oy=(W-(maxY-minY))/2-minY + (solo?0:W*0.02);
@@ -147,29 +148,28 @@ function scene(V, W, id){
              +rect(px,py,s,s,C.rose,pw);
   const [qx,qy]=p2(player);
   let player2=rect(qx,qy,s,s,C.rose,pw);
-  /* A face: two eyes, so it is a somebody and not a sample. Ink on rose. */
-  const eye=(x,y,r)=>`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="${C.ink}"/>`;
-  const eyes=(x,y)=>eye(x+s*0.33,y+s*0.42,s*0.07)+eye(x+s*0.67,y+s*0.42,s*0.07)
-    +`<path d="M ${(x+s*0.36).toFixed(1)} ${(y+s*0.64).toFixed(1)} q ${(s*0.14).toFixed(1)} ${(s*0.12).toFixed(1)} ${(s*0.28).toFixed(1)} 0" fill="none" stroke="${C.ink}" stroke-width="${(s*0.045).toFixed(1)}" stroke-linecap="round"/>`;
-  player3+=eyes(px,py); player2+=eyes(qx,qy);
 
-  /* The goal: the wireframe, jade, on the far tower - and on the page the
-     same shape sits right next to the player, which is the point. */
-  let goal3="", goal2="";
-  if(V.showGoal){
-    const ico=(x,y)=>{
-      const cx=x+s/2, cy=y+s/2, r=s*0.44;
-      const pts=[]; for(let i=0;i<6;i++){ const a=Math.PI/6+i*Math.PI/3; pts.push([cx+r*Math.cos(a),cy+r*Math.sin(a)]); }
-      const P=pts.map(p=>p.map(v=>v.toFixed(1)).join(",")).join(" ");
-      const sw=(s*0.035).toFixed(1);
-      let o=`<polygon points="${P}" fill="none" stroke="${C.goal}" stroke-width="${sw}" stroke-linejoin="round"/>`;
-      for(let i=0;i<6;i++) o+=`<line x1="${cx.toFixed(1)}" y1="${cy.toFixed(1)}" x2="${pts[i][0].toFixed(1)}" y2="${pts[i][1].toFixed(1)}" stroke="${C.goal}" stroke-width="${sw}"/>`;
-      const inner=[0,2,4].map(i=>pts[i].map(v=>v.toFixed(1)).join(",")).join(" ");
-      o+=`<polygon points="${inner}" fill="none" stroke="${C.goal}" stroke-width="${sw}" stroke-linejoin="round"/>`;
-      return o;
-    };
-    const [gx,gy]=p3(GOAL); goal3=ico(gx,gy-t*0.5);
-    const [hx,hy]=p2(GOAL); goal2=ico(hx,hy);
+  /* The hunter: huntMesh() in two dimensions. A plum cube smaller than a
+     cell (the shell is .72), a red cage round it, a red octahedron in it
+     and a soft red aura behind it - found by contrast, as in the game. On
+     the page it is a square with the same rim, core and halo, one square
+     from the player on the same row: the line the fold is taken on. */
+  let hunter3="", hunter2="";
+  if(V.showHunter){
+    const inset=s*0.14, hs=s-2*inset;
+    const rim=`stroke="${C.huntRim}" stroke-width="${(s*0.045).toFixed(1)}" stroke-linejoin="round"`;
+    const core=(cx,cy)=>{ const r=s*0.17; return poly([[cx,cy-r],[cx+r,cy],[cx,cy+r],[cx-r,cy]], C.huntRed, `stroke="none"`); };
+    const aura=(x,y,w,h)=>rect(x-s*0.1,y-s*0.1,w+s*0.2,h+s*0.2,C.huntRed,`opacity="0.35" filter="url(#${id}blur)"`);
+    /* 3D: the same oblique cube, plum, sitting on its block. */
+    const [gx,gy]=p3(HUNTER); const x=gx+inset, y=gy+inset+ (s-hs);
+    const hk=k*hs/s, ht=t*hs/s;
+    hunter3=aura(x,y-ht,hs+hk,hs+ht)
+      +poly([[x,y],[x+hs,y],[x+hs+hk,y-ht],[x+hk,y-ht]], C.huntTop, rim)
+      +poly([[x+hs,y],[x+hs+hk,y-ht],[x+hs+hk,y+hs-ht],[x+hs,y+hs]], C.huntSide, rim)
+      +rect(x,y,hs,hs,C.huntBody,rim)+core(x+hs/2,y+hs/2);
+    /* Flat: standing on the platform, so the square sits on the block's top. */
+    const [hx,hy]=p2(HUNTER); const fx=hx+inset, fy=hy+(s-hs);
+    hunter2=aura(fx,fy,hs,hs)+rect(fx,fy,hs,hs,C.huntBody,rim)+core(fx+hs/2,fy+hs/2);
   }
 
   /* --- the seam: a line through the icon, leaning a little. Left of it is
@@ -204,12 +204,12 @@ function scene(V, W, id){
     <rect width="${W}" height="${W}" fill="url(#${id}sky)"/>
     ${stars}
     ${solo?"":hills("#0f2a2a")}
-    ${world3}${goal3}${player3}
+    ${world3}${hunter3}${player3}
   </g>
   <g clip-path="url(#${id}R)">
     <rect width="${W}" height="${W}" fill="url(#${id}paper)"/>
     ${solo?"":hills("#566c86")}
-    ${world2}${goal2}${player2}
+    ${world2}${hunter2}${player2}
   </g>
   ${glow}
 </svg>`;
