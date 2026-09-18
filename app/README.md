@@ -96,16 +96,18 @@ optional:
 Play Billing needs no manifest entry: the plugin's library merges the
 `BILLING` permission in by itself.
 
-**Going live with ads** is four edits, made together: the real Android app
-id here, the real iOS app id in Info.plist, the two real rewarded unit ids in
-`AD_UNITS` in `js/24-ads.js`, and `AD_TEST=false` beside them.
-`tools/build-app.js` prints a warning on every build until the last one is
-done.
+**Going live with ads is now ONE edit**: `AD_TEST=false` in `js/24-ads.js`.
+Both app ids (here and in Info.plist) and both rewarded unit ids (`AD_UNITS`)
+are the real ones already - a real app id with test units is the intended
+pairing while testing. `tools/build-app.js` prints a warning on every build
+until that switch is flipped, which is deliberate: it stays `true` through
+the closed test, because a tester tapping a live ad is an invalid impression
+against your own account.
 
 **iOS, when `npx cap add ios` runs on the CI Mac.** Info.plist needs:
 
-- `GADApplicationIdentifier` - the iOS app id from AdMob (Google's test one is
-  `ca-app-pub-3940256099942544~1458002511`). Missing, it crashes on launch,
+- `GADApplicationIdentifier` = **`ca-app-pub-6542623981022877~4214992380`**,
+  the game's real iOS app id from AdMob. Missing, it crashes on launch,
   exactly as on Android.
 - `GADDelayAppMeasurementInit` = `YES`, for the same reason as Android.
 - `SKAdNetworkItems` - Google's list of ad network ids, copied from the

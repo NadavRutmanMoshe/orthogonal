@@ -322,14 +322,17 @@ bridge.
 
 ### What is left, and all of it is the owner's hands on a dashboard
 
-1. **AdMob account** (admob.google.com): **done 18 Sep**, and both rewarded
-   unit ids are in `AD_UNITS` (`ca-app-pub-6542623981022877/8535090358`
-   Android, `/5856956129` iOS). **Still needed: the two APP ids** (the `~`
-   ones), for `AndroidManifest.xml` and Info.plist - the manifest carries
-   Google's test app id until then. `AD_TEST` stays `true` through the closed
-   test: friends tapping live ads is how an AdMob account gets banned, and an
-   unlisted app gets limited serving anyway. Flip it, with the app ids, for the
-   public release, and add your own phones as test devices in AdMob.
+1. ~~**AdMob account**~~ **Done, 18 Sep.** Publisher `pub-6542623981022877`.
+   App ids: Android `~5232560580` (in `AndroidManifest.xml`), iOS
+   `~4214992380` (for Info.plist, recorded in `app/README.md` until the iOS
+   project exists). Rewarded unit ids: Android `/8535090358`, iOS
+   `/5856956129`, both in `AD_UNITS`.
+   **`AD_TEST` stays `true` through the closed test** - a tester tapping a
+   live ad is an invalid impression against your own account, and an unlisted
+   app gets limited serving anyway. Going live is that one switch, plus
+   linking the AdMob app to its store listing and adding your own phones as
+   test devices. **The AdMob GDPR message is still to be created** (AdMob >
+   Privacy & messaging), or EEA players get limited ads.
 2. **AdMob > Privacy & messaging**: create the GDPR message (Google's
    certified form). Without it, EEA players get limited ads.
 3. **Play Console > Monetize > In-app products**: seven one-time products with

@@ -10,13 +10,18 @@
         android:theme="@style/AppTheme">
 
         <!-- ADMOB. The app id is REQUIRED - without it the ad SDK crashes the
-             app on launch. This one is Google's public TEST app id, paired
-             with AD_TEST=true in js/24-ads.js; the real one comes from the
-             AdMob dashboard and replaces it when that switch goes false.
-             Note the app id has a "~" and an ad UNIT id has a "/". -->
+             app on launch. THIS IS THE REAL ONE, from the AdMob dashboard
+             (an app id carries "~"; an ad UNIT id carries "/").
+
+             The real app id sits happily beside TEST ad units, which is what
+             AD_TEST=true in js/24-ads.js still serves and will keep serving
+             through the closed test: the app id names the account, the unit
+             id decides whether an impression is real. So there is no live
+             ad to tap by accident, and nothing here changes when the switch
+             finally goes false. -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"/>
+            android:value="ca-app-pub-6542623981022877~5232560580"/>
         <!-- SEND NOTHING UNTIL THE GAME SAYS SO. By default the SDK starts
              measuring the moment the app opens, before anybody has answered
              how old they are. This holds it until initialize(), which
