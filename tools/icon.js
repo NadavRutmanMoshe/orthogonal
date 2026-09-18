@@ -36,34 +36,71 @@ function loadPlaywright(){
 }
 
 /* ---- the palette -------------------------------------------------------
-   FOUR COLOURS CARRY THIS GAME, and the icon is allowed nothing else.
+   THREE COLOURS ARE THE GAME and never change: rose #d6336c is the cube
+   (SKIN_COLORS[0], what every player starts as), teal #5ff2d0 is the fold
+   (the goal's jade and the landing mark's lean, the only colour that means
+   "this is the verb"), and red #ff4d5e is the pack (huntMesh()'s cage and
+   aura). Everything else is the WORLD, and the world is a choice.
 
-     Rose      #d6336c  the cube. SKIN_COLORS[0], the piece every player
-                        starts as, and the only warm thing in the world.
-     Night     #12233f  the void a board hangs in.
-     Teal      #5ff2d0  the fold. It is the goal's jade and the landing
-                        mark's lean, and it is the only colour in the game
-                        that means "this is the verb".
-     Red       #ff4d5e  the pack. huntMesh()'s cage and aura, and the
-                        charge telegraph.
+   A WORLD IS A CHOICE BECAUSE THE GAME HAS FIVE OF THEM. The icon was slate
+   and navy for a build and read as boring, which it was: that is PROLOGUE's
+   palette, the greyest in the game, and it sells the least interesting hour
+   of it. The right answer is not "no surface" (which is where the slate came
+   from, and the reasoning behind it still holds - an icon wearing world I's
+   grass sells world I) but a world picked for the PICTURE. So each world's
+   own `theme.sky` is in the table below, and `--world <name>` switches it.
 
-   What is NOT here is the surface. World I's grass green and earth brown
-   were in this icon for four builds and they are a LIE about the game: the
-   next world is basalt, the one after that is desert, then shards. A
-   section's ground is the one thing that changes every world, so putting one
-   world's ground in the icon sells one world. The arena is drawn in slate
-   instead - the block, not the skin on it - and that leaves rose, red and
-   teal the only saturated things in the square, which is also why they now
-   read at 48px. */
-const C={
-  sky:"#12233f", paper:"#94a9c3",
+   The sky is a two-stop gradient, as it is in the game, and the paper is
+   that sky lifted toward white - which is why a warm world gives a warm
+   page and the grey went away by itself. `theme.sky` is [top, bottom]. */
+const WORLDS={
+  /* Each world is its `theme.sky` as a two-stop gradient for the volume, and
+     a SECOND two-stop gradient for the page.
+
+     THE PAGE IS NOT THE SKY MIXED WITH WHITE. That was the first attempt and
+     it is where the grey kept coming from: mixing any hue toward white kills
+     its saturation, so every world produced the same washed putty. The page
+     is hand-picked instead - the sky's own hues, light but still SATURATED,
+     which is what a lit page actually looks like and what keeps a warm world
+     warm on both sides of the seam. */
+  /* PROLOGUE's own night. The honest baseline, and the greyest thing here. */
+  night:{skyTop:"#1d3a58", skyBot:"#0e1c2e",
+         face:"#35507d", lid:"#4b6ba0", side:"#2a4067",
+         paperTop:"#a9c0da", paperBot:"#7f9ab8",
+         flat:"#4c6a95", flatLid:"#5f7fab"},
+  /* II · FIRE. theme.sky is [0x1a0a10, 0x3a0f0a]; the bottom is pushed
+     warmer because in the game the ember glow low down is SCENERY - the lava
+     and the plume - and an icon has no room for scenery. */
+  fire:{skyTop:"#240a10", skyBot:"#6b1a08",
+        face:"#57403a", lid:"#7a594a", side:"#402e2a",
+        paperTop:"#c9a2a6", paperBot:"#f5a874",
+        flat:"#9a6450", flatLid:"#b87c60"},
+  /* III · WATER, and its sky is the best in the game: plum overhead, rust at
+     the horizon. `levels.md` says that warm sky is what "makes cyan sing",
+     which is a promise about the teal seam. Folded, plum and rust lift into
+     lilac and peach, so the page is a sunset too. */
+  water:{skyTop:"#2a1e3c", skyBot:"#7a3a26",
+         face:"#8a5544", lid:"#ad6d55", side:"#663c2e",
+         paperTop:"#b9a2cf", paperBot:"#efb08f",
+         flat:"#a05c4e", flatLid:"#bd7460"},
+  /* IV · DESERT, the one sky in the game that is bright rather than dark. */
+  desert:{skyTop:"#3d3a52", skyBot:"#97703c",
+          face:"#b09a6e", lid:"#d4bb8a", side:"#85734f",
+          paperTop:"#b7aecb", paperBot:"#f4d295",
+          flat:"#a88f5f", flatLid:"#c4a870"}
+};
+const PIECES={
   rose:"#d6336c", roseLid:"#ef5b8e", roseSide:"#a6234e",
-  blkFace:"#35507d", blkLid:"#4b6ba0", blkSide:"#2a4067",
-  flatFace:"#4c6a95", flatLid:"#5f7fab",
   huntBody:"#46323e", huntLid:"#5a4250", huntSide:"#33242d",
   huntRed:"#ff4d5e", huntRim:"#ff6b7a", huntEdge:"#ff8a94",
   ink:"#0e1626", white:"#ffffff", seam:"#5ff2d0"
 };
+/* The world the icon is set in. One word, and every colour follows. */
+var WORLD="water";
+function palette(name){
+  const w=WORLDS[name]||WORLDS.water;
+  return Object.assign({},PIECES,w);
+}
 
 /* ---- the scene ---------------------------------------------------------
    [x,y,z]: x right, y up, z depth AWAY from the camera. The arena is an
@@ -120,6 +157,7 @@ const VARIANTS={
 
 function scene(V, W, id){
   id=id||("i"+W);
+  const C=palette(V.world||WORLD);
   /* Cell size and the oblique projection. The game's camera tilts down so a
      block shows a front face and a lid, and turns in 90 degree steps, so no
      side face is ever seen. The icon takes a little licence and shows a
@@ -185,7 +223,7 @@ function scene(V, W, id){
      the slab reads as deep. */
   let world3="";
   for(const b of [...blocks].sort((a,b)=>(b[2]-a[2])||(a[0]-b[0]))){
-    const [x,y]=p3(b); world3+=cube3at(x,y,s,C.blkFace,C.blkLid,C.blkSide,stroke);
+    const [x,y]=p3(b); world3+=cube3at(x,y,s,C.face,C.lid,C.side,stroke);
   }
   /* Flat: every block that shares a square merges, so an arena three deep
      becomes one row. That collapse IS the game, and drawing it on one
@@ -196,7 +234,7 @@ function scene(V, W, id){
   for(const b of [...blocks].sort((a,b)=>b[2]-a[2])){
     const key=b[0]+","+b[1]; if(seen.has(key)) continue; seen.add(key);
     const [x,y]=p2(b);
-    world2+=rect(x,y,s,s,C.flatFace,stroke)+rect(x,y,s,s*0.14,C.flatLid,`stroke="none"`);
+    world2+=rect(x,y,s,s,C.flat,stroke)+rect(x,y,s,s*0.14,C.flatLid,`stroke="none"`);
   }
 
   /* The player. White outline, as outlineFor() gives a piece against the
@@ -249,8 +287,8 @@ function scene(V, W, id){
 
   /* The two halves as content, so `flip` is one swap rather than a second
      copy of the drawing. */
-  const volume=`<rect width="${W}" height="${W}" fill="${C.sky}"/>${stars}${world3}${hunters3}${player3}`;
-  const page=`<rect width="${W}" height="${W}" fill="${C.paper}"/>${world2}${hunters2}${player2}`;
+  const volume=`<rect width="${W}" height="${W}" fill="url(#${id}sky)"/>${stars}${world3}${hunters3}${player3}`;
+  const page=`<rect width="${W}" height="${W}" fill="url(#${id}pap)"/>${world2}${hunters2}${player2}`;
   const left=V.flip?page:volume, right=V.flip?volume:page;
 
   const glow=V.glow?`
@@ -260,6 +298,8 @@ function scene(V, W, id){
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${W}" viewBox="0 0 ${W} ${W}">
   <defs>
+    <linearGradient id="${id}sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.skyTop}"/><stop offset="1" stop-color="${C.skyBot}"/></linearGradient>
+    <linearGradient id="${id}pap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.paperTop}"/><stop offset="1" stop-color="${C.paperBot}"/></linearGradient>
     <clipPath id="${id}L"><path d="${leftClip}"/></clipPath>
     <clipPath id="${id}R"><path d="${rightClip}"/></clipPath>
     <filter id="${id}blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${(W*0.02).toFixed(0)}"/></filter>
@@ -274,8 +314,12 @@ async function main(){
   const args=process.argv.slice(2);
   const arg=n=>{ const i=args.indexOf(n); return i>=0?args[i+1]:null; };
   const vname=arg("--variant")||"A";
+  if(arg("--world")) WORLD=arg("--world");
   const V=VARIANTS[vname]; if(!V){ console.error("variants: "+Object.keys(VARIANTS).join(", ")); process.exit(1); }
-  const suffix=vname==="A"?"":"-"+vname;
+  /* A world other than the shipping one writes its own files, so three can
+     be looked at side by side without one overwriting the next. */
+  const wsuf=(arg("--world")&&arg("--world")!=="water")?"-"+arg("--world"):"";
+  const suffix=(vname==="A"?"":"-"+vname)+wsuf;
   fs.mkdirSync(OUT,{recursive:true});
   const svg=scene(V,1024);
   if(args.includes("--svg")) fs.writeFileSync(path.join(OUT,`icon${suffix}.svg`),svg);

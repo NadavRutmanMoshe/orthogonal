@@ -389,15 +389,27 @@ reads at 256, 128, 64 and 48, rounded). `--android` writes the launcher
 mipmaps, the adaptive foreground drawn full-bleed with the scene at 2/3 so
 any mask lands on sky.
 
-**Four colours, and the surface is not one of them.** Rose `#d6336c` is the
-cube, night `#12233f` is the void a board hangs in, teal `#5ff2d0` is the
-fold, red `#ff4d5e` is the pack. World I's grass and earth were in the icon
-for four builds and they are a LIE about the game: the next world is basalt,
-then desert, then shards. The ground is the one thing that changes every
-world, so an icon wearing one world's ground sells one world. The arena is
-slate instead - the block, not the skin on it - which leaves rose, red and
-teal the only saturated things in the square, and that is why they survive
-at 48px.
+**Three colours are the game; everything else is a world.** Rose `#d6336c`
+is the cube (SKIN_COLORS[0], what every player starts as), teal `#5ff2d0` is
+the fold (the goal's jade and the landing mark's lean, the only colour that
+means "this is the verb") and red `#ff4d5e` is the pack. Those never change.
+
+The rest is the world, and `--world night|fire|water|desert` switches it from
+a table of the game's own `theme.sky` values. It ships as **water**: III's
+sky is the best in the game, plum overhead and rust at the horizon, and
+`levels.md` says that warm sky is what "makes cyan sing" - which is a promise
+about the teal seam, collected here.
+
+Two dead ends worth keeping. First, an icon in ONE world's surface sells one
+world - that is why world I's grass and earth came off, and it still holds;
+the answer is to pick a world for the PICTURE, not to have no world, which
+was the second attempt and produced slate over navy. That is PROLOGUE's
+palette, the greyest in the game, and it read as boring because it was.
+Second, THE PAGE IS NOT THE SKY MIXED WITH WHITE. Mixing any hue toward
+white kills its saturation, so every world came out the same washed putty and
+the grey walked straight back in. Each world's page is a hand-picked pair
+instead - the sky's own hues, light but still saturated - and a warm world
+now stays warm on both sides of the seam.
 
 **What it shows.** A boss arena, because a boss arena here is one block tall
 and several deep, so the fold has something visible to do to it. A seam runs
