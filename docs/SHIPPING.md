@@ -285,9 +285,14 @@ bridge.
 - **No video to show pays nothing** and says so. A kinder rule - grant it
   anyway after a failed load - is one line in `adWatch()`, and it is also
   what airplane mode would then buy. Not taken; the owner's to change.
-- **No ATT prompt on iOS, for anybody.** Adults could be asked, for more
-  revenue; nobody is, which keeps the privacy label simple and a system
-  permission popup out of a game children play. Revisit only with numbers.
+- **No ATT prompt on iOS, for anybody** - and therefore `adNoTrack()`:
+  **every iOS player gets non-personalised ads**, not only the children.
+  Apple counts a personalised ad as tracking, and an app that tracks must show
+  the App Tracking Transparency prompt; without the prompt the only honest
+  privacy label is "not used to track you", which is only true if the ads are
+  non-personalised. It costs revenue from adults on iOS and buys a label a
+  reviewer can check. Reverse it only together with an ATT prompt and new
+  labels (`docs/STORE-ANSWERS.md`).
 
 ### `js/25-shop.js`
 
@@ -317,11 +322,14 @@ bridge.
 
 ### What is left, and all of it is the owner's hands on a dashboard
 
-1. **AdMob account** (admob.google.com): add the app twice (Android, iOS),
-   create one **Rewarded** ad unit in each, then put the two app ids in
-   `AndroidManifest.xml` / `Info.plist` and the two unit ids in `AD_UNITS`,
-   and set `AD_TEST=false`. **Never tap your own live ads**; add your phones
-   as test devices in the AdMob dashboard first.
+1. **AdMob account** (admob.google.com): **done 18 Sep**, and both rewarded
+   unit ids are in `AD_UNITS` (`ca-app-pub-6542623981022877/8535090358`
+   Android, `/5856956129` iOS). **Still needed: the two APP ids** (the `~`
+   ones), for `AndroidManifest.xml` and Info.plist - the manifest carries
+   Google's test app id until then. `AD_TEST` stays `true` through the closed
+   test: friends tapping live ads is how an AdMob account gets banned, and an
+   unlisted app gets limited serving anyway. Flip it, with the app ids, for the
+   public release, and add your own phones as test devices in AdMob.
 2. **AdMob > Privacy & messaging**: create the GDPR message (Google's
    certified form). Without it, EEA players get limited ads.
 3. **Play Console > Monetize > In-app products**: seven one-time products with
@@ -336,9 +344,13 @@ bridge.
 6. **iOS project**: when `npx cap add ios` runs on the CI Mac, Info.plist
    needs `GADApplicationIdentifier`, `GADDelayAppMeasurementInit` = YES, and
    Google's `SKAdNetworkItems` list - `app/README.md` has the detail.
-7. **Declarations**: Play Data Safety and Apple's privacy label now include
-   the AdMob SDK (device identifiers for adults, advertising, analytics) and
-   purchase history. The privacy policy must say the same.
+7. **Declarations**: written out, ready to copy, in `docs/STORE-ANSWERS.md` -
+   Play's target audience, ads, content rating and Data safety, and Apple's
+   privacy labels. The privacy policy they are checked against is
+   `docs/privacy.html`; it needs a contact email in place of `CONTACT_EMAIL`
+   and a public URL (GitHub Pages from `/docs` on this repo is the cheap
+   route, and does not publish the game itself - there is no index.html in
+   that folder).
 
 ---
 

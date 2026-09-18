@@ -32,8 +32,10 @@
    ============================================================ */
 var AD_TEST=true;
 var AD_UNITS={
-  android:{test:"ca-app-pub-3940256099942544/5224354917", live:""},
-  ios:    {test:"ca-app-pub-3940256099942544/1712485313", live:""}
+  android:{test:"ca-app-pub-3940256099942544/5224354917",
+           live:"ca-app-pub-6542623981022877/8535090358"},
+  ios:    {test:"ca-app-pub-3940256099942544/1712485313",
+           live:"ca-app-pub-6542623981022877/5856956129"}
 };
 /* How long a tap waits for a video that was not already loaded before it
    gives up and says so. Long enough for a slow connection, short enough that
@@ -63,6 +65,19 @@ function adPlugin(){
           typeof C.registerPlugin==="function")
     ? C.registerPlugin("AdMob") : null;
   return adPlug;
+}
+/* NON-PERSONALISED, ALWAYS, FOR A CHILD - AND FOR EVERY iOS PLAYER.
+
+   The child half is COPPA and the Families policy. The iOS half is Apple's:
+   personalised ads are "tracking", and an app that tracks has to put up the
+   App Tracking Transparency prompt. This game deliberately never asks (see
+   docs/SHIPPING.md), so it must not track, and the privacy label says
+   "not used to track you" - a claim that is only true if the ads are
+   non-personalised. It costs some revenue from adults on iOS; it buys a
+   label a reviewer can check and no system prompt in a game children play.
+   Reverse this only together with an ATT prompt and a new label. */
+function adNoTrack(){
+  return adChild()||window.Capacitor.getPlatform()==="ios";
 }
 function adUnit(){
   var u=AD_UNITS[window.Capacitor.getPlatform()]||AD_UNITS.android;
@@ -172,7 +187,7 @@ function adLoad(){
   if(AD.loading)return AD.loading;
   clearTimeout(AD.retryT);
   AD.loading=A.prepareRewardVideoAd({adId:adUnit(), isTesting:AD_TEST,
-                                     npa:adChild()})
+                                     npa:adNoTrack()})
     .then(function(){AD.ready=true;AD.retry=0;return true;},
           function(){
             AD.ready=false;

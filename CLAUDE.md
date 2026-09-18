@@ -21,6 +21,7 @@ default:
 | `docs/design/composer.md` | solution-first level generation |
 | `docs/ROADMAP.md` | known limitations, agreed next steps, what mobile still needs |
 | `docs/SHIPPING.md` | **taking it to Android, iOS and Steam**: the store clocks that set the calendar, `adChild()` and the mixed audience, the seven IAP products and the three-that-show-two upgrade, the Steam grant, the asset sizes, and the device gauntlet |
+| `docs/STORE-ANSWERS.md` | **the store forms, answered**: Play's target audience, ads, content rating and Data safety, and Apple's privacy labels. It and `docs/privacy.html` and the app's real behaviour have to agree - a reviewer checks all three |
 | `docs/HISTORY.md` | every version of a mechanic that was tried and dropped. Read before *redesigning* something, not before editing it. |
 
 Each of those is the previous `CLAUDE.md` text, moved verbatim. Nothing was
