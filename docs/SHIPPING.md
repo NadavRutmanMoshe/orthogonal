@@ -347,10 +347,20 @@ bridge.
 7. **Declarations**: written out, ready to copy, in `docs/STORE-ANSWERS.md` -
    Play's target audience, ads, content rating and Data safety, and Apple's
    privacy labels. The privacy policy they are checked against is
-   `docs/privacy.html`; it needs a contact email in place of `CONTACT_EMAIL`
-   and a public URL (GitHub Pages from `/docs` on this repo is the cheap
-   route, and does not publish the game itself - there is no index.html in
-   that folder).
+   `docs/privacy.html`, and it is **live, 18 Sep**:
+
+       https://nadavrutmanmoshe.github.io/orthogonal/privacy.html
+
+   That is the URL both store listings take. It is GitHub Pages on this repo,
+   serving **`/docs` only** - which is also how the game came OFF the web:
+   Pages had been serving the repo ROOT, so `index.html` was a free, playable
+   copy of the game at `nadavrutmanmoshe.github.io/orthogonal/`. The owner's
+   call was to retire it rather than leave a free version standing beside a
+   store listing; that address now 404s, and the way back is one field in
+   Settings > Pages. Changing the policy is a push to `main` plus a minute:
+   the source folder change does NOT rebuild the site on its own, so a build
+   has to be requested (`gh api -X POST repos/:owner/:repo/pages/builds`)
+   after any change to where Pages points.
 
 ---
 
