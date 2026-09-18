@@ -16,7 +16,7 @@
    blocks at different depths merge into one silhouette - which is the whole
    game, and the reason the two columns that stand apart on the left are one
    platform on the right. The Rose cube stands on the seam, half a cube and
-   half a square, and a hunter is mid-charge down the row beside him.
+   half a square, and a hunter stands on the row beside him.
 
    Rendering goes through the same headless Chromium tools/shot.js uses. */
 const fs=require("fs"), path=require("path");
@@ -72,15 +72,22 @@ const HUNT_SCALE=1;
 
 const VARIANTS={
   /* A: the seam runs through the player. Left of it, the world; right of it,
-     the page. The hero is the half-folded cube. */
-  A:{seam:0.58, tilt:9, showHunter:true, charge:true, glow:true},
-  /* B: A without the charge - the hunter just standing there. */
-  B:{seam:0.58, tilt:9, showHunter:true, glow:true},
+     the page. The hero is the half-folded cube, and the hunter simply stands
+     on the row it shares with him once the world is flat. This is the one
+     that ships: it is the quietest and it still says everything. */
+  A:{seam:0.58, tilt:9, showHunter:true, glow:true},
+  /* B: the same, with the seam leaning the other way. The cube is high in
+     the frame, so a seam that leans left at the top takes MORE of him onto
+     the page: he keeps a sliver of lid and the world side gets narrower. */
+  B:{seam:0.58, tilt:-9, showHunter:true, glow:true},
   /* C: no world, one enormous cube half folded. The most legible at 48px,
      and the least about the puzzle. */
-  C:{seam:0.55, tilt:0, showHunter:false, glow:true, solo:true}
+  C:{seam:0.55, tilt:0, showHunter:false, glow:true, solo:true},
+  /* D: A with the hunter mid-charge - the telegraph pane pointed at the cube
+     and speed lines off its back. Built, and it is a lot of picture for an
+     icon; kept here because the drawing of it is the expensive part. */
+  D:{seam:0.58, tilt:9, showHunter:true, charge:true, glow:true}
 };
-
 function scene(V, W, id){
   id=id||("i"+W);
   /* Cell size and the oblique projection. The game's camera tilts down so a
