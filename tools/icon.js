@@ -16,7 +16,7 @@
    blocks at different depths merge into one silhouette - which is the whole
    game, and the reason the two columns that stand apart on the left are one
    platform on the right. The Rose cube stands on the seam, half a cube and
-   half a square, and a hunter twice his weight waits on the page beside him.
+   half a square, and a hunter is mid-charge down the row beside him.
 
    Rendering goes through the same headless Chromium tools/shot.js uses. */
 const fs=require("fs"), path=require("path");
@@ -45,7 +45,7 @@ const C={
   grass:"#7fc63f", grassLid:"#a5e04a", grassSide:"#5f9e2c",
   earth:"#6f4a2a", earthSide:"#4e3218", earthFlat:"#7a5533",
   ink:"#14172a", white:"#ffffff",
-  huntBody:"#46323e", huntTop:"#5a4250", huntSide:"#33242d", huntRed:"#ff4d5e", huntRim:"#ff6b7a",
+  huntBody:"#46323e", huntTop:"#5a4250", huntSide:"#33242d", huntRed:"#ff4d5e", huntRim:"#ff6b7a", huntEdge:"#ff8a94",
   seam:"#5ff2d0"
 };
 
@@ -64,17 +64,18 @@ const BLOCKS=[
 ];
 const PLAYER=[0,2,0];
 const HUNTER=[2,2,2];
-/* How many cells tall the hunter stands. 1 is the player's own size; over 1
-   it looms. Under about .9 it stops being the thing you look at second. */
-const HUNT_SCALE=1.3;
+/* How many cells tall the hunter stands. 1 is the player's own size. It was
+   1.3 for a build and looked wrong for a reason worth writing down: a piece
+   that overhangs its square stops reading as a piece ON the grid, and this
+   is a grid game. The menace is bought with the charge instead. */
+const HUNT_SCALE=1;
 
 const VARIANTS={
   /* A: the seam runs through the player. Left of it, the world; right of it,
      the page. The hero is the half-folded cube. */
-  A:{seam:0.58, tilt:9, showHunter:true, glow:true},
-  /* B: the same, but the seam leans the other way and sits further right,
-     so more of the world is 3D and the cube is mostly a cube. */
-  B:{seam:0.58, tilt:-9, showHunter:true, glow:true},
+  A:{seam:0.58, tilt:9, showHunter:true, charge:true, glow:true},
+  /* B: A without the charge - the hunter just standing there. */
+  B:{seam:0.58, tilt:9, showHunter:true, glow:true},
   /* C: no world, one enormous cube half folded. The most legible at 48px,
      and the least about the puzzle. */
   C:{seam:0.55, tilt:0, showHunter:false, glow:true, solo:true}
@@ -107,7 +108,10 @@ function scene(V, W, id){
   const pts=[];
   for(const b of [...blocks.filter(b=>b[2]===0),player]){ const [x,y]=p3(b); pts.push([x,y-t],[x+s+k,y+s]); }
   for(const b of blocks){ const [x,y]=p2(b); pts.push([x,y],[x+s,y+s]); }
-  if(V.showHunter){ const [x,y]=p2(HUNTER), hs=s*HUNT_SCALE, dx=(s-hs)/2; pts.push([x+dx,y+s-hs],[x+dx+hs,y+s]); }
+  if(V.showHunter){ const [x,y]=p2(HUNTER), hs=s*HUNT_SCALE, dx=(s-hs)/2;
+    pts.push([x+dx,y+s-hs],[x+dx+hs,y+s]);
+    if(V.charge) pts.push([x+s*1.36,y+s]);   // the far end of the speed lines
+  }
   const minX=Math.min(...pts.map(p=>p[0])), maxX=Math.max(...pts.map(p=>p[0]));
   const minY=Math.min(...pts.map(p=>p[1])), maxY=Math.max(...pts.map(p=>p[1]));
   ox=(W-(maxX-minX))/2-minX; oy=(W-(maxY-minY))/2-minY + (solo?0:W*0.02);
@@ -153,13 +157,10 @@ function scene(V, W, id){
   const [qx,qy]=p2(player);
   let player2=rect(qx,qy,s,s,C.rose,pw);
 
-  /* The hunter: huntMesh() in two dimensions, and BIGGER THAN THE CUBE.
-     In the game its shell is .72 of a cell, because a fight is a crowd of
-     them on a board and they must not read as walls. An icon is one frame
-     with one threat in it, and a threat the same size as the hero is not a
-     threat - so it stands HUNT_SCALE cells tall, bottom aligned to the
-     block it stands on, looming over the row it shares with the player.
-     No core: the octahedron inside it was a red gem at icon size and read
+  /* The hunter: huntMesh() in two dimensions. In the game its shell is .72
+     of a cell, because a fight is a crowd of them and they must not read as
+     walls; an icon has one, so it fills its square - HUNT_SCALE cells tall,
+     bottom aligned to the block it stands on. No core: the octahedron inside it was a red gem at icon size and read
      as treasure, which is the opposite of what it is. What is left is the
      plum body, the red cage and the red aura, which is how the game asks
      you to find one anyway - by contrast, not by ornament. */
@@ -175,9 +176,49 @@ function scene(V, W, id){
       +poly([[x,y],[x+hs,y],[x+hs+hk,y-ht],[x+hk,y-ht]], C.huntTop, rim)
       +poly([[x+hs,y],[x+hs+hk,y-ht],[x+hs+hk,y+hs-ht],[x+hs,y+hs]], C.huntSide, rim)
       +rect(x,y,hs,hs,C.huntBody,rim);
+    /* THE CHARGE. What makes it read as coming at you is not its size, it
+       is this: the pane a hunter drops down the row in the beat before it
+       fires (lineMesh() / drawLines(), js/10-render.js - red at .5, a paler
+       rim at .7, RAY_W across). Caught mid-fall, so the row is visibly
+       being flattened and the bar has not landed yet.
+       It is drawn ONLY on the page, and that is the point of the picture:
+       in the volume the hunter is two cells back and cannot touch anybody.
+       Fold the world and it is suddenly on your row. The seam clips the
+       pane, so the threat begins exactly where the world goes flat. */
     /* Flat: the same square, standing on the platform. */
     const [hx,hy]=p2(HUNTER); const fx=hx+dx, fy=hy+dy;
-    hunter2=aura(fx,fy,hs,hs)+rect(fx,fy,hs,hs,C.huntBody,rim);
+    let ray="";
+    if(V.charge){
+      /* The pane, at .5 over paper, came out a washed pink rectangle that
+         read as scenery. Three things fix it and all three are about
+         DIRECTION, which is what "coming at you" means in a still picture:
+         the fill is nearly solid, the leading end is a POINT rather than a
+         wall, and the trailing end fades, so the eye is pulled from the
+         hunter toward the cube and not the other way. */
+      /* The tip must land in the GAP between them, not inside the cube, or
+         the point is hidden behind him and the whole thing is a bar again.
+         The gap is exactly one cell, so the beam is a cell long: the point
+         a whisker into the cube, the tail buried in the hunter. */
+      const rh=s*0.54, ry=hy+s-rh*1.15, rx=p2(player)[0]+s*0.94, tip=s*0.44;
+      const x1=hx+s*0.5;                       // it starts inside the hunter
+      /* Nearly solid all the way. A gradient that faded toward the hunter
+         detached the beam from the thing throwing it, which is the one
+         relationship the picture is about. */
+      ray=`<linearGradient id="${id}ray" x1="0" y1="0" x2="1" y2="0">`
+        +`<stop offset="0" stop-color="${C.huntRed}" stop-opacity="0.92"/>`
+        +`<stop offset="1" stop-color="${C.huntRed}" stop-opacity="0.82"/></linearGradient>`
+        +poly([[rx,ry+rh/2],[rx+tip,ry],[x1,ry],[x1,ry+rh],[rx+tip,ry+rh]],
+              `url(#${id}ray)`, `stroke="${C.huntEdge}" stroke-width="${(s*0.03).toFixed(1)}" stroke-opacity="0.85" stroke-linejoin="round"`);
+      /* Speed lines behind it. Nothing in the game draws these - they are
+         the one piece of pure poster language in the picture, and they are
+         what makes a still cube look like it is travelling. */
+      for(let i=0;i<3;i++){
+        const w=s*(0.28-i*0.08), yy=hy+s*(0.24+i*0.26);
+        ray+=rect(hx+s*1.01+i*s*0.05, yy, w, s*0.10, C.huntRed,
+                  `opacity="${(0.8-i*0.22).toFixed(2)}" rx="${(s*0.045).toFixed(1)}"`);
+      }
+    }
+    hunter2=ray+aura(fx,fy,hs,hs)+rect(fx,fy,hs,hs,C.huntBody,rim);
   }
 
   /* --- the seam: a line through the icon, leaning a little. Left of it is

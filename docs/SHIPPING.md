@@ -386,14 +386,17 @@ trial, the map, the wardrobe, a cutscene beat and the neighbour mid-sentence.
 **The icon is done**: `node tools/icon.js` draws it from the game's own
 palette - the Rose cube standing on a glowing seam, 3D on the left and
 pressed flat on the right, with the far tower merging into the platform the
-way the fold merges depth and a hunter waiting on it, bigger than the cube
-and one square from it on the same row - and writes `app/icon/icon-1024.png` (iOS),
+way the fold merges depth and a hunter one square away on the same row,
+mid-charge, its beam pointed at the cube - and writes `app/icon/icon-1024.png` (iOS),
 `app/icon/icon-512.png` (Play) and `app/icon/preview.png` (how it reads at
 256, 128, 64 and 48, rounded). `--android` writes the launcher mipmaps into
 the Android project, the adaptive foreground drawn full-bleed with the scene
 at 2/3 so any mask lands on sky. Two other compositions are in the script as
-`--variant B` (the seam leaning the other way) and `--variant C` (one huge
-cube, no world), regenerable in a second.
+`--variant B` (the same picture with the hunter merely standing there) and
+`--variant C` (one huge cube, no world), regenerable in a second. The
+hunter's size is `HUNT_SCALE`: it was 1.3 cells for a build and a piece
+that overhangs its square stops reading as a piece on a grid, so the
+menace is carried by the charge instead.
 
 **What the tool cannot make** is the artwork carrying a logotype: Play's
 1024x500 feature graphic, which is mandatory, and Steam's capsule set
