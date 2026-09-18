@@ -523,12 +523,98 @@ trial, the map, the wardrobe, a cutscene beat and the neighbour mid-sentence.
 - **Play**: 1080x1920, at least two and ideally eight. Icon 512x512.
 - **Steam**: 1920x1080, at least five.
 
-**What the tool cannot make** is the artwork carrying a logotype: Play's
-1024x500 feature graphic, which is mandatory, and Steam's capsule set
-(460x215, 231x87, 616x353, 374x448, 600x900 and the 3840x1240 library hero).
-That is six pieces of design work and it is the one item on this list that
-should start early, because it is the only one that cannot be finished in an
-afternoon by a script.
+**The icon is done**: `node tools/icon.js` writes `app/icon/icon-1024.png`
+(iOS), `app/icon/icon-512.png` (Play) and `app/icon/preview.png` (how it
+reads at 256, 128, 64 and 48, rounded). `--android` writes the launcher
+mipmaps, the adaptive foreground drawn full-bleed with the scene at 2/3 so
+any mask lands on sky.
+
+**Three colours are the game; everything else is a world.** Rose `#d6336c`
+is the cube (SKIN_COLORS[0], what every player starts as), teal `#5ff2d0` is
+the fold (the goal's jade and the landing mark's lean, the only colour that
+means "this is the verb") and red `#ff4d5e` is the pack. Those never change.
+
+The rest is the world, and `--world night|fire|water|desert` switches it from
+a table of the game's own `theme.sky` values. It ships as **fire** on the
+owner's call: II's maroon-and-ember is the boldest of the four, and the worry
+that its red would swallow the hunter did not survive looking, because the
+hunter is a DARK body with a bright rim and on a dark warm sky that rim is
+still the only hard edge in the square. Water is the runner-up and the one
+the argument favoured - `levels.md` says III's warm sky is what "makes cyan
+sing", which is a promise about the teal seam - and it is one word away.
+
+Two dead ends worth keeping. First, an icon in ONE world's surface sells one
+world - that is why world I's grass and earth came off, and it still holds;
+the answer is to pick a world for the PICTURE, not to have no world, which
+was the second attempt and produced slate over navy. That is PROLOGUE's
+palette, the greyest in the game, and it read as boring because it was.
+Second, THE PAGE IS NOT THE SKY MIXED WITH WHITE. Mixing any hue toward
+white kills its saturation, so every world came out the same washed putty and
+the grey walked straight back in. Each world's page is a hand-picked pair
+instead - the sky's own hues, light but still saturated - and a warm world
+now stays warm on both sides of the seam.
+
+**What it shows.** A boss arena, because a boss arena here is one block tall
+and several deep, so the fold has something visible to do to it. A seam runs
+down the icon: on the page side the arena is one strip, on the volume side
+the rows recede and can be counted. One object, both states.
+
+**The page is on the LEFT and the volume on the right**, which is the
+opposite of where it started and is the whole reason the picture works. A
+solid cube has a lid and a side; a flat square has neither, so whichever
+piece stands in the volume is the bigger thing on the screen. With the
+volume on the left the CUBE was the big one and the hunter was a small dark
+square - the hero out-weighing the threat. Flipped, the hunter is the solid
+one and the cube is a small bright square on paper, which is the right way
+round for a game about being chased. `V.flip` is that swap and it is one
+line, because each half is built as content and the clip decides which side
+gets it.
+
+**The gap the seam sits in is forced, and the seam is centred in it.** Every piece is drawn in BOTH
+projections and the clip decides which you see, so a piece the seam crosses
+shows half solid and half flat - deliberate in variant B, a mess anywhere
+else, because a cube is 1.5 cells wide on screen and its flat square is 1 and
+the straddle does not line up. With the hunter one cell from the cube there
+is NO seam position that misses both: the cube's solid form reaches 1.5 and
+the hunter's flat form starts at 1.0. Two cells out opens a gap from 1.5 to
+2.0, and the seam sits at 2.0 - the right-hand end of it, which is also
+exactly the middle of the icon: the framing centres a cast box running from
+the cube's left edge to the hunter's right, four cells wide, so `ox` is
+`(W-4s)/2` and a seam two cells along lands on `W/2`. That is why they stand
+where they stand.
+
+**Two bugs that only a small render shows.** First, THE STAR RADIUS WAS IN
+PIXELS, a flat 1.1 to 3.0, which is right at 1024 and enormous at 48: the
+icon scales and the dots did not, so a home screen showed a boss arena behind
+a handful of golf balls. It is a fraction of `W` now, and anything drawn here
+that is not measured in `W` has the same bug waiting in it. Second, A PIECE
+IS DRAWN IN ONE STATE, NOT BOTH. The arena spans the seam so it is drawn
+twice and the clip picks; a piece is not - it stands on one side and is
+either solid or flat. Drawing both and trusting the clip put a red crescent
+of the hunter's aura on the page, because the seam LEANS: a flat edge sitting
+exactly on the seam at the middle of the icon is a little to the left of it
+lower down. Only a piece the seam actually crosses wants both, and `cut` says
+so - variant B, where that straddle is the whole point.
+
+Two more numbers arrived by looking: `ARENA` is an ISLAND with sky around it
+rather than a floor running off the edges (that filled the volume side with a
+solid field of lids, the same trap `chrome.md` records for the cutscene's
+lawn), and the framing centres the CAST rather than the scene, or the wide
+arena drags the picture off-centre.
+
+`--variant E` is A with the seam a quarter-cell LEFT of centre, which is
+where it sat before it was centred; both positions are inside the safe gap so
+nothing is cut either way, and it is kept so the two can be looked at rather
+than argued about.
+
+Three other compositions are in the script: `--variant B` puts the seam
+through the cube, unflipped, so he is half a cube and half a square;
+`--variant C` is one huge half-folded cube with no world (most legible tiny,
+least about the puzzle); `--variant D` adds the charge telegraph, which is a
+lot of picture for an icon. `HUNT_SCALE` is the hunter's size in cells and is
+1: at 1.3 it overhung its square, and a piece that does not sit in a cell
+stops reading as a piece on a grid. Size was never how the hunter got its
+weight - which side of the seam it stands on is.
 
 ---
 
