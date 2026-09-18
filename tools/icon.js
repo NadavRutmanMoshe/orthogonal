@@ -16,7 +16,7 @@
    blocks at different depths merge into one silhouette - which is the whole
    game, and the reason the two columns that stand apart on the left are one
    platform on the right. The Rose cube stands on the seam, half a cube and
-   half a square, and a hunter waits on the page beside it.
+   half a square, and a hunter twice his weight waits on the page beside him.
 
    Rendering goes through the same headless Chromium tools/shot.js uses. */
 const fs=require("fs"), path=require("path");
@@ -64,6 +64,9 @@ const BLOCKS=[
 ];
 const PLAYER=[0,2,0];
 const HUNTER=[2,2,2];
+/* How many cells tall the hunter stands. 1 is the player's own size; over 1
+   it looms. Under about .9 it stops being the thing you look at second. */
+const HUNT_SCALE=1.3;
 
 const VARIANTS={
   /* A: the seam runs through the player. Left of it, the world; right of it,
@@ -103,7 +106,8 @@ function scene(V, W, id){
   let ox=0, oy=0;
   const pts=[];
   for(const b of [...blocks.filter(b=>b[2]===0),player]){ const [x,y]=p3(b); pts.push([x,y-t],[x+s+k,y+s]); }
-  for(const b of [...blocks,...(V.showHunter?[HUNTER]:[])]){ const [x,y]=p2(b); pts.push([x,y],[x+s,y+s]); }
+  for(const b of blocks){ const [x,y]=p2(b); pts.push([x,y],[x+s,y+s]); }
+  if(V.showHunter){ const [x,y]=p2(HUNTER), hs=s*HUNT_SCALE, dx=(s-hs)/2; pts.push([x+dx,y+s-hs],[x+dx+hs,y+s]); }
   const minX=Math.min(...pts.map(p=>p[0])), maxX=Math.max(...pts.map(p=>p[0]));
   const minY=Math.min(...pts.map(p=>p[1])), maxY=Math.max(...pts.map(p=>p[1]));
   ox=(W-(maxX-minX))/2-minX; oy=(W-(maxY-minY))/2-minY + (solo?0:W*0.02);
@@ -149,27 +153,31 @@ function scene(V, W, id){
   const [qx,qy]=p2(player);
   let player2=rect(qx,qy,s,s,C.rose,pw);
 
-  /* The hunter: huntMesh() in two dimensions. A plum cube smaller than a
-     cell (the shell is .72), a red cage round it, a red octahedron in it
-     and a soft red aura behind it - found by contrast, as in the game. On
-     the page it is a square with the same rim, core and halo, one square
-     from the player on the same row: the line the fold is taken on. */
+  /* The hunter: huntMesh() in two dimensions, and BIGGER THAN THE CUBE.
+     In the game its shell is .72 of a cell, because a fight is a crowd of
+     them on a board and they must not read as walls. An icon is one frame
+     with one threat in it, and a threat the same size as the hero is not a
+     threat - so it stands HUNT_SCALE cells tall, bottom aligned to the
+     block it stands on, looming over the row it shares with the player.
+     No core: the octahedron inside it was a red gem at icon size and read
+     as treasure, which is the opposite of what it is. What is left is the
+     plum body, the red cage and the red aura, which is how the game asks
+     you to find one anyway - by contrast, not by ornament. */
   let hunter3="", hunter2="";
   if(V.showHunter){
-    const inset=s*0.14, hs=s-2*inset;
-    const rim=`stroke="${C.huntRim}" stroke-width="${(s*0.045).toFixed(1)}" stroke-linejoin="round"`;
-    const core=(cx,cy)=>{ const r=s*0.17; return poly([[cx,cy-r],[cx+r,cy],[cx,cy+r],[cx-r,cy]], C.huntRed, `stroke="none"`); };
-    const aura=(x,y,w,h)=>rect(x-s*0.1,y-s*0.1,w+s*0.2,h+s*0.2,C.huntRed,`opacity="0.35" filter="url(#${id}blur)"`);
+    const hs=s*HUNT_SCALE, dx=(s-hs)/2, dy=s-hs;   // centred, standing on the floor
+    const rim=`stroke="${C.huntRim}" stroke-width="${(hs*0.055).toFixed(1)}" stroke-linejoin="round"`;
+    const aura=(x,y,w,h)=>rect(x-hs*0.12,y-hs*0.12,w+hs*0.24,h+hs*0.24,C.huntRed,`opacity="0.42" filter="url(#${id}blur)"`);
     /* 3D: the same oblique cube, plum, sitting on its block. */
-    const [gx,gy]=p3(HUNTER); const x=gx+inset, y=gy+inset+ (s-hs);
-    const hk=k*hs/s, ht=t*hs/s;
+    const [gx,gy]=p3(HUNTER); const x=gx+dx, y=gy+dy;
+    const hk=k*HUNT_SCALE, ht=t*HUNT_SCALE;
     hunter3=aura(x,y-ht,hs+hk,hs+ht)
       +poly([[x,y],[x+hs,y],[x+hs+hk,y-ht],[x+hk,y-ht]], C.huntTop, rim)
       +poly([[x+hs,y],[x+hs+hk,y-ht],[x+hs+hk,y+hs-ht],[x+hs,y+hs]], C.huntSide, rim)
-      +rect(x,y,hs,hs,C.huntBody,rim)+core(x+hs/2,y+hs/2);
-    /* Flat: standing on the platform, so the square sits on the block's top. */
-    const [hx,hy]=p2(HUNTER); const fx=hx+inset, fy=hy+(s-hs);
-    hunter2=aura(fx,fy,hs,hs)+rect(fx,fy,hs,hs,C.huntBody,rim)+core(fx+hs/2,fy+hs/2);
+      +rect(x,y,hs,hs,C.huntBody,rim);
+    /* Flat: the same square, standing on the platform. */
+    const [hx,hy]=p2(HUNTER); const fx=hx+dx, fy=hy+dy;
+    hunter2=aura(fx,fy,hs,hs)+rect(fx,fy,hs,hs,C.huntBody,rim);
   }
 
   /* --- the seam: a line through the icon, leaning a little. Left of it is
