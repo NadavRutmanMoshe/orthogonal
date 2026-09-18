@@ -602,10 +602,16 @@ solid field of lids, the same trap `chrome.md` records for the cutscene's
 lawn), and the framing centres the CAST rather than the scene, or the wide
 arena drags the picture off-centre.
 
-`--variant E` is A with the seam a quarter-cell LEFT of centre, which is
-where it sat before it was centred; both positions are inside the safe gap so
-nothing is cut either way, and it is kept so the two can be looked at rather
-than argued about.
+**E SHIPS, on the owner's call (18 Sep)**, and A is the one kept for
+comparison now - `--variant A`. E is A with the seam a quarter-cell LEFT of
+centre, which is where it sat before the arithmetic centred it: both
+positions are inside the safe gap, so nothing is cut either way, and what the
+quarter-cell buys is a little more page, a little less volume, and the cube
+nearer the middle of its own half. Centred was the answer the maths gave and
+this was the one that looked right, which is the order those two go in.
+**`SHIP` at the top of `tools/icon.js` is the one place that says so**: it is
+the default variant AND the one that writes the unsuffixed files, so
+`app/icon/icon-512.png` is always what the store page gets.
 
 Three other compositions are in the script: `--variant B` puts the seam
 through the cube, unflipped, so he is half a cube and half a square;

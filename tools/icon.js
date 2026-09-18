@@ -138,12 +138,19 @@ const HUNTERS=[[2,1,1]];
    of the seam it stands on is (see `flip`). */
 const HUNT_SCALE=1;
 
+/* WHICH ONE SHIPS, in one place: it is the default, and it is the one that
+   writes the unsuffixed files, so `app/icon/icon-512.png` is always the
+   picture on the store page rather than whichever letter was default when
+   the script was written. The owner picked E on 18 Sep, over A, which is the
+   same composition with the seam a quarter-cell further right. */
+const SHIP="E";
+
 const VARIANTS={
   /* A: FLIPPED. The page is on the left and the volume on the right, so the
      cube is the flat square and the HUNTER is the solid cube. A cube has a
      lid and a side and a flat square has neither, so whichever piece stands
      in the volume is the bigger thing on the screen - and it should not be
-     the one being hunted. This is the one that ships.
+     the one being hunted. E ships; this is E's seam, centred.
 
      seam 2.0 puts the line through the MIDDLE OF THE ICON, and that is
      arithmetic rather than taste: the framing centres a cast box that runs
@@ -160,12 +167,13 @@ const VARIANTS={
   /* C: no world, one enormous cube half folded. The most legible at 48px,
      and the least about the puzzle. */
   C:{seam:0.55, tilt:0, hunters:false, glow:true, solo:true},
-  /* E: A with the seam a quarter-cell LEFT of centre, which is where it sat
-     before it was centred. Both are inside the safe gap (1.5 to 2.0), so
-     nothing is cut either way and the only difference is where the line
-     falls: E leaves a little more page and a little less volume, and puts
-     the cube nearer the middle of its own half. Kept so the two can be
-     looked at side by side rather than argued about. */
+  /* E: SHIPS (the owner's call, 18 Sep). A with the seam a quarter-cell LEFT
+     of centre, which is where it sat before it was centred. Both are inside
+     the safe gap (1.5 to 2.0), so nothing is cut either way and the only
+     difference is where the line falls: E leaves a little more page and a
+     little less volume, and puts the cube nearer the middle of its own half.
+     Centred was the arithmetic answer and this was the one that looked
+     right, which is the order those two go in. */
   E:{seam:1.75, tilt:-9, flip:true, hunters:true, glow:true},
   /* D: A's arrangement unflipped, with the hunter mid-charge - the telegraph
      pane pointed at the cube, plus speed lines. A lot of picture for an icon,
@@ -346,14 +354,14 @@ function scene(V, W, id){
 async function main(){
   const args=process.argv.slice(2);
   const arg=n=>{ const i=args.indexOf(n); return i>=0?args[i+1]:null; };
-  const vname=arg("--variant")||"A";
+  const vname=arg("--variant")||SHIP;
   const DEFAULT_WORLD=WORLD;                 // captured before any override
   if(arg("--world")) WORLD=arg("--world");
   const V=VARIANTS[vname]; if(!V){ console.error("variants: "+Object.keys(VARIANTS).join(", ")); process.exit(1); }
   /* A world other than the shipping one writes its own files, so three can
      be looked at side by side without one overwriting the next. */
   const wsuf=(arg("--world")&&arg("--world")!==DEFAULT_WORLD)?"-"+arg("--world"):"";
-  const suffix=(vname==="A"?"":"-"+vname)+wsuf;
+  const suffix=(vname===SHIP?"":"-"+vname)+wsuf;
   fs.mkdirSync(OUT,{recursive:true});
   const svg=scene(V,1024);
   if(args.includes("--svg")) fs.writeFileSync(path.join(OUT,`icon${suffix}.svg`),svg);
