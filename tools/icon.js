@@ -9,14 +9,19 @@
 
    Why it is drawn and not painted: there are no image files in this project
    (CLAUDE.md, Rendering), and an icon that is a script can be re-rendered at
-   a new size, a new palette or a new skin in a second. The scene is a list of
-   voxels in the game's own block format, projected twice with the game's own
-   idea of a fold: on one side of a seam the world has depth and the blocks
-   show their tops, on the other side it is pressed flat into paper and the
-   blocks at different depths merge into one silhouette - which is the whole
-   game, and the reason the two columns that stand apart on the left are one
-   platform on the right. The Rose cube stands on the seam, half a cube and
-   half a square, and a hunter stands on the row beside him.
+   a new size, a new palette or a new skin in a second.
+
+   WHAT THE PICTURE IS. A boss arena, which in this game is one block tall
+   and several blocks DEEP - BOSS I is box(0,9,0,0,0,6,[]), ten wide, one
+   high, seven deep. A seam runs down the icon between the cube and the
+   hunter. Left of it the arena has its depth: the rows recede up and to the
+   right and you can count them. Right of it the same arena is folded, and
+   all of those rows have merged into a single strip. One object, both
+   states, the fold happening across the middle of the picture.
+
+   That is also why the cast stands where it does. The cube is in the volume
+   and the hunters are on the page, so the picture says what the game says:
+   fold the world and whatever was far away in depth is suddenly on your row.
 
    Rendering goes through the same headless Chromium tools/shot.js uses. */
 const fs=require("fs"), path=require("path");
@@ -33,98 +38,105 @@ function loadPlaywright(){
 }
 
 /* ---- the palette, lifted from the game --------------------------------
-   Sky: world I's night (js/02-levels.js). Rose: SKIN_COLORS[0]. Grass and
-   earth: the grass texture's own greens and browns, flattened to one value
-   each. Hunter: huntMesh()'s plum shell, red core, red cage and red aura.
-   Paper: what the sky becomes when the world is folded - lifted toward
-   white and greyed, PAPER_LIFT in the renderer. */
+   Sky: world I's night (js/02-levels.js), which is the sky BOSS I is fought
+   under. Rose: SKIN_COLORS[0]. Grass and earth: the grass texture's own
+   greens and browns, flattened to one value each. Hunter: huntMesh()'s plum
+   shell, red cage and red aura. Paper: what the sky becomes when the world
+   is folded - lifted toward white and greyed, PAPER_LIFT in the renderer. */
 const C={
   skyTop:"#1f4a70", skyBot:"#0d1b2e",
   paperTop:"#6d8aa8", paperBot:"#4c627e",
   rose:"#d6336c", roseTop:"#ee5a8c", roseSide:"#a8244f",
   grass:"#7fc63f", grassLid:"#a5e04a", grassSide:"#5f9e2c",
   earth:"#6f4a2a", earthSide:"#4e3218", earthFlat:"#7a5533",
-  ink:"#14172a", white:"#ffffff",
-  huntBody:"#46323e", huntTop:"#5a4250", huntSide:"#33242d", huntRed:"#ff4d5e", huntRim:"#ff6b7a", huntEdge:"#ff8a94",
-  seam:"#5ff2d0"
+  huntBody:"#46323e", huntTop:"#5a4250", huntSide:"#33242d",
+  huntRed:"#ff4d5e", huntRim:"#ff6b7a", huntEdge:"#ff8a94",
+  ink:"#14172a", white:"#ffffff", seam:"#5ff2d0",
+  woods:"#0f2a2a", woodsFlat:"#566c86"
 };
 
 /* ---- the scene ---------------------------------------------------------
-   [x,y,z]: x right, y up, z depth AWAY from the camera. Two towers, one
-   near and one two cells back, one square apart in x. In 3D the far one
-   draws higher and to the right, so there is air between them; flat, they
-   are one platform three wide. The player stands on the near tower and a
-   hunter on the far one: apart in the volume, on the page they share a row,
-   which is the whole of a fight in one picture. */
-const BLOCKS=[
-  [-1,0,0],
-  [0,0,0],[0,1,0],
-  [1,0,2],[1,1,2],
-  [2,0,2],[2,1,2]
-];
-const PLAYER=[0,2,0];
-const HUNTER=[2,2,2];
-/* How many cells tall the hunter stands. 1 is the player's own size. It was
-   1.3 for a build and looked wrong for a reason worth writing down: a piece
-   that overhangs its square stops reading as a piece ON the grid, and this
-   is a grid game. The menace is bought with the charge instead. */
+   [x,y,z]: x right, y up, z depth AWAY from the camera. The arena is an
+   ISLAND with sky all round it, which is how a boss arena actually looks
+   (shots/boss.png): a slab hanging over the woods, not a floor running off
+   the edges. Running it off the edges was tried and filled the world side
+   with a wall of green - the same trap `chrome.md` records for the
+   cutscene's lawn, because at this camera angle a big field of lids is
+   exactly that. */
+/* x0 is out to -2 so the depth rows have somewhere to be SEEN. They recede
+   up and to the right, so behind the cube they are hidden by him and beyond
+   him they are cut off by the seam; the only place a person can count them
+   is the wedge to his left, and that wedge has to be wide enough to count. */
+const ARENA={x0:-2, x1:4, z0:0, z1:2};
+const PLAYER=[0,1,0];
+/* Two hunters, because a fight is a pack. The first is the one the seam is
+   measured against; the second is further out and half off the edge, which
+   is what says there are more of them than fit in the frame. */
+const HUNTERS=[[2,1,2],[4,1,1]];
+/* How many cells tall a hunter stands. 1 is the player's own size. It was
+   1.3 for a build and looked wrong for a reason worth keeping: a piece that
+   overhangs its square stops reading as a piece ON the grid, and the grid is
+   what this game is. */
 const HUNT_SCALE=1;
 
 const VARIANTS={
-  /* A: the seam runs through the player. Left of it, the world; right of it,
-     the page. The hero is the half-folded cube, and the hunter simply stands
-     on the row it shares with him once the world is flat. This is the one
-     that ships: it is the quietest and it still says everything. */
-  A:{seam:0.58, tilt:9, showHunter:true, glow:true},
-  /* B: the same, with the seam leaning the other way. The cube is high in
-     the frame, so a seam that leans left at the top takes MORE of him onto
-     the page: he keeps a sliver of lid and the world side gets narrower. */
-  B:{seam:0.58, tilt:-9, showHunter:true, glow:true},
+  /* A: the seam falls BETWEEN the cube and the hunter, so neither is cut.
+     The cube keeps all three of its dimensions and the hunter is flat paper,
+     which is the cleanest way to say what the fold does to distance. This is
+     the one that ships. */
+  A:{seam:1.62, tilt:-9, hunters:true, glow:true},
+  /* B: the seam through the cube instead, so he is half a cube and half a
+     square. Louder, and it costs the arena's clean break. */
+  B:{seam:0.58, tilt:-9, hunters:true, glow:true},
   /* C: no world, one enormous cube half folded. The most legible at 48px,
      and the least about the puzzle. */
-  C:{seam:0.55, tilt:0, showHunter:false, glow:true, solo:true},
-  /* D: A with the hunter mid-charge - the telegraph pane pointed at the cube
-     and speed lines off its back. Built, and it is a lot of picture for an
-     icon; kept here because the drawing of it is the expensive part. */
-  D:{seam:0.58, tilt:9, showHunter:true, charge:true, glow:true}
+  C:{seam:0.55, tilt:0, hunters:false, glow:true, solo:true},
+  /* D: A with the near hunter mid-charge - the telegraph pane pointed at the
+     cube, plus speed lines. A lot of picture for an icon, kept because the
+     drawing of it is the expensive part. */
+  D:{seam:1.62, tilt:-9, hunters:true, charge:true, glow:true}
 };
+
 function scene(V, W, id){
   id=id||("i"+W);
   /* Cell size and the oblique projection. The game's camera tilts down so a
-     block shows a front face and a lid, and turns in 90° steps, so no side
-     face is ever seen. The icon takes a little licence and shows a side, or
-     a lone cube reads as a square with a hat. TILT is the lid's height and
-     SKEW its lean, as fractions of a cell. */
+     block shows a front face and a lid, and turns in 90 degree steps, so no
+     side face is ever seen. The icon takes a little licence and shows a
+     side, or a lone cube reads as a square with a hat. TILT is how far a
+     cell of depth lifts, SKEW how far it leans right. */
   const solo=!!V.solo;
   /* V.zoom shrinks the scene and nothing else: the sky, the page and the
      seam still fill the square. The adaptive foreground is drawn this way,
      so whatever mask the launcher cuts lands on background, not on an edge. */
-  const s=(solo? W*0.42 : W*0.175)*(V.zoom||1);
+  const s=(solo? W*0.42 : W*0.125)*(V.zoom||1);
   const TILT=0.52, SKEW=0.50;
   const k=SKEW*s, t=TILT*s;
-  const blocks=solo?[]:BLOCKS;
-  const player=solo?[0,0,0]:PLAYER;
 
-  /* Origin: centre what is actually drawn. Left of the seam the world is
-     3D, and only the near blocks are there; right of it everything is flat.
-     So the box is the 3D extent of the near blocks and the player plus the
-     flat extent of everything. */
+  const blocks=[];
+  if(!solo) for(let z=ARENA.z0;z<=ARENA.z1;z++)
+    for(let x=ARENA.x0;x<=ARENA.x1;x++) blocks.push([x,0,z]);
+  const player=solo?[0,0,0]:PLAYER;
+  const hunters=(V.hunters&&!solo)?HUNTERS:[];
+
   const p3=b=>[ox+b[0]*s+b[2]*k, oy-b[1]*s-b[2]*t];   // front-top-left, 3D
   const p2=b=>[ox+b[0]*s, oy-b[1]*s];                  // flat: depth stops paying
   let ox=0, oy=0;
+
+  /* FRAMING: the CAST is centred, not the scene. The arena is deliberately
+     wider than the icon and would drag the picture wherever its own middle
+     happened to fall; what a person looks at is the cube and the thing
+     coming for it, so those are what sit in the middle of the square. */
   const pts=[];
-  for(const b of [...blocks.filter(b=>b[2]===0),player]){ const [x,y]=p3(b); pts.push([x,y-t],[x+s+k,y+s]); }
-  for(const b of blocks){ const [x,y]=p2(b); pts.push([x,y],[x+s,y+s]); }
-  if(V.showHunter){ const [x,y]=p2(HUNTER), hs=s*HUNT_SCALE, dx=(s-hs)/2;
-    pts.push([x+dx,y+s-hs],[x+dx+hs,y+s]);
-    if(V.charge) pts.push([x+s*1.36,y+s]);   // the far end of the speed lines
-  }
+  { const [x,y]=p3(player); pts.push([x,y-t],[x+s+k,y+s]); }
+  if(hunters.length){ const [x,y]=p2(hunters[0]); pts.push([x,y],[x+s,y+s]); }
   const minX=Math.min(...pts.map(p=>p[0])), maxX=Math.max(...pts.map(p=>p[0]));
   const minY=Math.min(...pts.map(p=>p[1])), maxY=Math.max(...pts.map(p=>p[1]));
-  ox=(W-(maxX-minX))/2-minX; oy=(W-(maxY-minY))/2-minY + (solo?0:W*0.02);
+  ox=(W-(maxX-minX))/2-minX;
+  /* A shade above centre: the arena's depth rises up and to the right behind
+     the cast, so the weight of the picture is above them and empty paper
+     below. Nudging the cast up puts the floor nearer the middle. */
+  oy=(W-(maxY-minY))/2-minY - (solo?0:W*0.03);
 
-  /* --- 3D faces, painter's order: far first, then left to right, bottom up. */
-  const order=[...blocks].sort((a,b)=>(b[2]-a[2])||(a[0]-b[0])||(a[1]-b[1]));
   const poly=(pts,fill,extra="")=>`<polygon points="${pts.map(p=>p.map(v=>v.toFixed(1)).join(",")).join(" ")}" fill="${fill}" ${extra}/>`;
   const rect=(x,y,w,h,fill,extra="")=>`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" fill="${fill}" ${extra}/>`;
   const stroke=`stroke="${C.ink}" stroke-width="${(s*0.035).toFixed(1)}" stroke-linejoin="round"`;
@@ -134,114 +146,82 @@ function scene(V, W, id){
     let o="";
     o+=poly([[x,y],[x+s,y],[x+s+k,y-t],[x+k,y-t]], lid, stroke);          // top
     o+=poly([[x+s,y],[x+s+k,y-t],[x+s+k,y+s-t],[x+s,y+s]], side, stroke); // right side
-    o+=rect(x,y,s,s,front,stroke);                                          // front
+    o+=rect(x,y,s,s,front,stroke);                                        // front
     if(lidStrip){ // the grass lid wraps a little way down the front, as in the game
       o+=rect(x,y,s,s*0.16,lidStrip,`stroke="none"`);
       o+=poly([[x+s,y],[x+s+k,y-t],[x+s+k,y-t+s*0.16],[x+s,y+s*0.16]], C.grassSide, `stroke="none"`);
     }
     return o;
   }
-  function cube2(b, fill){ const [x,y]=p2(b); return rect(x,y,s,s,fill,stroke); }
 
-  let world3="", world2="";
-  for(const b of order) world3+=cube3(b, C.earth, C.grass, C.earthSide, C.grassLid);
-  /* Flat: blocks at different depths that share a square merge. Draw the
-     nearest last so it wins, like rule 5. */
+  /* --- the arena, twice.
+     3D: painter's order, far rows first, so the near row overlaps them and
+     the slab reads as deep. */
+  let world3="";
+  for(const b of [...blocks].sort((a,b)=>(b[2]-a[2])||(a[0]-b[0]))) world3+=cube3(b, C.earth, C.grass, C.earthSide, C.grassLid);
+  /* Flat: every block that shares a square merges, so an arena four deep
+     becomes one row. That collapse IS the game, and drawing it on one
+     continuous object either side of the seam is the whole reason the arena
+     is shaped like this. */
+  let world2="";
   const seen=new Set();
   for(const b of [...blocks].sort((a,b)=>b[2]-a[2])){
     const key=b[0]+","+b[1]; if(seen.has(key)) continue; seen.add(key);
-    world2+=cube2(b, C.earthFlat);
-    const [x,y]=p2(b); world2+=rect(x,y,s,s*0.16,C.grass,`stroke="none"`);
+    const [x,y]=p2(b);
+    world2+=rect(x,y,s,s,C.earthFlat,stroke)+rect(x,y,s,s*0.16,C.grass,`stroke="none"`);
   }
 
-  /* The player: 3D on the left, a square on the right. White outline, as
-     outlineFor() gives a piece against the void. */
+  /* The player: a whole cube, in the volume. White outline, as outlineFor()
+     gives a piece against the void. */
   const pw=`stroke="${C.white}" stroke-width="${(s*0.05).toFixed(1)}" stroke-linejoin="round"`;
   const [px,py]=p3(player);
-  let player3=poly([[px,py],[px+s,py],[px+s+k,py-t],[px+k,py-t]], C.roseTop, pw)
-             +poly([[px+s,py],[px+s+k,py-t],[px+s+k,py+s-t],[px+s,py+s]], C.roseSide, pw)
-             +rect(px,py,s,s,C.rose,pw);
+  const player3=poly([[px,py],[px+s,py],[px+s+k,py-t],[px+k,py-t]], C.roseTop, pw)
+    +poly([[px+s,py],[px+s+k,py-t],[px+s+k,py+s-t],[px+s,py+s]], C.roseSide, pw)
+    +rect(px,py,s,s,C.rose,pw);
   const [qx,qy]=p2(player);
-  let player2=rect(qx,qy,s,s,C.rose,pw);
+  const player2=rect(qx,qy,s,s,C.rose,pw);
 
-  /* The hunter: huntMesh() in two dimensions. In the game its shell is .72
-     of a cell, because a fight is a crowd of them and they must not read as
-     walls; an icon has one, so it fills its square - HUNT_SCALE cells tall,
-     bottom aligned to the block it stands on. No core: the octahedron inside it was a red gem at icon size and read
-     as treasure, which is the opposite of what it is. What is left is the
-     plum body, the red cage and the red aura, which is how the game asks
-     you to find one anyway - by contrast, not by ornament. */
-  let hunter3="", hunter2="";
-  if(V.showHunter){
-    const hs=s*HUNT_SCALE, dx=(s-hs)/2, dy=s-hs;   // centred, standing on the floor
-    const rim=`stroke="${C.huntRim}" stroke-width="${(hs*0.055).toFixed(1)}" stroke-linejoin="round"`;
-    const aura=(x,y,w,h)=>rect(x-hs*0.12,y-hs*0.12,w+hs*0.24,h+hs*0.24,C.huntRed,`opacity="0.42" filter="url(#${id}blur)"`);
-    /* 3D: the same oblique cube, plum, sitting on its block. */
-    const [gx,gy]=p3(HUNTER); const x=gx+dx, y=gy+dy;
-    const hk=k*HUNT_SCALE, ht=t*HUNT_SCALE;
-    hunter3=aura(x,y-ht,hs+hk,hs+ht)
-      +poly([[x,y],[x+hs,y],[x+hs+hk,y-ht],[x+hk,y-ht]], C.huntTop, rim)
-      +poly([[x+hs,y],[x+hs+hk,y-ht],[x+hs+hk,y+hs-ht],[x+hs,y+hs]], C.huntSide, rim)
-      +rect(x,y,hs,hs,C.huntBody,rim);
-    /* THE CHARGE. What makes it read as coming at you is not its size, it
-       is this: the pane a hunter drops down the row in the beat before it
-       fires (lineMesh() / drawLines(), js/10-render.js - red at .5, a paler
-       rim at .7, RAY_W across). Caught mid-fall, so the row is visibly
-       being flattened and the bar has not landed yet.
-       It is drawn ONLY on the page, and that is the point of the picture:
-       in the volume the hunter is two cells back and cannot touch anybody.
-       Fold the world and it is suddenly on your row. The seam clips the
-       pane, so the threat begins exactly where the world goes flat. */
-    /* Flat: the same square, standing on the platform. */
-    const [hx,hy]=p2(HUNTER); const fx=hx+dx, fy=hy+dy;
-    let ray="";
-    if(V.charge){
-      /* The pane, at .5 over paper, came out a washed pink rectangle that
-         read as scenery. Three things fix it and all three are about
-         DIRECTION, which is what "coming at you" means in a still picture:
-         the fill is nearly solid, the leading end is a POINT rather than a
-         wall, and the trailing end fades, so the eye is pulled from the
-         hunter toward the cube and not the other way. */
-      /* The tip must land in the GAP between them, not inside the cube, or
-         the point is hidden behind him and the whole thing is a bar again.
-         The gap is exactly one cell, so the beam is a cell long: the point
-         a whisker into the cube, the tail buried in the hunter. */
-      const rh=s*0.54, ry=hy+s-rh*1.15, rx=p2(player)[0]+s*0.94, tip=s*0.44;
-      const x1=hx+s*0.5;                       // it starts inside the hunter
-      /* Nearly solid all the way. A gradient that faded toward the hunter
-         detached the beam from the thing throwing it, which is the one
-         relationship the picture is about. */
-      ray=`<linearGradient id="${id}ray" x1="0" y1="0" x2="1" y2="0">`
+  /* The hunters: huntMesh() in two dimensions. Plum body, red cage, red aura
+     - found by contrast, as in the game. No core: the octahedron inside one
+     was a red gem at icon size and read as treasure, which is the opposite
+     of what it is. */
+  const hs=s*HUNT_SCALE, dx=(s-hs)/2, dy=s-hs;
+  const rim=`stroke="${C.huntRim}" stroke-width="${(hs*0.055).toFixed(1)}" stroke-linejoin="round"`;
+  const aura=(x,y,w,h)=>rect(x-hs*0.12,y-hs*0.12,w+hs*0.24,h+hs*0.24,C.huntRed,`opacity="0.42" filter="url(#${id}blur)"`);
+  let hunters2="";
+  hunters.forEach((h,i)=>{
+    const [hx,hy]=p2(h), fx=hx+dx, fy=hy+dy;
+    if(i===0&&V.charge){
+      /* THE CHARGE (variant D): the pane a hunter drops down the row in the
+         beat before it fires - lineMesh()/drawLines(), js/10-render.js -
+         caught mid-fall and sharpened to a point at the cube. */
+      const rh=s*0.54, ry=hy+s-rh*1.15, rx=qx+s*0.94, tip=s*0.44, x1=hx+s*0.5;
+      hunters2+=`<linearGradient id="${id}ray" x1="0" y1="0" x2="1" y2="0">`
         +`<stop offset="0" stop-color="${C.huntRed}" stop-opacity="0.92"/>`
         +`<stop offset="1" stop-color="${C.huntRed}" stop-opacity="0.82"/></linearGradient>`
         +poly([[rx,ry+rh/2],[rx+tip,ry],[x1,ry],[x1,ry+rh],[rx+tip,ry+rh]],
               `url(#${id}ray)`, `stroke="${C.huntEdge}" stroke-width="${(s*0.03).toFixed(1)}" stroke-opacity="0.85" stroke-linejoin="round"`);
-      /* Speed lines behind it. Nothing in the game draws these - they are
-         the one piece of pure poster language in the picture, and they are
-         what makes a still cube look like it is travelling. */
-      for(let i=0;i<3;i++){
-        const w=s*(0.28-i*0.08), yy=hy+s*(0.24+i*0.26);
-        ray+=rect(hx+s*1.01+i*s*0.05, yy, w, s*0.10, C.huntRed,
-                  `opacity="${(0.8-i*0.22).toFixed(2)}" rx="${(s*0.045).toFixed(1)}"`);
+      for(let j=0;j<3;j++){
+        const w=s*(0.28-j*0.08), yy=hy+s*(0.24+j*0.26);
+        hunters2+=rect(hx+s*1.01+j*s*0.05, yy, w, s*0.10, C.huntRed,
+          `opacity="${(0.8-j*0.22).toFixed(2)}" rx="${(s*0.045).toFixed(1)}"`);
       }
     }
-    hunter2=ray+aura(fx,fy,hs,hs)+rect(fx,fy,hs,hs,C.huntBody,rim);
-  }
+    hunters2+=aura(fx,fy,hs,hs)+rect(fx,fy,hs,hs,C.huntBody,rim);
+  });
 
-  /* --- the seam: a line through the icon, leaning a little. Left of it is
-     the world, right of it the page. */
-  /* V.seam is a fraction of the PLAYER's width, so the seam always cuts the
-     cube, whatever the cell size. */
+  /* --- the seam. V.seam is in CELLS from the player's own left edge, so it
+     keeps its place against the cast whatever the cell size is: 1.62 sits in
+     the gap between the cube and the near hunter, .58 cuts the cube. */
   const sx=px+s*V.seam, lean=Math.tan(V.tilt*Math.PI/180)*W/2;
   const leftClip=`M -10 -10 L ${sx+lean} -10 L ${sx-lean} ${W+10} L -10 ${W+10} Z`;
   const rightClip=`M ${sx+lean} -10 L ${W+10} -10 L ${W+10} ${W+10} L ${sx-lean} ${W+10} Z`;
 
   const stars=(()=>{ let o="", r=7; for(let i=0;i<26;i++){ r=(r*16807)%2147483647; const x=(r%1000)/1000*W; r=(r*16807)%2147483647; const y=(r%1000)/1000*W*0.8; r=(r*16807)%2147483647; const q=1.2+(r%1000)/1000*2.4; o+=`<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${q.toFixed(1)}" fill="#ffffff" opacity="${(0.35+q/8).toFixed(2)}"/>`; } return o; })();
 
-  /* The far woods, a dark rim along the bottom of the world side, like the
-     night forest under world I. On the page side it is the same shape,
-     greyed - scenery folds too. */
-  const hills=(fill)=>{ let d=`M 0 ${W*0.86}`; for(let i=0;i<=12;i++){ const x=i/12*W; const y=W*(0.80+0.05*Math.sin(i*1.7+0.4)+0.02*Math.cos(i*3.1)); d+=` Q ${(x-W/24).toFixed(0)} ${(y-W*0.06).toFixed(0)} ${x.toFixed(0)} ${y.toFixed(0)}`; } d+=` L ${W} ${W} L 0 ${W} Z`; return `<path d="${d}" fill="${fill}"/>`; };
+  /* The far woods, well below the arena, as under a night-grass boss. On the
+     page side it is the same shape greyed - scenery folds too. */
+  const hills=(fill)=>{ let d=`M 0 ${W*0.93}`; for(let i=0;i<=12;i++){ const x=i/12*W; const y=W*(0.88+0.04*Math.sin(i*1.7+0.4)+0.02*Math.cos(i*3.1)); d+=` Q ${(x-W/24).toFixed(0)} ${(y-W*0.05).toFixed(0)} ${x.toFixed(0)} ${y.toFixed(0)}`; } d+=` L ${W} ${W} L 0 ${W} Z`; return `<path d="${d}" fill="${fill}"/>`; };
 
   const glow=V.glow?`
     <line x1="${(sx+lean).toFixed(1)}" y1="-10" x2="${(sx-lean).toFixed(1)}" y2="${W+10}" stroke="${C.seam}" stroke-width="${(W*0.05).toFixed(0)}" opacity="0.28" filter="url(#${id}blur)"/>
@@ -259,13 +239,13 @@ function scene(V, W, id){
   <g clip-path="url(#${id}L)">
     <rect width="${W}" height="${W}" fill="url(#${id}sky)"/>
     ${stars}
-    ${solo?"":hills("#0f2a2a")}
-    ${world3}${hunter3}${player3}
+    ${solo?"":hills(C.woods)}
+    ${world3}${player3}
   </g>
   <g clip-path="url(#${id}R)">
     <rect width="${W}" height="${W}" fill="url(#${id}paper)"/>
-    ${solo?"":hills("#566c86")}
-    ${world2}${hunter2}${player2}
+    ${solo?"":hills(C.woodsFlat)}
+    ${world2}${hunters2}${player2}
   </g>
   ${glow}
 </svg>`;
@@ -296,9 +276,9 @@ async function main(){
   await shot(path.join(OUT,`icon-1024${suffix}.png`), svg, 1024);
   await shot(path.join(OUT,`icon-512${suffix}.png`), scene(V,512), 512);
 
-  /* A preview sheet: how it reads on a home screen, at three sizes, rounded
+  /* A preview sheet: how it reads on a home screen, at four sizes, rounded
      the way the OS rounds it. This is the file to LOOK at. */
-  const round=(w,r)=>`<div style="display:inline-block;width:${w}px;height:${w}px;border-radius:${r}px;overflow:hidden;margin:0 24px;vertical-align:middle;box-shadow:0 8px 24px rgba(0,0,0,.4)">${scene(V,w)}</div>`;
+  const round=(w,r)=>`<div style="display:inline-block;width:${w}px;height:${w}px;border-radius:${r}px;overflow:hidden;margin:0 24px;vertical-align:middle;box-shadow:0 8px 24px rgba(0,0,0,.4)">${scene(V,w,"p"+w)}</div>`;
   const sheet=`<div style="background:#e9ecf1;width:1024px;height:520px;display:flex;align-items:center;justify-content:center;font:14px sans-serif;color:#555">
     ${round(256,58)}${round(128,29)}${round(64,14)}${round(48,11)}</div>`;
   await page.setViewportSize({width:1024,height:520});

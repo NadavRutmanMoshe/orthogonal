@@ -384,26 +384,39 @@ trial, the map, the wardrobe, a cutscene beat and the neighbour mid-sentence.
 - **Steam**: 1920x1080, at least five.
 
 **The icon is done**: `node tools/icon.js` draws it from the game's own
-palette - the Rose cube standing on a glowing seam, 3D on the left and
-pressed flat on the right, with the far tower merging into the platform the
-way the fold merges depth and a hunter one square away on the same row,
-mid-charge, its beam pointed at the cube - and writes `app/icon/icon-1024.png` (iOS),
-`app/icon/icon-512.png` (Play) and `app/icon/preview.png` (how it reads at
-256, 128, 64 and 48, rounded). `--android` writes the launcher mipmaps into
-the Android project, the adaptive foreground drawn full-bleed with the scene
-at 2/3 so any mask lands on sky. Two other compositions are in the script as
-`--variant B` (the same picture with the hunter merely standing there) and
-`--variant C` (one huge cube, no world), regenerable in a second. The
-hunter's size is `HUNT_SCALE`: it was 1.3 cells for a build and a piece
-that overhangs its square stops reading as a piece on a grid, so the
-menace is carried by the charge instead.
+palette and writes `app/icon/icon-1024.png` (iOS), `app/icon/icon-512.png`
+(Play) and `app/icon/preview.png` (how it reads at 256, 128, 64 and 48,
+rounded). `--android` writes the launcher mipmaps into the Android project,
+the adaptive foreground drawn full-bleed with the scene at 2/3 so any mask
+lands on sky.
 
-**What the tool cannot make** is the artwork carrying a logotype: Play's
-1024x500 feature graphic, which is mandatory, and Steam's capsule set
-(460x215, 231x87, 616x353, 374x448, 600x900 and the 3840x1240 library hero).
-That is six pieces of design work and it is the one item on this list that
-should start early, because it is the only one that cannot be finished in an
-afternoon by a script.
+**What it shows, and why that shape.** A boss arena, because a boss arena in
+this game is one block tall and several deep - `box(0,9,0,0,0,6,[])` is
+BOSS I - which means the fold has something visible to do to it. A seam runs
+down the icon. Left of it the arena keeps its depth and you can count the
+rows receding; right of it the same arena is folded and those rows have
+become a single strip. One object, both states. The cube stands in the
+volume and two hunters stand on the page, so the picture also says the thing
+the fights are about: fold the world and what was far away in depth is
+suddenly on your row.
+
+Four numbers carry the composition and each was arrived at by looking:
+`ARENA` is an ISLAND with sky around it rather than a floor running off the
+edges (that filled the world side with a wall of green, the same trap
+`chrome.md` records for the cutscene's lawn); `x0` reaches out to -2 because
+the wedge left of the cube is the ONLY place the depth rows can be counted,
+being hidden by him in the middle and cut by the seam beyond it; the framing
+centres the CAST rather than the scene, or the wide arena drags the picture
+off-centre; and `V.seam` is measured in cells from the cube's own left edge,
+so it keeps its place against the cast at any cell size.
+
+Three other compositions are in the script: `--variant B` puts the seam
+through the cube so he is half a cube and half a square, `--variant C` is one
+huge half-folded cube with no world (most legible tiny, least about the
+puzzle) and `--variant D` adds the charge telegraph, which is a lot of
+picture for an icon. `HUNT_SCALE` is the hunter's size in cells and is 1: at
+1.3 it overhung its square and a piece that does not sit in a cell stops
+reading as a piece on a grid.
 
 ---
 
