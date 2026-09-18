@@ -31,10 +31,14 @@ function isDeal(it){return !!(it&&it.deal);}
    has taken most of it off. A discount nobody can see is a discount nobody
    was given: the struck-through number is the whole of what says "you have
    already paid for part of this". */
+/* shopPrice() is the store's own price in the player's currency once the
+   store has answered, and the dollars in PASSES/SKIN_SHAPES until then.
+   The old price is an <s>, not the <i> it was: on a catalogue tile `.item i`
+   is the 34px icon box, and the struck price was drawn inside one. */
 function dealPriceSay(it){
-  var p="$"+esc(dealPrice(it));
-  return dealDiscounted(it)
-    ? "<i class='wwas'>$"+esc(it.usd)+"</i>"+p
+  var p=esc(shopPrice(it)), was=shopWas(it);
+  return was
+    ? "<s class='wwas'>"+esc(was)+"</s>"+p
     : p;
 }
 function wardList(t){
@@ -304,11 +308,14 @@ function wardMeta(){
   else if(it.reward)  s+="<button disabled class='wearn'>EVERY "+
                          "<u class='st'>\u2605</u> IN "+
                          esc(secNumeral(it.sec))+"</button>";
-  /* NO STARS, NO ADS, NO SECOND TAP TO CONFIRM - there is nothing to confirm
-     until there is a store to charge. Dead for the same reason the ad
-     buttons are dead and said the same way, in the note below. */
-  else if(isDeal(it)) s+="<button disabled class='wbuyusd'>"+tagIcon()+
-                         "BUY \u00b7 $"+esc(dealPrice(it))+"</button>";
+  /* NO STARS, NO ADS, NO SECOND TAP TO CONFIRM - the store's own payment
+     sheet IS the confirmation, and asking twice before it is asking three
+     times. Dead in a browser, where there is no store to charge, and dead
+     while a purchase or a restore is already on screen. */
+  else if(isDeal(it)) s+="<button"+(shopPlugin()&&!SHOP.busy?" id='wBuyUsd'":" disabled")+
+                         " class='wbuyusd'>"+tagIcon()+
+                         (SHOP.busy?"ONE MOMENT \u2026":
+                          "BUY \u00b7 "+esc(shopPrice(it)))+"</button>";
   else if(bal<it.cost)s+="<button disabled>NEED "+(it.cost-bal)+" MORE <u class='st'>\u2605</u></button>";
   else if(buyArmed===id)
                       s+="<button id='wBuy' class='wsure'>SURE? \u00b7 "+it.cost+" <u class='st'>\u2605</u></button>";
@@ -320,19 +327,34 @@ function wardMeta(){
   var adRow=!have&&!it.reward&&!isDeal(it)&&!noLimits();
   if(adRow){
     var need=adsFor(it.cost), got=adsWatched(id);
-    s+="<button id='wAd' class='ad' disabled>"+adIcon()+"WATCH "+need+" AD"+(need===1?"":"S")+
+    s+="<button id='wAd' class='ad'>"+adIcon()+"WATCH "+need+" AD"+(need===1?"":"S")+
        (got?" ("+got+"/"+need+")":"")+"</button>";
   }
+  /* RESTORE PURCHASES, on the DEALS tab and only in the app. Apple rejects
+     an app that sells unlocks without one, and this tab is where somebody on
+     a new phone goes looking for what they bought. */
+  if(t==="deal"&&shopPlugin())
+    s+="<button id='wRestore' class='wrestore'"+(SHOP.busy?" disabled":"")+
+       ">RESTORE PURCHASES</button>";
   s+="</div>";
-  // The hook name belongs in the code and in CLAUDE.md, not in a player's
-  // narrow sidebar; all this has to say is why the button does nothing.
-  if(!have&&isDeal(it))
-    s+="<div class='note'>No store yet - nothing can be charged until "+
-       "the game is wrapped for one. The button is dead on purpose.</div>";
-  else if(adRow)s+="<div class='note'>No ad provider yet - the button is "+
-    "dead until the game is wrapped for a store.</div>";
+  // In a browser there is no store; say so once, plainly.
+  if(!have&&isDeal(it)&&!shopPlugin())
+    s+="<div class='note'>Buying opens in the phone app.</div>";
   $("wMeta").innerHTML=s;
   bind("wEquip",function(){wardEquip(t,id);SFX.key();wardRefresh();});
+  bind("wBuyUsd",function(){SFX.turn();shopBuy(it);});
+  bind("wRestore",function(){SFX.turn();shopRestore();});
+  /* One video towards this item; grantAdView() counts it and unlocks on the
+     last. Worn once it is unlocked, the way a star purchase is. */
+  bind("wAd",function(){
+    adWatch(function(ok){
+      if(!ok)return;
+      grantAdView(id);
+      if(owns(id)){wardEquip(t,id);SFX.key();flash(it.name+" unlocked");}
+      else flash(adsWatched(id)+" of "+adsFor(it.cost)+" watched");
+      wardRefresh();
+    });
+  });
   bind("wBuy",function(){
     if(buyArmed!==id){buyArmed=id;SFX.turn();wardMeta();return;}
     buyArmed=null;
@@ -496,6 +518,9 @@ var PANEL_ICONS={
          "-1.6-.7-1.6-1.6v-4.8c0-.9.7-1.6 1.6-1.6Zm9.6-9.6h5.2c.9 0 1.6.7 "+
          "1.6 1.6v14.4c0 .9-.7 1.6-1.6 1.6h-5.2c-.9 0-1.6-.7-1.6-1.6V4.8c0"+
          "-.9.7-1.6 1.6-1.6Z",
+  // a shield - AD PRIVACY, the consent choice a European player can revisit
+  privacy:"M12 2.4l7.6 3.1v5.7c0 4.7-3.2 8.9-7.6 10.4-4.4-1.5-7.6-5.7-7.6-"+
+          "10.4V5.5Z",
   // an arrow going back round to where it started
   reset:"M12 4a8 8 0 1 1-7.6 10.5 1.1 1.1 0 1 1 2.1-.7A5.8 5.8 0 1 0 12 6.2"+
         "c-1.7 0-3.2.7-4.2 1.9h2a1.1 1.1 0 0 1 0 2.2H5.1A1.1 1.1 0 0 1 4 9.2"+
@@ -823,6 +848,13 @@ function menuPanel(){
            keeps its replay flag: it is what stops a menu watch consuming
            FIND THEM on BOSS IV, and it is the seam any future door uses. */
         "<button id='mTut'>"+panelIcon("teach")+"REPLAY TUTORIAL</button>"+
+        /* AD PRIVACY exists only for a player Google says needs it - in
+           practice somebody in Europe who was shown the consent form, which
+           the law says they must be able to reopen. Nobody else sees a row
+           (adPrivacyNeeded(), js/24-ads.js). */
+        (adPrivacyNeeded()
+          ? "<button id='mAdPriv'>"+panelIcon("privacy")+"AD PRIVACY</button>"
+          : "")+
         /* LEVEL EDITOR MOVED TO THE HOME SCREEN as MY LEVELS. It is not a
            setting - it is a place you go, like LEVELS and the wardrobe are -
            and filing it under More next to RESET SETTINGS is what made it
@@ -900,6 +932,7 @@ function menuPanel(){
       settings.foldmark=m;saveSettings();menuPanel();
     });
   });
+  bind("mAdPriv",adPrivacyShow);
   bind("mTut",function(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
   });
@@ -1999,7 +2032,10 @@ function secGridDraw(){
            "<span class='seccapt'>"+
            (shut?"BEAT EVERY BOSS":buy?"LOCKED":"KEEP PLAYING")+"</span>"+
            (buy?"<span class='secad'>"+(noLimits()?"OPEN":
-                 adIcon()+"OPEN \u00b7 3 ADS")+"</span>":"")+
+                 /* The tile's pill holds "OPEN \u00b7 3 ADS" and no more, so
+                    once one is watched OPEN gives way to the count. */
+                 adIcon()+(adsBegun("world:"+LEVELS[sec.at].name)?"":"OPEN \u00b7 ")+
+                 adsSay("world:"+LEVELS[sec.at].name,3))+"</span>":"")+
            "</span>":"")+
        "</button>";
   }
@@ -2028,9 +2064,14 @@ function secGridDraw(){
   g.querySelectorAll(".sectile.lk .secad").forEach(function(el){
     var s=+el.parentNode.parentNode.getAttribute("data-sec");
     tap(el,function(){
-      grantSkip(LEVELS[SECTIONS[s].at].name);
-      secGridDraw();
-      flash("world opened · no stars for a skip");
+      var first=LEVELS[SECTIONS[s].at].name;
+      function open(){
+        grantSkip(first);
+        secGridDraw();
+        flash("world opened · no stars for a skip");
+      }
+      if(noLimits())open();
+      else adToward("world:"+first,3,open,secGridDraw);
     });
   });
 }
@@ -2126,7 +2167,8 @@ function mapDraw(spans){
     /* NO LIMITS: the same door, without the toll. */
     (mapSectionSkippable(n)
       ? "<button class='skipsec' id='mSecAd'>"+(noLimits()?"START THIS WORLD":
-          adIcon()+"START THIS WORLD · WATCH 3 ADS")+"</button>"
+          adIcon()+"START THIS WORLD · "+
+          adsWatchSay("world:"+LEVELS[sec.at].name,3))+"</button>"
       : "")+
     /* THE LOCK HAS TO SAY WHAT IS HOLDING IT. This is the shelf, and the one
        thing a player cannot work out from anywhere else in the game is which
@@ -2149,9 +2191,14 @@ function mapDraw(spans){
   /* Opens the section's *first* level and nothing else, so the section is
      played from its beginning rather than handed over. */
   if(sa)tap(sa,function(){
-    grantSkip(LEVELS[sec.at].name);
-    mapDraw(sectionSpans());
-    flash("world opened · no stars for a skip");
+    var first=LEVELS[sec.at].name;
+    function open(){
+      grantSkip(first);
+      mapDraw(sectionSpans());
+      flash("world opened · no stars for a skip");
+    }
+    if(noLimits())open();
+    else adToward("world:"+first,3,open,function(){mapDraw(sectionSpans());});
   });
 
   /* Laid out from the last level down, so the first sits at the *bottom* and
@@ -2425,8 +2472,8 @@ function mapSheet(i){
     var what=k==="boss"?"THE BOSS":k==="trial"?"THE TRIAL":"THIS LEVEL";
     acts=(noLimits()
          ? "<button class='go' id='mAd'>OPEN "+what+"</button>"
-         : "<button class='ad' id='mAd'>"+adIcon()+"OPEN "+what+" · WATCH "+ads+
-           " AD"+(ads>1?"S":"")+"</button>")+
+         : "<button class='ad' id='mAd'>"+adIcon()+"OPEN "+what+" · "+
+           adsWatchSay("level:"+l.name,ads)+"</button>")+
          "<button class='qt' id='mNo'>NOT NOW</button>";
     note="Opens <b>this one</b> and nothing else, and awards <b>no stars</b>.";
   }else if(st==="locked"){
@@ -2469,15 +2516,18 @@ function mapSheet(i){
     mapSheetClose();hidePanel();playSource="builtin";enterPlay(LEVELS[i],i,false);
   });
   var ad=$("mAd");
-  /* No ad provider is wired yet, so this does the unlock directly. When one
-     is, its completion callback is the only thing that should call
-     grantSkip() - everything else here stays exactly as it is. */
+  /* A boss is three videos and a trial two (mapAds), counted by adToward()
+     so they need not be watched in one sitting. No Limits opens it outright. */
   if(ad)tap(ad,function(){
-    grantSkip(l.name);
-    mapSection=mapSecOf(i);
-    mapDraw(sectionSpans());
-    mapSheet(i);
-    flash("opened · no stars for a skip");
+    function open(){
+      grantSkip(l.name);
+      mapSection=mapSecOf(i);
+      mapDraw(sectionSpans());
+      mapSheet(i);
+      flash("opened · no stars for a skip");
+    }
+    if(noLimits())open();
+    else adToward("level:"+l.name,mapAds(k),open,function(){mapSheet(i);});
   });
 }
 

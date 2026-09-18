@@ -1,0 +1,157 @@
+# The store forms, answered
+
+Every answer below, `docs/privacy.html`, and what the game actually does have
+to say the same thing: Google cross-checks the Data safety form against the
+policy it links to and against the app's own behaviour, scanned and run. So
+when the game changes what it collects, all three change together.
+
+Written 18 Sep 2026, for the build that carries `js/24-ads.js` and
+`js/25-shop.js`.
+
+**What the game does, in one paragraph, because every answer follows from it.**
+The game makes no network request of its own: no analytics, no crash service,
+no fonts, no accounts, no sign-in, no chat, no user-to-user anything. Progress
+lives in `localStorage` on the device. Two things reach the network, both only
+when the player presses a button: a Google AdMob **rewarded video**, and a
+**purchase**, which is handled by Play Billing or StoreKit. A player who never
+presses either is never online.
+
+---
+
+## Google Play
+
+### Target audience and content
+
+| Question | Answer |
+|---|---|
+| Target age groups | **Include the under-13 bands** as well as the adult ones. This is the mixed-audience decision in `docs/SHIPPING.md` |
+| Does your app appeal to children? | **Yes, to both children and older users** |
+| Store listing presented to children | Yes (it is the same listing) |
+| Families policy compliance | **Yes, committed.** AdMob is a Families self-certified ads SDK, which is what that commitment requires |
+| Ads SDK used | Google AdMob (self-certified for Families) |
+
+This puts the app in the Families programme and gets it a longer review. It is
+also why the privacy policy URL is mandatory rather than optional.
+
+### Ads
+
+| Question | Answer |
+|---|---|
+| Does your app contain ads? | **Yes** |
+| Ad formats | **Rewarded video only.** No banners, no interstitials, no ads for children beyond non-personalised rewarded video |
+| Are ads shown to children? | Yes, non-personalised only (see `adChild()` in `js/24-ads.js`) |
+
+### App access
+
+**All functionality is available without restrictions.** No login, no code, no
+region lock. Nothing to give a reviewer.
+
+### Advertising ID
+
+**Yes, the app uses an advertising ID**, for **advertising or marketing**. The
+`com.google.android.gms.permission.AD_ID` permission comes from the Google
+Mobile Ads library. For players treated as children the identifier is not
+transmitted, because the SDK is started with child-directed treatment.
+
+### Other declarations
+
+| Question | Answer |
+|---|---|
+| Government app | No |
+| Financial features | **None of these.** In-app purchases are not a "financial feature" in Play's sense; they are declared by the store listing itself |
+| Health apps | No |
+| News app | No |
+| COVID-19 contact tracing | No |
+| Data deletion request URL | Not provided - there is no account and we hold nothing to delete |
+
+### Content rating questionnaire
+
+Answer it honestly; these are the answers that match this game.
+
+| Question | Answer |
+|---|---|
+| App category | Game |
+| Violence (realistic, or against characters) | **No.** A cube is caught by another cube and the level restarts. No blood, no injury, no weapons, nothing dies visibly |
+| Sexual content, nudity, language, drugs, gambling, horror | No to all |
+| Simulated gambling / loot boxes | **No.** Everything purchasable is a named item at a fixed price; nothing is random |
+| Does the app allow users to interact or exchange content? | **No.** A shared level is a code the player copies out of the app by hand; the app has no network path to send it and no way to receive one except by paste |
+| Does the app share the user's location? | No |
+| Does the app allow purchases of digital goods? | **Yes** |
+| Does the app contain ads? | **Yes** |
+| Unrestricted internet access (browser) | No |
+
+Expect roughly ESRB Everyone / PEGI 3.
+
+### Data safety
+
+**Does your app collect or share any of the required user data types? Yes** -
+all of it through the Google Mobile Ads SDK, none of it by the game itself.
+The four rows below are Google's own published mapping for that SDK
+(developers.google.com/admob/android/privacy/play-data-disclosure), which is
+what a reviewer compares against.
+
+| Data type (Play's names) | Collected | Shared | Purposes | Required or optional | Ephemeral |
+|---|---|---|---|---|---|
+| **Location → Approximate location** | Yes | Yes | Advertising or marketing; Analytics; Fraud prevention, security and compliance | Required | No |
+| **App activity → App interactions** | Yes | Yes | Advertising or marketing; Analytics; Fraud prevention, security and compliance | Required | No |
+| **App info and performance → Diagnostics** | Yes | Yes | Advertising or marketing; Analytics; Fraud prevention, security and compliance | Required | No |
+| **Device or other IDs → Device or other IDs** | Yes | Yes | Advertising or marketing; Analytics; Fraud prevention, security and compliance | **Optional** (not sent for players treated as children) | No |
+
+**Everything else: not collected.** In particular: no name, email, address,
+phone number, photos, files, contacts, calendar, messages, audio, health,
+fitness, browsing history, search history, installed apps, or precise location.
+
+**Purchase history is NOT declared.** The purchase is made to Google Play, not
+to us; the app only asks the store which items this account owns and keeps that
+answer on the device. Nothing about a purchase is sent anywhere by the app.
+
+| Security question | Answer |
+|---|---|
+| Is all user data encrypted in transit? | **Yes** - the ads SDK uses TLS, and the game itself sends nothing |
+| Do you provide a way for users to request data deletion? | **No.** There is no account and no server; uninstalling removes everything the game saved |
+| Has your app been independently reviewed against a security standard? | No |
+
+---
+
+## Apple App Store
+
+### Privacy labels ("Data Types")
+
+Google's iOS mapping assumes an app that asks for tracking permission. **This
+one never does**, so it must not track, and `adNoTrack()` in `js/24-ads.js`
+asks for non-personalised ads on every iOS device for exactly that reason.
+That is what makes the "used to track you" column honest below.
+
+| Apple data type | Collected | Linked to the user | Used for tracking | Purpose |
+|---|---|---|---|---|
+| **Identifiers → Device ID** | Yes | **No** | **No** | Third-party advertising; Analytics |
+| **Usage Data → Product Interaction** | Yes | No | **No** | Third-party advertising; Analytics |
+| **Usage Data → Advertising Data** | Yes | No | **No** | Third-party advertising |
+| **Location → Coarse Location** | Yes | No | **No** | Third-party advertising; Analytics |
+| **Diagnostics → Performance Data / Crash Data** | Yes | No | No | App functionality; Analytics |
+
+Nothing else is collected. **Purchases → Purchase History is not declared**,
+for the same reason as on Play.
+
+### The rest of the Apple answers
+
+| Question | Answer |
+|---|---|
+| App Tracking Transparency prompt | **Not used.** No `NSUserTrackingUsageDescription` in Info.plist, and none should be added while `adNoTrack()` stands |
+| Kids Category | **Do not opt in.** It forbids third-party ads outright; the reasoning is in `docs/SHIPPING.md` |
+| Age rating | Answer the questionnaire as in the Play table above; expect 4+ |
+| Account deletion requirement | Not applicable - the app has no accounts |
+| In-app purchases | Seven non-consumables; the first ones must be submitted with the first app version |
+
+---
+
+## When any of this changes
+
+- **A new SDK, or any network call added to the game**, changes the Data safety
+  form, the privacy labels and the policy. There is no such thing as adding one
+  quietly.
+- **Asking for ATT on iOS** means `adNoTrack()` changes, every "used for
+  tracking" answer above flips to Yes, and the labels have to be resubmitted.
+- **Adding analytics or crash reporting** would be the first time the game
+  itself collects anything. Today the honest sentence in the policy is "the
+  game collects nothing", and that sentence is worth keeping.

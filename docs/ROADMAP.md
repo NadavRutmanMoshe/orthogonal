@@ -193,13 +193,14 @@
    could still take a real teaching level. The lesson from the three that are
    finished: **a card is what you reach for when the picture cannot be made to
    say it - not before.**
-9. **Ad integration.** Nothing is wired. **The plan for it, and for the two
-   app stores and Steam, is now `docs/SHIPPING.md`** - read that first; what
-   follows is the design rule it is built on.
-   Nothing is wired. When wrapped with Capacitor the
-   rewarded-video callback should call `grantShards(n)`, `grantAdView(id)`,
-   `grantSkip(name)` or `grantHints(n)` - four hooks, one per thing an ad can
-   buy. Rewarded-only
+9. **Ad integration.** **Wired on 17 Sep, on Google's test ads** -
+   `js/24-ads.js`, and the shop beside it in `js/25-shop.js`. What was built
+   and what is left (the AdMob account, the products in both consoles) is
+   **As built: ads and the shop** in `docs/SHIPPING.md`; what follows is the
+   design rule it is built on.
+   Every ad button calls `adWatch()`, whose callback calls `grantAdView(id)`,
+   `grantSkip(name)` or `grantHints(n)` - one hook per thing an ad can buy
+   (`grantShards(n)` is still there and still unused). Rewarded-only
    by design: skip a level, or buy shards. No interstitials - they pay poorly
    on a slow puzzle game and are the main cause of uninstalls.
    **The rule that keeps this out of pay-to-win: ads buy progress, never

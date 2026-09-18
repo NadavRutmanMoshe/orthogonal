@@ -95,10 +95,11 @@ are the difference between a fortnight and a month.
   required size is a loop over targets that already exist. The only artwork
   that cannot come out of it is the artwork that needs a logotype.
 
-And two that are not ready:
+And two that were not ready:
 
-- **The DEALS tab's BUY buttons are `disabled`.** A visibly dead shop is worse
-  than no shop, which is why wiring it was the right call over hiding it.
+- ~~**The DEALS tab's BUY buttons are `disabled`.**~~ **Wired, 17 Sep** - see
+  **As built: ads and the shop** below. In a browser they still are, with a
+  note saying buying opens in the app.
 - **There is no privacy policy.** Both stores require a URL, and the moment an
   ad SDK is in the binary it stops being a formality and becomes the thing the
   Data Safety form and the Privacy Nutrition Label are checked against.
@@ -135,7 +136,7 @@ That is better than the split, for three reasons.
   screenshot to re-take, and the first run is still the one question it was
   designed to be. The entire compliance change becomes a single predicate:
 
-      function adChild(){ var b=settings.ageband;
+      function adChild(){ var b=settings.ageBand;
         return b!=="a18" && b!=="a26" && b!=="a40" && b!=="a60"; }
 
   Read by the ad initialisation and by nothing else in the game. Anything
@@ -213,17 +214,143 @@ list will show `pass_all_upgrade` rather than EVERYTHING, so the two products
 want names a player would recognise on a receipt - "Everything (upgrade)"
 rather than an internal id.
 
-Two things the stores force that the code does not have yet:
+Two things the stores force, both built on 17 Sep:
 
 - **A RESTORE PURCHASES button.** Apple requires one on any app selling
-  non-consumables and rejects for its absence. It belongs on the DEALS tab.
-- **`owns()` must stop trusting localStorage alone.** Today entitlements live
+  non-consumables and rejects for its absence. It is on the DEALS tab, in the
+  app only.
+- **`owns()` must stop trusting localStorage alone.** Done as a launch sync
+  rather than inside `owns()` - see below. Today entitlements live
   in `wardrobe.owned` under the `orthogonal:*` keys. Inside a WebView the OS
   can clear that, and a player who paid $9.99 and lost it to a storage sweep
   is a refund and a one-star review. The store's entitlement set becomes the
   source of truth at boot, and `wardrobe.owned` becomes a cache of it. This
   is the one architectural change the shop forces; everything else is a seam
   that already exists.
+
+---
+
+## As built: ads and the shop
+
+Built 17 Sep, on branch `ads-and-shop`. Two plugins and two files, and every
+path through them is driven by `tools/storetest.js` against a fake native
+bridge.
+
+### The two plugins, and why these
+
+- **Ads: `@capacitor-community/admob` 7.2.0.** The de facto Capacitor AdMob
+  plugin. 7.x because the app is on Capacitor 7 and 8.x needs Capacitor 8 -
+  upgrading Capacitor mid-launch is not a trade worth making for a plugin.
+- **Purchases: `@capgo/native-purchases` 7.19.3, straight to the stores.**
+  The owner's call over RevenueCat: no third party, no extra account, no
+  extra SDK on the privacy forms. What that costs, accepted with it: no
+  server checks a receipt, so a rooted Android phone can fake a purchase
+  (iOS verifies on the phone, StoreKit 2 signs every transaction), and there
+  is no dashboard beyond the two store consoles.
+- **Both are reached through `Capacitor.registerPlugin()`**, exactly like the
+  back button, because there is no bundler to run their JS modules. Both
+  modules were read and are one `registerPlugin` call each, so nothing is
+  lost.
+
+### `js/24-ads.js`
+
+- **`adWatch(done)` is the one call an ad button makes.** `done(true)` only
+  for a video watched to the end. **In a browser it pays at once**, which is
+  what every ad button did before, so the artifact and itch.io are unchanged.
+- **It settles on the DISMISSED event, never on `showRewardVideoAd()`.** That
+  promise resolves on a reward and never settles at all when the video is
+  closed early - read in the plugin's Kotlin - so waiting on it leaves the
+  button stuck. A close with no reward yet waits 700ms, because iOS has been
+  seen to deliver the reward just after the close.
+- **Ads start only once the age band is known.** The child flags go to Google
+  once, at `initialize`. `adBoot()` starts them 3s after launch for a save;
+  `applyAgeBand()` starts them for a first run. `DELAY_APP_MEASUREMENT_INIT`
+  in the manifest stops the SDK sending anything on its own before that.
+- **`adChild()`** sets `tagForChildDirectedTreatment`,
+  `tagForUnderAgeOfConsent` and `npa` (non-personalised). The content rating
+  is `General` for everybody, not only children - a parent's phone is still
+  handed to a child.
+- **Consent (GDPR) is Google's own UMP**, in the same plugin. Asked silently
+  at start; the FORM waits for the first ad tap so it never lands on the
+  opening cutscene. **AD PRIVACY** appears under Menu > More only when Google
+  says this player needs a way back to it. It needs a GDPR message set up in
+  the AdMob dashboard; until then it answers "not required".
+- **A video is preloaded**, and the next one loaded as each closes, so a tap
+  shows one at once. A failed load backs off 15s to 5 min. The game's audio
+  context is suspended while a video plays.
+- **Multi-video unlocks are counted** (`adTally`, `orthogonal:adtally`, keyed
+  `world:` or `level:` plus the level NAME): a world is three, a boss on the
+  map three, a trial two. The labels count down, and may not grow when they
+  do (`adsWatchSay()`).
+- **No video to show pays nothing** and says so. A kinder rule - grant it
+  anyway after a failed load - is one line in `adWatch()`, and it is also
+  what airplane mode would then buy. Not taken; the owner's to change.
+- **No ATT prompt on iOS, for anybody** - and therefore `adNoTrack()`:
+  **every iOS player gets non-personalised ads**, not only the children.
+  Apple counts a personalised ad as tracking, and an app that tracks must show
+  the App Tracking Transparency prompt; without the prompt the only honest
+  privacy label is "not used to track you", which is only true if the ads are
+  non-personalised. It costs revenue from adults on iOS and buys a label a
+  reviewer can check. Reverse it only together with an ATT prompt and new
+  labels (`docs/STORE-ANSWERS.md`).
+
+### `js/25-shop.js`
+
+- **Store product ids ARE the game's ids** - `rook` `pup` `cat` `robot`
+  `pass_nolimits` `pass_all` - plus `pass_all_upgrade`. `shopProductFor()`
+  picks the upgrade product once NO LIMITS is owned; **`shopUnlocks()` turns
+  the upgrade into `pass_all`**, so the upgrade id never reaches
+  `wardrobe.owned` and `owns()`/`hasPass()` needed no change.
+- **The launch sync ONLY ADDS.** On Android a failed `getPurchases` answers
+  with an empty list, which is indistinguishable from "owns nothing" - read
+  in the plugin's Java. Removing on it would strip a paying player on a
+  train. Cost: a refunded item stays unlocked.
+- **Android PENDING (`purchaseState "2"`) unlocks nothing**, and anything
+  PURCHASED but unacknowledged is acknowledged at launch - Play refunds a
+  purchase nobody acknowledges within three days. One at a time, because the
+  plugin rebuilds its billing connection for each.
+- **A failed purchase asks the store before saying anything**: on Android
+  "already owned" arrives as the same error as a cancel, and a player who
+  owns it should get the item, not an error.
+- **RESTORE on Android is the read alone**; the plugin's own restore races the
+  read for the same billing connection. On iOS it calls `AppStore.sync()`
+  first, which may ask the player to sign in.
+- **iOS Ask to Buy** - a child's purchase a parent approves later - arrives
+  through `transactionUpdated` and unlocks then.
+- **Prices are the store's**, in the player's currency, once `getProducts`
+  answers; the dollars in `PASSES`/`SKIN_SHAPES` until then.
+
+### What is left, and all of it is the owner's hands on a dashboard
+
+1. **AdMob account** (admob.google.com): **done 18 Sep**, and both rewarded
+   unit ids are in `AD_UNITS` (`ca-app-pub-6542623981022877/8535090358`
+   Android, `/5856956129` iOS). **Still needed: the two APP ids** (the `~`
+   ones), for `AndroidManifest.xml` and Info.plist - the manifest carries
+   Google's test app id until then. `AD_TEST` stays `true` through the closed
+   test: friends tapping live ads is how an AdMob account gets banned, and an
+   unlisted app gets limited serving anyway. Flip it, with the app ids, for the
+   public release, and add your own phones as test devices in AdMob.
+2. **AdMob > Privacy & messaging**: create the GDPR message (Google's
+   certified form). Without it, EEA players get limited ads.
+3. **Play Console > Monetize > In-app products**: seven one-time products with
+   exactly the ids above. Products can only be created once the app has a
+   build uploaded **that contains the billing library** - so this build has
+   to go up to the closed track first.
+4. **Play Console > license testers**: add your own Google account, so test
+   purchases are free and refund themselves.
+5. **App Store Connect**: the same seven as **Non-Consumable** in-app
+   purchases, and the Paid Apps agreement signed (banking and tax), or
+   StoreKit returns no products at all.
+6. **iOS project**: when `npx cap add ios` runs on the CI Mac, Info.plist
+   needs `GADApplicationIdentifier`, `GADDelayAppMeasurementInit` = YES, and
+   Google's `SKAdNetworkItems` list - `app/README.md` has the detail.
+7. **Declarations**: written out, ready to copy, in `docs/STORE-ANSWERS.md` -
+   Play's target audience, ads, content rating and Data safety, and Apple's
+   privacy labels. The privacy policy they are checked against is
+   `docs/privacy.html`; it needs a contact email in place of `CONTACT_EMAIL`
+   and a public URL (GitHub Pages from `/docs` on this repo is the cheap
+   route, and does not publish the game itself - there is no index.html in
+   that folder).
 
 ---
 
@@ -458,9 +585,9 @@ deferred to the platform that cannot use it early anyway.
 | Mon 14 | Codemagic connected to the repo, building the iOS target on a cloud Mac. No Mac is needed for this or for anything after it. |
 | Tue 15 | **Signed Android build into the CLOSED track, ads and shop absent.** The move that saves a week: the clock starts now and the build keeps updating under it. Recruit the 12 testers the same day, and send them the closed opt-in link - internal testing does not count and actively blocks a tester from the closed test. |
 | Tue 15 - Thu 17 | The device gauntlet: safe areas, audio unlock, the two-finger turn, the back button. Needs a phone in hand. |
-| Thu 17 | `adChild()`. One predicate; the intro card does not change. An hour. |
-| Thu 17 - Fri 18 | AdMob behind the four hooks, rewarded only, child-directed from `adChild()`. |
-| Fri 18 - Sun 20 | IAP: seven products, one `purchase()` seam, RESTORE PURCHASES, and `owns()` reading the store's entitlements rather than localStorage. |
+| Thu 17 | ~~`adChild()`. One predicate; the intro card does not change. An hour.~~ **Done.** |
+| Thu 17 - Fri 18 | ~~AdMob behind the four hooks, rewarded only, child-directed from `adChild()`.~~ **Code done 17 Sep, on test ads.** The AdMob account is left. |
+| Fri 18 - Sun 20 | ~~IAP: seven products, one `purchase()` seam, RESTORE PURCHASES, and `owns()` reading the store's entitlements rather than localStorage.~~ **Code done 17 Sep.** The products in both consoles are left. |
 
 **Week 2 - assets, submit, and Steam's paperwork**
 

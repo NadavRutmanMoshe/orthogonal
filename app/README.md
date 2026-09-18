@@ -60,6 +60,76 @@ enables WebView debugging for debug builds and not for release ones, which is
 exactly the split you want: `chrome://inspect` works on your test build and
 does not on the one in the store.
 
+## Android 16 (API 36), because Play refuses anything lower
+
+**Since 31 Aug 2026 Google Play only accepts a NEW app that targets API 36.**
+Capacitor 7 ships targeting 35, so `variables.gradle` says 36 for
+`compileSdkVersion` and `targetSdkVersion`, and the build tools were moved up
+to what Capacitor 8 uses for the same reason: Android Gradle Plugin 8.13.0
+(`build.gradle`) and Gradle 8.14.3 (`gradle-wrapper.properties`). Capacitor
+itself stays on 7, because Capacitor 8's CLI needs Node 22 and this machine
+has 20 - that migration is its own job, done once, later.
+
+Targeting 36 changes two things worth checking on a phone: edge-to-edge can
+no longer be switched off (the safe-area tokens already expect it), and the
+back gesture goes through Android's predictive-back system, which
+`@capacitor/app`'s listener uses - press back once in a level to be sure.
+
+## The two money plugins
+
+`@capacitor-community/admob` 7.2.0 and `@capgo/native-purchases` 7.19.3,
+pinned exactly (`--save-exact`). Both have 8.x releases, and both 8.x lines
+need Capacitor 8; do not let `npm update` pull them. The why of each, and
+what the game does with them, is **As built: ads and the shop** in
+`docs/SHIPPING.md`.
+
+**`AndroidManifest.xml` carries two AdMob entries**, and the first is not
+optional:
+
+- `com.google.android.gms.ads.APPLICATION_ID` - without it the ad SDK crashes
+  the app **on launch**, before a single ad is asked for. It is Google's
+  public TEST app id today (`~3347511713`). An app id has a `~`; an ad unit id
+  has a `/`. Swapping one for the other is the classic crash.
+- `DELAY_APP_MEASUREMENT_INIT` - the SDK sends nothing until the game calls
+  `initialize()`, which it does only once the age band is known.
+
+Play Billing needs no manifest entry: the plugin's library merges the
+`BILLING` permission in by itself.
+
+**Going live with ads** is four edits, made together: the real Android app
+id here, the real iOS app id in Info.plist, the two real rewarded unit ids in
+`AD_UNITS` in `js/24-ads.js`, and `AD_TEST=false` beside them.
+`tools/build-app.js` prints a warning on every build until the last one is
+done.
+
+**iOS, when `npx cap add ios` runs on the CI Mac.** Info.plist needs:
+
+- `GADApplicationIdentifier` - the iOS app id from AdMob (Google's test one is
+  `ca-app-pub-3940256099942544~1458002511`). Missing, it crashes on launch,
+  exactly as on Android.
+- `GADDelayAppMeasurementInit` = `YES`, for the same reason as Android.
+- `SKAdNetworkItems` - Google's list of ad network ids, copied from the
+  AdMob iOS quick-start page. Without it iOS ads still show but pay less.
+- **No** `NSUserTrackingUsageDescription`: the game never asks for tracking
+  permission (ATT), so it must not declare a reason for asking.
+
+In-app purchases also need the **In-App Purchase capability** ticked on the
+app target, which Codemagic's automatic signing can set.
+
+## Testing it on the phone
+
+- **Ads** work today with no account: Google's test ads always fill and are
+  labelled "Test Ad".
+- **Purchases** need the products to exist in Play Console, which needs a
+  build containing the billing library uploaded to a track first. Then add
+  your own Google account under **License testing**, install **from the
+  Play testing link** (the surest way for Play to recognise the app), and
+  purchases are free and cancel themselves. A product id that is not set up
+  simply does not come back from the store: its BUY button keeps the dollar
+  price, and pressing it says "no purchase made".
+- `node tools/storetest.js` drives every path of both files against a fake
+  bridge in a desktop browser - the fastest check after touching either.
+
 ## Still open
 
 - ~~Orientation is not locked.~~ **Settled: it is portrait, locked.** The owner

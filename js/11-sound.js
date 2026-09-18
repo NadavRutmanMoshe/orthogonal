@@ -271,6 +271,9 @@ function applyAgeBand(id){
   applyUI();applyText();saveSettings();
   if(typeof syncHud==="function")syncHud();
   if(typeof onResize==="function")onResize();
+  /* The ads wait for this answer on a first run: the child flags go to
+     Google once, when they start (js/24-ads.js). */
+  if(typeof adStart==="function")adStart();
   return true;
 }
 

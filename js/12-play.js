@@ -2282,10 +2282,13 @@ function hintRefillOffer(){
     "<button class='qt' id='hrNo'>WAIT IT OUT</button>","","var(--star)");
   bind("hrNo",function(){hidePanel();});
   bind("hrAd",function(){
-    var n=grantHints(HINT_AD);
-    hidePanel();syncHud();
-    flash(n+" hint"+(n===1?"":"s")+" \u00b7 tap the bulb");
-    setTimeout(function(){cue("bHint");},260);
+    adWatch(function(ok){
+      if(!ok)return;
+      var n=grantHints(HINT_AD);
+      hidePanel();syncHud();
+      flash(n+" hint"+(n===1?"":"s")+" \u00b7 tap the bulb");
+      setTimeout(function(){cue("bHint");},260);
+    });
   });
 }
 function keysLeft(){
@@ -2844,21 +2847,23 @@ function struggleOffer(){
         "<span class='two'><b>SKIP</b><i>WATCH AN AD</i></span></button>"),
     "",B?"var(--vio)":"var(--amb)","pair");
   bind("sgNo",function(){hidePanel();});
-  /* Not gated on an ad here, for the same reason grantSkip() is not: there
-     is no provider yet, and a button that silently did nothing would be
-     worse than one that plainly works. When the SDK is wired, its completion
-     callback calls grantSkip() and nothing else on this path changes. */
+  /* THE VIDEO PLAYS FIRST, then the skip - adWatch() in js/24-ads.js, which
+     pays out at once in a browser. Under No Limits there is no video. */
   /* AND IT STARTS THE NEXT LEVEL, on the owner's call. It opened the map,
      which made the skip a detour: the player said "get me past this" and was
      handed a trail to find the next node on and press. playNextLevel() is
      NEXT LEVEL's own path, lock and all, so a skip past BOSS IV with a boss
      still standing lands on the map saying why, exactly as winning would. */
-  bind("sgAd",function(){
+  function skip(){
     grantSkip(levelKey);
     clearFails(levelKey);
     hidePanel();
     flash("skipped \u00b7 no stars for a skip");
     if(playSource==="builtin")playNextLevel(); else levelPicker();
+  }
+  bind("sgAd",function(){
+    if(paid)skip();
+    else adWatch(function(ok){if(ok)skip();});
   });
 }
 
