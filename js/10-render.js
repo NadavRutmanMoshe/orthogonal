@@ -2190,6 +2190,17 @@ function trailMark(x,y,z){
   trailSet[k]=trailNow();          // when, so the decal can arrive with the foot
   trailAttach(k);
 }
+/* THE SAME MARK, FOR A BLOCK THAT WILL BE REACHED IN `delay` ms. The fold
+   walks you along a run of blocks (foldWalkStart(), js/12-play.js) and each
+   one lights as the cube gets to it. TRAIL_LAG is taken off here rather than
+   added to the caller's number, because the lag exists to cover a step's own
+   travel and this caller has already said exactly when the foot lands. */
+function trailMarkIn(x,y,z,delay){
+  var k=K(x,y,z);
+  if(trailSet[k])return;
+  trailSet[k]=trailNow()+delay-TRAIL_LAG;
+  trailAttach(k);
+}
 function trailSync(){for(var k in trailSet)trailAttach(k);}
 function trailClear(){
   trailFresh.length=0;
@@ -4672,6 +4683,17 @@ function animate(now){
   var srcX,srcY,srcZ;
   if(app==="edit"){srcX=L.start[0];srcY=L.start[1];srcZ=L.start[2];}
   else{srcX=player.x;srcY=player.y;srcZ=player.z;}
+  /* THE FOLD WALKS THE CUBE FORWARD, a block at a time, instead of sliding it
+     the whole way in one move. The source square of the interpolation below
+     is normally the cell the player is standing in; during a fold it is
+     whichever block of the run the walk has reached (foldWalkCell(),
+     js/12-play.js), so the cube crosses the column the way it would have
+     walked it, at a pace no walk has - a fold is one move, and it has to
+     still read as one. The blocks themselves are drawn with the same
+     `b+(projected-b)*flatT` this interpolation uses, so the cube lands on
+     each of them however far the world has folded by then. */
+  var walk=(typeof foldWalkCell==="function")?foldWalkCell():null;
+  if(walk){srcX=walk[0];srcZ=walk[2];}
   /* While peeking in the plane the player is drawn rising onto the block
      they WOULD land on, not the one they folded from - which is the whole
      answer to "where do I come back". Outside the peek this is unchanged. */
@@ -4760,7 +4782,10 @@ function animate(now){
     }
   } else {
     var before=playerMesh.position.y;
-    playerMesh.position.lerp(tmp,.26);
+    /* .26 is a step's ease; a fold's walk gives a block 80ms at most, so at
+       .26 the cube would still be leaving one square as it was handed the
+       next and the whole run would smear into the slide this replaced. */
+    playerMesh.position.lerp(tmp,walk?.5:.26);
     // squash a little when arriving from above, so landings have weight
     var drop=before-playerMesh.position.y;
     if(drop>.14) squash=Math.min(.42,squash+drop*.35);

@@ -759,6 +759,13 @@ is the rule.
   lid went to .5 and silently stopped drawing on stone; it asks the kind now
   (.504 over stone, .437 over the liquid plate). `HISTORY.md` lists the
   others to re-measure if the body changes again.
+- **The fold WALKS you to the front block, one at a time** (`foldRun()`,
+  `foldWalkStart()`, `foldWalkCell()` in `js/12-play.js`, state in
+  `05-state.js`). The loop stands the cube on the run's current block instead
+  of on the cell the player is in, so rule 5's journey is taken rather than
+  slid. `FOLD_WALK_MS` 80ms a block, the whole run inside .62 of the fold, the
+  player's lerp .5 while it runs; a one-block run starts no walk
+  (`controls.md`).
 - **A trail mark arrives with the FOOT, not with the move.** `trailHere()`
   fires when the step is committed, but `playerMesh` lerps at .26 a frame, so
   the decal was painted on the block before the cube got there. `trailSet[k]`
@@ -767,7 +774,9 @@ is the rule.
   every decal, which is what makes a recolour one write in `applySkin()`.
   Anything older than the two is drawn full size, so `trailSync()` after a
   rebuild does not replay the whole trail. `visible` belongs to the block
-  loop (`flatT<.45`); this may only touch the scale.
+  loop (`flatT<.45`); this may only touch the scale. On a fold the column's
+  marks are staged along the walk (`trailMarkIn()`, `i*step`), so a block
+  lights as the cube reaches it rather than the whole line at once.
 - Surfaces are drawn on canvas, never loaded; there are no image or audio
   files in this project and there will not be. Keep the grain off a pixel
   lattice (commercial reason, `look.md`).

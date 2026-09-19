@@ -1877,18 +1877,65 @@ function trailHere(){
   if(typeof trailMark!=="function")return;
   trailMark(player.x,player.y-1,player.z);
 }
-function trailColumn(){
-  if(typeof trailMark!=="function"||!L||!R)return;
+/* THE RUN, IN ORDER: the blocks the fold carries you over, from the one under
+   your feet to the one nearest the camera. Sorted, because the cube walks it
+   and the marks light along it - a list in `L.blocks` order would step the
+   cube about the column at random. */
+function foldRun(){
+  if(!L||!R)return [];
   var u=R.uOf(view,player.x,player.z), y=player.y-1;
   // AX[v].d points toward the camera, so a larger d is nearer the front and
   // R.pick's "highest t wins" and this test are reading the same number.
-  var t0=R.dOf(view,player.x,player.z);
+  var t0=R.dOf(view,player.x,player.z), run=[];
   for(var i=0;i<L.blocks.length;i++){
     var b=L.blocks[i];
     if(b[1]!==y||isCrate(b))continue;
     if(R.uOf(view,b[0],b[2])!==u)continue;
     if(R.dOf(view,b[0],b[2])<t0)continue;      // behind you: never crossed
-    trailMark(b[0],b[1],b[2]);
+    run.push(b);
+  }
+  run.sort(function(p,q){
+    return R.dOf(view,p[0],p[2])-R.dOf(view,q[0],q[2]);
+  });
+  return run;
+}
+/* HOW FAST A BLOCK GOES BY. Fast on purpose - this is one move, not five, and
+   the walk has to be over well before the fold is, or the cube is still
+   crossing a volume that is already a page. `FOLD_WALK_MS` is the pace it
+   would like; the second term is the whole run held inside .62 of the fold,
+   which is what wins on a deep column. */
+var FOLD_WALK_MS=80;
+function foldWalkStart(run){
+  foldWalk=null;
+  if(!run||run.length<2)return 0;              // one block: nothing to walk
+  var fdur=(B||TR)?FOLD_MS_CLOCK:FOLD_MS_IN;
+  var step=Math.min(FOLD_WALK_MS,(fdur*.62)/(run.length-1));
+  foldWalk={cells:run,t0:(typeof trailNow==="function"?trailNow():Date.now()),
+            step:step};
+  return step;
+}
+/* Which block the cube is over right now, for the loop to stand it on. It
+   holds the last one once the walk is done: while the world is flat the
+   source square only matters as the far end of an interpolation that has
+   already finished, and the front block is where the unfold puts you anyway. */
+function foldWalkCell(){
+  if(!foldWalk||!flat)return null;
+  var now=(typeof trailNow==="function")?trailNow():Date.now();
+  var i=Math.floor((now-foldWalk.t0)/foldWalk.step);
+  if(i<0)i=0;
+  if(i>foldWalk.cells.length-1)i=foldWalk.cells.length-1;
+  return foldWalk.cells[i];
+}
+/* A block lights as the cube reaches it, which is what `step` is for. Marking
+   the run all at once painted the whole line before the fold had even begun
+   to play - the same complaint as a mark landing before the foot, one move
+   further along. */
+function trailColumn(run,step){
+  if(typeof trailMark!=="function"||!run)return;
+  for(var i=0;i<run.length;i++){
+    var b=run[i];
+    if(step&&i&&typeof trailMarkIn==="function")trailMarkIn(b[0],b[1],b[2],i*step);
+    else trailMark(b[0],b[1],b[2]);
   }
 }
 function trailFlatStep(){
@@ -2136,9 +2183,12 @@ function doFlatten(){
   pushHistory();moveCount++;
   flatPos={u:pu,y:player.y};
   foldOrigin={u:pu,y:player.y,v:view};    // the landing mark's starting square
-  // The column you just merged - see trailColumn(). Taken before the fold
-  // resolves, for the same reason everything else on this line is.
-  trailColumn();
+  /* The column you just merged - see foldRun(). Taken before the fold
+     resolves, for the same reason everything else on this line is. The walk
+     is started off the same list, so the cube and the marks are reading one
+     order and one clock. */
+  var run=foldRun();
+  trailColumn(run,foldWalkStart(run));
   /* Captured BEFORE the fold resolves, while the player is still standing on
      something in the volume - afterwards there is only a silhouette. */
   if(typeof markWaterTrace==="function")markWaterTrace();

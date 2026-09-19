@@ -43,6 +43,16 @@ var FOLD_MS_IN=520, FOLD_MS_OUT=620, FOLD_MS_CLOCK=380;
 /* The tween's own state, owned by 10-render.js. `foldLast` is what the loop
    last wrote to flatT, which is how an external write to it is noticed. */
 var foldBase=0, foldFrom=0, foldP=1, foldWas=0, foldLast=0;
+/* THE WALK THE FOLD MAKES YOU TAKE. Folding carries you forward through the
+   silhouette column to the block nearest the camera - that is rule 5, and
+   until now the picture said it by sliding the cube straight there in one
+   continuous move while the world flattened, which reads as the cube being
+   teleported rather than walking. This is the same journey stepped: a list of
+   the blocks crossed, in order, with the wall-clock moment the walk began and
+   how long a block takes. Written by foldWalkStart() (js/12-play.js) and read
+   by the loop's player block; `null` the rest of the time, which is every
+   move that is not a fold. */
+var foldWalk=null;
 /* ONE HINT ON THE HOUSE, armed by the card that explains what the bulb is.
    The card asks the player to press a button that normally costs them a
    star, so the press it asks for must not - being taught what a control does

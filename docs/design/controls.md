@@ -189,6 +189,49 @@ exclusive - every gesture also has a key and, unless hidden, a button:
 
 ---
 
+## The fold walks you forward, one block at a time
+
+Folding carries you through the silhouette column to the block nearest the
+camera - rule 5, arriving early. The picture used to say that by sliding the
+cube from its own square to the front of the plane in one continuous move
+while the world flattened, which reads as the cube being *put* there rather
+than going there. It showed up as a complaint about the trail: the whole run
+of blocks lit at once, before the transition had even begun, and a line of
+marks appearing under a cube that has not moved along it is a line of marks
+that means nothing.
+
+**The run is a list now, in order** (`foldRun()`, `js/12-play.js`): every
+block at your feet's height in your column, from the one you are standing on
+forward to the one nearest the camera, sorted by depth - `L.blocks` order
+would have stepped the cube about the column at random.
+
+**The cube walks it while the world folds.** `foldWalkStart()` puts the list,
+the moment it began and a per-block pace into `foldWalk` (`js/05-state.js`),
+and the loop's player block asks `foldWalkCell()` which block to stand on
+instead of using the cell the player is standing in. The blocks themselves
+are drawn with the same `b+(projected-b)*flatT` that interpolation uses, so
+the cube lands on each of them however far the world has folded by then, and
+the walk needs no separate path through space.
+
+**Fast, and over before the fold is.** `FOLD_WALK_MS` is 80ms a block, and
+the whole run is held inside .62 of the fold's own duration, which is what
+wins on a deep column. A fold is ONE move and has to keep reading as one; a
+cube still crossing a volume that is already a page is worse than the slide
+it replaced. The player's lerp goes from .26 to .5 for the same reason - at
+.26 the cube would still be leaving one square as it was handed the next.
+
+**The marks light along it.** `trailColumn()` takes the run and the pace and
+stages each block's decal by `i*step` through `trailMarkIn()`, so a block
+lights as the cube reaches it. One block-and-a-bit behind would have been the
+same complaint again, so `trailMarkIn()` takes `TRAIL_LAG` off: the lag
+exists to cover a step's own travel and this caller already knows exactly
+when the foot lands.
+
+A one-block run (you are already at the front of your column) starts no walk
+at all, so the ordinary fold is exactly as it was.
+
+---
+
 ## The landing indicator - rule 5, shown instead of stated
 
 **"You return on the block nearest the camera, unless an anchor is among the
