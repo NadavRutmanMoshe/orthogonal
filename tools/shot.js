@@ -39,6 +39,9 @@ const fs=require("fs"), path=require("path");
 const ROOT=path.join(__dirname,"..");
 
 const {loadPlaywright}=require("./playwright.js");
+/* The fold tutorial in FIRE colours, shared with tools/video.js so the still
+   and the moving picture are the same board. See tools/foldlevel.js. */
+const {FOLD_LEVEL}=require("./foldlevel.js");
 
 /* Every screen is a name, a one-line description, and the JS that puts the
    game on it. The JS runs inside the page with every global in scope, after
@@ -84,6 +87,39 @@ const SCREENS={
   glimpse:  {what:"the father, half a second in the back of a fire level",
              js:"lv(20);setTimeout(function(){ghostShow();},700);", wait:1000},
   phase:    {what:"the between-phases note on a boss", js:"lv(18);setTimeout(function(){phaseNote('the ground rises');},300);", wait:1200},
+  /* THE FOLD TUTORIAL IN FIRE COLOURS, and the pair is the point: the same
+     board, the same camera, the same two steps walked - one in the volume
+     and one in the plane. Everything about the game that can be said without
+     words is said by putting those two pictures next to each other, which is
+     why tools/store.js opens with them and why changing one means changing
+     the other. The board itself is tools/foldlevel.js, shared with the
+     promo video so the still and the moving picture cannot disagree.
+
+     The player walks to the brink first. Standing on the start square the
+     gap is a fact about the level; standing at the edge of it, it is a
+     problem the player is already in. */
+  firefold: {what:"the fold tutorial re-skinned as FIRE, at the brink, in 3D",
+             js:"lvCustom(FOLD_LEVEL);setTimeout(function(){press('right');},400);"
+               +"setTimeout(function(){press('right');},1100);", wait:2400},
+  fireflat: {what:"the same board, same camera, folded to 2D - the pair to firefold",
+             js:"lvCustom(FOLD_LEVEL);setTimeout(function(){press('right');},400);"
+               +"setTimeout(function(){press('right');},1100);setTimeout(doFlatten,1900);", wait:3600},
+  /* THE TWO WORDS A FIGHT CAN END ON, both on BOSS I. They are the game's own
+     stings (bossSting() in js/12-play.js), reached through the game's own
+     paths: `smashed` calls bossHurt(), the same function a charge calls, and
+     `crushed` really folds - bossFoldCrush() decides the kill, picks the
+     word and counts the phase. Nothing is drawn here that the fight does not
+     draw itself.
+
+     The timing is why they are separate screens rather than an --eval. A
+     sting lives STING_MS (940ms) and the kill cam's snow starts at KC_HOLD
+     (1600ms), so the shot has to land in the gap between the word appearing
+     and the television covering it. Those two constants are in
+     js/05-state.js; if either moves, these waits move with it. */
+  smashed:  {what:"BOSS I: SMASHED - a hunter reached you and took a life",
+             js:"lv(18);setTimeout(bossSmash,1500);", wait:2050},
+  crushed:  {what:"BOSS I: CRUSHED - you folded with one in your silhouette column",
+             js:"lv(18);setTimeout(bossCrush,1500);", wait:2300},
   /* THE CUTSCENES, seekable by beat. storySeek() runs every beat up to the
      one asked for and snaps the walks to their last cell, which is near
      enough to the pose a beat holds - so `story1:13` is the frame just after
@@ -214,23 +250,120 @@ async function main(){
     if(job.def.splash){
       await page.waitForTimeout(300);
     }else{
-      await page.evaluate(()=>{
+      await page.evaluate(foldLvl=>{
         // The sting: skip straight to done, the same path a second tap takes.
         if(splashState!=="done"){splashState="running";splashEnd();}
-        window.lv=function(i){
+        var clear=function(){
           if(typeof homeHide==="function"&&homeUp())homeHide();
           $("intro").classList.add("gone");
           hidePanel();
-          enterPlay(LEVELS[i],i,false);
         };
+        window.lv=function(i){ clear(); enterPlay(LEVELS[i],i,false); };
         // The same clearing a cutscene needs, minus the level: storyPlay()
         // loads its own board.
-        window.storyShot=function(){
-          if(typeof homeHide==="function"&&homeUp())homeHide();
-          $("intro").classList.add("gone");
-          hidePanel();
+        window.storyShot=clear;
+        /* A LEVEL THAT IS NOT IN LEVELS, played the way a player's own level
+           plays. playSource MUST be "library" here: enterPlay() picks the
+           world with applyTheme(playSource==="builtin" ? themeForLevel(lvIndex)
+           : levelTheme(L)), so as a builtin the level's own `theme` is
+           ignored and the index decides - and -1 gives PROLOGUE's slate,
+           which is the palette FOLD_LEVEL was re-skinned to get away from.
+           Set per context, and every screen gets a fresh one, so this cannot
+           leak into the builtin shots. */
+        window.FOLD_LEVEL=foldLvl;
+        window.lvCustom=function(L){ clear(); playSource="library"; enterPlay(L,-1,false); };
+        /* ---- the two ways a fight ends, posed ----------------------------
+           Both call the game's own function and let it draw whatever it
+           draws; neither writes a sting itself.
+
+           SMASHED is bossHurt(), which is what a charge and a touch both
+           call (js/12-play.js). The shield is cleared first because a fight
+           opens with grace on it and bossHurt() returns early while
+           shielded() - otherwise this quietly did nothing and the shot came
+           out as an ordinary arena. */
+        /* TWO THINGS HAVE TO BE HELD OFF FOR EITHER OF THESE TO PHOTOGRAPH.
+
+           THE REPLAY, because it goes up on EVERY hit and every phase clear,
+           not just the fatal one (replayStart at the foot of bossHurt), and
+           it washes the board, letterboxes it and writes REPLAY across the
+           bottom - so the first attempt at both of these came out as two
+           pictures of the kill cam's chrome. It is turned away with the
+           game's own guard rather than with a flag: replayStart() refuses a
+           buffer shorter than two frames, so emptying repBuf is a decline,
+           not a bypass.
+
+           THE STING'S OWN ANIMATION, and stopping its timer is not enough -
+           that was the second attempt and it came out blank too. The word is
+           a CSS animation with `forwards` on it (.bsword in
+           css/65-replay.css), so it lifts away at its own 100% whatever the
+           class says; holding `.on` holds an element that has already
+           animated itself to nothing.
+
+           So it is PINNED rather than held: every animation in the sting is
+           seeked to STING_FRAME and paused through the Web Animations API,
+           which fixes the whole thing at one frame no matter how slowly a
+           swiftshader frame arrives. 330ms is where the poster is - the
+           bloom (.34s) has just finished, the speed lines (.58s) are still
+           travelling, and the word (.92s) has landed and is glowing, which
+           is the part of the effect anybody ever reads. */
+        var STING_FRAME=330;
+        var stingHold=function(){
+          var el=$("bossSting"), n=0;
+          var iv=setInterval(function(){
+            if(el&&el.classList.contains("on")){
+              clearTimeout(stingTimer);clearInterval(iv);
+              var as=el.getAnimations?el.getAnimations({subtree:true}):[];
+              for(var i=0;i<as.length;i++){
+                try{ as[i].currentTime=STING_FRAME; as[i].pause(); }catch(e){}
+              }
+            } else if(++n>200)clearInterval(iv);
+          },20);
         };
-      });
+        window.bossSmash=function(){
+          if(typeof B==="undefined"||!B||!hunters.length)return;
+          repBuf.length=0;
+          shieldMs=0;bossGraceMs=0;
+          stingHold();
+          bossHurt("it reached you",hunters[0]);
+        };
+        /* CRUSHED is a REAL FOLD. All this does is stand the hunter where a
+           player would have manoeuvred it - foldKills() wants it at the same
+           height and the same `u` (screen-right), which is the one cell the
+           whole fight is about getting it into - and then presses GO 2D.
+           bossFoldCrush() decides whether that kills, picks the word and
+           counts the phase, exactly as it does in play.
+
+           The cell is searched rather than assumed: `u` is x or z depending
+           on the view (AX in js/01-coords.js), so hard-coding one axis works
+           in two views out of four and fails silently in the others. Asking
+           doomedCell() - the predicate bossFoldCrush() itself uses - is the
+           same trick tools/video.js uses to land its kills. */
+        window.bossCrush=function(){
+          if(typeof B==="undefined"||!B||!hunters.length)return;
+          repBuf.length=0;
+          stingHold();
+          /* AND THE PHASE CARD IS KEPT OFF THIS ONE. A phase clear normally
+             waits for its replay before advancing (bossPendingAdvance), so in
+             play the word gets the whole kill cam to itself and the card
+             arrives well after it. With the replay declined above there is
+             nothing for the advance to wait behind, so bossNext() runs on the
+             same frame and "phase 2 of 3" lands exactly where the word is.
+             Taken off for a few seconds rather than suppressed at the source:
+             the fight still advances, it just is not photographed doing it. */
+          var kill=setInterval(function(){ phaseNoteEnd(); },30);
+          setTimeout(function(){ clearInterval(kill); },6000);
+          var h=hunters[0], cr=(typeof liveCrates==="function")?liveCrates():[];
+          h.y=player.y;h.line=null;h.lock=0;h.shy=0;
+          var tries=[[player.x,player.z+3],[player.x,player.z-3],
+                     [player.x+3,player.z],[player.x-3,player.z],
+                     [player.x,player.z+2],[player.x+2,player.z]];
+          for(var i=0;i<tries.length;i++){
+            h.x=tries[i][0];h.z=tries[i][1];
+            if(R.solid(h.x,h.y-1,h.z,cr)&&doomedCell(h.x,h.y,h.z,cr))break;
+          }
+          doFlatten();
+        };
+      },FOLD_LEVEL);
       await page.waitForTimeout(500);   // SPLASH_OUT
       const js=job.def.js.replace(/\bN\b/g,String(job.n));
       if(js)await page.evaluate(js);

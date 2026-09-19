@@ -167,30 +167,46 @@ it is the only claim here that is about a number that could quietly drift.
 1024x500. Layout A ships: the name printed on the folded page in ink, the
 hunter kept on the dark half, which is the half a thumbnail crop keeps.
 
-**Screenshots** `store/play/*.png`, out of `node tools/store.js`. Eight at
+**Screenshots** `shots/play/*.png`, out of `node tools/store.js`. Ten at
 1080x1920, numbered in upload order, because Play shows them in that order
 and most people see the first two:
 
 | # | Shot | What it is for |
 |---|---|---|
-| 01 | `level:36` | A world with depth in it. The setup. |
-| 02 | `flat:36` | **The same board, folded.** The verb, and the only picture that explains this game without words. |
-| 03 | `level:21` | II · FIRE, which is the best-looking hour of the game. |
+| 01 | `firefold` | The fold tutorial in FIRE colours, walked to the brink. A gap that cannot be crossed. The setup. |
+| 02 | `fireflat` | **The same board, same camera, folded.** The verb, and the only picture that explains this game without words. |
+| 03 | `home` | The name, the cube on its plinth, and the three things the game does. |
 | 04 | `boss` | BOSS I. The clearest of the four at thumbnail size - the pack is a dark body with a bright rim, and it needs a light arena behind it. |
-| 05 | `trial` (IV) | The curtain of falling blocks, three seconds in. |
-| 06 | `map:3` | The water map. Progression, and the prettiest screen in the game. |
-| 07 | `story1:2` | The house and the family outside it. The only shot about what the game is *about*. |
-| 08 | `wardrobe` | What the stars are for. |
-| 09 | `guide` | Held back - Play takes eight. The charmer of the set; swap him in for 08 if the wardrobe reads as a shop. |
+| 05 | `smashed` | The red sting. A fight you can lose. |
+| 06 | `crushed` | The teal sting. A fight you can win, and *how* - by folding. |
+| 07 | `trial` (I) | The clock: three hearts, three cores, one lit slice about to become lethal. |
+| 08 | `story1:13` +1400ms | The fold that takes his parents, caught with the burst still in the air. |
+| 09 | `story1:16` | "My parents!" The only shot about what the game is *about*. |
+| 10 | `wardrobe` | What the stars are for. |
 
-**01 and 02 are a pair and must stay one.** Same board, same camera, water
-column and six cells of depth in the first and nine squares in a row in the
-second. Change one and change the other, or the hook stops working.
+**Play takes eight and this is ten**, on the owner's call: all ten are
+generated and numbered, and the eight to upload are picked in the Console.
+Nothing is marked `spare` in `tools/store.js`.
 
-**Level 36 is picked by measurement.** It is the only non-boss, non-trial
-level carrying three kinds of block, six cells of depth and enough blocks to
-fill a portrait frame. The query that found it is in the session log, and
-re-running it is the way to re-pick if the level ever changes.
+**01 and 02 are a pair and must stay one.** Same board, same camera, the
+same two steps walked - a gap and a spur out in depth in the first, one
+unbroken row in the second. Change one and change the other, or the hook
+stops working. The board is `tools/foldlevel.js`, which `tools/video.js`
+opens on too, so the listing and the promo are the same level.
+
+**Why that board rather than a campaign level.** The set used to open on
+`level:36` and `flat:36`, picked by measurement as the only non-boss,
+non-trial level with three kinds of block, six cells of depth and enough
+blocks to fill a portrait frame. It was a good picture of a *puzzle* and a
+poor picture of the *verb*: too much on the board for a stranger to see what
+changed between the two shots. The fold tutorial is the game's own clearest
+statement of the mechanic - two platforms, an uncrossable gap, one spur off
+in depth - and in FIRE rather than PROLOGUE's slate, which is the greyest
+palette in the game and not what a listing's first picture should be.
+
+**Three fight shots, not one**, because a fight is the half of this game a
+puzzle screenshot cannot suggest at all, and because 05 and 06 are the two
+words it can end on. `map:3` and `level:21` came off to make room.
 
 ---
 
@@ -211,7 +227,19 @@ the address shown on the listing has to be the same one the policy gives.
    account is not live, so there are no real unit ids to switch to. Going
    live is the real ids, the app id in the manifest and the switch,
    together (`docs/SHIPPING.md`), and it is a release, not a listing edit.
-2. **The promo video.** Play takes a YouTube URL, not a file. Not started.
+2. **The promo video** is cut and waiting on a YouTube upload, which is the
+   one step only the owner can take - Play takes a URL, not a file.
+   `shots/play/promo.mp4`, 45.5s, 720x1600 portrait, 7.6MB. It is four takes
+   off the owner's own phone, joined in the order they are numbered: the
+   studio sting, a fire puzzle folded and solved, BOSS I, TRIAL I ending on
+   a three-star win card. `node tools/promo-join.js` re-joins them from
+   `vid_1..4.mp4` in that folder.
+
+   It is a RECORDING, not `tools/video.js`'s scripted cut, and the two are
+   not the same asset: the scripted one is landscape, silent of any phone,
+   and re-records after a game change; this one has the owner's thumb, his
+   status bar and his timing in it. Both are kept. If the status bar turns
+   out to matter to a reviewer, the scripted cut is the one to upload.
 
 ## Settled, so it does not get re-opened
 

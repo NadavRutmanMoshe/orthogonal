@@ -1,37 +1,43 @@
 #!/usr/bin/env node
-/* The store screenshot set, as a list rather than as eight things to
- * remember.
+/* The store screenshot set, as a list rather than as ten things to remember.
  *
- *     node tools/store.js              writes store/play/*.png  (1080x1920)
- *     node tools/store.js --ios        the iPhone size         (1290x2796)
- *     node tools/store.js --tablet     Play 7" tablet slot     (1200x1920)
- *     node tools/store.js --tab10      Play 10" tablet slot    (1600x2560)
+ *     node tools/store.js              writes shots/play/*.png   (1080x1920)
+ *     node tools/store.js --ios        the iPhone size          (1290x2796)
+ *     node tools/store.js --tablet     Play 7" tablet slot      (1200x1920)
+ *     node tools/store.js --tab10      Play 10" tablet slot     (1600x2560)
  *     node tools/store.js --only 02    just one shot, while tuning it
- *     node tools/store.js --all-spares including the ninth, which Play has
- *                                      no room for
+ *     node tools/store.js --all-spares including any held back
  *
  * WHY THIS EXISTS. `tools/shot.js` can already take any screen at any size,
- * so the set was eight command lines with the right level indices, the right
+ * so the set was ten command lines with the right level indices, the right
  * --eval and the right --wait in them. That is fine once and useless the
- * second time: change the HUD and the set has to be re-taken, and nobody
- * remembers that the trial shot needs 3.4 seconds of settle or the falling
- * blocks are still in the air. The list below is the memory.
+ * second time: change the HUD - or the blocks, or a sting's timing - and the
+ * set has to be re-taken, and nobody remembers that the SMASHED shot has to
+ * land in the 660ms between the word appearing and the kill cam covering it.
+ * The list below is the memory.
  *
  * THE ORDER IS THE PITCH, and it is why the files are numbered. Play shows
  * them in upload order and most people see the first two and stop:
  *
- *   01  a world with depth in it          the setup
- *   02  THE SAME LEVEL, FOLDED            the verb, and the only image that
- *                                         explains the game without words
- *   03..08                                that the game keeps going
+ *   01  a board with a gap that cannot be walked   the setup
+ *   02  THE SAME BOARD, FOLDED                     the verb, and the only
+ *                                                  image that explains the
+ *                                                  game without words
+ *   03..10                                         that the game keeps going
  *
- * 01 and 02 are deliberately the same board from the same camera, because
- * the pair IS the mechanic: the water column and the depth are gone and the
- * nine squares are one row. Change one of them and change the other.
+ * 01 and 02 are deliberately the same board from the same camera with the
+ * same two steps walked, because the pair IS the mechanic: the gap is gone
+ * and the spur that was out in depth is simply the next square along. Change
+ * one of them and change the other.
  *
- * Level 36 is picked by measurement, not taste - it is the only non-boss,
- * non-trial level with three kinds of block, six cells of depth and enough
- * blocks to fill a portrait frame.
+ * PLAY TAKES AT MOST EIGHT per slot and this list is ten, on the owner's
+ * call: all ten are generated and numbered, and the eight to upload are
+ * picked in the Console. Nothing here is marked `spare`.
+ *
+ * WHERE THEY LAND. `shots/`, beside everything else tools/shot.js writes,
+ * rather than the `store/` they used to go to - one folder for stills, and
+ * one fewer place to look. `store/` is still where the moving pictures and
+ * the working frames go (tools/video.js).
  */
 const {execFileSync}=require("child_process");
 const path=require("path"), fs=require("fs");
@@ -43,38 +49,72 @@ const SHOT=path.join(__dirname,"shot.js");
    the layout is concerned and the shot would not look like a phone. 360 is
    near the owner's own 327. */
 const SIZES={
-  play:{w:360, h:640, dpr:3, out:"store/play"},      // 1080x1920
+  play:{w:360, h:640, dpr:3, out:"shots/play"},      // 1080x1920
   /* iPhone 6.7": 1290x2796 is 430 at dpr 3. */
-  ios: {w:430, h:932, dpr:3, out:"store/ios"},       // 1290x2796
+  ios: {w:430, h:932, dpr:3, out:"shots/ios"},       // 1290x2796
   /* Play's two tablet slots. THE CSS WIDTH IS THE POINT, not the pixel
      count: 1200x1920 can be reached as 400 CSS px at dpr 3, and that is a
      wide PHONE as far as this layout is concerned - the shot would come out
      looking like the phone set and would hide every bug a real tablet has.
      A 7" tablet is about 600 CSS px across and a 10" about 800, so those are
      the viewports and dpr 2 carries them to Play's sizes. */
-  tab7: {w:600, h:960,  dpr:2, out:"store/tablet7"},  // 1200x1920
-  tab10:{w:800, h:1280, dpr:2, out:"store/tablet10"}  // 1600x2560
+  tab7: {w:600, h:960,  dpr:2, out:"shots/tablet7"},  // 1200x1920
+  tab10:{w:800, h:1280, dpr:2, out:"shots/tablet10"}  // 1600x2560
 };
 
 /* Each shot: the file's number and name, the shot.js screen, and whatever it
    takes to reach the moment. `wait` is settle time - a clock level needs
-   enough of it that the thing the shot is about has actually happened. */
+   enough of it that the thing the shot is about has actually happened.
+
+   Most of these are a bare screen name because the reaching has been pushed
+   down into tools/shot.js, where it belongs: a screen that needs a hunter
+   posed or a cutscene seeking to a beat is a screen, not an --eval. */
 const SHOTS=[
-  {n:"01-volume",   screen:"level:36"},
-  {n:"02-folded",   screen:"flat:36"},
-  {n:"03-fire",     screen:"level:21"},
+  /* THE PAIR. The fold tutorial in FIRE colours - PROLOGUE, where that board
+     actually lives, is the greyest palette in the game, and a store listing
+     does not get a second chance at its first picture. tools/foldlevel.js
+     holds the board and says why; tools/video.js opens on the same one, so
+     the listing and the promo are the same level. */
+  {n:"01-fold-3d",  screen:"firefold"},
+  {n:"02-fold-2d",  screen:"fireflat"},
+  /* WHAT THE GAME IS, once the verb has been shown: a home screen with a
+     cube on a plinth, and the three things it does. */
+  {n:"03-home",     screen:"home"},
+  /* THE FIGHT, in three pictures rather than one, because a fight is the
+     half of this game a puzzle screenshot cannot suggest at all: the arena,
+     then each of the two words it can end on. */
   {n:"04-boss",     screen:"boss"},
-  /* TRIAL IV, three seconds in: the curtain of falling blocks is the
-     picture, and it is not in the air before then. */
-  {n:"05-trial",    screen:"trial", eval:"lv(43)", wait:3400},
-  {n:"06-map",      screen:"map:3"},
-  /* The opening cutscene, beat 2: the house, and the family outside it. The
-     only shot that says what the game is ABOUT rather than how it plays. */
-  {n:"07-home",     screen:"story1:2"},
-  {n:"08-wardrobe", screen:"wardrobe"},
-  /* Held back because Play takes eight. The neighbour is the charmer of the
-     set; swap him in for 08 if the wardrobe reads as a shop. */
-  {n:"09-guide",    screen:"guide", spare:true}
+  {n:"05-smashed",  screen:"smashed"},
+  {n:"06-crushed",  screen:"crushed"},
+  /* THE CLOCK. TRIAL I, a second in - the hearts, the goal count and the
+     sweep's telegraph across one slice.
+
+     TRIAL IV is the other candidate and was the set's trial for a while:
+     `{screen:"trial", eval:"lv(43)", wait:3400}` gives the curtain of
+     falling blocks, which is a louder picture. It went back to TRIAL I on
+     the owner's call - the curtain reads as scenery until you know what it
+     is, and the metronome's single lit slice reads as a threat immediately. */
+  {n:"07-trial",    screen:"trial"},
+  /* THE STORY, in the two beats that are the whole of it: the fold that
+     takes his parents, and what he says about it. Beat numbers are array
+     indices into STORY.open.beats (js/22-story.js) and MOVE when a beat is
+     added or cut - if either of these comes out as the wrong moment, that is
+     why, and `node tools/shot.js --list` explains the seek.
+
+     08 IS SEEKED TO 13 AND THEN LET RUN, which is why it carries a wait
+     rather than a beat number of its own. Beat 14 is the take and seeking
+     straight to it arrives after the event: storySeek() runs a beat's `at()`
+     in line, so the ash is emitted and decayed before the first frame is
+     drawn and the picture is four cubes that are simply absent. Seeking to
+     13 - the fold - and waiting 1400ms lets beat 14 arrive on the timeline
+     the way it does in play, with the burst still in the air. That is the
+     difference between a photograph of them vanishing and one of them
+     having vanished. */
+  {n:"08-taken",    screen:"story1:13", wait:1400},
+  {n:"09-myparents",screen:"story1:16"},
+  /* AND THAT THERE IS SOMETHING TO SPEND STARS ON. Last because it is the
+     only shot that is about the economy rather than the game. */
+  {n:"10-wardrobe", screen:"wardrobe"}
 ];
 
 function main(){
@@ -98,6 +138,6 @@ function main(){
     fs.renameSync(from,to);
     console.log(path.relative(ROOT,to));
   }
-  console.log(`\n${size.w*size.dpr}x${size.h*size.dpr} - Play takes at least 2 and at most 8 per slot.`);
+  console.log(`\n${size.w*size.dpr}x${size.h*size.dpr} - Play takes at least 2 and at most 8 per slot, and this set is ${SHOTS.length}.`);
 }
 main();

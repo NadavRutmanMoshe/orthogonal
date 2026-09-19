@@ -46,29 +46,11 @@ const SIZES={
 };
 
 /* ---- the opening level -------------------------------------------------
-   THE FOLD TUTORIAL, RE-SKINNED AS FIRE, on the owner's call, and both
-   halves of that are the point.
-
-   Its LAYOUT because it is the clearest statement of the verb in the whole
-   game: two platforms, a gap between them that cannot be walked, and a spur
-   off in depth that is only reachable once depth stops existing. Every
-   later level is that idea with something on top.
-
-   Its WORLD because PROLOGUE, where it actually lives, is the greyest
-   palette in the game - the same finding that took the icon off slate
-   (tools/icon.js). `theme` is a SECTIONS index and `levelTheme()` reads
-   SECTIONS[theme].theme, so 2 is II FIRE and that is the whole re-skin.
-
-   NOT `tutorial:true`, which the real one is: that would bring the coach,
-   the ghost hand and the guided lock, and a promo video wants the board. */
-const FOLD_LEVEL={
-  name:"00 - First Fold",
-  hint:"The gap is not crossable. The gap is not the point.",
-  start:[0,1,0], goal:[4,1,0], rotate:false, theme:2,
-  blocks:[[0,0,-1],[0,0,0],[0,0,1],[1,0,-1],[1,0,0],[1,0,1],
-          [2,0,-1],[2,0,0],[2,0,1],[4,0,1],[4,0,0],[4,0,-1],
-          [3,0,3],[3,0,4],[3,0,5]]
-};
+   THE FOLD TUTORIAL, RE-SKINNED AS FIRE, on the owner's call. It lives in
+   tools/foldlevel.js, which says why that board and why that world, because
+   tools/shot.js points a camera at the same level for the store set and a
+   second copy of a board is a board that drifts. */
+const {FOLD_LEVEL}=require("./foldlevel.js");
 
 /* ---- the script --------------------------------------------------------
    A scene is a list of steps. Each is {do, wait} or {until, wait}: `do` is

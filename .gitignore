@@ -3,8 +3,10 @@ node_modules/
 .DS_Store
 *.log
 shots/
-# The store screenshot set. Reproducible with `node tools/store.js` at any
-# commit, needed by no build, and 3.4MB of PNG - unlike app/icon/, which is
-# checked in because the Android project reads the launcher mipmaps out of
-# the tree.
+# tools/video.js output: the scripted promo, and the working frames it is
+# tuned against. Reproducible at any commit, needed by no build - unlike
+# app/icon/, which is checked in because the Android project reads the
+# launcher mipmaps out of the tree. The still store set used to live here
+# and is now under shots/, which is ignored above, along with the owner's
+# phone takes and the promo joined from them.
 store/
