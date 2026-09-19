@@ -742,6 +742,12 @@ is the rule.
 - One merged block geometry, per-face brightness in a vertex-colour
   attribute, `material.color` rewritten every frame by the block loop. Reach
   for `map`/vertex colours, never for the one channel the loop owns.
+- **A block FILLS its cell on all three axes**, and `edgeGeo` is cut from a
+  full cell to match. The .9 case is gone on the owner's call: the seam it
+  left showed in both dimensions and read as tiles rather than ground once
+  folded. Blocks stay countable by the hairline at every cell edge. The lit
+  rim rides `r=.5`, so it is buried against a neighbour and only draws on an
+  exposed edge (`look.md`).
 - Surfaces are drawn on canvas, never loaded; there are no image or audio
   files in this project and there will not be. Keep the grain off a pixel
   lattice (commercial reason, `look.md`).

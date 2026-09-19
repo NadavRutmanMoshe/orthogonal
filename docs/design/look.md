@@ -34,8 +34,26 @@ side by side and picked from the screenshots. Two things make it free:
   palette to keep in sync.
 - **`boxGeo` and `edgeGeo` were swapped in place** rather than joined by a new
   name, because blocks and crates are the only things that used them.
-  `edgeGeo` is cut from the **case** (.9), not from a full cell, or a hairline
-  floats in the seam the inset creates.
+  `edgeGeo` is cut from whatever the body is, or the hairline floats off the
+  thing it outlines - so it has grown with it twice, and is a full cell now.
+- **THE CASE IS GONE: the body fills its cell on all three axes.** It was .9
+  wide and .9 deep, and the .1 of void left between one block and the next was
+  argued for as meaning - the seam said "this is not part of that block". The
+  height lost that argument first (a column of blocks folded flat read as
+  tiles hanging in the air), and the width has now lost it on the owner's
+  call: the gap showed in BOTH dimensions, and in the plane, where there is no
+  shading to explain it, a row of blocks read as separate tiles rather than as
+  ground. What keeps blocks countable instead is the hairline at every cell
+  edge plus the per-face brightness - a joint is a drawn LINE, not a hole,
+  and the gap that matters in a game about silhouettes is the one the puzzle
+  put there.
+- **The lit rim survives by moving out to the cell edge** (`r=.5` in
+  `makeBlockGeo()`), so half of each bar sits outside the cell. Against a
+  neighbour it is buried in that neighbour's body and nothing shows, which is
+  the point of closing the gap; on an exposed edge it pokes out and draws the
+  same rim it always did, so a structure is still cased on the outside. The
+  bars' top is .4995 against the body's .5 - covered rather than coplanar, so
+  they cannot fight the lid for depth.
 
 ### The sky and the air
 
