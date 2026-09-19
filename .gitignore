@@ -3,3 +3,8 @@ node_modules/
 .DS_Store
 *.log
 shots/
+# The store screenshot set. Reproducible with `node tools/store.js` at any
+# commit, needed by no build, and 3.4MB of PNG - unlike app/icon/, which is
+# checked in because the Android project reads the launcher mipmaps out of
+# the tree.
+store/
