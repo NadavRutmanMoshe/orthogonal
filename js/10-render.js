@@ -123,7 +123,14 @@ function initGL(){
   boxGeo=makeBlockGeo();
   waterGeo=makeLiquidGeo(1.55);   // a bright surface: water shows its light there
   fireGeo =makeLiquidGeo(1.30);   // a molten crust, hot but not white
-  edgeGeo=new THREE.EdgesGeometry(new THREE.BoxGeometry(.9,.9,.9));
+  /* .9 WIDE AND A FULL CELL TALL, which is the body makeBlockGeo() builds -
+     the two have to agree or the hairline floats off the thing it is
+     outlining. It was a .9 cube on all three axes, matching a body that was
+     also .9 tall; when the body grew to close the gap between stacked
+     blocks, this had to grow with it or sit .05 short at the top and the
+     bottom. Stone and crates are what wear it; water and fire have their
+     own (liquidEdgeGeo). */
+  edgeGeo=new THREE.EdgesGeometry(new THREE.BoxGeometry(.9,1,.9));
   liquidEdgeGeo=new THREE.EdgesGeometry(new THREE.BoxGeometry(1,.98,1));
   TEX={stone:stoneTex(),grass:grassTex(),basalt:basaltTex(),
        water:waterTex(),lava:lavaTex(),obsidian:obsidianTex()};
@@ -2691,13 +2698,17 @@ function fitViewSize(){
    never seen - it was never seen on the octahedron either - and `cage` is
    the rim, which is the piece that carries the state: red normally, the
    goal's green when the fold would kill it. */
+/* The shell's size, and the drop that stands it on the floor. One place,
+   because drawBoss() adds HUNT_SEAT to the hunter's y and huntMesh() builds
+   the box - two numbers that must not drift apart. */
+var HUNT_SHELL=.72, HUNT_SEAT=-(.5-HUNT_SHELL/2);
 function huntMesh(){
   var g=new THREE.Group();
   /* NOT PURE BLACK. The officers read in the opening because they stand on a
      bright meadow; an arena is basalt or night grass, and 0x241820 on that
      is a hole in the board rather than a thing on it. Lifted far enough to
      have a value and kept cold enough to still read as black. */
-  var shell=new THREE.Mesh(new THREE.BoxGeometry(.72,.72,.72),
+  var shell=new THREE.Mesh(new THREE.BoxGeometry(HUNT_SHELL,HUNT_SHELL,HUNT_SHELL),
     new THREE.MeshLambertMaterial({color:0x46323e}));
   var core=new THREE.Mesh(new THREE.OctahedronGeometry(.2),
     new THREE.MeshBasicMaterial({color:0xff4d5e}));
@@ -3115,7 +3126,14 @@ function drawBoss(rx,rz,tdvx,tdvz){
     m.visible=true;
     var hu=h.x*rx+h.z*rz, hd=h.x*tdvx+h.z*tdvz;
     var px=hu*rx+hd*.012*tdvx, pz=hu*rz+hd*.012*tdvz;
-    tmp.set(h.x+(px-h.x)*flatT, h.y, h.z+(pz-h.z)*flatT);
+    /* STANDING ON THE ARENA, not hovering over it. The shell is a .72 cube
+       built around its own middle and the group sits at the cell centre, so
+       its underside was at -.36 against a block topping out at -.5 - the
+       same fifth-of-a-cell lie the player told before seatPlayerMesh(), and
+       the same one the plane shows up and the volume hides. HUNT_SEAT is
+       derived from the shell rather than typed, so resizing the piece
+       cannot leave it floating again. */
+    tmp.set(h.x+(px-h.x)*flatT, h.y+HUNT_SEAT, h.z+(pz-h.z)*flatT);
     // Snapped rather than eased when it is a long way off: a hunter thrown
     // back to its spawn should arrive there, not glide across the arena.
     m.position.lerp(tmp, m.position.distanceTo(tmp)>2.5?1:.35);
