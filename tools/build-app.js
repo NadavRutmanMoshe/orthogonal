@@ -1,7 +1,7 @@
 "use strict";
 /* Copy the game into the Capacitor project's web root.
  *
- *   node tools/build-app.js          -> app/www/
+ *   node tools/build-app.js          -> app/www/ AND the Android assets
  *
  * A COPY, NOT A BUNDLE, and that is the whole design. The game is classic
  * scripts loaded in the order index.html lists, with no build step; a WebView
@@ -9,6 +9,15 @@
  * trace from a tester names a line in a file you can open. dist/ is a
  * different job - build-single.js inlines everything into ONE file because
  * itch.io and the artifact host each want exactly one.
+ *
+ * IT COPIES TWICE, and the second one is the bug this file used to have.
+ * `app/www` is Capacitor's web root and `npx cap copy` is what normally
+ * carries it into `app/android/app/src/main/assets/public`, which is what
+ * the APK actually reads - but there is no node_modules here and so no
+ * `cap` to run. Writing only www meant gradle had nothing new to build,
+ * reported success, and installed an APK of whatever the assets happened to
+ * hold last time. That is the worst shape a build bug can have: it looks
+ * like it worked. The copy is all `cap copy` does for web assets anyway.
  *
  * The one thing it does beyond copying is stamp the commit, the same way
  * build-single.js does, so an installed APK can say in its menu which commit
@@ -75,7 +84,19 @@ const bytes=(function size(d){
   return t;
 })(WWW);
 
+/* Into the APK's own asset tree, which is the copy that ships. Removed
+   first rather than written over: a file deleted from the game has to
+   disappear from the app too, and a merge would leave it installed. */
+const ASSETS=path.join(ROOT,"app","android","app","src","main","assets","public");
+let synced=0;
+if(fs.existsSync(path.dirname(ASSETS))){
+  fs.rmSync(ASSETS,{recursive:true,force:true});
+  synced=copyDir(WWW,ASSETS);
+}
+
 console.log("app/www: "+files+" files, "+(bytes/1024).toFixed(0)+"KB");
+if(synced)console.log("android assets: "+synced+" files");
+else console.warn("!  no android project at app/android - www only");
 console.log("build "+BUILD);
 if(BUILD.indexOf("UNCOMMITTED")>=0)
   console.warn("!  built from a dirty tree - this APK cannot be re-derived");

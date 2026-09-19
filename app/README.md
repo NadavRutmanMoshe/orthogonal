@@ -149,3 +149,32 @@ app target, which Codemagic's automatic signing can set.
 - **Nothing is signed.** Release signing and the upload keystore are set up
   once, in Android Studio, and the keystore has to be backed up somewhere
   that survives the laptop.
+
+## Building and installing the APK, on this machine
+
+    node tools/build-app.js
+    cd app/android
+    ./gradlew assembleDebug -Dorg.gradle.java.home="C:/Program Files/Android/Android Studio/jbr"
+    adb install -r app/build/outputs/apk/debug/app-debug.apk
+
+**`-Dorg.gradle.java.home` IS NOT OPTIONAL HERE, and the failure it avoids
+is a confusing one.** Gradle picks its own JVM, not the one on PATH, and
+its wrapper found an Adoptium **17** while Capacitor 7's `capacitor-android`
+module compiles at source 21. The error is
+
+    Execution failed for task ':capacitor-android:compileDebugJavaWithJavac'
+    > invalid source release: 21
+
+which reads like the JDK is too new and means the opposite. Android
+Studio's bundled JBR is 21 and is the one to point at. `java -version` on
+PATH tells you nothing about this - ask `./gradlew -version`, which prints
+the Daemon JVM it will actually use.
+
+**And `tools/build-app.js` now writes BOTH copies.** `app/www` is
+Capacitor's web root; the APK reads
+`app/android/app/src/main/assets/public`, and `npx cap copy` is normally
+what carries one to the other. There is no `node_modules` here and so no
+`cap`, so build-app does the copy itself. Before it did, gradle saw
+nothing new, **reported BUILD SUCCESSFUL, and installed the previous
+build's game** - which is the worst shape a build bug can have, because it
+looks like it worked.
