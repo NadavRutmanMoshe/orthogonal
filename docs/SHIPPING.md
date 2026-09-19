@@ -523,6 +523,26 @@ trial, the map, the wardrobe, a cutscene beat and the neighbour mid-sentence.
 - **Play**: 1080x1920, at least two and ideally eight. Icon 512x512.
 - **Steam**: 1920x1080, at least five.
 
+**The feature graphic is done too**, and it was the item on this list that
+"cannot be finished in an afternoon by a script" - it now is one.
+`node tools/feature.js` writes `app/icon/feature-A|B|C.png` at Play's
+1024x500. It is the ICON'S OWN SCENE, wide: same arena, same seam, same three
+fixed colours, because the two sit side by side on the listing and two
+pictures would read as two games. The name is set in the game's own
+typefaces, read out of `css/05-fonts.css` as the base64 they already are, so
+the store page and the game are set in the same metal and nothing is
+downloaded to draw it.
+
+Three layouts, because this is the one asset with no right answer in the
+code: **A** prints the name on the folded page in `--ink`, which is what the
+game does to type on paper anywhere else; **B** is the inverse, cream on the
+dark volume side; **C** centres it over a scrim, the safest under Play's own
+cropping and the dullest. Two numbers per layout do the work: `zoom` pulls
+the cast back (the icon frames a SQUARE, and a square's worth of arena fills
+a 1024x500 strip, which is how the title ended up across the cube twice) and
+`dx` slides it away from the type. The sky, the page and the seam stay full
+bleed either way, so the fold still runs edge to edge.
+
 **The icon is done**: `node tools/icon.js` writes `app/icon/icon-1024.png`
 (iOS), `app/icon/icon-512.png` (Play) and `app/icon/preview.png` (how it
 reads at 256, 128, 64 and 48, rounded). `--android` writes the launcher

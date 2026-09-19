@@ -409,4 +409,8 @@ async function main(){
   }
   await browser.close();
 }
-main().catch(e=>{ console.error(e); process.exit(1); });
+/* The scene is the picture; tools/feature.js draws the same one wide, with
+   the game's name set on it, for Play's 1024x500 feature graphic. So this
+   file only runs when it is the thing that was run. */
+if(require.main===module) main().catch(e=>{ console.error(e); process.exit(1); });
+module.exports={scene,VARIANTS,WORLDS,palette,SHIP,loadPlaywright};
