@@ -47,54 +47,76 @@ itself.
 
 ## Full description (4000 max)
 
-Around 2,150 characters, so there is room to grow. Play renders a small set
-of HTML tags in this field, but plain text with blank lines between
-paragraphs is what survives being re-flowed on every screen width, so that
-is what this is. The bullets are `•`, typed, not a list tag.
+**Information first, on the owner's call.** It opened with the story - "They
+took my parents. I couldn't stop them." - and that came off: somebody
+reading this field is deciding whether to install a *puzzle game*, and the
+first thing they need is what kind of puzzle it is. The story is still in
+here, at the bottom, where it is a reason to keep playing rather than the
+pitch.
+
+Play renders a small set of HTML tags in this field, but plain text with
+blank lines between paragraphs is what survives being re-flowed on every
+screen width, so that is what this is. The bullets are `•`, typed, not a
+list tag.
+
+**The four world lines are the game's own `SECTIONS[].sub` strings**, near
+enough verbatim. That is deliberate: a world's one-line description on the
+chooser and its line on the store page should not be two different
+promises.
 
 ```
-They took my parents. I couldn't stop them. I'm just a cube.
+I'm Just A Cube is a puzzle game about going from 3D to 2D and back.
 
-But I can do one thing nothing else in this world can do. I can drop it to 2D.
+You are a cube on a grid. You can walk, and you can climb one block. That
+is not enough to get anywhere, so you have one other move: drop the whole
+world to 2D.
 
-Fold the world flat and everything collapses along the way you are looking.
-Two blocks a long way apart in depth land on the same square, and the gap
+Fold it flat and everything collapses along the direction you are looking.
+Blocks that were far apart in depth land on the same square, and the gap
 between them stops existing. Walk across it. Stand the world back up, and
-you are somewhere you could never have reached.
+you are somewhere you could not have walked to.
 
-That is the whole puzzle. One verb. The game is working out which way to
-look before you use it.
+The camera turns in ninety degree steps. Choosing which way to look before
+you fold is the puzzle.
 
 
-WHAT IS IN IT
+FOUR WORLDS, AND EACH ONE TEACHES YOU SOMETHING NEW
 
-• 109 hand-built levels across six worlds. Each one teaches a single idea
-  before it asks anything of you.
-• Fire that kills everything in the column it folds into. Water you can
-  stand on that leaves nothing behind in 2D. Crates you can shove to change
-  what the flat world looks like.
-• Four hunts. The pack moves on a real clock, learns your row and fires
-  down it. The only way to kill one is to fold while it is sharing your
-  silhouette.
-• Four timed trials, with a lethal plane sweeping the board one slice at a
-  time.
-• A story in three scenes, told in the same blocks you play in. Nothing is
-  a video. Everything folds.
-• A level editor with the solver in it. Build a level, press VERIFY, and it
-  tells you whether it can be finished and in how few moves. Share one as a
-  single line of text.
-• Shapes and colours to earn with stars, and a neighbour who stands beside
-  the early levels and tells you what he can see.
+• NATURE - go 2D, cross the gap, come back.
+• FIRE - fire is solid, and it burns you.
+• WATER - stand on water, and it leaves nothing behind in 2D.
+• DESERT - shove a crate and the 2D world changes.
+
+Every world also has a level on a real clock, where a lethal plane sweeps
+the board one slice at a time and you have three lives to get where you
+are going. Those are the reaction ones, and there is one in each world.
+
+Every world ends with a fight. The pack moves on its own clock, learns
+which row you are standing in and fires down it, and the only way to put
+one down is to fold while it is sharing your silhouette.
+
+Clear all four and a fifth world opens with sixty more levels in it.
+
+
+ALSO IN THERE
+
+• 109 levels in total.
+• A level editor with the game's own solver in it. Build a level, press
+  VERIFY, and it tells you whether it can be finished and in how few
+  moves. Share it as a single line of text.
+• Shapes and colours to unlock with stars.
+• A story, in three scenes, told in the same blocks you play in. Nothing
+  is a video. Everything folds.
 
 
 HOW IT PLAYS
 
 Swipe to walk. Double tap to fold. Two fingers to turn the camera. Or turn
 on a d-pad and buttons instead - it is one row in the settings, and so are
-the board size, the text size and how fast the fights run.
+the board size, the text size and how fast the timed levels run.
 
 The game asks your age once, sets those three for you, and does not ask
-again. Every one of them is a row in the menu afterwards.
+again.
 
 Every level has a par and three stars for beating it. Three hints sit in
 the bank, and they come back on their own.
@@ -115,8 +137,12 @@ neither is never online.
 
 | Claim | Checked against |
 |---|---|
-| 109 levels, six worlds | `LEVELS.length`, `SECTIONS.length` in `js/02-levels.js` |
-| four hunts, four trials | four `boss` levels that are not `tutorial:true`, four `trial` |
+| 109 levels | `LEVELS.length` in `js/02-levels.js` |
+| **four** worlds, and a fifth that opens | `SECTIONS` holds six, but `secPickable(n)` is `n>0`, so PROLOGUE has no tile and is not a world to the player. That leaves NATURE, FIRE, WATER, DESERT and EXTRA, and EXTRA carries `locked:true` until `bossesLeft()` is empty. **Say four, not six** - six is the array and four is what a player is offered |
+| sixty more levels in the fifth | indices 49..108, i.e. `LEVELS.length - SECTIONS[5].at` |
+| one timed level in **each** world | `trial` at 10, 23, 32, 43 - one inside each of the four `SECTIONS` spans |
+| **every world ends with** a fight | `boss` (not `tutorial:true`) at 18, 27, 37, 48, each the last index of its span. SPARRING at 17 is the teaching one and does not count |
+| the four world lines | `SECTIONS[].sub`, near enough verbatim, so the chooser and the store page make one promise |
 | fire poisons its column, water casts nothing, crates shove | `js/03-rules.js`, and rules 1-7 in `CLAUDE.md` |
 | the solver is in the editor | `VERIFY` in `js/14-editor.js`, `solve()` in `js/04-solver.js` |
 | a level shares as one line | `OL2` + 64 characters + `~Name`, `shareCode()` |
@@ -168,19 +194,24 @@ re-running it is the way to re-pick if the level ever changes.
 
 ---
 
+## The two fields the Console asks for by name
+
+    Privacy policy   https://nadavrutmanmoshe.github.io/orthogonal/privacy.html
+    Email            nadaz.games@gmail.com
+
+Both were already in the repo and this doc listed them as outstanding,
+which was wrong: the URL is in `docs/SHIPPING.md` and the address is at the
+foot of `docs/privacy.html` itself. They are written out here because the
+Console asks for them as two separate fields on two separate screens, and
+the address shown on the listing has to be the same one the policy gives.
+
 ## Still outstanding
 
-Things a script cannot do, roughly in the order they block submission.
-
-1. **The privacy policy needs a public URL.** `docs/privacy.html` is written;
-   it has to be reachable at an address the Play Console can be given, and
-   the Data safety form is checked against it. Mandatory here rather than
-   optional, because the Families programme.
-2. **A contact email address** on the listing, shown publicly.
-3. **Whether to claim tablet support.** `node tools/store.js --tablet` writes
-   the 1200x1920 set if so. Claiming it means the layout is held to it.
-4. **`AD_TEST` is still `true`.** Going live is the real ad unit ids, the app
-   id in the manifest and the switch, together (`docs/SHIPPING.md`).
+1. **`AD_TEST` is still `true`**, and that is fine for now - the AdMob
+   account is not live, so there are no real unit ids to switch to. Going
+   live is the real ids, the app id in the manifest and the switch,
+   together (`docs/SHIPPING.md`), and it is a release, not a listing edit.
+2. **The promo video.** Play takes a YouTube URL, not a file. Not started.
 
 ## Settled, so it does not get re-opened
 
@@ -193,3 +224,34 @@ nothing else, and type over the board is type over the board. `tools/
 caption.js` does not exist and should not be written without being asked
 for again.
 
+
+---
+
+## Tablets
+
+**Play asks for tablet screenshots in two slots**, 7" and 10", and nags in
+the Console when they are empty. Filling them is not the same thing as
+supporting tablets: the app installs on one either way, and what decides
+whether it is any good there is the layout, not the assets.
+
+So the layout was looked at rather than assumed, and it holds:
+
+- **Panels cap at 560px and centre**, which is the rule in `CLAUDE.md`, and
+  it is doing its job - on an 800px-wide tablet the wardrobe is a 556px
+  sheet in the middle of the screen, not a stretched one.
+- **The board scales.** `fitViewSize()` fits the arena per axis and the 7"
+  shot is the best-framed of any size this game has been shot at.
+- **Nothing clips, nothing overlaps, nothing is cut off** at either size.
+
+One thing is loose rather than broken: at 10" there is more empty sky over
+the board and a vertical gap in the wardrobe between the last row of tiles
+and the footer, because the content does not fill a 1280px-tall panel.
+Nobody would call it a bug and no store reviewer will either, but it is why
+the 7" set is the better-looking of the two.
+
+**`node tools/store.js --tablet` writes the 7" set and `--tab10` the 10".**
+The CSS width is the point and not the pixel count: 1200x1920 can be
+reached as 400 CSS px at dpr 3, which is a wide PHONE to this layout, and
+the shots would have come out looking like the phone set while hiding every
+tablet bug there was to find. 600 and 800 CSS px at dpr 2 are the real
+things.

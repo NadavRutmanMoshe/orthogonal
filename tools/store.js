@@ -4,7 +4,8 @@
  *
  *     node tools/store.js              writes store/play/*.png  (1080x1920)
  *     node tools/store.js --ios        the iPhone size         (1290x2796)
- *     node tools/store.js --tablet     Play's tablet slots     (1200x1920)
+ *     node tools/store.js --tablet     Play 7" tablet slot     (1200x1920)
+ *     node tools/store.js --tab10      Play 10" tablet slot    (1600x2560)
  *     node tools/store.js --only 02    just one shot, while tuning it
  *     node tools/store.js --all-spares including the ninth, which Play has
  *                                      no room for
@@ -45,10 +46,14 @@ const SIZES={
   play:{w:360, h:640, dpr:3, out:"store/play"},      // 1080x1920
   /* iPhone 6.7": 1290x2796 is 430 at dpr 3. */
   ios: {w:430, h:932, dpr:3, out:"store/ios"},       // 1290x2796
-  /* Play's tablet slots. Only needed if the listing claims tablet support;
-     400 CSS px is a wide phone, which is what a 7" tablet is to this
-     layout - the panels cap at 560px, so nothing stretches. */
-  tablet:{w:400, h:640, dpr:3, out:"store/tablet"}   // 1200x1920
+  /* Play's two tablet slots. THE CSS WIDTH IS THE POINT, not the pixel
+     count: 1200x1920 can be reached as 400 CSS px at dpr 3, and that is a
+     wide PHONE as far as this layout is concerned - the shot would come out
+     looking like the phone set and would hide every bug a real tablet has.
+     A 7" tablet is about 600 CSS px across and a 10" about 800, so those are
+     the viewports and dpr 2 carries them to Play's sizes. */
+  tab7: {w:600, h:960,  dpr:2, out:"store/tablet7"},  // 1200x1920
+  tab10:{w:800, h:1280, dpr:2, out:"store/tablet10"}  // 1600x2560
 };
 
 /* Each shot: the file's number and name, the shot.js screen, and whatever it
@@ -75,7 +80,7 @@ const SHOTS=[
 function main(){
   const args=process.argv.slice(2);
   const only=(()=>{ const i=args.indexOf("--only"); return i>=0?args[i+1]:null; })();
-  const size=SIZES[args.includes("--ios")?"ios":args.includes("--tablet")?"tablet":"play"];
+  const size=SIZES[args.includes("--ios")?"ios":args.includes("--tab10")?"tab10":args.includes("--tablet")?"tab7":"play"];
   const all=args.includes("--all-spares");
   const out=path.join(ROOT,size.out);
   fs.mkdirSync(out,{recursive:true});
