@@ -759,6 +759,15 @@ is the rule.
   lid went to .5 and silently stopped drawing on stone; it asks the kind now
   (.504 over stone, .437 over the liquid plate). `HISTORY.md` lists the
   others to re-measure if the body changes again.
+- **A trail mark arrives with the FOOT, not with the move.** `trailHere()`
+  fires when the step is committed, but `playerMesh` lerps at .26 a frame, so
+  the decal was painted on the block before the cube got there. `trailSet[k]`
+  holds the moment it was made; the decal waits `TRAIL_LAG` (115ms) and
+  blooms over `TRAIL_GROW` (160ms), on the SCALE - one material is shared by
+  every decal, which is what makes a recolour one write in `applySkin()`.
+  Anything older than the two is drawn full size, so `trailSync()` after a
+  rebuild does not replay the whole trail. `visible` belongs to the block
+  loop (`flatT<.45`); this may only touch the scale.
 - Surfaces are drawn on canvas, never loaded; there are no image or audio
   files in this project and there will not be. Keep the grain off a pixel
   lattice (commercial reason, `look.md`).

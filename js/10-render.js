@@ -2056,6 +2056,45 @@ function makeBlockGeo(rails){
    every rebuild.
    ============================================================ */
 var trailSet={}, trailMat=null, trailGeo=null, trailTex=null;
+/* THE MARK ARRIVES WITH THE FOOT, NOT WITH THE MOVE.
+
+   `trailHere()` is called the instant a step is COMMITTED, which is right -
+   the rules have you on the new square, and the next press moves off it. The
+   drawing does not: playerMesh lerps toward the new cell at .26 a frame, so
+   the cube is still visibly crossing for about a sixth of a second after the
+   state says it arrived. Attaching the decal there painted the block before
+   the player landed on it, which is what it looked like.
+
+   So a mark carries the time it was made, waits `TRAIL_LAG` and then blooms
+   over `TRAIL_GROW` - the scale, not the opacity, because one material is
+   shared by every decal in the world and that is what makes a colour change
+   one write in applySkin(). A mark that is older than the two put together
+   is drawn full size at once, so a rebuild (syncMeshes drops the meshes and
+   trailSync re-attaches every decal) does not replay the animation for the
+   whole trail.
+
+   Visibility belongs to the block loop (`flatT<.45`, with the anchor's
+   mark), so this may only touch the scale. */
+var TRAIL_LAG=115, TRAIL_GROW=160, trailFresh=[];
+function trailNow(){
+  return (typeof performance!=="undefined"&&performance.now)
+    ? performance.now() : Date.now();
+}
+/* true once the mark has finished arriving and no longer needs a frame. */
+function trailEase(q,now){
+  var t=(now-q.userData.t0-TRAIL_LAG)/TRAIL_GROW;
+  if(t<=0){q.scale.setScalar(0);return false;}
+  if(t>=1){q.scale.setScalar(1);return true;}
+  var e=1-Math.pow(1-t,3);          // out-cubic: it presses in and settles
+  q.scale.setScalar(.5+.5*e);
+  return false;
+}
+function trailTick(){
+  if(!trailFresh.length)return;
+  var now=trailNow();
+  for(var i=trailFresh.length-1;i>=0;i--)
+    if(trailEase(trailFresh[i],now))trailFresh.splice(i,1);
+}
 var TRAIL_A=.62;
 
 /* THE MARK CARRIES ITS OWN CONTRAST, and that is the whole of this texture.
@@ -2138,6 +2177,8 @@ function trailAttach(k){
   q.rotation.x=-Math.PI/2;
   q.position.y=liquid?.437:.504;
   q.renderOrder=3;
+  q.userData.t0=trailSet[k]||0;
+  if(!trailEase(q,trailNow()))trailFresh.push(q);
   m.userData.trail=q;m.add(q);
 }
 /* Cells only, never meshes: a block that does not exist yet - a boss arena
@@ -2146,10 +2187,12 @@ function trailAttach(k){
 function trailMark(x,y,z){
   var k=K(x,y,z);
   if(trailSet[k])return;
-  trailSet[k]=1;trailAttach(k);
+  trailSet[k]=trailNow();          // when, so the decal can arrive with the foot
+  trailAttach(k);
 }
 function trailSync(){for(var k in trailSet)trailAttach(k);}
 function trailClear(){
+  trailFresh.length=0;
   for(var k in trailSet){
     var m=meshes[k];
     if(m&&m.userData.trail){m.remove(m.userData.trail);m.userData.trail=null;}
@@ -4441,6 +4484,7 @@ function animate(now){
     }
   }
   perilPulse=.5+.5*Math.sin(Date.now()*.006);
+  trailTick();     // a mark that was made this step is still arriving
   for(var k in meshes){
     var m=meshes[k],b=m.userData.base;
     if(m.userData.mark)m.userData.mark.visible=flatT<.45;
