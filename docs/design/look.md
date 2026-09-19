@@ -49,11 +49,28 @@ side by side and picked from the screenshots. Two things make it free:
   put there.
 - **The lit rim survives by moving out to the cell edge** (`r=.5` in
   `makeBlockGeo()`), so half of each bar sits outside the cell. Against a
-  neighbour it is buried in that neighbour's body and nothing shows, which is
-  the point of closing the gap; on an exposed edge it pokes out and draws the
-  same rim it always did, so a structure is still cased on the outside. The
-  bars' top is .4995 against the body's .5 - covered rather than coplanar, so
-  they cannot fight the lid for depth.
+  neighbour at the same height it is buried in that neighbour's body and
+  nothing shows, which is the point of closing the gap; on an exposed edge it
+  pokes out and draws the same rim it always did, so a structure is still
+  cased on the outside. The bars' top is .4995 against the body's .5 -
+  covered rather than coplanar, so they cannot fight the lid for depth.
+- **THE RIM IS A LID, so a block with a block on it does not wear one.**
+  Sideways the rails hide themselves; UPWARDS they do not - the block above
+  is flush at the cell edge and the bars stand .0375 proud of it, so a stack
+  wore a bright lip at every course. On a boss arena that is a band across
+  the whole wall once per row, and the wall read as brickwork rather than as
+  ground (reported as a repeating pattern on the big levels).
+  `makeBlockGeo(false)` builds the bare body and `syncMeshes()` hands it to
+  every cell with a cell directly above, so the rim draws where a structure
+  ENDS. Cover is `L.blocks` only: a crate moves, and a mesh rebuilt on every
+  shove is churn for a lip that is hidden for one move. The rebuild test in
+  `syncMeshes()` is now kind, painted AND capped.
+- **The hairline is .24 on stone, not .35.** A block fills its cell, so two
+  neighbours' outlines land on the same edge and every interior joint is
+  drawn twice: at .35 the inside of an arena came out darker than its
+  outside, which is backwards. .24 doubled is about the old value. An anchor
+  and the liquids keep theirs - they are one block in a field of stone, and
+  the line is part of how they are told apart.
 
 ### The sky and the air
 

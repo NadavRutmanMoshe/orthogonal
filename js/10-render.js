@@ -123,6 +123,7 @@ function initGL(){
      hairline at the cell edge would have floated in the seam the inset
      created. There is no seam left to float in. */
   boxGeo=makeBlockGeo();
+  boxGeoFlat=makeBlockGeo(false);   // the same body with no rim: a covered block
   waterGeo=makeLiquidGeo(1.55);   // a bright surface: water shows its light there
   fireGeo =makeLiquidGeo(1.30);   // a molten crust, hot but not white
   /* A FULL CELL, which is the body makeBlockGeo() builds - the two have to
@@ -230,6 +231,7 @@ function initGL(){
    floating in a swatch. `scene.background` is dropped when it is up,
    because the quad is now what paints every pixel behind the world. */
 var flameGeo=null,waterGeo=null,fireGeo=null,liquidEdgeGeo=null,TEX=null;
+var boxGeoFlat=null;
 var skyQuad=null, airField=null, starField=null;
 var airPhase=0, flareT=0, flareEvery=0, skyWarm=0, lastFlareP=1;
 var colSkyTop=new THREE.Color(0x141a2e), colSkyBot=new THREE.Color(0x0a0e1a);
@@ -1998,8 +2000,17 @@ function makeFlameGeo(){
    outside. Their top is .4995, a twentieth of a hundredth under the body's
    lid, so they are covered rather than coplanar with it and cannot fight it
    for depth. */
-function makeBlockGeo(){
+/* THE RIM IS A LID, SO A BLOCK WITH A BLOCK ON IT DOES NOT WEAR ONE.
+   `rails` false builds the bare body, and syncMeshes() asks for it on every
+   cell that has another cell directly above. The rails stand .0375 proud of
+   the cell, so on a stacked block they drew a bright lip at EVERY course:
+   on a boss arena - twelve wide and three deep - that is a band across the
+   whole wall once per row, and the wall reads as brickwork rather than as
+   ground. Reported as a repeating pattern on the big levels. Now the rim
+   draws where a structure ENDS, which is the thing it was always saying. */
+function makeBlockGeo(rails){
   var parts=[faceVals({w:1,h:1,d:1})];
+  if(rails===false)return mergeBoxes(parts);
   var r=.5,t=.075;
   parts.push(faceVals({w:1,h:t,d:t,y:.462,z:r, top:1.85,bot:1.5,xp:1.8,xn:1.65,zp:1.85,zn:1.6}));
   parts.push(faceVals({w:1,h:t,d:t,y:.462,z:-r,top:1.85,bot:1.5,xp:1.8,xn:1.65,zp:1.85,zn:1.6}));
@@ -2107,12 +2118,25 @@ function trailAttach(k){
   var m=meshes[k];
   if(!m||m.userData.trail)return;
   if(!trailGeo)trailGeo=new THREE.PlaneGeometry(.74,.74);
-  /* .463 clears the stone case's top face (.45) and the liquid surface plate
-     (.43) and still sits under the rim frame's crown (~.4995), so one height
-     works for stone, water and fire without a per-kind branch. */
+  /* IT SITS ON WHATEVER THAT BLOCK'S TOP ACTUALLY IS, and one height for all
+     three kinds is what lost it.
+
+     It was .463, written when a stone block was a .9 CUBE and its lid was at
+     .45. The body has grown twice since - tall first, to close the gap
+     between stacked blocks, then full - and its lid is at .5 now, so the
+     decal was inside the block, under an opaque face, and the trail silently
+     stopped being drawn on stone. It still drew on water and fire, whose
+     surface plate tops out at .43, which is why it looked like it had gone
+     rather than like it had broken.
+
+     So the height is asked of the kind: .504 is a thousandth over stone's
+     lid (and over the rim's .4995 crown), .437 a thousandth over the liquid
+     plate. Both are far too small a step to see and far too big to fight the
+     face below for depth. */
+  var liquid=(m.userData.kind===1||m.userData.kind===4);
   var q=new THREE.Mesh(trailGeo,trailMaterial());
   q.rotation.x=-Math.PI/2;
-  q.position.y=.463;
+  q.position.y=liquid?.437:.504;
   q.renderOrder=3;
   m.userData.trail=q;m.add(q);
 }
@@ -2150,10 +2174,10 @@ function trailClear(){
    why the mesh remembers it (`userData.painted`) and syncMeshes rebuilds a
    cell whose painted-ness changed, exactly as it does for a changed kind. */
 function paintedCell(k){return !!(tintSet&&tintSet[k]!==undefined);}
-function addMesh(x,y,z,kind){
+function addMesh(x,y,z,kind,capped){
   var k=K(x,y,z);
   if(meshes[k])return;
-  var m=makeBlockMesh(kind,paintedCell(k));
+  var m=makeBlockMesh(kind,paintedCell(k),capped);
   m.position.set(x,y,z);
   m.userData.base=[x,y,z];
   scene.add(m);meshes[k]=m;
@@ -2164,7 +2188,7 @@ function addMesh(x,y,z,kind){
    is a function rather than the body of addMesh(). The chips used to be
    hand-drawn SVG approximations of these, and an approximation of a thing the
    player is looking at on the same screen is just a wrong picture. */
-function makeBlockMesh(kind,painted){
+function makeBlockMesh(kind,painted,capped){
   var glass=kind===1, anchor=kind===2, spike=kind===4;
   var mat=glass
     /* Water reads through a warm section, which is where it is taught, so it
@@ -2179,15 +2203,24 @@ function makeBlockMesh(kind,painted){
   /* THE FORM IS THE LABEL. Stone keeps the case-and-rim; water and fire are
      full cells with a surface plate, so they are told apart in silhouette
      before a single colour is read. */
-  var m=new THREE.Mesh(glass?waterGeo:(spike?fireGeo:boxGeo),mat);
+  var m=new THREE.Mesh(glass?waterGeo:(spike?fireGeo:(capped?boxGeoFlat:boxGeo)),mat);
+  m.userData.capped=!!capped;
   m.userData.glass=glass;
   m.userData.anchor=anchor;
   m.userData.kind=kind||0;
   m.userData.painted=!!painted;
+  /* THE HAIRLINE IS LIGHTER THAN IT WAS (.35 -> .24 on stone) because there
+     are twice as many of them to look at: two neighbours' lines land on the
+     same cell edge now that a block fills its cell, so every interior joint
+     is drawn twice and came out darker than the outside of the arena. .24
+     doubled is about the old .35 - the joints read as they used to and the
+     silhouette's own edge, drawn once, steps back. An anchor and the liquids
+     keep theirs: they are one block in a field of stone, and the line is
+     part of how they are told apart. */
   var edge=new THREE.LineSegments((glass||spike)?liquidEdgeGeo:edgeGeo,
     new THREE.LineBasicMaterial({
       color:glass?0xbdeaf7:(anchor?0xffd98a:(spike?0xff8a72:0x0f1424)),
-      transparent:true,opacity:glass?.95:(anchor||spike?.85:.35)}));
+      transparent:true,opacity:glass?.95:(anchor||spike?.85:.24)}));
   m.userData.edge=edge;
   m.add(edge);
   /* ONLY THE ANCHOR STILL CARRIES A SYMBOL. Water became a shape and lost
@@ -2521,19 +2554,33 @@ function syncMeshes(){
      share. It nulls itself when a level has no `tint`, so an ordinary level
      is exactly as it was. */
   buildTints();
+  /* WHICH CELLS HAVE A CELL ON TOP, so makeBlockGeo()'s lid can be left off
+     the ones that do. Built here rather than asked of the level per block,
+     because this runs on every rebuild and a linear scan per block is n^2 on
+     a boss arena. Crates are deliberately NOT in it: they move, and a mesh
+     that has to be rebuilt every time a crate is shoved is churn for a lip
+     that a crate covers for one move. */
+  var solid={};
+  for(var s0=0;s0<L.blocks.length;s0++){
+    var q=L.blocks[s0];
+    if(!isCrate(q))solid[K(q[0],q[1],q[2])]=1;
+  }
   var want={};
   for(var i=0;i<L.blocks.length;i++){
     var b=L.blocks[i],k=K(b[0],b[1],b[2]);
     if(isCrate(b))continue;                  // crates are drawn separately
     want[k]=b;
     // a block that changed material has to be rebuilt, not just kept -
-    // its kind, or whether it is painted (see paintedCell above addMesh)
+    // its kind, whether it is painted (see paintedCell above addMesh), or
+    // whether something has been built on top of it since
     var kind=b[3]||0;
+    var capped=!!solid[K(b[0],b[1]+1,b[2])];
     if(meshes[k]&&(meshes[k].userData.kind!==kind||
-                   !!meshes[k].userData.painted!==paintedCell(k))){
+                   !!meshes[k].userData.painted!==paintedCell(k)||
+                   !!meshes[k].userData.capped!==capped)){
       scene.remove(meshes[k]);meshes[k].material.dispose();delete meshes[k];
     }
-    addMesh(b[0],b[1],b[2],kind);
+    addMesh(b[0],b[1],b[2],kind,capped);
   }
   for(var k in meshes) if(!want[k]){
     var m=meshes[k];scene.remove(m);m.material.dispose();delete meshes[k];

@@ -1795,3 +1795,49 @@ lighting dimmed so the ring's light is the one you notice. Two lessons carried
 over from the rig: the stand's slab and piece stay Phong (a light that lands
 between a box's corners is lost on Lambert), and DRAG TO TURN stays at the
 bottom right, out of whatever stands at the top of the stage.
+
+## The trail disappeared when the block grew, and nothing said so
+
+The trail's decal was placed at `y=.463` with a comment explaining that this
+"clears the stone case's top face (.45)". It did, on the day it was written,
+when a block was a .9 cube. The body has grown twice since - first to `h:1`,
+to close the gap between stacked blocks, then to a full cell on all three
+axes - and its lid has been at `.5` ever since the first of those. So the
+decal has been sitting INSIDE the block, under an opaque face, and the trail
+on stone simply stopped being drawn. Nothing failed, nothing logged, and the
+level still looked right; the only tell was a feature quietly missing.
+
+It survived on water and fire the whole time, because their surface plate
+tops out at `.43` and `.463` is over it. That is what made the report read as
+"the trail is gone" rather than "the trail is broken": the kind of block it
+still worked on is not the kind you walk on most.
+
+**A constant that was measured against another object's geometry has to be
+derived from it or named with it.** The fix asks the block what kind it is
+and uses `.504` over stone's lid or `.437` over the liquid plate, and says so
+where the numbers are. The same trap is live anywhere a decal, a mark or a
+mesh sits "just above" a block: `markGeo`'s anchor at `.54`, the landing
+mark, the trial's floor rings. If the block's height changes again, they are
+the list to re-measure.
+
+## The lit rim on every course read as brickwork
+
+Closing the gap between blocks put the rails out at the cell edge, where half
+of each bar sits outside the cell. That is what draws the rim on an exposed
+edge - and a block with a block ON it has four such bars poking out at the
+joint, so a stack wore a bright lip at every course. One block, fine; a boss
+arena twelve wide and three deep, and it is a band across the whole wall once
+per row. Reported as a repeating pattern on the big levels, which is exactly
+what it was.
+
+`makeBlockGeo(false)` is the same body with no rails, and `syncMeshes()` hands
+it to every cell that has a cell directly above. The rim now draws where a
+structure ENDS, which is what a case around a block was always saying. Crates
+are deliberately not counted as cover: they move, and rebuilding a mesh on
+every shove is churn for a lip that is hidden for one move.
+
+The hairline came down with it, `.35` to `.24` on stone. Two neighbours' lines
+land on the same cell edge now that a block fills its cell, so every interior
+joint is drawn twice: at `.35` the inside of an arena was darker than its
+outside, which is backwards. `.24` doubled is about the old value, so a joint
+reads as it used to and the silhouette's own edge steps back.

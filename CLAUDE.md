@@ -745,9 +745,20 @@ is the rule.
 - **A block FILLS its cell on all three axes**, and `edgeGeo` is cut from a
   full cell to match. The .9 case is gone on the owner's call: the seam it
   left showed in both dimensions and read as tiles rather than ground once
-  folded. Blocks stay countable by the hairline at every cell edge. The lit
-  rim rides `r=.5`, so it is buried against a neighbour and only draws on an
-  exposed edge (`look.md`).
+  folded. Blocks stay countable by the **hairline** - the thin outline each
+  block wears, `edgeGeo` as `LineSegments`, .24 on stone because two
+  neighbours now draw the same cell edge (`look.md`).
+- **The lit rim is a LID: a block with a block on it does not wear one.**
+  The rails ride `r=.5` and stand proud of the cell, so on a stack they drew
+  a bright lip at every course and a boss arena read as brickwork.
+  `makeBlockGeo(false)` is the bare body and `syncMeshes()` hands it to every
+  covered cell (crates do not count as cover - they move). Rebuild tests are
+  kind, painted AND capped.
+- **Anything that sits "just above" a block is measured against the block's
+  lid, which has changed twice.** The trail decal was left at .463 when the
+  lid went to .5 and silently stopped drawing on stone; it asks the kind now
+  (.504 over stone, .437 over the liquid plate). `HISTORY.md` lists the
+  others to re-measure if the body changes again.
 - Surfaces are drawn on canvas, never loaded; there are no image or audio
   files in this project and there will not be. Keep the grain off a pixel
   lattice (commercial reason, `look.md`).
