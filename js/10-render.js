@@ -154,6 +154,7 @@ function initGL(){
   };
 
   playerMesh=buildPlayerMesh();
+  if(typeof seatPlayerMesh==="function")seatPlayerMesh(playerMesh);
   scene.add(playerMesh);
   /* THERE IS NO PLATE UNDER THE PLAYER any more. It was a .94 square in the
      player's own colour laid on the block below them, and the argument for
@@ -1963,8 +1964,29 @@ function makeFlameGeo(){
   g.computeVertexNormals();
   return g;
 }
+/* THE BODY IS A FULL CELL TALL AND NINE TENTHS WIDE, and the asymmetry is
+   the whole point rather than an oversight.
+
+   The seam between blocks is deliberate - a block is a CASE, and the gap is
+   what says "this is not part of that block", which is the thing a game
+   about silhouettes cannot afford to blur. Sideways that still holds, and
+   the four rails below span a full cell (w:1) so neighbours meet at the lid
+   anyway.
+
+   UPWARDS IT DID NOT HOLD. The body was .9 tall as well, so a block stacked
+   on a block left .05 of void between them: the top of the lower one
+   reaches .4995 with its rails on, and the bottom of the upper one stopped
+   at .55. In the volume the lids and the shading hid it. In the PLANE they
+   do not - the rails are edge-on, there is no shadow, and a column of
+   blocks reads as a stack of tiles hanging in the air. Reported off the
+   store screenshots, where it is the first thing you see.
+
+   h:1 closes it and costs nothing else. The rails sit at .462 with a height
+   of .075, so their top is .4995 - flush with the body instead of proud of
+   it by a twentieth - and they still stand out horizontally, which is the
+   part that was bridging the sideways seam all along. */
 function makeBlockGeo(){
-  var parts=[faceVals({w:.9,h:.9,d:.9})];
+  var parts=[faceVals({w:.9,h:1,d:.9})];
   var r=.465,t=.075;
   parts.push(faceVals({w:1,h:t,d:t,y:.462,z:r, top:1.85,bot:1.5,xp:1.8,xn:1.65,zp:1.85,zn:1.6}));
   parts.push(faceVals({w:1,h:t,d:t,y:.462,z:-r,top:1.85,bot:1.5,xp:1.8,xn:1.65,zp:1.85,zn:1.6}));
@@ -4545,6 +4567,12 @@ function animate(now){
   var pu=flat?flatPos.u:(srcX*rx+srcZ*rz), py=flat?flatPos.y:srcY;
   var fx=pu*rx+1.2*tdvx,fz=pu*rz+1.2*tdvz;
   tmp.set(srcX+(fx-srcX)*flatT, srcY+(py-srcY)*flatT, srcZ+(fz-srcZ)*flatT);
+  /* Stand the piece on the block rather than in the middle of the air above
+     it - see seatPlayerMesh() in js/09-wardrobe.js. Added to the TARGET, so
+     every path that moves the piece (the lerp, both deaths, the fold's own
+     interpolation) inherits it, and `drop` below still measures a fall
+     because a constant offset cancels in a difference. */
+  if(typeof playerSeat==="number")tmp.y+=playerSeat;
   /* CAUGHT BY THE FIRE, and it does not fall - it burns where it stands.
 
      The piece was a spike once and the death was the same one falling out of

@@ -314,6 +314,34 @@ function playerGeometry(id){
 // equipped. The wardrobe's display case needs to build an item the player does
 // not own and has not equipped, which reading the globals directly could never
 // do; the game still calls this with no arguments and gets what it always got.
+/* WHERE THE PIECE'S FEET ARE.
+
+   Every shape in playerGeometry() is built around its own middle - a .62
+   cube, a .34 sphere, a .68 cone - and the renderer puts the piece at the
+   CENTRE of the cell it occupies. So the cube's underside sat at -.31 while
+   the block holding it up tops out at -.5, and the player floated a fifth
+   of a cell above the world. In the volume the shadow pad under it covered
+   the lie; in the plane nothing does, and it reads as a sticker over the
+   board rather than a thing standing on it.
+
+   Measured rather than hard-coded, because the catalogue is eleven shapes
+   of different heights and a constant would only ever be right for one of
+   them. `playerSeat` is what the renderer adds to the piece's y, so the
+   POSITION still means "the cell" everywhere else - the shield, the trail,
+   the ash burst and the camera all keep reading it unchanged.
+
+   The wardrobe's display case deliberately does not use this: an item on a
+   plinth is being looked at, not standing on anything. */
+var playerSeat=0;
+function seatPlayerMesh(m){
+  playerSeat=0;
+  if(!m||typeof THREE==="undefined"||!THREE.Box3)return 0;
+  try{
+    var bb=new THREE.Box3().setFromObject(m);
+    if(isFinite(bb.min.y))playerSeat=-.5-bb.min.y;
+  }catch(e){}
+  return playerSeat;
+}
 function buildPlayerMesh(shape,col,mat){
   shape=shape||wardrobe.shape;
   if(col===undefined)col=findBy(SKIN_COLORS,wardrobe.color).hex;
@@ -577,6 +605,7 @@ function applySkin(){
   var pos=playerMesh.position.clone();
   scene.remove(playerMesh);
   playerMesh=buildPlayerMesh();
+  seatPlayerMesh(playerMesh);
   playerMesh.position.copy(pos);
   scene.add(playerMesh);
   var col=findBy(SKIN_COLORS,wardrobe.color).hex;
