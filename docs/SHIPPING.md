@@ -665,8 +665,14 @@ paperwork gets bought just to hide it. What that means per store:
   has moved more than once. Worth five minutes in the Console rather than a
   guess here.
 - **The bundle id is free everywhere and permanent, so it carries the name
-  whatever the stores decide**: `com.nadazgames.imjustacube`, the same string
-  as the Android `applicationId` and the iOS bundle id. Decide nothing else
+  whatever the stores decide**: `com.nadazgames.ImJustACube`, the same string
+  as the Android `applicationId` and the iOS bundle id. **The capitals are
+  real**: it was planned lowercase, but Play Console registered the app with
+  capitals, and Play compares the id case-sensitively - the first upload was
+  refused for `imjustacube`. The Java `namespace` stays lowercase (it only
+  names the package `MainActivity` lives in), and so does
+  `custom_url_scheme`, because Android matches URL schemes case-sensitively
+  and they are always written lowercase. Decide nothing else
   about it later; it cannot be changed after the first upload.
 - **The game itself says the studio name nowhere.** The sting is the cube and
   `tap to fold`, and there is no logotype anywhere in `index.html`. If

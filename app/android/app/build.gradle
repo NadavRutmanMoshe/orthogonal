@@ -1,10 +1,15 @@
 apply plugin: 'com.android.application'
 
 android {
+    // The namespace is the Java package MainActivity lives in; the
+    // applicationId is the app's identity on the phone and in Play. They are
+    // separate on purpose: Play Console registered the app as
+    // com.nadazgames.ImJustACube, capitals and all, and an id is compared
+    // case-sensitively, so only the applicationId had to change.
     namespace "com.nadazgames.imjustacube"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.nadazgames.imjustacube"
+        applicationId "com.nadazgames.ImJustACube"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

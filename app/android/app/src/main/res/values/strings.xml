@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">I\'m Just A Cube</string>
     <string name="title_activity_main">I\'m Just A Cube</string>
-    <string name="package_name">com.nadazgames.imjustacube</string>
+    <string name="package_name">com.nadazgames.ImJustACube</string>
     <string name="custom_url_scheme">com.nadazgames.imjustacube</string>
 </resources>
