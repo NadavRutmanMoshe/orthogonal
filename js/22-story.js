@@ -669,6 +669,15 @@ var STORY={
        at:function(){stHop("mum",300);}},
       {ms:3800, say:"I have been in the silhouette since they came to the door.", who:"mum"},
       {ms:4200, say:"Your father is not here. He went into the fire world.", who:"mum"},
+      /* AND THEN SHE SAYS THE WARM THING, on the owner's call. The line
+         before it is the ominous one - the father is still out there, which
+         is what the game keeps for itself - and ending on that left the
+         reunion colder than the scene had earned. This is the last thing
+         anybody says in the game, so it gets a hop: the opening's own
+         gesture, the one he greeted the neighbours with and lost his
+         parents to, spent here on the only body language a cube has. */
+      {ms:3400, say:"I'm proud of you, son.", who:"mum",
+       at:function(){stHop("mum");stHop("son",380);}},
       {ms:2000, at:function(){storyEndCard();}}
     ]
   }

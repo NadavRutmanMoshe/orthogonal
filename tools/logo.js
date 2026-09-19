@@ -68,21 +68,63 @@ async function main(){
   await page.waitForFunction(()=>typeof splashState!=="undefined");
   await page.waitForTimeout(400);
 
-  /* Fold it, and strip the card down to the mark. The prompt, the rule and
-     the bloom are the sting's stagecraft; a profile picture is the word. */
+  /* Fold it, and strip the card down to the mark PLUS its rule.
+
+     `fold` lands the cubes; `hit` is the class that draws the line under
+     them - .srule is a 1px gradient that grows to the wordmark's own width
+     (cols * c) once the fold arrives, and the sting's comment calls it "the
+     plane the cubes land in, said once and quietly". It is half the logo:
+     without it the mark is a word, with it the word is standing on
+     something, which is the game.
+
+     The prompt goes because "tap to fold" is an instruction to a player and
+     this is a profile picture. The bloom goes because it is a .44s flash
+     that ends at opacity 0 - keeping it only risks catching it mid-frame. */
   await page.evaluate(()=>{
     var el=document.getElementById("splash");
-    el.classList.add("on","fold");
+    el.classList.add("on","fold","hit");
     splashState="running";
     var p=document.getElementById("splashPrompt"); if(p)p.remove();
-    document.querySelectorAll(".srule,.sbloom").forEach(n=>n.remove());
+    document.querySelectorAll(".sbloom").forEach(n=>n.remove());
+    /* THE RULE IS SCALED TO THE MARK, NOT LEFT AT 1px. On the card it is a
+       hairline and it works, because it ARRIVES - it grows to width over
+       520ms and motion is what makes a thin line register. A still has no
+       motion to spend, so at this size the same 1px came out as a smudge
+       you had to be told was there. Tied to --c (the cube size) so it holds
+       at any output size, and taken to the card's own white - the bloom's
+       rgba(232,242,255) - rather than --fg-dim, because "the white line" is
+       what it reads as and what it was asked for. */
+    var r=document.querySelector(".srule");
+    if(r){
+      r.style.height="calc(var(--c) * .13)";
+      r.style.background=
+        "linear-gradient(90deg,transparent,#e8f2ff 22%,#e8f2ff 78%,transparent)";
+      r.style.marginTop="calc(var(--c) * 1.5)";
+    }
   });
   // The cubes travel on a CSS transition; SPLASH_FOLD is 980ms.
   await page.waitForTimeout(1500);
 
   fs.mkdirSync(OUT,{recursive:true});
+  /* The mark is the stage AND the rule under it, so the framing has to be
+     the union of the two. Centring on the stage alone hangs the line off
+     the bottom and puts the whole thing high in the square - which a
+     circular crop then makes obvious. */
+  async function markBox(){
+    const b=await page.evaluate(()=>{
+      var r=[".sstage",".srule"].map(function(sel){
+        var n=document.querySelector(sel); if(!n)return null;
+        var q=n.getBoundingClientRect();
+        return {l:q.left,t:q.top,r:q.right,b:q.bottom};
+      }).filter(Boolean);
+      var l=Math.min.apply(null,r.map(q=>q.l)), t=Math.min.apply(null,r.map(q=>q.t));
+      var rr=Math.max.apply(null,r.map(q=>q.r)), bb=Math.max.apply(null,r.map(q=>q.b));
+      return {x:l,y:t,width:rr-l,height:bb-t};
+    });
+    return b;
+  }
   const stage=await page.$(".sstage");
-  const box=await stage.boundingBox();
+  const box=await markBox();
   /* Scale the page so the wordmark fills FILL of the square, then shoot the
      square centred on it. Zooming the whole document rather than the stage
      keeps the cubes' 3D transforms intact - scaling a preserve-3d subtree
@@ -91,7 +133,7 @@ async function main(){
   const zoom=(SIZE*FILL)/box.width;
   await page.evaluate(z=>{ document.documentElement.style.zoom=z; },zoom);
   await page.waitForTimeout(250);
-  const b2=await (await page.$(".sstage")).boundingBox();
+  const b2=await markBox();
   const clip={x:b2.x+b2.width/2-SIZE/2, y:b2.y+b2.height/2-SIZE/2,
               width:SIZE, height:SIZE};
 
