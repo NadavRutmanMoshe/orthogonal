@@ -38,14 +38,7 @@
 const fs=require("fs"), path=require("path");
 const ROOT=path.join(__dirname,"..");
 
-function loadPlaywright(){
-  const tries=["playwright",
-    "/opt/node22/lib/node_modules/playwright",
-    path.join(process.env.npm_config_prefix||"/usr/local","lib","node_modules","playwright")];
-  for(const t of tries){ try{ return require(t); }catch(e){} }
-  console.error("playwright not found. `npm i -g playwright` (Chromium is already installed in the remote sandbox; elsewhere also `npx playwright install chromium`).");
-  process.exit(2);
-}
+const {loadPlaywright}=require("./playwright.js");
 
 /* Every screen is a name, a one-line description, and the JS that puts the
    game on it. The JS runs inside the page with every global in scope, after

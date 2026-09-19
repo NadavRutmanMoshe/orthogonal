@@ -41,13 +41,13 @@ function fontCss(){
   return css.match(/@font-face\{[^}]*\}/g).join("\n");
 }
 
-/* WHAT IT SAYS. The name, and the intro card's own first line under it -
-   the one sentence the game uses to explain itself to somebody who has never
-   played, which is exactly this graphic's job too. Nothing is invented here;
-   a store page that promises something in words the game never says is how a
-   listing and a game come apart. */
+/* WHAT IT SAYS: the name, and nothing else. It carried the intro card's own
+   first line under it - "A cube, a world, and one verb." - and that line is
+   gone from the game too, on the owner's call. It was a tagline ABOUT the
+   game rather than anything a player does in it, and a second line of type
+   is also the first thing Play's cropping eats. The picture is the pitch:
+   one object, folded on the left and deep on the right. */
 const TITLE="I'm Just A Cube";
-const LINE="A cube, a world, and one verb.";
 
 /* Three arrangements, because this is the one asset with no right answer in
    the code: the type can sit on the page, over the dark, or across both. */
@@ -78,10 +78,14 @@ function html(L,V){
      sideways so the cast clears the type. It is drawn WIDER than the strip
      and offset by half the excess, so sliding it never uncovers an edge. */
   const over=Math.abs(L.dx)*2;
+  /* Which slice of that square survives the crop, as fractions of it. The
+     scene puts its sky and page gradients over exactly this band, so the
+     strip shows the icon's whole ramp rather than the middle of it. */
+  const S=W+over, band=[((S-H)/2)/S, ((S+H)/2)/S];
   const art=`<div style="position:absolute;inset:0;overflow:hidden">
-      <div style="position:absolute;left:${L.dx-over/2}px;top:${-(W+over-H)/2}px;
-                  width:${W+over}px;height:${W+over}px">
-        ${scene({...V,zoom:L.zoom},W+over,"feat")}
+      <div style="position:absolute;left:${L.dx-over/2}px;top:${-(S-H)/2}px;
+                  width:${S}px;height:${S}px">
+        ${scene({...V,zoom:L.zoom,band},S,"feat")}
       </div>
     </div>`;
   const scrim=L.scrim
@@ -110,9 +114,6 @@ function html(L,V){
         <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;
                     font-size:68px;letter-spacing:-.035em;line-height:1;
                     color:${col};text-shadow:${shadow}">${TITLE}</div>
-        <div style="font-family:'IBM Plex Mono',monospace;font-weight:500;
-                    font-size:21px;letter-spacing:.02em;
-                    color:${col};opacity:.82">${LINE}</div>
       </div>
     </div>
   </body></html>`;

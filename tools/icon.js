@@ -26,14 +26,7 @@ const fs=require("fs"), path=require("path");
 const ROOT=path.join(__dirname,"..");
 const OUT=path.join(ROOT,"app","icon");
 
-function loadPlaywright(){
-  const tries=["playwright",
-    "/opt/node22/lib/node_modules/playwright",
-    path.join(process.env.npm_config_prefix||"/usr/local","lib","node_modules","playwright")];
-  for(const t of tries){ try{ return require(t); }catch(e){} }
-  console.error("playwright not found. `npm i -g playwright`.");
-  process.exit(2);
-}
+const {loadPlaywright}=require("./playwright.js");
 
 /* ---- the palette -------------------------------------------------------
    THREE COLOURS ARE THE GAME and never change: rose #d6336c is the cube
@@ -337,10 +330,21 @@ function scene(V, W, id){
     <line x1="${(sx+lean).toFixed(1)}" y1="-10" x2="${(sx-lean).toFixed(1)}" y2="${W+10}" stroke="${C.seam}" stroke-width="${(W*0.012).toFixed(0)}" opacity="0.95"/>
     <line x1="${(sx+lean).toFixed(1)}" y1="-10" x2="${(sx-lean).toFixed(1)}" y2="${W+10}" stroke="#ffffff" stroke-width="${(W*0.004).toFixed(0)}" opacity="0.9"/>`:"";
 
+  /* BOTH GRADIENTS RUN OVER THE VISIBLE BAND, NOT OVER THE SQUARE. The icon
+     shows the whole square, so 0 and 1 land on its own top and bottom and
+     the page reads mauve overhead, peach at the floor - the sunset the
+     palette is picked for. The feature graphic draws the same square and
+     keeps only the middle strip of it, so with the stops at 0 and 1 the
+     left side was the MIDDLE THIRD of that ramp and nothing else: one flat
+     salmon, the same picture with its colour taken out. `V.band` is
+     [top,bottom] as fractions of the square, and putting the stops there
+     spends the full ramp inside the crop. Reported as the feature graphic's
+     left side not looking like the icon's, which is exactly what it was. */
+  const [g0,g1]=V.band||[0,1];
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${W}" viewBox="0 0 ${W} ${W}">
   <defs>
-    <linearGradient id="${id}sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.skyTop}"/><stop offset="1" stop-color="${C.skyBot}"/></linearGradient>
-    <linearGradient id="${id}pap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.paperTop}"/><stop offset="1" stop-color="${C.paperBot}"/></linearGradient>
+    <linearGradient id="${id}sky" x1="0" y1="${g0}" x2="0" y2="${g1}"><stop offset="0" stop-color="${C.skyTop}"/><stop offset="1" stop-color="${C.skyBot}"/></linearGradient>
+    <linearGradient id="${id}pap" x1="0" y1="${g0}" x2="0" y2="${g1}"><stop offset="0" stop-color="${C.paperTop}"/><stop offset="1" stop-color="${C.paperBot}"/></linearGradient>
     <clipPath id="${id}L"><path d="${leftClip}"/></clipPath>
     <clipPath id="${id}R"><path d="${rightClip}"/></clipPath>
     <filter id="${id}blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${(W*0.02).toFixed(0)}"/></filter>

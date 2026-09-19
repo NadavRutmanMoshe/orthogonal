@@ -59,9 +59,10 @@
    327px phone. */
 .htitle{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;
   font-size:34px;letter-spacing:-.03em;color:var(--fg);line-height:1}
-.hsub{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
-  letter-spacing:.28em;text-transform:uppercase;color:var(--fg-dim);
-  margin-top:7px}
+/* There was a .hsub under the title - "a cube, a world, one verb", wide
+   mono caps. It came off with the same words on the intro card (index.html)
+   on the owner's call; the stand under the title is the thing that says
+   what the game is. */
 /* The plinth is the wardrobe's case, same renderer, same frame - `.wglass`
    and `.wfloor` are in css/40-panels.css, which loads before this one. */
 .hstand{width:196px;height:196px;margin:0;--halo:96%}

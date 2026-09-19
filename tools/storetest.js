@@ -19,13 +19,7 @@
  */
 const path=require("path");
 const PAGE=require("url").pathToFileURL(path.join(__dirname,"..","index.html")).href;
-function loadPlaywright(){
-  const tries=["playwright","/opt/node22/lib/node_modules/playwright",
-    path.join(process.env.npm_config_prefix||"/usr/local","lib","node_modules","playwright")];
-  for(const t of tries){ try{ return require(t); }catch(e){} }
-  console.error("playwright not found - see tools/shot.js");
-  process.exit(2);
-}
+const {loadPlaywright}=require("./playwright.js");
 const pw=loadPlaywright();
 
 let fails=0, passes=0;
