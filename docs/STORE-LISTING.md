@@ -27,7 +27,8 @@ offline, indie, 3D, minimalist.
 
 ## Short description (80 max)
 
-The owner's line, which is the voice the game is written in:
+**This one, on the owner's call.** It is his line, and it is the voice the
+game is written in:
 
     Traveling between dimensions in order to find my parents.
 
@@ -35,13 +36,14 @@ The owner's line, which is the voice the game is written in:
 the mechanic - which is the right way round for the line that sits under the
 icon in a search result.
 
-**One alternative, if the listing needs the genre in it for search.** Play
-indexes the short description heavily, and this one says "puzzle" without
-losing the voice:
-
-    A puzzle about folding the world flat to find my parents.
-
-57 characters. The owner picks; the first is the default.
+**The alternative was offered and turned down**, and it is recorded because
+the argument for it will come back the first time anybody looks at search
+ranking: `A puzzle about folding the world flat to find my parents.`, also
+57 characters. Play indexes this field heavily and the shipping line does
+not contain the word "puzzle" anywhere. That is a known cost, accepted - the
+full description and the **Games > Puzzle** category both carry the genre,
+and the line under the icon is the one place the game gets to sound like
+itself.
 
 ## Full description (4000 max)
 
@@ -177,10 +179,17 @@ Things a script cannot do, roughly in the order they block submission.
 2. **A contact email address** on the listing, shown publicly.
 3. **Whether to claim tablet support.** `node tools/store.js --tablet` writes
    the 1200x1920 set if so. Claiming it means the layout is held to it.
-4. **Captions on the screenshots.** Every listing that converts has them,
-   and this set is bare gameplay. It is a compositing pass over
-   `store/play/*.png` and would be a tool like the others - not started,
-   because it is a decision about how much the pictures should sell rather
-   than show.
-5. **`AD_TEST` is still `true`.** Going live is the real ad unit ids, the app
+4. **`AD_TEST` is still `true`.** Going live is the real ad unit ids, the app
    id in the manifest and the switch, together (`docs/SHIPPING.md`).
+
+## Settled, so it does not get re-opened
+
+**THE SCREENSHOTS SHIP BARE**, on the owner's call. A caption pass was
+offered - a headline band over each shot in the game's own typefaces, which
+is what most listings that convert do, and which would have made 01 and 02
+say "the world has depth" and "fold it and the depth is gone" in words
+rather than only in pictures. Turned down: the shots show the game and
+nothing else, and type over the board is type over the board. `tools/
+caption.js` does not exist and should not be written without being asked
+for again.
+
