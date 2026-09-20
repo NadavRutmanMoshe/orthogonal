@@ -14,9 +14,11 @@ var trialSlab,trialEdge;
 // How high above its square a slice's block starts the beat.
 var FALL_H=4.2;
 var colPeril=new THREE.Color(0x8f3b52);
-/* `colFoldHi` stood here - the green the landing mark lifted its winner
-   toward. The mark is gone and nothing else read it; the landing rings and
-   the tutorial's marker carry their own greens. */
+/* The colour the winner of a silhouette column is lifted toward while the
+   fold runs - the goal's own green, which is what "this is the one" is said
+   in everywhere else in this game (the landing rings, the tutorial's landing
+   marker, the cued button). See foldHiSet. */
+var colFoldHi=new THREE.Color(0x6ff0d2);
 var perilSet=null,perilCleanup=[],perilPulse=0;
 /* The tutorial's landing marker, as the block loop sees it: cell key -> 1 for
    the block that will catch you, 2 for one that lost the tie. Built by
@@ -3658,29 +3660,176 @@ function onResize(){
    visibly receded, which is a categorical statement rather than a gradient
    the eye has to measure. */
 var DEPTH_STEP=.34, DEPTH_SLOPE=.09, DEPTH_CAP=.68;
-/* THE LANDING MARK IS GONE, and the step mark is what replaced it.
+/* ============================================================
+   THE FOLD, AND THE ONE BLOCK IT HANDS YOU BACK
 
-   It lit every block the fold could hand you - a ROW along the plane, lifted
-   toward white, leaning teal and breathing for LAND_MS after every unfold.
-   It was switched off by default one build before this, and then taken out
-   on the owner's call: two marks answering two different questions in the
-   same green is one more than a board can carry, and the row is the one that
-   needs rule 5 already learned to be read. stepHiBuild() below answers the
-   question a player actually has, which is where they can go.
+   The fold itself is a straight slide to the plane: every block travels
+   along its own line of sight and arrives together. A two-beat version was
+   built and played - the whole world gathering into the front block of each
+   column first, then flattening - and dropped on the owner's call. What
+   survived it is the part that was actually doing the teaching, and it is
+   cheaper: MARK THE BLOCK, and leave the motion alone (docs/HISTORY.md).
 
-   What went with it: foldMarkStart/Fade/On/Wanted, foldHiSet/foldHiBuild,
-   FOLD_BREATH_MS, settings.foldmark and its row, and foldOrigin, which
-   nothing else read. What did NOT: landEnvelope(), LAND_MS, landHint and the
-   peek's live rings, and tutLandMark() - the tutorial still marks the block
-   it is teaching, and a peek still rings the block it previews.
+   Rule 5 is the one rule of this game nobody reads off the screen, and it
+   has two halves. Coming back to 3D puts you on the supporting block nearest
+   the camera - but only among the blocks you can actually REACH, and in the
+   plane you reach the TOP of a silhouette stack and nothing under it. A
+   block with another block over it, at any depth, is behind a wall once the
+   world is flat. So the mark goes on the top ledge's winner, and it is asked
+   for with the game's own `R.landings()` / `R.pick()` pair rather than
+   re-derived here - which is what makes the anchor's override of rule 5
+   correct for free, and what stops the drawing and the rule ever drifting.
+   ============================================================ */
+var foldHiT=0;
+/* THE MARK'S OWN CLOCK, and it needs one - this is the bug that shipped.
 
-   The reasoning it was built on is in docs/HISTORY.md, not lost here. */
+   It used to read `landFade()` outright, on the reasoning that the mark and
+   the landing rings say the same thing about the same block and should fade
+   as one. They do, but the rings have a TRIGGER as well as a clock, and it
+   is deliberately narrow: `doUnflatten()` only calls `showLanding()` when
+   the column held MORE THAN ONE candidate, because rings drawn round a
+   single block announce a choice nobody made. Reading their fade inherited
+   that trigger, so on `03 - A Real Challenge` - where every square you
+   actually climb to has exactly one candidate - coming back to 3D lit
+   nothing at all. Reported in exactly those words.
+
+   So the mark starts on EVERY unfold and runs for LAND_MS on its own count.
+   Same envelope (`landEnvelope`), so where the rings do appear the two still
+   fade as one thing; different trigger, because "where did I land" is a
+   question every landing raises and "which one did it pick" is not.
+
+   Pinned to the level it started on: a level that loads inside the second
+   and a half - winning on the unfold, say - would otherwise inherit a
+   running mark and flash its own blocks. */
+/* AND IT BREATHES, which is the half of this that colour cannot do.
+
+   A tint alone is only ever as loud as the difference between it and the
+   ground under it, and on the NATURE world the ground is green - so a mark
+   in the goal's green was nearly invisible on exactly the levels where the
+   teaching happens. Both reports of this came from grass.
+
+   Brightness plus a breath is the answer the tutorial's own landing marker
+   already reached, for the same reason and in the same words: "a block that
+   is visibly alive is unmistakable". Motion does not care what colour it is
+   over. Two breaths across the mark's life, counted off its own clock rather
+   than off the wall, so every mark looks the same from its own first frame
+   instead of catching the sine wherever it happened to be. */
+var FOLD_BREATH_MS=780;
+var foldMarkT=-1, foldMarkL=null, foldMarkPh=0, foldMarkBreath=.5;
+function foldMarkStart(){
+  foldMarkT=0;foldMarkPh=0;foldMarkL=(typeof L!=="undefined")?L:null;
+}
+function foldMarkFade(dtMs){
+  if(typeof L!=="undefined"&&foldMarkL&&foldMarkL!==L)foldMarkT=-1;
+  foldMarkPh+=dtMs;
+  foldMarkBreath=.5+.5*Math.sin(foldMarkPh/FOLD_BREATH_MS*Math.PI*2);
+  // Flat: no landing to mark, but a peek is a preview of one and lights the
+  // same block. Folding again ends the count, the way it ends the rings'.
+  if(flat){foldMarkT=-1;return planePeek>.05?peekFade():0;}
+  if(foldMarkT<0)return 0;
+  foldMarkT+=dtMs;
+  if(foldMarkT>=LAND_MS){foldMarkT=-1;return 0;}
+  return landEnvelope(foldMarkT/LAND_MS);
+}
+/* THE PLAYER'S OWN SWITCH (`settings.foldmark`, Menu > How it plays >
+   Landing mark).
+
+   The mark is a teaching aid, and a teaching aid that cannot be turned off
+   is decoration everybody has to keep looking at. Off means off: no tint, no
+   rim, and nothing rebuilt per frame either, because `foldHiT` is what gates
+   that work.
+
+   THE TEST IS NOW FOR "on", NOT AGAINST "off", because the default moved.
+   It read `!(settings.foldmark==="off")`, which is "on unless told
+   otherwise" - and that made a missing settings object, or a frame drawn
+   before loadSettings() has run, light the mark when a fresh install does
+   not. The fallback has to be the same answer as `FOLDMARK_DEFAULT`, or the
+   first second of a first run disagrees with every second after it. */
+function foldMarkOn(){
+  return typeof settings!=="undefined"&&settings.foldmark==="on";
+}
+/* AND NEVER IN A FIGHT, whatever the switch says. A boss is played at the
+   speed of the pack - there is no moment to read a board lighting up, and a
+   breathing block is one more moving thing on a screen where the hunters are
+   the ones that must be found. A trial keeps it: the clock there is a
+   rhythm you plan around, and where you will land is the plan. `B` is the
+   test and not `TR`, because BOSS IV runs a sweep too (see CLAUDE.md). */
+function foldMarkWanted(){
+  return foldMarkOn()&&!B;
+}
+/* THE BLOCKS THIS FOLD COULD HAND YOU, as cell keys the block loop can test
+   in O(1). Rebuilt while the mark is showing, and not at all when it is not.
+
+   EVERY LANDING THE FOLD OFFERED, AND ONLY THOSE - asked of the rules, never
+   read off the drawing. This used to walk the MESHES for ledges, and a mesh
+   is not the plane: water is a block you can see and stand on in the volume
+   and a HOLE in the plane, because it casts nothing. So a water block with
+   nothing over it was lit as somewhere you could stand when flat, which it
+   is not, and a stone under a sheet of water was skipped as buried, when in
+   the plane the water is not there and the stone is exactly where you stand.
+   Reported as the mark "not highlighting well with water".
+
+   So it now plays the plane. From the square the fold began on (`foldOrigin`,
+   js/05-state.js) it walks left and right with the game's own step -
+   `resolveStep()` over `R.siloSolid()`, the same call `move2()` makes -
+   refusing a fall out of the world and a square of fire, and collects every
+   square it can reach. For each, `R.landings()` and `R.pick()` - the two
+   calls `doUnflatten()` makes - say which block standing up there would put
+   you on, and that block is lit. A landing onto fire is left dark: it is
+   where you would land, but it is not a place to go.
+
+   THE `n>1` TEST IS GONE, and it is why world I never lit at all. It lit a
+   column only if it held two blocks or more, on the reasoning that one block
+   decides nothing - and world I's boards are one block deep, so every column
+   failed it and the only thing left was the block under your own feet,
+   under your own cube. A landing with one candidate is still a landing.
+
+   THE BLOCK UNDER YOUR FEET IS NOT A SPECIAL CASE ANY MORE. The square you
+   stood up from is a square the fold could reach, so it is lit by the rule,
+   and nothing that is not a landing gets lit by an exception.
+
+   Built off `AX[v]`, the SNAPPED basis of the fold's own view, rather than
+   off the eased `viewAngle` the drawing uses: u has to come out an exact
+   integer or the keys are floats with noise on them and nothing ever
+   matches. The view is the fold's and not the current one, so turning in
+   the second and a half after standing up does not relight a different
+   board. */
+var foldHiSet={}, foldHiKey="";
+function foldHiBuild(){
+  if(!R||app!=="play"||typeof resolveStep!=="function"){foldHiSet={};foldHiKey="";return;}
+  var o=foldOrigin;
+  // A resumed save, or an undo into a fold from before this one was recorded:
+  // the square you are on is the best origin there is.
+  if(!o||(flat&&o.v!==view))o={u:flatPos.u,y:flatPos.y,v:view};
+  var key=(L&&L.name)+"|"+o.v+"|"+o.u+"|"+o.y+"|"+gCrates.join(";");
+  if(key===foldHiKey)return;
+  foldHiKey=key;foldHiSet={};
+  var v=o.v, cr=liveCrates(), seen={}, q=[[o.u,o.y]], c, s, nu, ny, k;
+  seen[o.u+"|"+o.y]=1;
+  function at(u){return function(h){return R.siloSolid(v,u,h,cr);};}
+  while(q.length){
+    c=q.shift();
+    var land=R.landings(v,c[0],c[1],cr);
+    if(land.length){
+      var w=R.pick(land);
+      if(!R.deadly3(w.x,c[1],w.z))foldHiSet[K(w.x,c[1]-1,w.z)]=1;
+    }
+    for(s=-1;s<=1;s+=2){
+      nu=c[0]+s;
+      ny=resolveStep(at(nu),c[1],at(c[0]));
+      if(ny===null||ny===FELL||R.deadly2(v,nu,ny))continue;
+      k=nu+"|"+ny;
+      if(seen[k])continue;
+      seen[k]=1;q.push([nu,ny]);
+    }
+  }
+}
 
 /* THE FOUR SQUARES A STEP CAN REACH, lit the whole time you are in the
-   volume. The owner's ask, and it is now the only mark on the board that is
-   not a warning or a lesson - the landing row it replaced is gone.
+   volume. The owner's ask, and it replaces the landing row as the thing a
+   player sees without asking for it (see FOLDMARK_DEFAULT).
 
-   WHY FOUR AND NOT A ROW. The landing mark answered "which block in this
+   WHY FOUR AND NOT A ROW. The landing mark answers "which block in this
    column will the unfold hand me", which is rule 5 and which you have to
    have learned the rule to even be asking. This answers "where can I go
    from here", which is the question in front of somebody on their first
@@ -4312,10 +4461,32 @@ function animate(now){
   setSkyColors(skyWarm);
   layoutAtmosphere(dtMs);
   landFrame(dtMs);
-  // The landing mark used to be computed here, between landFrame and the
-  // block loop, so it could share that frame's `landHint`. It is gone; the
-  // rings landFrame draws are not.
-  // Nothing is rebuilt while the mark is not being
+  /* THE MARK'S STRENGTH, and it is the landing rings' own, exactly.
+
+     IT USED TO LIGHT GOING INTO 2D AS WELL, off `flatT`, and that half is
+     gone on the owner's call: reported as "it disappeared super fast", which
+     it did and could not help doing. The fold in is 520ms end to end, so a
+     mark that comes up before the world moves and is out before the plane
+     lands has a few hundred milliseconds to be seen - and it is answering a
+     question ("which one will it pick?") the player has not asked yet,
+     because nothing has happened. It is a flash, and a flash on the board is
+     read as something going wrong.
+
+     COMING BACK is where the question is live, and there the rings already
+     answer it: they appear on the landing, hold for LAND_MS and fade at both
+     ends. So the mark simply IS them - same clock, same curve, one source
+     (`landFade`), so the block and the ring around it can never fade apart -
+     and it is on the block itself, which is the only marker that survives
+     being stood on. The peek's live rings light it too, and should: a peek
+     is a preview of coming back, not of going away.
+
+     Placed after landFrame so both read the same frame's `landHint`; nothing
+     between here and the block loop reads either. */
+  foldHiT=foldMarkWanted()?foldMarkFade(dtMs):0;
+  // Nothing is rebuilt while the world is simply standing there in the
+  // volume, which is most frames of most sessions.
+  if(foldHiT>.01)foldHiBuild(); else if(foldHiKey){foldHiSet={};foldHiKey="";}
+  // Same gate, same reason: nothing is rebuilt while the mark is not being
   // drawn, and the key inside means a cube standing still costs one string
   // compare a frame rather than four walks of the rules.
   stepHiT=stepMarkOn();
@@ -4540,6 +4711,48 @@ function animate(now){
       m.material.color.copy(base).lerp(colInk,flatT*INK_SETTLE);
       applyDepth(m,b,pdepth,tdvx,tdvz,flatT);
     }
+    /* AND THE BLOCK THE FOLD HANDS YOU IS LIT WHILE THE FOLD RUNS.
+
+       The motion says the world is collapsing. It does not, and on the
+       owner's call now will not, say which of the blocks in a column you
+       will be standing on when you come back - so this does, on the block
+       itself, for the length of the transition and no longer. See
+       foldHiBuild() for which block that is and why it is the top one.
+
+       ON TOP OF THE BLOCK'S IDENTITY, NOT INSTEAD OF IT - a lift toward
+       the goal's green and a bright rim, which is the same pair the
+       tutorial's landing marker uses a few branches up and the same green
+       the landing rings use on the way back. Repainting the winner outright
+       was tried there and rejected for a reason that applies here too: two
+       blocks swapping COLOUR at the same moment they swap screen position
+       leaves the player unable to say whether the blocks moved or the
+       marker did.
+
+       Peril outranks it, as it outranks everything: a warning that this
+       fold will crush you beats a lesson about which block wins. So does the
+       TUTORIAL'S landing marker, and for a sharper reason - it draws the
+       winner in this same green and the LOSER in a dim version of it, so a
+       bright rim laid over its loser would say both blocks won, on the one
+       level whose whole job is to say which. The rim is put back by the
+       perilCleanup sweep at the foot of the frame, which is already the one
+       place edge colours are restored from. */
+    if(foldHiT>.01&&foldHiSet[k]&&!(perilSet&&perilSet[k])&&
+       !(tutMarkSet&&tutMarkSet[k])){
+      /* WHITE FIRST, THEN THE TEAL, AND ALL OF IT BREATHING. A tint straight
+         to the goal's green is nearly invisible on the nature world - green
+         on green - which is where both reports of this came from. A lift
+         toward white brightens any surface the game has; the teal on top of
+         it names the colour; the breath is what carries it when neither is
+         enough. Same three things the tutorial's landing marker uses, in the
+         same order and for the same reason. */
+      var hk=foldHiT*(.58+.42*foldMarkBreath);
+      m.material.color.lerp(colWhite,.50*hk).lerp(colFoldHi,.26*hk);
+      m.userData.edge.material.color.set(0x9dffe8);
+      m.userData.edge.material.opacity=Math.max(
+        m.userData.edge.material.opacity,.30+.70*hk);
+      m.material.opacity=1;
+      if(perilCleanup.indexOf(k)<0)perilCleanup.push(k);
+    }
     /* AND THE FOUR SQUARES YOU CAN STEP TO, under everything above it.
 
        LAST IN THE ORDER, because it is the only one of these marks that is
@@ -4563,7 +4776,7 @@ function animate(now){
        marks apart when both are on: the step mark is bright, the landing
        mark is bright AND teal AND moving. */
     if(stepHiT>.01&&stepHiSet[k]&&!(perilSet&&perilSet[k])&&
-       !(tutMarkSet&&tutMarkSet[k])){
+       !(tutMarkSet&&tutMarkSet[k])&&!(foldHiT>.01&&foldHiSet[k])){
       m.material.color.lerp(colWhite,.40*stepHiT);
       m.userData.edge.material.color.set(0xcdeaff);
       m.userData.edge.material.opacity=Math.max(
@@ -4780,6 +4993,7 @@ function animate(now){
       var pm=meshes[perilCleanup[pc]];
       if(!pm||(perilSet&&perilSet[perilCleanup[pc]])||
          (tutMarkSet&&tutMarkSet[perilCleanup[pc]])||
+         (foldHiT>.01&&foldHiSet[perilCleanup[pc]])||
          (stepHiT>.01&&stepHiSet[perilCleanup[pc]]))continue;
       var pk=pm.userData.kind;
       pm.userData.edge.material.color.set(
@@ -4788,6 +5002,7 @@ function animate(now){
     }
     perilCleanup=perilCleanup.filter(function(kk){
       return (perilSet&&perilSet[kk])||(tutMarkSet&&tutMarkSet[kk])||
+             (foldHiT>.01&&foldHiSet[kk])||
              (stepHiT>.01&&stepHiSet[kk]);});
   }
   var sealed=app==="play"&&keyMeshes.length&&keysLeft()>0;

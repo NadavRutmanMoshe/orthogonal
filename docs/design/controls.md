@@ -234,16 +234,6 @@ at all, so the ordinary fold is exactly as it was.
 
 ## The landing indicator - rule 5, shown instead of stated
 
-> **THE MARK DESCRIBED IN THIS SECTION NO LONGER EXISTS.** It was switched
-> off by default in one build and removed in the next, on the owner's call,
-> once the step mark below had taken over the job of saying where you can go.
-> What is kept here is the reasoning, because it is the record of what the
-> problem was and of four separate bugs the mark was debugged through - the
-> water bug, the `n>1` column filter, the borrowed trigger and the flash on
-> the way into 2D. Read it before drawing anything on a block again; do not
-> read it as a description of the code. The peek's rings and the tutorial's
-> marker are still real, and the paragraphs about them still hold.
-
 **"You return on the block nearest the camera, unless an anchor is among the
 candidates" is the single thing that cost the first real playtester the
 most.** It is stated once in `First Fold` and never shown again.
@@ -354,9 +344,9 @@ way with DON'T SHOW ME AGAIN and the kill-cam row. `noSlowOffer` is the one to
 keep in mind: a save that had pressed that button would have lost its
 out-of-lives card forever if the key had been left on the list.
 
-## The step mark - four squares, and why it replaced the row
+## The step mark - four squares, and why it took the row's place
 
-The landing indicator above answered *which block in this column will the
+The landing indicator above answers *which block in this column will the
 unfold hand me*. That is rule 5, and the trouble with it as the thing a
 player sees unasked is that you have to have learned rule 5 to be asking.
 Somebody on their second board is not wondering which of three blocks in

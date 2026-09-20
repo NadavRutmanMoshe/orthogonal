@@ -763,10 +763,23 @@ function menuPanel(){
           seg("mSpd","slow","SLOW",settings.speed)+
           seg("mSpd","regular","REGULAR",settings.speed)+
           seg("mSpd","fast","FAST",settings.speed)+"</span></div>"+
-        /* The "Landing mark" row stood here, switching the mark on the block
-           the unfold handed you. Both the mark and the row are gone: the step
-           mark answers where you can go on every frame, and it needs no
-           switch because it is not a lesson you finish with. */
+        /* WHERE YOU LAND IS A ROW HERE, not a card of its own. It had its own
+           heading and one unlabelled row under it, which is a heading saying
+           the same thing as a label would - and it is plainly one of the
+           things that governs how the game plays, which is what this card is
+           for. Labelled now, because a row in a card of rows needs to say
+           which one it is.
+
+           "Landing mark", not "Where you land", and the length is the reason:
+           the label column is 98px, which holds twelve monospace characters -
+           "Fights speed" exactly - and fourteen wrapped onto a second line and
+           knocked the row out of alignment. Widening the column is the wrong
+           trade, because the same width feeds the three-option rows above and
+           they are the ones with no slack. It says what the switch does
+           anyway: it marks the block you land on. */
+        "<div class='crow'><label>Landing mark</label><span class='seg'>"+
+          seg("mMark","on","SHOW",settings.foldmark)+
+          seg("mMark","off","OFF",settings.foldmark)+"</span></div>"+
         /* TEMPORARY ROW - it is a question being put to the owner, not a
            setting the game wants, and it comes out with the answer the way
            the hunter's death did. "Kill sound" is ten characters against the
@@ -924,6 +937,12 @@ function menuPanel(){
       settings.speed=m;saveSettings();menuPanel();
     });
   });
+  // Nothing to apply: the render loop asks foldMarkOn() every frame.
+  ["on","off"].forEach(function(m){
+    bind("mMark_"+m,function(){
+      settings.foldmark=m;saveSettings();menuPanel();
+    });
+  });
   /* And this one PLAYS what you just picked, which is the only thing that
      makes an audition row usable - the alternative is closing the menu,
      finding a fight and killing something to hear one of three. Nothing to
@@ -941,6 +960,7 @@ function menuPanel(){
   bind("mReset",function(){
     settings.volume=defaultVolume();settings.volTouched=false;
     settings.brightness=1;settings.ui=UI_DEFAULT;
+    settings.foldmark=FOLDMARK_DEFAULT;
     settings.killsound=KILLSOUND_DEFAULT;   // temporary, with its row
     /* The other two thirds of the age card go back to a fresh install too,
        and so does the memory of which band was picked: a reset that left the

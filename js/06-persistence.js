@@ -123,11 +123,8 @@ function loadSettings(){
            plain version on with nothing left to change it - exactly the trap
            `pace` is in below. A key whose feature is removed comes out of
            this whitelist with it. */
-        /* `foldmark` is deliberately NOT read any more. The landing mark it
-           switched is gone and so is its row, so a save carrying "on" would
-           be a value with nothing left to change it and nothing left to
-           apply it - the trap `pace` and `killcam` are in. A key whose
-           feature is removed comes out of this whitelist with it. */
+        if(o.foldmark&&["on","off"].indexOf(o.foldmark)>=0)
+          settings.foldmark=o.foldmark;
         /* TEMPORARY, and on this list only so the owner can answer the
            question across a reload - a switch that forgot which of three
            sounds was being tried would make the comparison impossible. It

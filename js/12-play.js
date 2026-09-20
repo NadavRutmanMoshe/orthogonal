@@ -2182,6 +2182,7 @@ function doFlatten(){
   lastSolidDepth=R.dOf(view,player.x,player.z);
   pushHistory();moveCount++;
   flatPos={u:pu,y:player.y};
+  foldOrigin={u:pu,y:player.y,v:view};    // the landing mark's starting square
   /* The column you just merged - see foldRun(). Taken before the fold
      resolves, for the same reason everything else on this line is. The walk
      is started off the same list, so the cube and the marks are reading one
@@ -2237,11 +2238,8 @@ function doUnflatten(){
   trailHere();
   flat=false;flatTarget=0;SFX.unfold();foldJolt(false);
   trialFoldSpend();       // and it does not claim the way back either
-  /* RULE 5 IS NO LONGER SHOWN ON THE LANDING AT ALL. The mark that lit
-     every block this fold could have put you on is gone, and the rings went
-     one build before it. What answers "where can I go" now is the step mark
-     (stepHiBuild(), js/10-render.js), which is on in the volume whether or
-     not you just folded.
+  /* RULE 5, SHOWN, by the mark: every block this fold could have put you
+     on, lit on every landing (foldMarkStart(), js/10-render.js).
 
      THE RINGS ARE GONE from a landing, on the owner's call. They circled the
      block you came back on and, dimmer, the ones you did not, and once the
@@ -2251,6 +2249,7 @@ function doUnflatten(){
      rings, which are a preview and a lesson rather than a landing. The words
      below are not the rings and stay: the first few times a column held a
      choice, it is still said once. */
+  if(typeof foldMarkStart==="function")foldMarkStart();
   if(land.length>1){
     var seen=settings.landHints||0;
     if(seen<LAND_HINT_TIMES){
@@ -2682,7 +2681,7 @@ function initDynamic(){
   nKeysTotal=(L.keys||[]).length;
 }
 function resetLevel(){
-  moveHistory=[];moveCount=0;hintsUsed=0;levelDone=false;tutReset();
+  moveHistory=[];foldOrigin=null;moveCount=0;hintsUsed=0;levelDone=false;tutReset();
   bossReset();trialReset();
   initDynamic();buildDynamic();
   player={x:L.start[0],y:L.start[1],z:L.start[2]};
@@ -2939,7 +2938,7 @@ function loadLevel(level,idx){
   $("won").classList.remove("on");
   player={x:L.start[0],y:L.start[1],z:L.start[2]};
   flat=false;flatTarget=0;flatT=0;view=0;viewAngle=0;viewAngleTarget=0;
-  moveHistory=[];moveCount=0;hintsUsed=0;dying=null;levelDone=false;tutReset();
+  moveHistory=[];foldOrigin=null;moveCount=0;hintsUsed=0;dying=null;levelDone=false;tutReset();
   /* THE TRIAL FIRST, THEN THE FIGHT, and the order is load-bearing now that a
      boss phase can install a sweep of its own: bossReset() ends in
      bossEnterPhase(), which writes TR from the phase it is entering, so
