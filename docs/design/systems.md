@@ -448,6 +448,52 @@
   where this matters most**: `SFX.die()` is the only thing a death's wind-up
   plays (see the kill cam in `docs/UI.md`), so it is heard alone, under
   television snow, with nothing else to hide behind.
+- **AND THEN THE KILL ITSELF, which is the third time this file has been
+  told the same thing.** `SFX.strike()` - a core going down - was reported
+  as disturbing, and the diagnosis is the one the crate's shove and the
+  old death both got, compounded three ways. It was a SQUARE wave, the
+  hardest-edged voice available and the exact thing taken out of the other
+  two. It was at **.055, the loudest blip anywhere in the file**, half again
+  the death's .030. And its bright voice swept 900 **up** to 1400, which
+  reads as an alarm going up rather than as something coming down - the
+  opposite of the moment. It fires three to five times a phase.
+
+  **Three candidates, on a switch, which is the established answer to a
+  question about feel** - the cheer was picked out of six this way and the
+  hunter's death out of three. Menu > How it plays > Kill sound, and
+  picking one plays it on the spot, because the alternative is closing the
+  menu and finding a fight to hear one of three. Each is a different idea
+  of what killing one of the pack *is*, not three tunings of one idea:
+
+  - **THUD**, the default and the conservative answer - the shape that
+    shipped with the edge taken off. Square becomes triangle, the gain comes
+    back to the file's ordinary .038, and the bright voice **falls** (1200
+    to 620) so it lands instead of whooping. One short noise front, because
+    the square was doing that job and a triangle alone has no attack on a
+    phone speaker. A player who never opens the menu gets the fix.
+  - **BURST**, it comes apart - no tone at the front at all, so there is
+    nothing that *can* ring or buzz. A hard short noise front, a softer one
+    opening out behind, a low sine for weight. Kept clear of the hunter's
+    own kapoosh (that opens out for 400ms, this closes in 200), because a
+    kill and a death must never be the same shape.
+  - **CHIME**, a kill is a reward so it sounds like one - two sines a fifth
+    apart struck together and falling, a small bell being damped, over one
+    tiny noise tick for the front edge. Harshness is impossible here by
+    construction. The furthest from what shipped, and the only one that
+    would make a fight feel like scoring rather than hitting.
+
+  **All three are quieter than what they replace** - .088, .082 and .074
+  stacked against the old .095 - so the limiter's worst case cannot have
+  gone up, which is the measurement `MIX`/`POST` changes owe. **The switch
+  comes out with the answer**: the winner becomes the body of
+  `SFX.strike()`, and `KILLSOUND_DEFAULT`, the row, the bind, the whitelist
+  line and the RESET SETTINGS line all go together, the way `bossdie` did.
+  A setting kept past its answer is an unmade decision with a control on it.
+
+  **One thing the switch does not decide**: `SFX.strike()` is also the
+  phase-announce voice (`js/12-play.js`, `bossEnterPhase()`), so whichever
+  wins is also the sound of a phase beginning. Whether those should be two
+  different voices is a separate question and has not been asked.
 - **THE AMBIENT LAYER IS CURRENTLY MUTED** - `AMB_MUTED` in `js/11-sound.js`
   is `true`. Playtested and disliked: the birds, the sea, the wind and the
   desert together were more presence than the game wanted, and a bed you have

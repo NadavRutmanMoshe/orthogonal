@@ -66,6 +66,14 @@ var UI_DEFAULT="none";
    have left a reset switching a mark back on that a fresh install does not
    have. Two writes of one value is the drift this constant exists to stop. */
 var FOLDMARK_DEFAULT="off";
+/* WHICH KILL SOUND, and this one is TEMPORARY - it is a question being put
+   to the owner, not a setting the game wants. "thud" is the conservative
+   answer (the shape that shipped, de-buzzed), so a player who never opens
+   the menu gets the fix rather than the experiment. When the answer comes
+   back, the winner becomes the body of SFX.strike(), and this constant, the
+   row in menuPanel(), the whitelist line and the RESET SETTINGS line all
+   come out together - the way `bossdie` and `killcam` went. */
+var KILLSOUND_DEFAULT="thud";
 /* The other two thirds of the setup question, and their defaults live here
    beside the buttons for the same reason: RESET SETTINGS reads all three, so
    a reset cannot drift away from a fresh install. MEDIUM and REGULAR are the
@@ -126,7 +134,10 @@ var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false
                  has to have learned rule 5 to read. It stays a row and it
                  stays switchable - a player who wants rule 5 drawn for them
                  turns it on - but nobody gets it unasked any more. */
-              foldmark:FOLDMARK_DEFAULT};
+              foldmark:FOLDMARK_DEFAULT,
+              /* Temporary, and it goes when the owner picks. See
+                 KILLSOUND_DEFAULT and SFX.strike(). */
+              killsound:KILLSOUND_DEFAULT};
 /* How many times the landing rule is spelled out in words. The rings keep
    drawing forever - they are free and they answer the question faster than a
    sentence does - but a line of text on every fold would be nagging. */
@@ -1363,11 +1374,61 @@ var SFX={
   // The turn of a beat. Deliberately tiny - it is a count, not an event, and
   // you should stop noticing it and start moving on it.
   tick:function(){blip(1180,.035,"sine",.014);},
-  // A core going down: a hard hit with a bright ring over it, so a strike
-  // never gets confused with taking one.
+  /* A CORE GOING DOWN - and this is the sound the owner called disturbing.
+
+     What it was: a SQUARE wave at .055 sliding 150 to 70, with a sine
+     sweeping 900 UP to 1400 over it. Three things wrong with it and they
+     compound. A square is the hardest-edged voice in this file and is what
+     the other two complaints in here turned out to be - the sawtooth in the
+     old death and the square in the old crate shove, both taken out for
+     exactly this reason. .055 is the loudest blip anywhere in the file, half
+     again the death's .030. And a tone that RISES reads as an alarm going
+     up rather than as a thing coming down, which is the opposite of what the
+     moment is. It fires three to five times a phase.
+
+     Three replacements, on a temporary switch, the way the crowd's cheer was
+     picked out of six and the hunter's death out of three - a sound cannot
+     be judged from a description, so the owner hears all three in the game
+     and the switch comes out with the question. Menu > How it plays > Kill
+     sound, and picking one plays it. Each is a different idea of what
+     killing one of the pack IS, not three tunings of one idea. */
   strike:function(){
-    blip(150,.22,"square",.055,70);
-    blip(900,.3,"sine",.04,1400);
+    var c=audio();if(!c)return;
+    var t=c.currentTime;
+    var k=(typeof settings!=="undefined"&&settings.killsound)||KILLSOUND_DEFAULT;
+    /* "BURST" - IT COMES APART. No tone at the front at all, so there is
+       nothing that can ring or buzz: a hard short noise front, a softer one
+       opening out behind it, and a low sine for the weight of the thing.
+       Kept well clear of the hunter's own "kapoosh" - that one opens out for
+       400ms and this closes in 200 - because a kill and a death must never
+       be the same shape. */
+    if(k==="burst"){
+      noiseAt(c,t,.045,.032,3600,1500,2.4,false);
+      noiseAt(c,t+.04,.20,.020,2000,360,1.0,true);
+      blip(104,.26,"sine",.030,58);
+    /* "CHIME" - A KILL IS A REWARD, SO IT SOUNDS LIKE ONE. Two sines a fifth
+       apart struck together and falling, which is a small bell being damped,
+       over one tiny noise tick that keeps a front edge on it for a phone
+       speaker. Harshness is impossible here by construction - there is no
+       edged waveform in it anywhere - and it is the only one of the three
+       that would make a fight feel like scoring rather than like hitting.
+       The furthest from what shipped, and deliberately so. */
+    } else if(k==="chime"){
+      noiseAt(c,t,.022,.014,5200,2600,1.6,false);
+      blip(784,.34,"sine",.034,392);
+      blip(523,.40,"sine",.026,262);
+    /* "THUD" - THE SAME SENTENCE, WITH THE EDGE TAKEN OFF, and the default.
+       The shape that shipped is kept: a low hit with a bright voice over it,
+       so the fight still reads the way the owner has been playing it. The
+       square becomes a triangle, the gain comes back to the file's ordinary
+       .038, and the bright voice FALLS - 1200 down to 620 - so it lands
+       instead of whooping. One short noise front, because the square was
+       doing that job and a triangle alone has no attack on a phone. */
+    } else {
+      noiseAt(c,t,.040,.020,3000,1200,2,false);
+      blip(150,.22,"triangle",.038,70);
+      blip(1200,.26,"sine",.030,620);
+    }
   },
   /* THE ROOM, ON A KILL - AND IT IS NOW ONE THING, QUIETLY.
 

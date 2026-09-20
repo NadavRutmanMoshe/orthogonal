@@ -777,9 +777,20 @@ function menuPanel(){
            trade, because the same width feeds the three-option rows above and
            they are the ones with no slack. It says what the switch does
            anyway: it marks the block you land on. */
-        "<div class='crow bare'><label>Landing mark</label><span class='seg'>"+
+        "<div class='crow'><label>Landing mark</label><span class='seg'>"+
           seg("mMark","on","SHOW",settings.foldmark)+
-          seg("mMark","off","OFF",settings.foldmark)+"</span></div></div>"+
+          seg("mMark","off","OFF",settings.foldmark)+"</span></div>"+
+        /* TEMPORARY ROW - it is a question being put to the owner, not a
+           setting the game wants, and it comes out with the answer the way
+           the hunter's death did. "Kill sound" is ten characters against the
+           label column's twelve. The three words are what each one IS rather
+           than A/B/C, because a name you can hear is the whole point of
+           auditioning them; picking one plays it, which is the only way a
+           row like this can be used at all. */
+        "<div class='crow bare'><label>Kill sound</label><span class='seg'>"+
+          seg("mKill","thud","THUD",settings.killsound)+
+          seg("mKill","burst","BURST",settings.killsound)+
+          seg("mKill","chime","CHIME",settings.killsound)+"</span></div></div>"+
       /* ACCESSIBILITY IS ITS OWN CARD, under How it plays. The two size rows
          were inside that card and they do not belong to it: everything else
          there is a choice about the GAME - which controls, how fast a fight
@@ -932,6 +943,16 @@ function menuPanel(){
       settings.foldmark=m;saveSettings();menuPanel();
     });
   });
+  /* And this one PLAYS what you just picked, which is the only thing that
+     makes an audition row usable - the alternative is closing the menu,
+     finding a fight and killing something to hear one of three. Nothing to
+     apply either: SFX.strike() reads the setting at the moment it fires. */
+  ["thud","burst","chime"].forEach(function(m){
+    bind("mKill_"+m,function(){
+      settings.killsound=m;saveSettings();menuPanel();
+      if(typeof SFX!=="undefined"&&SFX.strike)SFX.strike();
+    });
+  });
   bind("mAdPriv",adPrivacyShow);
   bind("mTut",function(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
@@ -940,6 +961,7 @@ function menuPanel(){
     settings.volume=defaultVolume();settings.volTouched=false;
     settings.brightness=1;settings.ui=UI_DEFAULT;
     settings.foldmark=FOLDMARK_DEFAULT;
+    settings.killsound=KILLSOUND_DEFAULT;   // temporary, with its row
     /* The other two thirds of the age card go back to a fresh install too,
        and so does the memory of which band was picked: a reset that left the
        age sheet showing a band it had just overwritten would be lying about

@@ -619,6 +619,22 @@ is the rule.
   `settings.noSlowOffer` and `STRUGGLE_OFFER` are gone with the opt-out;
   nothing suppresses the card. `fails[]` is still kept, for the neighbour's
   line at ten.
+- **`SFX.strike()` - the kill - IS A SETTING FOR ONE ROUND**, and the row is
+  temporary. It was a square wave at `.055` (the loudest blip in the file)
+  with a sine sweeping *up* 900-1400 over it: the same abrasive-voice
+  diagnosis the old `die()` sawtooth and the old `shove()` square got, plus
+  a rising tone that reads as an alarm rather than as something coming down.
+  Three candidates on Menu > How it plays > Kill sound, and **picking one
+  plays it**: `thud` (the old shape de-buzzed - triangle, .038, and the
+  bright voice FALLS; the default, so a player who never opens the menu gets
+  the fix), `burst` (noise only, nothing that can ring) and `chime` (two
+  sines a fifth apart, falling - a kill as a reward). All three are quieter
+  stacked than the `.095` they replace, so the limiter's worst case did not
+  move. `KILLSOUND_DEFAULT` sits beside `UI_DEFAULT`; **when the owner picks,
+  the winner becomes the body of `strike()` and the constant, the row, the
+  bind, the whitelist line and the RESET SETTINGS line all come out**, the
+  way `bossdie` did. `strike()` is also the phase-announce voice, so the
+  winner is that too - a separate question, not yet asked (`systems.md`).
 - **`SFX.die(kind)` dispatches five deaths** and none of them is a setting:
   "kapoosh" for a hunter's hit, "plack" for a crush, "kshhh" for the sweep,
   "ssss" for fire, and the fall's own voice for everything unnamed. The
