@@ -3825,6 +3825,102 @@ function foldHiBuild(){
   }
 }
 
+/* THE FOUR SQUARES A STEP CAN REACH, lit the whole time you are in the
+   volume. The owner's ask, and it replaces the landing row as the thing a
+   player sees without asking for it (see FOLDMARK_DEFAULT).
+
+   WHY FOUR AND NOT A ROW. The landing mark answers "which block in this
+   column will the unfold hand me", which is rule 5 and which you have to
+   have learned the rule to even be asking. This answers "where can I go
+   from here", which is the question in front of somebody on their first
+   board, and the answer is always at most four squares. It is also the one
+   drawing that says STEPPING UP IS A MOVE - the rule nothing on screen has
+   ever stated, since a block one higher looks like a wall until you try it.
+
+   LEVEL OR UP, NEVER DOWN, and that is the one judgement in here. A step
+   off a ledge is legal and resolveStep() will hand back the y you land on,
+   so a drop could be lit - but on a pillar that lights all four neighbours
+   and says "anywhere", when what is actually on offer is a fall. "Even if
+   it is above me" was the ask, so the mark is the squares you can WALK to;
+   `ny>=player.y` is the whole of it and it is one character to widen.
+
+   ASKED OF THE RULES, NEVER OF THE MESHES - the lesson foldHiBuild() paid
+   for. This runs the same three calls move3() runs, in the same order:
+   the crate push simulated into a local set, resolveStep() over R.solid()
+   with the clearance-here argument, and then the two refusals that are not
+   the step itself - a hunter standing there is a wall, and a landing onto
+   fire is where you would go and not a place to go. Anything that would be
+   refused or fatal is left dark, so the mark cannot promise a move the game
+   will not make.
+
+   Keyed on the crates AND the pack, because both of them move under a cube
+   that is standing still - a hunter walking into the square beside you has
+   to take its light away on the beat it arrives. */
+var stepHiSet={}, stepHiKey="", stepHiT=0;
+var STEP_DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
+function stepHiBuild(){
+  if(!R||app!=="play"||typeof resolveStep!=="function"||typeof player==="undefined"||!player){
+    stepHiSet={};stepHiKey="";return;
+  }
+  var hk="";
+  if(typeof hunters!=="undefined"&&hunters)
+    for(var q=0;q<hunters.length;q++)
+      hk+=hunters[q].x+","+hunters[q].y+","+hunters[q].z+";";
+  var key=(L&&L.name)+"|"+player.x+"|"+player.y+"|"+player.z+"|"+
+          gCrates.join(";")+"|"+hk;
+  if(key===stepHiKey)return;
+  stepHiKey=key;stepHiSet={};
+  var here=player;
+  function solidAt(x,z,cr){return function(h){return R.solid(x,h,z,cr);};}
+  for(var i=0;i<4;i++){
+    var dx=STEP_DIRS[i][0], dz=STEP_DIRS[i][1];
+    var nx=player.x+dx, nz=player.z+dz, cr=liveCrates();
+    // A crate you can shove leaves the square, so the step lands where it
+    // was. One that amber holds, or that has nowhere to go, stays solid and
+    // you step onto it instead - both of which resolveStep() reads off `cr`.
+    if(typeof crateIndexAt==="function"&&crateIndexAt(nx,player.y,nz)>=0&&
+       !R.heldFast(nx,player.y,nz)){
+      var res=R.push(nx,player.y,nz,dx,dz,cr);
+      if(res){cr.delete(K(nx,player.y,nz));cr.add(K(res.x,res.y,res.z));}
+    }
+    var ny=resolveStep(solidAt(nx,nz,cr),player.y,solidAt(here.x,here.z,cr));
+    if(ny===null||ny===FELL||ny<player.y)continue;
+    if(typeof hunterHere==="function"&&hunterHere(nx,ny,nz))continue;
+    if(R.deadly3(nx,ny,nz))continue;
+    stepHiSet[K(nx,ny-1,nz)]=1;
+  }
+}
+/* AND WHEN IT IS DRAWN. In the volume only: flat, a step is along `u` and
+   there are two of them, not four, and the squares are columns rather than
+   blocks - the mark would be answering about a board that is not there. It
+   rides `flatT` straight out rather than fading on a clock of its own, so
+   it is gone by a third of the way into the fold and back as the world
+   opens, which is the same motion the player is already watching.
+
+   Not while dying - the board is about to reset - and not in a cutscene,
+   where the cube is the son and nobody is being offered a move.
+
+   AND NEVER ON A TUTORIAL LEVEL, which is the one placement rule here and
+   it is the neighbour's rule for the neighbour's reason. Two of them, and
+   the first is fatal on its own: the guided lock (`tutBlocks()`,
+   js/15-tutorial.js) REFUSES every direction that is not the cued one, so a
+   mark lighting all four would be promising three moves the game is about to
+   swallow - on the levels whose whole job is to teach what a move is, to
+   somebody taking the screen completely literally. The second is that a
+   teaching level already has a coach, a ghost hand, a guided lock and its
+   own landing marker pointing at one block; a fifth voice saying something
+   slightly different is not help. He starts where the teaching stops.
+
+   This also covers the cutscenes, which are tutorial:true levels handed to
+   enterPlay(), but storyOn() stays above it as the statement of intent. */
+function stepMarkOn(){
+  if(app!=="play"||flat)return 0;
+  if(typeof dying!=="undefined"&&dying)return 0;
+  if(typeof storyOn==="function"&&storyOn())return 0;
+  if(L&&L.tutorial)return 0;
+  return Math.max(0,1-flatT*3);
+}
+
 /* HOW FAR THE CAMERA LEANS - the one structural lever on depth ambiguity.
 
    At .62 a cell of height is 1.90 cells of depth on screen, so a block two
@@ -4390,6 +4486,11 @@ function animate(now){
   // Nothing is rebuilt while the world is simply standing there in the
   // volume, which is most frames of most sessions.
   if(foldHiT>.01)foldHiBuild(); else if(foldHiKey){foldHiSet={};foldHiKey="";}
+  // Same gate, same reason: nothing is rebuilt while the mark is not being
+  // drawn, and the key inside means a cube standing still costs one string
+  // compare a frame rather than four walks of the rules.
+  stepHiT=stepMarkOn();
+  if(stepHiT>.01)stepHiBuild(); else if(stepHiKey){stepHiSet={};stepHiKey="";}
   lookCue();
   /* playerMesh rather than `player`, because the mesh is where the player is
      actually drawn - already eased, and already in plane coordinates when
@@ -4652,6 +4753,36 @@ function animate(now){
       m.material.opacity=1;
       if(perilCleanup.indexOf(k)<0)perilCleanup.push(k);
     }
+    /* AND THE FOUR SQUARES YOU CAN STEP TO, under everything above it.
+
+       LAST IN THE ORDER, because it is the only one of these marks that is
+       always on and it is therefore the only one that can be in the way.
+       Peril says this fold kills you, the tutorial's marker is teaching one
+       specific block, and the landing mark was asked for - each of those is
+       an answer to a question with a moment attached, and a permanent hint
+       does not get to cover one.
+
+       QUIETER THAN THE LANDING MARK, AND IT DOES NOT BREATHE. The fold mark
+       gets white plus teal plus a breath because it runs for a second and a
+       half and has to be found in that time, on grass, once. This one is on
+       every frame of every level: a breath would be four things pulsing in
+       the corner of your eye for the whole game, which is the reason the
+       landing mark is kept out of fights. So it is a lift toward white and a
+       rim, and nothing moves.
+
+       WHITE AND NOT A HUE, for the reason the fold mark had to learn twice -
+       brightness is the only signal that survives every surface in the game,
+       and green on the nature world was invisible. It also keeps the two
+       marks apart when both are on: the step mark is bright, the landing
+       mark is bright AND teal AND moving. */
+    if(stepHiT>.01&&stepHiSet[k]&&!(perilSet&&perilSet[k])&&
+       !(tutMarkSet&&tutMarkSet[k])&&!(foldHiT>.01&&foldHiSet[k])){
+      m.material.color.lerp(colWhite,.40*stepHiT);
+      m.userData.edge.material.color.set(0xcdeaff);
+      m.userData.edge.material.opacity=Math.max(
+        m.userData.edge.material.opacity,.34+.62*stepHiT);
+      if(perilCleanup.indexOf(k)<0)perilCleanup.push(k);
+    }
   }
 
   // crates fold like stone, and lerp toward their cell so a shove reads as a slide
@@ -4862,7 +4993,8 @@ function animate(now){
       var pm=meshes[perilCleanup[pc]];
       if(!pm||(perilSet&&perilSet[perilCleanup[pc]])||
          (tutMarkSet&&tutMarkSet[perilCleanup[pc]])||
-         (foldHiT>.01&&foldHiSet[perilCleanup[pc]]))continue;
+         (foldHiT>.01&&foldHiSet[perilCleanup[pc]])||
+         (stepHiT>.01&&stepHiSet[perilCleanup[pc]]))continue;
       var pk=pm.userData.kind;
       pm.userData.edge.material.color.set(
         pk===1?0xbdeaf7:pk===2?0xffd98a:pk===4?0xff8a72:0x0f1424);
@@ -4870,7 +5002,8 @@ function animate(now){
     }
     perilCleanup=perilCleanup.filter(function(kk){
       return (perilSet&&perilSet[kk])||(tutMarkSet&&tutMarkSet[kk])||
-             (foldHiT>.01&&foldHiSet[kk]);});
+             (foldHiT>.01&&foldHiSet[kk])||
+             (stepHiT>.01&&stepHiSet[kk]);});
   }
   var sealed=app==="play"&&keyMeshes.length&&keysLeft()>0;
   // Amber, not green, on anything with a clock: the colour is the promise

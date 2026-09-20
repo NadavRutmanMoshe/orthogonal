@@ -837,7 +837,28 @@ is the rule.
   nothing; the peek's live rings and the tutorial's rings (`tutLandMark()`)
   stay.
   Peril and the tutorial's landing marker both outrank it. `foldMarkOn()`
-  (`settings.foldmark`, Menu > How it plays > Landing mark) turns it off.
+  (`settings.foldmark`, Menu > How it plays > Landing mark) turns it off,
+  and **it is OFF by default** (`FOLDMARK_DEFAULT`, beside `UI_DEFAULT` so
+  the fresh settings object and RESET SETTINGS cannot drift apart). The row
+  answers rule 5, which you must have learned the rule to be asking; the
+  step mark below answers "where can I go", and that is the one a player
+  gets unasked now.
+- **THE STEP MARK IS THE FOUR SQUARES A STEP CAN REACH**, lit the whole
+  time you are in the volume (`stepHiBuild()`, `stepMarkOn()`,
+  `js/10-render.js`). It is the only drawing of the rule that **stepping up
+  is a move**. **Level or up, never down** - a drop is legal but lighting it
+  says "anywhere" on a pillar. **Asked of the rules**: the same three calls
+  `move3()` makes, crate push simulated, then the refusals that are not the
+  step - a hunter is a wall, fire is left dark. **Never on a `tutorial:true`
+  level**, the neighbour's rule for the neighbour's reason and because
+  `tutBlocks()`'s guided lock would refuse three of the four it lights.
+  **Last in the priority order** (peril, then `tutMarkSet`, then the landing
+  mark, then this) because it is the only one always on, and it must be in
+  **both** of `perilCleanup`'s keep-tests or its rim is wiped on the frame
+  that drew it. A lift toward white and a rim, and **it does not breathe** -
+  it is on every frame, and the breath is why the landing mark is kept out
+  of fights. It **is** drawn in fights; `&&!B` in `stepMarkOn()` is the line
+  if that is wrong (`controls.md`).
   A two-beat fold that gathered the world
   into the front block was built, played and dropped for this
   (`controls.md`, `HISTORY.md`).

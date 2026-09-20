@@ -344,6 +344,79 @@ way with DON'T SHOW ME AGAIN and the kill-cam row. `noSlowOffer` is the one to
 keep in mind: a save that had pressed that button would have lost its
 out-of-lives card forever if the key had been left on the list.
 
+## The step mark - four squares, and why it took the row's place
+
+The landing indicator above answers *which block in this column will the
+unfold hand me*. That is rule 5, and the trouble with it as the thing a
+player sees unasked is that you have to have learned rule 5 to be asking.
+Somebody on their second board is not wondering which of three blocks in
+depth wins; they are wondering **where they can go**, and nothing on the
+screen had ever said.
+
+So `stepHiBuild()` (`js/10-render.js`) lights the four squares a step can
+reach, and it is on the whole time the world is in the volume. Four is the
+whole answer - a step is orthogonal and there are four of them - which is
+why it can be permanent where the row could not: a row of landings is as
+long as the board, and four squares is a shape you stop reading after a
+day and keep using.
+
+**It is also the only drawing of the rule that stepping up is a move.** A
+block one higher looks exactly like a wall until you walk into it, and
+rule 2's clearance test means sometimes it *is* one. The mark is where
+that gets said.
+
+**Level or up, never down.** `resolveStep()` will happily hand back the
+square you land on after a drop, so a fall could be lit - but on a pillar
+that lights all four neighbours and reads as "anywhere", when what is on
+offer is a fall. The ask was "the four blocks I can reach even if it's
+above me", so the mark is the squares you can **walk** to. `ny>=player.y`
+is the whole of it, and it is one character to widen if a drop should
+count.
+
+**Asked of the rules, never of the meshes** - the lesson the landing
+indicator paid for with the water bug. It runs the same three calls
+`move3()` runs, in the same order: the crate push simulated into a local
+set, `resolveStep()` over `R.solid()` with the clearance-here argument,
+then the two refusals that are not the step itself. A hunter standing
+there is a wall, and a landing onto fire is where you would go and not a
+place to go. Anything the game would refuse is left dark, so the mark
+cannot promise a move that will not happen.
+
+**Never on a `tutorial:true` level**, and that is the placement rule. It is
+the neighbour's rule for the neighbour's reason, and the first half of it
+is fatal on its own: the guided lock (`tutBlocks()`, `js/15-tutorial.js`)
+refuses every direction that is not the cued one, so four lit squares would
+be promising three moves the game is about to swallow - on the levels whose
+job is to teach what a move is, to somebody reading the screen completely
+literally. The second half is that a teaching level already has a coach, a
+ghost hand, a guided lock and its own landing marker pointing at one block.
+A fifth voice saying something slightly different is not help.
+
+**Quieter than the landing mark, and it does not breathe.** The fold mark
+gets white plus teal plus a breath because it runs for a second and a half
+and has to be found inside it, once, possibly on grass. This one is on
+every frame of every level, and a breath would be four things pulsing at
+the edge of vision for the whole game - which is the exact reason the
+landing mark is kept out of fights. So it is a lift toward white and a
+rim, and nothing moves. White and not a hue for the reason the fold mark
+had to learn twice: brightness is the only signal that survives every
+surface in the game. It also keeps the two apart when both are on - the
+step mark is bright, the landing mark is bright *and* teal *and* moving.
+
+**Last in the priority order**, under peril, under the tutorial's marker
+and under the landing mark. It is the only one of the four that is always
+on, so it is the only one that can be in the way; the other three are each
+an answer to a question with a moment attached, and a permanent hint does
+not get to cover one. It joins `perilCleanup` like the rest, and it is in
+both of that sweep's keep-tests - miss either and the rim is restored at
+the foot of the frame that drew it, which is a mark that never appears.
+
+**It is drawn in fights**, which is the one place it departs from the
+landing mark. That mark is excluded from a boss because it breathes; this
+one does not, and where you can step is exactly what a fight asks you for
+at speed. `&&!B` in `stepMarkOn()` is the line if that turns out wrong in
+the hand.
+
 ## How big the world is drawn
 
 **The frustum fits the arena to the SCREEN, not to the largest of its three
