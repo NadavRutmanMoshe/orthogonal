@@ -632,30 +632,13 @@ is the rule.
   `settings.noSlowOffer` and `STRUGGLE_OFFER` are gone with the opt-out;
   nothing suppresses the card. `fails[]` is still kept, for the neighbour's
   line at ten.
-- **FOUR VOICES FIRE ON A KILL** - `kill()` (the pack member going down),
+- **FOUR VOICES FIRE ON A KILL** - `strike()` (the core going down),
   `cheer()` (the room, over the kill cam), `rec()` (the record light) and
-  `relive()` (the kill again on the replay's closing fold). **When a
+  `relive()` (the hit again on the replay's closing fold). **When a
   complaint names the moment rather than the voice, list all four**: "the
   kill audio is disturbing" was fixed at `strike()` first, correctly and
   without answering it, because the sound actually meant was `cheer()`
   (`systems.md`).
-- **`SFX.kill()` is the kill and `SFX.strike()` is the phase ANNOUNCE**, and
-  the split exists because one voice was doing both - so the same sound said
-  "you caught one" and "a phase is starting", and since a skip drops you into
-  a fresh fight, **skipping played the kill sound at you**. Reported as THUD
-  being overused. `kill()` is high (1.5-2.4kHz) and short (160ms) **because
-  the fold and the room are both low and both FALLING on that same beat** -
-  a kill in their register is just more of the fold, so it is punctuation
-  over the collapse instead. A noise tick, two sines a fifth apart falling a
-  minor third, a small low body; nothing edged anywhere. `.086` stacked
-  against THUD's `.088`. **`kill(g)` takes a gain scale so `relive()` calls
-  it** rather than keeping a copy (`systems.md`).
-- **`relive()` CALLS the kill, it does not re-type it.** It used to be a
-  hand-written duplicate of `strike()` captioned "the game's own strike, at
-  half gain" - so when the square wave came out of `strike()`, it stayed in
-  `relive()`, and every kill the player watched replayed the original buzzer
-  while the live hit had been fixed. The comment was right and the code was
-  not, which is the failure mode a copy always has.
 - **`SFX.strike()` is THUD**, the old shape with the edge taken off:
   triangle not square, `.038` not `.055` (which was the loudest blip in the
   file), and the bright voice FALLS 1200-620 instead of rising 900-1400 -
@@ -894,45 +877,15 @@ is the rule.
   stay.
   Peril and the tutorial's landing marker both outrank it. `foldMarkOn()`
   (`settings.foldmark`, Menu > How it plays > Landing mark) turns it off,
-  and **it is OFF by default** (`FOLDMARK_DEFAULT`, beside `UI_DEFAULT` so
-  the fresh settings object and RESET SETTINGS cannot drift apart). The row
-  answers rule 5, which you must have learned the rule to be asking; the
-  step mark below answers "where can I go", and that is the one a player
-  gets unasked now.
-  **IT WAS DELETED ONCE AND BROUGHT BACK, so do not delete it again.** Read
-  as "get rid of the bright row" and removed whole - the mark, the switch,
-  `foldOrigin`, the lot - and the owner's answer was that only the DEFAULT
-  was meant to change: the row stays in Settings for whoever wants rule 5
-  drawn. Off by default is the whole of the decision (`HISTORY.md`).
-- **THE STEP MARK IS THE FOUR SQUARES A STEP CAN REACH**, lit the whole
-  time you are in the volume (`stepHiBuild()`, `stepMarkOn()`,
-  `js/10-render.js`). It is the only drawing of the rule that **stepping up
-  is a move**. **Level or up, never down** - a drop is legal but lighting it
-  says "anywhere" on a pillar. **Asked of the rules**: the same three calls
-  `move3()` makes, crate push simulated, then the refusals that are not the
-  step - a hunter is a wall, fire is left dark. **Never on a `tutorial:true`
-  level**, the neighbour's rule for the neighbour's reason and because
-  `tutBlocks()`'s guided lock would refuse three of the four it lights.
-  **Last in the priority order** (peril, then `tutMarkSet`, then the landing
-  mark, then this) because it is the only one always on, and it must be in
-  **both** of `perilCleanup`'s keep-tests or its rim is wiped on the frame
-  that drew it. **IT IS THE RIM AND NOTHING ELSE** - `STEP_RIM` (.55) on the
-  block's hairline, no colour change and no touch on the surface. **That .55
-  is `applyDepth()`'s old number**: blocks at the player's own depth used to
-  get .55 against stone's resting .35, which is the subtle "the row you are
-  on is highlighted" the owner liked and asked to have pointed at the four
-  squares instead. It **moved**, it was not copied - the depth branch now
-  gives stone .35 like everywhere else, because one rim cannot mean both
-  "your depth" and "you can step here". **The depth DARKENING is untouched**
-  and is what still carries depth. **Two louder versions came first and both
-  were wrong the same way**: a 40% white lift (bleached the grass) and then
-  the landing mark's white-then-teal pair at .62 (reported as looking weird).
-  Both repaint the SURFACE, and a surface is what a block IS - repaint four
-  permanently and the board has four blocks made of something else. **Only
-  stone shows it**: glass rests at .95 and the kinds at .85, above `STEP_RIM`,
-  and `Math.max` leaves them - exactly as the depth rim behaved. It **is**
-  drawn in fights; `&&!B` in `stepMarkOn()` is the line if that is wrong
-  (`controls.md`).
+  and it is **ON by default** (`FOLDMARK_DEFAULT`, beside `UI_DEFAULT` so
+  the fresh settings object and RESET SETTINGS cannot drift apart).
+  **IT HAS BEEN DELETED ONCE AND DEFAULTED OFF ONCE, AND BOTH WERE PUT
+  BACK.** A step mark - four always-on squares saying where you could
+  walk - was built to replace it, in three looks (a white lift, the
+  landing mark's pair at .62, and the depth row's own hairline moved onto
+  it). All three were rejected and the whole feature came out; the landing
+  mark is the only thing that draws where you are going, and it is on
+  (`HISTORY.md`).
   A two-beat fold that gathered the world
   into the front block was built, played and dropped for this
   (`controls.md`, `HISTORY.md`).

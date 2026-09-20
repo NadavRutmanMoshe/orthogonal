@@ -492,30 +492,70 @@ the level asks.
 
 ---
 
-## The landing mark was deleted for a day, and that was a misread
+## The step mark: four squares, three looks, all of it reverted
 
-Worth recording because the mistake is cheap to repeat. The landing mark was
-switched off by default once the step mark arrived, and the owner then said
-*"get rid of the line being bright, keep only the 4 squares"*. That was read
-as **delete the feature** and it was removed whole - the mark, `foldOrigin`,
-the switch, the settings row, the whitelist line, with a post-mortem written
-about how it had answered the wrong question.
+A mark that lit **the four squares a step could reach**, always, while you
+were in the volume. It was asked for, built, redrawn three times on three
+separate reports, and then taken out entirely along with everything it had
+dragged in with it. Nothing of it ships. It is here because the *reasons* it
+was redrawn are real and the next person to light a block will meet them.
 
-What was actually meant was **the default**, which had already changed. The
-row stays in Settings: a player who wants rule 5 drawn for them should be
-able to ask for it, and the only decision was that nobody gets it unasked.
-The whole thing came back as a revert the next day.
+**What it was.** `stepHiBuild()` asked the rules - the same three calls
+`move3()` makes, crate push simulated - for the four orthogonal neighbours
+you could step to, level or one up, and lit the block you would stand on. A
+hunter was a wall, fire stayed dark, drops were not lit (on a pillar, lighting
+falls lights all four and says "anywhere"). It was off on `tutorial:true`
+levels, because the guided lock refuses every direction but the cued one and
+four lit squares would have promised three moves the game was about to
+swallow.
 
-**The lesson is about the word "it".** "Get rid of the line being bright" is
-about what the screen does by default; "get rid of the landing mark" is about
-what the game contains. A removal that also deletes a settings row, a saved
-key and a whitelist entry is a much larger claim than a removal that flips a
-default, and the larger one should have been confirmed before it was built -
-especially when the default had *already* been flipped in the commit before,
-which should have been the clue that the complaint was about something else.
+**The three looks, and why each was rejected.** This is the part worth
+keeping:
 
-Ask when a request could mean "stop showing me this" or "take this out of the
-game". They cost very different amounts to undo.
+1. **A 40% lift toward white**, with a pale rim. Reported as too much. The
+   diagnosis is not "too bright": **a large white lerp does not read as a
+   square being pointed at, it reads as a square made of a different, paler
+   material**, because it takes the colour out of whatever is underneath. On
+   the nature world it bleached the turf.
+2. **The landing mark's own pair** - white then teal, so the block stays a
+   coloured block that is *lit* rather than becoming a white one - held at
+   `.62`, the bottom of that mark's breath. Kept the colour, still reported
+   as looking weird.
+3. **The depth row's hairline, moved.** `applyDepth()` gives every block at
+   the player's own depth an edge opacity of `.55` against the `.35` stone
+   rests at - a crisper outline, no colour change, the subtlest highlight in
+   the game. It was taken off the depth row and put on the four squares.
+   Also rejected.
+
+What (1) and (2) have in common is that they **repaint the surface**, and a
+surface is what a block *is*: repaint four of them permanently and the board
+has four blocks made of something else in it. (3) avoided that and was still
+not wanted, which is the real finding - **the objection was to a permanent
+always-on hint on the board at all**, not to how it was drawn. Three rounds
+of redrawing never tested that, because each report was about the drawing.
+
+**And it took the landing mark with it, twice.** The landing mark was
+defaulted off while the step mark was there ("two marks answering two
+different questions in the same green"), and then, on *"get rid of the line
+being bright, keep only the 4 squares"*, deleted whole - mark, `foldOrigin`,
+switch, settings row, whitelist line, with a post-mortem written about how it
+had answered the wrong question. What was meant was **the default**, which
+had already changed in the commit before. It came back as a revert, and the
+default came back too when the step mark went.
+
+**Two lessons.**
+
+*The word "it".* "Get rid of the line being bright" is about what the screen
+does by default; "get rid of the landing mark" is about what the game
+contains. A removal that also deletes a settings row, a saved key and a
+whitelist entry is a much larger claim than one that flips a default. Ask
+when a request could mean "stop showing me this" or "take this out of the
+game" - they cost very different amounts to undo.
+
+*Redrawing is not the same as re-asking.* Three iterations on the look of a
+thing whose existence was the problem is the expensive way to find that out.
+When the second report on one feature is also about how it looks, that is the
+moment to ask whether it should be there.
 
 ---
 

@@ -3737,16 +3737,9 @@ function foldMarkFade(dtMs){
    The mark is a teaching aid, and a teaching aid that cannot be turned off
    is decoration everybody has to keep looking at. Off means off: no tint, no
    rim, and nothing rebuilt per frame either, because `foldHiT` is what gates
-   that work.
-
-   THE TEST IS NOW FOR "on", NOT AGAINST "off", because the default moved.
-   It read `!(settings.foldmark==="off")`, which is "on unless told
-   otherwise" - and that made a missing settings object, or a frame drawn
-   before loadSettings() has run, light the mark when a fresh install does
-   not. The fallback has to be the same answer as `FOLDMARK_DEFAULT`, or the
-   first second of a first run disagrees with every second after it. */
+   that work. */
 function foldMarkOn(){
-  return typeof settings!=="undefined"&&settings.foldmark==="on";
+  return !(typeof settings!=="undefined"&&settings.foldmark==="off");
 }
 /* AND NEVER IN A FIGHT, whatever the switch says. A boss is played at the
    speed of the pack - there is no moment to read a board lighting up, and a
@@ -3825,115 +3818,6 @@ function foldHiBuild(){
   }
 }
 
-/* THE FOUR SQUARES A STEP CAN REACH, lit the whole time you are in the
-   volume. The owner's ask, and it replaces the landing row as the thing a
-   player sees without asking for it (see FOLDMARK_DEFAULT).
-
-   WHY FOUR AND NOT A ROW. The landing mark answers "which block in this
-   column will the unfold hand me", which is rule 5 and which you have to
-   have learned the rule to even be asking. This answers "where can I go
-   from here", which is the question in front of somebody on their first
-   board, and the answer is always at most four squares. It is also the one
-   drawing that says STEPPING UP IS A MOVE - the rule nothing on screen has
-   ever stated, since a block one higher looks like a wall until you try it.
-
-   LEVEL OR UP, NEVER DOWN, and that is the one judgement in here. A step
-   off a ledge is legal and resolveStep() will hand back the y you land on,
-   so a drop could be lit - but on a pillar that lights all four neighbours
-   and says "anywhere", when what is actually on offer is a fall. "Even if
-   it is above me" was the ask, so the mark is the squares you can WALK to;
-   `ny>=player.y` is the whole of it and it is one character to widen.
-
-   ASKED OF THE RULES, NEVER OF THE MESHES - the lesson foldHiBuild() paid
-   for. This runs the same three calls move3() runs, in the same order:
-   the crate push simulated into a local set, resolveStep() over R.solid()
-   with the clearance-here argument, and then the two refusals that are not
-   the step itself - a hunter standing there is a wall, and a landing onto
-   fire is where you would go and not a place to go. Anything that would be
-   refused or fatal is left dark, so the mark cannot promise a move the game
-   will not make.
-
-   Keyed on the crates AND the pack, because both of them move under a cube
-   that is standing still - a hunter walking into the square beside you has
-   to take its light away on the beat it arrives. */
-/* THE STEP MARK IS A HAIRLINE, and this is its opacity on stone.
-
-   .55 is not a new number: it is what `applyDepth()` gave every block at the
-   player's own depth, against the .35 stone rests at. That rim was the
-   subtlest highlight in the game and the owner asked for it to be pointed at
-   the four reachable squares instead of at the depth row. It moved rather
-   than being copied - the same drawing in two places would be one rim saying
-   two things.
-
-   The dial for "too much" or "too little", and the two louder marks that
-   came before it are in the block loop, along with why repainting a block's
-   SURFACE is what made both of them look wrong. */
-var STEP_RIM=.55;
-var stepHiSet={}, stepHiKey="", stepHiT=0;
-var STEP_DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
-function stepHiBuild(){
-  if(!R||app!=="play"||typeof resolveStep!=="function"||typeof player==="undefined"||!player){
-    stepHiSet={};stepHiKey="";return;
-  }
-  var hk="";
-  if(typeof hunters!=="undefined"&&hunters)
-    for(var q=0;q<hunters.length;q++)
-      hk+=hunters[q].x+","+hunters[q].y+","+hunters[q].z+";";
-  var key=(L&&L.name)+"|"+player.x+"|"+player.y+"|"+player.z+"|"+
-          gCrates.join(";")+"|"+hk;
-  if(key===stepHiKey)return;
-  stepHiKey=key;stepHiSet={};
-  var here=player;
-  function solidAt(x,z,cr){return function(h){return R.solid(x,h,z,cr);};}
-  for(var i=0;i<4;i++){
-    var dx=STEP_DIRS[i][0], dz=STEP_DIRS[i][1];
-    var nx=player.x+dx, nz=player.z+dz, cr=liveCrates();
-    // A crate you can shove leaves the square, so the step lands where it
-    // was. One that amber holds, or that has nowhere to go, stays solid and
-    // you step onto it instead - both of which resolveStep() reads off `cr`.
-    if(typeof crateIndexAt==="function"&&crateIndexAt(nx,player.y,nz)>=0&&
-       !R.heldFast(nx,player.y,nz)){
-      var res=R.push(nx,player.y,nz,dx,dz,cr);
-      if(res){cr.delete(K(nx,player.y,nz));cr.add(K(res.x,res.y,res.z));}
-    }
-    var ny=resolveStep(solidAt(nx,nz,cr),player.y,solidAt(here.x,here.z,cr));
-    if(ny===null||ny===FELL||ny<player.y)continue;
-    if(typeof hunterHere==="function"&&hunterHere(nx,ny,nz))continue;
-    if(R.deadly3(nx,ny,nz))continue;
-    stepHiSet[K(nx,ny-1,nz)]=1;
-  }
-}
-/* AND WHEN IT IS DRAWN. In the volume only: flat, a step is along `u` and
-   there are two of them, not four, and the squares are columns rather than
-   blocks - the mark would be answering about a board that is not there. It
-   rides `flatT` straight out rather than fading on a clock of its own, so
-   it is gone by a third of the way into the fold and back as the world
-   opens, which is the same motion the player is already watching.
-
-   Not while dying - the board is about to reset - and not in a cutscene,
-   where the cube is the son and nobody is being offered a move.
-
-   AND NEVER ON A TUTORIAL LEVEL, which is the one placement rule here and
-   it is the neighbour's rule for the neighbour's reason. Two of them, and
-   the first is fatal on its own: the guided lock (`tutBlocks()`,
-   js/15-tutorial.js) REFUSES every direction that is not the cued one, so a
-   mark lighting all four would be promising three moves the game is about to
-   swallow - on the levels whose whole job is to teach what a move is, to
-   somebody taking the screen completely literally. The second is that a
-   teaching level already has a coach, a ghost hand, a guided lock and its
-   own landing marker pointing at one block; a fifth voice saying something
-   slightly different is not help. He starts where the teaching stops.
-
-   This also covers the cutscenes, which are tutorial:true levels handed to
-   enterPlay(), but storyOn() stays above it as the statement of intent. */
-function stepMarkOn(){
-  if(app!=="play"||flat)return 0;
-  if(typeof dying!=="undefined"&&dying)return 0;
-  if(typeof storyOn==="function"&&storyOn())return 0;
-  if(L&&L.tutorial)return 0;
-  return Math.max(0,1-flatT*3);
-}
-
 /* HOW FAR THE CAMERA LEANS - the one structural lever on depth ambiguity.
 
    At .62 a cell of height is 1.90 cells of depth on screen, so a block two
@@ -3953,25 +3837,8 @@ function applyDepth(mesh,base,pd,dvx,dvz,ft){
   var d=base[0]*dvx+base[2]*dvz;
   var diff=Math.abs(d-pd);
   if(diff<.5){
-    /* YOUR OWN DEPTH SLICE IS NO LONGER RIMMED, and the .55 that used to be
-       here has moved to the step mark (STEP_RIM, the block loop).
-
-       Stone rests at .35 and this branch gave it .55, so every block at the
-       player's depth wore a crisper hairline than the rest of the board -
-       the "the row you are on is subtly highlighted" that the owner liked
-       and asked to have pointed at the four reachable squares instead. It
-       cannot be in both places: a rim that means "your depth" and a rim that
-       means "you can step here" are the same drawing saying two things, and
-       the row is the one that says the less useful of them - depth is
-       already carried by the DARKENING below, which is the part that does
-       the legibility work and is untouched.
-
-       Glass and the kinds keep their own values because those are piece
-       IDENTITY, not a highlight: .95 and .85 are what they rest at
-       everywhere (see the perilCleanup sweep), so they were never lifted by
-       this branch at all. Only stone was, and only stone changes. */
     if(mesh.userData.edge)mesh.userData.edge.material.opacity=
-      mesh.userData.glass?.95:(mesh.userData.kind?.85:.35);
+      mesh.userData.glass?.95:(mesh.userData.kind?.85:.55);
     return;
   }
   var f=Math.min(DEPTH_CAP,DEPTH_STEP+(diff-1)*DEPTH_SLOPE)*(1-ft*2);
@@ -4516,11 +4383,6 @@ function animate(now){
   // Nothing is rebuilt while the world is simply standing there in the
   // volume, which is most frames of most sessions.
   if(foldHiT>.01)foldHiBuild(); else if(foldHiKey){foldHiSet={};foldHiKey="";}
-  // Same gate, same reason: nothing is rebuilt while the mark is not being
-  // drawn, and the key inside means a cube standing still costs one string
-  // compare a frame rather than four walks of the rules.
-  stepHiT=stepMarkOn();
-  if(stepHiT>.01)stepHiBuild(); else if(stepHiKey){stepHiSet={};stepHiKey="";}
   lookCue();
   /* playerMesh rather than `player`, because the mesh is where the player is
      actually drawn - already eased, and already in plane coordinates when
@@ -4783,45 +4645,6 @@ function animate(now){
       m.material.opacity=1;
       if(perilCleanup.indexOf(k)<0)perilCleanup.push(k);
     }
-    /* AND THE FOUR SQUARES YOU CAN STEP TO, under everything above it.
-
-       LAST IN THE ORDER, because it is the only one of these marks that is
-       always on and it is therefore the only one that can be in the way.
-       Peril says this fold kills you, the tutorial's marker is teaching one
-       specific block, and the landing mark was asked for - each of those is
-       an answer to a question with a moment attached, and a permanent hint
-       does not get to cover one.
-
-       IT IS THE RIM AND NOTHING ELSE, and it is the drawing that used to
-       mean "your own depth slice" (see applyDepth). Stone rests at .35 and
-       that branch lifted it to .55, which is a crisper hairline and no
-       colour change at all - subtle enough that it reads as the board being
-       well drawn rather than as the game pointing at something. The owner
-       liked it, and asked for it to point at the four squares instead.
-
-       TWO LOUDER VERSIONS CAME FIRST AND BOTH WERE WRONG, in the same way.
-       A 40% lift toward white bleached the grass - a big white lerp reads as
-       a square made of a paler MATERIAL, not as a square being pointed at,
-       because it takes the colour out of what is under it. Then the landing
-       mark's white-then-teal pair at .62, which kept the colour but was
-       still a lit block sitting on an unlit board, and was reported as
-       looking weird. The thing they have in common is that they both repaint
-       the SURFACE, and a surface is what a block IS - repaint four of them
-       permanently and the board has four blocks made of something else.
-
-       So this touches the OUTLINE only. Nothing about the block's identity
-       moves; it is drawn a little more sharply than its neighbours, which is
-       what the depth slice was doing and why it never looked like a gadget.
-       `STEP_RIM` is the dial. Glass (.95) and the kinds (.85) already rest
-       above it and `Math.max` leaves them alone, so the mark is invisible on
-       water, anchor and fire - exactly as the depth rim was, since only
-       stone was ever lifted by it. */
-    if(stepHiT>.01&&stepHiSet[k]&&!(perilSet&&perilSet[k])&&
-       !(tutMarkSet&&tutMarkSet[k])&&!(foldHiT>.01&&foldHiSet[k])){
-      m.userData.edge.material.opacity=Math.max(
-        m.userData.edge.material.opacity,STEP_RIM*stepHiT);
-      if(perilCleanup.indexOf(k)<0)perilCleanup.push(k);
-    }
   }
 
   // crates fold like stone, and lerp toward their cell so a shove reads as a slide
@@ -5032,8 +4855,7 @@ function animate(now){
       var pm=meshes[perilCleanup[pc]];
       if(!pm||(perilSet&&perilSet[perilCleanup[pc]])||
          (tutMarkSet&&tutMarkSet[perilCleanup[pc]])||
-         (foldHiT>.01&&foldHiSet[perilCleanup[pc]])||
-         (stepHiT>.01&&stepHiSet[perilCleanup[pc]]))continue;
+         (foldHiT>.01&&foldHiSet[perilCleanup[pc]]))continue;
       var pk=pm.userData.kind;
       pm.userData.edge.material.color.set(
         pk===1?0xbdeaf7:pk===2?0xffd98a:pk===4?0xff8a72:0x0f1424);
@@ -5041,8 +4863,7 @@ function animate(now){
     }
     perilCleanup=perilCleanup.filter(function(kk){
       return (perilSet&&perilSet[kk])||(tutMarkSet&&tutMarkSet[kk])||
-             (foldHiT>.01&&foldHiSet[kk])||
-             (stepHiT>.01&&stepHiSet[kk]);});
+             (foldHiT>.01&&foldHiSet[kk]);});
   }
   var sealed=app==="play"&&keyMeshes.length&&keysLeft()>0;
   // Amber, not green, on anything with a clock: the colour is the promise

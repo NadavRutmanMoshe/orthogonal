@@ -62,10 +62,16 @@ function defaultVolume(){
 var UI_DEFAULT="none";
 /* The landing mark's default, here for exactly the same reason: it was
    inlined as "on" in RESET SETTINGS and written again in the settings object
-   below, so turning the default off meant finding both, and missing one would
-   have left a reset switching a mark back on that a fresh install does not
-   have. Two writes of one value is the drift this constant exists to stop. */
-var FOLDMARK_DEFAULT="off";
+   below, so changing the default meant finding both, and missing one would
+   have left a reset switching the mark to something a fresh install does not
+   have. Two writes of one value is the drift this constant exists to stop.
+
+   IT IS BACK AT "on", which is where it started. It was moved to "off" for a
+   few builds while the step mark was on the board answering "where can I go"
+   instead; the step mark is gone on the owner's call and the landing mark is
+   the only thing left that draws anything about where you are going, so it
+   is on again, exactly as it shipped. */
+var FOLDMARK_DEFAULT="on";
 /* `KILLSOUND_DEFAULT` stood here while thud/burst/chime were on a switch.
    The owner picked THUD, so it is the body of SFX.strike() now and the
    constant, the row, the bind, the RESET SETTINGS line and the whitelist
@@ -118,18 +124,10 @@ var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false
                  to store. */
               /* THE GREEN BLOCK, on or off. Coming back to 3D the block you
                  land on is lit for as long as the landing rings hold; this
-                 is the switch that stops it.
-
-                 OFF BY DEFAULT, on the owner's call, and the reason is that
-                 it is no longer the only drawing of where you can go. The
-                 step mark (stepHiBuild(), js/10-render.js) lights the four
-                 squares a step can reach and it is always on, so the board
-                 already answers "where now" without being asked. Lighting a
-                 whole row of landings on top of that is two answers to two
-                 different questions at once, and the row is the one a player
-                 has to have learned rule 5 to read. It stays a row and it
-                 stays switchable - a player who wants rule 5 drawn for them
-                 turns it on - but nobody gets it unasked any more. */
+                 is the switch that stops it. On by default because it is the
+                 one drawing of rule 5 there is, but a teaching aid nobody can
+                 turn off is decoration - and a player who has learned the
+                 rule is entitled to want their board back. */
               foldmark:FOLDMARK_DEFAULT};
 /* How many times the landing rule is spelled out in words. The rings keep
    drawing forever - they are free and they answer the question faster than a
@@ -1390,43 +1388,6 @@ var SFX={
     blip(150,.22,"triangle",.038,70);
     blip(1200,.26,"sine",.030,620);
   },
-  /* KILLING ONE OF THE PACK, and it is its own voice now.
-
-     THUD was doing two jobs. `strike()` is the phase ANNOUNCE as well as the
-     kill, so the same sound said "you caught one" and "a phase is starting" -
-     and since a skip drops you into a fresh fight, skipping played the kill
-     sound at you. Reported as thud being overused and as skipping feeling
-     like killing. One voice cannot mean an achievement and an arrival.
-
-     So the announce keeps THUD, which is what it always wanted to be - a low
-     hit that says something has begun - and the kill moves here.
-
-     WHY IT IS HIGH AND SHORT, which is the whole design. Three things play
-     on the beat a hunter dies and two of them were already spoken for: the
-     FOLD (sines 560->150 and 280->75, 420ms) and the ROOM (110 and 165 into
-     reverb). Both are low and both are FALLING, because the world is
-     collapsing - that is the picture. A kill laid in the same register is
-     just more of the fold. So this sits at 1.5-2.4kHz where nothing else in
-     the mix is, and lasts 160ms against the fold's 420, which makes it
-     punctuation on top of the collapse rather than part of it.
-
-     A tight noise tick for the catch, then two sines a fifth apart falling a
-     minor third - ringing enough to be a reward, dark enough not to be a
-     fanfare - and a small low body so it survives a phone speaker. Nothing
-     edged in it anywhere: the harshness that started all of this came from a
-     square wave, and there is not one here.
-
-     `g` scales the whole thing so relive() can play the same voice quieter
-     rather than keeping its own copy, which is the bug that comment used to
-     describe and did not do. .086 stacked at g=1, under THUD's .088. */
-  kill:function(g){
-    var c=audio();if(!c)return;
-    g=(g===undefined)?1:g;
-    noiseAt(c,c.currentTime,.028,.016*g,5200,3000,3,false);
-    blip(1568,.16,"sine",.032*g,1245);
-    blip(2349,.12,"sine",.018*g,1864);
-    blip(220,.10,"triangle",.020*g,140);
-  },
   /* THE ROOM, ON A KILL - THIRD VERSION, AND THE FIRST THAT IS NOT NOISE.
 
      This is the sound the owner has now called wrong twice, and the second
@@ -1476,27 +1437,22 @@ var SFX={
     setTimeout(function(){blip(2200,.055,"sine",.018);},95);
   },
   /* THE HIT, LANDING AGAIN, on the film's closing fold - the beat where the
-     world drops onto the thing you caught. Nothing new is synthesised: it
-     CALLS the kill, quieter, because reliving it should sound like it did
-     one remove away.
-
-     AND IT CALLS IT RATHER THAN COPYING IT, which is the whole of a bug that
-     shipped. This said "it is the game's own strike, at half gain" and was
-     in fact a hand-typed duplicate of what strike() used to be - so when the
-     square wave came out of strike(), it stayed here, and every kill you
-     watched replayed the original buzzer at .030 while the live hit had
-     already been fixed. The comment was right and the code was not, which is
-     the failure mode a copy always has. One call now, and it cannot drift.
+     world drops onto the thing you caught. Nothing new is synthesised: it is
+     the game's own strike, at half gain, because reliving it should sound
+     like it did one remove away.
 
      IT NO LONGER PLAYS THE FOLD. It used to open with SFX.fold(), and once
      the replay grew a soundtrack that became a duplicate: the fold the player
      actually made is on the tape at the moment they made it (see repSfx in
-     js/12-play.js) and plays itself. Only the kill is here, and only
+     js/12-play.js) and plays itself. Only the strike is here, and only
      because it is deliberately kept OFF the tape - it fires on the last
      instant of the recorded window, and the closing fold takes another half
      second after that, so recorded it would land before its own picture. */
   relive:function(ms){
-    setTimeout(function(){ SFX.kill(.6); },Math.max(0,ms|0));
+    setTimeout(function(){
+      blip(150,.22,"square",.030,70);
+      blip(900,.3,"sine",.022,1400);
+    },Math.max(0,ms|0));
   },
   // One per star landing on the counter, climbing as they arrive, so three
   // stars resolve upward instead of repeating the same note three times.

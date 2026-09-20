@@ -493,46 +493,10 @@
   idea of a kill. A setting kept past its answer is an unmade decision with
   a control on it.
 
-  **One thing the switch never decided**: `SFX.strike()` was also the
-  phase-announce voice (`js/12-play.js`, `bossEnterPhase()`), so THUD was
-  also the sound of a phase beginning. That was written down here as "a
-  separate question, not asked" - and it got asked one build later, from the
-  other end: *"the thud is a bit over used even on the skip, so it's weird
-  to kill and skip"*.
-
-  **A skip drops you into a fresh fight, which announces its first phase,
-  which played the kill sound at you.** One voice cannot mean an achievement
-  and an arrival. So THUD stays on the announce, which is what a low hit is
-  for - something has begun - and the kill moved to `SFX.kill()`.
-
-  **`kill()` is high and short, and the reason is what else is playing.**
-  Three voices land on the beat a hunter dies and two were already spoken
-  for: the FOLD (sines 560-150 and 280-75, 420ms) and the ROOM (110 and 165
-  into reverb). Both are low, and both are **falling**, because the world is
-  collapsing - that is the picture. A kill in the same register is just more
-  of the fold. So `kill()` sits at 1.5-2.4kHz where nothing else in the mix
-  is, and lasts 160ms against the fold's 420, which makes it punctuation on
-  top of the collapse rather than part of it. A tight noise tick for the
-  catch, two sines a fifth apart falling a minor third - ringing enough to
-  be a reward, dark enough not to be a fanfare - and a small low body so it
-  survives a phone speaker. Nothing edged: the harshness that started all of
-  this was a square wave, and there is not one in it. `.086` stacked,
-  against THUD's `.088`.
-- **AND `relive()` HAD BEEN PLAYING THE OLD BUZZER ALL ALONG.** Worth its
-  own entry, because the bug is a shape rather than a sound. `relive()` is
-  the kill landing again on the replay's closing fold, and it was captioned
-  *"nothing new is synthesised: it is the game's own strike, at half gain"* -
-  while actually being a **hand-typed duplicate** of what `strike()` used to
-  be. So when the square wave came out of `strike()`, it stayed in
-  `relive()`: the live hit was fixed and every kill the player then watched
-  replayed the original buzzer at `.030`.
-
-  The comment was true when it was written and false by the time it
-  mattered, which is the failure mode a copy always has - and it is
-  invisible, because the caption tells you the thing you are looking for is
-  already handled. `relive()` calls `SFX.kill(.6)` now, and `kill(g)` takes
-  a gain scale for exactly that reason. **If a comment says one voice IS
-  another, make it a call.**
+  **One thing the switch never decided**: `SFX.strike()` is also the
+  phase-announce voice (`js/12-play.js`, `bossEnterPhase()`), so THUD is
+  also the sound of a phase beginning. Whether those should be two different
+  voices is a separate question and has not been asked.
 - **AND IT WAS STILL NOT THE RIGHT SOUND, because the complaint was about
   `cheer()`.** This is the one to read before touching a kill again. The
   owner reported the kill audio as disturbing, `strike()` was the obvious
