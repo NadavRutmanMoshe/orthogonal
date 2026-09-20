@@ -392,22 +392,40 @@ literally. The second half is that a teaching level already has a coach, a
 ghost hand, a guided lock and its own landing marker pointing at one block.
 A fifth voice saying something slightly different is not help.
 
-**It wears the landing mark's look, held still and held down at `STEP_HI`
-(.62).** The first version was a plain 40% lift toward white with a pale
-blue rim, and it was reported as too much - correctly, and the reason is
-worth keeping. **A large white lerp does not read as a square being pointed
-at; it reads as a square made of a different, paler material**, because it
-takes the colour out of whatever is underneath. On the nature world it
-bleached the turf. The landing mark never had that problem because after
-its lift it puts the teal *back*, so the block stays a coloured block that
-is lit rather than becoming a white one.
+**It is the rim and nothing else, and the rim is a number the game already
+owned.** `applyDepth()` gave every block at the player's own depth an edge
+opacity of **.55**, against the **.35** stone rests at everywhere else - a
+slightly crisper hairline on your own slice, no colour change at all. That
+is the subtlest highlight in the game, subtle enough that it reads as the
+board being well drawn rather than as the game pointing at something, and
+the owner asked for it to point at the four reachable squares instead.
 
-So the pair is now the landing mark's exactly - `colWhite` then `colFoldHi`,
-in that order - scaled by `STEP_HI`. **.62 is the bottom of the landing
-mark's own breath** (`.58+.42*breath`), which is the whole idea: the mark
-that is always on sits permanently at the level the louder one only dips
-to. They are the same family, and they still cannot be confused, because
-the landing mark is brighter *and* moving.
+**It moved; it was not copied.** The depth branch now gives stone .35 like
+everywhere else. One rim cannot mean both "this is your depth" and "you can
+step here" - and depth was the less useful of the two, because depth is
+already carried by the *darkening*, which is the part that does the
+legibility work and is untouched. `STEP_RIM` is the dial.
+
+**Two louder versions came first, and they were wrong in the same way.** The
+first was a 40% lift toward white with a pale blue rim: **a large white lerp
+does not read as a square being pointed at, it reads as a square made of a
+different, paler material**, because it takes the colour out of whatever is
+underneath. On the nature world it bleached the turf. The second kept the
+colour - the landing mark's white-then-teal pair at .62 of its strength -
+and was still reported as looking weird.
+
+What both have in common is that they **repaint the surface**, and a
+surface is what a block *is*. Repaint four of them permanently and the board
+has four blocks made of something else in it. Touching only the outline says
+the same thing without making that claim: the block is drawn a little more
+sharply than its neighbours, which is exactly what the depth slice was doing
+and exactly why it never looked like a gadget.
+
+**Only stone shows it.** Glass rests at .95 and the kinds at .85, both above
+`STEP_RIM`, and `Math.max` leaves them alone - so the mark is invisible on
+water, anchor and fire. That is not new: only stone was ever lifted by the
+depth rim either. It is a real limit and it is the first thing to revisit if
+the mark is wanted on a board built out of water.
 
 **And it still does not breathe.** The landing mark pulses because it has a
 second and a half to be found in, once. This is on every frame of every

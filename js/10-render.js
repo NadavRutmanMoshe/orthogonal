@@ -3856,11 +3856,19 @@ function foldHiBuild(){
    Keyed on the crates AND the pack, because both of them move under a cube
    that is standing still - a hunter walking into the square beside you has
    to take its light away on the beat it arrives. */
-/* How loud the step mark is against the landing mark, whose look it wears.
-   .62 is the BOTTOM of that mark's own breath (`.58+.42*breath`), so the
-   always-on mark sits exactly where the louder one dips to and the two can
-   never be confused. The dial for "the highlight is a bit much". */
-var STEP_HI=.62;
+/* THE STEP MARK IS A HAIRLINE, and this is its opacity on stone.
+
+   .55 is not a new number: it is what `applyDepth()` gave every block at the
+   player's own depth, against the .35 stone rests at. That rim was the
+   subtlest highlight in the game and the owner asked for it to be pointed at
+   the four reachable squares instead of at the depth row. It moved rather
+   than being copied - the same drawing in two places would be one rim saying
+   two things.
+
+   The dial for "too much" or "too little", and the two louder marks that
+   came before it are in the block loop, along with why repainting a block's
+   SURFACE is what made both of them look wrong. */
+var STEP_RIM=.55;
 var stepHiSet={}, stepHiKey="", stepHiT=0;
 var STEP_DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
 function stepHiBuild(){
@@ -3945,8 +3953,25 @@ function applyDepth(mesh,base,pd,dvx,dvz,ft){
   var d=base[0]*dvx+base[2]*dvz;
   var diff=Math.abs(d-pd);
   if(diff<.5){
+    /* YOUR OWN DEPTH SLICE IS NO LONGER RIMMED, and the .55 that used to be
+       here has moved to the step mark (STEP_RIM, the block loop).
+
+       Stone rests at .35 and this branch gave it .55, so every block at the
+       player's depth wore a crisper hairline than the rest of the board -
+       the "the row you are on is subtly highlighted" that the owner liked
+       and asked to have pointed at the four reachable squares instead. It
+       cannot be in both places: a rim that means "your depth" and a rim that
+       means "you can step here" are the same drawing saying two things, and
+       the row is the one that says the less useful of them - depth is
+       already carried by the DARKENING below, which is the part that does
+       the legibility work and is untouched.
+
+       Glass and the kinds keep their own values because those are piece
+       IDENTITY, not a highlight: .95 and .85 are what they rest at
+       everywhere (see the perilCleanup sweep), so they were never lifted by
+       this branch at all. Only stone was, and only stone changes. */
     if(mesh.userData.edge)mesh.userData.edge.material.opacity=
-      mesh.userData.glass?.95:(mesh.userData.kind?.85:.55);
+      mesh.userData.glass?.95:(mesh.userData.kind?.85:.35);
     return;
   }
   var f=Math.min(DEPTH_CAP,DEPTH_STEP+(diff-1)*DEPTH_SLOPE)*(1-ft*2);
@@ -4767,35 +4792,34 @@ function animate(now){
        an answer to a question with a moment attached, and a permanent hint
        does not get to cover one.
 
-       IT WEARS THE LANDING MARK'S LOOK, HELD STILL AND HELD DOWN. It was a
-       plain 40% lift toward white with a pale blue rim, and that was
-       reported as too much - correctly. A big white lerp does not read as a
-       square being POINTED AT, it reads as a square made of a different and
-       paler material, because it takes the colour out of whatever is under
-       it: on grass it bleached the turf. The landing mark never had that
-       problem, because after its lift it puts the teal BACK - so the block
-       stays a coloured block that is lit, rather than a white one.
+       IT IS THE RIM AND NOTHING ELSE, and it is the drawing that used to
+       mean "your own depth slice" (see applyDepth). Stone rests at .35 and
+       that branch lifted it to .55, which is a crisper hairline and no
+       colour change at all - subtle enough that it reads as the board being
+       well drawn rather than as the game pointing at something. The owner
+       liked it, and asked for it to point at the four squares instead.
 
-       So the pair is the landing mark's exactly - `colWhite` then
-       `colFoldHi`, in that order - at STEP_HI, .62 of its strength. .62 is
-       the bottom of the landing mark's own breath (`.58+.42*breath`), so
-       this is very nearly that mark at its quietest, held there: the two are
-       the same family, and the one that is always on sits at the level the
-       louder one only dips to.
+       TWO LOUDER VERSIONS CAME FIRST AND BOTH WERE WRONG, in the same way.
+       A 40% lift toward white bleached the grass - a big white lerp reads as
+       a square made of a paler MATERIAL, not as a square being pointed at,
+       because it takes the colour out of what is under it. Then the landing
+       mark's white-then-teal pair at .62, which kept the colour but was
+       still a lit block sitting on an unlit board, and was reported as
+       looking weird. The thing they have in common is that they both repaint
+       the SURFACE, and a surface is what a block IS - repaint four of them
+       permanently and the board has four blocks made of something else.
 
-       AND IT STILL DOES NOT BREATHE. The landing mark pulses because it has
-       a second and a half to be found in, once. This is on every frame of
-       every level, and four things pulsing at the edge of vision for the
-       whole game is the exact reason the landing mark is kept out of fights.
-       Being permanently at the quiet end of the same look is what separates
-       them now: the landing mark is brighter AND moving. */
+       So this touches the OUTLINE only. Nothing about the block's identity
+       moves; it is drawn a little more sharply than its neighbours, which is
+       what the depth slice was doing and why it never looked like a gadget.
+       `STEP_RIM` is the dial. Glass (.95) and the kinds (.85) already rest
+       above it and `Math.max` leaves them alone, so the mark is invisible on
+       water, anchor and fire - exactly as the depth rim was, since only
+       stone was ever lifted by it. */
     if(stepHiT>.01&&stepHiSet[k]&&!(perilSet&&perilSet[k])&&
        !(tutMarkSet&&tutMarkSet[k])&&!(foldHiT>.01&&foldHiSet[k])){
-      var sk=STEP_HI*stepHiT;
-      m.material.color.lerp(colWhite,.50*sk).lerp(colFoldHi,.26*sk);
-      m.userData.edge.material.color.set(0x9dffe8);
       m.userData.edge.material.opacity=Math.max(
-        m.userData.edge.material.opacity,.30+.70*sk);
+        m.userData.edge.material.opacity,STEP_RIM*stepHiT);
       if(perilCleanup.indexOf(k)<0)perilCleanup.push(k);
     }
   }

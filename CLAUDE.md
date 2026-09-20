@@ -899,17 +899,23 @@ is the rule.
   **Last in the priority order** (peril, then `tutMarkSet`, then the landing
   mark, then this) because it is the only one always on, and it must be in
   **both** of `perilCleanup`'s keep-tests or its rim is wiped on the frame
-  that drew it. **It wears the landing mark's exact pair** - `colWhite` then
-  `colFoldHi`, teal rim - scaled by `STEP_HI` (.62), which is the BOTTOM of
-  that mark's own breath, so the always-on mark sits where the louder one
-  only dips to. `STEP_HI` is the dial when the highlight is too much. A
-  plain white lift was tried first and reported as too much: a big white
-  lerp reads as a paler MATERIAL, not as a square being pointed at, because
-  it takes the colour out of what is under it - it bleached the grass. The
-  landing mark escapes that by putting the teal back after the lift.
-  **It does not breathe** - it is on every frame, and the breath is why the
-  landing mark is kept out of fights. It **is** drawn in fights; `&&!B` in
-  `stepMarkOn()` is the line if that is wrong (`controls.md`).
+  that drew it. **IT IS THE RIM AND NOTHING ELSE** - `STEP_RIM` (.55) on the
+  block's hairline, no colour change and no touch on the surface. **That .55
+  is `applyDepth()`'s old number**: blocks at the player's own depth used to
+  get .55 against stone's resting .35, which is the subtle "the row you are
+  on is highlighted" the owner liked and asked to have pointed at the four
+  squares instead. It **moved**, it was not copied - the depth branch now
+  gives stone .35 like everywhere else, because one rim cannot mean both
+  "your depth" and "you can step here". **The depth DARKENING is untouched**
+  and is what still carries depth. **Two louder versions came first and both
+  were wrong the same way**: a 40% white lift (bleached the grass) and then
+  the landing mark's white-then-teal pair at .62 (reported as looking weird).
+  Both repaint the SURFACE, and a surface is what a block IS - repaint four
+  permanently and the board has four blocks made of something else. **Only
+  stone shows it**: glass rests at .95 and the kinds at .85, above `STEP_RIM`,
+  and `Math.max` leaves them - exactly as the depth rim behaved. It **is**
+  drawn in fights; `&&!B` in `stepMarkOn()` is the line if that is wrong
+  (`controls.md`).
   A two-beat fold that gathered the world
   into the front block was built, played and dropped for this
   (`controls.md`, `HISTORY.md`).
