@@ -757,6 +757,15 @@ is the rule.
 - **Ads start only once the age band is known** - `adBoot()` for a save,
   `applyAgeBand()` for a first run - because the child flags go to Google once,
   at `initialize`. `adChild()` is true for everything but an adult band.
+- **BUMP `versionCode` BEFORE EVERY PLAY UPLOAD**
+  (`app/android/app/build.gradle`, now `2`/`"1.0.1"`). Play burns a version
+  code the moment it is uploaded - even if that build was never released,
+  was rolled back or was deleted from a track - and refuses the next upload
+  with "Version code 1 has already been used". It is the one number in this
+  project that cannot be re-derived from a commit, and the error arrives at
+  the END of the upload, after the bundle has transferred. `versionName` is
+  cosmetic and may repeat; neither is `BUILD`, the commit stamp
+  (`SHIPPING.md`).
 - **`AD_TEST` is `true` until the AdMob account exists**, with Google's test
   ids; `tools/build-app.js` warns on every build. Going live is the real ids
   in `AD_UNITS`, the app id in `AndroidManifest.xml` and Info.plist, and the

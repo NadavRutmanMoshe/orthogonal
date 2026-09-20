@@ -644,6 +644,41 @@ weight - which side of the seam it stands on is.
 
 ---
 
+## The version code, and the one number you cannot take back
+
+**Play refused an upload with "Version code 1 has already been used. Try a
+different version code."** That is `versionCode` in
+`app/android/app/build.gradle`, and it is the one value in this project that
+is spent the moment it is uploaded.
+
+**It is a counter Play owns, and it only ever goes up.** The rule is harsher
+than it first looks: a versionCode is burned even if the build that used it
+was never released, was rolled back, was replaced in a draft, or was deleted
+from a track entirely. There is no way to free one and no way to reuse one.
+The artifact build can always be re-derived from a commit; this number cannot
+be recovered at all.
+
+**So bump it before every upload**, including a re-upload of a build that is
+only meant to replace a draft nobody saw. It is now at `2` (`versionName
+"1.0.1"`), because `1` went up with the first `.aab`.
+
+**`versionName` is the other one and has none of these rules.** It is the
+string a player sees on the store listing and in Settings > Apps. It may
+repeat, it may go down, Play does not care. It is kept in step with the code
+here only so a crash report can be matched to a build - that is the whole of
+its job.
+
+**Neither is the same as `BUILD`**, the commit stamp `build-single.js` and
+`build-app.js` write into the page. That one identifies the source; these two
+identify the artifact Play is holding.
+
+**What it looks like when it bites:** the error arrives at the *end* of a
+long upload, after the bundle has finished transferring and been processed,
+so it costs the whole upload rather than being caught up front. Bumping the
+number and rebuilding is the only fix, and rebuilding an `.aab` means the
+signing key, which is why this is worth checking before starting an upload
+rather than after.
+
 ## What Monday actually needs
 
 Two of the three accounts ask for more than a card number, and finding that

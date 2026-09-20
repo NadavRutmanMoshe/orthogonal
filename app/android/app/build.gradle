@@ -12,8 +12,21 @@ android {
         applicationId "com.nadazgames.ImJustACube"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        // THE VERSION CODE IS A COUNTER PLAY OWNS, AND IT ONLY EVER GOES UP.
+        // Play refuses an upload whose versionCode it has already seen -
+        // "Version code 1 has already been used" - and it refuses it even if
+        // the build that used it was never released, was rolled back, or was
+        // deleted from a track. A number, once uploaded, is spent forever.
+        //
+        // So BUMP THIS BEFORE EVERY UPLOAD, including a re-upload of a build
+        // that was only meant to replace a draft. It is the one line that
+        // cannot be recovered by rebuilding.
+        //
+        // versionName is the string a player sees and has no such rule; it
+        // can repeat, and it is kept in step here only so a crash report can
+        // be matched to a build.
+        versionCode 2
+        versionName "1.0.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
