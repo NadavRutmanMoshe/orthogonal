@@ -938,7 +938,8 @@ function menuPanel(){
   });
   bind("mReset",function(){
     settings.volume=defaultVolume();settings.volTouched=false;
-    settings.brightness=1;settings.ui=UI_DEFAULT;settings.foldmark="on";
+    settings.brightness=1;settings.ui=UI_DEFAULT;
+    settings.foldmark=FOLDMARK_DEFAULT;
     /* The other two thirds of the age card go back to a fresh install too,
        and so does the memory of which band was picked: a reset that left the
        age sheet showing a band it had just overwritten would be lying about

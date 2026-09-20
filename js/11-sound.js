@@ -60,6 +60,12 @@ function defaultVolume(){
    so the reset cannot drift away from a fresh install the way it had:
    it put the buttons back to "full" while a first run starts hidden. */
 var UI_DEFAULT="none";
+/* The landing mark's default, here for exactly the same reason: it was
+   inlined as "on" in RESET SETTINGS and written again in the settings object
+   below, so turning the default off meant finding both, and missing one would
+   have left a reset switching a mark back on that a fresh install does not
+   have. Two writes of one value is the drift this constant exists to stop. */
+var FOLDMARK_DEFAULT="off";
 /* The other two thirds of the setup question, and their defaults live here
    beside the buttons for the same reason: RESET SETTINGS reads all three, so
    a reset cannot drift away from a fresh install. MEDIUM and REGULAR are the
@@ -108,11 +114,19 @@ var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false
                  to store. */
               /* THE GREEN BLOCK, on or off. Coming back to 3D the block you
                  land on is lit for as long as the landing rings hold; this
-                 is the switch that stops it. On by default because it is the
-                 one drawing of rule 5 there is, but a teaching aid nobody can
-                 turn off is decoration - and a player who has learned the
-                 rule is entitled to want their board back. */
-              foldmark:"on"};
+                 is the switch that stops it.
+
+                 OFF BY DEFAULT, on the owner's call, and the reason is that
+                 it is no longer the only drawing of where you can go. The
+                 step mark (stepHiBuild(), js/10-render.js) lights the four
+                 squares a step can reach and it is always on, so the board
+                 already answers "where now" without being asked. Lighting a
+                 whole row of landings on top of that is two answers to two
+                 different questions at once, and the row is the one a player
+                 has to have learned rule 5 to read. It stays a row and it
+                 stays switchable - a player who wants rule 5 drawn for them
+                 turns it on - but nobody gets it unasked any more. */
+              foldmark:FOLDMARK_DEFAULT};
 /* How many times the landing rule is spelled out in words. The rings keep
    drawing forever - they are free and they answer the question faster than a
    sentence does - but a line of text on every fold would be nagging. */

@@ -3737,9 +3737,16 @@ function foldMarkFade(dtMs){
    The mark is a teaching aid, and a teaching aid that cannot be turned off
    is decoration everybody has to keep looking at. Off means off: no tint, no
    rim, and nothing rebuilt per frame either, because `foldHiT` is what gates
-   that work. */
+   that work.
+
+   THE TEST IS NOW FOR "on", NOT AGAINST "off", because the default moved.
+   It read `!(settings.foldmark==="off")`, which is "on unless told
+   otherwise" - and that made a missing settings object, or a frame drawn
+   before loadSettings() has run, light the mark when a fresh install does
+   not. The fallback has to be the same answer as `FOLDMARK_DEFAULT`, or the
+   first second of a first run disagrees with every second after it. */
 function foldMarkOn(){
-  return !(typeof settings!=="undefined"&&settings.foldmark==="off");
+  return typeof settings!=="undefined"&&settings.foldmark==="on";
 }
 /* AND NEVER IN A FIGHT, whatever the switch says. A boss is played at the
    speed of the pack - there is no moment to read a board lighting up, and a
