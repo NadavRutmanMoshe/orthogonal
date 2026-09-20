@@ -632,22 +632,32 @@ is the rule.
   `settings.noSlowOffer` and `STRUGGLE_OFFER` are gone with the opt-out;
   nothing suppresses the card. `fails[]` is still kept, for the neighbour's
   line at ten.
-- **`SFX.strike()` - the kill - IS A SETTING FOR ONE ROUND**, and the row is
-  temporary. It was a square wave at `.055` (the loudest blip in the file)
-  with a sine sweeping *up* 900-1400 over it: the same abrasive-voice
-  diagnosis the old `die()` sawtooth and the old `shove()` square got, plus
-  a rising tone that reads as an alarm rather than as something coming down.
-  Three candidates on Menu > How it plays > Kill sound, and **picking one
-  plays it**: `thud` (the old shape de-buzzed - triangle, .038, and the
-  bright voice FALLS; the default, so a player who never opens the menu gets
-  the fix), `burst` (noise only, nothing that can ring) and `chime` (two
-  sines a fifth apart, falling - a kill as a reward). All three are quieter
-  stacked than the `.095` they replace, so the limiter's worst case did not
-  move. `KILLSOUND_DEFAULT` sits beside `UI_DEFAULT`; **when the owner picks,
-  the winner becomes the body of `strike()` and the constant, the row, the
-  bind, the whitelist line and the RESET SETTINGS line all come out**, the
-  way `bossdie` did. `strike()` is also the phase-announce voice, so the
-  winner is that too - a separate question, not yet asked (`systems.md`).
+- **FOUR VOICES FIRE ON A KILL** - `strike()` (the core going down),
+  `cheer()` (the room, over the kill cam), `rec()` (the record light) and
+  `relive()` (the hit again on the replay's closing fold). **When a
+  complaint names the moment rather than the voice, list all four**: "the
+  kill audio is disturbing" was fixed at `strike()` first, correctly and
+  without answering it, because the sound actually meant was `cheer()`
+  (`systems.md`).
+- **`SFX.strike()` is THUD**, the old shape with the edge taken off:
+  triangle not square, `.038` not `.055` (which was the loudest blip in the
+  file), and the bright voice FALLS 1200-620 instead of rising 900-1400 -
+  a rising tone reads as an alarm, not as something coming down. Same
+  abrasive-voice diagnosis the old `die()` sawtooth and `shove()` square
+  got. It was a three-way switch (thud/burst/chime) for one round; the owner
+  picked, and the constant, row, bind, whitelist line and RESET SETTINGS
+  line came out with the question, the way `bossdie` did. It is **also the
+  phase-announce voice**, so THUD is that too - a separate question, not
+  asked.
+- **`SFX.cheer()` - the room on a kill - IS NOT NOISE, and must not become
+  noise again.** It was a 2.4s band-passed hiss, and **the kill cam plays
+  television snow over the same beat**: two broadband sources are the same
+  signal added to itself, so the room dissolved into the picture instead of
+  sitting under it. No level fixes that. It is now two low sines a fifth
+  apart (`roomSwell()`, which exists because `blip()`'s 8ms attack can only
+  hit, never arrive) sent to **`reverb()`** - a room is a reverberation, and
+  the file has had a real convolution all along. `crowdBed()` and its
+  warm-up in `warmAudio()` went with it (`systems.md`).
 - **`SFX.die(kind)` dispatches five deaths** and none of them is a setting:
   "kapoosh" for a hunter's hit, "plack" for a crush, "kshhh" for the sweep,
   "ssss" for fire, and the fall's own voice for everything unnamed. The

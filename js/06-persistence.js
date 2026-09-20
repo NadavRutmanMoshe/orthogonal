@@ -125,15 +125,12 @@ function loadSettings(){
            this whitelist with it. */
         if(o.foldmark&&["on","off"].indexOf(o.foldmark)>=0)
           settings.foldmark=o.foldmark;
-        /* TEMPORARY, and on this list only so the owner can answer the
-           question across a reload - a switch that forgot which of three
-           sounds was being tried would make the comparison impossible. It
-           comes off the list with the row, and when it does, a save carrying
-           "chime" falls through to KILLSOUND_DEFAULT rather than pinning a
-           voice with nothing left to change it. That is the `pace` trap and
-           it is the reason this comment is here. */
-        if(o.killsound&&["thud","burst","chime"].indexOf(o.killsound)>=0)
-          settings.killsound=o.killsound;
+        /* `killsound` is deliberately NOT read any more. It was on this list
+           for one round so the owner could compare thud/burst/chime across a
+           reload; THUD won and is the body of SFX.strike() now, so a save
+           carrying "chime" would pin a voice with nothing left to change it -
+           the trap `pace` and `killcam` are in. A key whose feature is
+           removed comes out of this whitelist with it. */
         /* `pace` is deliberately NOT read any more. The row that set it is
            gone, so a save carrying 0.5 would pin every clock in the game at
            half speed with nothing left to change it - which is the trap this

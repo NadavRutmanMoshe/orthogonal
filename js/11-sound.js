@@ -66,14 +66,10 @@ var UI_DEFAULT="none";
    have left a reset switching a mark back on that a fresh install does not
    have. Two writes of one value is the drift this constant exists to stop. */
 var FOLDMARK_DEFAULT="off";
-/* WHICH KILL SOUND, and this one is TEMPORARY - it is a question being put
-   to the owner, not a setting the game wants. "thud" is the conservative
-   answer (the shape that shipped, de-buzzed), so a player who never opens
-   the menu gets the fix rather than the experiment. When the answer comes
-   back, the winner becomes the body of SFX.strike(), and this constant, the
-   row in menuPanel(), the whitelist line and the RESET SETTINGS line all
-   come out together - the way `bossdie` and `killcam` went. */
-var KILLSOUND_DEFAULT="thud";
+/* `KILLSOUND_DEFAULT` stood here while thud/burst/chime were on a switch.
+   The owner picked THUD, so it is the body of SFX.strike() now and the
+   constant, the row, the bind, the RESET SETTINGS line and the whitelist
+   entry all came out together - the way `bossdie` and `killcam` went. */
 /* The other two thirds of the setup question, and their defaults live here
    beside the buttons for the same reason: RESET SETTINGS reads all three, so
    a reset cannot drift away from a fresh install. MEDIUM and REGULAR are the
@@ -134,10 +130,7 @@ var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false
                  has to have learned rule 5 to read. It stays a row and it
                  stays switchable - a player who wants rule 5 drawn for them
                  turns it on - but nobody gets it unasked any more. */
-              foldmark:FOLDMARK_DEFAULT,
-              /* Temporary, and it goes when the owner picks. See
-                 KILLSOUND_DEFAULT and SFX.strike(). */
-              killsound:KILLSOUND_DEFAULT};
+              foldmark:FOLDMARK_DEFAULT};
 /* How many times the landing rule is spelled out in words. The rings keep
    drawing forever - they are free and they answer the question faster than a
    sentence does - but a line of text on every fold would be nagging. */
@@ -970,7 +963,8 @@ function out(c){return masterGain||c.destination;}
 var AUDIO_WAIT=350;
 /* AND THE HELD BUFFERS ARE FILLED BEFORE ANYTHING ASKS FOR THEM.
 
-   Holding them (sfxNoiseBuf, crowdBedBuffer) took the cheer from
+   Holding them (sfxNoiseBuf, and the crowd bed while there was one) took the
+   cheer from
    17.6ms to 4.8ms, but "built once" was still being built ON THE KILL FRAME
    the first time: 31.1ms measured for that one cheer, and the first cheer a
    save ever plays is the first boss it ever kills. Nobody gets the fast path
@@ -989,10 +983,9 @@ function warmAudio(c){
   if(audioWarmed||!c)return;
   audioWarmed=true;
   var go=function(){
-    try{
-      sfxNoiseBuf(c);
-      crowdBedBuffer(c,Math.floor(c.sampleRate*3));
-    }catch(e){}
+    // The crowd bed was warmed here too, until cheer() stopped being made of
+    // noise and there was no buffer left to hold.
+    try{ sfxNoiseBuf(c); }catch(e){}
   };
   if(window.requestIdleCallback)requestIdleCallback(go,{timeout:2000});
   else setTimeout(go,300);
@@ -1184,52 +1177,42 @@ function noiseRise(c,at,dur,vol){
    Deliberately quiet (.026 against a blip's .05). It fires on the same beat
    as SFX.strike() and must sit UNDER it: the hit is the event, this is the
    room reacting to it. */
-/* THE BED IS BUILT ONCE, and the swell stays IN it.
+/* THE BED IS GONE, AND SO IS THE REASON IT HAD TO BE PRE-BUILT.
 
-   Its one caller asks for 2.4 seconds: 129,600 samples, each carrying two
-   Math.random() calls and a step of a random walk, and it was built from
-   scratch on the frame a boss died. SFX.cheer() measured 35.7ms cold and
-   17.6ms warm on the owner's phone, against an 11.1ms frame at 90Hz - so the
-   room cheering cost two or three dropped frames at the exact moment the
-   kill lands, which is the moment nobody should be dropping frames.
+   `crowdBedBuf`/`crowdBedBuffer()` held three seconds of amplitude-wobbled
+   noise because building it cost 35.7ms cold on the owner's phone, against
+   an 11.1ms frame - the room cheering dropped two or three frames on the
+   exact frame a kill landed. Keeping the buffer fixed that.
 
-   The wobble cannot move to a gain node, because a crowd's swell is
-   per-sample amplitude rather than an envelope over the whole sound. So the
-   buffer is KEPT instead, three seconds of it, which is over the 2.7 the
-   cheer needs. A longer request builds its own; nothing asks for one. */
-var crowdBedBuf=null, crowdBedLen=0;
-function crowdBedBuffer(c,need){
-  if(crowdBedBuf&&crowdBedLen>=need)return crowdBedBuf;
-  var len=Math.max(need,Math.floor(c.sampleRate*3));
-  var b=c.createBuffer(1,len,c.sampleRate),d=b.getChannelData(0),env=0;
-  for(var i=0;i<len;i++){
-    env+=(Math.random()-.5)*.055;
-    if(env>1)env=1; else if(env<-1)env=-1;
-    d[i]=(Math.random()*2-1)*(.5+.5*Math.abs(env));
-  }
-  crowdBedBuf=b;crowdBedLen=len;
-  return b;
-}
-function crowdBed(c,at,dur,vol){
-  var src=c.createBufferSource();
-  src.buffer=crowdBedBuffer(c,Math.floor(c.sampleRate*(dur+.3)));
-  var bp=c.createBiquadFilter();bp.type="bandpass";bp.Q.value=.85;
-  bp.frequency.setValueAtTime(620,at);
-  bp.frequency.exponentialRampToValueAtTime(1600,at+dur*.42);
-  bp.frequency.exponentialRampToValueAtTime(980,at+dur);
-  var g=c.createGain();
+   cheer() is two oscillators now, which cost nothing to start, so there is
+   no buffer to hold and nothing to warm. The saving is real and incidental:
+   the fix was for how it SOUNDED (see cheer()), and being free is what a
+   sound made of two sines is anyway. */
+/* A SWELL THAT BLOOMS AND SETTLES, and it is what the room is made of now.
+
+   `blip()` cannot do this: its attack is a fixed 8ms, which is right for a
+   footstep and wrong for something that is supposed to arrive rather than
+   hit. This one takes a third of its life to come up, which is the whole
+   difference between a note and a swell.
+
+   It goes to the REVERB as well as the output, and that is the point rather
+   than a garnish - see cheer(). */
+function roomSwell(c,at,f,dur,vol){
+  var o=c.createOscillator(),g=c.createGain();
+  o.type="sine";
+  o.frequency.setValueAtTime(f,at);
+  // A slight lift rather than a flat tone: a room answering, not an alarm.
+  o.frequency.exponentialRampToValueAtTime(f*1.05,at+dur);
   g.gain.setValueAtTime(.0001,at);
-  g.gain.exponentialRampToValueAtTime(vol,at+.16);
-  g.gain.setValueAtTime(vol,at+dur*.5);
-  g.gain.exponentialRampToValueAtTime(.0001,at+dur+.22);
-  src.connect(bp);bp.connect(g);g.connect(out(c));
-  src.start(at);src.stop(at+dur+.28);
+  g.gain.exponentialRampToValueAtTime(vol,at+dur*.34);
+  g.gain.exponentialRampToValueAtTime(.0001,at+dur);
+  o.connect(g);g.connect(out(c));g.connect(reverb(c));
+  o.start(at);o.stop(at+dur+.05);
 }
-/* The hands are gone. crowdClap() and crowdClaps() built twenty short
-   noise bursts scattered over a second and a half, and on a phone speaker
-   that read as popcorn rather than as applause - the owner's word, from the
-   sound test. SFX.cheer() is the bed alone now, so nothing calls them and
-   they are out rather than left sitting unused. See cheer(). */
+/* The hands are gone, and now the bed is too. crowdClap() and crowdClaps()
+   built twenty short noise bursts over a second and a half and read as
+   popcorn; crowdBed()/crowdBedBuffer() were the band-passed hiss left behind
+   when they came off, and they are out with them. See cheer(). */
 /* HAPTICS - the same event, felt.
 
    The fold is the game's one verb and on a phone it is a tap on glass with
@@ -1386,69 +1369,65 @@ var SFX={
      up rather than as a thing coming down, which is the opposite of what the
      moment is. It fires three to five times a phase.
 
-     Three replacements, on a temporary switch, the way the crowd's cheer was
-     picked out of six and the hunter's death out of three - a sound cannot
-     be judged from a description, so the owner hears all three in the game
-     and the switch comes out with the question. Menu > How it plays > Kill
-     sound, and picking one plays it. Each is a different idea of what
-     killing one of the pack IS, not three tunings of one idea. */
+     THE SWITCH IS GONE, AND "THUD" IS WHAT IT LEFT. Three candidates went
+     into Menu > How it plays > Kill sound for one round - thud, burst,
+     chime - the way the hunter's death went into `settings.bossdie` and the
+     cheer was picked out of six. The owner kept THUD, so it is simply the
+     body of this function now and the row, the key, the default and the
+     whitelist line came out with the question. A setting kept past its
+     answer is an unmade decision with a control on it. Burst and chime are
+     in the history if a fight ever wants a different idea of a kill.
+
+     THE SAME SENTENCE, WITH THE EDGE TAKEN OFF. The shape that shipped is
+     kept - a low hit with a bright voice over it, so the fight reads the way
+     it always did. The square becomes a triangle, the gain comes back to the
+     file's ordinary .038, and the bright voice FALLS, 1200 down to 620, so
+     it lands instead of whooping. One short noise front, because the square
+     was doing that job and a triangle alone has no attack on a phone. */
   strike:function(){
     var c=audio();if(!c)return;
-    var t=c.currentTime;
-    var k=(typeof settings!=="undefined"&&settings.killsound)||KILLSOUND_DEFAULT;
-    /* "BURST" - IT COMES APART. No tone at the front at all, so there is
-       nothing that can ring or buzz: a hard short noise front, a softer one
-       opening out behind it, and a low sine for the weight of the thing.
-       Kept well clear of the hunter's own "kapoosh" - that one opens out for
-       400ms and this closes in 200 - because a kill and a death must never
-       be the same shape. */
-    if(k==="burst"){
-      noiseAt(c,t,.045,.032,3600,1500,2.4,false);
-      noiseAt(c,t+.04,.20,.020,2000,360,1.0,true);
-      blip(104,.26,"sine",.030,58);
-    /* "CHIME" - A KILL IS A REWARD, SO IT SOUNDS LIKE ONE. Two sines a fifth
-       apart struck together and falling, which is a small bell being damped,
-       over one tiny noise tick that keeps a front edge on it for a phone
-       speaker. Harshness is impossible here by construction - there is no
-       edged waveform in it anywhere - and it is the only one of the three
-       that would make a fight feel like scoring rather than like hitting.
-       The furthest from what shipped, and deliberately so. */
-    } else if(k==="chime"){
-      noiseAt(c,t,.022,.014,5200,2600,1.6,false);
-      blip(784,.34,"sine",.034,392);
-      blip(523,.40,"sine",.026,262);
-    /* "THUD" - THE SAME SENTENCE, WITH THE EDGE TAKEN OFF, and the default.
-       The shape that shipped is kept: a low hit with a bright voice over it,
-       so the fight still reads the way the owner has been playing it. The
-       square becomes a triangle, the gain comes back to the file's ordinary
-       .038, and the bright voice FALLS - 1200 down to 620 - so it lands
-       instead of whooping. One short noise front, because the square was
-       doing that job and a triangle alone has no attack on a phone. */
-    } else {
-      noiseAt(c,t,.040,.020,3000,1200,2,false);
-      blip(150,.22,"triangle",.038,70);
-      blip(1200,.26,"sine",.030,620);
-    }
+    noiseAt(c,c.currentTime,.040,.020,3000,1200,2,false);
+    blip(150,.22,"triangle",.038,70);
+    blip(1200,.26,"sine",.030,620);
   },
-  /* THE ROOM, ON A KILL - AND IT IS NOW ONE THING, QUIETLY.
+  /* THE ROOM, ON A KILL - THIRD VERSION, AND THE FIRST THAT IS NOT NOISE.
 
-     It was four: twenty claps, a bed of filtered noise under them, and two
-     voices going up over the top. The owner named this as the sound that was
-     distorted, and taking it apart in the sound test said what was wrong -
-     THE HANDS. Twenty short noise bursts scattered over a second and a half
-     do not read as applause on a phone speaker, they read as popcorn, which
-     is exactly what was reported. Density, not level: the chain measured
-     clean through all of it.
+     This is the sound the owner has now called wrong twice, and the second
+     report - "something that was off and still is off" - is the one that
+     found the actual fault. It was never the claps.
 
-     So the claps are gone, and crowdClap()/crowdClaps() went with them. What
-     is left is the bed alone at .010 rather than .026, which is the version
-     the owner picked out of six. The two rising voices came off with the
-     hands - they were the top of a pile that no longer exists, and the bed on
-     its own is a room, which is all this beat was ever for. Putting them back
-     is two lines and they are in the history. */
+     WHAT IT WAS. Version one was twenty short noise bursts (the hands) over
+     a band-passed noise bed. That read as popcorn, so the hands came off.
+     Version two was the bed alone, 2.4 SECONDS of band-passed hiss at .010,
+     and it was still wrong for a reason no amount of tuning the bed could
+     reach: THE KILL CAM PLAYS TELEVISION SNOW OVER THE SAME BEAT. Snow is
+     broadband noise and so was the bed, so the two were the same signal
+     added to itself - the room did not sit under the picture, it dissolved
+     into it, and what was left was a hazier hiss. Fixing that by making the
+     bed quieter only makes it a quieter part of the same mush; fixing it by
+     making it louder makes the snow sound broken.
+
+     SO THE ROOM STOPS BEING NOISE. Two sines a fifth apart, low, blooming
+     over a third of their length and settling - roomSwell() exists because
+     blip()'s 8ms attack cannot arrive, it can only hit. Low and tonal puts
+     the room in a completely different part of the spectrum from the snow,
+     so the two stack instead of cancelling: you hear a hall answering
+     underneath a television, which is the picture the kill cam is drawing.
+
+     AND THE TAIL IS THE ACTUAL ROOM. Both voices go to reverb() as well as
+     to the output - a 0.9s convolution at .22 wet that every other voice in
+     this file already uses. A room is a reverberation; it was being drawn
+     with a noise generator when the file has had a real one all along. That
+     is why this can be short (.9s and 1.1s against 2.4s) and still say more:
+     the swell stops but the room keeps ringing.
+
+     Quiet on purpose - .024 and .015, against the strike's .088 stacked.
+     The strike is the announcement. This is the room behind it. */
   cheer:function(){
     var c=audio();if(!c)return;
-    crowdBed(c,c.currentTime,2.4,.010);
+    var t=c.currentTime;
+    roomSwell(c,t,110,1.1,.024);
+    roomSwell(c,t+.06,165,.9,.015);
   },
   /* THE RECORD LIGHT COMING ON. Two short high chirps, the noise every
      camcorder ever made when the button went down - it lands on the beat the

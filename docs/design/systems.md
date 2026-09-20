@@ -484,16 +484,55 @@
 
   **All three are quieter than what they replace** - .088, .082 and .074
   stacked against the old .095 - so the limiter's worst case cannot have
-  gone up, which is the measurement `MIX`/`POST` changes owe. **The switch
-  comes out with the answer**: the winner becomes the body of
-  `SFX.strike()`, and `KILLSOUND_DEFAULT`, the row, the bind, the whitelist
-  line and the RESET SETTINGS line all go together, the way `bossdie` did.
-  A setting kept past its answer is an unmade decision with a control on it.
+  gone up, which is the measurement `MIX`/`POST` changes owe.
 
-  **One thing the switch does not decide**: `SFX.strike()` is also the
-  phase-announce voice (`js/12-play.js`, `bossEnterPhase()`), so whichever
-  wins is also the sound of a phase beginning. Whether those should be two
-  different voices is a separate question and has not been asked.
+  **THUD WON, and the switch came out with the question.** It is the body of
+  `SFX.strike()` now, and `KILLSOUND_DEFAULT`, the row, the bind, the
+  whitelist line and the RESET SETTINGS line went together, the way
+  `bossdie` did. Burst and chime are above if a fight ever wants a different
+  idea of a kill. A setting kept past its answer is an unmade decision with
+  a control on it.
+
+  **One thing the switch never decided**: `SFX.strike()` is also the
+  phase-announce voice (`js/12-play.js`, `bossEnterPhase()`), so THUD is
+  also the sound of a phase beginning. Whether those should be two different
+  voices is a separate question and has not been asked.
+- **AND IT WAS STILL NOT THE RIGHT SOUND, because the complaint was about
+  `cheer()`.** This is the one to read before touching a kill again. The
+  owner reported the kill audio as disturbing, `strike()` was the obvious
+  culprit - a square wave at the loudest gain in the file - and fixing it
+  was correct and did not answer the complaint. The second report named it:
+  *"the clap or sweep or I don't remember the name, but something that was
+  off and still is off"*. That is `cheer()`, the room on a kill, which had
+  **already been reported once** and only half fixed.
+
+  **The fault was never the claps, and it could not be tuned out.** The kill
+  cam plays TELEVISION SNOW over the same beat, and the room was a
+  band-passed noise bed - 2.4 seconds of it. Snow is broadband noise and so
+  was the bed, so the two were the same signal added to itself: the room did
+  not sit under the picture, it dissolved into it. Quieter makes it a
+  quieter part of the same mush; louder makes the snow sound broken. Three
+  rounds of adjusting a noise bed against another noise bed.
+
+  **So the room stopped being noise.** Two sines a fifth apart, low,
+  blooming over a third of their length and settling (`roomSwell()`, which
+  exists because `blip()`'s fixed 8ms attack can only hit, never arrive).
+  Low and tonal puts the room in a different part of the spectrum from the
+  snow, so the two stack instead of cancelling. **And the tail is the actual
+  room**: both voices go to `reverb()` as well as the output - the 0.9s
+  convolution at .22 wet that every other voice already uses. A room *is* a
+  reverberation, and it had been drawn with a noise generator while the file
+  had a real one all along. That is why the new one can be shorter (.9s and
+  1.1s against 2.4s) and still say more.
+
+  `crowdBed()`/`crowdBedBuffer()` went with it, and so did their warm-up in
+  `warmAudio()` - the buffer was held because building it cost 35.7ms on the
+  frame a kill landed, and two oscillators cost nothing to start.
+
+  **The lesson is the diagnosis, not the sound.** When a complaint names a
+  moment rather than a voice, list everything that fires on that moment
+  before picking one. Four things play on a kill - `strike`, `cheer`, `rec`
+  and the replayed `relive` - and the loudest was not the wrong one.
 - **THE AMBIENT LAYER IS CURRENTLY MUTED** - `AMB_MUTED` in `js/11-sound.js`
   is `true`. Playtested and disliked: the birds, the sea, the wind and the
   desert together were more presence than the game wanted, and a bed you have
