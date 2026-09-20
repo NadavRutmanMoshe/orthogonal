@@ -3856,6 +3856,11 @@ function foldHiBuild(){
    Keyed on the crates AND the pack, because both of them move under a cube
    that is standing still - a hunter walking into the square beside you has
    to take its light away on the beat it arrives. */
+/* How loud the step mark is against the landing mark, whose look it wears.
+   .62 is the BOTTOM of that mark's own breath (`.58+.42*breath`), so the
+   always-on mark sits exactly where the louder one dips to and the two can
+   never be confused. The dial for "the highlight is a bit much". */
+var STEP_HI=.62;
 var stepHiSet={}, stepHiKey="", stepHiT=0;
 var STEP_DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
 function stepHiBuild(){
@@ -4762,25 +4767,35 @@ function animate(now){
        an answer to a question with a moment attached, and a permanent hint
        does not get to cover one.
 
-       QUIETER THAN THE LANDING MARK, AND IT DOES NOT BREATHE. The fold mark
-       gets white plus teal plus a breath because it runs for a second and a
-       half and has to be found in that time, on grass, once. This one is on
-       every frame of every level: a breath would be four things pulsing in
-       the corner of your eye for the whole game, which is the reason the
-       landing mark is kept out of fights. So it is a lift toward white and a
-       rim, and nothing moves.
+       IT WEARS THE LANDING MARK'S LOOK, HELD STILL AND HELD DOWN. It was a
+       plain 40% lift toward white with a pale blue rim, and that was
+       reported as too much - correctly. A big white lerp does not read as a
+       square being POINTED AT, it reads as a square made of a different and
+       paler material, because it takes the colour out of whatever is under
+       it: on grass it bleached the turf. The landing mark never had that
+       problem, because after its lift it puts the teal BACK - so the block
+       stays a coloured block that is lit, rather than a white one.
 
-       WHITE AND NOT A HUE, for the reason the fold mark had to learn twice -
-       brightness is the only signal that survives every surface in the game,
-       and green on the nature world was invisible. It also keeps the two
-       marks apart when both are on: the step mark is bright, the landing
-       mark is bright AND teal AND moving. */
+       So the pair is the landing mark's exactly - `colWhite` then
+       `colFoldHi`, in that order - at STEP_HI, .62 of its strength. .62 is
+       the bottom of the landing mark's own breath (`.58+.42*breath`), so
+       this is very nearly that mark at its quietest, held there: the two are
+       the same family, and the one that is always on sits at the level the
+       louder one only dips to.
+
+       AND IT STILL DOES NOT BREATHE. The landing mark pulses because it has
+       a second and a half to be found in, once. This is on every frame of
+       every level, and four things pulsing at the edge of vision for the
+       whole game is the exact reason the landing mark is kept out of fights.
+       Being permanently at the quiet end of the same look is what separates
+       them now: the landing mark is brighter AND moving. */
     if(stepHiT>.01&&stepHiSet[k]&&!(perilSet&&perilSet[k])&&
        !(tutMarkSet&&tutMarkSet[k])&&!(foldHiT>.01&&foldHiSet[k])){
-      m.material.color.lerp(colWhite,.40*stepHiT);
-      m.userData.edge.material.color.set(0xcdeaff);
+      var sk=STEP_HI*stepHiT;
+      m.material.color.lerp(colWhite,.50*sk).lerp(colFoldHi,.26*sk);
+      m.userData.edge.material.color.set(0x9dffe8);
       m.userData.edge.material.opacity=Math.max(
-        m.userData.edge.material.opacity,.34+.62*stepHiT);
+        m.userData.edge.material.opacity,.30+.70*sk);
       if(perilCleanup.indexOf(k)<0)perilCleanup.push(k);
     }
   }

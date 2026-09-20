@@ -889,10 +889,17 @@ is the rule.
   **Last in the priority order** (peril, then `tutMarkSet`, then the landing
   mark, then this) because it is the only one always on, and it must be in
   **both** of `perilCleanup`'s keep-tests or its rim is wiped on the frame
-  that drew it. A lift toward white and a rim, and **it does not breathe** -
-  it is on every frame, and the breath is why the landing mark is kept out
-  of fights. It **is** drawn in fights; `&&!B` in `stepMarkOn()` is the line
-  if that is wrong (`controls.md`).
+  that drew it. **It wears the landing mark's exact pair** - `colWhite` then
+  `colFoldHi`, teal rim - scaled by `STEP_HI` (.62), which is the BOTTOM of
+  that mark's own breath, so the always-on mark sits where the louder one
+  only dips to. `STEP_HI` is the dial when the highlight is too much. A
+  plain white lift was tried first and reported as too much: a big white
+  lerp reads as a paler MATERIAL, not as a square being pointed at, because
+  it takes the colour out of what is under it - it bleached the grass. The
+  landing mark escapes that by putting the teal back after the lift.
+  **It does not breathe** - it is on every frame, and the breath is why the
+  landing mark is kept out of fights. It **is** drawn in fights; `&&!B` in
+  `stepMarkOn()` is the line if that is wrong (`controls.md`).
   A two-beat fold that gathered the world
   into the front block was built, played and dropped for this
   (`controls.md`, `HISTORY.md`).

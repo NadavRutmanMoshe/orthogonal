@@ -392,16 +392,27 @@ literally. The second half is that a teaching level already has a coach, a
 ghost hand, a guided lock and its own landing marker pointing at one block.
 A fifth voice saying something slightly different is not help.
 
-**Quieter than the landing mark, and it does not breathe.** The fold mark
-gets white plus teal plus a breath because it runs for a second and a half
-and has to be found inside it, once, possibly on grass. This one is on
-every frame of every level, and a breath would be four things pulsing at
-the edge of vision for the whole game - which is the exact reason the
-landing mark is kept out of fights. So it is a lift toward white and a
-rim, and nothing moves. White and not a hue for the reason the fold mark
-had to learn twice: brightness is the only signal that survives every
-surface in the game. It also keeps the two apart when both are on - the
-step mark is bright, the landing mark is bright *and* teal *and* moving.
+**It wears the landing mark's look, held still and held down at `STEP_HI`
+(.62).** The first version was a plain 40% lift toward white with a pale
+blue rim, and it was reported as too much - correctly, and the reason is
+worth keeping. **A large white lerp does not read as a square being pointed
+at; it reads as a square made of a different, paler material**, because it
+takes the colour out of whatever is underneath. On the nature world it
+bleached the turf. The landing mark never had that problem because after
+its lift it puts the teal *back*, so the block stays a coloured block that
+is lit rather than becoming a white one.
+
+So the pair is now the landing mark's exactly - `colWhite` then `colFoldHi`,
+in that order - scaled by `STEP_HI`. **.62 is the bottom of the landing
+mark's own breath** (`.58+.42*breath`), which is the whole idea: the mark
+that is always on sits permanently at the level the louder one only dips
+to. They are the same family, and they still cannot be confused, because
+the landing mark is brighter *and* moving.
+
+**And it still does not breathe.** The landing mark pulses because it has a
+second and a half to be found in, once. This is on every frame of every
+level, and four things pulsing at the edge of vision for the whole game is
+the exact reason the landing mark is kept out of fights.
 
 **Last in the priority order**, under peril, under the tutorial's marker
 and under the landing mark. It is the only one of the four that is always
