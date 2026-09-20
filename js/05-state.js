@@ -16,16 +16,13 @@ var custom={name:"Untitled",hint:"Your level.",blocks:[],keys:[],
             start:[0,1,0],goal:[3,1,0],rotate:true,theme:null};
 var view=0,flat=false,flatT=0,flatTarget=0,viewAngle=0,viewAngleTarget=0;
 var player={x:0,y:0,z:0},flatPos={u:0,y:0};
-/* WHERE THE CURRENT FOLD BEGAN - the plane square and the view - written by
-   doFlatten() and read by the landing mark (foldHiBuild(), js/10-render.js),
-   which lights every block this fold could put you on, and that means every
-   plane square you could have walked to FROM HERE. Walking is not
-   reversible in the plane (a fall of two cannot be climbed back), so the
-   square you unfolded from is not enough to answer it. In the history so an
-   undo back into an older fold brings that fold's origin with it; null after
-   a resumed save, where the mark falls back to the square you are on. */
-/* Not `foldFrom`: that is the fold tween's starting flatT, a few lines down. */
-var foldOrigin=null;
+/* `foldOrigin` stood here - where the current fold began, written by
+   doFlatten() and carried in the history so an undo brought its fold's
+   origin with it. The landing mark was the only thing that ever read it,
+   and it went out with the mark. `st.ff` in an older history entry or a
+   resumed save is simply ignored now.
+   (Not to be confused with `foldFrom`, the fold tween's starting flatT a
+   few lines down, which is live.) */
 var tool="add", undoStack=[];
 var dying=null, dyingT=0;
 var squash=0, shakeT=0, lastY=null, lastSolidDepth=0;
@@ -324,7 +321,7 @@ var levelDone=false;
 function snapState(){
   return {x:player.x,y:player.y,z:player.z,flat:flat,
           fu:flatPos.u,fy:flatPos.y,view:view,ang:viewAngleTarget,
-          cr:gCrates.map(function(c){return c.slice();}),keys:gKeys,ff:foldOrigin};
+          cr:gCrates.map(function(c){return c.slice();}),keys:gKeys};
 }
 function pushHistory(){
   /* THE ONE PLACE THAT MEANS "A MOVE WAS COMMITTED", which is exactly when a
@@ -343,7 +340,6 @@ function undoMove(){
   flat=st.flat;flatPos={u:st.fu,y:st.fy};
   view=st.view;viewAngleTarget=st.ang;
   gCrates=st.cr.map(function(c){return c.slice();});gKeys=st.keys;
-  foldOrigin=st.ff||null;
   /* Undo does not touch a fight at all - not the pack, not the lives, not
      the clock. It cannot: the hunters move on wall time and there is no tick
      to step back to, and rewinding a kill while they kept walking would put

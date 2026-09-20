@@ -65,7 +65,10 @@ var UI_DEFAULT="none";
    below, so turning the default off meant finding both, and missing one would
    have left a reset switching a mark back on that a fresh install does not
    have. Two writes of one value is the drift this constant exists to stop. */
-var FOLDMARK_DEFAULT="off";
+/* `FOLDMARK_DEFAULT` stood here. The landing mark it switched is gone and
+   so is its row; `settings.foldmark` comes off loadSettings()'s whitelist
+   with it, which is the rule that keeps a save from carrying a value with
+   nothing left to change it. */
 /* WHICH KILL SOUND, and this one is TEMPORARY - it is a question being put
    to the owner, not a setting the game wants. "thud" is the conservative
    answer (the shape that shipped, de-buzzed), so a player who never opens
@@ -120,21 +123,11 @@ var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false
               /* `killcam` is gone. The owner played both and kept the
                  television, so kcFull() is a constant now and there is no key
                  to store. */
-              /* THE GREEN BLOCK, on or off. Coming back to 3D the block you
-                 land on is lit for as long as the landing rings hold; this
-                 is the switch that stops it.
-
-                 OFF BY DEFAULT, on the owner's call, and the reason is that
-                 it is no longer the only drawing of where you can go. The
-                 step mark (stepHiBuild(), js/10-render.js) lights the four
-                 squares a step can reach and it is always on, so the board
-                 already answers "where now" without being asked. Lighting a
-                 whole row of landings on top of that is two answers to two
-                 different questions at once, and the row is the one a player
-                 has to have learned rule 5 to read. It stays a row and it
-                 stays switchable - a player who wants rule 5 drawn for them
-                 turns it on - but nobody gets it unasked any more. */
-              foldmark:FOLDMARK_DEFAULT,
+              /* `foldmark` is gone with the landing mark it switched. It was
+                 defaulted off one build and taken out the next: the step mark
+                 answers "where can I go" on every frame, and a second, longer
+                 mark answering "which block wins the column" was the one a
+                 player needs rule 5 already learned to read. */
               /* Temporary, and it goes when the owner picks. See
                  KILLSOUND_DEFAULT and SFX.strike(). */
               killsound:KILLSOUND_DEFAULT};

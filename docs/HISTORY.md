@@ -492,6 +492,49 @@ the level asks.
 
 ---
 
+## Attempt four was a mark on the board, and it was the wrong question
+
+The landing mark was the fourth answer to rule 5 and the most elaborate. On
+every unfold it lit **every block the fold could have handed you** - walked
+out of `foldOrigin` along the plane with `resolveStep()`, each square asked
+of `R.landings()`/`R.pick()` - lifted toward white, leaning teal, with a
+bright rim, breathing twice over `LAND_MS`. It shipped, and it was debugged
+through four separate bugs worth keeping:
+
+- **It borrowed the rings' clock and inherited their trigger.** The rings
+  only appear when a column holds more than one candidate; reading their fade
+  meant that on `03 - A Real Challenge`, where every square has exactly one,
+  coming back to 3D lit nothing at all. A mark needs its own clock when its
+  question is not the rings' question.
+- **It walked the meshes, and a mesh is not the plane.** Water is a block you
+  can stand on in the volume and a *hole* in the plane, so water lit as
+  standable when it was not, and stone under water was skipped as buried when
+  it was exactly where you land. Reported as "not highlighting well with
+  water". Ask the rules, never the drawing.
+- **An `n>1` column filter meant world I never lit at all**, its boards being
+  one block deep. A landing with one candidate is still a landing.
+- **It lit on the way INTO 2D as well**, off `flatT`, which gives it a few
+  hundred ms of a 520ms fold - reported as "it disappeared super fast". A
+  flash on the board reads as something going wrong.
+
+**And then it came out anyway, which is the part worth remembering.** All
+four fixes were correct and the mark worked. What was wrong was upstream of
+all of them: *it answered a question the player did not have.* "Which of the
+blocks in this column wins" is rule 5, and you have to have learned rule 5 to
+be asking it. What somebody on their second board actually wants to know is
+**where can I go** - and the answer to that is four squares, not a row.
+
+The step mark replaced it, the landing mark was defaulted off for one build
+and removed the next, and the rings had gone a build before that. The cost
+was four rounds of debugging a drawing that was correct and misaimed.
+
+**The lesson is not "don't draw on blocks".** It is that a teaching aid needs
+its question checked before its rendering: the mark was iterated four times
+on *how well it was seen* and never once on *whether it was what was being
+asked*. Both questions are cheap to ask at the start and only one of them was.
+
+---
+
 ## The replay: why state snapshots and not input re-simulation
 
 A charge is instant and comes from across the arena, so the one event a player

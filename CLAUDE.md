@@ -365,12 +365,13 @@ is the rule.
   a control to one of them means adding it to all five or to none. MY LEVELS
   is the fifth, and every screen under it goes through `mlScreen()`.
 - **The settings sheet is five cards**: WORLDS and the shelf row, Sound &
-  light, **How it plays** (Controls, Fights speed, Landing mark),
-  **Accessibility** (Level size, Text size) and More. The split is by what a
-  setting is ABOUT - the game, or the person - so the two size rows are not
-  buried among five rows about the game. `.crow label` is 98px, which holds
-  TWELVE monospace characters and no more: "Where you land" is fourteen and
-  wrapped, which is why that row is called "Landing mark".
+  light, **How it plays** (Controls, Fights speed, and Kill sound while that
+  question is open), **Accessibility** (Level size, Text size) and More. The
+  split is by what a setting is ABOUT - the game, or the person - so the two
+  size rows are not buried among five rows about the game. `.crow label` is
+  98px, which holds TWELVE monospace characters and no more; the row that
+  taught this was "Where you land" at fourteen, which wrapped, and it was
+  renamed "Landing mark" before the whole row came out.
 - **WORLDS is at the top of the settings sheet**, a `.psec` row above the
   back-to-this-shelf row, wearing the chooser's `#4ec8e0` and `gridIcon()`.
   It opens `sectionPicker()`, not the map. It reverses the note in
@@ -658,11 +659,10 @@ is the rule.
   since `05-fonts.css` landed: the real IBM Plex Mono is wider than the
   substitute it was measured in, and it needs 96px. It is 98px now. Re-check
   any hand-tuned width after a font change.
-- **`settings.foldmark` is `"on"`/`"off"`** - Menu > How it plays > Landing
-  mark (it was a card of its own called "Where you land"), the
-  switch on the green block the fold marks. Whitelisted in `loadSettings()`
-  and reset by RESET SETTINGS. Nothing applies it: the render loop asks
-  `foldMarkOn()` every frame.
+- **`settings.foldmark` is gone**, with the landing mark it switched and the
+  Landing mark row that set it. It is off `loadSettings()`'s whitelist too,
+  which is the rule: a key whose feature is removed comes out of the list
+  with it, or a save pins a value nothing applies and nothing can change.
 - **The kill cam has no switch: `kcFull()` is a constant true.** The owner
   played FULL and PLAIN and kept the television, so `settings.killcam` came
   out of the defaults, out of RESET SETTINGS and out of `loadSettings()`.
@@ -828,37 +828,18 @@ is the rule.
   fight that ships. A phase's own `aim` is the SHAPE of a fight; this is the
   dial for when every fight is too fast. `h.lock` is set from `bossAim()`, not
   from `ph.aim`, so the line on the floor cannot disagree with its own clock.
-- **The fold's motion is one beat; what teaches rule 5 is a MARK, and it is
-  only drawn COMING BACK** (`foldHiBuild()`, `js/10-render.js`). The block you
-  land on is lifted toward white, leans teal, takes a bright rim and
-  **breathes** - colour alone is invisible on the nature world, green on
-  green. It runs for `LAND_MS` on **its own clock, started by every unfold**
-  (`foldMarkStart()` in `doUnflatten`), `landEnvelope` for its fade. A peek
-  lights it too. It lit on the way INTO 2D as well, off
-  `flatT`, and that half came out on the owner's call: a 520ms fold gives it
-  a few hundred milliseconds, so it read as a flash, and it was answering a
-  question the player had not asked yet.
-  **It lights EVERY LANDING THE FOLD OFFERED, asked of the rules, never of
-  the meshes.** From `foldOrigin` (the square and view `doFlatten()` started
-  from; in the history, so undo carries it) it walks the plane with
-  `resolveStep()` over `R.siloSolid()` exactly as `move2()` does, and every
-  square it reaches is handed to `R.landings()`/`R.pick()`; a landing onto
-  fire stays dark. Walking MESHES for ledges was the water bug - water is a
-  block you see and a hole in the plane - and its `n>1` column filter is why
-  world I, one block deep, never lit. No special case for the block under
-  your feet: the square you stood up from is reached, so it lights by rule.
-  **Never in a boss** (`foldMarkWanted()` asks `!B`), **on in a trial**.
-  **The landing RINGS are gone from a landing** on the owner's call - the
-  mark now says the same thing on every block. `showLanding()` is reached by
-  nothing; the peek's live rings and the tutorial's rings (`tutLandMark()`)
-  stay.
-  Peril and the tutorial's landing marker both outrank it. `foldMarkOn()`
-  (`settings.foldmark`, Menu > How it plays > Landing mark) turns it off,
-  and **it is OFF by default** (`FOLDMARK_DEFAULT`, beside `UI_DEFAULT` so
-  the fresh settings object and RESET SETTINGS cannot drift apart). The row
-  answers rule 5, which you must have learned the rule to be asking; the
-  step mark below answers "where can I go", and that is the one a player
-  gets unasked now.
+- **THE LANDING MARK IS GONE, and so are the landing RINGS.** The mark lit
+  every block the fold could hand you - a row along the plane, lifted toward
+  white, leaning teal and breathing for `LAND_MS` after every unfold. Off by
+  default one build, out the next, on the owner's call: two marks answering
+  two different questions in the same green is one more than a board carries,
+  and the row is the one that needs rule 5 already learned to be read. Out
+  with it went `foldMarkStart/Fade/On/Wanted`, `foldHiSet`/`foldHiBuild()`,
+  `FOLD_BREATH_MS`, `colFoldHi`, `settings.foldmark` and its row (and its
+  whitelist line), and `foldOrigin`, which nothing else read. **Still there:**
+  `landEnvelope()`, `LAND_MS`, `landHint`, the peek's live rings and
+  `tutLandMark()` - a peek still rings the block it previews and the tutorial
+  still marks the block it is teaching (`controls.md`, `HISTORY.md`).
 - **THE STEP MARK IS THE FOUR SQUARES A STEP CAN REACH**, lit the whole
   time you are in the volume (`stepHiBuild()`, `stepMarkOn()`,
   `js/10-render.js`). It is the only drawing of the rule that **stepping up
