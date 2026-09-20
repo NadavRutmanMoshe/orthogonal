@@ -336,8 +336,18 @@ is the rule.
   before `syncBossBar()` measures `.hud`.
 - `.hud` chrome follows `paperIsLight()`, not the verb.
 - **The two typefaces are IN the file** - `css/05-fonts.css`, base64 woff2,
-  latin only - and the page now makes NO outbound request of any kind. Keep it
-  that way: it is what lets the Android manifest drop the INTERNET permission.
+  latin only - and the page now makes NO outbound request of any kind. Keep
+  it that way: it is what makes the app work on a first run with no network,
+  which is when a WebView opens.
+  **BUT THE MANIFEST STILL DECLARES `INTERNET`**, and that is correct rather
+  than an oversight - this line used to claim the permission had been
+  dropped, and a build says otherwise (`aapt2 dump badging` on the APK). It
+  is declared explicitly in `app/android/app/src/main/AndroidManifest.xml`,
+  not merged in from a plugin, and **ads and Play Billing both need it**, so
+  it cannot come off while `js/24-ads.js` and `js/25-shop.js` exist. What the
+  bundled fonts buy is that the GAME needs nothing; the store and the ads
+  still do. Keep `STORE-ANSWERS.md` and `docs/privacy.html` saying that,
+  because a reviewer checks the manifest against both.
   Refresh with `tools/fonts.js`, which asks **one weight per request** and
   throws if two come back sharing a URL: a combined request returns the
   family's VARIABLE file and every weight then renders at the lightest,
