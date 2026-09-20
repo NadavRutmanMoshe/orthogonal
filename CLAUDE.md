@@ -632,13 +632,30 @@ is the rule.
   `settings.noSlowOffer` and `STRUGGLE_OFFER` are gone with the opt-out;
   nothing suppresses the card. `fails[]` is still kept, for the neighbour's
   line at ten.
-- **FOUR VOICES FIRE ON A KILL** - `strike()` (the core going down),
+- **FOUR VOICES FIRE ON A KILL** - `kill()` (the pack member going down),
   `cheer()` (the room, over the kill cam), `rec()` (the record light) and
-  `relive()` (the hit again on the replay's closing fold). **When a
+  `relive()` (the kill again on the replay's closing fold). **When a
   complaint names the moment rather than the voice, list all four**: "the
   kill audio is disturbing" was fixed at `strike()` first, correctly and
   without answering it, because the sound actually meant was `cheer()`
   (`systems.md`).
+- **`SFX.kill()` is the kill and `SFX.strike()` is the phase ANNOUNCE**, and
+  the split exists because one voice was doing both - so the same sound said
+  "you caught one" and "a phase is starting", and since a skip drops you into
+  a fresh fight, **skipping played the kill sound at you**. Reported as THUD
+  being overused. `kill()` is high (1.5-2.4kHz) and short (160ms) **because
+  the fold and the room are both low and both FALLING on that same beat** -
+  a kill in their register is just more of the fold, so it is punctuation
+  over the collapse instead. A noise tick, two sines a fifth apart falling a
+  minor third, a small low body; nothing edged anywhere. `.086` stacked
+  against THUD's `.088`. **`kill(g)` takes a gain scale so `relive()` calls
+  it** rather than keeping a copy (`systems.md`).
+- **`relive()` CALLS the kill, it does not re-type it.** It used to be a
+  hand-written duplicate of `strike()` captioned "the game's own strike, at
+  half gain" - so when the square wave came out of `strike()`, it stayed in
+  `relive()`, and every kill the player watched replayed the original buzzer
+  while the live hit had been fixed. The comment was right and the code was
+  not, which is the failure mode a copy always has.
 - **`SFX.strike()` is THUD**, the old shape with the edge taken off:
   triangle not square, `.038` not `.055` (which was the loudest blip in the
   file), and the bright voice FALLS 1200-620 instead of rising 900-1400 -

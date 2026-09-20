@@ -1390,6 +1390,43 @@ var SFX={
     blip(150,.22,"triangle",.038,70);
     blip(1200,.26,"sine",.030,620);
   },
+  /* KILLING ONE OF THE PACK, and it is its own voice now.
+
+     THUD was doing two jobs. `strike()` is the phase ANNOUNCE as well as the
+     kill, so the same sound said "you caught one" and "a phase is starting" -
+     and since a skip drops you into a fresh fight, skipping played the kill
+     sound at you. Reported as thud being overused and as skipping feeling
+     like killing. One voice cannot mean an achievement and an arrival.
+
+     So the announce keeps THUD, which is what it always wanted to be - a low
+     hit that says something has begun - and the kill moves here.
+
+     WHY IT IS HIGH AND SHORT, which is the whole design. Three things play
+     on the beat a hunter dies and two of them were already spoken for: the
+     FOLD (sines 560->150 and 280->75, 420ms) and the ROOM (110 and 165 into
+     reverb). Both are low and both are FALLING, because the world is
+     collapsing - that is the picture. A kill laid in the same register is
+     just more of the fold. So this sits at 1.5-2.4kHz where nothing else in
+     the mix is, and lasts 160ms against the fold's 420, which makes it
+     punctuation on top of the collapse rather than part of it.
+
+     A tight noise tick for the catch, then two sines a fifth apart falling a
+     minor third - ringing enough to be a reward, dark enough not to be a
+     fanfare - and a small low body so it survives a phone speaker. Nothing
+     edged in it anywhere: the harshness that started all of this came from a
+     square wave, and there is not one here.
+
+     `g` scales the whole thing so relive() can play the same voice quieter
+     rather than keeping its own copy, which is the bug that comment used to
+     describe and did not do. .086 stacked at g=1, under THUD's .088. */
+  kill:function(g){
+    var c=audio();if(!c)return;
+    g=(g===undefined)?1:g;
+    noiseAt(c,c.currentTime,.028,.016*g,5200,3000,3,false);
+    blip(1568,.16,"sine",.032*g,1245);
+    blip(2349,.12,"sine",.018*g,1864);
+    blip(220,.10,"triangle",.020*g,140);
+  },
   /* THE ROOM, ON A KILL - THIRD VERSION, AND THE FIRST THAT IS NOT NOISE.
 
      This is the sound the owner has now called wrong twice, and the second
@@ -1439,22 +1476,27 @@ var SFX={
     setTimeout(function(){blip(2200,.055,"sine",.018);},95);
   },
   /* THE HIT, LANDING AGAIN, on the film's closing fold - the beat where the
-     world drops onto the thing you caught. Nothing new is synthesised: it is
-     the game's own strike, at half gain, because reliving it should sound
-     like it did one remove away.
+     world drops onto the thing you caught. Nothing new is synthesised: it
+     CALLS the kill, quieter, because reliving it should sound like it did
+     one remove away.
+
+     AND IT CALLS IT RATHER THAN COPYING IT, which is the whole of a bug that
+     shipped. This said "it is the game's own strike, at half gain" and was
+     in fact a hand-typed duplicate of what strike() used to be - so when the
+     square wave came out of strike(), it stayed here, and every kill you
+     watched replayed the original buzzer at .030 while the live hit had
+     already been fixed. The comment was right and the code was not, which is
+     the failure mode a copy always has. One call now, and it cannot drift.
 
      IT NO LONGER PLAYS THE FOLD. It used to open with SFX.fold(), and once
      the replay grew a soundtrack that became a duplicate: the fold the player
      actually made is on the tape at the moment they made it (see repSfx in
-     js/12-play.js) and plays itself. Only the strike is here, and only
+     js/12-play.js) and plays itself. Only the kill is here, and only
      because it is deliberately kept OFF the tape - it fires on the last
      instant of the recorded window, and the closing fold takes another half
      second after that, so recorded it would land before its own picture. */
   relive:function(ms){
-    setTimeout(function(){
-      blip(150,.22,"square",.030,70);
-      blip(900,.3,"sine",.022,1400);
-    },Math.max(0,ms|0));
+    setTimeout(function(){ SFX.kill(.6); },Math.max(0,ms|0));
   },
   // One per star landing on the counter, climbing as they arrive, so three
   // stars resolve upward instead of repeating the same note three times.

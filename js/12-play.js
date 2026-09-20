@@ -229,6 +229,12 @@ function bossEnterPhase(announce){
     // A beat of grace, because a phase that begins by walking a fresh hunter
     // into you is a hit you were given no way to read.
     bossGraceMs=Math.max(bossGraceMs,B.grace);
+    /* THUD, and this is the only thing left that plays it. It used to be the
+       kill as well, so one sound meant both "you caught one" and "a phase is
+       starting" - and because a skip drops you straight into a fresh fight,
+       skipping a level played the kill sound at you. The kill has its own
+       voice now (SFX.kill, high and short); an arrival is a low hit, which
+       is what THUD always was. */
     SFX.strike();shakeT=1;bossHitFlash=1;
     // The card says what changed now; a toast saying it as well is two
     // messages competing for the same beat.
@@ -1332,7 +1338,7 @@ function bossFoldCrush(){
   if(B.twin){
     if(!twinAligned())return;
     bossHp--;bossHitFlash=1;
-    SFX.strike();shakeT=1;slowMo();
+    SFX.kill();shakeT=1;slowMo();
     // Both halves go: a core is the pair, and killing it is killing both.
     if(typeof ashHunter==="function")
       for(var th=0;th<hunters.length;th++)
@@ -1379,7 +1385,7 @@ function bossFoldCrush(){
   }
   for(var d=doomed.length-1;d>=0;d--)hunters.splice(doomed[d],1);
   bossHitFlash=1;
-  SFX.strike();shakeT=1;slowMo();
+  SFX.kill();shakeT=1;slowMo();
   /* THE WORD COUNTS THE KILL; THE LINE UNDER IT CARRIES THE NEWS.
 
      It used to be the other way round - the word was PHASE CLEAR or BOSS DOWN
@@ -1649,7 +1655,7 @@ function bossTakeCrate(idx){
   }
   hunters.splice(idx,1);
   bossHitFlash=1;
-  SFX.strike();shakeT=1;
+  SFX.kill();shakeT=1;
   bossSting("kill",killWord(1,!hunters.length),
     hunters.length?(hunters.length+" left · under the crate"):"phase clear");
   if(!hunters.length){bossAdvance();return true;}
