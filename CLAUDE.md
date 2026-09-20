@@ -359,6 +359,19 @@ is the rule.
   context is spent, so the home screen replaces its canvas element
   (`homeCase()`). `body>canvas` in the CSS is what keeps the game's own
   canvas distinct.
+- **The home stand is built BEHIND THE STING'S FADE-OUT, not after it.**
+  `homeCaseCovered()` waits for `#splash.out` - the moment the sting stops
+  animating - which leaves `SPLASH_OUT` (420ms) of cover before
+  `body.splashing` comes off and the home screen is actually seen. It used
+  to poll `body.splashing` every 200ms, so the stand arrived up to 200ms
+  plus a WebGL build AFTER the screen was up; reported as the showcase
+  loading after home had loaded, and "sometimes" was the tell - it depended
+  where the splash landed between two ticks. The wait is per FRAME now.
+  Still off the boot path and still not during the animation. **Its fade-in
+  is a CSS ANIMATION** (`hcaseIn`, `.hstand canvas`), never a class set from
+  a `requestAnimationFrame`: those frames queue behind the context build
+  (361ms measured) and put the fade after the reveal. Measured on the real
+  boot path - built 394-541ms before the screen is uncovered.
 - Panels are phone-width and centred, capped at 560px. Type starts at 12px.
 - **The five full-height panels wear one page shape**: header is title ·
   `?` · star total · `✕`; footer (`.pfoot`) is up-one-level · `CLOSE`. Adding

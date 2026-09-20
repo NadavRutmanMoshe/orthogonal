@@ -1106,6 +1106,14 @@ function homeCase(){
   old.parentNode.replaceChild(cv,old);
   previewStart(cv);
   homeStand();
+  /* The fade-up is a CSS ANIMATION on the element, not a class set from
+     here, and that is not a style preference - it is the measured fix.
+     Adding a `.lit` class from a pair of requestAnimationFrames put the
+     fade 208ms AFTER the home screen was uncovered, because those frames
+     queue behind building the WebGL context, which took 361ms in the
+     harness. An animation with `both` starts when the element is inserted
+     and needs nothing scheduled, so it runs behind the sting like the build
+     does. See .hstand canvas in css/95-home.css. */
 }
 /* Just the drawing, on whatever context is already there. Equipping from the
    strip goes through here rather than homeCase(), because building a WebGL
@@ -1130,18 +1138,52 @@ function homeStand(){
    the same void the page is painted in. So: schedule it, and while the sting
    is up, keep putting it off. The poll re-checks rather than hooking
    splashEnd because homeShow is also reached from the menu long after the
-   sting is over, and one path is easier to keep right than two. */
-var homeCaseTimer=null;
+   sting is over, and one path is easier to keep right than two.
+
+   IT USED TO WAIT FOR THE STING TO BE GONE, AND THAT IS THE POP. Reported
+   as the stand loading after the home screen had loaded, and "sometimes" is
+   the tell: the poll ran every 200ms against `body.splashing`, which is not
+   removed until SPLASH_OUT (420ms) AFTER the sting has finished animating.
+   So the home screen was revealed and then, anywhere up to 200ms later plus
+   the cost of building a WebGL context, the character arrived on the plinth.
+   Whether you saw it depended on where the splash landed between two ticks,
+   which is exactly the "sometimes".
+
+   THE COVER IS THE FADE-OUT, NOT THE END OF IT. `splashEnd()` adds `.out`
+   to `#splash` and only removes `body.splashing` 420ms later, so the moment
+   `.out` appears the animation is over - nothing is left but a compositor
+   opacity fade - and the home screen is still completely hidden behind it.
+   That is 420ms of cover to build in, which is several times what the build
+   costs. `homeCaseCovered()` is that test, and the wait is now per FRAME
+   rather than per 200ms, so the build starts on the exact frame the sting
+   stops animating instead of up to a fifth of a second later.
+
+   Nothing about the original reasoning changes: this is still off the boot
+   path (boot-to-sting is untouched) and still not during the animation. It
+   is simply no longer after the curtain has come up. */
+var homeCaseTimer=null, homeCaseRaf=0;
+function homeCaseCovered(){
+  // No sting at all (a menu visit, or a harness that skipped it): nothing to
+  // hide behind and nothing to wait for.
+  if(!document.body.classList.contains("splashing"))return true;
+  // The sting is still up, but is it still MOVING? `.out` says it is not.
+  var sp=$("splash");
+  return !!(sp&&sp.classList.contains("out"));
+}
+function homeCaseCancel(){
+  if(homeCaseRaf){cancelAnimationFrame(homeCaseRaf);homeCaseRaf=0;}
+  clearTimeout(homeCaseTimer);homeCaseTimer=null;
+}
 function homeCaseSoon(){
-  clearTimeout(homeCaseTimer);
+  homeCaseCancel();
   if(!homeUp())return;
-  var splashing=document.body.classList.contains("splashing");
-  homeCaseTimer=setTimeout(function(){
-    homeCaseTimer=null;
+  if(homeCaseCovered()){homeCase();return;}
+  homeCaseRaf=requestAnimationFrame(function tick(){
+    homeCaseRaf=0;
     if(!homeUp())return;
-    if(document.body.classList.contains("splashing")){homeCaseSoon();return;}
-    homeCase();
-  },splashing?200:0);
+    if(homeCaseCovered()){homeCase();return;}
+    homeCaseRaf=requestAnimationFrame(tick);
+  });
 }
 function homeShow(){
   if(!$("home"))return;
@@ -1155,7 +1197,7 @@ function homeShow(){
 }
 function homeHide(){
   if(!homeUp())return;
-  clearTimeout(homeCaseTimer);homeCaseTimer=null;
+  homeCaseCancel();
   previewStop();
   $("home").classList.remove("on");
   syncHud();

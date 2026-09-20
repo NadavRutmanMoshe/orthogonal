@@ -66,7 +66,27 @@
 /* The plinth is the wardrobe's case, same renderer, same frame - `.wglass`
    and `.wfloor` are in css/40-panels.css, which loads before this one. */
 .hstand{width:196px;height:196px;margin:0;--halo:96%}
-.hstand canvas{width:100%;height:100%;display:block}
+/* The stand fades up rather than appearing. homeCase() builds a brand new
+   canvas every time (the display case is a singleton and a lost context is
+   spent), so without this the character snaps onto the plinth on whatever
+   frame the WebGL context finished building.
+
+   AN ANIMATION, NOT A TRANSITION, and that is the measured part. A
+   transition needs a second value set from JS, and the two
+   requestAnimationFrames that did it queued behind building the WebGL
+   context - 361ms in the harness - which put the fade 208ms after the home
+   screen had been uncovered. An animation with `both` starts the moment the
+   element is inserted, needs nothing scheduled, and so runs behind the
+   sting exactly as the build does.
+
+   @keyframes names are document-global, so this one is prefixed. */
+   .18s AND NOT .24s: the whole fade has to finish inside the 420ms of
+   SPLASH_OUT that the build is also spending, or the last of it is seen
+   after the curtain is up. Measured at .24s it landed within 1ms of the
+   reveal, which is cutting it. */
+@keyframes hcaseIn{from{opacity:0}to{opacity:1}}
+.hstand canvas{width:100%;height:100%;display:block;
+  animation:hcaseIn .18s ease both}
 .hstars{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;
   letter-spacing:.14em;text-transform:uppercase;color:var(--fg-dim)}
 .hstars b{color:var(--star);font-weight:600;font-size:12px}
