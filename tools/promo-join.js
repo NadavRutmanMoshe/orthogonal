@@ -34,39 +34,10 @@ const {execFileSync,execSync}=require("child_process");
 const path=require("path"), fs=require("fs"), os=require("os");
 const ROOT=path.join(__dirname,"..");
 
-/* ffmpeg from PATH if it is there, and from winget's package directory if it
-   is not - a fresh `winget install` adds the shim to PATH but not to the
-   shell that is already running, which is the state this is usually first
-   run in. Same shape of problem as loadPlaywright()'s global lookup. */
-function findFfmpeg(){
-  try{
-    execSync("ffmpeg -version",{stdio:"ignore"});
-    return "ffmpeg";
-  }catch(e){}
-  const roots=[
-    path.join(os.homedir(),"AppData","Local","Microsoft","WinGet","Packages"),
-    path.join(os.homedir(),"AppData","Local","Microsoft","WinGet","Links")
-  ];
-  for(const r of roots){
-    if(!fs.existsSync(r))continue;
-    const hit=hunt(r,"ffmpeg.exe",4);
-    if(hit)return hit;
-  }
-  console.error("ffmpeg not found. Install it with:  winget install Gyan.FFmpeg");
-  process.exit(2);
-}
-function hunt(dir,name,depth){
-  if(depth<0)return null;
-  let ents;
-  try{ ents=fs.readdirSync(dir,{withFileTypes:true}); }catch(e){ return null; }
-  for(const e of ents) if(e.isFile()&&e.name.toLowerCase()===name) return path.join(dir,e.name);
-  for(const e of ents){
-    if(!e.isDirectory())continue;
-    const hit=hunt(path.join(dir,e.name),name,depth-1);
-    if(hit)return hit;
-  }
-  return null;
-}
+/* ffmpeg lives in tools/ffmpeg.js now: tools/video.js wants it too, and
+   this project's rule is that the second tool to want a helper is when it
+   moves to a file of its own (tools/playwright.js). */
+const {findFfmpeg}=require("./ffmpeg.js");
 
 function main(){
   const args=process.argv.slice(2);
