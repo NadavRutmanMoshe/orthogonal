@@ -512,28 +512,43 @@ L96 14 L0 14 Z' fill='%23fff'/></svg>");
         other pressable thing in this game is a lit cap with that radius and
         a card whose whole content is three buttons should not be the one
         square-cornered object on screen. */
+  /* A CARD OVER A SHEET, NOT INSTEAD OF IT (shopRestoreCard, js/25-shop.js).
+     Appended inside #panel, which is position:fixed and so the containing
+     block for this: the scrim covers the sheet and nothing else, the sheet
+     keeps its scroll and its live display case, and closing the card is
+     removing one element. Its type is the offer card's own, shared through
+     the `.pmcard` selectors below rather than copied. */
+  .pmodal{position:absolute;inset:0;z-index:30;display:flex;
+    align-items:center;justify-content:center;padding:16px;
+    background:color-mix(in srgb,var(--void) 66%,transparent)}
+  .pmcard{width:100%;max-width:340px;border-radius:14px;
+    padding:17px 16px 16px;
+    background:linear-gradient(var(--panel),var(--panel)),
+               linear-gradient(var(--panel),var(--panel));
+    border:1px solid color-mix(in srgb,var(--goal) 24%,var(--rule));
+    box-shadow:0 20px 44px -14px rgba(0,0,0,.66)}
   .panel.offer{border-radius:14px;padding:17px 16px 16px;max-width:400px;
     border-color:color-mix(in srgb,var(--ok,var(--goal)) 24%,var(--rule));
     max-height:min(78vh,560px);
     box-shadow:0 20px 44px -14px rgba(0,0,0,.66),
       0 0 0 100vmax color-mix(in srgb,var(--void) 66%,transparent)}
-  .panel.offer .okick{font-size:10.5px;letter-spacing:.2em;font-weight:600;
+  .panel.offer .okick,.pmcard .okick{font-size:10.5px;letter-spacing:.2em;font-weight:600;
     text-transform:uppercase;color:var(--ok,var(--goal));line-height:1.2}
   /* Beats `.panel h3`, which is the 12px dim label every other panel puts
      over a list - the wrong element for the one line that names the card. */
-  .panel.offer h3{font-family:'Space Grotesk',system-ui,sans-serif;
+  .panel.offer h3,.pmcard h3{font-family:'Space Grotesk',system-ui,sans-serif;
     font-size:20px;font-weight:700;letter-spacing:-.015em;color:var(--fg);
     text-transform:none;margin:4px 0 0;line-height:1.2}
-  .panel.offer .olead{font-size:13px;line-height:1.6;color:var(--fg);
+  .panel.offer .olead,.pmcard .olead{font-size:13px;line-height:1.6;color:var(--fg);
     margin-top:8px;letter-spacing:.01em}
   .panel.offer .olead b{color:var(--ok,var(--goal));font-weight:600}
-  .panel.offer .ma{margin-top:15px}
+  .panel.offer .ma,.pmcard .ma{margin-top:15px}
   /* A label that outgrows its button wraps inside it rather than running out
      of it - the belt to the braces of keeping the labels short. Scoped to
      the offer so the map's own sheet keeps its fixed row height. */
-  .panel.offer .ma button{height:auto;min-height:46px;padding:11px 12px;
+  .panel.offer .ma button,.pmcard .ma button{height:auto;min-height:46px;padding:11px 12px;
     line-height:1.35;text-align:center}
-  .panel.offer .ma .qt{min-height:36px;padding:8px 12px}
+  .panel.offer .ma .qt,.pmcard .ma .qt{min-height:36px;padding:8px 12px}
   /* THE AD BUTTON CARRIES THE LONGEST LABEL IN THE GAME, and it names the
      fight - so on a narrow phone the TYPE gives way, not the words.
 

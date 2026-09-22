@@ -319,12 +319,10 @@ function shopRestore(){
   var P=shopPlugin();
   if(!P)return;
   if(SHOP.busy){flash("the store is still working on the last one");return;}
-  /* Where the press came from, taken NOW rather than when the store answers:
-     the card below takes over the one shared #panel, so GOT IT has to be
-     able to put the player back on the sheet they were reading, scrolled to
-     the row they pressed. */
-  var from=panelKind, pb=$("panel").querySelector(".pbody"),
-      top=pb?pb.scrollTop:0;
+  /* Which sheet the press came from, taken now: the card is drawn on top of
+     that sheet, so if the player has left it by the time the store answers,
+     there is nothing to draw it on. */
+  var from=panelKind;
   shopBusy(true);
   flash("checking your purchases …");
   var first=shopOS()==="ios"
@@ -348,45 +346,40 @@ function shopRestore(){
        is the polite way to answer a question they have moved on from. */
     if(got.length){SFX.key();flash("restored · "+shopNames(got));shopRedraw();return;}
     var owned=shopOwnsAny();
-    if(panelKind===from&&panelOpen())shopRestoreCard(owned,from,top);
+    if(panelKind===from&&panelOpen())shopRestoreCard(owned);
     else flash(owned?"nothing new · your purchases are already here"
                     :"no purchases found on this store account");
   });
 }
-/* WHAT RESTORE PURCHASES IS, SAID ONCE, AT THE MOMENT IT LOOKS BROKEN.
+/* WHAT HAPPENED, AT THE MOMENT RESTORE SEEMS TO DO NOTHING.
 
-   Reported by the owner the first time he pressed it: it said "nothing to
-   restore", which he read - fairly - as a dead button, and he had no idea
-   what the button was FOR. Both are the same gap. Nobody reads an
-   explanation before pressing a button, but everybody wants one when the
-   button seems to have done nothing, so that is exactly when this appears.
+   The owner pressed it, got "nothing to restore", and read it as a dead
+   button. A card answers that - but it is drawn INSIDE the sheet the
+   button is on, over it, not in place of it. The first version went
+   through offerShell(), which takes over the one shared #panel: the
+   wardrobe vanished and the home screen showed behind a short card, which
+   read as being thrown out to home. Appended into #panel instead, the
+   sheet stays exactly where it was (scroll, selection, the live display
+   case) and GOT IT just takes the card away.
 
-   The TITLE is what happened, the LEAD is what it means for you, and the
-   note under the rule is what the button is for - in that order, because
-   that is the order the questions come in. The store is named, because
-   "your account" means nothing until it is "your Google Play account".
-   It deliberately gives no step-by-step for switching accounts: that path
-   is different on every Android skin and every iOS version, and a wrong
-   instruction is worse than none. */
-function shopRestoreCard(owned,from,top){
+   Two lines and a button, on the owner's call. A note under a rule saying
+   what the button is for was there for one build; "nobody is gonna read
+   that", and the card was bigger than the answer it gives. It shares
+   `.panel.offer`'s type (css/85-map.css) through `.pmcard`, so it is the
+   same card, not a lookalike. Tapping the scrim closes it too. */
+function shopRestoreCard(owned){
   var store=shopOS()==="ios"?"App Store":"Google Play";
-  offerShell("Restore purchases",
-    owned?"Already here":"Nothing to restore",
-    owned?"Everything you've bought is on this phone already."
-         :"We didn't find any purchases on the "+store+" account signed in "+
-          "on this phone. Bought them on a different account? Sign in to "+
-          "that one and try again.",
-    "<button class='qt' id='rsOk'>GOT IT</button>",
-    "Purchases belong to your "+store+" account, not to this phone. If you "+
-    "reinstall the game or move to a new phone, they come back on their own "+
-    "when it starts - this button just asks "+store+" again.");
-  bind("rsOk",function(){
-    if(from==="menu"){
-      menuPanel();
-      var b=$("panel").querySelector(".pbody");
-      if(b)b.scrollTop=top;
-    }
-    else if(from==="wardrobe")wardrobePanel("deal");
-    else hidePanel();
-  });
+  var old=$("rsCard");if(old)old.remove();
+  var d=document.createElement("div");
+  d.className="pmodal";d.id="rsCard";
+  d.innerHTML="<div class='pmcard'><div class='okick'>Restore purchases</div>"+
+    "<h3>"+(owned?"Already here":"Nothing to restore")+"</h3>"+
+    "<div class='olead'>"+(owned
+      ?"Everything you've bought is already on this phone."
+      :"No purchases found on this "+store+" account. Bought them on "+
+       "another one? Sign in to it and try again.")+"</div>"+
+    "<div class='ma'><button class='qt' id='rsOk'>GOT IT</button></div></div>";
+  $("panel").appendChild(d);
+  bind("rsOk",function(){d.remove();});
+  d.addEventListener("click",function(e){if(e.target===d)d.remove();});
 }

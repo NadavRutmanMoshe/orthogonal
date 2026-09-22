@@ -426,31 +426,33 @@ const log=page=>page.evaluate(()=>window.__log||[]);
     await page.click("#wRestore");await page.waitForTimeout(250);
     ok(await page.evaluate(()=>owns("pup"))&&/restored · Pup/.test(await toast(page)),"RESTORE PURCHASES writes back what the store has");
     ok(!(await log(page)).some(e=>e[0]==="restore"),"android restore does not call the plugin's racing restore");
-    /* WHEN NOTHING VISIBLY HAPPENS, A CARD SAYS WHAT THE BUTTON IS FOR - the
-       owner pressed it, read "nothing to restore" as a dead button, and did
-       not know what it was for. The card must come up, name the store, and
-       GOT IT must put the player back on the sheet they pressed it on. */
-    const card=()=>page.evaluate(()=>panelKind==="offer"?$("panel").textContent:"");
+    /* WHEN NOTHING VISIBLY HAPPENS, A CARD SAYS WHAT HAPPENED - and it is
+       drawn OVER the DEALS shelf, not instead of it. The first version took
+       the shared #panel and the player landed on the home screen behind a
+       short card; the owner read that as being thrown out. So: the card is
+       there, the wardrobe is still the open panel under it, and GOT IT only
+       takes the card away. */
+    const card=()=>page.evaluate(()=>$("rsCard")?$("rsCard").textContent:"");
     await page.click("#wRestore");await page.waitForTimeout(250);
     let c=await card();
-    ok(/Already here/.test(c)&&/Google Play account/.test(c),"second restore: a card says they are already here, and what the button is for");
+    ok(/Already here/.test(c),"second restore: a card says they are already here");
+    ok(await page.evaluate(()=>panelKind==="wardrobe"&&!!$("wRestore")),"and the DEALS shelf is still open under it");
+    ok(!/belong to your/.test(c),"no footnote under the card - two lines and a button");
     await page.click("#rsOk");await page.waitForTimeout(250);
-    ok(await page.evaluate(()=>panelKind==="wardrobe"&&!!$("wRestore")),"GOT IT goes back to the DEALS shelf");
+    ok(await page.evaluate(()=>!$("rsCard")&&panelKind==="wardrobe"),"GOT IT takes the card away and leaves the shelf");
     /* THE THIRD ANSWER: an account that never bought anything is a different
        fact from one whose purchases are already in place, and only the first
        is a reason to go looking at which store account you are signed in to. */
     await page.evaluate(()=>{__fake.storeOwned=[];wardrobe.owned=[];wardRefresh();});
     await page.click("#wRestore");await page.waitForTimeout(250);
     c=await card();
-    ok(/Nothing to restore/.test(c)&&/different account/.test(c),"restore with nothing bought anywhere: a card says so and names the other cause");
-    await page.click("#rsOk");await page.waitForTimeout(250);
-    // The same button in Settings > More, and GOT IT back to Settings.
+    ok(/Nothing to restore/.test(c)&&/another one/.test(c),"restore with nothing bought anywhere: the card says so and names the other cause");
+    await page.evaluate(()=>{var d=$("rsCard");d.dispatchEvent(new MouseEvent("click",{bubbles:true}));});
+    await page.waitForTimeout(150);
+    ok(await page.evaluate(()=>!$("rsCard")),"tapping the scrim closes it too");
+    // Off the Settings sheet, on the owner's call: DEALS is where it lives.
     await page.evaluate(()=>menuPanel());await page.waitForTimeout(250);
-    ok(await page.evaluate(()=>!!$("mRestore")),"RESTORE PURCHASES is in Settings too");
-    await page.click("#mRestore");await page.waitForTimeout(250);
-    ok(/Nothing to restore/.test(await card()),"the Settings copy gets the same card");
-    await page.click("#rsOk");await page.waitForTimeout(250);
-    ok(await page.evaluate(()=>panelKind==="menu"),"GOT IT goes back to Settings");
+    ok(await page.evaluate(()=>!$("mRestore")),"RESTORE PURCHASES is not in Settings");
     // Walk away while the store is thinking: no card from nowhere, a toast.
     await page.evaluate(()=>{wardrobePanel("deal");});await page.waitForTimeout(250);
     await page.evaluate(()=>{shopRestore();hidePanel();});await page.waitForTimeout(250);

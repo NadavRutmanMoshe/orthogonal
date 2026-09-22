@@ -522,20 +522,6 @@ var PANEL_ICONS={
   privacy:"M12 2.4l7.6 3.1v5.7c0 4.7-3.2 8.9-7.6 10.4-4.4-1.5-7.6-5.7-7.6-"+
           "10.4V5.5Z",
   // an arrow going back round to where it started
-  /* RESTORE: an arrow coming DOWN into a tray - your purchases pulled back
-     from the store, which is exactly what the button does. Deliberately not
-     the circular arrow: that is `reset` two rows below it in the same card,
-     and one glyph for "put my things back" and "throw my settings away"
-     would be the worst possible pair to confuse. It IS the mirror of
-     upIcon() (LOAD A LEVEL), and that collision is the reason this note
-     exists - the two never share a screen, so it stands, but anything that
-     puts them together needs one of them redrawn. */
-  restore:"M12 2.6a1.15 1.15 0 0 1 1.15 1.15v8.24l2.5-2.5a1.15 1.15 0 0 1 "+
-          "1.63 1.63l-4.46 4.46a1.15 1.15 0 0 1-1.63 0L6.72 11.12a1.15 1.15 "+
-          "0 0 1 1.63-1.63l2.5 2.5V3.75A1.15 1.15 0 0 1 12 2.6Z"+
-          "M4.4 17.5a1.15 1.15 0 0 1 1.15 1.15v1.2h12.9v-1.2a1.15 1.15 0 0 1 "+
-          "2.3 0v1.9a1.55 1.55 0 0 1-1.55 1.55H4.8a1.55 1.55 0 0 1-1.55-1.55"+
-          "v-1.9A1.15 1.15 0 0 1 4.4 17.5Z",
   reset:"M12 4a8 8 0 1 1-7.6 10.5 1.1 1.1 0 1 1 2.1-.7A5.8 5.8 0 1 0 12 6.2"+
         "c-1.7 0-3.2.7-4.2 1.9h2a1.1 1.1 0 0 1 0 2.2H5.1A1.1 1.1 0 0 1 4 9.2"+
         "V6.4a1.1 1.1 0 0 1 2.2 0v.5A8 8 0 0 1 12 4Z"
@@ -872,26 +858,6 @@ function menuPanel(){
         (adPrivacyNeeded()
           ? "<button id='mAdPriv'>"+panelIcon("privacy")+"AD PRIVACY</button>"
           : "")+
-        /* RESTORE PURCHASES IS IN TWO PLACES, and the duplication is the
-           point. It is on the DEALS shelf because that is where somebody
-           comparing prices is standing - but the person who NEEDS it is on a
-           new phone, opening the game, finding things locked, and they have
-           no reason to walk into a shop to get back something they already
-           paid for. Settings is where everybody looks for that, and it is
-           where an App Store reviewer looks: Apple requires a restore
-           mechanism for non-consumables (Review Guideline 3.1.1), and a
-           button they cannot find is a rejection.
-
-           Only in the app, like the shelf's copy - in a browser there is no
-           store to ask, and a row that can only say "no" is worse than no
-           row. On Android it is nearly ceremonial anyway, because
-           shopBoot() already syncs at every launch; it is a manual
-           re-trigger and a piece of reassurance, which is most of what this
-           button is for on either platform. */
-        (shopPlugin()
-          ? "<button id='mRestore'>"+panelIcon("restore")+
-            "RESTORE PURCHASES</button>"
-          : "")+
         /* LEVEL EDITOR MOVED TO THE HOME SCREEN as MY LEVELS. It is not a
            setting - it is a place you go, like LEVELS and the wardrobe are -
            and filing it under More next to RESET SETTINGS is what made it
@@ -970,11 +936,6 @@ function menuPanel(){
     });
   });
   bind("mAdPriv",adPrivacyShow);
-  /* shopRestore() says what happened in a toast, which is the only feedback
-     this row can give: its own shopRedraw() repaints the wardrobe, and the
-     wardrobe is not what is on screen. Anything it restores is waiting on
-     the shelf the next time that is opened. */
-  bind("mRestore",function(){SFX.turn();shopRestore();});
   bind("mTut",function(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
   });
