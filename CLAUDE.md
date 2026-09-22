@@ -770,6 +770,22 @@ is the rule.
   with a fallback. The shop's watchdog **re-syncs rather than guessing** - a
   hang is not proof that nothing was charged. Anything new that awaits a
   plugin gets a clock, or it is the same bug again (`docs/HISTORY.md`).
+- **Every billing call goes through `shopQ()`, one at a time.** The plugin
+  keeps ONE billing client in one field and every method rebuilds it on
+  the way in, so two calls in flight kill each other. `shopBoot()` used to
+  fire `getProducts` and `getPurchases` in the same millisecond: prices came
+  back "Product not found" (really `-1 Service connection is disconnected`),
+  the sync could hang, and everything after it, restore included, queued
+  behind the stuck call on the plugin's one thread for the whole session.
+  Each queued call has a clock (15s; a purchase 180s). `storetest.js`'s
+  `shared:true` models the kill, and the old code fails it.
+- **RESTORE PURCHASES is in two places** (DEALS and Settings > More, only
+  when `shopPlugin()`), and when nothing visibly happens it opens
+  `shopRestoreCard()` saying what the button is for. The card takes the
+  one shared `#panel`, so GOT IT returns to the sheet it came from
+  (`panelKind` taken at the press). A toast over any open panel wears a
+  plate (`body.mapopen .toast`), and the home stand's dead canvas is hidden
+  under a panel (`body.mapopen .hstand canvas`).
 - **`tools/storetest.js`'s fakes must be able to NOT answer.** `buyMode:"hang"`
   and `consentMode:"hang"` are `new Promise(()=>{})`; a mock that always
   answers is testing the easy half, and that is why all three hangs shipped.

@@ -2086,3 +2086,49 @@ Studio (its own bundled JDK) is fine. And a phone that has been sitting
 locked shows as `offline` to adb until it is unlocked and the debugging
 prompt is accepted again - an empty `adb devices` is usually a locked screen,
 not a broken cable.
+
+## The fourth hang was two calls at once
+
+Found while checking the new restore card on the phone: the card never
+appeared. logcat showed `getPurchases` going out and nothing coming back -
+the fourth never-settling promise of the branch - but this one had a cause
+on OUR side, and it had been there since the shop was wired.
+
+`shopBoot()` fired `getProducts` and `getPurchases` in the same millisecond.
+`NativePurchasesPlugin.java` keeps ONE billing client in one field, and every
+method tears it down and builds a new one on the way in:
+
+```
+.785 getProducts   builds a client, starts its query
+.786 getPurchases  initBillingClient() CLOSES that client mid-query
+.968 getProducts   "Query result: -1 - Service connection is disconnected"
+                   -> reported to us as "Product not found"
+.979 getProducts'  failure path closes getPurchases' NEW client
+.980 getPurchases  "Waiting for billing client setup to finish" - forever
+```
+
+**Three symptoms that had looked unrelated.** The DEALS shelf never showed
+store prices, only the dollar fallback: the "Product not found" logged at every
+launch was a dropped connection, not missing products. The launch sync could
+hang. And because the plugin runs calls one after another on a single thread,
+every later call, RESTORE PURCHASES included, queued behind the stuck one for
+the rest of the session. It is a race, so it came and went, which is exactly
+why the Play build had answered restore and the debug build did not.
+
+**The rule was already written down, in the wrong place.** `shopAck()` went
+one token at a time "because the plugin tears its billing connection down and
+rebuilds it for each". One caller knew; `shopBoot()` did not. So the rule
+became a function: `shopQ()` chains every billing call behind the last, all
+five go through it, and each has a clock so the queue is never only as alive
+as its slowest member.
+
+**And again the fake could not see it**, because it answered any number of
+overlapping calls. `shared:true` makes a call overtaken by a later one never
+settle, which is what the plugin does. Run against the pre-queue code it
+fails - no prices at launch - and that run is the proof the test tests the
+bug rather than the fix.
+
+**After the fix, on the device:** `getProducts` alone gets `Query result: 0`
+(a clean answer; "not found" is true on the `.debug` package, which Play has
+never heard of), `getPurchases` starts only after it, and the restore card
+appears.
