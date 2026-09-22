@@ -97,6 +97,36 @@
     letter-spacing:.05em;color:var(--player);opacity:0;transition:opacity .25s;
     pointer-events:none;text-align:center;padding:0 20px}
   .toast.on{opacity:1}
+  /* A TOAST OVER AN OPEN PANEL NEEDS A PLATE UNDER IT.
+
+     Everywhere else this floats over the board, which at the top of the
+     screen is dark and empty, so bare coloured type is exactly right and
+     that is what it has always been. A panel is neither: it is opaque, it
+     is full of type of its own, and the toast lands at 76px straight across
+     whatever row happens to be there. Caught on a real phone the moment
+     RESTORE PURCHASES arrived in Settings - "checking your purchases ..."
+     wrapped over the Controls row and was unreadable.
+
+     `body.mapopen` is set for ANY open panel (syncMapChrome), so this also
+     quietly fixes the wardrobe's own toasts, which have been landing on its
+     header since the shelf was wired. The plate borrows the panel's own
+     background and rule so it reads as part of the sheet rather than as a
+     second window, and z-index 15 already puts it over every panel but a
+     full-bleed card.
+
+     THE TOKEN IS PAINTED TWICE ON PURPOSE. `--panel` is .93 alpha, which is
+     right for a sheet floating over a board and wrong for a plate sitting on
+     that sheet: one coat left the WORLDS row legible THROUGH the sentence,
+     which is type over type and worse than no plate. Two coats compound to
+     .995 and read as solid, without inventing a colour that would then have
+     to be maintained in both themes - the flat theme redefines --panel and
+     gets the same treatment for free. */
+  body.mapopen .toast{
+    background:linear-gradient(var(--panel),var(--panel)),
+               linear-gradient(var(--panel),var(--panel));
+    border:1px solid var(--rule);
+    border-radius:10px;padding:7px 14px;max-width:calc(100% - 52px);
+    box-shadow:0 6px 18px rgba(0,0,0,.34)}
   /* The spoken cue: green because green already means "do this" on the
      button pulse, and down by the controls because that is where the eye and
      the thumb are - at the top it landed across the level's own hint. */
