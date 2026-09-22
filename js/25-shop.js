@@ -79,6 +79,52 @@ var SHOP={prices:{}, busy:false, busyT:0};
    agrees. Long, because a real payment sheet is slow - a card to type in, a
    parent to approve. */
 var SHOP_STUCK_MS=180000;
+
+/* ONE CALL AT A TIME, ALWAYS, and every billing call goes through here.
+
+   The plugin keeps ONE billing client in one field, and every method tears
+   it down and builds a new one on the way in. Two calls in flight at once
+   therefore kill each other, and this was caught in logcat doing exactly
+   that at every launch, because shopBoot() fired getProducts and
+   getPurchases in the same millisecond:
+
+     .785 getProducts   builds a client, starts its query
+     .786 getPurchases  initBillingClient() CLOSES that client mid-query
+     .968 getProducts   "Query result: -1 - Service connection is
+                        disconnected" - reported to us as "Product not found"
+     .979 getProducts'  failure path closes getPurchases' NEW client
+     .980 getPurchases  "Waiting for billing client setup to finish" - forever
+
+   Three symptoms, one cause. The shelf never got store prices (that "not
+   found" was a dropped connection, not missing products). The launch sync
+   could hang. And because the plugin runs its calls one after another on a
+   single thread, everything after the stuck call - RESTORE PURCHASES
+   included - queued behind it for the rest of the session. It is a race,
+   so it came and went, which is why one build answered restore and the
+   next did not.
+
+   shopAck() already went one token at a time "because the plugin tears its
+   billing connection down and rebuilds it for each"; the rule was known and
+   only that one caller kept it. Now the rule is the queue, and nothing can
+   forget it.
+
+   EACH CALL HAS A CLOCK, or the queue is only as alive as its slowest
+   member. A timed-out call rejects with "shop-timeout" and the queue moves
+   on. The clock is the plugin's own patience plus room (it waits 10s for a
+   billing connection), except for a purchase, which is a person typing a
+   card number and gets the same long clock as the busy watchdog. */
+var SHOP_CALL_MS=15000, shopTail=Promise.resolve();
+function shopQ(call,ms){
+  var run=shopTail.then(function(){
+    return new Promise(function(res,rej){
+      var t=setTimeout(function(){rej(new Error("shop-timeout"));},ms||SHOP_CALL_MS);
+      call().then(function(v){clearTimeout(t);res(v);},
+                  function(e){clearTimeout(t);rej(e);});
+    });
+  });
+  shopTail=run.catch(function(){});   // a failed call must not stop the next
+  return run;
+}
 function shopBusy(on){
   SHOP.busy=on;
   clearTimeout(SHOP.busyT);
@@ -141,7 +187,7 @@ function shopBoot(){
     if(got.length)flash(shopNames(got)+" unlocked");
   });
   var ids=shopDeals().map(function(d){return d.id;}).concat([SHOP_UPGRADE]);
-  P.getProducts({productIdentifiers:ids,productType:"inapp"})
+  shopQ(function(){return P.getProducts({productIdentifiers:ids,productType:"inapp"});})
     .then(function(r){
       (r&&r.products||[]).forEach(function(p){
         if(p&&p.identifier&&p.priceString)SHOP.prices[p.identifier]=p.priceString;
@@ -156,7 +202,7 @@ function shopBoot(){
 function shopSync(){
   var P=shopPlugin();
   if(!P)return Promise.resolve([]);
-  return P.getPurchases({productType:"inapp"})
+  return shopQ(function(){return P.getPurchases({productType:"inapp"});})
     .then(function(r){return shopTake(r&&r.purchases||[]);})
     .catch(function(){return [];});
 }
@@ -191,7 +237,8 @@ function shopAck(tokens){
   var P=shopPlugin();
   tokens.reduce(function(p,tok){
     return p.then(function(){
-      return P.acknowledgePurchase({purchaseToken:tok}).catch(function(){});
+      return shopQ(function(){return P.acknowledgePurchase({purchaseToken:tok});})
+        .catch(function(){});
     });
   },Promise.resolve());
 }
@@ -222,7 +269,9 @@ function shopBuy(it){
   if(SHOP.busy){flash("the store is still working on the last one");return;}
   var pid=shopProductFor(it);
   shopBusy(true);
-  P.purchaseProduct({productIdentifier:pid,productType:"inapp",quantity:1})
+  shopQ(function(){
+    return P.purchaseProduct({productIdentifier:pid,productType:"inapp",quantity:1});
+  },SHOP_STUCK_MS)
     .then(function(t){
       shopBusy(false);
       shopTake([t]);
@@ -233,8 +282,13 @@ function shopBuy(it){
       }
       shopRedraw();
     },function(e){
-      shopBusy(false);
       var m=String(e&&e.message||e);
+      /* THE QUEUE'S CLOCK RAN OUT, and it runs on the same 180s as the busy
+         watchdog, which is armed first and so has already fired: shopUnwedge
+         has cleared busy and asked the store. Saying anything here as well
+         would be the same news twice. */
+      if(m==="shop-timeout")return;
+      shopBusy(false);
       /* A pending payment is not a failure: it unlocks when it clears. */
       if(/pending/i.test(m)){
         flash("payment pending · it unlocks when it clears");
@@ -274,7 +328,7 @@ function shopRestore(){
   shopBusy(true);
   flash("checking your purchases …");
   var first=shopOS()==="ios"
-    ? P.restorePurchases().catch(function(){})
+    ? shopQ(function(){return P.restorePurchases();}).catch(function(){})
     : Promise.resolve();
   first.then(shopSync).then(function(got){
     shopBusy(false);

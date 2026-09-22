@@ -57,11 +57,24 @@ function fakeNative(opts){
     },
   };
   const tx=(id,state,ack)=>({productIdentifier:id,purchaseState:state||"1",isAcknowledged:ack!==false,purchaseToken:"tok-"+id});
+  /* THE PLUGIN'S ONE BILLING CLIENT. NativePurchasesPlugin.java keeps a
+     single client in one field and every method rebuilds it on the way in,
+     so a call that starts while another is in flight kills the one in
+     flight - caught in logcat at every launch (shopQ() in js/25-shop.js has
+     the timeline). `shared:true` models that: every call takes a moment, and
+     one overtaken by a later call never settles. A fake that answers any
+     number of overlapping calls cannot see the bug at all. */
+  let live=0;
+  const shared=v=>{const me=++live;
+    return new Promise(res=>later(60,()=>{if(me===live)res(v());}));};
   const Shop={
     addListener(ev,fn){(listeners["shop:"+ev]=listeners["shop:"+ev]||[]).push(fn);return Promise.resolve({remove(){}});},
     getProducts(o){L.push(["getProducts",o]);
-      return Promise.resolve({products:o.productIdentifiers.map(id=>({identifier:id,priceString:"\u20aa"+(id==="pass_all"?"39.90":id==="pass_all_upgrade"?"21.90":id==="pass_nolimits"?"19.90":"11.90")}))});},
-    getPurchases(o){L.push(["getPurchases",o]);return Promise.resolve({purchases:F.storeOwned.map(x=>typeof x==="string"?tx(x):x)});},
+      const v=()=>({products:o.productIdentifiers.map(id=>({identifier:id,priceString:"\u20aa"+(id==="pass_all"?"39.90":id==="pass_all_upgrade"?"21.90":id==="pass_nolimits"?"19.90":"11.90")}))});
+      return F.shared?shared(v):Promise.resolve(v());},
+    getPurchases(o){L.push(["getPurchases",o]);
+      const v=()=>({purchases:F.storeOwned.map(x=>typeof x==="string"?tx(x):x)});
+      return F.shared?shared(v):Promise.resolve(v());},
     purchaseProduct(o){L.push(["purchase",o.productIdentifier]);
       /* A FLOW THAT NEVER LAUNCHED. The plugin drops launchBillingFlow's
          result on the floor, so a refused flow never reaches the listener
@@ -292,6 +305,20 @@ const log=page=>page.evaluate(()=>window.__log||[]);
     const paid=await page.evaluate(()=>new Promise(r=>{adWatch(r);setTimeout(()=>r("stuck"),4000);}));
     ok(paid===true,"the ad button still pays after a hung consent call");
     ok(await page.evaluate(()=>!AD.busy),"and busy is released");
+    await ctx.close();
+  }
+
+  console.log("");
+  console.log("[native] the plugin's one billing client: calls must never overlap");
+  {
+    const {ctx,page}=await openGame(browser,{native:true,settings:{ageBand:"a26"},progress:midSave,
+      fake:{shared:true,storeOwned:["cat"]}});
+    await page.waitForTimeout(1200);
+    ok(await page.evaluate(()=>Object.keys(SHOP.prices).length>0),"store prices load at launch when the calls are queued");
+    ok(await page.evaluate(()=>owns("cat")),"and the launch sync still lands");
+    const ms=await page.evaluate(()=>new Promise(r=>{var t0=Date.now();
+      shopSync().then(()=>r(Date.now()-t0));setTimeout(()=>r(-1),3000);}));
+    ok(ms>=0,"a later call still answers - nothing is stuck behind a killed one");
     await ctx.close();
   }
 
