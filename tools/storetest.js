@@ -399,14 +399,38 @@ const log=page=>page.evaluate(()=>window.__log||[]);
     await page.click("#wRestore");await page.waitForTimeout(250);
     ok(await page.evaluate(()=>owns("pup"))&&/restored · Pup/.test(await toast(page)),"RESTORE PURCHASES writes back what the store has");
     ok(!(await log(page)).some(e=>e[0]==="restore"),"android restore does not call the plugin's racing restore");
+    /* WHEN NOTHING VISIBLY HAPPENS, A CARD SAYS WHAT THE BUTTON IS FOR - the
+       owner pressed it, read "nothing to restore" as a dead button, and did
+       not know what it was for. The card must come up, name the store, and
+       GOT IT must put the player back on the sheet they pressed it on. */
+    const card=()=>page.evaluate(()=>panelKind==="offer"?$("panel").textContent:"");
     await page.click("#wRestore");await page.waitForTimeout(250);
-    ok(/already here/.test(await toast(page)),"second restore: says they are already here, not 'nothing'");
+    let c=await card();
+    ok(/Already here/.test(c)&&/Google Play account/.test(c),"second restore: a card says they are already here, and what the button is for");
+    await page.click("#rsOk");await page.waitForTimeout(250);
+    ok(await page.evaluate(()=>panelKind==="wardrobe"&&!!$("wRestore")),"GOT IT goes back to the DEALS shelf");
     /* THE THIRD ANSWER: an account that never bought anything is a different
        fact from one whose purchases are already in place, and only the first
        is a reason to go looking at which store account you are signed in to. */
     await page.evaluate(()=>{__fake.storeOwned=[];wardrobe.owned=[];wardRefresh();});
     await page.click("#wRestore");await page.waitForTimeout(250);
-    ok(/no purchases found/.test(await toast(page)),"restore with nothing bought anywhere says so");
+    c=await card();
+    ok(/Nothing to restore/.test(c)&&/different account/.test(c),"restore with nothing bought anywhere: a card says so and names the other cause");
+    await page.click("#rsOk");await page.waitForTimeout(250);
+    // The same button in Settings > More, and GOT IT back to Settings.
+    await page.evaluate(()=>menuPanel());await page.waitForTimeout(250);
+    ok(await page.evaluate(()=>!!$("mRestore")),"RESTORE PURCHASES is in Settings too");
+    await page.click("#mRestore");await page.waitForTimeout(250);
+    ok(/Nothing to restore/.test(await card()),"the Settings copy gets the same card");
+    await page.click("#rsOk");await page.waitForTimeout(250);
+    ok(await page.evaluate(()=>panelKind==="menu"),"GOT IT goes back to Settings");
+    // Walk away while the store is thinking: no card from nowhere, a toast.
+    await page.evaluate(()=>{wardrobePanel("deal");});await page.waitForTimeout(250);
+    await page.evaluate(()=>{shopRestore();hidePanel();});await page.waitForTimeout(250);
+    ok(!(await page.evaluate(()=>panelOpen()))&&/no purchases found/.test(await toast(page)),"a player who left the sheet gets a toast, not a card out of nowhere");
+    // Leave the wardrobe open, as the old ending of this block did: the tests
+    // below drive it with wardRefresh() and expect to find it on screen.
+    await page.evaluate(()=>wardrobePanel("deal"));await page.waitForTimeout(250);
 
     // iOS later approval (Ask to Buy)
     await page.evaluate(()=>__emitShop("transactionUpdated",{productIdentifier:"robot",transactionId:"9"}));

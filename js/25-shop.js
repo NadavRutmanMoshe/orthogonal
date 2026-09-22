@@ -265,6 +265,12 @@ function shopRestore(){
   var P=shopPlugin();
   if(!P)return;
   if(SHOP.busy){flash("the store is still working on the last one");return;}
+  /* Where the press came from, taken NOW rather than when the store answers:
+     the card below takes over the one shared #panel, so GOT IT has to be
+     able to put the player back on the sheet they were reading, scrolled to
+     the row they pressed. */
+  var from=panelKind, pb=$("panel").querySelector(".pbody"),
+      top=pb?pb.scrollTop:0;
   shopBusy(true);
   flash("checking your purchases …");
   var first=shopOS()==="ios"
@@ -279,10 +285,54 @@ function shopRestore(){
        is an empty list, and the honest thing to say is not "nothing" but
        "they are already here". The third case is the one where nothing was
        ever bought on this account, which is a different fact and the only
-       one where a player should go looking for a different store account. */
-    if(got.length){SFX.key();flash("restored · "+shopNames(got));}
-    else if(shopOwnsAny())flash("nothing new · your purchases are already here");
-    else flash("no purchases found on this store account");
-    shopRedraw();
+       one where a player should go looking for a different store account.
+
+       Something coming back is its own explanation, so it stays a toast.
+       The two cases where nothing visibly happens get a card instead (see
+       shopRestoreCard) - unless the player has already left the sheet they
+       pressed it on, when a card would appear out of nowhere and the toast
+       is the polite way to answer a question they have moved on from. */
+    if(got.length){SFX.key();flash("restored · "+shopNames(got));shopRedraw();return;}
+    var owned=shopOwnsAny();
+    if(panelKind===from&&panelOpen())shopRestoreCard(owned,from,top);
+    else flash(owned?"nothing new · your purchases are already here"
+                    :"no purchases found on this store account");
+  });
+}
+/* WHAT RESTORE PURCHASES IS, SAID ONCE, AT THE MOMENT IT LOOKS BROKEN.
+
+   Reported by the owner the first time he pressed it: it said "nothing to
+   restore", which he read - fairly - as a dead button, and he had no idea
+   what the button was FOR. Both are the same gap. Nobody reads an
+   explanation before pressing a button, but everybody wants one when the
+   button seems to have done nothing, so that is exactly when this appears.
+
+   The TITLE is what happened, the LEAD is what it means for you, and the
+   note under the rule is what the button is for - in that order, because
+   that is the order the questions come in. The store is named, because
+   "your account" means nothing until it is "your Google Play account".
+   It deliberately gives no step-by-step for switching accounts: that path
+   is different on every Android skin and every iOS version, and a wrong
+   instruction is worse than none. */
+function shopRestoreCard(owned,from,top){
+  var store=shopOS()==="ios"?"App Store":"Google Play";
+  offerShell("Restore purchases",
+    owned?"Already here":"Nothing to restore",
+    owned?"Everything you've bought is on this phone already."
+         :"We didn't find any purchases on the "+store+" account signed in "+
+          "on this phone. Bought them on a different account? Sign in to "+
+          "that one and try again.",
+    "<button class='qt' id='rsOk'>GOT IT</button>",
+    "Purchases belong to your "+store+" account, not to this phone. If you "+
+    "reinstall the game or move to a new phone, they come back on their own "+
+    "when it starts - this button just asks "+store+" again.");
+  bind("rsOk",function(){
+    if(from==="menu"){
+      menuPanel();
+      var b=$("panel").querySelector(".pbody");
+      if(b)b.scrollTop=top;
+    }
+    else if(from==="wardrobe")wardrobePanel("deal");
+    else hidePanel();
   });
 }
