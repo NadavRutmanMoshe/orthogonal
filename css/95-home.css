@@ -87,6 +87,15 @@
 @keyframes hcaseIn{from{opacity:0}to{opacity:1}}
 .hstand canvas{width:100%;height:100%;display:block;
   animation:hcaseIn .18s ease both}
+/* A DEAD STAND IS HIDDEN WHILE A PANEL IS UP. showPanel() tears the stand's
+   WebGL context down (it is the singleton the wardrobe's case also uses),
+   and a canvas that has lost its context is spent - Android's WebView draws
+   it as a grey box with a sad face. Behind a tall panel nobody could see
+   that. The restore card is the first SHORT card ever to open over the home
+   screen, and there it showed, on the phone, above the card's top edge.
+   hidePanel() builds a fresh canvas (homeCase) and body.mapopen comes off
+   in the same call, so the stand's own fade-in brings it back. */
+body.mapopen .hstand canvas{visibility:hidden}
 .hstars{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;
   letter-spacing:.14em;text-transform:uppercase;color:var(--fg-dim)}
 .hstars b{color:var(--star);font-weight:600;font-size:12px}
