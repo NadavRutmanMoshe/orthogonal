@@ -1,0 +1,119 @@
+# I'm Just A Cube - the cloud Mac that builds the iOS app.
+#
+# WHY THIS FILE EXISTS. Building for iOS requires macOS and there is no Mac
+# here; Xcode runs nowhere else. Codemagic rents one per build: it clones the
+# repo, builds the Xcode project under app/ios, signs it from an App Store
+# Connect API key, and uploads it to TestFlight - which is what puts the game
+# on the owner's own iPhone or iPad. Nothing in this file runs on this
+# machine, and nothing here is needed to work on the iOS project itself.
+#
+# WHAT THE OWNER HAS TO DO ONCE, in the Codemagic web app:
+#   1. Sign up (the free plan: 500 macOS minutes a month, one build at a
+#      time; a build of this app is roughly ten of them) and connect this
+#      GitHub repository.
+#   2. App Store Connect > Users and Access > Integrations > App Store
+#      Connect API: create a key with the App Manager role. Download the .p8
+#      ONCE - Apple never shows it again - and note the Issuer ID and Key ID.
+#   3. Codemagic > Teams > Integrations > Developer Portal > Add key. Name it
+#      exactly `AppStoreConnect`, which is the name `integrations:` reads
+#      below. Paste the three things from step 2.
+#   4. App Store Connect > Apps > + > New App, bundle id
+#      com.nadazgames.ImJustACube. The app record has to EXIST before a build
+#      can be uploaded to it; an upload to nothing fails at the very end.
+#
+# After that, a build is one button in Codemagic, or a push to this branch if
+# the trigger below is turned on.
+workflows:
+  ios-testflight:
+    name: iOS - TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      # Must match the key's name in Codemagic > Teams > Integrations.
+      app_store_connect: AppStoreConnect
+    environment:
+      ios_signing:
+        # AUTOMATIC SIGNING, and it is the reason this is Codemagic rather
+        # than a raw macOS runner. Certificates and provisioning profiles are
+        # fetched and installed from the API key above; none of it is checked
+        # in and none of it has to be understood.
+        distribution_type: app_store
+        bundle_identifier: com.nadazgames.ImJustACube
+      vars:
+        XCODE_WORKSPACE: "app/ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+        BUNDLE_ID: "com.nadazgames.ImJustACube"
+        # The app's NUMERIC Apple ID, which App Store Connect shows under
+        # App Information once the app record exists. It is only used to ask
+        # the store what build number it has already seen; left empty, the
+        # build still works and counts from Codemagic's own build number.
+        APP_STORE_APPLE_ID: ""
+      # Node 20, the version this project is developed on. Capacitor 8's CLI
+      # wants 22; that migration is its own job and this pins the pair that
+      # are known to agree.
+      node: 20
+      xcode: latest
+      cocoapods: default
+    # No automatic trigger. A build costs minutes and the owner decides when
+    # one is wanted; turn this on by uncommenting once the loop is familiar.
+    # triggering:
+    #   events:
+    #     - push
+    #   branch_patterns:
+    #     - pattern: main
+    scripts:
+      - name: Install the shell's npm dependencies
+        script: |
+          cd app
+          npm ci
+      - name: Copy the game into the web root
+        # The same script the Android build uses. It also stamps the commit
+        # into index.html, so an installed build says which commit it is.
+        script: node tools/build-app.js
+      - name: Sync the web root into the Xcode project
+        script: |
+          cd app
+          npx cap sync ios
+      - name: pod install
+        # Podfile.lock is NOT checked in - it cannot be generated on Windows,
+        # where this project is developed - so the pods resolve here, per
+        # build. The versions that matter are pinned in app/package.json.
+        script: |
+          cd app/ios/App
+          pod install
+      - name: Take the next build number from App Store Connect
+        # THE IOS TWIN OF THE ANDROID versionCode RULE. Apple burns a build
+        # number the moment it is uploaded: the same CFBundleVersion twice
+        # under one CFBundleShortVersionString is rejected, and the error
+        # arrives at the end of the upload. Asking the store what it already
+        # has and adding one means the number can never be guessed wrong.
+        # MARKETING_VERSION (the version a player sees) stays where
+        # project.pbxproj puts it and is bumped by hand, like versionName.
+        script: |
+          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || true)
+          # Empty or not a number means the app record does not exist yet, or
+          # the id above was left blank. Codemagic's own BUILD_NUMBER counts
+          # up on its own and is a safe floor.
+          case "$LATEST" in ''|*[!0-9]*) LATEST="$BUILD_NUMBER" ;; esac
+          NEXT=$((LATEST + 1))
+          echo "Building as build number $NEXT"
+          cd app/ios/App
+          agvtool new-version -all "$NEXT"
+      - name: Fetch the signing profiles
+        script: xcode-project use-profiles
+      - name: Build the ipa
+        script: |
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        # To TestFlight and no further. Submitting to the App Store itself
+        # stays a decision made in App Store Connect, by hand, once a build
+        # has been played.
+        submit_to_testflight: true
+        submit_to_app_store: false

@@ -1,0 +1,41 @@
+require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+
+# iOS 15.0, AND IT IS NOT A PREFERENCE. Capacitor's template says 14.0;
+# @capgo/native-purchases declares `ios.deployment_target = '15.0'` in its
+# podspec because StoreKit 2 starts at iOS 15, and CocoaPods refuses outright:
+# "The platform of the target `App` (iOS 14.0) is not compatible with
+# CapgoNativePurchases". The App target in project.pbxproj carries the same
+# 15.0, or the two disagree. (Google-Mobile-Ads-SDK 12.12.0 asks only for
+# 12.0, so the purchases plugin is the whole of this floor.)
+#
+# `cap sync` rewrites the require_relative line above and the body of the pod
+# list below, and nothing else, so this comment and the platform line survive
+# a sync. It finds that body by SEARCHING THE WHOLE FILE for the phrase that
+# opens it - so a comment anywhere above that quotes the phrase is matched
+# first and everything down to the real `end` is deleted. It happened once,
+# writing this very note. Do not name it; do not put anything you want kept
+# inside it.
+platform :ios, '15.0'
+use_frameworks!
+
+# workaround to avoid Xcode caching of Pods that requires
+# Product -> Clean Build Folder after new Cordova plugins installed
+# Requires CocoaPods 1.6 or newer
+install! 'cocoapods', :disable_input_output_paths => true
+
+def capacitor_pods
+  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
+  pod 'CapacitorCommunityAdmob', :path => '../../node_modules/@capacitor-community/admob'
+  pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
+  pod 'CapgoNativePurchases', :path => '../../node_modules/@capgo/native-purchases'
+end
+
+target 'App' do
+  capacitor_pods
+  # Add your Pods here
+end
+
+post_install do |installer|
+  assertDeploymentTarget(installer)
+end

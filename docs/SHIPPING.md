@@ -330,8 +330,8 @@ bridge.
 
 1. ~~**AdMob account**~~ **Done, 18 Sep.** Publisher `pub-6542623981022877`.
    App ids: Android `~5232560580` (in `AndroidManifest.xml`), iOS
-   `~4214992380` (for Info.plist, recorded in `app/README.md` until the iOS
-   project exists). Rewarded unit ids: Android `/8535090358`, iOS
+   `~4214992380` (**in `app/ios/App/App/Info.plist`** as of 22 Sep, as
+   `GADApplicationIdentifier`). Rewarded unit ids: Android `/8535090358`, iOS
    `/5856956129`, both in `AD_UNITS`.
    **`AD_TEST` stays `true` through the closed test** - a tester tapping a
    live ad is an invalid impression against your own account, and an unlisted
@@ -350,9 +350,16 @@ bridge.
 5. **App Store Connect**: the same seven as **Non-Consumable** in-app
    purchases, and the Paid Apps agreement signed (banking and tax), or
    StoreKit returns no products at all.
-6. **iOS project**: when `npx cap add ios` runs on the CI Mac, Info.plist
-   needs `GADApplicationIdentifier`, `GADDelayAppMeasurementInit` = YES, and
-   Google's `SKAdNetworkItems` list - `app/README.md` has the detail.
+6. ~~**iOS project**~~ **Done, 22 Sep, and it did not need the Mac.**
+   `app/ios` is checked in: `GADApplicationIdentifier`,
+   `GADDelayAppMeasurementInit` = YES and Google's 50 `SKAdNetworkItems` are
+   all in Info.plist, portrait is locked on both device families, the launch
+   screen is the void instead of a white flash, and the icon comes out of
+   `tools/icon.js --ios`. What is left is the dashboard: an **Apple Developer
+   Program** enrolment, an **App Store Connect app record** for
+   `com.nadazgames.ImJustACube` (a build cannot be uploaded to an app that
+   does not exist), and an **App Store Connect API key** pasted into
+   Codemagic. `app/README.md` > **The iOS project** has the detail.
 7. **Declarations**: written out, ready to copy, in `docs/STORE-ANSWERS.md` -
    Play's target audience, ads, content rating and Data safety, and Apple's
    privacy labels. The privacy policy they are checked against is
@@ -422,16 +429,26 @@ knowing it is that cheap; not worth doing before anyone has played it.
 The hardware is an Android phone, an iPhone, and a Windows/Linux PC. No Mac.
 There is a Mac belonging to a brother in Italy.
 
-**Building for iOS requires macOS - that part is real and has no workaround.**
-Capacitor produces an Xcode project and Xcode does not run anywhere else.
-But building is the half that can be rented, and **testing is the half that
-cannot** - and that is the half already owned. So the answer is a cloud Mac
-for the build and the iPhone in the pocket for everything else.
+**BUILDING for iOS requires macOS - that part is real and has no
+workaround.** Xcode does not run anywhere else. But **making the project
+does not**, and that turned out to be most of the work: `npx cap add ios`
+ran on the Windows machine on 22 Sep and `app/ios` is checked in, plist,
+icon, launch screen and all. The CLI needs a Mac only for `pod install` and
+an `xcodebuild clean`, and skips both with a warning when it is not on one.
+So building is the half that can be rented, **testing is the half that
+cannot** - and that half is already owned - and editing turns out to be
+neither.
 
 - **Build on CI, not on a borrowed desk.** `Codemagic` runs the build on a
   Mac mini in a data centre, handles the certificates and provisioning
   profiles from an App Store Connect API key, and uploads straight to
-  TestFlight. It has a free tier and it supports Capacitor directly.
+  TestFlight. **`codemagic.yaml` at the repository root is that build,
+  written**, and its header is the one-time setup: an API key with the App
+  Manager role, added to Codemagic under the name `AppStoreConnect`, and an
+  App Store Connect app record to upload into. The free plan is **500 macOS
+  minutes a month**, one build at a time, 120 minutes a build; this app is
+  roughly ten minutes, so call it 40-odd free builds a month, then
+  \$0.095/minute.
   `GitHub Actions` macOS runners are the alternative and the repo is already
   on GitHub: 2000 free minutes a month on a private repo, but **macOS burns
   them at 10x**, so that is about 200 real macOS minutes - call it 16 to 25
@@ -524,8 +541,10 @@ that sells this game: a mid-campaign level, the same level folded (`flat:N`,
 which is the hook and the only image that explains the verb), a boss, a
 trial, the map, the wardrobe, a cutscene beat and the neighbour mid-sentence.
 
-- **iOS**: 1290x2796 and 1320x2868, plus iPad at 2064x2752 if iPad is
-  supported. Icon 1024x1024.
+- **iOS**: 1290x2796 and 1320x2868, **and iPad at 2064x2752, which is now
+  required rather than optional** - iPad is supported, on the owner's call,
+  because the iOS device in the house is an iPad. Icon 1024x1024, and it
+  must have no alpha channel.
 - **Play**: 1080x1920, at least two and ideally eight. Icon 512x512.
 - **Steam**: 1920x1080, at least five.
 

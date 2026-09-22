@@ -6,6 +6,8 @@
    node tools/icon.js --variant B  a different composition (see VARIANTS below)
    node tools/icon.js --android    also writes the launcher mipmaps into the
                                    Android project (ic_launcher, _round, _foreground)
+   node tools/icon.js --ios        also writes the iOS app icon into the Xcode
+                                   project (one 1024 square, no alpha)
 
    Why it is drawn and not painted: there are no image files in this project
    (CLAUDE.md, Rendering), and an icon that is a script can be re-rendered at
@@ -410,6 +412,24 @@ async function main(){
       await shot(path.join(dir,"ic_launcher_round.png"), scene(V,w), w);
       await shot(path.join(dir,"ic_launcher_foreground.png"), scene({...V,zoom:72/108},fw), fw);
     }
+  }
+
+  if(args.includes("--ios")){
+    /* ONE FILE. iOS has asked for a single 1024 square since Xcode 14 and
+       masks it itself, so there is no set of sizes here the way there is on
+       Android - the appiconset's Contents.json names this one filename.
+
+       NO ALPHA CHANNEL, and that is the thing to watch. Apple rejects an app
+       icon that has one, at upload, after the whole build has transferred.
+       Nothing here asks for transparency (`shot`'s fourth argument is left
+       off, so omitBackground is false) and Chromium writes an opaque PNG -
+       colour type 2 rather than 6. If this ever starts failing at upload,
+       that byte is what to check: `node -e "console.log(require('fs')
+       .readFileSync(f)[25])"` on the written file, 2 good, 6 bad. */
+    const set=path.join(ROOT,"app","ios","App","App",
+                        "Assets.xcassets","AppIcon.appiconset");
+    if(fs.existsSync(set)) await shot(path.join(set,"AppIcon-512@2x.png"), svg, 1024);
+    else console.warn("!  no iOS project at app/ios - skipped");
   }
   await browser.close();
 }

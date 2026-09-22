@@ -1,8 +1,8 @@
 # The native shell
 
-The Capacitor project that wraps `I'm Just A Cube` as an Android app, and
-later as an iOS one. The game is the repository root; this folder is only the
-box it ships in.
+The Capacitor project that wraps `I'm Just A Cube` as an Android app and as
+an iOS one. The game is the repository root; this folder is only the box it
+ships in.
 
 `docs/SHIPPING.md` is the plan this belongs to. What is here is the decisions
 that live in code rather than in prose.
@@ -11,11 +11,13 @@ that live in code rather than in prose.
 
 ```
 node tools/build-app.js      # copy the game into app/www
-cd app && npx cap sync       # copy app/www into the native project
+cd app && npx cap sync       # copy app/www into BOTH native projects
 npx cap open android         # hand it to Android Studio
 ```
 
-`npm run android` in this folder is those three in one. During development,
+`npm run android` in this folder is those three in one, and `npm run ios` is
+the same three ending in Xcode - which only exists on a Mac. See **The iOS
+project** below for what the loop is here instead. During development,
 `npx cap run android --live-reload --external` serves the game from your
 machine instead, so an edit reloads on the phone without a rebuild.
 
@@ -33,7 +35,7 @@ commit the same way `build-single.js` does, so an installed APK says in its
 menu which commit it is; without that, "the tester is on an old build" is a
 guess rather than a fact.
 
-## The three settings in capacitor.config.json that are not defaults
+## The settings in capacitor.config.json that are not defaults
 
 **`adjustMarginsForEdgeToEdge: "disable"`, and this one is a trap with a
 timer on it.** Set to `"auto"`, Capacitor adds margins to the WebView on
@@ -55,6 +57,22 @@ gesture is a camera turn and nothing should be zooming underneath it.
 fills the window before the WebView has painted anything, so the wrong value
 here is a white flash on every launch.
 
+**The `ios` block is two lines, and both are written out on purpose.**
+`backgroundColor` is the same `#0f1424` again: iOS falls back to the
+top-level value when the platform block has none, so this is a duplicate the
+way the `android` block's copy is, and it is here so that neither platform
+can be changed by accident while editing the other. `contentInset: "never"`
+is Capacitor 7's own default and is the iOS twin of
+`adjustMarginsForEdgeToEdge` above: it is what stops the system insetting the
+WebView, which would flatten every `env(safe-area-inset-*)` to `0` and let
+the shell letterbox the game instead of the page holding its own chrome off
+the notch.
+
+`zoomEnabled` is NOT repeated there, and that is not an oversight: the iOS
+side reads `ios.zoomEnabled` **or** the top-level one
+(`CAPInstanceDescriptor.swift`), so the line at the root already switches
+pinch-zoom off on both platforms.
+
 `webContentsDebuggingEnabled` is deliberately NOT set. Left alone, Capacitor
 enables WebView debugging for debug builds and not for release ones, which is
 exactly the split you want: `chrome://inspect` works on your test build and
@@ -74,6 +92,99 @@ Targeting 36 changes two things worth checking on a phone: edge-to-edge can
 no longer be switched off (the safe-area tokens already expect it), and the
 back gesture goes through Android's predictive-back system, which
 `@capacitor/app`'s listener uses - press back once in a level to be sure.
+
+## The iOS project, and the Mac that is not here
+
+`app/ios` is a real Xcode project and it was generated **on this Windows
+machine**, which is worth knowing because the internet will tell you it
+cannot be. `npx cap add ios` only needs macOS for the last two steps of what
+it does - `pod install` and an `xcodebuild clean` - and the CLI checks for
+CocoaPods only when it is running on a Mac (`checkCocoaPods` in
+`@capacitor/cli/dist/ios/common.js`). Everywhere else it writes the whole
+project, prints `Skipping pod install because CocoaPods is not installed`,
+and stops there. So the project, the plist, the icon and the launch screen
+are all editable here; only **building** needs a Mac, and that is rented
+per build (`codemagic.yaml` at the repository root).
+
+The loop on this machine is therefore: edit, `cd app && npx cap sync ios` to
+be sure nothing you wrote is clobbered, commit, push, and start a build in
+Codemagic. `npm run ios` is the Mac loop and ends in `npx cap open ios`,
+which needs Xcode; on Windows it will do the first two steps and fail on the
+third, which is harmless.
+
+**What is checked in is eleven files.** `ios/.gitignore` came with the
+template and is right: `App/Pods`, `App/App/public` (the game, copied in by
+`cap sync`), `App/App/capacitor.config.json` (written from the one in `app/`)
+and `capacitor-cordova-ios-plugins` are all generated. **`Podfile.lock` is
+not checked in either**, because it cannot be generated here - CocoaPods is
+Ruby on macOS - so the pods resolve on CI, per build. That is a real
+looseness and the thing that holds it down is `app/package.json`, where both
+money plugins are pinned to an exact version.
+
+### The five decisions in it
+
+**iOS 15.0, and it is not a preference.** Capacitor's template says 14.0 and
+`@capgo/native-purchases` declares 15.0 in its podspec, because StoreKit 2
+starts there. CocoaPods does not negotiate: it refuses the install outright
+with "The platform of the target `App` (iOS 14.0) is not compatible with
+CapgoNativePurchases". Both the `Podfile` and `IPHONEOS_DEPLOYMENT_TARGET` in
+`project.pbxproj` say 15.0, and they have to agree. AdMob is not the
+constraint - `Google-Mobile-Ads-SDK` 12.12.0 asks only for iOS 12.
+
+**Portrait, locked, on iPhone and iPad - and `UIRequiresFullScreen` is what
+makes that legal.** The orientation call is the Android one for the same
+reason: every screen is laid out down a tall screen. But an iPad app that
+does not support all four orientations is only allowed if it also opts out of
+Split View, which is that key. Without it the app is rejected with an iPad
+Multitasking error. Upside-down is permitted on iPad, where it is just which
+way up you are holding it, and not on iPhone, where it would put the home
+indicator at the top.
+
+**iPad IS supported** (`TARGETED_DEVICE_FAMILY = "1,2"`, Capacitor's default,
+left alone) on the owner's call: the iOS device in the house is an iPad, so
+it is both the test device and the first real screen the game will be seen
+on. The cost is a second screenshot set for the store and a 4:3 screen that
+every panel and the map have to be looked at on.
+
+**The launch screen is the void and nothing else.** On iOS the launch
+storyboard is not optional the way an Android splash drawable is - it is what
+the system draws for the whole cold start - and the template ships a white
+image. That is a white flash before the sting on every launch, which is the
+exact thing `backgroundColor: "#0f1424"` was set to prevent. `LaunchScreen`
+is now a plain view in that colour, `Splash.imageset` is deleted, and there
+is no second piece of artwork to drift away from `js/20-splash.js`.
+
+**The app icon is the store icon, byte for byte.** `node tools/icon.js --ios`
+writes `AppIcon-512@2x.png` from the same `scene()` that writes
+`app/icon/icon-1024.png`, so the two cannot disagree; the render is
+deterministic, so running it twice changes nothing on disk. iOS wants one
+1024 square and masks it itself, and it must have **no alpha channel** -
+Apple rejects that at upload, after the whole build has transferred.
+
+### Versions, and Apple's version of the burnt-number trap
+
+`MARKETING_VERSION` is `1.0.2`, deliberately the same string as Android's
+`versionName`, so "which build is this" has one answer across both stores.
+`CURRENT_PROJECT_VERSION` is Apple's `versionCode`, and Apple burns it the
+same way Play does: the same build number twice under one version string is
+rejected, at the end of the upload. It is **not** bumped by hand - the
+Codemagic workflow asks App Store Connect what it has already seen and adds
+one, which is a thing Play's side cannot do and this side can.
+
+### What the iOS side still needs, and all of it is on a dashboard
+
+- An **Apple Developer Program** enrolment ($99/year) and an **App Store
+  Connect app record** for `com.nadazgames.ImJustACube`. A build cannot be
+  uploaded to an app that does not exist yet.
+- An **App Store Connect API key** (App Manager role), pasted into Codemagic
+  as `AppStoreConnect`. The header of `codemagic.yaml` is the checklist.
+- The **seven in-app purchases as Non-Consumable**, same ids as Play, and the
+  **Paid Apps agreement** signed - without it StoreKit returns no products at
+  all, so every price in the shop stays at the dollar default.
+- **The In-App Purchase capability** on the app target, which Codemagic's
+  automatic signing can set.
+- **Screenshots** at 1290x2796 and 1320x2868, plus iPad at 2064x2752 now that
+  iPad is supported (`tools/store.js --ios`, `--tab10`).
 
 ## The two money plugins
 
@@ -104,16 +215,20 @@ until that switch is flipped, which is deliberate: it stays `true` through
 the closed test, because a tester tapping a live ad is an invalid impression
 against your own account.
 
-**iOS, when `npx cap add ios` runs on the CI Mac.** Info.plist needs:
+**`Info.plist` is the iOS twin of `AndroidManifest.xml`, and it is written.**
+The four AdMob decisions are in it:
 
 - `GADApplicationIdentifier` = **`ca-app-pub-6542623981022877~4214992380`**,
   the game's real iOS app id from AdMob. Missing, it crashes on launch,
   exactly as on Android.
 - `GADDelayAppMeasurementInit` = `YES`, for the same reason as Android.
-- `SKAdNetworkItems` - Google's list of ad network ids, copied from the
-  AdMob iOS quick-start page. Without it iOS ads still show but pay less.
-- **No** `NSUserTrackingUsageDescription`: the game never asks for tracking
-  permission (ATT), so it must not declare a reason for asking.
+- `SKAdNetworkItems` - **50 ids**, Google's published third-party list from
+  `developers.google.com/admob/ios/3p-skadnetworks` (that page last changed
+  2026-02-10). Without it iOS ads still show and pay less. Google trims and
+  adds to that list; re-copying it is a chore for a release, not for a build.
+- **No** `NSUserTrackingUsageDescription`, deliberately: the game never shows
+  the ATT prompt, so it must not declare a reason for asking. An app that
+  declares one and never asks is a question at review.
 
 In-app purchases also need the **In-App Purchase capability** ticked on the
 app target, which Codemagic's automatic signing can set.

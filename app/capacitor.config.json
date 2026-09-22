@@ -8,5 +8,9 @@
     "backgroundColor": "#0f1424",
     "zoomEnabled": false,
     "adjustMarginsForEdgeToEdge": "disable"
+  },
+  "ios": {
+    "backgroundColor": "#0f1424",
+    "contentInset": "never"
   }
 }
