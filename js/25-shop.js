@@ -33,14 +33,14 @@
 
 var SHOP_UPGRADE="pass_all_upgrade";
 
+/* The plugin, or null in a browser - and null is what greys out every BUY
+   button on the DEALS shelf and hides RESTORE PURCHASES. capPlugin() is the
+   one copy of this lookup and the paragraph explaining it is at the back
+   button in js/19-bindings.js. */
 var shopPlug;
 function shopPlugin(){
   if(shopPlug!==undefined)return shopPlug;
-  var C=window.Capacitor;
-  shopPlug=(C&&C.isNativePlatform&&C.isNativePlatform()&&
-            C.isPluginAvailable&&C.isPluginAvailable("NativePurchases")&&
-            typeof C.registerPlugin==="function")
-    ? C.registerPlugin("NativePurchases") : null;
+  shopPlug=capPlugin("NativePurchases");
   return shopPlug;
 }
 function shopOS(){return window.Capacitor&&window.Capacitor.getPlatform();}

@@ -67,8 +67,26 @@ function fakeNative(opts){
     acknowledgePurchase(o){L.push(["ack",o.purchaseToken]);return Promise.resolve();},
   };
   window.__emitShop=(ev,d)=>(listeners["shop:"+ev]||[]).forEach(fn=>fn(d));
-  window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>F.platform,
-    isPluginAvailable:()=>true,registerPlugin:n=>n==="AdMob"?AdMob:Shop};
+  /* SHAPED LIKE THE BRIDGE A DEVICE ACTUALLY INJECTS, which is the whole
+     point of a fake. The native side writes a generated proxy per plugin
+     INTO Capacitor.Plugins and there is no registerPlugin anywhere in a
+     WebView with no bundler - the paragraph is at capPlugin() in
+     js/19-bindings.js. This fake used to offer the exact mirror image,
+     registerPlugin and no Plugins at all, so every test here passed while
+     the app found no plugins whatsoever on a real phone: no ads, no BUY
+     button, and the back button quitting mid-level.
+
+     `bridge:"bundled"` is the OTHER shape, the one @capacitor/core gives a
+     project with a build step. Both have to work, so both are testable. */
+  var caps={isNativePlatform:()=>true,getPlatform:()=>F.platform,
+    isPluginAvailable:n=>Object.prototype.hasOwnProperty.call(caps.Plugins,n)};
+  if(F.bridge==="bundled"){
+    caps.Plugins={};
+    caps.registerPlugin=n=>n==="AdMob"?AdMob:n==="NativePurchases"?Shop:null;
+  }else{
+    caps.Plugins={AdMob:AdMob,NativePurchases:Shop};
+  }
+  window.Capacitor=caps;
 }
 
 async function openGame(browser,{native,settings,progress,wardrobe,fake,tag}){
@@ -111,6 +129,29 @@ const log=page=>page.evaluate(()=>window.__log||[]);
     ok(/<button disabled="" class="wbuyusd">/.test(meta),"BUY disabled in a browser");
     ok(/\$4\.99/.test(meta),"browser shows dollar price");
     ok(!page.errors.length,"no page errors "+page.errors.join(" | "));
+    await ctx.close();
+  }
+
+  /* THE SHAPE OF THE BRIDGE IS ITSELF A TEST NOW, because getting it wrong
+     is what shipped: every other test in this file passed while the phone
+     found no plugins at all. A device fills Capacitor.Plugins from the
+     native side and has no registerPlugin; a bundled build is the other way
+     round. capPlugin() has to find the plugin in both. */
+  console.log("\n[native] the bridge shape: Plugins on a device, registerPlugin when bundled");
+  {
+    const {ctx,page}=await openGame(browser,{native:true,settings:{ageBand:"a26"},progress:midSave});
+    const r=await page.evaluate(()=>({reg:typeof Capacitor.registerPlugin,
+      ad:!!adPlugin(),shop:!!shopPlugin(),avail:Capacitor.isPluginAvailable("AdMob")}));
+    ok(r.reg==="undefined","a device bridge has no registerPlugin");
+    ok(r.avail===true,"isPluginAvailable reads Capacitor.Plugins");
+    ok(r.ad,"adPlugin() found on a device-shaped bridge");
+    ok(r.shop,"shopPlugin() found on a device-shaped bridge");
+    await ctx.close();
+  }
+  {
+    const {ctx,page}=await openGame(browser,{native:true,settings:{ageBand:"a26"},progress:midSave,fake:{bridge:"bundled"}});
+    const r=await page.evaluate(()=>({ad:!!adPlugin(),shop:!!shopPlugin()}));
+    ok(r.ad&&r.shop,"both found on a bundled bridge too");
     await ctx.close();
   }
 

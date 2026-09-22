@@ -393,28 +393,55 @@ function backExitAsk(){
   return false;
 }
 
-/* The only native code in the file, and it costs nothing when there is no
-   Capacitor: in a browser it is one property read and an early return.
+/* ============================================================
+   THE ONE WAY TO REACH A NATIVE PLUGIN
 
-   `Capacitor.registerPlugin("App")` IS THE CALL, and `Capacitor.Plugins.App`
-   is not - which is worth the paragraph, because the wrong one fails by doing
-   nothing at all. The native bridge injected into the WebView creates
-   `Capacitor.Plugins` as an EMPTY object (`r.Plugins = r.Plugins || {}` in
-   @capacitor/core) and it is each plugin's own JS module that fills it, by
-   calling registerPlugin as it loads. These are classic scripts with no
-   bundler, so @capacitor/app's module never runs, so `Plugins.App` is
-   undefined however correctly the plugin is installed - and a guard that
-   tests for it returns quietly and leaves the back button doing the WebView
-   default, which is to quit the game mid-level.
+   This is the only native code in the file, and `capPlugin()` is the only
+   copy of this lookup in the project: js/24-ads.js and js/25-shop.js both
+   call it, and they are loaded after this file for that reason. It costs
+   nothing when there is no Capacitor - in a browser it is one property read
+   and an early return.
 
-   registerPlugin is on the bridge itself and builds the proxy on demand, so
-   it is the path that works without a build step. Plugins.App is still read
-   first, for the day this is bundled and the module has filled it in. */
-(function(){
+   `Capacitor.Plugins.AdMob` IS THE CALL, and `Capacitor.registerPlugin` is
+   NOT - which is the exact opposite of what this paragraph claimed until a
+   real phone proved otherwise, and worth every line of the correction,
+   because the wrong one fails by doing NOTHING AT ALL.
+
+   WHAT THE WEBVIEW ACTUALLY GETS, injected by the native side before the
+   page loads (JSExport.java / JSInjector.java in @capacitor/android, and
+   the equivalent on iOS), in this order:
+
+     1. `window.Capacitor = { DEBUG, isLoggingEnabled, Plugins: {} }`
+     2. native-bridge.js: getPlatform, isNativePlatform, addListener,
+        toNative, nativePromise, isPluginAvailable. NO registerPlugin.
+     3. A PROXY PER REGISTERED PLUGIN, generated in Java from each plugin's
+        @PluginMethod list and written straight into `Capacitor.Plugins` -
+        every method as a promise, with addListener beside them, plus
+        `Capacitor.PluginHeaders`.
+
+   So on a device `Plugins` is FULL, and `registerPlugin` does not exist
+   there at all: it lives in @capacitor/core's ES module, which these
+   classic scripts never load. The old belief was backwards, and the cost
+   was three features dead on the phone and nothing said - the back button
+   quitting mid-level, every ad paying out silently with no video, and
+   every BUY on the DEALS shelf greyed out. The fake bridge in
+   tools/storetest.js offered registerPlugin and no Plugins at all, so the
+   tests proved the one shape that cannot happen (docs/HISTORY.md).
+
+   registerPlugin is kept as the SECOND choice, for the day this is bundled
+   and @capacitor/core has filled Plugins itself. `isPluginAvailable` is
+   deliberately not asked: on the real bridge it is
+   `hasOwnProperty(Capacitor.Plugins, name)`, which is the question this
+   already answers by looking.
+   ============================================================ */
+function capPlugin(name){
   var C=window.Capacitor;
-  if(!C)return;
-  var App=(C.Plugins&&C.Plugins.App)||
-          (typeof C.registerPlugin==="function"&&C.registerPlugin("App"));
+  if(!C||!C.isNativePlatform||!C.isNativePlatform())return null;
+  return (C.Plugins&&C.Plugins[name])||
+         (typeof C.registerPlugin==="function"&&C.registerPlugin(name))||null;
+}
+(function(){
+  var App=capPlugin("App");
   if(!App||typeof App.addListener!=="function")return;
   App.addListener("backButton",function(){
     if(backOut())return;

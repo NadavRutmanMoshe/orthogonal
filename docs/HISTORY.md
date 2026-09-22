@@ -1908,3 +1908,85 @@ land on the same cell edge now that a block fills its cell, so every interior
 joint is drawn twice: at `.35` the inside of an arena was darker than its
 outside, which is backwards. `.24` doubled is about the old value, so a joint
 reads as it used to and the silhouette's own edge steps back.
+
+## The fake bridge was the mirror image of the real one
+
+**Reported from a phone as two things and it was one.** "I added myself as a
+licence tester but the BUY button is still off, and pressing WATCH AN AD does
+nothing." Three features were dead, not two - the back button was quitting the
+game mid-level as well - and all three were one line of belief, held
+confidently, written into `CLAUDE.md` as fact and proved by a test suite that
+could not have caught it.
+
+**The belief.** "`Capacitor.registerPlugin("App")` IS THE CALL, and
+`Capacitor.Plugins.App` is not - the injected bridge creates `Plugins` EMPTY
+and each plugin's own JS module fills it, and with no bundler that module
+never runs." Every clause of that is true of `@capacitor/core`, the ES module
+a bundled app imports. None of it is true of the WebView this game runs in.
+
+**What a device actually injects**, in order, before the page loads
+(`JSExport.java` and `JSInjector.java` in `@capacitor/android`, and the
+equivalent on iOS):
+
+1. `window.Capacitor = { DEBUG, isLoggingEnabled, Plugins: {} }`
+2. `native-bridge.js` - `getPlatform`, `isNativePlatform`, `addListener`,
+   `toNative`, `nativePromise`, `isPluginAvailable`. **No `registerPlugin`.**
+3. **A proxy per registered plugin, generated in Java** from each plugin's
+   `@PluginMethod` list and written straight into `Capacitor.Plugins` - every
+   method as a promise, `addListener` beside them, then `PluginHeaders`.
+
+So `Plugins` is FULL on a phone and `registerPlugin` is not there at all. The
+belief was exactly backwards, and both new files gated on it:
+
+```js
+adPlug = ( ... && typeof C.registerPlugin==="function") ? C.registerPlugin("AdMob") : null;
+```
+
+`adPlugin()` and `shopPlugin()` returned `null` on every real device, and null
+is the BROWSER branch. Nothing errored, nothing was logged, and each feature
+failed into its browser behaviour, which is the quietest possible way to
+break: `adWatch` paid out instantly with no video (so an ad button appeared to
+do nothing while silently granting the thing), `shopPlugin()` greyed out every
+BUY on the DEALS shelf and hid RESTORE PURCHASES, and the Play Console licence
+tester the owner had just added was never asked anything at all. The back
+button survived only by accident - its own lookup read `Plugins.App` **first**
+and fell back to `registerPlugin`, so the correct path was already in the
+codebase, one file away from the two that got it wrong.
+
+**Why the tests said it was fine.** `tools/storetest.js` drives both files
+through a fake `window.Capacitor`. The fake was:
+
+```js
+{isNativePlatform:()=>true, getPlatform:()=>F.platform,
+ isPluginAvailable:()=>true, registerPlugin:n=>n==="AdMob"?AdMob:Shop}
+```
+
+`registerPlugin` present, `Plugins` absent, `isPluginAvailable` hardcoded
+true - **the precise mirror image of the only shape that can exist on a
+device.** 62 tests passed over three dead features. A fake built from the same
+belief as the code cannot test the belief; it tests that the code is
+self-consistent, which it was.
+
+**The fix.** One `capPlugin(name)` in `js/19-bindings.js` - `Plugins` first,
+`registerPlugin` second for the day this is bundled, `isPluginAvailable` never
+(on the real bridge it is only `hasOwnProperty(Plugins,name)`, the same
+question asked twice). `js/24-ads.js` and `js/25-shop.js` call it, which is
+why they load after bindings. The fake now has the device shape by default,
+offers the bundled shape as `bridge:"bundled"`, and **the shape itself is
+five assertions** - including that a device bridge has no `registerPlugin`,
+so putting the old belief back fails the suite instead of the phone.
+
+**What this cost and what it buys.** It cost a build the owner sideloaded, a
+licence tester added for nothing, and a confident wrong paragraph in three
+docs. Two things worth keeping from it. **A doc that says a thing "was tested"
+should say what it was tested against** - the old line ended "Tested against a
+faked bridge shaped like the real one", and the shape was the whole bug.
+And **a native lookup that fails into a browser fallback needs the fallback to
+be visible**, because silence is indistinguishable from working: every path in
+both files ended in `.catch(function(){})`, so the phone knew exactly what was
+wrong and never said a word.
+
+**Found separately, fixed with it:** `adWatch` set `AD.busy=true` with nothing
+that could clear it off the happy path. One tap the plugin took and never
+answered left every ad button in the session a silent no-op. `adBusy()` is now
+the only writer, arms a 180s watchdog, and a tap while one is up says so.

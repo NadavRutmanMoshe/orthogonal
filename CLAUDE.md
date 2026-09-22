@@ -950,12 +950,23 @@ is the rule.
   app, on a second press inside two seconds. A full-bleed card SWALLOWS it -
   backing out of the win card would skip a level. It returns whether it
   handled the press; the Capacitor listener is the only native code in the
-  file and is one property read from nothing in a browser. **It reaches the
-  plugin through `Capacitor.registerPlugin("App")`, never
-  `Capacitor.Plugins.App`** - the injected bridge creates `Plugins` EMPTY and
-  each plugin's own JS module fills it, and with no bundler that module never
-  runs, so a guard on `Plugins.App` returns quietly and leaves back quitting
-  the game mid-level. Tested against a faked bridge shaped like the real one.
+  file and is one property read from nothing in a browser.
+- **`capPlugin(name)` (`js/19-bindings.js`) is the ONE way to reach a native
+  plugin**, and the back button, `js/24-ads.js` and `js/25-shop.js` all call
+  it - which is why those two are loaded after bindings. **The plugin is on
+  `Capacitor.Plugins`, and `Capacitor.registerPlugin` DOES NOT EXIST on a
+  device**, which reverses what this line said until a phone proved
+  otherwise. The native side injects, in order, `Capacitor={...,Plugins:{}}`,
+  then `native-bridge.js` (no `registerPlugin` in it), then **a proxy per
+  registered plugin generated in Java from its `@PluginMethod` list, written
+  straight into `Plugins`** (`JSExport.java`). `registerPlugin` lives in
+  @capacitor/core's ES module, which these classic scripts never load. So
+  `Plugins` first, `registerPlugin` second for the day this is bundled, and
+  `isPluginAvailable` never - on the real bridge it is just
+  `hasOwnProperty(Plugins,name)`. **A fake bridge is only worth what its
+  shape is worth**: `tools/storetest.js`'s offered the mirror image and 62
+  tests passed over three dead features (`docs/HISTORY.md`). It now fakes
+  both shapes and asserts them.
 - **`tap()` fires on pointerdown, except inside something that scrolls -
   there it fires on the lift.** `tapScroller()` (`js/18-ui.js`) looks for an
   ancestor with `overflow-y:auto|scroll`; inside one the press waits for

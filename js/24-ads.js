@@ -52,18 +52,17 @@ function adChild(){
   return b!=="a18"&&b!=="a26"&&b!=="a40"&&b!=="a60";
 }
 
-/* The plugin, or null in a browser. registerPlugin rather than
-   Capacitor.Plugins.AdMob, for the reason written at the back button in
-   js/19-bindings.js: with no bundler the plugin's own module never runs, so
-   Plugins.AdMob is always empty. */
+/* The plugin, or null in a browser. capPlugin() is the whole lookup and it
+   lives at the back button in js/19-bindings.js, which is loaded first - go
+   and read the paragraph there before changing this. The short version: the
+   plugin is on `Capacitor.Plugins`, put there by the native side, and
+   `registerPlugin` does not exist in a WebView with no bundler. Asking for
+   registerPlugin here is what left every ad button silently paying out
+   nothing on a real phone. */
 var adPlug;
 function adPlugin(){
   if(adPlug!==undefined)return adPlug;
-  var C=window.Capacitor;
-  adPlug=(C&&C.isNativePlatform&&C.isNativePlatform()&&
-          C.isPluginAvailable&&C.isPluginAvailable("AdMob")&&
-          typeof C.registerPlugin==="function")
-    ? C.registerPlugin("AdMob") : null;
+  adPlug=capPlugin("AdMob");
   return adPlug;
 }
 /* NON-PERSONALISED, ALWAYS, FOR A CHILD - AND FOR EVERY iOS PLAYER.
@@ -89,8 +88,34 @@ function adUnit(){
    busy:    a tap is being served; a second tap is ignored until it is done.
    done:    the callback of the video on screen, until it closes. */
 var AD={started:null, heard:false, consent:null, ready:false, loading:null,
-        busy:false, done:null, earned:false, closed:false, failed:false,
-        graceT:0, retry:0, retryT:0};
+        busy:false, busyT:0, done:null, earned:false, closed:false,
+        failed:false, graceT:0, retry:0, retryT:0};
+
+/* A SECOND TAP WHILE A VIDEO IS COMING SAYS SO, AND A STUCK ONE LETS GO.
+
+   `busy` is what stops two taps racing for one video, and it used to be set
+   with nothing that could ever unset it from outside the happy path: if the
+   plugin took a tap and then said nothing - no REWARD, no DISMISSED, no
+   rejection - the flag stayed true for the rest of the session and EVERY
+   later ad button in the game became a silent no-op, with nothing on screen
+   to say why. So the flag is only ever written through adBusy(), which arms
+   a watchdog beside it, and a tap that lands while it is up gets a sentence
+   instead of silence.
+
+   The timeout is long on purpose: a rewarded video plus whatever store page
+   it opens is a slow thing to sit through, and this is a way out of a dead
+   session, not a deadline on the player. */
+var AD_STUCK_MS=180000;
+function adBusy(on){
+  AD.busy=on;
+  clearTimeout(AD.busyT);
+  if(!on)return;
+  AD.busyT=setTimeout(function(){
+    if(!AD.busy)return;
+    AD.busy=false;AD.done=null;AD.closed=false;
+    adQuiet(false);
+  },AD_STUCK_MS);
+}
 
 /* ============================================================
    STARTING
@@ -224,8 +249,8 @@ function adWithin(p,ms){
    ============================================================ */
 function adWatch(done){
   if(!adPlugin()){done(true);return;}
-  if(AD.busy)return;
-  AD.busy=true;
+  if(AD.busy){flash("a video is already on its way");return;}
+  adBusy(true);
   adStart()
     .then(adConsentAsk)
     .then(function(){
@@ -235,7 +260,7 @@ function adWatch(done){
     })
     .then(function(ok){
       if(!ok){
-        AD.busy=false;
+        adBusy(false);
         flash("no video to show right now · try again in a minute");
         done(false);
         return;
@@ -264,7 +289,7 @@ function adSettle(){
   clearTimeout(AD.graceT);
   var done=AD.done;
   if(!done)return;
-  AD.done=null;AD.busy=false;AD.closed=false;
+  AD.done=null;AD.closed=false;adBusy(false);
   adQuiet(false);
   adLoad();                       // the next one, before anybody asks
   if(AD.earned)done(true);

@@ -247,10 +247,16 @@ bridge.
   server checks a receipt, so a rooted Android phone can fake a purchase
   (iOS verifies on the phone, StoreKit 2 signs every transaction), and there
   is no dashboard beyond the two store consoles.
-- **Both are reached through `Capacitor.registerPlugin()`**, exactly like the
-  back button, because there is no bundler to run their JS modules. Both
-  modules were read and are one `registerPlugin` call each, so nothing is
-  lost.
+- **Both are reached through `capPlugin()`** (`js/19-bindings.js`), exactly
+  like the back button, which reads `Capacitor.Plugins.AdMob` and
+  `Capacitor.Plugins.NativePurchases` - the proxies the native side generates
+  from each plugin's `@PluginMethod` list and injects before the page loads.
+  There is no bundler here, so the plugins' own JS modules never run, and
+  `Capacitor.registerPlugin` - which lives in those modules' dependency
+  @capacitor/core - does not exist in this WebView at all. It was the gate on
+  both files for one build and both features were dead on the phone with
+  nothing said (`docs/HISTORY.md`). Every method either file calls was
+  checked against the plugin's Java: all present.
 
 ### `js/24-ads.js`
 
