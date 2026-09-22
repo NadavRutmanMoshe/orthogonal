@@ -128,8 +128,14 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
-        # To TestFlight and no further. Submitting to the App Store itself
-        # stays a decision made in App Store Connect, by hand, once a build
-        # has been played.
-        submit_to_testflight: true
+        # UPLOAD, AND STOP THERE. An uploaded build is already in TestFlight
+        # for INTERNAL testers (the owner and anyone on the team), with no
+        # review. `submit_to_testflight: true` means something else: send
+        # every build to Apple's EXTERNAL beta review, which refuses until
+        # TestFlight > Test Information has a feedback email and a reviewer
+        # contact - and the first build, fully compiled, signed, uploaded
+        # and processed, went red on exactly that step. External testers are
+        # a choice made per build in App Store Connect, like the App Store
+        # itself.
+        submit_to_testflight: false
         submit_to_app_store: false
