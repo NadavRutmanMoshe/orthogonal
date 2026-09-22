@@ -35,6 +35,31 @@ android {
         }
     }
     buildTypes {
+        // A DEV BUILD INSTALLS BESIDE THE PLAY ONE, NOT OVER IT.
+        //
+        // The app on a test phone comes from Play and is signed with the Play
+        // key; a debug APK is signed with the debug key, and Android refuses
+        // to swap one for the other (INSTALL_FAILED_UPDATE_INCOMPATIBLE). The
+        // only way through is to uninstall first, and uninstalling takes the
+        // app's data with it - which is the SAVE, since every orthogonal:*
+        // key lives in the WebView's localStorage. It also takes the phone
+        // out of whatever Play track put the app there.
+        //
+        // A suffixed applicationId makes the debug build a different app
+        // entirely: its own icon, its own data, its own localStorage. It
+        // installs and uninstalls freely while the Play build and its save
+        // sit untouched beside it.
+        //
+        // What it can and cannot test. ADS: fully - AdMob's test units do not
+        // care what the package is called. IAP: not at all - Play Billing
+        // only sells to a build Play distributed under the id it knows, so
+        // the BUY button will reach the store and be refused. That is the
+        // right split, because ads are what needs a fast loop and a purchase
+        // needs a track either way.
+        debug {
+            applicationIdSuffix ".debug"
+            versionNameSuffix "-debug"
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
