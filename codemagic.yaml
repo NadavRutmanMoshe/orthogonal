@@ -17,9 +17,15 @@
 #   3. Codemagic > Teams > Integrations > Developer Portal > Add key. Name it
 #      exactly `AppStoreConnect`, which is the name `integrations:` reads
 #      below. Paste the three things from step 2.
-#   4. App Store Connect > Apps > + > New App, bundle id
-#      com.nadazgames.ImJustACube. The app record has to EXIST before a build
-#      can be uploaded to it; an upload to nothing fails at the very end.
+#   4. ~~App Store Connect > Apps > + > New App.~~ DONE: the app record
+#      exists, bundle id com.nadazgames.ImJustACube, Apple ID 6813031706,
+#      team 3285JYDBF2, metadata and the seven in-app purchases entered.
+#      Both ids are filled in below, so nothing here is a placeholder.
+#   5. Business > Agreements, Tax, and Banking: the PAID APPS agreement has
+#      to read Active, which needs the bank account and the tax forms. It
+#      does not block a build or TestFlight - it blocks the SHOP: until it
+#      is Active, StoreKit answers getProducts with nothing at all and every
+#      price in DEALS stays at the hard-coded dollar default.
 #
 # After that, a build is one button in Codemagic, or a push to this branch if
 # the trigger below is turned on.
@@ -43,11 +49,10 @@ workflows:
         XCODE_WORKSPACE: "app/ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
         BUNDLE_ID: "com.nadazgames.ImJustACube"
-        # The app's NUMERIC Apple ID, which App Store Connect shows under
-        # App Information once the app record exists. It is only used to ask
-        # the store what build number it has already seen; left empty, the
-        # build still works and counts from Codemagic's own build number.
-        APP_STORE_APPLE_ID: ""
+        # The app's NUMERIC Apple ID, from App Store Connect > App
+        # Information. Used to ask the store what build number it has
+        # already seen, so the number can never be guessed wrong.
+        APP_STORE_APPLE_ID: "6813031706"
       # Node 20, the version this project is developed on. Capacitor 8's CLI
       # wants 22; that migration is its own job and this pins the pair that
       # are known to agree.
