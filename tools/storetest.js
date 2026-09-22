@@ -57,6 +57,11 @@ function fakeNative(opts){
       return Promise.resolve({products:o.productIdentifiers.map(id=>({identifier:id,priceString:"\u20aa"+(id==="pass_all"?"39.90":id==="pass_all_upgrade"?"21.90":id==="pass_nolimits"?"19.90":"11.90")}))});},
     getPurchases(o){L.push(["getPurchases",o]);return Promise.resolve({purchases:F.storeOwned.map(x=>typeof x==="string"?tx(x):x)});},
     purchaseProduct(o){L.push(["purchase",o.productIdentifier]);
+      /* A FLOW THAT NEVER LAUNCHED. The plugin drops launchBillingFlow's
+         result on the floor, so a refused flow never reaches the listener
+         and this call is never resolved OR rejected - see shopBusy() in
+         js/25-shop.js. This is that promise. */
+      if(F.buyMode==="hang")return new Promise(()=>{});
       return new Promise((res,rej)=>later(120,()=>{
         if(F.buyMode==="ok"){F.storeOwned.push(o.productIdentifier);res(tx(o.productIdentifier));}
         else if(F.buyMode==="pending")rej(new Error("Purchase is pending"));
@@ -346,6 +351,23 @@ const log=page=>page.evaluate(()=>window.__log||[]);
     await page.evaluate(()=>{__fake.buyMode="alreadyOwned";wardSel.deal="rook";wardRefresh();});
     await page.click("#wBuyUsd");await page.waitForTimeout(250);
     ok(await page.evaluate(()=>owns("rook"))&&/restored/.test(await toast(page)),"already owned on the store: restored instead of an error");
+
+    // A PURCHASE THAT NEVER ANSWERS: the shelf must let go by itself.
+    await page.evaluate(()=>{__fake.buyMode="hang";__fake.storeOwned=[];
+      wardrobe.owned=[];SHOP_STUCK_MS=600;wardSel.deal="cat";wardRefresh();});
+    await page.click("#wBuyUsd");await page.waitForTimeout(200);
+    ok(await page.evaluate(()=>SHOP.busy)&&/ONE MOMENT/.test(await page.evaluate(()=>$("wMeta").innerHTML)),
+       "a hung purchase shows ONE MOMENT while it waits");
+    await page.waitForTimeout(900);
+    ok(await page.evaluate(()=>!SHOP.busy),"and lets go of the shelf when the store never answers");
+    ok(/didn't answer/.test(await toast(page)),"and says nothing was charged");
+    ok(/BUY/.test(await page.evaluate(()=>$("wMeta").innerHTML)),"BUY is pressable again");
+    // the same hang, but the money DID go through: say so rather than deny it
+    await page.evaluate(()=>{__fake.storeOwned=["cat"];wardrobe.owned=[];
+      wardSel.deal="cat";wardRefresh();});
+    await page.click("#wBuyUsd");await page.waitForTimeout(900);
+    ok(await page.evaluate(()=>owns("cat")),"a hang that was actually paid unlocks on the re-sync");
+    await page.evaluate(()=>{SHOP_STUCK_MS=180000;__fake.buyMode="ok";});
 
     // restore
     await page.evaluate(()=>{__fake.storeOwned=["pup"];wardRefresh();});

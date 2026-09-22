@@ -49,7 +49,51 @@ function shopOS(){return window.Capacitor&&window.Capacitor.getPlatform();}
    currency ("₪11.90", "4,99 €"). Filled at boot; until it is, and in a
    browser, the shelf prints the dollar price written in PASSES/SKIN_SHAPES.
    busy:   a purchase or a restore is on screen. */
-var SHOP={prices:{}, busy:false};
+var SHOP={prices:{}, busy:false, busyT:0};
+
+/* A PURCHASE THAT NEVER ANSWERS MUST NOT WEDGE THE SHELF, and this one can.
+
+   `purchaseProduct` resolves ONLY from the plugin's PurchasesUpdatedListener,
+   and Play calls that listener only if the billing flow actually launched.
+   The plugin launches it like this (NativePurchasesPlugin.java):
+
+       BillingResult r = billingClient.launchBillingFlow(getActivity(), params);
+       Log.d(TAG, "Billing flow launch result: " + r.getResponseCode() + …);
+
+   The result is LOGGED AND DROPPED. A flow that refuses to launch -
+   ITEM_UNAVAILABLE, DEVELOPER_ERROR, BILLING_UNAVAILABLE, which is what an
+   account that may not buy this build gets - never reaches the listener, so
+   the call is never resolved and never rejected. The promise hangs for the
+   life of the app.
+
+   Nothing in JS can see that, so the only defence is a clock. Same shape as
+   adBusy() in js/24-ads.js, and for the same reason: busy is what stops two
+   taps racing, so anything that can set it and never clear it takes the
+   whole shelf down with it - every BUY frozen at ONE MOMENT, RESTORE
+   disabled, until the app is killed.
+
+   ON THE WAY OUT IT ASKS THE STORE RATHER THAN GUESSING. A hang is not proof
+   that nothing was charged: the sheet may have taken the money and the
+   answer may be what got lost. So the timeout re-syncs and reports what the
+   store actually says, and only says nothing was charged when the store
+   agrees. Long, because a real payment sheet is slow - a card to type in, a
+   parent to approve. */
+var SHOP_STUCK_MS=180000;
+function shopBusy(on){
+  SHOP.busy=on;
+  clearTimeout(SHOP.busyT);
+  if(on)SHOP.busyT=setTimeout(shopUnwedge,SHOP_STUCK_MS);
+  shopRedraw();
+}
+function shopUnwedge(){
+  if(!SHOP.busy)return;
+  SHOP.busy=false;shopRedraw();
+  shopSync().then(function(got){
+    if(got.length){SFX.key();flash(shopNames(got)+" unlocked");}
+    else flash("the store didn't answer · nothing was charged");
+    shopRedraw();
+  });
+}
 
 function shopDeals(){return PASSES.concat(SKIN_SHAPES.filter(isDeal));}
 function shopKnown(pid){
@@ -161,12 +205,13 @@ function shopNames(ids){
    ============================================================ */
 function shopBuy(it){
   var P=shopPlugin();
-  if(!P||SHOP.busy)return;
+  if(!P)return;
+  if(SHOP.busy){flash("the store is still working on the last one");return;}
   var pid=shopProductFor(it);
-  SHOP.busy=true;shopRedraw();
+  shopBusy(true);
   P.purchaseProduct({productIdentifier:pid,productType:"inapp",quantity:1})
     .then(function(t){
-      SHOP.busy=false;
+      shopBusy(false);
       shopTake([t]);
       if(owns(it.id)||hasPass(it.id)){
         // You paid for a shape; wear it, the way a star purchase does.
@@ -175,7 +220,7 @@ function shopBuy(it){
       }
       shopRedraw();
     },function(e){
-      SHOP.busy=false;
+      shopBusy(false);
       var m=String(e&&e.message||e);
       /* A pending payment is not a failure: it unlocks when it clears. */
       if(/pending/i.test(m)){
@@ -205,14 +250,15 @@ function shopBuy(it){
    ============================================================ */
 function shopRestore(){
   var P=shopPlugin();
-  if(!P||SHOP.busy)return;
-  SHOP.busy=true;shopRedraw();
+  if(!P)return;
+  if(SHOP.busy){flash("the store is still working on the last one");return;}
+  shopBusy(true);
   flash("checking your purchases …");
   var first=shopOS()==="ios"
     ? P.restorePurchases().catch(function(){})
     : Promise.resolve();
   first.then(shopSync).then(function(got){
-    SHOP.busy=false;
+    shopBusy(false);
     if(got.length){SFX.key();flash("restored · "+shopNames(got));}
     else flash("nothing to restore · all up to date");
     shopRedraw();
