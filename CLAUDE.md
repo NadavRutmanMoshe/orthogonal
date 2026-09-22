@@ -759,6 +759,29 @@ is the rule.
   wrong catalogue back to its default.
 
 **Ads and the shop** (`SHIPPING.md`, "As built: ads and the shop")
+- **A NATIVE PROMISE THAT NEVER SETTLES IS THIS PAIR OF FILES' REAL FAILURE
+  MODE, and `.catch()` cannot see it.** Three of them were found on one
+  phone: `purchaseProduct` (the plugin drops `launchBillingFlow`'s result, so
+  a refused flow never reaches its listener), `requestConsentInfo` (UMP calls
+  neither callback, intermittently) and `adWatch`'s own `busy`. Each one
+  wedged its whole feature for the life of the app, in silence. **So `busy`
+  is written ONLY through `adBusy()` / `shopBusy()`**, each arming a 180s
+  watchdog, and `adSoon()` caps the two start-up calls at 8s and carries on
+  with a fallback. The shop's watchdog **re-syncs rather than guessing** - a
+  hang is not proof that nothing was charged. Anything new that awaits a
+  plugin gets a clock, or it is the same bug again (`docs/HISTORY.md`).
+- **`tools/storetest.js`'s fakes must be able to NOT answer.** `buyMode:"hang"`
+  and `consentMode:"hang"` are `new Promise(()=>{})`; a mock that always
+  answers is testing the easy half, and that is why all three hangs shipped.
+- **When a phone fails silently, `adb logcat` is the FIRST move.** Two rounds
+  of this were diagnosed without a device and both readings were wrong; one
+  logcat dump named two causes in a minute by showing a call go out with no
+  answer back. Filter on `pluginId:` for the bridge traffic.
+- **The debug build installs BESIDE the Play one** (`applicationIdSuffix
+  ".debug"`). A debug APK cannot replace a Play-signed one, and uninstalling
+  to make room takes the save (localStorage) and the phone's place in the
+  track with it. Ads test fully on the suffixed build; **IAP does not test on
+  it at all** - Play sells only to the id it distributed.
 - **Every ad button is `adWatch(function(ok){ if(ok) grant...(); })`.** Never
   a `grant*()` straight from a button. In a browser `adWatch` pays at once, so
   the artifact plays exactly as it did before there were ads.

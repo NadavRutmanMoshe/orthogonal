@@ -1990,3 +1990,99 @@ wrong and never said a word.
 that could clear it off the happy path. One tap the plugin took and never
 answered left every ad button in the session a silent no-op. `adBusy()` is now
 the only writer, arms a 180s watchdog, and a tap while one is up says so.
+
+## Three hangs with one shape, and the clock that was missing from all of them
+
+The plugin lookup fix above made the ads and the shop reachable, and the
+phone immediately produced two new faults: "after i purchase it just says
+one moment...", and an ad button answering "a video is already on its way"
+for ever. They looked unrelated. They were the same bug three times, and
+none of them was in the plugin lookup.
+
+**The shape.** A Capacitor plugin method is a promise. A promise that
+REJECTS is handled everywhere in these two files. A promise that NEVER
+SETTLES is handled nowhere, and `.catch()` cannot help - there is nothing to
+catch. Each of these files has a `busy` flag that exists to stop two taps
+racing for one video or one payment sheet, and a flag that can be set and
+never cleared takes the whole feature down with it for the life of the app,
+silently.
+
+**One: the shop.** `purchaseProduct` resolves ONLY from the plugin's
+`PurchasesUpdatedListener`, and Play calls that listener only if the billing
+flow actually launched. `NativePurchasesPlugin.java` launches it like this:
+
+```java
+BillingResult r = billingClient.launchBillingFlow(getActivity(), params);
+Log.d(TAG, "Billing flow launch result: " + r.getResponseCode() + ...);
+```
+
+The result is logged and dropped. `ITEM_UNAVAILABLE`, `DEVELOPER_ERROR` and
+`BILLING_UNAVAILABLE` - which is what an account that may not buy this build
+gets - never reach the listener, so the call is never resolved and never
+rejected. Caught live in logcat: `purchaseProduct pass_nolimits` sent at
+16:00:12 and never answered.
+
+**Two: the ads.** Caught the same way:
+
+```
+V Capacitor: callback: ..., pluginId: AdMob, methodName: requestConsentInfo
+(nothing, ever)
+```
+
+The plugin's Java is not at fault - `AdConsentExecutor` resolves on success
+and rejects on `formError`. Google's UMP SDK called neither. That stalls
+`adStart()`, so `AD.started` never settles, so `adWatch` holds `busy` and
+every ad button goes quiet. **It did not reproduce on the next run** - the
+same call answered in 384ms - so it is intermittent, and intermittent is
+exactly the case a timeout is for.
+
+**Three: `adWatch`'s own `busy`**, which had no way out at all off the happy
+path. Found by reading rather than by the phone, and fixed with the first.
+
+**The fix, three times: a clock.** `adBusy()` and `shopBusy()` are the only
+writers of their flags and each arms a 180s watchdog; `adSoon()` wraps the
+two calls on the ad start-up path in 8s and carries on with a fallback. The
+shop's watchdog **asks the store on the way out rather than guessing** - a
+hang is not proof that nothing was charged, so it re-syncs and only says
+nothing happened when the store agrees.
+
+**What the fake bridge could not have told us, and now can.** Every one of
+these was invisible to `tools/storetest.js`, because a fake written by the
+same hand that wrote the caller answers every call promptly - that is what a
+mock does. It now has `buyMode:"hang"` and `consentMode:"hang"`, both
+`new Promise(()=>{})`, and eleven assertions that the UI lets go. **A mock
+that only ever answers is testing the easy half.**
+
+**And the reason the phone was needed at all.** Two rounds of this were
+diagnosed from a phone chat with no device access and both readings were
+wrong - the first blamed a stale `cap sync` (the plugins were in the AAB all
+along), the second would have blamed Play Console. `adb logcat` named both
+causes in one dump, in about a minute, by showing a call going out with no
+answer coming back. **When a feature fails silently, the log is not a last
+resort, it is the first move.**
+
+## The debug build had to stop replacing the Play build
+
+Installing a debug APK over a Play-installed one is refused -
+`INSTALL_FAILED_UPDATE_INCOMPATIBLE`, because Play signs with its own key -
+and the only way through is `adb uninstall`, which takes the app's data with
+it. That data is the SAVE: every `orthogonal:*` key lives in the WebView's
+localStorage, and there is no way to pull it off a release-signed build
+(`run-as` needs a debuggable app). It also took the phone out of the Play
+track that put the app there.
+
+That was paid once before anybody noticed it was avoidable.
+`applicationIdSuffix ".debug"` makes the dev build a different app - its own
+icon, its own data - so it installs and uninstalls freely beside the Play
+one. Ads test fully on it; IAP does not test on it at all, because Play only
+sells to a build it distributed under the id it knows. That split is the
+right way round: ads are what needs a fast loop, and a purchase needs a
+track either way.
+
+**Two machine notes that cost time.** `JAVA_HOME` on this machine points at
+JDK 17 while `java` on PATH is 21; Gradle follows `JAVA_HOME`, so a
+command-line build fails with `invalid source release: 21` while Android
+Studio (its own bundled JDK) is fine. And a phone that has been sitting
+locked shows as `offline` to adb until it is unlocked and the debugging
+prompt is accepted again - an empty `adb devices` is usually a locked screen,
+not a broken cable.
