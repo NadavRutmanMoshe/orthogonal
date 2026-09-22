@@ -27,6 +27,14 @@
 #      is Active, StoreKit answers getProducts with nothing at all and every
 #      price in DEALS stays at the hard-coded dollar default.
 #
+#   6. Codemagic > Teams > Code signing identities > iOS certificates >
+#      GENERATE CERTIFICATE, type Apple Distribution, using the key from
+#      step 3. (Not the .p12 upload box beside it - that is for a
+#      certificate made elsewhere, and there is none.)
+#   7. developer.apple.com > Certificates, IDs & Profiles > Profiles > + >
+#      App Store Connect > this bundle id > the certificate from step 6.
+#      Then back in Codemagic > iOS provisioning profiles > FETCH PROFILES.
+#
 # After that, a build is one button in Codemagic, or a push to this branch if
 # the trigger below is turned on.
 workflows:
@@ -39,10 +47,13 @@ workflows:
       app_store_connect: AppStoreConnect
     environment:
       ios_signing:
-        # AUTOMATIC SIGNING, and it is the reason this is Codemagic rather
-        # than a raw macOS runner. Certificates and provisioning profiles are
-        # fetched and installed from the API key above; none of it is checked
-        # in and none of it has to be understood.
+        # THIS FINDS SIGNING FILES, IT DOES NOT MAKE THEM. It looks in
+        # Codemagic > Teams > Code signing identities for a distribution
+        # certificate and an App Store profile for this bundle id, and the
+        # first build failed with "No matching profiles found" because that
+        # page was empty. Filling it is two buttons, once, and the API key is
+        # what those buttons use (setup steps 6-7 in the header). None of it
+        # is checked in.
         distribution_type: app_store
         bundle_identifier: com.nadazgames.ImJustACube
       vars:
