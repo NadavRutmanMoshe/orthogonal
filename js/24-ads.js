@@ -154,11 +154,10 @@ function adStart(){
     A.addListener("onRewardedVideoAdDismissed",adClosed);
     A.addListener("onRewardedVideoAdFailedToShow",adFailed);
   }
-  AD.started=A.requestConsentInfo({tagForUnderAgeOfConsent:child})
-    .catch(function(){return null;})
+  AD.started=adSoon(A.requestConsentInfo({tagForUnderAgeOfConsent:child}),null)
     .then(function(info){
       AD.consent=info;
-      return A.initialize({
+      return adSoon(A.initialize({
         tagForChildDirectedTreatment:child,
         tagForUnderAgeOfConsent:child,
         /* G for everybody, not only for children: a parent's phone set to
@@ -166,7 +165,7 @@ function adStart(){
            of them play. One word to change if it ever needs to be. */
         maxAdContentRating:"General",
         initializeForTesting:AD_TEST
-      });
+      }),null);
     })
     .then(function(){
       if(!adConsentPending())adLoad();
@@ -177,6 +176,38 @@ function adStart(){
       return false;
     });
   return AD.started;
+}
+/* A NATIVE CALL THAT NEVER ANSWERS, WHICH IS THIS FILE'S REAL FAILURE MODE.
+
+   Seen on a real phone, in logcat, from the app's own process:
+
+     V Capacitor: callback: …, pluginId: AdMob, methodName: requestConsentInfo
+     (nothing, ever)
+
+   The call went to native and no answer came back - no resolve, no reject.
+   The plugin's own Java is not at fault (AdConsentExecutor resolves on
+   success and rejects on formError); it is Google's UMP SDK that never
+   calls either callback. That stalls the whole chain below, so `AD.started`
+   never settles, so any adWatch() awaiting it holds `busy` for ever and
+   every ad button in the session goes quiet.
+
+   `.catch()` cannot help: a promise that never settles is not a rejection.
+   Only a clock can, which is what this is - resolve with `fallback` if the
+   native side has not answered in time, and carry on.
+
+   BOTH CALLS IT WRAPS ARE SAFE TO GIVE UP ON. Consent info is advisory: a
+   null AD.consent reads as "no form required", which is the same answer an
+   account with no messages configured gets, and adPrivacyNeeded() simply
+   stays false. A timed-out initialize is worse but still not fatal - the
+   load that follows either works or fails into adLoad()'s own backoff.
+   Either beats a button that does nothing and says nothing. */
+var AD_CALL_MS=8000;
+function adSoon(p,fallback){
+  return new Promise(function(res){
+    var t=setTimeout(function(){res(fallback);},AD_CALL_MS);
+    p.then(function(v){clearTimeout(t);res(v);},
+           function(){clearTimeout(t);res(fallback);});
+  });
 }
 function adConsentPending(){
   var c=AD.consent;

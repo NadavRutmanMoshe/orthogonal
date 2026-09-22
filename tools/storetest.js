@@ -35,7 +35,13 @@ function fakeNative(opts){
   const later=(ms,fn)=>setTimeout(fn,ms);
   const AdMob={
     addListener(ev,fn){(listeners[ev]=listeners[ev]||[]).push(fn);return Promise.resolve({remove(){}});},
-    requestConsentInfo(o){L.push(["consentInfo",o]);return Promise.resolve(Object.assign({},F.consent));},
+    requestConsentInfo(o){L.push(["consentInfo",o]);
+      /* SEEN ON A REAL PHONE: the call reaches native and no answer ever
+         comes back - not a resolve, not a reject. Google's UMP SDK simply
+         never calls either callback, and adSoon() in js/24-ads.js is the
+         clock that gets past it. */
+      if(F.consentMode==="hang")return new Promise(()=>{});
+      return Promise.resolve(Object.assign({},F.consent));},
     showConsentForm(){L.push(["consentForm"]);return Promise.resolve({status:"OBTAINED",privacyOptionsRequirementStatus:"REQUIRED"});},
     showPrivacyOptionsForm(){L.push(["privacyForm"]);return Promise.resolve();},
     initialize(o){L.push(["initialize",o]);return Promise.resolve();},
@@ -267,6 +273,25 @@ const log=page=>page.evaluate(()=>window.__log||[]);
     await page.waitForTimeout(3200);
     const init=(await log(page)).find(e=>e[0]==="initialize");
     ok(init&&init[1].tagForChildDirectedTreatment===true,"I'D RATHER NOT SAY (dmed): child-directed");
+    await ctx.close();
+  }
+
+  console.log("");
+  console.log("[native] a native call that never answers must not kill ads");
+  {
+    const {ctx,page}=await openGame(browser,{native:true,settings:{ageBand:"a26"},progress:midSave,
+      fake:{consentMode:"hang"}});
+    await page.evaluate(()=>{AD_CALL_MS=500;});
+    await page.waitForTimeout(3400);
+    ok(await page.evaluate(()=>!!AD.started),"adStart still runs when consent never answers");
+    await page.waitForTimeout(900);
+    const l=await log(page);
+    ok(l.some(e=>e[0]==="initialize"),"it gives up on consent and initialises anyway");
+    ok(l.some(e=>e[0]==="prepare"),"and still preloads a video");
+    ok(await page.evaluate(()=>!adPrivacyNeeded()),"a null consent reads as no form required");
+    const paid=await page.evaluate(()=>new Promise(r=>{adWatch(r);setTimeout(()=>r("stuck"),4000);}));
+    ok(paid===true,"the ad button still pays after a hung consent call");
+    ok(await page.evaluate(()=>!AD.busy),"and busy is released");
     await ctx.close();
   }
 
