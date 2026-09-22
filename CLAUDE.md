@@ -779,13 +779,23 @@ is the rule.
   behind the stuck call on the plugin's one thread for the whole session.
   Each queued call has a clock (15s; a purchase 180s). `storetest.js`'s
   `shared:true` models the kill, and the old code fails it.
-- **RESTORE PURCHASES is in two places** (DEALS and Settings > More, only
-  when `shopPlugin()`), and when nothing visibly happens it opens
-  `shopRestoreCard()` saying what the button is for. The card takes the
-  one shared `#panel`, so GOT IT returns to the sheet it came from
-  (`panelKind` taken at the press). A toast over any open panel wears a
-  plate (`body.mapopen .toast`), and the home stand's dead canvas is hidden
-  under a panel (`body.mapopen .hstand canvas`).
+- **RESTORE PURCHASES lives on the DEALS shelf only.** It was in Settings >
+  More for one build and came off on the owner's call. When nothing visibly
+  happens it opens `shopRestoreCard()`, two lines and GOT IT, drawn INSIDE
+  `#panel` as an overlay (`.pmodal`/`.pmcard`) so the shelf stays behind it.
+  It went through `offerShell()` for one build, which takes over the shared
+  panel and dropped the player onto the home screen behind a short card.
+  A toast over any open panel wears a plate (`body.mapopen .toast`), and the
+  home stand's dead canvas is hidden under a panel
+  (`body.mapopen .hstand canvas`).
+- **Progress survives a reinstall through `allowBackup="true"` and nothing
+  else.** Android backs the WebView's localStorage (every `orthogonal:*`
+  key) up to the player's own Google account and restores it on reinstall
+  or a new phone. Proven on a device (22 Sep). There is no game code for it,
+  so the only way to break it is flipping that attribute. Its limit: the OS
+  backs up about once a day (idle, charging, Wi-Fi), so progress newer than
+  the last backup is lost. `docs/privacy.html` section 1 and
+  `STORE-ANSWERS.md` both say the backup exists; change all three together.
 - **`tools/storetest.js`'s fakes must be able to NOT answer.** `buyMode:"hang"`
   and `consentMode:"hang"` are `new Promise(()=>{})`; a mock that always
   answers is testing the easy half, and that is why all three hangs shipped.

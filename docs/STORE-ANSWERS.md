@@ -132,10 +132,18 @@ fitness, browsing history, search history, installed apps, or precise location.
 to us; the app only asks the store which items this account owns and keeps that
 answer on the device. Nothing about a purchase is sent anywhere by the app.
 
+**Android's own backup is not declared either, and this is the reading taken,
+so it is written down.** `android:allowBackup="true"` lets the OPERATING SYSTEM
+copy the save into the player's own Google account, encrypted, where we have no
+access; it is what brings progress back after a reinstall (proven on a device,
+22 Sep, `docs/HISTORY.md`). The app itself transmits nothing, so it is not the
+app collecting data. `docs/privacy.html` section 1 says the backup exists, so
+the policy, this form and the manifest agree - which is what a reviewer checks.
+
 | Security question | Answer |
 |---|---|
 | Is all user data encrypted in transit? | **Yes** - the ads SDK uses TLS, and the game itself sends nothing |
-| Do you provide a way for users to request data deletion? | **No.** There is no account and no server; uninstalling removes everything the game saved |
+| Do you provide a way for users to request data deletion? | **No.** There is no account and no server; uninstalling removes everything the game saved from the device. The only other copy is in the player's own phone backup, which the app does not send and we cannot see (below) |
 | Has your app been independently reviewed against a security standard? | No |
 
 ---

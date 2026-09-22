@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- allowBackup="true" IS THE PROGRESS BACKUP. Android copies the app's
+         data - the WebView's localStorage, which holds every orthogonal:*
+         key, so levels, stars, wardrobe and settings - into the player's own
+         Google account, and puts it back when the game is reinstalled from
+         Play or a new phone is set up. Proven on a device on 22 Sep: forced
+         backup, uninstall, reinstall, and the save came back (docs/HISTORY.md).
+         No code does this and none is needed. Setting it false for "privacy"
+         silently loses every player's progress on a reinstall, and
+         docs/privacy.html section 1 and STORE-ANSWERS.md both describe it -
+         change all three together or none. -->
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"

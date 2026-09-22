@@ -2132,3 +2132,49 @@ bug rather than the fix.
 (a clean answer; "not found" is true on the `.debug` package, which Play has
 never heard of), `getPurchases` starts only after it, and the restore card
 appears.
+
+## Linking progress to the account turned out to be one attribute
+
+The owner asked for progress to survive deleting the game and downloading it
+again. Four ways were on the table: Android's own backup, a save code, Play
+Games / Game Center cloud saves, and our own server with accounts. The last
+was ruled out on sight - a backend to run, a login screen, and collecting
+accounts in a game children play is the most regulated thing it could add.
+
+**The first one was already switched on.** `android:allowBackup="true"` had
+been in the manifest since the Capacitor template, with no rules file, which
+means Android backs up the whole app data directory - including the WebView's
+localStorage, where every `orthogonal:*` key lives - to the player's own
+Google account. Nobody had proven it covered the save, so it was tested on
+the `.debug` build, which cannot touch the Play build or its save:
+
+```
+bmgr enabled            -> Backup Manager currently enabled
+bmgr list transports    -> * com.google.android.gms/.backup.BackupTransportService
+bmgr backupnow .debug   -> 763392 bytes, result: Success
+adb uninstall .debug    -> the app's data is gone
+adb install             -> "Got full restore package ... restore finished"
+launch                  -> the HOME screen, not the age card
+```
+
+A fresh install always opens on "How old are you?". It opened on CONTINUE,
+with the equipped Ball on the stand. The save came back.
+
+**What it does not do, so nobody oversells it.** Android backs up on its own
+schedule, about once a day, only when the phone is idle, charging and on
+Wi-Fi - the test forced it with `backupnow`, and a real player cannot. So
+progress newer than the last backup is lost on a reinstall. It needs the
+player's phone backup to be on (it usually is), the same Google account, and
+it is Android only; iPhone's equivalent is iCloud. It is very likely why the
+owner's own save did NOT come back when he uninstalled the Play build the day
+after installing it: no backup had run yet.
+
+**It exposed a sentence in the privacy policy that had been false all along.**
+`docs/privacy.html` said the save "stays on the device ... and is deleted when
+you uninstall the game". With backup on, a copy goes to the player's own
+account and comes back. Section 1, section 6 and "Your choices" now say so,
+and `STORE-ANSWERS.md` records why it is still not declared as collection:
+the operating system sends it to the player's own account, and the app sends
+nothing. The manifest carries a comment at the attribute, because flipping it
+to false "for privacy" would silently cost every player their progress on a
+reinstall.
