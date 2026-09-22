@@ -195,6 +195,19 @@ function shopAck(tokens){
     });
   },Promise.resolve());
 }
+/* HAS ANYTHING ON THE MONEY SHELF EVER BEEN BOUGHT, as far as this install
+   knows. It reads `wardrobe.owned` directly rather than `owns()`, and that is
+   the point: owns() answers yes for every paid shape once EVERYTHING is held,
+   by rule, so it would call a pass-holder an owner of four things nobody
+   bought individually. What this question is really asking is "did money
+   change hands on this account", and the ids actually written into the
+   wardrobe are the record of that. */
+function shopOwnsAny(){
+  var d=shopDeals();
+  for(var i=0;i<d.length;i++)
+    if(wardrobe.owned.indexOf(d[i].id)>=0)return true;
+  return false;
+}
 function shopNames(ids){
   var d=shopDeals();
   return ids.map(function(id){return findBy(d,id).name;}).join(" · ");
@@ -259,8 +272,17 @@ function shopRestore(){
     : Promise.resolve();
   first.then(shopSync).then(function(got){
     shopBusy(false);
+    /* THREE ANSWERS, NOT TWO, because "nothing to restore" was being read as
+       "the button is broken" - and fairly, since it is what a dead button
+       would say. shopSync() returns only what was MISSING and has now been
+       added, so the ordinary case for somebody who has just bought something
+       is an empty list, and the honest thing to say is not "nothing" but
+       "they are already here". The third case is the one where nothing was
+       ever bought on this account, which is a different fact and the only
+       one where a player should go looking for a different store account. */
     if(got.length){SFX.key();flash("restored · "+shopNames(got));}
-    else flash("nothing to restore · all up to date");
+    else if(shopOwnsAny())flash("nothing new · your purchases are already here");
+    else flash("no purchases found on this store account");
     shopRedraw();
   });
 }

@@ -400,7 +400,13 @@ const log=page=>page.evaluate(()=>window.__log||[]);
     ok(await page.evaluate(()=>owns("pup"))&&/restored · Pup/.test(await toast(page)),"RESTORE PURCHASES writes back what the store has");
     ok(!(await log(page)).some(e=>e[0]==="restore"),"android restore does not call the plugin's racing restore");
     await page.click("#wRestore");await page.waitForTimeout(250);
-    ok(/nothing to restore/.test(await toast(page)),"second restore: nothing to restore");
+    ok(/already here/.test(await toast(page)),"second restore: says they are already here, not 'nothing'");
+    /* THE THIRD ANSWER: an account that never bought anything is a different
+       fact from one whose purchases are already in place, and only the first
+       is a reason to go looking at which store account you are signed in to. */
+    await page.evaluate(()=>{__fake.storeOwned=[];wardrobe.owned=[];wardRefresh();});
+    await page.click("#wRestore");await page.waitForTimeout(250);
+    ok(/no purchases found/.test(await toast(page)),"restore with nothing bought anywhere says so");
 
     // iOS later approval (Ask to Buy)
     await page.evaluate(()=>__emitShop("transactionUpdated",{productIdentifier:"robot",transactionId:"9"}));
