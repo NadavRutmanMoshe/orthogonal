@@ -10,3 +10,8 @@ shots/
 # and is now under shots/, which is ignored above, along with the owner's
 # phone takes and the promo joined from them.
 store/
+# App Store Connect API keys (AuthKey_XXXXXXXXXX.p8). THIS REPO IS PUBLIC, and
+# Apple issues a .p8 exactly once: committed, it is a key anyone can use to
+# upload builds as this account, and it cannot be un-published. It belongs in
+# Codemagic's integration form and a backup, never in this tree.
+*.p8
