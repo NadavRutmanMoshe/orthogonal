@@ -544,7 +544,9 @@ trial, the map, the wardrobe, a cutscene beat and the neighbour mid-sentence.
 - **iOS**: 1290x2796 and 1320x2868, **and iPad at 2064x2752, which is now
   required rather than optional** - iPad is supported, on the owner's call,
   because the iOS device in the house is an iPad. Icon 1024x1024, and it
-  must have no alpha channel.
+  must have no alpha channel. `node tools/store.js --ipad` is that set, and
+  the iPad viewport is 1032x1376 CSS at dpr 2 - a real 13" iPad's own size,
+  not a number that multiplies to the right picture.
 - **Play**: 1080x1920, at least two and ideally eight. Icon 512x512.
 - **Steam**: 1920x1080, at least five.
 

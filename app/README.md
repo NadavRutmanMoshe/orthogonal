@@ -183,8 +183,10 @@ one, which is a thing Play's side cannot do and this side can.
   all, so every price in the shop stays at the dollar default.
 - **The In-App Purchase capability** on the app target, which Codemagic's
   automatic signing can set.
-- **Screenshots** at 1290x2796 and 1320x2868, plus iPad at 2064x2752 now that
-  iPad is supported (`tools/store.js --ios`, `--tab10`).
+- **Screenshots**: `node tools/store.js --ios` (1290x2796) and
+  `node tools/store.js --ipad` (2064x2752). **The iPad set is required, not
+  optional**, because the device family includes iPad; App Store Connect
+  takes up to ten per display size and the set is ten.
 
 ## The two money plugins
 

@@ -3,6 +3,7 @@
  *
  *     node tools/store.js              writes shots/play/*.png   (1080x1920)
  *     node tools/store.js --ios        the iPhone size          (1290x2796)
+ *     node tools/store.js --ipad       the iPad 13" size        (2064x2752)
  *     node tools/store.js --tablet     Play 7" tablet slot      (1200x1920)
  *     node tools/store.js --tab10      Play 10" tablet slot     (1600x2560)
  *     node tools/store.js --only 02    just one shot, while tuning it
@@ -52,6 +53,17 @@ const SIZES={
   play:{w:360, h:640, dpr:3, out:"shots/play"},      // 1080x1920
   /* iPhone 6.7": 1290x2796 is 430 at dpr 3. */
   ios: {w:430, h:932, dpr:3, out:"shots/ios"},       // 1290x2796
+  /* THE IPAD SLOT IS NOT OPTIONAL FOR THIS APP. App Store Connect asks for
+     13-inch iPad shots from anything whose device family includes iPad, and
+     ours does (TARGETED_DEVICE_FAMILY = "1,2", app/README.md) - so this is a
+     required upload, not a nice-to-have like Play's tablet slots.
+
+     1032x1376 at dpr 2 is 2064x2752, the 13" iPad Pro exactly, and it is a
+     real iPad's CSS size rather than a number that multiplies to the right
+     picture - the same rule as the two Play tablet slots below. 2048x2732
+     (the older 12.9", 1024x1366) is also accepted; 1032 is the current one
+     and Apple scales down, never up. */
+  ipad: {w:1032, h:1376, dpr:2, out:"shots/ipad"},   // 2064x2752
   /* Play's two tablet slots. THE CSS WIDTH IS THE POINT, not the pixel
      count: 1200x1920 can be reached as 400 CSS px at dpr 3, and that is a
      wide PHONE as far as this layout is concerned - the shot would come out
@@ -120,7 +132,12 @@ const SHOTS=[
 function main(){
   const args=process.argv.slice(2);
   const only=(()=>{ const i=args.indexOf("--only"); return i>=0?args[i+1]:null; })();
-  const size=SIZES[args.includes("--ios")?"ios":args.includes("--tab10")?"tab10":args.includes("--tablet")?"tab7":"play"];
+  const size=SIZES[args.includes("--ios")?"ios":args.includes("--ipad")?"ipad":
+                   args.includes("--tab10")?"tab10":args.includes("--tablet")?"tab7":"play"];
+  /* The two stores count differently, and the footer is the only place that
+     says how many of these to actually upload. Apple takes up to TEN per
+     display size and needs at least one; Play takes eight and needs two. */
+  const apple=size===SIZES.ios||size===SIZES.ipad;
   const all=args.includes("--all-spares");
   const out=path.join(ROOT,size.out);
   fs.mkdirSync(out,{recursive:true});
@@ -138,6 +155,8 @@ function main(){
     fs.renameSync(from,to);
     console.log(path.relative(ROOT,to));
   }
-  console.log(`\n${size.w*size.dpr}x${size.h*size.dpr} - Play takes at least 2 and at most 8 per slot, and this set is ${SHOTS.length}.`);
+  console.log(`\n${size.w*size.dpr}x${size.h*size.dpr} - ` + (apple
+    ? `App Store Connect takes up to 10 per display size, and this set is ${SHOTS.length}. Upload all of them.`
+    : `Play takes at least 2 and at most 8 per slot, and this set is ${SHOTS.length}.`));
 }
 main();
