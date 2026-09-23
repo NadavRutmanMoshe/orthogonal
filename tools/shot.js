@@ -76,6 +76,7 @@ const SCREENS={
      the note beside starsOffer() in js/12-play.js) and the target went on
      pointing at a function that no longer exists, which aborted --all. */
   starsoffer:{what:"the card that explains stars", js:"lv(14);settings.starAsked=false;setTimeout(starsOffer,50);"},
+  shopnudge:{what:"the wardrobe card that offers the Pyramid", js:"UNLIMITED_SHARDS=true;lv(19);settings.shopNudged=[];settings.shopNudgeOff=false;setTimeout(shopNudge,50);", wait:1400},
   refill:   {what:"the out-of-hints card", js:"lv(2);setTimeout(hintRefillOffer,50);"},
   struggle: {what:"the out-of-lives card, TRY AGAIN and the skip", js:"lv(18);settings.noSlowOffer=false;setTimeout(struggleOffer,600);", wait:1400},
   tutcard:  {what:"a full-bleed explanation card", js:"lv(2);cardPut('A heading','Two lines of body text, with {to2} named the way the button names it.','brief');"},

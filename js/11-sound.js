@@ -119,6 +119,10 @@ var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false
                  preferences back, and whether you have watched the opening
                  is not a preference. REPLAY STORY is how you ask for it. */
               seenStory1:false, seenStory2:false, seenStory3:false,
+              /* The wardrobe card (shopNudge(), js/12-play.js): which of its
+                 four shapes have been shown, and whether the player said
+                 stop. Not reset by RESET SETTINGS - an ad seen is seen. */
+              shopNudged:[], shopNudgeOff:false,
               /* `killcam` is gone. The owner played both and kept the
                  television, so kcFull() is a constant now and there is no key
                  to store. */

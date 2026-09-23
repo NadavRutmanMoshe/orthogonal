@@ -542,6 +542,10 @@ L96 14 L0 14 Z' fill='%23fff'/></svg>");
   .panel.offer .olead,.pmcard .olead{font-size:13px;line-height:1.6;color:var(--fg);
     margin-top:8px;letter-spacing:.01em}
   .panel.offer .olead b{color:var(--ok,var(--goal));font-weight:600}
+  /* The wardrobe card's stand (shopNudge()): the wardrobe's own case, a
+     little shorter so the card still fits a small phone without scrolling. */
+  .panel.offer .onudge{margin:2px 0 10px}
+  .panel.offer .onudge .wcanvas{height:clamp(130px,22vh,190px)}
   .panel.offer .ma,.pmcard .ma{margin-top:15px}
   /* A label that outgrows its button wraps inside it rather than running out
      of it - the belt to the braces of keeping the labels short. Scoped to

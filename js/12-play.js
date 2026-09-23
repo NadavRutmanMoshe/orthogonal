@@ -2785,6 +2785,85 @@ function starsOffer(){
     "is three moves.</b>","var(--star)");
   bind("stOk",function(){hidePanel();});
 }
+/* THE WARDROBE, POINTED AT. Testers never opened it: the stars pile up in a
+   corner and nothing ever says they are money. So once the balance can pay
+   for one of these four shapes, the next ordinary level opens with a card
+   showing that shape on the wardrobe's own stand, with BUY on it.
+
+   Each shape is shown once (`settings.shopNudged`), in this order, one card
+   per level entered - the prices are 16, 18, 22 and 24, so the thresholds
+   ARE the prices, and the card only ever offers something the player can
+   actually pay for. DON'T SHOW ME AGAIN ends all four (`shopNudgeOff`).
+
+   Never over a fight or a trial (a card over a clock is a card over a
+   running clock), never in a lesson, never under No Limits - the balance is
+   bottomless there and "your stars can buy this" says nothing. It goes
+   BEFORE the stars card when both are due, and hands over to it on the way
+   out (offerChain()). */
+var SHOP_NUDGES=["pyramid","diamond","donut","star"];
+var nudgeArmed=false;
+function shopNudgeItem(){
+  if(settings.shopNudgeOff||noLimits())return null;
+  if(playSource!=="builtin"||!L||L.tutorial||L.boss||L.trial)return null;
+  var seen=settings.shopNudged||[], bal=shards();
+  for(var i=0;i<SHOP_NUDGES.length;i++){
+    var id=SHOP_NUDGES[i];
+    if(seen.indexOf(id)>=0||owns(id))continue;
+    var it=findBy(SKIN_SHAPES,id);
+    if(it.id===id&&bal>=it.cost)return it;
+  }
+  return null;
+}
+function offerChain(){
+  if(starsOfferDue())setTimeout(starsOffer,320);
+}
+function shopNudge(){
+  var it=shopNudgeItem();if(!it)return;
+  if(levelOver()||panelOpen()||screenUp())return;
+  settings.shopNudged=(settings.shopNudged||[]).concat([it.id]);saveSettings();
+  nudgeArmed=false;
+  // Non-breaking, or the star wraps onto a line of its own on a narrow phone.
+  var star=" <u class='st'>★</u>";
+  offerShell("Wardrobe","The "+esc(it.name),
+    "<div class='wglass onudge'><canvas id='nudgeCase' class='wcanvas'></canvas>"+
+      "<i class='wfloor'></i><span class='wturn'>DRAG TO TURN</span></div>"+
+    "Your stars are spendable. You have <b>"+shards()+star+"</b>, and the "+
+      esc(it.name)+" is <b>"+it.cost+star+"</b>.",
+    "<button class='go' id='nuBuy'>BUY · "+it.cost+star+"</button>"+
+    "<button id='nuShop'>SEE THE WARDROBE</button>"+
+    "<button class='qt' id='nuLater'>NOT NOW</button>"+
+    "<button class='qt' id='nuNever'>DON'T SHOW ME AGAIN</button>",
+    "","var(--star)");
+  bind("nuBuy",function(){
+    // Armed, then confirmed - the wardrobe's own rule, because a mis-tap
+    // here spends stars exactly as one there would.
+    if(!nudgeArmed){
+      nudgeArmed=true;SFX.turn();
+      $("nuBuy").innerHTML="SURE? · "+it.cost+star;return;
+    }
+    if(shards()<it.cost){flash("not enough stars");SFX.bump();hidePanel();return;}
+    wardrobe.owned.push(it.id);wardrobe.spent+=it.cost;
+    wardEquip("shape",it.id);
+    SFX.key();flash(it.name+" unlocked");
+    if(typeof syncHud==="function")syncHud();
+    hidePanel();offerChain();
+  });
+  bind("nuShop",function(){SFX.turn();wardrobeAt(it.id);});
+  bind("nuLater",function(){hidePanel();offerChain();});
+  bind("nuNever",function(){
+    settings.shopNudgeOff=true;saveSettings();
+    hidePanel();offerChain();
+  });
+  // A frame late, like the wardrobe's own case: the canvas has no size until
+  // the card is laid out. Re-checked, so a card closed inside that frame
+  // does not start a context nothing will ever stop.
+  requestAnimationFrame(function(){
+    var cv=$("nudgeCase");
+    if(!cv||panelKind!=="offer"||!panelOpen())return;
+    previewStart(cv);
+    previewShow(it.id,wardrobe.color,wardrobe.world3,wardrobe.world2,false);
+  });
+}
 /* THE OFFER CARD, AND WHY IT HAS FOUR PARTS RATHER THAN THREE.
 
    It used to be `<h3>` · lead · buttons · note, and the two flaws were the
@@ -2968,7 +3047,10 @@ function loadLevel(level,idx){
   // The board first, the card a beat later - the same order the struggle
   // offer uses, and for the same reason: it is a door standing in front of
   // something, so the something has to be there.
-  if(starsOfferDue())setTimeout(starsOffer,520);
+  // The shop card first when both are due; it hands over to the stars card
+  // when it closes (offerChain()).
+  if(shopNudgeItem())setTimeout(shopNudge,520);
+  else if(starsOfferDue())setTimeout(starsOffer,520);
   /* The neighbour, if this is one of his levels. Last, because he is placed
      from L.blocks and from the start and the goal, all of which this
      function has just settled. */
