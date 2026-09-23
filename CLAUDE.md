@@ -591,6 +591,14 @@ is the rule.
   out-of-lives card the fight itself puts up.
 
 **Settings and saves** (`systems.md`)
+- **The wardrobe card (`shopNudge()`, `js/12-play.js`) offers the four star
+  shapes** - Pyramid 16, Diamond 18, Donut 22, Shard 24 - each once, when the
+  spendable BALANCE covers it, on the next ordinary level entered, and goes
+  before the stars card, handing over to it on close (`offerChain()`).
+  `shopNudged`/`shopNudgeOff` are whitelisted in `loadSettings()`.
+- **Text in the skin's colour reads `--player-ink`, never `--player`.**
+  `applySkin()` writes both; ink is lifted toward white when the skin is too
+  dark to set type in (stSay()'s rule), or Black blanks every selected option.
 - **A first run is asked ONE question: how old are you.** The intro card's
   five bands ARE its start button (there is no BEGIN, and no PICK A LEVEL),
   and each writes three settings at once - `size`, `speed`, `ui` - from

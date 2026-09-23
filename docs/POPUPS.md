@@ -150,7 +150,7 @@ hand, and with nothing on screen it is the note under the spoken move.
 A sheet over a dimmed board, in five parts: a **kicker** in the card's own
 colour, a **title** in the display face, one **lead** line at reading weight,
 the **buttons**, and an optional **note** under a hairline.
-`offerShell(kick,title,lead,acts,note,tone)`, `js/12-play.js`. Three of them
+`offerShell(kick,title,lead,acts,note,tone)`, `js/12-play.js`. Four of them
 exist - the card that introduced the bulb was cut.
 
 ### THREE STARS - shown once, on the first level that scores
@@ -158,11 +158,25 @@ exist - the card that introduced the bulb was cut.
 
 - **Kicker:** `SCORING`
 - **Title:** `Three stars`
-- **Lead:** `Three stars means you found the **shortest route** - not that you
-  finished.`
+- **Lead:** `Three stars means you found the **shortest route**.`
 - **Buttons:** `TRY FOR THREE`
 - **Note:** `Half again as many moves is two stars, twice as many is one.
   **This one is three moves.**`
+
+### THE WARDROBE - once the balance can pay for a star shape
+*Shot: `shopnudge`. `shopNudge()`. Tone: the wardrobe button's violet. Centred
+(`.panel.offer.nudge`), the hanger in the kicker, the shape turning on the
+wardrobe's own stand.*
+
+Pyramid at 16, Diamond 18, Donut 22, Shard 24 - each once, one per ordinary
+level entered, before the stars card when both are due.
+
+- **Kicker:** `WARDROBE`
+- **Title:** `The Pyramid` (or Diamond, Donut, Shard)
+- **Lead:** `Your stars are spendable. You have **N ★**, and the Pyramid is **16 ★**.`
+- **Buttons:** `BUY · 16 ★` (then `SURE? · 16 ★`) · `SEE THE WARDROBE` ·
+  `NOT NOW` · `DON'T SHOW ME AGAIN`
+- **Note:** none
 
 ### OUT OF HINTS - the bulb with an empty pool
 *Shot: `refill`. `hintRefillOffer()`. Tone: gold.*

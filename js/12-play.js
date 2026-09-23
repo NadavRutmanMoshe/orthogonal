@@ -2778,8 +2778,7 @@ function starsOffer(){
      this button plays nothing. A plain confirm wears the goal's green, like
      every other confirm in the game. */
   offerShell("Scoring","Three stars",
-    "Three stars means you found the <b>shortest route</b> \u2014 not that "+
-    "you finished.",
+    "Three stars means you found the <b>shortest route</b>.",
     "<button class='go' id='stOk'>TRY FOR THREE</button>",
     "Half again as many moves is two stars, twice as many is one. <b>This one "+
     "is three moves.</b>","var(--star)");
@@ -2824,7 +2823,7 @@ function shopNudge(){
   nudgeArmed=false;
   // Non-breaking, or the star wraps onto a line of its own on a narrow phone.
   var star=" <u class='st'>★</u>";
-  offerShell("Wardrobe","The "+esc(it.name),
+  offerShell(wardIcon()+"Wardrobe","The "+esc(it.name),
     "<div class='wglass onudge'><canvas id='nudgeCase' class='wcanvas'></canvas>"+
       "<i class='wfloor'></i><span class='wturn'>DRAG TO TURN</span></div>"+
     "Your stars are spendable. You have <b>"+shards()+star+"</b>, and the "+
@@ -2833,7 +2832,11 @@ function shopNudge(){
     "<button id='nuShop'>SEE THE WARDROBE</button>"+
     "<button class='qt' id='nuLater'>NOT NOW</button>"+
     "<button class='qt' id='nuNever'>DON'T SHOW ME AGAIN</button>",
-    "","var(--star)");
+    // The wardrobe button's own violet, so the card is recognisably about it.
+    "","var(--vio)");
+  // Centred on the screen: the card is tall, and anchored like the other
+  // offers it rode up to the top edge.
+  $("panel").classList.add("nudge");
   bind("nuBuy",function(){
     // Armed, then confirmed - the wardrobe's own rule, because a mis-tap
     // here spends stars exactly as one there would.

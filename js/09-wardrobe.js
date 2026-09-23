@@ -618,6 +618,14 @@ function applySkin(){
   if(typeof trailTint==="function")trailTint(col);
   document.documentElement.style.setProperty("--player",
     "#"+col.toString(16).padStart(6,"0"));
+  /* THE SKIN COLOUR, AS TYPE. `--player` is also what the chrome writes a
+     selected option in, and Black on a dark panel is no text at all - the
+     settings sheet's chosen rows went blank on it. So text reads `--player-ink`:
+     the same colour, lifted toward white when it is too dark to set type in -
+     the rule stSay() already uses for the story's captions (lum .34, .72). */
+  var ink=new THREE.Color(col);
+  if(pipLum(col)<.34)ink.lerp(new THREE.Color(0xffffff),.72);
+  document.documentElement.style.setProperty("--player-ink","#"+ink.getHexString());
 }
 /* ============================================================
    THE DISPLAY CASE

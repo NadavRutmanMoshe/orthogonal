@@ -29,7 +29,7 @@
   .panel h3{margin:0 0 7px;font-size:12px;letter-spacing:.14em;
     color:var(--fg-dim);font-weight:500}
   .panel .ok{color:var(--goal)}
-  .panel .bad{color:var(--player)}
+  .panel .bad{color:var(--player-ink,var(--player))}
   .panel .warn{color:#e0a03c}
   .panel .mono{color:var(--fg-dim);word-break:break-all}
   .panel textarea{width:100%;height:110px;background:transparent;
@@ -50,7 +50,7 @@
   .panel input::placeholder{color:var(--fg-dim)}
   .lrow{display:flex;align-items:center;gap:8px;padding:7px 0;
     border-bottom:1px solid var(--rule);scroll-margin:40px}
-  .lrow.here .lname{color:var(--player)}
+  .lrow.here .lname{color:var(--player-ink,var(--player))}
   .lname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;
     white-space:nowrap;color:var(--fg)}
   .lrow .mono{font-size:11px;white-space:nowrap}
@@ -483,7 +483,7 @@
   .wact{display:flex;flex-direction:column;gap:6px;margin-top:10px}
   .wact button{height:40px;width:100%;font-size:12.5px;letter-spacing:.1em}
   .wact .wgo{border-color:var(--goal);color:var(--goal)}
-  .wact .wsure{border-color:var(--player);color:var(--player)}
+  .wact .wsure{border-color:var(--player);color:var(--player-ink,var(--player))}
   .wcase .note{margin-top:5px}
   /* The list scrolls under this row, so it needs a hard edge of its own -
      without one, a half-scrolled tile reads as though it is behind the
@@ -556,7 +556,7 @@
   .lrow.trialrow .lname{color:#e0a03c;letter-spacing:.05em}
   .chap.locked{color:var(--fg-dim)}
   .chap.locked .secbar{opacity:.5}
-  .chap{margin:12px 0 4px;font-size:11.5px;letter-spacing:.16em;color:var(--player)}
+  .chap{margin:12px 0 4px;font-size:11.5px;letter-spacing:.16em;color:var(--player-ink,var(--player))}
   .chap:first-child{margin-top:2px}
   .chap span{display:block;color:var(--fg-dim);letter-spacing:.03em;
     font-size:11.5px;margin-top:2px;text-transform:none}

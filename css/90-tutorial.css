@@ -115,7 +115,7 @@ body.tutlock .coach{z-index:11}
 .deathsay.on{opacity:1;animation:phaseIn .45s cubic-bezier(.2,.9,.3,1)}
 /* Named the way the checklist names it, and only where it is the control's
    own name - the verb, never a glyph. See tutWords(). */
-.deathsay b{font-weight:700;color:var(--player)}
+.deathsay b{font-weight:700;color:var(--player-ink,var(--player))}
 /* On the paper the amber is a wash; the ink colour is what reads there. */
 body.flat .deathsay{color:#8a5a12;
   text-shadow:0 2px 16px rgba(230,225,211,.9),0 1px 3px rgba(230,225,211,.8)}

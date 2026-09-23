@@ -62,6 +62,8 @@ function showPanel(html,kind){
      on, it would raise the next panel over a card that was meant to be in
      front of it. */
   $("panel").classList.remove("overcard");
+  // Likewise the wardrobe card's centring, set by shopNudge() alone.
+  $("panel").classList.remove("nudge");
   /* The offer cards, and only them: they are the one panel that is a
      decision rather than a place, so they get their own shape, their own
      type scale and a scrim over the board. See `.panel.offer` in

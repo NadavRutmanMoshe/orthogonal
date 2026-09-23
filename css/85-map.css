@@ -72,9 +72,9 @@
     border:1px solid var(--rule);border-radius:20px;color:var(--star);font-size:12px}
   .mq{width:30px;height:30px;border-radius:50%;flex-shrink:0;font-size:13px;
     color:var(--fg-dim);border:1px solid var(--rule);background:transparent}
-  .mq.on{color:var(--player);border-color:var(--player)}
+  .mq.on{color:var(--player-ink,var(--player));border-color:var(--player)}
   .mq.mx{color:var(--fg);font-size:15px}
-  .mq.mx:active{border-color:var(--player);color:var(--player)}
+  .mq.mx:active{border-color:var(--player);color:var(--player-ink,var(--player))}
 
   /* THE SECTION CHOOSER, which replaced the tab strip that used to live here.
      `.mtabs` / `.mtab` are gone with it; the reasoning is on sectionPicker()
@@ -545,6 +545,10 @@ L96 14 L0 14 Z' fill='%23fff'/></svg>");
   /* The wardrobe card's stand (shopNudge()): the wardrobe's own case, a
      little shorter so the card still fits a small phone without scrolling. */
   .panel.offer .onudge{margin:2px 0 10px}
+  .panel.offer.nudge{top:50%;bottom:auto;transform:translate(-50%,-50%)}
+  .panel.offer .okicon{width:15px;height:15px;margin:-3px 6px 0 0;
+    vertical-align:middle;fill:currentColor}
+  .panel.offer .okicon .ln{fill:none;stroke:currentColor;stroke-linecap:round}
   .panel.offer .onudge .wcanvas{height:clamp(130px,22vh,190px)}
   .panel.offer .ma,.pmcard .ma{margin-top:15px}
   /* A label that outgrows its button wraps inside it rather than running out

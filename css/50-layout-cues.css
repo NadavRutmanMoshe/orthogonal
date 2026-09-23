@@ -40,7 +40,7 @@
   .coach.on{opacity:1}
   .coach i{display:block;font-style:normal;font-size:10.5px;letter-spacing:.18em;
     color:var(--goal);margin-bottom:5px}
-  .coach b{color:var(--player);font-weight:500}
+  .coach b{color:var(--player-ink,var(--player));font-weight:500}
   /* Both of these RE-STATE the bottom the base rule set, so both re-state
      its inset too. Every override of an edge-anchored value is its own
      safe-area decision; there is no way to write it once. */
@@ -67,8 +67,8 @@
   .crow.bare{border-bottom:0;padding-bottom:2px}
   .crow .seg{flex:1;display:flex;gap:4px}
   .crow .seg button{flex:1;height:27px;font-size:10.5px;letter-spacing:.05em}
-  .crow .seg button.on{border-color:var(--player);color:var(--player);
-    background:rgba(214,51,108,.13)}
+  .crow .seg button.on{border-color:var(--player-ink,var(--player));color:var(--player-ink,var(--player));
+    background:color-mix(in srgb,var(--player-ink,var(--player)) 13%,transparent)}
   /* AND ON A NARROW PHONE THE LABEL GOES ABOVE THE ROW.
 
      The two longest labels are twelve monospace characters, and 92px of
@@ -94,7 +94,7 @@
   .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:auto;
     top:calc(var(--sat) + 76px);
     z-index:15;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12.5px;
-    letter-spacing:.05em;color:var(--player);opacity:0;transition:opacity .25s;
+    letter-spacing:.05em;color:var(--player-ink,var(--player));opacity:0;transition:opacity .25s;
     pointer-events:none;text-align:center;padding:0 20px}
   .toast.on{opacity:1}
   /* A TOAST OVER AN OPEN PANEL NEEDS A PLATE UNDER IT.

@@ -459,6 +459,14 @@ function gridIcon(cls){
     "<rect x='3.2' y='13.4' width='7.4' height='7.4' rx='1.7'/>"+
     "<rect x='13.4' y='13.4' width='7.4' height='7.4' rx='1.7'/></svg>";
 }
+/* The hanger the wardrobe's corner button wears (#bWard in index.html), for
+   the wardrobe card's kicker, so the card names the button it is about. */
+function wardIcon(){
+  return "<svg class='okicon' viewBox='0 0 24 24' aria-hidden='true'>"+
+    "<path class='ln' d='M12 10.2V9c0-1 .7-1.6 1.5-2a1.9 1.9 0 1 0-2.7-1.7' "+
+    "stroke-width='2.1'/><path d='M12.7 10.1h-1.4l-7.6 5.3c-1.6 1.1-.8 3.6 "+
+    "1.1 3.6h14.4c1.9 0 2.7-2.5 1.1-3.6l-7.6-5.3Z'/></svg>";
+}
 function tagIcon(){
   return "<svg class='tagicon' viewBox='0 0 24 24' fill-rule='evenodd' "+
     "aria-hidden='true'><path d='M2.6 11.5 11.4 2.7c.4-.4.9-.6 1.4-.6h6.5c1.1 "+

@@ -12,7 +12,7 @@
   #composeBar{display:none;flex-direction:column;gap:6px}
   #composeBar.on{display:flex}
   .script{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;
-    letter-spacing:.1em;color:var(--player);margin-top:5px;line-height:1.6;
+    letter-spacing:.1em;color:var(--player-ink,var(--player));margin-top:5px;line-height:1.6;
     max-width:62vw;word-break:break-word}
   .row{display:flex;gap:4px;align-items:stretch}
   /* THE PIECE CHIPS. Each one wears its piece's hue in `--c` (set by
