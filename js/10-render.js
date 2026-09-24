@@ -2693,8 +2693,61 @@ function recomputeBounds(){
      about. */
   arenaSW=Math.max(b[0]-a[0],b[2]-a[2])+1;      // +1: blocks are a cell wide
   arenaSH=(b[1]-a[1])+1+CAM_TILT*arenaSW;
+  /* A LEVEL THAT CANNOT TURN ONLY EVER SHOWS VIEW 0, where screen-right is
+     x and depth is z - so the worst case over four views is a worst case
+     that never happens, and it was paid for in HEIGHT: a board seven wide
+     and three deep was charged seven cells of depth, which on a landscape
+     screen (height-bound) framed it at about half the size it fits at.
+     On a computer only for now; on a phone the fit is width-bound in
+     portrait and this would move every locked level's framing a little
+     for no reported problem. */
+  if(typeof deskMode==="function"&&deskMode()&&L.rotate===false&&
+     !(typeof storyFrameBox==="function"&&storyFrameBox()))deskFit(b[0]-a[0]);
   arenaLo=a.slice();arenaHi=b.slice();
   viewSizeT=fitViewSize();
+}
+/* THE COMPUTER'S FIT FOR A LOCKED LEVEL: what is actually on screen,
+   measured through the camera's real angle and centred on it.
+
+   The general fit above charges a cell of height 1 and a cell of depth
+   CAM_TILT, and centres on the middle of the world box. Through the real
+   camera - at (0, CAM_TILT*34, 40), a 27.8 degree pitch - a cell of height
+   draws at cos (.885) and a cell of depth at sin (.466), and the neighbour
+   is handed in as a stand-in point (guidePoint()) whose depth has been
+   converted into height at .62 a cell. On a landscape screen, where height
+   is what runs out, the three errors added up to a board framed at about
+   half its size and centred a cell too high - reported with a screenshot.
+
+   So every cell that draws - the blocks, the start, the goal, and the
+   neighbour where he really stands, two cells tall - is projected to
+   screen-up (cos*y - sin*z), and the camera is aimed at the middle of that.
+   Folded, the camera is level and screen-up is plain y, around the same
+   centre; the half-height is whichever of the two needs more. `xspan` is
+   the world box's, which already holds him. */
+function deskFit(xspan){
+  var pit=Math.atan2(CAM_TILT*34,40), C=Math.cos(pit), S=Math.sin(pit);
+  var h3=(C+S)/2, lo3=1e9, hi3=-1e9, loF=1e9, hiF=-1e9, zlo=1e9, zhi=-1e9;
+  function cell(y0,y1,z,yF0,yF1){
+    lo3=Math.min(lo3,C*y0-S*z-h3); hi3=Math.max(hi3,C*y1-S*z+h3);
+    loF=Math.min(loF,yF0-.5);      hiF=Math.max(hiF,yF1+.5);
+  }
+  var cells=L.blocks.concat(L.keys||[]);
+  if(L.start)cells=cells.concat([L.start]);
+  if(L.goal)cells=cells.concat([L.goal]);
+  for(var i=0;i<cells.length;i++){
+    var p=cells[i];
+    cell(p[1],p[1],p[2],p[1],p[1]);
+    zlo=Math.min(zlo,p[2]);zhi=Math.max(zhi,p[2]);
+  }
+  var g=typeof guideSpot==="function"?guideSpot():null;
+  // He and his pedestal are about two cells tall, from his spot upward.
+  if(g)cell(g[1],g[1]+1.2,g[2],g[3],g[3]+1.2);
+  var cz=(zlo+zhi)/2, mid3=(lo3+hi3)/2;
+  var cy=(mid3+S*cz)/C;
+  var half=Math.max((hi3-lo3)/2,cy-loF,hiF-cy);
+  centerT.set(centerT.x,cy,cz);
+  arenaSW=xspan+1;
+  arenaSH=half*2;
 }
 /* Both axes have to fit, so take whichever demands more room. The vertical
    requirement is multiplied by the aspect because in portrait the frustum's
@@ -2711,6 +2764,10 @@ function fitViewSize(){
      default layout is now GESTURES with no bar at all - which is most of
      why there is room to do this. */
   var padW=1.0, padH=barIsUp()?3.0:1.7;
+  /* A computer's top and bottom margins hold less: the level's name sits in
+     the corner, beside the board rather than over it on a wide screen, and
+     the key strip is two keys. */
+  if(typeof deskMode==="function"&&deskMode()&&w/h>=1.2)padH=1.1;
   /* MENU > BOARD SIZE. Guarded because 11-sound.js loads after this file; by
      the time this is first called it is there, and the guard is the same one
      barIsUp() takes above.

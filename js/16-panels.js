@@ -829,9 +829,13 @@ function menuPanel(){
          fits the chrome to the window (applyZoom(), js/26-desk.js). */
       (desk
         ? "<div class='pcard'><h4>"+panelIcon("access")+"Screen</h4>"+
-          "<div class='crow'><label>Full screen</label><span class='seg'>"+
-            seg("mFull","on","ON",fullOn()?"on":"off")+
-            seg("mFull","off","OFF",fullOn()?"on":"off")+"</span></div>"+
+          "<div class='crow'><label>Full screen</label>"+
+            (fullAllowed()
+              ? "<span class='seg'>"+
+                seg("mFull","on","ON",fullOn()?"on":"off")+
+                seg("mFull","off","OFF",fullOn()?"on":"off")+"</span>"
+              : "<span class='knote'>Your browser's own: F11, or the ⤢ "+
+                "button at the top right of this page.</span>")+"</div>"+
           "<div class='crow bare'><label>Interface</label><span class='seg'>"+
             seg("mZoom","small","SMALLER",settings.uiScale)+
             seg("mZoom","auto","AUTO",settings.uiScale)+

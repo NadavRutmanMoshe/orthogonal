@@ -36,7 +36,7 @@ var CUE_WORDS={
   bLeft:"go left",  bRight:"go right",
   bUp:"go up",      bDown:"go down",
   bRotL:"rotate counter-clockwise", bRotR:"rotate clockwise",
-  bUndo:"undo",     bLook:"peek"
+  bRestart:"restart", bLook:"peek"
 };
 function cueWord(id){
   if(id==="bFlat")return flat?"3D shift":"2D shift";
@@ -903,8 +903,9 @@ function showHint(){
   if(res.status!=="solved"){
     // Cue first, flash second: there is one toast and the last write wins, so
     // the sentence that explains the situation has to be the one that lands.
-    cue("bUndo");
-    flash("no way to finish from here \u2014 undo or reset");
+    // Undo is gone from play, so restart is the way back.
+    cue("bRestart");
+    flash("no way to finish from here - restart");
     return;
   }
   if(!res.path.length){flash("you're standing on it");return;}

@@ -84,6 +84,14 @@ function applyZoom(){
    settings row and F11 / Alt+Enter work. In a browser F11 is usually the
    browser's own and never reaches the page; in Electron it reaches us. */
 function fullOn(){return !!(document.fullscreenElement||document.webkitFullscreenElement);}
+/* WHETHER THE PAGE MAY ASK AT ALL. A page inside a frame - the published
+   artifact is one - can only go full screen if the frame allows it, and
+   claude.ai's does not. There the browser refuses every request in silence,
+   so the row says where the real switch is instead of offering two dead
+   buttons. Electron has no frame, and there it is always true. */
+function fullAllowed(){
+  return !!(document.fullscreenEnabled||document.webkitFullscreenEnabled);
+}
 function fullToggle(){
   try{
     if(fullOn()){(document.exitFullscreen||document.webkitExitFullscreen).call(document);}
@@ -121,7 +129,6 @@ var KEY_ACTS=[
   {id:"turnl",   say:"Turn left",    def:"q"},
   {id:"turnr",   say:"Turn right",   def:"e"},
   {id:"peek",    say:"Peek (hold)",  def:"shift"},
-  {id:"undo",    say:"Undo",         def:"z"},
   {id:"restart", say:"Restart",      def:"r"},
   {id:"hint",    say:"Hint",         def:"h"},
   {id:"mute",    say:"Sound on/off", def:"m"}
@@ -133,7 +140,7 @@ var KEY_RESERVED={escape:1,enter:1,tab:1,f1:1,f5:1,f11:1,f12:1,
                   meta:1,os:1,contextmenu:1,capslock:1};
 // Actions that act on the board, and so are held off behind a full-bleed screen.
 var KEY_GAME={up:1,left:1,down:1,right:1,fold:1,turnl:1,turnr:1,peek:1,
-              undo:1,restart:1,hint:1};
+              restart:1,hint:1};
 function keyDef(act){
   for(var i=0;i<KEY_ACTS.length;i++)if(KEY_ACTS[i].id===act)return KEY_ACTS[i].def;
   return "";
@@ -187,7 +194,7 @@ function inputIs(kind){
 /* The pad's glyphs, per action. Xbox names, because that is what Steam
    shows on every controller unless told otherwise. */
 var PAD_SAY={up:"↑",left:"←",down:"↓",right:"→",
-             fold:"A",turnl:"LB",turnr:"RB",peek:"LT",undo:"B",
+             fold:"A",turnl:"LB",turnr:"RB",peek:"LT",
              restart:"Y",hint:"X",mute:""};
 // The cap for an action on the controls in hand right now.
 function capOf(act){
@@ -214,19 +221,18 @@ function kbd(act){
    edge, each with what it does under it, small enough to read past. It is
    a reminder, not a control - it takes no clicks - and it only says what
    the current level can use: no TURN on a level where the camera is
-   locked, PEEK only while there is a plane to peek out of.
+   locked.
+
+   TWO GROUPS, on the owner's call: the dimension and the turn. Walking is
+   WASD and nobody forgets it; restart, hint and peek have their own round
+   buttons on screen, and seven groups along the bottom read as a manual.
 
    Built from keyOf()/capOf() every time, so a rebind or picking up a pad
    redraws it; syncHud() calls kStripSync() for everything that changes
    what it should say or whether it is up at all. */
 var KSTRIP_GROUPS=[
-  {acts:["up","left","down","right"], say:"MOVE", move:true},
   {acts:["turnl","turnr"],            say:"TURN", rot:true},
-  {acts:["fold"],                     say:"{fold}"},
-  {acts:["peek"],                     say:"PEEK", flat:true},
-  {acts:["undo"],                     say:"UNDO"},
-  {acts:["restart"],                  say:"RESTART"},
-  {acts:["hint"],                     say:"HINT"}
+  {acts:["fold"],                     say:"{fold}"}
 ];
 var kStripKey="";
 function kStripBuild(){kStripKey="";kStripSync();}
@@ -331,7 +337,7 @@ function keysPanel(){
       "<kbd class='kc"+(keyLabel(k).length>2?" wide":"")+"'>"+esc(keyLabel(k))+
       "</kbd></button></div>";
   }).join("");
-  var pad=[["Move","D-pad / left stick"],["GO 2D / 3D","A"],["Undo","B"],
+  var pad=[["Move","D-pad / left stick"],["GO 2D / 3D","A"],
            ["Hint","X"],["Restart","Y"],["Turn","LB / RB"],["Peek (hold)","LT / RT"],
            ["Settings","MENU"]].map(function(p){
     return "<div class='krow'><label>"+p[0]+"</label><span class='kpad'>"+p[1]+"</span></div>";
@@ -541,6 +547,11 @@ function padAct(d,fire,hit,down){
     if(hit(0)||hit(9))splashPoke();
     return;
   }
+  // A replay: any button skips it, as any key does.
+  if(document.body.classList.contains("replaying")){
+    for(var i=0;i<10;i++)if(hit(i)){replaySkip();break;}
+    return;
+  }
   if(typeof storyOn==="function"&&storyOn()&&!$("storyend").classList.contains("on")){
     if(hit(1)||hit(9))storySkip();
     else if(hit(0)&&typeof storyAsking==="function"&&storyAsking())runAct("fold");
@@ -554,7 +565,6 @@ function padAct(d,fire,hit,down){
   }
   if(fire)runAct(d);
   if(hit(0))runAct("fold");
-  if(hit(1))runAct("undo");
   if(hit(2))runAct("hint");
   if(hit(3))runAct("restart");
   if(hit(4))runAct("turnl");
@@ -603,4 +613,7 @@ function deskBoot(){
   applyZoom();
   if(padFirst())padStart();
   kStripBuild();
+  // The replay's skip line says what skips it here (a key, not a tap).
+  var sk=document.querySelector("#repSkip i");
+  if(sk)sk.textContent=on?"PRESS ANY KEY TO SKIP":"TAP TO SKIP";
 }

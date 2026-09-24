@@ -273,10 +273,10 @@ function runAct(act){
   else if(act==="turnl")rotateView(-1);
   else if(act==="turnr")rotateView(1);
   else if(act==="restart"){if(app==="play")resetLevel();}
-  else if(act==="undo"){
-    if(app==="play"){undoMove();SFX.undo();}
-    else if(app==="edit")undo();
-  }
+  /* NO UNDO IN PLAY, on the owner's call: a puzzle you can rewind one step
+     at a time is a puzzle you can brute-force, and restart is the way back.
+     The editor keeps Z for its own undo (below) - that is building, not
+     playing. undoMove() is left standing and reached by nothing. */
   else if(act==="hint"){if(app==="play")showHint();}
   else if(act==="mute"){muted=!muted;flash(muted?"sound off":"sound on");
     if(typeof ambSync==="function")ambSync();}
@@ -296,6 +296,13 @@ window.addEventListener("keydown",function(e){
   if((tag==="INPUT"&&t.type!=="range"||tag==="TEXTAREA"||tag==="SELECT")&&k!=="escape")return;
   if(k==="f11"||(k==="enter"&&e.altKey)){fullToggle();e.preventDefault();return;}
   inputIs("keys");
+  /* A REPLAY IS SKIPPED BY ANY KEY. The whole screen is its skip button for
+     a finger (`.rskip`); a keyboard's equivalent is every key, because the
+     thing being asked is "get on with it" and hunting for the right key to
+     say that is worse than the wait. */
+  if(document.body.classList.contains("replaying")){
+    replaySkip();e.preventDefault();return;
+  }
   /* An overlay swallows taps by being there; a keyboard does not care what
      is on top. Without this the arrow keys walked the player around a level
      nobody could see, behind the title screen. */
@@ -310,11 +317,12 @@ window.addEventListener("keydown",function(e){
      the solver about a lawn, undo has nothing to undo. Escape is the way
      out, which here means SKIP: it is the key the reflex reaches for, and a
      settings panel over a cutscene is not what it is reaching for. */
-  var act=keyAction(k)||(k==="u"?"undo":null);
+  var act=keyAction(k);
   if(typeof storyOn==="function"&&storyOn()){
     if(k==="escape"){storySkip();e.preventDefault();return;}
-    if(act==="restart"||act==="undo"||act==="hint"){e.preventDefault();return;}
+    if(act==="restart"||act==="hint"){e.preventDefault();return;}
   }
+  if(app==="edit"&&k==="z"){undo();e.preventDefault();return;}
   // A screen of buttons: the keys move the ring over them instead.
   if(k!=="escape"&&navRoot()){
     if(NAV_DIR[k]){navMove(NAV_DIR[k][0],NAV_DIR[k][1]);e.preventDefault();return;}

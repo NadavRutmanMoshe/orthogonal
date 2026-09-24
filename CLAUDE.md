@@ -875,6 +875,20 @@ is the rule.
   the two scroll-to-centre sums. A new one of those is the same bug.
 - **A computer is pinned to HIDDEN** and never has the bar, even in a
   tutorial (`barIsUp()`); Settings' Controls row becomes Keys.
+- **The key strip is TWO groups, TURN and GO 2D/3D**, on the owner's call.
+- **There is no undo in play**, on any device (owner's call): no key, no
+  pad button, and the stuck hint says restart. `undoMove()` is reached by
+  nothing; the editor keeps its own undo (Z and its button).
+- **A replay is skipped by ANY key or pad button** on a computer, and its
+  line says so.
+- **A locked level on a computer is framed by `deskFit()`**: every drawn
+  cell (and the neighbour where he really stands) projected through the
+  camera's real 27.8 degree pitch, and centred on that. The general fit
+  over-charges height and was framing boards at about half size in
+  landscape. Phones keep the general fit.
+- **Full screen inside the artifact is the browser's**, not ours:
+  claude.ai's frame refuses the API (`fullAllowed()`), so the row points at
+  F11 / the page's own button. In Electron it works.
 - **An action, not a key.** `runAct()` (`js/19-bindings.js`) is where keys
   and the pad both land, then the four verbs. `settings.keys` holds
   overrides only; a taken key SWAPS; the arrows always walk unless bound.
