@@ -2192,3 +2192,43 @@ card for one build; the owner played HIDE and kept it for the whole game, and
 the switch (`settings.goalXray`) came out with the mesh. If a level ever
 needs the goal findable behind something, that is a level problem to design
 round, not a render flag.
+
+## The promo stopped being filmed in real time
+
+`tools/video.js` went through four cameras, and the first three failed the
+same way. Playwright's `recordVideo` wrote a hard 25fps with no sound. The
+page's own tab capture (`getDisplayMedia` + `MediaRecorder`) got about two
+frames a second at 1080p, because every frame had to be read back out of
+WebGL and encoded to VP8 in software inside the browser. Headed Chrome
+fullscreen under ffmpeg's `gdigrab` fixed the encoder, but not the page: on
+the owner's laptop (a GeForce MX230) a 1920x1080 WebGL scene does not hold
+60, so the film had lag in it, and no setting on the recorder could remove
+frames that were never drawn. It also took over the screen for the whole
+take, and needed a measured offset to put the sound on the picture - which
+was written with the wrong sign once and put the sound nine seconds out.
+
+**The fourth camera does not film in real time.** `tools/clock.js` is an
+init script that replaces every clock the game reads before the game runs:
+`performance.now`, `Date`, the timers, `requestAnimationFrame`,
+`requestIdleCallback`, every CSS animation and transition (through
+`document.getAnimations()`, paused and moved by hand, finished with
+`finish()` so the end events still fire), and the `AudioContext`. The page
+only moves when the driver calls `__cap.step()`, which advances all of them
+by exactly one frame; the driver photographs it and pipes the JPEG to x264.
+A frame that takes 150ms to draw still sits 1/60s after the last one.
+
+**The sound is rendered on the same clock**, which is what retired the
+offset. The game is handed an `OfflineAudioContext` that always says
+"running", and each step renders exactly that frame's audio - `suspend()` at
+the frame's time, `resume()`, wait. The game schedules against
+`currentTime` as it always did, and `currentTime` is the film's clock.
+
+**Two traps.** A step that returns a promise (`vidFight()`, `vidRun()`)
+cannot be awaited from the driver any more: it resolves on the page's clock,
+and the page's clock waits for the driver. It is started, its answer parked
+on `window`, and the frames tick until it arrives. And a 0ms timer that
+re-arms itself would spin forever inside one step, so every timer is at
+least 1ms.
+
+**The price is the wait**: 3 frames of work a second on SwiftShader, 6.6 on
+the GPU, so the GPU became the default - it changes only how long it takes.
