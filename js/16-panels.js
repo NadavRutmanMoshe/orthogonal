@@ -672,7 +672,7 @@ function buyTestPanel(){
 }
 /* THE TESTING CARD on the settings sheet (see menuPanel()). The owner's
    switch for trying things on the phone; false to ship. */
-var TEST_CARD=true;
+var TEST_CARD=false;
 function menuPanel(){
   var vol=Math.round(settings.volume*100), bri=Math.round(settings.brightness*100);
   /* THE WAY BACK TO THE SHELF YOU ARE STANDING ON.
