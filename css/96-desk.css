@@ -153,53 +153,65 @@ body.desk .corner.tr button[data-tip]:hover::after{left:auto;right:0;
 
 @media (min-aspect-ratio:5/4){
 
-/* ---- THE HOME MENU WEARS ONE THEME. On a phone every door is its own
-   hue - violet wardrobe, cyan levels, blue editor, the section's colour on
-   CONTINUE - which ties each to its place in the game and reads, on a big
-   screen, as five unrelated buttons. Here it is one menu: dark glass with a
-   neutral label, the icons and every rim in ONE accent, and that accent is
-   the player's own colour - the colour the stand beside it is glowing in, so
-   the menu and the cube are one picture. CONTINUE is the one filled button.
-   `--player-ink`, not `--player`: the Black skin is lifted to be readable. */
-body.desk .home{--acc:var(--player-ink,var(--player))}
+/* ---- THE HOME MENU IS A RAMP OF COLOUR, top to bottom. One accent (the
+   round before this) was coherent and, in the owner's word, boring; a hue
+   per door (the phone's) is five unrelated buttons. The owner's answer is a
+   RAMP: light green, teal, blue, purple, down the menu - with MY LEVELS and
+   WARDROBE swapped so the ramp ends on the wardrobe's violet.
+
+   CONTINUE wears the colour of the world it will open, and that is what
+   made one fixed ramp impossible. So the ramp is BUILT FROM it: CONTINUE is
+   the world's colour (`--wsec`, written by homeSync()), WARDROBE is the
+   fixed violet, and the two doors between are mixed a third and two thirds
+   of the way - IN OKLCH, which walks round the colour wheel rather than
+   through grey, so from NATURE's green it runs green, teal, blue, violet,
+   exactly the ramp that was asked for, and every other world gets a ramp of
+   its own for nothing. SETTINGS and MULTIPLAYER sit under it, neutral. */
+body.desk .home{--wsec:#35c2a5;--r4:#a274ff;
+  --r1:var(--wsec);
+  --r2:color-mix(in oklch,var(--wsec) 64%,var(--r4));
+  --r3:color-mix(in oklch,var(--wsec) 30%,var(--r4))}
+body.desk .home #hContinue{--c:var(--r1)}
+body.desk .home #hLevels{--c:var(--r2)}
+body.desk .home #hMine{--c:var(--r3);order:-1}
+body.desk .home #hWard{--c:var(--r4)}
+body.desk .home button.tiny{--c:#8c9dc4}
 body.desk .home .hbtns button,body.desk .home .hshop button,
-body.desk .home button.tiny{--c:var(--acc);color:var(--fg);
-  height:50px;justify-content:flex-start;padding-left:60px;
-  font-size:14px;font-weight:600;letter-spacing:.2em;
-  border:1px solid rgba(195,205,228,.14);border-radius:10px;
-  background:linear-gradient(90deg,rgba(255,255,255,.06),rgba(255,255,255,.012)),
-    rgba(10,14,28,.62);
-  --lip:rgba(3,5,12,.75);box-shadow:0 3px 0 var(--lip)}
+body.desk .home button.tiny{
+  height:52px;justify-content:flex-start;padding-left:60px;
+  font-size:14px;font-weight:600;letter-spacing:.2em;border-radius:10px;
+  color:color-mix(in srgb,var(--c) 55%,#fff);
+  border:1.5px solid color-mix(in srgb,var(--c) 52%,transparent);
+  background:linear-gradient(90deg,color-mix(in srgb,var(--c) 26%,transparent),
+    color-mix(in srgb,var(--c) 5%,transparent) 75%),rgba(10,14,28,.66);
+  --lip:color-mix(in srgb,var(--c) 38%,#04070d);
+  box-shadow:0 3px 0 var(--lip),0 0 16px color-mix(in srgb,var(--c) 14%,transparent)}
 body.desk .home button.tiny{height:44px;font-size:12.5px;margin-top:10px;
+  color:var(--fg-dim);border-color:rgba(195,205,228,.16);
+  background:rgba(10,14,28,.62);box-shadow:0 3px 0 rgba(3,5,12,.75)}
+body.desk .home button svg{color:var(--c);left:22px;width:20px;height:20px}
+body.desk .home button.tiny svg{left:23px;width:17px;height:17px;
   color:var(--fg-dim)}
-body.desk .home button svg{color:var(--acc);left:22px;width:20px;height:20px}
-body.desk .home button.tiny svg{left:23px;width:17px;height:17px}
 body.desk .home .hci{left:21px}
-body.desk .home button:not(:disabled):hover{color:#fff;
-  border-color:color-mix(in srgb,var(--acc) 75%,transparent);
-  background:linear-gradient(90deg,color-mix(in srgb,var(--acc) 22%,transparent),
-    rgba(255,255,255,.02)),rgba(10,14,28,.7);
-  box-shadow:0 3px 0 var(--lip),
-    0 0 22px color-mix(in srgb,var(--acc) 28%,transparent);filter:none}
-/* The one filled button. */
+body.desk .home button:not(:disabled):hover{color:#fff;filter:none;
+  border-color:var(--c);
+  background:linear-gradient(90deg,color-mix(in srgb,var(--c) 44%,transparent),
+    color-mix(in srgb,var(--c) 10%,transparent) 80%),rgba(10,14,28,.7);
+  box-shadow:0 3px 0 var(--lip),0 0 26px color-mix(in srgb,var(--c) 38%,transparent)}
+/* CONTINUE is the first step of the ramp and the one filled button. */
 body.desk .home .hbtns button.hcont{height:62px;color:#fff;
-  border-color:color-mix(in srgb,var(--acc) 80%,transparent);
-  background:linear-gradient(90deg,color-mix(in srgb,var(--acc) 42%,#0a0e1c),
-    color-mix(in srgb,var(--acc) 18%,#0a0e1c));
-  --lip:color-mix(in srgb,var(--acc) 40%,#04070d);
-  box-shadow:0 4px 0 var(--lip),
-    0 0 26px color-mix(in srgb,var(--acc) 22%,transparent)}
-body.desk .home .hbtns button.hcont:hover{
-  background:linear-gradient(90deg,color-mix(in srgb,var(--acc) 58%,#0a0e1c),
-    color-mix(in srgb,var(--acc) 26%,#0a0e1c))}
+  border-color:color-mix(in srgb,var(--c) 85%,transparent);
+  background:linear-gradient(90deg,color-mix(in srgb,var(--c) 48%,#0a0e1c),
+    color-mix(in srgb,var(--c) 18%,#0a0e1c));
+  box-shadow:0 4px 0 var(--lip),0 0 26px color-mix(in srgb,var(--c) 26%,transparent)}
 body.desk .home .hct{align-items:flex-start}
 body.desk .home .hcont b{font-size:15px;letter-spacing:.2em}
-body.desk .home .hcont i{color:rgba(255,255,255,.62)}
-/* Locked stays visibly locked: dashed, dim, no glow. */
-body.desk .home button.tiny.hmulti{border-style:dashed;color:var(--fg-dim);
-  opacity:.75}
-body.desk .home button.tiny.hmulti:hover{transform:none;box-shadow:0 3px 0 var(--lip);
-  background:rgba(10,14,28,.62);border-color:rgba(195,205,228,.14);color:var(--fg-dim)}
+body.desk .home .hcont i{color:rgba(255,255,255,.66)}
+/* Locked stays visibly locked: dashed, dim, no glow, no grow. */
+body.desk .home button.tiny.hmulti{border-style:dashed;opacity:.75}
+body.desk .home button.tiny.hmulti:hover{transform:none;color:var(--fg-dim);
+  border-color:rgba(195,205,228,.16);background:rgba(10,14,28,.62);
+  box-shadow:0 3px 0 rgba(3,5,12,.75)}
 body.desk .hshop{border-top-color:rgba(195,205,228,.1)}
 
 /* ---- 2. HOME: THE MENU ON THE LEFT, THE STAND ON THE RIGHT. The same
@@ -246,17 +258,16 @@ body.desk .panel.ward .wglass{flex:1 1 auto;max-width:none;min-height:0;
 body.desk .panel.ward .wcanvas{flex:1 1 auto;height:auto;min-height:0}
 body.desk .panel.ward .pfoot{grid-area:f}
 
-/* ---- 4. SETTINGS: THE WHOLE SHEET ON ONE SCREEN. Six columns so the two
-   navigation rows sit side by side at half width each and the cards three
-   to a row; nothing scrolls at 720 page pixels tall. */
-body.desk .panel[data-kind=menu] .pbody{display:grid;
-  grid-template-columns:repeat(6,minmax(0,1fr));column-gap:14px;
-  align-content:start;align-items:start;padding:0 16px 16px}
-body.desk .panel[data-kind=menu] .pbody>.psec{grid-column:span 3}
-/* Outside a level there is one navigation row, and it takes the row. */
-body.desk .panel[data-kind=menu] .pbody>button.psec:only-of-type{
-  grid-column:1 / -1}
-body.desk .panel[data-kind=menu] .pbody>.pcard{grid-column:span 2}
+/* ---- 4. SETTINGS: THE WHOLE SHEET ON ONE SCREEN, in three COLUMNS, not a
+   grid. A grid row is as tall as its tallest card, so the short cards left
+   holes under them - reported as gaps. Columns stack each card directly
+   under the one above, the way a newspaper does, and the navigation rows
+   span all three across the top. */
+body.desk .panel[data-kind=menu] .pbody{display:block;columns:3;
+  column-gap:14px;padding:0 16px 16px}
+body.desk .panel[data-kind=menu] .pbody>.psec{column-span:all}
+body.desk .panel[data-kind=menu] .pbody>.pcard{break-inside:avoid;
+  display:inline-block;width:100%;margin-top:12px}
 /* Keys: the keyboard and the pad side by side. */
 body.desk .panel[data-kind=keys] .pbody{display:grid;
   grid-template-columns:1.3fr 1fr;column-gap:14px;align-items:start;
@@ -277,10 +288,16 @@ body.desk .home .hwin button svg{position:static;transform:none;
 body.desk .home .hwin button.hquit:hover{--c:#ff5d6c}
 /* The tips grow leftward from the right edge, like the play corner's. */
 body.desk .hwin button[data-tip]:hover::after{left:auto;right:0;transform:none}
-/* In the Settings header the switch sits beside close and wears its size. */
-body.desk .phead #mWinFull{position:relative}
-body.desk .phead #mWinFull svg{width:16px;height:16px}
-body.desk .phead #mWinFull[data-tip]:hover::after{left:auto;right:0;transform:none}
+/* In every panel header the switch sits beside close and wears its size. */
+body.desk .phead .pwin{position:relative}
+body.desk .phead .pwin svg{width:16px;height:16px}
+body.desk .phead .pwin[data-tip]:hover::after{left:auto;right:0;transform:none}
+/* And in play, the first of the right-hand corner's round buttons, in the
+   corner's own neutral. */
+body.desk #bWinFull{--c:#8c9dc4}
+body.desk #bWinFull svg{width:19px;height:19px}
+#bWinFull{display:none}
+body.desk #bWinFull{display:flex}
 /* Under an open panel the home screen's window buttons would sit beside it
    as a second copy of the one in the panel's header. */
 body.desk.mapopen .hwin{display:none}

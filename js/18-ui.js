@@ -105,6 +105,8 @@ function syncMapChrome(){
   if(typeof mapBgStart==="function"){
     if(panelKind==="map"||panelKind==="secs")mapBgStart(); else mapBgStop();
   }
+  // A computer's full-screen switch in the header (js/26-desk.js).
+  if(typeof winPanel==="function")winPanel();
 }
 function hidePanel(){
   previewStop();
@@ -284,7 +286,7 @@ function syncHud(){
      just below, and an inline style beats any stylesheet. So a cutscene is
      simply not "in play" as far as the chrome is concerned. */
   var inPlay=app==="play"&&!homeUp()&&!inStory;
-  ["bHint","bLook","bMenu","bWard","bRestart"].forEach(function(id){
+  ["bHint","bLook","bMenu","bWard","bRestart","bWinFull"].forEach(function(id){
     var el=$(id); if(el)el.style.display=inPlay?"flex":"none";
   });
   /* THE BANK IS NOT SHOWN INSIDE A LEVEL. How many stars you have collected

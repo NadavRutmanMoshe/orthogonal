@@ -731,10 +731,6 @@ function menuPanel(){
        here; this one had a label. */
     "<div class='phead'><div class='pt'><b>Settings</b></div>"+
       "<div class='mtot'>"+starsEarned()+" ★</div>"+
-      /* The window's full-screen switch, beside close, where a PC puts it. */
-      (desk?"<button class='mq mx' id='mWinFull' aria-label='Full screen' "+
-        "data-tip='"+(fullOn()?"Exit full screen":"Full screen")+" · F11'>"+
-        (fullOn()?WIN_SHRINK:WIN_FULL)+"</button>":"")+
       "<button class='mq mx' id='mClose' aria-label='Back to the level'>✕</button></div>"+
     "<div class='pbody'>"+worldsBtn+secBtn+
       /* WORLDS first, then the shelf you are standing on. Both are
@@ -1004,7 +1000,6 @@ function menuPanel(){
       settings.quality=m;saveSettings();applyQuality();menuPanel();
     });
   });
-  bind("mWinFull",function(){winFull();});
   bind("mTStars",function(){hidePanel();setTimeout(starsCard,60);});
   bind("mAdPriv",adPrivacyShow);
   bind("mTut",function(){
@@ -1150,6 +1145,9 @@ function homeSync(){
      read as a tab on a dark panel, which is the same job a button has. */
   var sec=SECTIONS[mapSecOf(t.i)];
   b.style.setProperty("--sec",(sec&&sec.col)||"var(--goal)");
+  /* And on the whole screen, where the computer's menu builds its ramp of
+     colours from it (css/96-desk.css). */
+  $("home").style.setProperty("--wsec",(sec&&sec.col)||"#35c2a5");
   /* AND THE SECTION'S OWN EMBLEM, the same drawing its tile carries on the
      chooser. `--tabc` is what secEmblem()'s fill reads, so it is set to the
      same value `--sec` just took: one colour, one picture, on the button and

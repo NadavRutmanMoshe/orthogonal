@@ -894,16 +894,23 @@ is the rule.
   `#panel[data-kind]`): home menu-left/stand-right, wardrobe choosing-left/
   case-right, Settings on one screen, hover on every button. A narrow
   desktop window falls back to the phone layouts.
-- **The home menu on a computer is ONE accent, the player's colour**
-  (`--player-ink`), not a hue per door; CONTINUE is the one filled button.
-  Hover grows a button (`scale(1.06)`, wide ones 1.025) and `:active` puts it
-  back on its lip. Window buttons (full screen, and quit only in Electron,
-  `deskApp()`) sit top right of home and in the Settings header.
+- **The home menu on a computer is a RAMP built from CONTINUE's world
+  colour** (`--wsec`, set in `homeSync()`) to the wardrobe's violet, mixed
+  in OKLCH so it walks the colour wheel: NATURE runs green, teal, blue,
+  violet. MY LEVELS is ordered above WARDROBE so the ramp ends on violet.
+  A single accent was tried first and called boring. Hover grows a button
+  (`scale(1.06)`, wide ones 1.025) and `:active` puts it back on its lip.
+- **The full-screen switch is everywhere on a computer**: home (with quit,
+  Electron only, `deskApp()`), the play corner (`#bWinFull`), and every
+  panel header (`winPanel()`, called by `showPanel()`).
+- **Settings on a computer is CSS columns, not a grid**: a grid row is as
+  tall as its tallest card and left holes.
 - **Esc is the game's in full screen**: `navigator.keyboard.lock(["Escape"])`
   on entering (hold Esc to leave). It only works for full screen the game
   itself asked for - not the browser's F11, not the artifact's expand button.
 - **Settings > Screen > Quality** (`applyQuality()`): NORMAL/HIGH/ULTRA =
-  1/1.5/2x the screen's resolution, capped at 3; defaults HIGH; phones
+  1/1.5/2x the screen's resolution, capped at 3; defaults NORMAL (ULTRA
+  lagged on the owner's laptop); phones
   never read it.
 - **Full screen inside the artifact is the browser's**, not ours:
   claude.ai's frame refuses the API (`fullAllowed()`), so the row points at

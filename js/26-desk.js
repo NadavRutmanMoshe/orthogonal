@@ -142,18 +142,43 @@ function winBuild(){
   if(!home||$("hWin"))return;
   var w=document.createElement("div");
   w.className="hwin";w.id="hWin";
-  w.innerHTML="<button class='rnd' id='hWinFull'></button>"+
+  w.innerHTML="<button class='rnd' id='hWinFull' data-winfull></button>"+
     (deskApp()?"<button class='rnd hquit' id='hWinQuit' data-tip='Quit'>"+WIN_QUIT+"</button>":"");
   home.appendChild(w);
   tap($("hWinFull"),winFull);
   if($("hWinQuit"))tap($("hWinQuit"),function(){window.close();});
+  /* AND IN PLAY: first in the top-right corner, before restart and the eye,
+     so the switch is on screen everywhere the owner looked for it. */
+  var tr=document.querySelector(".corner.tr");
+  if(tr&&!$("bWinFull")){
+    var f=document.createElement("button");
+    f.className="rnd";f.id="bWinFull";f.setAttribute("data-winfull","");
+    f.setAttribute("aria-label","Full screen");
+    tr.insertBefore(f,tr.firstChild);
+    tap(f,winFull);
+  }
+  winSync();
+}
+/* AND IN EVERY FULL-HEIGHT PANEL'S HEADER, beside its close button. Called by
+   showPanel() after it writes a panel, since each panel writes its own
+   header and none of them knows about this. */
+function winPanel(){
+  if(!deskMode())return;
+  var head=$("panel").querySelector(".phead");
+  if(!head||head.querySelector("[data-winfull]"))return;
+  var xs=head.querySelectorAll(".mx"), x=xs.length?xs[xs.length-1]:null;
+  var f=document.createElement("button");
+  f.className="mq mx pwin";f.setAttribute("data-winfull","");
+  f.setAttribute("aria-label","Full screen");
+  if(x)head.insertBefore(f,x);else head.appendChild(f);
+  tap(f,winFull);
   winSync();
 }
 function winSync(){
-  var b=$("hWinFull");
-  if(!b)return;
-  b.innerHTML=fullOn()?WIN_SHRINK:WIN_FULL;
-  b.setAttribute("data-tip",fullOn()?"Exit full screen · F11":"Full screen · F11");
+  [].forEach.call(document.querySelectorAll("[data-winfull]"),function(b){
+    b.innerHTML=fullOn()?WIN_SHRINK:WIN_FULL;
+    b.setAttribute("data-tip",fullOn()?"Exit full screen · F11":"Full screen · F11");
+  });
 }
 
 /* ============================================================

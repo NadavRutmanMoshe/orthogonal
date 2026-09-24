@@ -140,7 +140,7 @@ var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false
                  leans on the page zoom that fits the chrome to the screen. */
               keys:{}, keyStrip:"on", uiScale:"auto",
               // Render quality on a computer (applyQuality(), js/26-desk.js).
-              quality:"high"};
+              quality:"normal"};
 /* How many times the landing rule is spelled out in words. The rings keep
    drawing forever - they are free and they answer the question faster than a
    sentence does - but a line of text on every fold would be nagging. */
