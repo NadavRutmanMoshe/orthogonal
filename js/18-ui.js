@@ -90,7 +90,10 @@ function syncMapChrome(){
      asked to make - and whose list has no length a 44vh sheet could hold. */
   $("panel").classList.toggle("tall",panelKind==="map"||panelKind==="secs"||
                                      panelKind==="menu"||panelKind==="wardrobe"||
-                                     panelKind==="mylevels");
+                                     panelKind==="mylevels"||panelKind==="keys");
+  /* Which screen this is, for CSS that lays one of them out differently on
+     a wide screen (css/96-desk.css) without a class per kind. */
+  $("panel").setAttribute("data-kind",panelKind||"");
   /* The running star total sits at z-index 30 so it can float over the win
      overlay, which also floats it over any open panel - and the menu, the
      wardrobe and the map all now carry a total of their own in their header.

@@ -235,7 +235,21 @@ var KSTRIP_GROUPS=[
   {acts:["fold"],                     say:"{fold}"}
 ];
 var kStripKey="";
-function kStripBuild(){kStripKey="";kStripSync();}
+function kStripBuild(){kStripKey="";kStripSync();deskTips();}
+/* What each corner button is and its key, shown on hover (css/96-desk.css
+   reads `data-tip`). From the bindings, so a rebound key is the key shown. */
+function deskTips(){
+  var on=deskMode();
+  var tips={bMenu:"Settings · ESC", bWard:"Wardrobe",
+            bHint:"Hint · "+keyLabel(keyOf("hint")),
+            bRestart:"Restart · "+keyLabel(keyOf("restart")),
+            bLook:"Look around · hold "+keyLabel(keyOf("peek"))};
+  for(var id in tips){
+    var el=$(id);
+    if(!el)continue;
+    if(on)el.setAttribute("data-tip",tips[id]);else el.removeAttribute("data-tip");
+  }
+}
 function kStripWanted(){
   if(!deskMode()||settings.keyStrip==="off")return false;
   if(app!=="play"||homeUp()||screenUp()||panelOpen())return false;

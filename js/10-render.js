@@ -2731,13 +2731,14 @@ function deskFit(xspan){
     lo3=Math.min(lo3,C*y0-S*z-h3); hi3=Math.max(hi3,C*y1-S*z+h3);
     loF=Math.min(loF,yF0-.5);      hiF=Math.max(hiF,yF1+.5);
   }
-  var cells=L.blocks.concat(L.keys||[]);
+  var cells=L.blocks.concat(L.keys||[]), xlo=1e9, xhi=-1e9;
   if(L.start)cells=cells.concat([L.start]);
   if(L.goal)cells=cells.concat([L.goal]);
   for(var i=0;i<cells.length;i++){
     var p=cells[i];
     cell(p[1],p[1],p[2],p[1],p[1]);
     zlo=Math.min(zlo,p[2]);zhi=Math.max(zhi,p[2]);
+    xlo=Math.min(xlo,p[0]);xhi=Math.max(xhi,p[0]);
   }
   var g=typeof guideSpot==="function"?guideSpot():null;
   // He and his pedestal are about two cells tall, from his spot upward.
@@ -2745,8 +2746,15 @@ function deskFit(xspan){
   var cz=(zlo+zhi)/2, mid3=(lo3+hi3)/2;
   var cy=(mid3+S*cz)/C;
   var half=Math.max((hi3-lo3)/2,cy-loF,hiF-cy);
-  centerT.set(centerT.x,cy,cz);
-  arenaSW=xspan+1;
+  /* THE BOARD IS CENTRED, NOT THE BOARD AND HIM. He stands off its right
+     edge now, and centring the pair pushed the puzzle left of the middle of
+     the screen - reported as the map sitting off centre. So the camera aims
+     at the board's own middle and the frame is simply made wide enough, on
+     both sides, to keep him in it. */
+  var cx=(xlo+xhi)/2, halfW=(xhi-xlo)/2+.5;
+  if(g)halfW=Math.max(halfW,g[0]+.9-cx);
+  centerT.set(cx,cy,cz);
+  arenaSW=Math.max(xspan+1,halfW*2);
   arenaSH=half*2;
 }
 /* Both axes have to fit, so take whichever demands more room. The vertical

@@ -101,3 +101,104 @@ body.desk.mapopen .ghost{opacity:0}
 .krow .kpad{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;
   letter-spacing:.06em;color:var(--fg)}
 .knote{font-size:11px;color:var(--fg-dim);line-height:1.5;margin-bottom:4px}
+
+/* ============================================================
+   THE COMPUTER'S OWN LAYOUT - "a phone on a PC" was the report.
+
+   The page is zoomed to the screen (applyZoom()), which made everything
+   big enough and left it phone-shaped: one column down the middle of a
+   monitor. Below, on a computer held landscape, the screens with the most
+   in them use the width instead. Gated on the aspect as well as the class,
+   so a desktop window dragged narrow falls back to the phone layout, which
+   is the right one for a narrow window.
+
+   Sizes here are page pixels; at 1080p the page is 1280x720 of them.
+   ============================================================ */
+
+/* ---- 1. EVERY BUTTON ANSWERS THE MOUSE. A phone has no hover, so nothing
+   here ever lit up under a pointer, and a screen that does not react to the
+   mouse reads as a picture of a screen. A lift in brightness rather than a
+   new shadow, so every family's own fill, rim and lip survive it. */
+body.desk button{transition:color .35s ease,border-color .2s ease,
+  background .12s ease,transform .1s ease,box-shadow .1s ease,filter .12s ease}
+body.desk button:not(:disabled):hover{filter:brightness(1.28) saturate(1.12);
+  border-color:color-mix(in srgb,var(--c) 70%,var(--rule))}
+body.desk button:not(:disabled):active{filter:brightness(1.08)}
+
+/* ---- WHAT A CORNER BUTTON IS, AND ITS KEY, on hover. The round buttons are
+   icons a phone player learned by pressing; a mouse player hovers first.
+   `data-tip` is written by deskTips() (js/26-desk.js) from the bindings. */
+body.desk button.rnd{position:relative}
+body.desk button[data-tip]:hover::after{content:attr(data-tip);
+  position:absolute;top:calc(100% + 9px);left:50%;transform:translateX(-50%);
+  white-space:nowrap;pointer-events:none;z-index:40;
+  font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;
+  letter-spacing:.08em;line-height:1;color:var(--fg);
+  background:rgba(15,20,36,.94);border:1px solid var(--rule);
+  border-radius:6px;padding:6px 9px}
+/* The right-hand corner's tips grow leftward, or they run off the screen. */
+body.desk .corner.tr button[data-tip]:hover::after{left:auto;right:0;
+  transform:none}
+
+@media (min-aspect-ratio:5/4){
+
+/* ---- 2. HOME: THE MENU ON THE LEFT, THE STAND ON THE RIGHT. The same
+   buttons in the same order; the grid only moves them. The two 1fr rows
+   at the top and bottom of the left column share whatever the stand's
+   height leaves over, so the menu sits centred against it. */
+body.desk .hwrap{max-width:1000px;display:grid;
+  grid-template-columns:minmax(300px,360px) minmax(320px,1fr);
+  grid-template-rows:1fr repeat(6,auto) 1fr;
+  grid-template-areas:"a s" "t s" "x s" "b s" "h s" "m s" "u s" "e s";
+  column-gap:80px;align-items:center;justify-items:stretch}
+body.desk .htitle{grid-area:t;font-size:52px;text-align:left;
+  justify-self:start;white-space:nowrap}
+body.desk .hstars{grid-area:x;justify-self:start;margin:10px 0 22px}
+body.desk .hbtns{grid-area:b;margin-top:0}
+body.desk .hshop{grid-area:h}
+body.desk .home #hMenu{grid-area:m;width:100%;justify-self:stretch}
+body.desk .home #hMulti{grid-area:u;width:100%;justify-self:stretch}
+body.desk .hstand{grid-area:s;width:420px;height:420px;
+  justify-self:center;align-self:center}
+
+/* ---- 3. WARDROBE: CHOOSING ON THE LEFT, THE CASE ON THE RIGHT. The panel
+   becomes the grid and `.wbody` steps aside (display:contents) so its three
+   children - the case, the list and the caption - can be placed beside the
+   tabs. The case takes the whole height of the right column. */
+body.desk .panel.tall[data-kind=wardrobe],
+body.desk .panel.tall[data-kind=menu],
+body.desk .panel.tall[data-kind=keys]{width:min(1120px,calc(100% - 64px));
+  max-width:none}
+body.desk .panel.ward.tall.on{display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);
+  grid-template-rows:auto auto minmax(0,1fr) auto auto;
+  grid-template-areas:"h h" "t c" "l c" "m c" "f f"}
+body.desk .panel.ward .phead{grid-area:h}
+body.desk .panel.ward .tabs{grid-area:t}
+body.desk .panel.ward .wbody{display:contents}
+body.desk .panel.ward .wlist{grid-area:l;padding-top:2px}
+body.desk .panel.ward .wlist .grid{grid-template-columns:repeat(4,1fr)}
+body.desk .panel.ward #wMeta{grid-area:m;padding-bottom:10px}
+body.desk .panel.ward .wcase{grid-area:c;padding:10px 16px 12px 4px;
+  min-height:0}
+body.desk .panel.ward .wglass{flex:1 1 auto;max-width:none;min-height:0;
+  display:flex;flex-direction:column}
+body.desk .panel.ward .wcanvas{flex:1 1 auto;height:auto;min-height:0}
+body.desk .panel.ward .pfoot{grid-area:f}
+
+/* ---- 4. SETTINGS: THE WHOLE SHEET ON ONE SCREEN. Six columns so the two
+   navigation rows sit side by side at half width each and the cards three
+   to a row; nothing scrolls at 720 page pixels tall. */
+body.desk .panel[data-kind=menu] .pbody{display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));column-gap:14px;
+  align-content:start;align-items:start;padding:0 16px 16px}
+body.desk .panel[data-kind=menu] .pbody>.psec{grid-column:span 3}
+/* Outside a level there is one navigation row, and it takes the row. */
+body.desk .panel[data-kind=menu] .pbody>button.psec:only-of-type{
+  grid-column:1 / -1}
+body.desk .panel[data-kind=menu] .pbody>.pcard{grid-column:span 2}
+/* Keys: the keyboard and the pad side by side. */
+body.desk .panel[data-kind=keys] .pbody{display:grid;
+  grid-template-columns:1.3fr 1fr;column-gap:14px;align-items:start;
+  padding:0 16px 16px}
+}

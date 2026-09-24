@@ -886,6 +886,14 @@ is the rule.
   camera's real 27.8 degree pitch, and centred on that. The general fit
   over-charges height and was framing boards at about half size in
   landscape. Phones keep the general fit.
+- **On a computer the neighbour stands BESIDE a locked board** (right of
+  it, mid height and depth), and `deskFit()` centres the BOARD and widens
+  the frame to hold him. Behind-and-above cost a landscape screen a third of
+  its height. Phones keep him behind.
+- **A computer held landscape gets its own layouts** (`css/96-desk.css`,
+  `#panel[data-kind]`): home menu-left/stand-right, wardrobe choosing-left/
+  case-right, Settings on one screen, hover on every button. A narrow
+  desktop window falls back to the phone layouts.
 - **Full screen inside the artifact is the browser's**, not ours:
   claude.ai's frame refuses the API (`fullAllowed()`), so the row points at
   F11 / the page's own button. In Electron it works.
