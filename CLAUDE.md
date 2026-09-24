@@ -105,6 +105,7 @@ listed in `index.html`. `21-boot.js` is the only file that *runs* anything.
 | `js/23-guide.js` | the neighbour who stands on the I · NATURE levels and gives a tip written for the one he is standing on. **Pure decoration** - no rule, no solver, never solid. Also loaded after boot and `typeof`-guarded |
 | `js/24-ads.js` | rewarded video: `adChild()`, consent, preloading, `adWatch(done)`, and the per-unlock count `adToward()`. **Loaded BEFORE boot**, out of numeric order like 20, so boot starts it and nothing needs a typeof guard |
 | `js/25-shop.js` | the DEALS shelf charged for real: `shopBuy()`, `shopRestore()`, the launch sync from the store, store prices. Loaded before boot, like 24 |
+| `js/26-desk.js` | **the computer**: `deskMode()` (the DEVICE - a mouse and keyboard) and `steamBuild()` (what was PAID for), the page zoom (`applyZoom()`, `uiZoom()`), key bindings (`KEY_ACTS`, `keyOf()`, `keyAction()`), the key strip, Settings > Keys, menu navigation by keys or pad (`navRoot()`), the gamepad, and the no-age-card first run. Loaded before boot, like 24 |
 | `tools/storetest.js` | the ads and the shop driven through a FAKE Capacitor bridge, every path (a video closed early, a pending payment, the upgrade). Needs Playwright, like `shot.js` |
 | `tools/verify.js` | every level machine-checked: BFS, `trialSafety()`, `bossArena()`, `bosssim`, the `SECTIONS`/`LEVEL_RENAMES` invariants |
 | `tools/shot.js` | **headless screenshots of any screen** (`node tools/shot.js --list`). The eyes for UI work. A cutscene is seekable by beat (`story1:12`), and an explicit `--wait` now beats the screen's own default. |
@@ -858,6 +859,31 @@ is the rule.
   wrap on a 327px phone.
 - **The plugins are pinned at 7.x** (`app/package.json`, exact): their 8.x
   lines need Capacitor 8.
+
+**The computer** (`js/26-desk.js`, `SHIPPING.md`)
+- **`deskMode()` is the device, `steamBuild()` is the purchase**, and they
+  are kept apart: a laptop playing the free artifact gets the keys and the
+  zoom and is granted nothing. `?desk=1` / `?desk=0` / `?steam` override
+  either; the Electron preload is to set `window.STEAM`. `tools/shot.js`
+  sends `?desk=0` unless `--desk`, `--steam` or `--pc` - headless Chromium
+  has a mouse, and every phone shot would otherwise be a desktop one.
+- **The page is ZOOMED on a big screen, the canvas is not.** CSS `zoom` on
+  the root (height/720, never under 1, times Settings > Screen > Interface),
+  the inverse on the game's canvas. So **a rect is SCREEN pixels and a
+  style is PAGE pixels**: anything that measures one and writes the other
+  divides by `uiZoom()` - the neighbour's bubble, the star flight, the eye,
+  the two scroll-to-centre sums. A new one of those is the same bug.
+- **A computer is pinned to HIDDEN** and never has the bar, even in a
+  tutorial (`barIsUp()`); Settings' Controls row becomes Keys.
+- **An action, not a key.** `runAct()` (`js/19-bindings.js`) is where keys
+  and the pad both land, then the four verbs. `settings.keys` holds
+  overrides only; a taken key SWAPS; the arrows always walk unless bound.
+  Anything that names a control asks `keyOf()`/`capOf()`, so the tutorial
+  teaches the player's own key.
+- **First run on a computer: no age card.** `deskFirstRun()` writes the HARD
+  band and goes straight to the opening.
+- **The Steam build owns EVERYTHING by rule** (`hasPass()`), $6.99, pending
+  the owner's call on DLC (`SHIPPING.md`, "Steam and in-app purchases").
 
 **Rendering** (`look.md`, `controls.md`)
 - **`outlineFor()` reads the PIECE, not the background: white lines on

@@ -633,7 +633,10 @@ function guideFrame(dtMs,rx,rz,tdvx,tdvz,ft){
   if(el&&el.classList.contains("on")){
     if(GD.said&&!GD.stuck&&Date.now()-GD.said>GUIDE_SAY_MS)guideHide();
     else{
-      var w=window.innerWidth,h=window.innerHeight;
+      /* In the PAGE's pixels, which on a computer are zoomed (uiZoom(),
+         js/26-desk.js): the bubble lives in the page, the camera does not. */
+      var z=typeof uiZoom==="function"?uiZoom():1;
+      var w=window.innerWidth/z,h=window.innerHeight/z;
       /* ABOVE HIM, OR BELOW HIM IF THERE IS NO ROOM ABOVE.
 
          He is over the top of the board now, which is near the top of the

@@ -10,7 +10,10 @@
  *   --out DIR         where the PNGs go (default shots/)
  *   --phone           390x844 @2  (default)
  *   --small           327x711 @2.75 - the owner's phone, the narrow case
- *   --desktop         1280x800 @1
+ *   --desktop         1280x800 @1 (the Steam Deck's size; phone chrome unless --desk)
+ *   --desk            the computer version: key strip, zoom, no bar (js/26-desk.js)
+ *   --steam           --desk, and the Steam build's grant
+ *   --pc              1920x1080 @1 with --desk
  *   --w N --h N --dpr N   any viewport
  *   --ui full|compact|none   control layout (default: the game's default)
  *   --save fresh|mid|all     how much of the campaign the fake save has beaten
@@ -151,6 +154,12 @@ function parseArgs(argv){
     else if(a==="--phone"){o.w=390;o.h=844;o.dpr=2;}
     else if(a==="--small"){o.w=327;o.h=711;o.dpr=2.75;}
     else if(a==="--desktop"){o.w=1280;o.h=800;o.dpr=1;}
+    /* THE COMPUTER VERSION (js/26-desk.js): the key strip, the zoom, no bar.
+       Headless Chromium has a mouse, so without this every shot would be a
+       desktop one - the page is told `?desk=0` unless one of these asks. */
+    else if(a==="--desk")o.desk=1;
+    else if(a==="--steam")o.desk=2;
+    else if(a==="--pc"){o.w=1920;o.h=1080;o.dpr=1;o.desk=1;}
     else if(a==="--w")o.w=+next();
     else if(a==="--h")o.h=+next();
     else if(a==="--dpr")o.dpr=+next();
@@ -219,7 +228,8 @@ async function main(){
     "--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader",
     "--autoplay-policy=no-user-gesture-required"]});
   fs.mkdirSync(path.join(ROOT,o.out),{recursive:true});
-  const url="file://"+path.join(ROOT,"index.html");
+  const url="file://"+path.join(ROOT,"index.html")+
+    (o.desk===2?"?desk=1&steam":o.desk?"?desk=1":"?desk=0");
 
   for(const job of jobs){
     const saveKind=job.def.save||o.save;

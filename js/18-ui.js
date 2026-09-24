@@ -298,6 +298,8 @@ function syncHud(){
      decide where the lives row sits, and the primer is inside .hud. */
   syncPrimer();
   syncBossBar();
+  // The computer's key strip answers to everything above (js/26-desk.js).
+  if(typeof kStripSync==="function")kStripSync();
 
   if(app==="edit"){
     /* THE LEVEL'S NAME, not the word EDITOR. MY LEVELS can have several
@@ -577,12 +579,15 @@ function flyStars(srcEls,base,gained){
   var reduce=window.matchMedia&&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if(!tgt||!gained||reduce||!srcEls.length){syncStarTotal();return;}
+  /* Screen pixels in, page pixels out: on a computer the page is zoomed
+     (uiZoom(), js/26-desk.js) and a rect is measured on the screen. */
+  var z=typeof uiZoom==="function"?uiZoom():1;
   var tb=tgt.getBoundingClientRect();
-  var tx=tb.left+tb.width/2, ty=tb.top+tb.height/2;
+  var tx=(tb.left+tb.width/2)/z, ty=(tb.top+tb.height/2)/z;
   srcEls.forEach(function(src,i){
     setTimeout(function(){
       var r=src.getBoundingClientRect();
-      var sx=r.left+r.width/2, sy=r.top+r.height/2;
+      var sx=(r.left+r.width/2)/z, sy=(r.top+r.height/2)/z;
       src.classList.add("launch");
       setTimeout(function(){src.classList.remove("launch");},220);
 

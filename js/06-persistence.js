@@ -125,6 +125,21 @@ function loadSettings(){
            this whitelist with it. */
         if(o.foldmark&&["on","off"].indexOf(o.foldmark)>=0)
           settings.foldmark=o.foldmark;
+        /* THE COMPUTER'S THREE (js/26-desk.js). The key overrides are
+           bounded to actions that exist and to one key name each, so a
+           renamed action cannot leave a save binding something that is not
+           there; the other two against their own words, like the rest. */
+        if(o.keys&&typeof o.keys==="object"){
+          var ks={};
+          KEY_ACTS.forEach(function(a){
+            var v=o.keys[a.id];
+            if(typeof v==="string"&&v.length>0&&v.length<=12)ks[a.id]=v;
+          });
+          settings.keys=ks;
+        }
+        if(o.keyStrip&&["on","off"].indexOf(o.keyStrip)>=0)
+          settings.keyStrip=o.keyStrip;
+        if(o.uiScale&&UI_SCALE[o.uiScale])settings.uiScale=o.uiScale;
         /* `killsound` is deliberately NOT read any more. It was on this list
            for one round so the owner could compare thud/burst/chime across a
            reload; THUD won and is the body of SFX.strike() now, so a save

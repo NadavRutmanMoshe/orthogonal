@@ -260,16 +260,42 @@ window.addEventListener("pagehide",function(){
 });
 
 window.addEventListener("keyup",function(e){
-  if(e.key.toLowerCase()==="shift"){peekLatch=false;peekSet(false);}
+  if((e.key||"").toLowerCase()===keyOf("peek"))runAct("unpeek");
 });
-/* The keys that drive the game, as a set, so one test can hold them all off
-   while a full-bleed screen is up. Everything not in here stays live behind
-   the intro card and the home screen - mute, and Escape, which is a way out
-   rather than a move. */
-var GAME_KEYS={arrowleft:1,arrowright:1,arrowup:1,arrowdown:1,a:1,d:1,w:1,s:1,
-               " ":1,q:1,e:1,r:1,u:1,z:1,h:1,shift:1};
+/* ONE ACTION, WHATEVER ASKED FOR IT. The keyboard and the gamepad both land
+   here (js/26-desk.js maps a key or a button to an action), so a rebound key
+   and a pad button reach the same four verbs by the same road, and every gate
+   on a verb - the tutorial's lock, a fight's hold, a cutscene - holds for
+   both without either knowing it is there. */
+function runAct(act){
+  if(act==="left"||act==="right"||act==="up"||act==="down")press(act);
+  else if(act==="fold"){if(app==="play"){flat?doUnflatten():doFlatten();}}
+  else if(act==="turnl")rotateView(-1);
+  else if(act==="turnr")rotateView(1);
+  else if(act==="restart"){if(app==="play")resetLevel();}
+  else if(act==="undo"){
+    if(app==="play"){undoMove();SFX.undo();}
+    else if(app==="edit")undo();
+  }
+  else if(act==="hint"){if(app==="play")showHint();}
+  else if(act==="mute"){muted=!muted;flash(muted?"sound off":"sound on");
+    if(typeof ambSync==="function")ambSync();}
+  else if(act==="peek")peekSet(true);
+  else if(act==="unpeek"){peekLatch=false;peekSet(false);}
+}
+/* Arrows, WASD, Enter and Space move and press the focus ring on any screen
+   that is a stack of buttons (navRoot(), js/26-desk.js). */
+var NAV_DIR={arrowup:[0,-1],arrowdown:[0,1],arrowleft:[-1,0],arrowright:[1,0],
+             w:[0,-1],s:[0,1],a:[-1,0],d:[1,0]};
 window.addEventListener("keydown",function(e){
-  var k=e.key.toLowerCase();
+  var k=(e.key||"").toLowerCase();
+  // A rebind waiting for its key takes the press before anything else sees it.
+  if(keyCaptureTake(e))return;
+  // Typing a level's name is typing, not walking.
+  var t=e.target, tag=t&&t.tagName;
+  if((tag==="INPUT"&&t.type!=="range"||tag==="TEXTAREA"||tag==="SELECT")&&k!=="escape")return;
+  if(k==="f11"||(k==="enter"&&e.altKey)){fullToggle();e.preventDefault();return;}
+  inputIs("keys");
   /* An overlay swallows taps by being there; a keyboard does not care what
      is on top. Without this the arrow keys walked the player around a level
      nobody could see, behind the title screen. */
@@ -284,25 +310,22 @@ window.addEventListener("keydown",function(e){
      the solver about a lawn, undo has nothing to undo. Escape is the way
      out, which here means SKIP: it is the key the reflex reaches for, and a
      settings panel over a cutscene is not what it is reaching for. */
+  var act=keyAction(k)||(k==="u"?"undo":null);
   if(typeof storyOn==="function"&&storyOn()){
     if(k==="escape"){storySkip();e.preventDefault();return;}
-    if(k==="r"||k==="u"||k==="z"||k==="h"){e.preventDefault();return;}
+    if(act==="restart"||act==="undo"||act==="hint"){e.preventDefault();return;}
   }
-  if(GAME_KEYS[k]&&screenUp())return;
-  if(k==="arrowleft"||k==="a"){press("left");e.preventDefault();}
-  else if(k==="arrowright"||k==="d"){press("right");e.preventDefault();}
-  else if(k==="arrowup"||k==="w"){press("up");e.preventDefault();}
-  else if(k==="arrowdown"||k==="s"){press("down");e.preventDefault();}
-  else if(k===" "&&app==="play"){flat?doUnflatten():doFlatten();e.preventDefault();}
-  else if(k==="q"){rotateView(-1);}
-  else if(k==="e"){rotateView(1);}
-  else if(k==="r"&&app==="play"){resetLevel();}
-  else if((k==="u"||(k==="z"&&app==="play"))&&app==="play"){undoMove();SFX.undo();}
-  else if(k==="h"&&app==="play"){showHint();}
-  else if(k==="m"){muted=!muted;flash(muted?"sound off":"sound on");
-    if(typeof ambSync==="function")ambSync();}
-  else if(k==="shift"){peekSet(true);}
-  else if(k==="z"&&app==="edit"){undo();}
+  // A screen of buttons: the keys move the ring over them instead.
+  if(k!=="escape"&&navRoot()){
+    if(NAV_DIR[k]){navMove(NAV_DIR[k][0],NAV_DIR[k][1]);e.preventDefault();return;}
+    if(k==="enter"||k===" "){navOk();e.preventDefault();return;}
+  }
+  if(act&&KEY_GAME[act]&&screenUp())return;
+  if(act){
+    if(act==="peek"&&e.repeat)return;
+    runAct(act);
+    if(act!=="mute")e.preventDefault();
+  }
   /* Escape is the key everyone already presses. It closes whatever panel is
      open first and only opens the menu from a clear screen, because a key
      that opened the menu unconditionally would be the one thing you cannot

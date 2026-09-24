@@ -3615,6 +3615,8 @@ function buildGrid(){
    these cannot go much below .8 without cropping the biggest boards - the
    88-block BOSS IV arena is the one to check against. */
 function barIsUp(){
+  // A computer never has the bar, not even in a tutorial: it teaches keys.
+  if(typeof deskMode==="function"&&deskMode())return false;
   var u=(typeof settings!=="undefined"&&settings.ui)||"full";
   // a tutorial forces the bar back on whatever the layout says
   return u!=="none"||document.body.classList.contains("tut");
@@ -3628,6 +3630,8 @@ function updateFrustum(){
   camera.updateProjectionMatrix();
 }
 function onResize(){
+  // The page zoom first: it is what the canvas's own counter-zoom answers to.
+  if(typeof applyZoom==="function")applyZoom();
   renderer.setSize(window.innerWidth,window.innerHeight);
   updateFrustum();
   previewSize();   // the display case is sized in % and needs to be re-measured

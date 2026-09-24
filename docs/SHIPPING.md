@@ -58,7 +58,7 @@ you count the ones that are out of your hands.
   `UNDER 18` and I'D RATHER NOT SAY both mean child, for ad purposes only.
   The owner's call, and it is the conservative one: see below for why it also
   means the intro card does not change at all.
-- **Steam is $5.99 and grants everything.** No ads, no shop, the whole
+- **Steam is $6.99 and grants everything** (was $5.99). No ads, no shop, the whole
   catalogue open. This supersedes the earlier $4.99 NO LIMITS reading, which
   left four paid characters locked behind a shop Steam does not have.
 - **`buyTestPanel()` (`js/16-panels.js`) must stay reached by nothing.** It
@@ -382,7 +382,11 @@ bridge.
 
 ## The Steam grant
 
-**$5.99, and it grants `pass_all` at boot.** Settled. The first reading of
+**$6.99, and it grants `pass_all`** - by rule inside `hasPass()` when
+`steamBuild()` says so, not by a write into the save. The price moved from
+$5.99 on the owner's call (24 Sep), pending one question: Steam DOES have
+in-game purchases, so a cheaper base plus paid characters is possible - see
+**Steam and in-app purchases** below before the price is fixed. The first reading of
 this was $4.99 carrying NO LIMITS, which was coherent right up until you
 notice that `owns()` grants the four paid characters from `pass_all` and not
 from `pass_nolimits` - so that build would have shown four locked characters
@@ -401,6 +405,25 @@ If that turns out to matter when the Steam build is played, the fix is one
 predicate: give `shards()` its own question instead of asking `noLimits()`,
 so a Steam player gets every shape unlocked and a real star balance. Worth
 knowing it is that cheap; not worth doing before anyone has played it.
+
+### Steam and in-app purchases
+
+Steam has two ways to sell something inside a game, and both are real:
+
+- **DLC.** Each paid thing is its own small app in Steamworks with its own
+  store page, and the game asks Steam at launch which ones the player owns
+  (`isDlcInstalled` in `steamworks.js`). No server, no payment code - Steam
+  sells it on the store page and in the overlay. Four characters would be
+  four DLC pages (or one bundle), each reviewed like the main page.
+- **Microtransactions** (`ISteamMicroTxn`). A BUY button inside the game,
+  the purchase confirmed in the Steam overlay. **This needs a server**: the
+  order is opened and finalised by calls to Steam's Web API with a
+  publisher key, which must never ship inside the game. This project has no
+  server, and that alone is the reason not to.
+
+So "everything for one price" is not forced - DLC would work without a
+server. It is still the simpler shape: one product, nothing in the game
+that sells, and nothing in the save that could disagree with Steam.
 
 ### The other Steam tweaks
 
