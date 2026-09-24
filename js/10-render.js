@@ -3689,7 +3689,7 @@ var foldHiT=0;
    is deliberately narrow: `doUnflatten()` only calls `showLanding()` when
    the column held MORE THAN ONE candidate, because rings drawn round a
    single block announce a choice nobody made. Reading their fade inherited
-   that trigger, so on `03 - A Real Challenge` - where every square you
+   that trigger, so on `04 - A Real Challenge` - where every square you
    actually climb to has exactly one candidate - coming back to 3D lit
    nothing at all. Reported in exactly those words.
 

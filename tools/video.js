@@ -789,9 +789,9 @@ async function main(){
        films. Progress is keyed by level NAME and an ordinary level's value
        is a move count, so these are nine cleared boards. */
     var p={"00 - First Steps":4,"00 - First Fold":7,"01 - On Your Own":9,
-           "02 - Beware of Walls":11,"03 - A Real Challenge":13,
-           "04 - The Shortcut":10,"05 - The Only Way":12,
-           "06 - The Illusion":14,"07 - The Block":12};
+           "03 - Beware of Walls":11,"04 - A Real Challenge":13,
+           "05 - The Shortcut":10,"06 - The Only Way":12,
+           "07 - The Illusion":14,"08 - The Block":12};
     localStorage.setItem("orthogonal:progress",JSON.stringify(p));
   }catch(e){}
     /* THE FILM OPENS BLACK, and it has to be done here rather than with the

@@ -119,29 +119,31 @@ var GUIDE_PED_H=.18;
 var GUIDE_LINES={
   "01 - On Your Own":
     "{do:2d} to go flat. Things far apart in depth land side by side.",
-  "02 - Beware of Walls":
+  "02 - Behind the Wall":
+    "Can't see yourself? Hold the eye - it leans the camera, and it costs no move.",
+  "03 - Beware of Walls":
     "Anything sharing your column comes flat with you - and lands on top of you.",
-  "03 - A Real Challenge":
+  "04 - A Real Challenge":
     "Stuck? The bulb gives you the next move. Three of them, one back every half hour.",
-  "04 - The Shortcut":
+  "05 - The Shortcut":
     "You can use the rules of this world to make it faster.",
-  "05 - The Only Way":
+  "06 - The Only Way":
     "The world folds onto one particular block. Which one, you find out from inside.",
-  "06 - The Illusion":
+  "07 - The Illusion":
     "Flat, the eye shows which block you would stand back up on. Look before you go.",
-  "07 - The Block":
+  "08 - The Block":
     "This world can take things from you, but it can also give.",
-  "08 - Limited":
+  "09 - Limited":
     "Hold the eye in {n3} too. Leaning round the board is free - it is not a move.",
-  "10 - No Bridge":
+  "11 - No Bridge":
     "The rules of this world and your turning, together, make things you would not expect.",
-  "11 - No Bridge 2":
+  "12 - No Bridge 2":
     "The same two again - the rules, and your turning. This board wants more of it.",
-  "12 - Simple Walk":
+  "13 - Simple Walk":
     "You can build your own levels. MY LEVELS, on the home screen.",
-  "13 - Not a Simple Walk":
+  "14 - Not a Simple Walk":
     "Sometimes a simple walk is the hard one.",
-  "14 - The Silence Before the Storm":
+  "15 - The Silence Before the Storm":
     "I believe in you, son. You have got this - go and find your parents."
 };
 /* WHAT HE SAYS ON A BOARD NOBODY HAS WRITTEN HIM A LINE FOR. Today that is
@@ -203,7 +205,7 @@ function guideHere(idx){
      fourth voice. He starts where the teaching stops.
 
      `tutorial:true` is the test rather than "is it PROLOGUE", because the
-     second place it bites is inside I · NATURE: `09 - The Rotation` is the
+     second place it bites is inside I · NATURE: `10 - The Rotation` is the
      level that hands rotation over, and it is where the owner found him in
      the way. His plinth is placed off the +x end of the board and nowhere
      else (guidePlinth()), which is out of the way in exactly one of the four
@@ -248,7 +250,7 @@ function guideHere(idx){
    ONLY THE VIEWS THE LEVEL CAN BE TURNED TO. A `rotate:false` level is locked
    to the view it opens in, so asking what he would look like from the side is
    asking about a camera position the player cannot reach - and paying for it
-   in altitude. Every level he stands on before `09 - The Rotation` is locked;
+   in altitude. Every level he stands on before `10 - The Rotation` is locked;
    the four after it are not, and those take the worst case over all four.
 
    Pure: it reads L and nothing else, so recomputeBounds() can ask for it

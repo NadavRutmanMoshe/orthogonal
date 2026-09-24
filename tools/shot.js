@@ -68,26 +68,26 @@ const SCREENS={
   "level:N":{what:"playing level N (index into LEVELS; 2 is '01 - On Your Own', the safe one)", js:"lv(N);"},
   "flat:N": {what:"level N, folded to 2D", js:"lv(N);setTimeout(doFlatten,50);", wait:1500},
   "win:N":  {what:"level N's win card", js:"lv(N);setTimeout(function(){moveCount=statsCached(L).moves||0;win();},50);", wait:2200},
-  boss:     {what:"BOSS I, a second in", js:"lv(18);", wait:1200},
-  trial:    {what:"TRIAL I, a second in", js:"lv(10);", wait:1200},
+  boss:     {what:"BOSS I, a second in", js:"lv(19);", wait:1200},
+  trial:    {what:"TRIAL I, a second in", js:"lv(11);", wait:1200},
   tutorial: {what:"00 - First Steps with the ghost hand", js:"lv(0);", wait:2500},
   editor:   {what:"the level editor", js:"enterEditor();"},
   /* `hintoffer` is gone: the card that explained the bulb was removed (see
      the note beside starsOffer() in js/12-play.js) and the target went on
      pointing at a function that no longer exists, which aborted --all. */
-  starsoffer:{what:"the card that explains stars", js:"lv(14);settings.starAsked=false;setTimeout(starsOffer,50);"},
-  shopnudge:{what:"the wardrobe card that offers the Pyramid", js:"UNLIMITED_SHARDS=true;lv(19);settings.shopNudged=[];settings.shopNudgeOff=false;setTimeout(shopNudge,50);", wait:1400},
+  starsoffer:{what:"the card that explains stars", js:"lv(15);settings.starAsked=false;setTimeout(starsOffer,50);"},
+  shopnudge:{what:"the wardrobe card that offers the Pyramid", js:"UNLIMITED_SHARDS=true;lv(20);settings.shopNudged=[];settings.shopNudgeOff=false;setTimeout(shopNudge,50);", wait:1400},
   refill:   {what:"the out-of-hints card", js:"lv(2);setTimeout(hintRefillOffer,50);"},
-  struggle: {what:"the out-of-lives card, TRY AGAIN and the skip", js:"lv(18);settings.noSlowOffer=false;setTimeout(struggleOffer,600);", wait:1400},
+  struggle: {what:"the out-of-lives card, TRY AGAIN and the skip", js:"lv(19);settings.noSlowOffer=false;setTimeout(struggleOffer,600);", wait:1400},
   tutcard:  {what:"a full-bleed explanation card", js:"lv(2);cardPut('A heading','Two lines of body text, with {to2} named the way the button names it.','brief');"},
   toast:    {what:"a toast and a spoken cue", js:"lv(2);flash('a toast');flashCue('go right','hint · 2 left');", wait:400},
   guide:    {what:"the neighbour standing in a level, mid-sentence",
-             js:"lv(6);setTimeout(function(){guideSay(guideTip());},400);", wait:1400},
+             js:"lv(7);setTimeout(function(){guideSay(guideTip());},400);", wait:1400},
   guidestuck:{what:"his line after ten losses on the same level",
-             js:"lv(6);setTimeout(function(){guideSay(GUIDE_STUCK,true);},400);", wait:1400},
+             js:"lv(7);setTimeout(function(){guideSay(GUIDE_STUCK,true);},400);", wait:1400},
   glimpse:  {what:"the father, half a second in the back of a fire level",
-             js:"lv(20);setTimeout(function(){ghostShow();},700);", wait:1000},
-  phase:    {what:"the between-phases note on a boss", js:"lv(18);setTimeout(function(){phaseNote('the ground rises');},300);", wait:1200},
+             js:"lv(21);setTimeout(function(){ghostShow();},700);", wait:1000},
+  phase:    {what:"the between-phases note on a boss", js:"lv(19);setTimeout(function(){phaseNote('the ground rises');},300);", wait:1200},
   /* THE FOLD TUTORIAL IN FIRE COLOURS, and the pair is the point: the same
      board, the same camera, the same two steps walked - one in the volume
      and one in the plane. Everything about the game that can be said without
@@ -118,9 +118,9 @@ const SCREENS={
      and the television covering it. Those two constants are in
      js/05-state.js; if either moves, these waits move with it. */
   smashed:  {what:"BOSS I: SMASHED - a hunter reached you and took a life",
-             js:"lv(18);setTimeout(bossSmash,1500);", wait:2050},
+             js:"lv(19);setTimeout(bossSmash,1500);", wait:2050},
   crushed:  {what:"BOSS I: CRUSHED - you folded with one in your silhouette column",
-             js:"lv(18);setTimeout(bossCrush,1500);", wait:2300},
+             js:"lv(19);setTimeout(bossCrush,1500);", wait:2300},
   /* THE CUTSCENES, seekable by beat. storySeek() runs every beat up to the
      one asked for and snaps the walks to their last cell, which is near
      enough to the pose a beat holds - so `story1:13` is the frame just after

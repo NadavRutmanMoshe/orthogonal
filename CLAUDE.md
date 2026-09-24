@@ -152,7 +152,7 @@ Block format `[x,y,z,k]`: 0 stone, 1 water (code says `glass`), 2 anchor,
   stay** - every level was `NN — Name` until the titles were de-dashed, and
   those keys are the saves written under the old titles.
 - Rotation is locked (`rotate:false`) from the tutorials through `TRIAL I`
-  and unlocked at `09 - The Rotation`, then never taken back. On a locked
+  and unlocked at `10 - The Rotation`, then never taken back. On a locked
   level the turn buttons are **not drawn** (`body.norot`).
 - `tutorial:true` means no par, no stars, and the solver is not asked.
 - Progress is keyed by level **name**. `progress[name]` holds a move count
