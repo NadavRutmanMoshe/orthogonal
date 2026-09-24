@@ -119,22 +119,37 @@ body.desk.mapopen .ghost{opacity:0}
    here ever lit up under a pointer, and a screen that does not react to the
    mouse reads as a picture of a screen. A lift in brightness rather than a
    new shadow, so every family's own fill, rim and lip survive it. */
-body.desk button{transition:color .35s ease,border-color .2s ease,
-  background .12s ease,transform .1s ease,box-shadow .1s ease,filter .12s ease}
-body.desk button:not(:disabled):hover{filter:brightness(1.28) saturate(1.12);
-  border-color:color-mix(in srgb,var(--c) 70%,var(--rule));
+body.desk button,body.desk .item{transition:color .35s ease,
+  border-color .2s ease,background .12s ease,box-shadow .12s ease,
+  filter .12s ease,
+  /* THE SPRING. An overshooting curve on the way back, so a button lets go
+     of a click with a small bounce rather than just returning. */
+  transform .26s cubic-bezier(.34,1.7,.5,1)}
+/* The wardrobe's tiles are not buttons (they are `.item` divs), which is why
+   they sat still under a pointer that made every button around them move. */
+body.desk .item{position:relative}
+body.desk button:not(:disabled):hover,body.desk .item:hover{
+  filter:brightness(1.28) saturate(1.12);
+  border-color:color-mix(in srgb,var(--c,var(--goal)) 70%,var(--rule));
   /* AND IT GROWS TOWARD THE POINTER, which is the half of the feedback
      that says "press me" rather than "you are over me". Lifted above its
-     neighbours so the grown edge is never drawn under the next button.
-     The press still wins: :active below puts it back down on its lip. */
-  transform:scale(1.06);z-index:2}
-/* Wide buttons grow less: six percent of a 540px row is a lurch. */
+     neighbours so the grown edge is never drawn under the next button. */
+  transform:scale(1.07);z-index:2}
+/* Wide things grow less: six percent of a 540px row is a lurch. */
 body.desk .home button:not(:disabled):hover,
 body.desk .psec:not(:disabled):hover,
 body.desk .pfoot button:not(:disabled):hover,
-body.desk .pmore button:not(:disabled):hover{transform:scale(1.025)}
-body.desk button:not(:disabled):active{filter:brightness(1.08);
-  transform:translateY(3px) scale(1)}
+body.desk .pmore button:not(:disabled):hover,
+body.desk .sectile:not(:disabled):hover,
+body.desk .mlrow button:not(:disabled):hover{transform:scale(1.025)}
+body.desk .sectile.lk:hover{transform:none;filter:none}
+/* THE PRESS SQUASHES, fast, and the spring above brings it back. */
+body.desk button:not(:disabled):active,body.desk .item:active{
+  filter:brightness(1.1);transform:scale(.93);transition-duration:.06s}
+body.desk .home button:not(:disabled):active,
+body.desk .psec:not(:disabled):active,
+body.desk .pfoot button:not(:disabled):active,
+body.desk .sectile:not(:disabled):active{transform:scale(.97)}
 
 /* ---- WHAT A CORNER BUTTON IS, AND ITS KEY, on hover. The round buttons are
    icons a phone player learned by pressing; a mouse player hovers first.
@@ -239,7 +254,9 @@ body.desk .hstand{grid-area:s;width:420px;height:420px;
    tabs. The case takes the whole height of the right column. */
 body.desk .panel.tall[data-kind=wardrobe],
 body.desk .panel.tall[data-kind=menu],
-body.desk .panel.tall[data-kind=keys]{width:min(1120px,calc(100% - 64px));
+body.desk .panel.tall[data-kind=keys],
+body.desk .panel.tall[data-kind=secs],
+body.desk .panel.tall[data-kind=map]{width:min(1120px,calc(100% - 64px));
   max-width:none}
 body.desk .panel.ward.tall.on{display:grid;
   grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);
@@ -268,6 +285,21 @@ body.desk .panel[data-kind=menu] .pbody{display:block;columns:3;
 body.desk .panel[data-kind=menu] .pbody>.psec{column-span:all}
 body.desk .panel[data-kind=menu] .pbody>.pcard{break-inside:avoid;
   display:inline-block;width:100%;margin-top:12px}
+/* MY LEVELS is a list of rows, and a row the width of a monitor is a row
+   whose buttons are a long way from its name: wider than a phone, not the
+   whole screen. */
+body.desk .panel.tall[data-kind=mylevels]{width:min(860px,calc(100% - 64px));
+  max-width:none}
+/* ---- WORLDS: three across, not two. The first three worlds on the top
+   row, DESERT and EXTRA under them, EXTRA two wide. */
+body.desk .panel[data-kind=secs] .secgrid{grid-template-columns:repeat(3,1fr);
+  grid-template-rows:1fr 1fr;padding:16px 4px 4px;gap:14px}
+body.desk .panel[data-kind=secs] .sectile.wide{grid-column:span 2}
+/* ---- WHATEVER IS OPEN, THE HOME SCREEN BEHIND IT STEPS BACK. A panel is
+   narrower than a monitor, and the menu's bright doors were reading through
+   on both sides of it as a second screen. */
+body.desk.mapopen .home .hwrap{opacity:.14;filter:blur(3px);
+  transition:opacity .25s ease,filter .25s ease}
 /* Keys: the keyboard and the pad side by side. */
 body.desk .panel[data-kind=keys] .pbody{display:grid;
   grid-template-columns:1.3fr 1fr;column-gap:14px;align-items:start;
@@ -289,9 +321,9 @@ body.desk .home .hwin button.hquit:hover{--c:#ff5d6c}
 /* The tips grow leftward from the right edge, like the play corner's. */
 body.desk .hwin button[data-tip]:hover::after{left:auto;right:0;transform:none}
 /* In every panel header the switch sits beside close and wears its size. */
-body.desk .phead .pwin{position:relative}
-body.desk .phead .pwin svg{width:16px;height:16px}
-body.desk .phead .pwin[data-tip]:hover::after{left:auto;right:0;transform:none}
+body.desk .pwin{position:relative}
+body.desk .pwin svg{width:15px;height:15px;flex:none}
+body.desk .pwin[data-tip]:hover::after{left:auto;right:0;transform:none}
 /* And in play, the first of the right-hand corner's round buttons, in the
    corner's own neutral. */
 body.desk #bWinFull{--c:#8c9dc4}
@@ -301,8 +333,3 @@ body.desk #bWinFull{display:flex}
 /* Under an open panel the home screen's window buttons would sit beside it
    as a second copy of the one in the panel's header. */
 body.desk.mapopen .hwin{display:none}
-/* Settings > Screen > Menu colour: each numeral in its own world's colour. */
-body.desk .crow .seg button.hue{flex:0 0 34px;color:var(--h);
-  border-color:color-mix(in srgb,var(--h) 45%,transparent)}
-body.desk .crow .seg button.hue.on{color:#fff;border-color:var(--h);
-  background:color-mix(in srgb,var(--h) 38%,var(--panel))}

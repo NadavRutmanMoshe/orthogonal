@@ -164,7 +164,8 @@ function winBuild(){
    header and none of them knows about this. */
 function winPanel(){
   if(!deskMode())return;
-  var head=$("panel").querySelector(".phead");
+  // `.mhead` is the chooser's and the map's header, `.phead` everyone else's.
+  var head=$("panel").querySelector(".phead,.mhead");
   if(!head||head.querySelector("[data-winfull]"))return;
   var xs=head.querySelectorAll(".mx"), x=xs.length?xs[xs.length-1]:null;
   var f=document.createElement("button");
@@ -698,7 +699,7 @@ function padAct(d,fire,hit,down){
 
    Called from boot once the saves are in. The sting may still be up, so
    the scene waits for it (splashAfter(), called by splashEnd()). */
-var deskIntroDue=false;
+var deskIntroDue=false, deskPanelWatch=null;
 function deskFirstRun(){
   if(!deskMode()||!nothingBehind())return false;
   if(!settings.ageBand)applyAgeBand("dhard");
@@ -723,6 +724,13 @@ function deskBoot(){
   applyZoom();
   applyQuality();
   if(on)winBuild();
+  /* Some panels rewrite themselves after showPanel() has run (the map redraws
+     its own header), which takes the switch out with them - so it is put back
+     whenever the panel's contents change. */
+  if(on&&!deskPanelWatch&&window.MutationObserver&&$("panel")){
+    deskPanelWatch=new MutationObserver(function(){winPanel();});
+    deskPanelWatch.observe($("panel"),{childList:true,subtree:true});
+  }
   if(padFirst())padStart();
   kStripBuild();
   // The replay's skip line says what skips it here (a key, not a tap).

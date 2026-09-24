@@ -141,7 +141,6 @@ function loadSettings(){
           settings.keyStrip=o.keyStrip;
         if(o.uiScale&&UI_SCALE[o.uiScale])settings.uiScale=o.uiScale;
         if(o.quality&&QUALITY[o.quality])settings.quality=o.quality;
-        if(o.menuHue&&/^(auto|[1-5])$/.test(String(o.menuHue)))settings.menuHue=String(o.menuHue);
         /* `killsound` is deliberately NOT read any more. It was on this list
            for one round so the owner could compare thud/burst/chime across a
            reload; THUD won and is the body of SFX.strike() now, so a save

@@ -894,14 +894,20 @@ is the rule.
   a landscape screen a third of its height. Phones keep him where he was.
 - **A computer held landscape gets its own layouts** (`css/96-desk.css`,
   `#panel[data-kind]`): home menu-left/stand-right, wardrobe choosing-left/
-  case-right, Settings on one screen, hover on every button. A narrow
-  desktop window falls back to the phone layouts.
+  case-right, Settings on one screen, worlds three across, the map and the
+  chooser wide, MY LEVELS medium, and the home screen dimmed behind any
+  panel. A narrow desktop window falls back to the phone layouts.
+- **Every button AND the wardrobe's `.item` tiles (divs, not buttons) grow
+  on hover and squash on press**, springing back on an overshooting curve.
+  The full-screen switch goes into `.phead` and `.mhead` headers alike, and
+  a MutationObserver on `#panel` puts it back when a panel redraws itself.
 - **The home menu on a computer is a RAMP built from CONTINUE's world
   colour** (`--wsec`, set in `homeSync()`) to the wardrobe's violet, mixed
   in OKLCH so it walks the colour wheel: NATURE runs green, teal, blue,
   violet. MY LEVELS is ordered above WARDROBE so the ramp ends on violet.
-  A single accent was tried first and called boring. Settings > Screen >
-  Menu colour (`settings.menuHue`) pins one world's ramp; AUTO follows. Hover grows a button
+  A single accent was tried first and called boring. A Menu colour row
+  that pinned one world's ramp existed for one round, to compare them, and
+  came off with its setting. Hover grows a button
   (`scale(1.06)`, wide ones 1.025) and `:active` puts it back on its lip.
 - **The full-screen switch is everywhere on a computer**: home (with quit,
   Electron only, `deskApp()`), the play corner (`#bWinFull`), and every
