@@ -159,8 +159,8 @@ exist - the card that introduced the bulb was cut.
 - **Kicker:** `SCORING SYSTEM`
 - **Title:** `Getting three stars`
 - **Lead:** a legend, four rows of small stars: `★★★ - shortest solve` ·
-  `★★☆ - up to one and a half as many moves` · `★☆☆ - up to twice as many
-  moves` · `☆☆☆ - more than twice as many moves`
+  `★★☆ - up to 1.5x shortest` · `★☆☆ - up to 2x shortest` ·
+  `☆☆☆ - more than 2x shortest`
 - **Buttons:** `TRY FOR THREE`
 - **Note:** `**This level is three moves.**`
 
