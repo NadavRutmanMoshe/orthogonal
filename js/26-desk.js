@@ -103,8 +103,79 @@ function fullToggle(){
   }catch(e){}
 }
 document.addEventListener("fullscreenchange",function(){
+  /* ESC IS THE GAME'S, NOT THE BROWSER'S. In full screen a browser takes
+     Escape to leave it, and Escape is also this game's settings key - so
+     one press did both. The Keyboard Lock API hands Escape to the page while
+     full screen (Chrome and Electron; holding it still leaves, and the
+     browser says so), and it is released on the way out. */
+  var kb=navigator.keyboard;
+  try{
+    if(fullOn()&&kb&&kb.lock)kb.lock(["Escape"]).catch(function(){});
+    else if(kb&&kb.unlock)kb.unlock();
+  }catch(e){}
   if(typeof panelKind!=="undefined"&&panelKind==="menu"&&panelOpen())menuPanel();
+  winSync();
 });
+
+/* ============================================================
+   THE WINDOW'S OWN BUTTONS - full screen and quit, top right of the home
+   screen, where every PC game keeps them. Quit only exists where there is a
+   window to close (the Steam build is Electron); a browser tab cannot be
+   closed by the page it shows, so there it is not drawn rather than drawn
+   dead. Full screen is drawn wherever the page may ask for it, and where it
+   may not (the artifact's frame) it says where the browser's own switch is. */
+function deskApp(){
+  return window.STEAM===true||/Electron/i.test(navigator.userAgent||"");
+}
+var WIN_FULL="<svg viewBox='0 0 24 24' aria-hidden='true'><path d='M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5' "+
+  "fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/></svg>";
+var WIN_SHRINK="<svg viewBox='0 0 24 24' aria-hidden='true'><path d='M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5' "+
+  "fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/></svg>";
+var WIN_QUIT="<svg viewBox='0 0 24 24' aria-hidden='true'><path d='M12 3v8M6.3 6.8a8 8 0 1 0 11.4 0' "+
+  "fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round'/></svg>";
+function winFull(){
+  if(fullAllowed())fullToggle();
+  else flash("full screen: F11, or ⤢ at the top right of the page");
+}
+function winBuild(){
+  var home=$("home");
+  if(!home||$("hWin"))return;
+  var w=document.createElement("div");
+  w.className="hwin";w.id="hWin";
+  w.innerHTML="<button class='rnd' id='hWinFull'></button>"+
+    (deskApp()?"<button class='rnd hquit' id='hWinQuit' data-tip='Quit'>"+WIN_QUIT+"</button>":"");
+  home.appendChild(w);
+  tap($("hWinFull"),winFull);
+  if($("hWinQuit"))tap($("hWinQuit"),function(){window.close();});
+  winSync();
+}
+function winSync(){
+  var b=$("hWinFull");
+  if(!b)return;
+  b.innerHTML=fullOn()?WIN_SHRINK:WIN_FULL;
+  b.setAttribute("data-tip",fullOn()?"Exit full screen · F11":"Full screen · F11");
+}
+
+/* ============================================================
+   RENDER QUALITY - Settings > Screen > Quality.
+
+   The world is drawn at the screen's own resolution times this, and the
+   browser scales the result down: a cheap supersample, which is what a big
+   monitor at 1x shows most (the stair-steps on every block edge). NORMAL is
+   the screen's resolution, as a phone draws; HIGH is half again; ULTRA
+   twice. Capped at 3 device pixels to a CSS pixel so a 4K screen at ULTRA
+   does not ask for an 8K frame. Phones never read it. */
+var QUALITY={normal:1,high:1.5,ultra:2};
+function applyQuality(){
+  if(typeof renderer==="undefined"||!renderer)return;
+  var dpr=window.devicePixelRatio||1;
+  var pr=deskMode()?Math.min(3,dpr*(QUALITY[settings.quality]||1))
+                   :Math.min(dpr,2);
+  if(renderer.getPixelRatio()!==pr){
+    renderer.setPixelRatio(pr);
+    renderer.setSize(window.innerWidth,window.innerHeight);
+  }
+}
 
 /* ============================================================
    KEYS - which key does what, and the player may change it.
@@ -625,6 +696,8 @@ function deskBoot(){
   document.body.classList.toggle("desk",on);
   if(on&&settings.ui!=="none"){settings.ui="none";applyUI();}
   applyZoom();
+  applyQuality();
+  if(on)winBuild();
   if(padFirst())padStart();
   kStripBuild();
   // The replay's skip line says what skips it here (a key, not a tap).

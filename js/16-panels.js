@@ -731,6 +731,10 @@ function menuPanel(){
        here; this one had a label. */
     "<div class='phead'><div class='pt'><b>Settings</b></div>"+
       "<div class='mtot'>"+starsEarned()+" ★</div>"+
+      /* The window's full-screen switch, beside close, where a PC puts it. */
+      (desk?"<button class='mq mx' id='mWinFull' aria-label='Full screen' "+
+        "data-tip='"+(fullOn()?"Exit full screen":"Full screen")+" · F11'>"+
+        (fullOn()?WIN_SHRINK:WIN_FULL)+"</button>":"")+
       "<button class='mq mx' id='mClose' aria-label='Back to the level'>✕</button></div>"+
     "<div class='pbody'>"+worldsBtn+secBtn+
       /* WORLDS first, then the shelf you are standing on. Both are
@@ -836,10 +840,14 @@ function menuPanel(){
                 seg("mFull","off","OFF",fullOn()?"on":"off")+"</span>"
               : "<span class='knote'>Your browser's own: F11, or the ⤢ "+
                 "button at the top right of this page.</span>")+"</div>"+
-          "<div class='crow bare'><label>Interface</label><span class='seg'>"+
+          "<div class='crow'><label>Interface</label><span class='seg'>"+
             seg("mZoom","small","SMALLER",settings.uiScale)+
             seg("mZoom","auto","AUTO",settings.uiScale)+
-            seg("mZoom","large","BIGGER",settings.uiScale)+"</span></div></div>"
+            seg("mZoom","large","BIGGER",settings.uiScale)+"</span></div>"+
+          "<div class='crow bare'><label>Quality</label><span class='seg'>"+
+            seg("mQual","normal","NORMAL",settings.quality)+
+            seg("mQual","high","HIGH",settings.quality)+
+            seg("mQual","ultra","ULTRA",settings.quality)+"</span></div></div>"
         : "")+
       /* THE KILL CAM ROW IS GONE AND FULL WON. It was a genuine question -
          the snow and the camcorder are two extra seconds of ceremony on every
@@ -991,6 +999,12 @@ function menuPanel(){
       settings.uiScale=m;saveSettings();onResize();menuPanel();
     });
   });
+  ["normal","high","ultra"].forEach(function(m){
+    bind("mQual_"+m,function(){
+      settings.quality=m;saveSettings();applyQuality();menuPanel();
+    });
+  });
+  bind("mWinFull",function(){winFull();});
   bind("mTStars",function(){hidePanel();setTimeout(starsCard,60);});
   bind("mAdPriv",adPrivacyShow);
   bind("mTut",function(){
