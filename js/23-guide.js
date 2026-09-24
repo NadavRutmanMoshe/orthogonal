@@ -278,6 +278,24 @@ function guideSpot(){
      the corner placement was invented for. The four rotating levels he stands
      on keep him over the middle, where no turn can swing him anywhere. */
   var locked=(L.rotate===false);
+  /* ON A COMPUTER HE STANDS BESIDE THE BOARD, not behind it. Behind is
+     right for a phone held upright, where height is spare and width is not;
+     a monitor is the other way round, and behind-and-above cost the board a
+     third of the screen's height to hold a man nobody is playing. So on a
+     locked level he stands GUIDE_OUT past the board's right edge (screen-
+     right is +x in view 0, the only view a locked level has), at the back
+     depth, at the board's middle height - and the same height folded, since
+     beside the board he is over nothing in either. Not the back row: depth
+     draws high, and a man at the back of a deep board stood over it again. */
+  if(locked&&typeof deskMode==="function"&&deskMode()){
+    var topY=-1e9, botY=1e9;
+    for(i=0;i<L.blocks.length;i++){
+      if(L.blocks[i][1]>topY)topY=L.blocks[i][1];
+      if(L.blocks[i][1]<botY)botY=L.blocks[i][1];
+    }
+    var sy=(topY+botY)/2+GUIDE_PED_DROP+.57;
+    return [hix+GUIDE_OUT+.5, sy, (loz+hiz)/2, sy];
+  }
   var out=locked?(Math.abs(ax)*((hix-lox)/2)+
                   Math.abs(az)*((hiz-loz)/2)+GUIDE_OUT):0;
   var gx=(lox+hix)/2+ax*out, gz=(loz+hiz)/2+az*out;
@@ -355,6 +373,8 @@ function guidePoint(){
   // The same "hold both heights" rule where there is no offset to convert.
   if(!L||L.rotate!==false||!L.blocks||!L.blocks.length)
     return [g[0],Math.max(g[1],g[3]),g[2]];
+  // Beside the board (a computer): where he stands is where he appears.
+  if(typeof deskMode==="function"&&deskMode())return [g[0],g[1],g[2]];
   var loz=1e9,hiz=-1e9,i,b;
   for(i=0;i<L.blocks.length;i++){
     b=L.blocks[i];
