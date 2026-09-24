@@ -840,10 +840,22 @@ function menuPanel(){
             seg("mZoom","small","SMALLER",settings.uiScale)+
             seg("mZoom","auto","AUTO",settings.uiScale)+
             seg("mZoom","large","BIGGER",settings.uiScale)+"</span></div>"+
-          "<div class='crow bare'><label>Quality</label><span class='seg'>"+
+          "<div class='crow'><label>Quality</label><span class='seg'>"+
             seg("mQual","normal","NORMAL",settings.quality)+
             seg("mQual","high","HIGH",settings.quality)+
-            seg("mQual","ultra","ULTRA",settings.quality)+"</span></div></div>"
+            seg("mQual","ultra","ULTRA",settings.quality)+"</span></div>"+
+          /* The home menu's ramp starts from a world's colour; AUTO is the
+             world CONTINUE opens, a numeral pins one world's ramp. Each
+             numeral wears its world's colour, so the row is its own key. */
+          "<div class='crow bare'><label>Menu colour</label><span class='seg'>"+
+            seg("mHue","auto","AUTO",settings.menuHue||"auto")+
+            [1,2,3,4,5].map(function(i){
+              var s=SECTIONS[i]; if(!s)return "";
+              return "<button id='mHue_"+i+"' class='hue"+
+                (String(settings.menuHue)===String(i)?" on":"")+
+                "' style='--h:"+s.col+"' title='"+esc(s.name)+"'>"+
+                ["","I","II","III","IV","V"][i]+"</button>";
+            }).join("")+"</span></div></div>"
         : "")+
       /* THE KILL CAM ROW IS GONE AND FULL WON. It was a genuine question -
          the snow and the camcorder are two extra seconds of ceremony on every
@@ -993,6 +1005,11 @@ function menuPanel(){
   ["small","auto","large"].forEach(function(m){
     bind("mZoom_"+m,function(){
       settings.uiScale=m;saveSettings();onResize();menuPanel();
+    });
+  });
+  ["auto","1","2","3","4","5"].forEach(function(m){
+    bind("mHue_"+m,function(){
+      settings.menuHue=m;saveSettings();homeSync();menuPanel();
     });
   });
   ["normal","high","ultra"].forEach(function(m){
@@ -1147,7 +1164,10 @@ function homeSync(){
   b.style.setProperty("--sec",(sec&&sec.col)||"var(--goal)");
   /* And on the whole screen, where the computer's menu builds its ramp of
      colours from it (css/96-desk.css). */
-  $("home").style.setProperty("--wsec",(sec&&sec.col)||"#35c2a5");
+  /* Settings > Screen > Menu colour can pin one world's ramp instead of
+     following CONTINUE's (`settings.menuHue`, a SECTIONS index, or "auto"). */
+  var hs=settings.menuHue&&settings.menuHue!=="auto"?SECTIONS[+settings.menuHue]:null;
+  $("home").style.setProperty("--wsec",(hs&&hs.col)||(sec&&sec.col)||"#35c2a5");
   /* AND THE SECTION'S OWN EMBLEM, the same drawing its tile carries on the
      chooser. `--tabc` is what secEmblem()'s fill reads, so it is set to the
      same value `--sec` just took: one colour, one picture, on the button and

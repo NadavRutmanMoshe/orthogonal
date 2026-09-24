@@ -2701,8 +2701,8 @@ function recomputeBounds(){
      On a computer only for now; on a phone the fit is width-bound in
      portrait and this would move every locked level's framing a little
      for no reported problem. */
-  if(typeof deskMode==="function"&&deskMode()&&L.rotate===false&&
-     !(typeof storyFrameBox==="function"&&storyFrameBox()))deskFit(b[0]-a[0]);
+  if(typeof deskMode==="function"&&deskMode()&&
+     !(typeof storyFrameBox==="function"&&storyFrameBox()))deskFit();
   arenaLo=a.slice();arenaHi=b.slice();
   viewSizeT=fitViewSize();
 }
@@ -2724,37 +2724,45 @@ function recomputeBounds(){
    Folded, the camera is level and screen-up is plain y, around the same
    centre; the half-height is whichever of the two needs more. `xspan` is
    the world box's, which already holds him. */
-function deskFit(xspan){
+function deskFit(){
   var pit=Math.atan2(CAM_TILT*34,40), C=Math.cos(pit), S=Math.sin(pit);
-  var h3=(C+S)/2, lo3=1e9, hi3=-1e9, loF=1e9, hiF=-1e9, zlo=1e9, zhi=-1e9;
-  function cell(y0,y1,z,yF0,yF1){
-    lo3=Math.min(lo3,C*y0-S*z-h3); hi3=Math.max(hi3,C*y1-S*z+h3);
-    loF=Math.min(loF,yF0-.5);      hiF=Math.max(hiF,yF1+.5);
-  }
-  var cells=L.blocks.concat(L.keys||[]), xlo=1e9, xhi=-1e9;
+  var h3=(C+S)/2, locked=(L.rotate===false), views=locked?[AX[0]]:AX;
+  var cells=L.blocks.concat(L.keys||[]), i, v, p;
   if(L.start)cells=cells.concat([L.start]);
   if(L.goal)cells=cells.concat([L.goal]);
-  for(var i=0;i<cells.length;i++){
-    var p=cells[i];
-    cell(p[1],p[1],p[2],p[1],p[1]);
-    zlo=Math.min(zlo,p[2]);zhi=Math.max(zhi,p[2]);
+  var xlo=1e9,xhi=-1e9,zlo=1e9,zhi=-1e9,loF=1e9,hiF=-1e9;
+  for(i=0;i<cells.length;i++){
+    p=cells[i];
     xlo=Math.min(xlo,p[0]);xhi=Math.max(xhi,p[0]);
+    zlo=Math.min(zlo,p[2]);zhi=Math.max(zhi,p[2]);
+    loF=Math.min(loF,p[1]-.5);hiF=Math.max(hiF,p[1]+.5);
   }
+  /* The camera orbits the board's middle, so every view is measured about
+     it: screen-up is C*y less S times the depth toward the camera, and
+     screen-right is the offset along r. */
+  var cx=(xlo+xhi)/2, cz=(zlo+zhi)/2;
   var g=typeof guideSpot==="function"?guideSpot():null;
-  // He and his pedestal are about two cells tall, from his spot upward.
-  if(g)cell(g[1],g[1]+1.2,g[2],g[3],g[3]+1.2);
-  var cz=(zlo+zhi)/2, mid3=(lo3+hi3)/2;
-  var cy=(mid3+S*cz)/C;
-  var half=Math.max((hi3-lo3)/2,cy-loF,hiF-cy);
-  /* THE BOARD IS CENTRED, NOT THE BOARD AND HIM. He stands off its right
-     edge now, and centring the pair pushed the puzzle left of the middle of
-     the screen - reported as the map sitting off centre. So the camera aims
-     at the board's own middle and the frame is simply made wide enough, on
-     both sides, to keep him in it. */
-  var cx=(xlo+xhi)/2, halfW=(xhi-xlo)/2+.5;
-  if(g)halfW=Math.max(halfW,g[0]+.9-cx);
+  var side=typeof guideSide==="function"?guideSide():0;
+  if(g){loF=Math.min(loF,g[3]-.5);hiF=Math.max(hiF,g[3]+1.7);}
+  var hi=-1e9, lo=1e9, halfW=0;
+  function put(px,y0,y1,pz,w){
+    var dd=(px-cx)*v.d[0]+(pz-cz)*v.d[2], u=(px-cx)*v.r[0]+(pz-cz)*v.r[2];
+    hi=Math.max(hi,C*y1-S*dd+h3); lo=Math.min(lo,C*y0-S*dd-h3);
+    halfW=Math.max(halfW,Math.abs(u)+w);
+  }
+  for(var vi=0;vi<views.length;vi++){
+    v=views[vi];
+    for(i=0;i<cells.length;i++){p=cells[i];put(p[0],p[1],p[1],p[2],.5);}
+    // He and his pedestal are about two cells tall, from his spot upward.
+    if(g){
+      if(locked)put(g[0],g[1],g[1]+1.2,g[2],.9);
+      else put(cx+v.r[0]*side,g[1],g[1]+1.2,cz+v.r[2]*side,.9);
+    }
+  }
+  var cy=(hi+lo)/2/C;
+  var half=Math.max((hi-lo)/2,cy-loF,hiF-cy);
   centerT.set(cx,cy,cz);
-  arenaSW=Math.max(xspan+1,halfW*2);
+  arenaSW=halfW*2;
   arenaSH=half*2;
 }
 /* Both axes have to fit, so take whichever demands more room. The vertical

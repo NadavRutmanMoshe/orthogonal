@@ -287,14 +287,19 @@ function guideSpot(){
      depth, at the board's middle height - and the same height folded, since
      beside the board he is over nothing in either. Not the back row: depth
      draws high, and a man at the back of a deep board stood over it again. */
-  if(locked&&typeof deskMode==="function"&&deskMode()){
+  if(typeof deskMode==="function"&&deskMode()){
     var topY=-1e9, botY=1e9;
     for(i=0;i<L.blocks.length;i++){
       if(L.blocks[i][1]>topY)topY=L.blocks[i][1];
       if(L.blocks[i][1]<botY)botY=L.blocks[i][1];
     }
     var sy=(topY+botY)/2+GUIDE_PED_DROP+.57;
-    return [hix+GUIDE_OUT+.5, sy, (loz+hiz)/2, sy];
+    if(locked)return [hix+GUIDE_OUT+.5, sy, (loz+hiz)/2, sy];
+    /* A board that turns: he stands at its middle and guideFrame() moves
+       him out along whatever screen-right is in the current view
+       (guideSide()), so he is beside it from every side and walks round
+       with the turn. A fixed world offset would swing to the front. */
+    return [(lox+hix)/2, sy, (loz+hiz)/2, sy];
   }
   var out=locked?(Math.abs(ax)*((hix-lox)/2)+
                   Math.abs(az)*((hiz-loz)/2)+GUIDE_OUT):0;
@@ -621,10 +626,26 @@ function guideAnchor(dy,w,h,cam){
   gdTmp.set(GD.px,GD.py+dy,GD.pz);gdTmp.project(cam);
   return {x:(gdTmp.x*.5+.5)*w, y:(-gdTmp.y*.5+.5)*h};
 }
+/* How far out along screen-right he stands on a turning board on a
+   computer (guideSpot()), or 0: past the board's widest half-span in any
+   view, plus the usual gap. Locked boards and phones place him in the world
+   and answer 0 here. */
+function guideSide(){
+  if(!L||L.rotate===false||typeof deskMode!=="function"||!deskMode())return 0;
+  if(!L.blocks||!L.blocks.length)return 0;
+  var lox=1e9,hix=-1e9,loz=1e9,hiz=-1e9,i,b;
+  for(i=0;i<L.blocks.length;i++){
+    b=L.blocks[i];
+    lox=Math.min(lox,b[0]);hix=Math.max(hix,b[0]);
+    loz=Math.min(loz,b[2]);hiz=Math.max(hiz,b[2]);
+  }
+  return Math.max(hix-lox,hiz-loz)/2+GUIDE_OUT+.5;
+}
 function guideFrame(dtMs,rx,rz,tdvx,tdvz,ft){
   if(!GD)return;
   if(!gdTmp&&typeof THREE!=="undefined")gdTmp=new THREE.Vector3();
-  var u=GD.x*rx+GD.z*rz;
+  var side=guideSide(), bx=GD.x+rx*side, bz=GD.z+rz*side;
+  var u=bx*rx+bz*rz;
   var fx=u*rx+1.0*tdvx, fz=u*rz+1.0*tdvz;
   GD.bob+=dtMs*.0013;
   /* THE SMOOTHED POSITION IS KEPT SEPARATELY FROM THE DRAWN ONE, and the bob
@@ -632,10 +653,10 @@ function guideFrame(dtMs,rx,rz,tdvx,tdvz,ft){
      STILL - the bubble, and so the tail under it - reads GD.px/py/pz; see
      guideAnchor() above. It is the same .3 chase the mesh position was doing,
      moved one step earlier so that only one thing breathes. */
-  GD.px+=((GD.x+(fx-GD.x)*ft)-GD.px)*.3;
+  GD.px+=((bx+(fx-bx)*ft)-GD.px)*.3;
   // and up, by the same `ft`, to the height the plane needs - see guideSpot()
   GD.py+=((GD.y+(GD.fy-GD.y)*ft)-GD.py)*.3;
-  GD.pz+=((GD.z+(fz-GD.z)*ft)-GD.pz)*.3;
+  GD.pz+=((bz+(fz-bz)*ft)-GD.pz)*.3;
   GD.mesh.position.set(GD.px, GD.py+Math.sin(GD.bob)*.035, GD.pz);
   GD.mesh.rotation.y=Math.atan2(tdvx,tdvz);
   /* The pedestal rides the still position, one step lower and WITHOUT the

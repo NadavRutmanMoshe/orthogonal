@@ -301,3 +301,8 @@ body.desk #bWinFull{display:flex}
 /* Under an open panel the home screen's window buttons would sit beside it
    as a second copy of the one in the panel's header. */
 body.desk.mapopen .hwin{display:none}
+/* Settings > Screen > Menu colour: each numeral in its own world's colour. */
+body.desk .crow .seg button.hue{flex:0 0 34px;color:var(--h);
+  border-color:color-mix(in srgb,var(--h) 45%,transparent)}
+body.desk .crow .seg button.hue.on{color:#fff;border-color:var(--h);
+  background:color-mix(in srgb,var(--h) 38%,var(--panel))}

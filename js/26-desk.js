@@ -222,8 +222,8 @@ var KEY_ACTS=[
   {id:"down",    say:"Walk down",    def:"s"},
   {id:"right",   say:"Walk right",   def:"d"},
   {id:"fold",    say:"GO 2D / 3D",   def:" "},
-  {id:"turnl",   say:"Turn left",    def:"q"},
-  {id:"turnr",   say:"Turn right",   def:"e"},
+  {id:"turnl",   say:"Rotate left",  def:"q"},
+  {id:"turnr",   say:"Rotate right", def:"e"},
   {id:"peek",    say:"Peek (hold)",  def:"shift"},
   {id:"restart", say:"Restart",      def:"r"},
   {id:"hint",    say:"Hint",         def:"h"},
@@ -327,7 +327,7 @@ function kbd(act){
    redraws it; syncHud() calls kStripSync() for everything that changes
    what it should say or whether it is up at all. */
 var KSTRIP_GROUPS=[
-  {acts:["turnl","turnr"],            say:"TURN", rot:true},
+  {acts:["turnl","turnr"],            say:"ROTATE", rot:true},
   {acts:["fold"],                     say:"{fold}"}
 ];
 var kStripKey="";
@@ -448,7 +448,7 @@ function keysPanel(){
       "</kbd></button></div>";
   }).join("");
   var pad=[["Move","D-pad / left stick"],["GO 2D / 3D","A"],
-           ["Hint","X"],["Restart","Y"],["Turn","LB / RB"],["Peek (hold)","LT / RT"],
+           ["Hint","X"],["Restart","Y"],["Rotate","LB / RB"],["Peek (hold)","LT / RT"],
            ["Settings","MENU"]].map(function(p){
     return "<div class='krow'><label>"+p[0]+"</label><span class='kpad'>"+p[1]+"</span></div>";
   }).join("");
