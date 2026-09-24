@@ -2178,3 +2178,17 @@ the operating system sends it to the player's own account, and the app sends
 nothing. The manifest carries a comment at the attribute, because flipping it
 to false "for privacy" would silently cost every player their progress on a
 reinstall.
+
+
+## The goal drawn through walls (goalGhost), removed
+
+The goal had a second wireframe that ignored the depth buffer, at .32
+opacity, so a crate or a block standing in front of the goal could never hide
+it. The reason was sound: a goal inside a crate's cell is otherwise invisible.
+It went when `02 - Behind the Wall` arrived - a level whose whole point is
+that a tower hides you and the goal until you use the eye, and the ghost drew
+the goal straight through the tower. It was a SEE/HIDE switch on a Testing
+card for one build; the owner played HIDE and kept it for the whole game, and
+the switch (`settings.goalXray`) came out with the mesh. If a level ever
+needs the goal findable behind something, that is a level problem to design
+round, not a render flag.

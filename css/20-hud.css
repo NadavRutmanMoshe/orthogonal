@@ -91,6 +91,15 @@
      Same goal colour as the strike cue, because both mean "there is
      something you can do here". */
   button.rnd.look{animation:lookpulse 1.9s ease-in-out infinite}
+  /* THE EYE OUT IN THE MIDDLE (eyeCue(), js/12-play.js): 02 - Behind the
+     Wall carries it there when the level opens and home when it is won.
+     `translate`/`scale`, not `transform`, which the press already owns. The
+     transition list repeats the button's own, or this would replace it. */
+  #bLook{transition:color .35s ease,border-color .35s ease,background .12s ease,
+      transform .1s ease,box-shadow .1s ease,
+      translate 1.1s cubic-bezier(.45,0,.2,1),scale 1.1s cubic-bezier(.45,0,.2,1)}
+  body.eyecue #bLook{translate:var(--eyex,0) var(--eyey,0);scale:1.35}
+  #bLook.eyejump{transition:none}
   @keyframes lookpulse{
     0%,100%{box-shadow:0 3px 0 var(--lip),0 0 0 0 var(--star-glow),
       0 0 16px color-mix(in srgb,var(--c) 16%,transparent)}

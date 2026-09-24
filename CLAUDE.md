@@ -596,6 +596,15 @@ is the rule.
   spendable BALANCE covers it, on the next ordinary level entered, and goes
   before the stars card, handing over to it on close (`offerChain()`).
   `shopNudged`/`shopNudgeOff` are whitelisted in `loadSettings()`.
+- **The goal is NOT drawn through walls.** Its see-through copy (`goalGhost`)
+  is gone on the owner's call: `02 - Behind the Wall` hides the goal behind
+  a tower, and the copy gave it away (`HISTORY.md`).
+- **`eyeCue:true` on a level flies the eye button** out of its corner to the
+  middle of the screen (`eyeCue()`, `js/12-play.js`, the `translate`/`scale`
+  properties so the press's `transform` is untouched) and `win()` flies it
+  home behind the card. `02 - Behind the Wall` is the one level.
+- **`TEST_CARD` (`js/16-panels.js`) puts a Testing card on the settings
+  sheet** (SHOW STARS CARD). It must be false to ship; `build-app.js` warns.
 - **Text in the skin's colour reads `--player-ink`, never `--player`.**
   `applySkin()` writes both; ink is lifted toward white when the skin is too
   dark to set type in (stSay()'s rule), or Black blanks every selected option.

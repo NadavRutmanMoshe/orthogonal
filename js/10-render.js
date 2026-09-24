@@ -56,7 +56,7 @@ function buildTints(){
     if(!tintCol[t[3]])tintCol[t[3]]=new THREE.Color(t[3]);
   }
 }
-var crateMeshes=[],keyMeshes=[],goalGhost=null,trialMarks=[];
+var crateMeshes=[],keyMeshes=[],trialMarks=[];
 var amb,dir1,dir2;
 var center=new THREE.Vector3(),centerT=new THREE.Vector3();
 var repFade=0, repFollow=new THREE.Vector3();
@@ -181,14 +181,11 @@ function initGL(){
   goalMesh=new THREE.Mesh(new THREE.BoxGeometry(.5,.5,.5),
     new THREE.MeshBasicMaterial({color:0x35c2a5,wireframe:true}));
   scene.add(goalMesh);
-  // A crate or a block can sit exactly where the goal is and hide it entirely.
-  // This second copy ignores the depth buffer, so the goal always shows through
-  // whatever is in front of it, faintly.
-  goalGhost=new THREE.Mesh(new THREE.BoxGeometry(.56,.56,.56),
-    new THREE.MeshBasicMaterial({color:0x35c2a5,wireframe:true,
-      transparent:true,opacity:.32,depthTest:false}));
-  goalGhost.renderOrder=999;
-  scene.add(goalGhost);
+  /* THE GOAL IS NOT DRAWN THROUGH WALLS ANY MORE, on the owner's call. It
+     had a faint second copy that ignored the depth buffer, so a block or a
+     crate in front of it could never hide it - and that gave away the one
+     thing `02 - Behind the Wall` hides: where the goal is. Tried as a switch
+     on the phone, HIDE was kept for the whole game and the switch removed. */
 
   /* A trial's sweep: one translucent slab over the slice that is about to
      become lethal. Drawn as a single box rather than a marker per cell
@@ -4837,21 +4834,12 @@ function animate(now){
      does: its board is a house or a night platform, and a green wireframe
      standing in the doorway is the game's HUD leaking into a scene that is
      trying to be a place. */
-  goalMesh.visible=goalGhost.visible=
-    !B&&!(typeof storyOn==="function"&&storyOn());
-  // Menu > Testing can take the see-through copy away (settings.goalXray).
-  if(settings.goalXray==="off")goalGhost.visible=false;
+  goalMesh.visible=!B&&!(typeof storyOn==="function"&&storyOn());
   var g=((typeof liveGoal==="function"&&L.goal)?liveGoal():L.goal)||[0,0,0];
   var gu=g[0]*rx+g[2]*rz, gd=g[0]*tdvx+g[2]*tdvz;
   var gx=gu*rx+gd*.012*tdvx, gz=gu*rz+gd*.012*tdvz;
   goalMesh.position.set(g[0]+(gx-g[0])*flatT,g[1],g[2]+(gz-g[2])*flatT);
   goalMesh.rotation.y+=.012;goalMesh.rotation.x+=.008;
-  if(goalGhost){
-    goalGhost.position.copy(goalMesh.position);
-    goalGhost.rotation.copy(goalMesh.rotation);
-    goalGhost.scale.copy(goalMesh.scale);
-    goalGhost.material.color.copy(goalMesh.material.color);
-  }
   if(perilCleanup.length){
     for(var pc=0;pc<perilCleanup.length;pc++){
       var pm=meshes[perilCleanup[pc]];

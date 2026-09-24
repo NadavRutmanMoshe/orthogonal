@@ -156,12 +156,13 @@ exist - the card that introduced the bulb was cut.
 ### THREE STARS - shown once, on the first level that scores
 *Shot: `starsoffer`. `starsOffer()`. Tone: gold.*
 
-- **Kicker:** `SCORING`
-- **Title:** `Three stars`
-- **Lead:** `Three stars means you found the **shortest route**.`
+- **Kicker:** `SCORING SYSTEM`
+- **Title:** `Getting three stars`
+- **Lead:** a legend, four rows of small stars: `★★★ - shortest solve` ·
+  `★★☆ - up to one and a half as many moves` · `★☆☆ - up to twice as many
+  moves` · `☆☆☆ - more than twice as many moves`
 - **Buttons:** `TRY FOR THREE`
-- **Note:** `Half again as many moves is two stars, twice as many is one.
-  **This one is three moves.**`
+- **Note:** `**This level is three moves.**`
 
 ### THE WARDROBE - once the balance can pay for a star shape
 *Shot: `shopnudge`. `shopNudge()`. Tone: the wardrobe button's violet. Centred

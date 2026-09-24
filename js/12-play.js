@@ -2380,6 +2380,8 @@ var starsBefore=0,starsAfter=0,starsGained=0;
 var wonStars=0;
 function win(){
   wonStars=0;
+  // The eye goes back to its corner behind the win card (eyeCue()).
+  eyeCue(false);
   levelDone=true;
   /* The star total is hidden while a clock is running and `levelDone` is what
      brings it back, so the chrome has to be re-asked now rather than at the
@@ -2765,6 +2767,38 @@ function resetLevel(){
    Deliberately NOT a reward or a gate - it explains a rule that is already
    running. `settings.starAsked` is in the loadSettings() whitelist beside
    the other two, or it would be asked on every reload. */
+/* THE EYE, MOVED TO THE MIDDLE OF THE SCREEN. On the level that cannot be
+   played without it, the button travels out of the top-right corner to the
+   vertical middle, a little right of centre (clear of the board, which is
+   centred), and stays there - bigger - until the level is won, when it flies
+   home behind the win card. It is the same button the whole way, so what the
+   player learns is where it LIVES.
+
+   Drawn with the individual `translate` and `scale` properties, not
+   `transform`: every button already owns `transform` for its press, and the
+   pulse owns `box-shadow`, so neither can fight this. The distance is
+   measured from the button's HOME - its corner's box plus its offset in it,
+   neither of which a translate moves - so it is right however far it has
+   already travelled. `instant` puts it home without the flight. */
+function eyeCue(on,instant){
+  var el=$("bLook");if(!el||!el.parentNode)return;
+  if(on){
+    var c=el.parentNode.getBoundingClientRect();
+    var hx=c.left+el.offsetLeft+el.offsetWidth/2,
+        hy=c.top+el.offsetTop+el.offsetHeight/2;
+    el.style.setProperty("--eyex",Math.round(innerWidth*.72-hx)+"px");
+    el.style.setProperty("--eyey",Math.round(innerHeight*.5-hy)+"px");
+  }
+  if(instant){
+    el.classList.add("eyejump");
+    document.body.classList.toggle("eyecue",!!on);
+    void el.offsetWidth;
+    el.classList.remove("eyejump");
+  } else document.body.classList.toggle("eyecue",!!on);
+}
+addEventListener("resize",function(){
+  if(document.body.classList.contains("eyecue"))eyeCue(true,true);
+});
 function starsOfferDue(){
   return !settings.starAsked&&playSource==="builtin"&&
          !!L&&!!L.stars&&!L.tutorial;
@@ -2781,11 +2815,17 @@ function starsCard(){
      it is the one thing on a card that has to mean "this plays a video", and
      this button plays nothing. A plain confirm wears the goal's green, like
      every other confirm in the game. */
-  offerShell("Scoring","Three stars",
-    "Three stars means you found the <b>shortest route</b>.",
+  /* THE RULE AS A LEGEND, not as a paragraph, on the owner's call: four
+     rows of stars, each with what it takes. STAR_2X and STAR_1X in
+     js/07-difficulty.js are the numbers these words say. */
+  var rows=[[3,"shortest solve"],[2,"up to one and a half as many moves"],
+            [1,"up to twice as many moves"],[0,"more than twice as many moves"]];
+  offerShell("Scoring system","Getting three stars",
+    "<div class='ostars'>"+rows.map(function(r){
+      return "<div><span>"+starGlyphs(r[0])+"</span><i>-</i>"+r[1]+"</div>";
+    }).join("")+"</div>",
     "<button class='go' id='stOk'>TRY FOR THREE</button>",
-    "Half again as many moves is two stars, twice as many is one. <b>This one "+
-    "is three moves.</b>","var(--star)");
+    "<b>This level is three moves.</b>","var(--star)");
   bind("stOk",function(){hidePanel();});
 }
 /* THE WARDROBE, POINTED AT. Testers never opened it: the stars pile up in a
@@ -3061,6 +3101,13 @@ function loadLevel(level,idx){
   // something, so the something has to be there.
   // The shop card first when both are due; it hands over to the stars card
   // when it closes (offerChain()).
+  /* THE EYE, CARRIED OUT TO WHERE IT IS NEEDED, on a level carrying
+     `eyeCue` (02 - Behind the Wall). Put home at once on every other level,
+     with no flight: the flight home is the win's, not the next level's. */
+  eyeCue(false,true);
+  if(L.eyeCue&&playSource==="builtin")setTimeout(function(){
+    if(L&&L.eyeCue&&!levelOver())eyeCue(true);
+  },650);
   if(shopNudgeItem())setTimeout(shopNudge,520);
   else if(starsOfferDue())setTimeout(starsOffer,520);
   /* The neighbour, if this is one of his levels. Last, because he is placed

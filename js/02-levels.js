@@ -136,7 +136,10 @@ var LEVELS=[
       Its twin in the plane is 07 - The Illusion, where the eye previews the
       landing instead. */
    blocks:[[0,0,-1],[0,0,0],[0,0,1],[0,1,1],[0,1,-1],[0,2,1],[0,3,1]],
-   start:[0,1,0],goal:[0,2,-1],rotate:false},
+   /* `eyeCue`: the eye button flies out of its corner to the middle of the
+      screen when the level opens and goes home when it is won - see
+      eyeCue() in js/12-play.js. */
+   start:[0,1,0],goal:[0,2,-1],rotate:false,eyeCue:true},
 {name:"03 - Beware of Walls",
    hint:"Walls can kill you if you go 2D into them.",
    /* THE FIRST LEVEL WHERE FOLDING CAN KILL YOU, and the first the red

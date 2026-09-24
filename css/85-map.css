@@ -546,6 +546,13 @@ L96 14 L0 14 Z' fill='%23fff'/></svg>");
      little shorter so the card still fits a small phone without scrolling. */
   .panel.offer .onudge{margin:2px 0 10px}
   .panel.offer .olead b.ogold{color:var(--star)}
+  /* The stars card's legend (starsCard()): a small row of stars, a dash,
+     and what it takes - the stars in one column so the four rows line up. */
+  .panel.offer .ostars{display:grid;gap:5px;margin-top:2px}
+  .panel.offer .ostars div{display:grid;grid-template-columns:auto auto 1fr;
+    gap:8px;align-items:baseline;font-size:12.5px;line-height:1.4}
+  .panel.offer .ostars span{color:var(--star);font-size:12px;letter-spacing:.08em}
+  .panel.offer .ostars i{font-style:normal;color:var(--fg-dim)}
   .panel.offer.nudge{top:50%;bottom:auto;transform:translate(-50%,-50%)}
   .panel.offer .okicon{width:15px;height:15px;margin:-3px 6px 0 0;
     vertical-align:middle;fill:currentColor}

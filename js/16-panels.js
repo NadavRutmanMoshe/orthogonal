@@ -878,16 +878,11 @@ function menuPanel(){
       "</div>"+
       /* TESTING - the owner's switches for trying a change on the phone.
          TEST_CARD must be false to ship; tools/build-app.js warns while it
-         is true. The two SHOW buttons draw the cards without marking them
-         seen; the goal row is a real setting (settings.goalXray). */
+         is true. SHOW STARS CARD draws the card without marking it seen. */
       (TEST_CARD
         ? "</div><div class='pcard'><h4>"+panelIcon("more")+"Testing</h4>"+
-          "<div class='crow'><label>Goal in walls</label><span class='seg'>"+
-            seg("mXray","on","SEE",settings.goalXray)+
-            seg("mXray","off","HIDE",settings.goalXray)+"</span></div>"+
           "<div class='psub'>"+
-          "<button id='mTStars'>SHOW STARS CARD</button>"+
-          "<button id='mTWard'>SHOW WARDROBE CARD</button></div>"
+          "<button id='mTStars'>SHOW STARS CARD</button></div>"
         : "")+
       /* THE BUILD STAMP IS OFF THE PANEL, on the owner's call, and this is a
          reversal worth writing down. It was put here because a published
@@ -959,16 +954,7 @@ function menuPanel(){
       settings.foldmark=m;saveSettings();menuPanel();
     });
   });
-  ["on","off"].forEach(function(m){
-    bind("mXray_"+m,function(){settings.goalXray=m;saveSettings();menuPanel();});
-  });
   bind("mTStars",function(){hidePanel();setTimeout(starsCard,60);});
-  bind("mTWard",function(){
-    var id=null;
-    for(var i=0;i<SHOP_NUDGES.length&&!id;i++)if(!owns(SHOP_NUDGES[i]))id=SHOP_NUDGES[i];
-    hidePanel();
-    setTimeout(function(){shopNudgeCard(findBy(SKIN_SHAPES,id||"pyramid"));},60);
-  });
   bind("mAdPriv",adPrivacyShow);
   bind("mTut",function(){
     hidePanel();playSource="builtin";enterPlay(LEVELS[0],0,false);
