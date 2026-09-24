@@ -134,17 +134,16 @@ const SCENES={
         killed, then phase three, which is the one that wins the level. An
         opening phase is the tutorial of a fight and he skips it.
 
-        THE REPLAY IS SKIPPED, on his call, and by the button a player
-        presses - vidNoRep() calls replaySkip(), the same function bound to
-        #repSkip in js/19-bindings.js. It is a real skip, not a suppressed
-        film: bossPendingAdvance still waits for replayEnd() and still gets
-        its phase card, just without the second and a half of snow.
+        THE KILL PLAYS OUT. It was skipped once (vidNoRep(), which presses
+        #repSkip the moment a replay starts), and the owner's verdict on that
+        film was that the death is the part worth seeing. vidNoRep() is
+        still here for a cut that wants it.
 
         bossPhase is ZERO-INDEXED, so phase two is 1 and phase three is 2,
         and killing phase 2 wins rather than reaching a bossPhase of 3 -
         which is why the last wait is on levelOver() and not on vidPhase(). */
   boss:[
-    {do:`vidNoRep();lvVid("BOSS I - Catch Me If You Can!");vidBossPhase(1)`,  wait:2900},  // phase two, up
+    {do:`lvVid("BOSS I - Catch Me If You Can!");vidBossPhase(1)`,  wait:2900},  // phase two, up
     {do:`vidFight(30000)`,                wait:2600},   // phase two down
     {do:`vidFight(30000)`,                wait:700},    // phase three down
     {until:`typeof levelOver==="function"&&levelOver()`, wait:3200},  // stars
@@ -248,104 +247,202 @@ function pageHelpers(foldLevel){
       trialCore=Math.max(0,Math.min(TR.cores.length-1,n|0));
       buildGrid();syncHud();
     };
-    /* THE FIGHT, PLAYED. Standing still and waiting to be lined up does not
-       work and the reason is in the rules: foldKills() wants the hunter in
-       your silhouette COLUMN (same u, same y), while bossLine() gives it a
-       charge down any shared ROW - same z, or same x. Wait passively and it
-       reaches a row line long before it wanders into your column, and it
-       kills you. Three times, which is out of lives.
+    /* THE FIGHT, PLAYED WITH THE TURN. foldKills() wants the hunter in your
+       silhouette COLUMN - same height, and differing from you only along the
+       view's DEPTH. bossLine() gives a hunter a charge down any shared ROW,
+       x or z. Those are the same relation seen along two axes, and that is
+       the whole fight: a hunter lined up with you along the depth dies to
+       the fold, and one lined up across it is a quarter turn away from the
+       same thing.
 
-       So this plays the fight the way a person does. Every tick: kill if
-       the kill is there; otherwise, if it already has a row line, step
-       through depth to break it; otherwise close the gap in u. Aligning u
-       hands it a column line at the same instant it hands us the crush, and
-       that race we win - it needs bossAim() milliseconds to fire and we
-       fold on the next 90ms tick.
+       The first version of this never turned. It slid sideways, closing u
+       in the one view it had, and waited for the hunter to wander into the
+       column - which works, and which the owner watched and called out:
+       rotating is the fun part of the game, and the film did not show it.
+
+       So now it plays the way the fight is meant to be played. It WALKS to
+       a square in the hunter's row - through depth, round the pillars, by a
+       breadth-first search of the floor - and prefers the row it would have
+       to TURN to use. Standing there hands the hunter a line and hands us
+       the kill in the same instant; the ray goes down on the floor, the
+       camera turns, the world folds. That race we win: bossAim() is well
+       over a second, and a step, a turn and a fold are about half that.
 
        It resolves when the fold is away, so the caller can simply wait on
        it rather than guess how long a chase takes. */
-    var vidDepth="up";
+    /* EVERY HIT ON US, COUNTED. A promo that shows the player losing a heart
+       is a promo to re-shoot, and the first turning chase did exactly that
+       while still printing "won". The driver prints this after each scene.
+       bossHurt is a global function declaration, so wrapping it on window
+       wraps every call the game makes to it. */
+    window.vidHurt=0;
+    if(typeof bossHurt==="function"){
+      var realHurt=bossHurt;
+      window.bossHurt=function(){ window.vidHurt++; return realHurt.apply(this,arguments); };
+    }
+    /* What the chase decided and why, with --log. The film shows the result;
+       this says whether a turn happened, which on a symmetric arena a still
+       frame cannot. */
+    window.vidSay=function(what){
+      if(!window.vidLogOn)return;
+      var hs=hunters.map(function(h){return h.x+","+h.z+(h.lock>0?"*":"");}).join(" ");
+      console.log("vid: "+(performance.now()/1000).toFixed(2)+"s view "+view
+        +" me "+player.x+","+player.z+" pack "+hs+"  "+what);
+    };
+    var vidTurnDir=1;
     window.vidHunt=function(ms){
       return new Promise(function(resolve){
         var t0=Date.now();
-        function step(dir,then){
-          var x0=player.x, z0=player.z;
-          press(dir);
-          setTimeout(function(){
-            if(player.x===x0&&player.z===z0)then(false); else then(true);
-          },240);
+        function crates(){ return (typeof liveCrates==="function")?liveCrates():[]; }
+        /* Which way to turn so that folding kills h: 0 for "fold now", +1 or
+           -1 for a quarter turn, null for no kill from here. A half turn
+           looks down the same axis as no turn, so these three cover all four
+           views. */
+        function killTurn(p,h,cr){
+          if(foldKills(R,view,p,h,cr))return 0;
+          var a=vidTurnDir, b=-vidTurnDir;
+          if(foldKills(R,(view+a+4)%4,p,h,cr))return a;
+          if(foldKills(R,(view+b+4)%4,p,h,cr))return b;
+          return null;
+        }
+        function hunterAt(x,z){
+          for(var i=0;i<hunters.length;i++)
+            if(hunters[i].x===x&&hunters[i].z===z&&hunters[i].y===player.y)return true;
+          return false;
+        }
+        function near(x,z){
+          for(var i=0;i<hunters.length;i++){
+            var h=hunters[i];
+            if(h.y===player.y&&Math.abs(h.x-x)+Math.abs(h.z-z)<=1)return true;
+          }
+          return false;
+        }
+        // Level ground only: floor under it, nothing in it, nobody on it.
+        function walkable(x,z,cr){
+          return R.solid(x,player.y-1,z,cr)&&!R.solid(x,player.y,z,cr)&&!hunterAt(x,z);
+        }
+        /* A charge from anybody but the one we are hunting. Its own line is
+           the race we mean to win; anyone else's is just a way to die. */
+        function threat(x,z,target,cr){
+          var n=0, p={x:x,y:player.y,z:z};
+          for(var i=0;i<hunters.length;i++){
+            var h=hunters[i];
+            if(h!==target&&bossLine(R,h,p,cr))n++;
+          }
+          return n;
         }
         function tick(){
           if(Date.now()-t0>ms){resolve("timeout");return;}
           if(typeof B==="undefined"||!B||!hunters||!hunters.length){resolve("clear");return;}
           if(bossPendingAdvance||bossPendingDeath){resolve("pending");return;}
-          if(flat||(typeof folding==="function"&&folding())){setTimeout(tick,90);return;}
-          var cr=(typeof liveCrates==="function")?liveCrates():[];
-          for(var i=0;i<hunters.length;i++){
-            var h=hunters[i];
-            if(doomedCell(h.x,h.y,h.z,cr)){ doFlatten(); resolve("fold"); return; }
+          if(flat||bossHolding()||(typeof folding==="function"&&folding())){
+            setTimeout(tick,90);return;}
+          var cr=crates(), i;
+          // The kill, if it is there - turning first if that is what it takes.
+          for(i=0;i<hunters.length;i++){
+            var k=killTurn(player,hunters[i],cr);
+            if(k===0){ vidSay("fold"); doFlatten(); resolve("fold"); return; }
           }
-          var best=null,bd=1e9;
-          for(var j=0;j<hunters.length;j++){
-            var g=hunters[j], d=Math.abs(g.x-player.x)+Math.abs(g.z-player.z);
-            if(d<bd){bd=d;best=g;}
-          }
-          if(!best){setTimeout(tick,90);return;}
-          /* THE REST OF THE PACK IS THE DIFFERENCE BETWEEN A PHASE ONE AND A
-             PHASE THREE, and the first version of this chase did not look at
-             it. It tracked the nearest hunter and stepped out of THAT one's
-             row - which is correct on an arena with one hunter on it, and is
-             how you walk into the second one's row on an arena with three.
-             The owner films phases two and three, so the pack is what the
-             board is.
-
-             So every square we could be standing on next is scored against
-             every hunter EXCEPT the one we are hunting: a shared row with
-             any of them is a charge waiting to happen (bossLine() fires down
-             a shared x or z, js/03-rules.js), and those are worth a hundred
-             of anything else. The target's own row is deliberately NOT a
-             threat - closing u is exactly the race the comment above is
-             about, and it is the race we win.
-
-             Staying put is in the list on purpose. It is scored the same way
-             and sometimes wins, which is how the chase waits out a bad beat
-             instead of shuffling into something worse. */
-          var tu=R.uOf(view,best.x,best.z);
-          function threat(x,z){
-            var n=0;
-            for(var k=0;k<hunters.length;k++){
-              var h2=hunters[k];
-              if(h2===best)continue;
-              if(h2.y===player.y&&(h2.x===x||h2.z===z))n++;
+          for(i=0;i<hunters.length;i++){
+            var k2=killTurn(player,hunters[i],cr);
+            if(k2!==null){
+              vidSay("turn "+k2+" (lined up)"); rotateView(k2); vidTurnDir=-vidTurnDir;
+              /* It walked into OUR lane, so it is already aiming: turn and
+                 fold nearly together. The camera still visibly swings - the
+                 fold starts while it is finishing - and the race stays ours. */
+              setTimeout(tick,160); return;
             }
-            return n;
           }
-          var r=AX[view].r, dp=AX[view].d;
-          var ds=[{n:"right",dx:r[0],dz:r[2]},{n:"left",dx:-r[0],dz:-r[2]},
-                  {n:"up",dx:-dp[0],dz:-dp[2]},{n:"down",dx:dp[0],dz:dp[2]}];
-          var opts=[{n:null,x:player.x,z:player.z}];
-          for(var m=0;m<ds.length;m++){
-            var o=ds[m], nx=player.x+o.dx, nz=player.z+o.dz;
-            if(!(R.solid(nx,player.y-1,nz,cr)||R.solid(nx,player.y,nz,cr)))continue;
-            opts.push({n:o.n,x:nx,z:nz});
+          /* Otherwise walk. Breadth-first over the floor from where we stand;
+             every square that would offer a kill on some hunter is a goal,
+             scored by distance, by whether it needs the turn (it should - that
+             is what the owner wants to see), and heavily by any OTHER
+             hunter's line on it. Squares next to a hunter are out: its step
+             onto you kills. */
+          var start=player.x+","+player.z, prev={}, dist={}, q=[[player.x,player.z]];
+          prev[start]=null; dist[start]=0;
+          var best=null, bs=1e9;
+          while(q.length){
+            var c=q.shift(), key=c[0]+","+c[1], d=dist[key];
+            if(d>0&&!near(c[0],c[1])){
+              var p={x:c[0],y:player.y,z:c[1]};
+              for(var j=0;j<hunters.length;j++){
+                var h=hunters[j], kt=killTurn(p,h,cr);
+                if(kt===null)continue;
+                var sc=d+(kt===0?8:0)+100*threat(c[0],c[1],h,cr);
+                if(sc<bs){bs=sc;best=key;}
+              }
+            }
+            var steps=[[1,0],[-1,0],[0,1],[0,-1]];
+            for(var s=0;s<4;s++){
+              var nx=c[0]+steps[s][0], nz=c[1]+steps[s][1], nk=nx+","+nz;
+              // Passing next to a hunter is allowed - it moves - stopping is not.
+              if(nk in dist||!walkable(nx,nz,cr))continue;
+              dist[nk]=d+1; prev[nk]=key; q.push([nx,nz]);
+            }
           }
-          var pick=null, ps=1e9;
-          for(var q=0;q<opts.length;q++){
-            var c=opts[q];
-            var sc=threat(c.x,c.z)*100+Math.abs(R.uOf(view,c.x,c.z)-tu);
-            if(sc<ps){ps=sc;pick=c;}
+          /* NO KILL ON OFFER, SO SET ONE UP rather than stand still - the
+             first log of this chase was a player frozen for a second at a
+             time saying "no square to go to". BOSS I's pillars stand in rows
+             1, 3 and 5 and columns 2, 4 and 6, and a fold from a lane with a
+             pillar in it crushes you, so most lanes are cover and only the
+             clean ones are kill lanes. So: go and stand where BOTH of your
+             lanes are clean, two or three squares off the nearest hunter,
+             out of everybody's line, and let it walk into one of them. */
+          if(!best){
+            var lure=null, ls=1e9;
+            for(var lk in dist){
+              var ld=dist[lk]; if(ld>5)continue;
+              var lxy=lk.split(","), lx=+lxy[0], lz=+lxy[1];
+              if(near(lx,lz)||threat(lx,lz,null,cr))continue;
+              var nd=1e9;
+              for(var m=0;m<hunters.length;m++)
+                nd=Math.min(nd,Math.abs(hunters[m].x-lx)+Math.abs(hunters[m].z-lz));
+              var dirty=(crushedBy(R,view,lx,player.y,lz,cr)?1:0)+
+                        (crushedBy(R,(view+1)%4,lx,player.y,lz,cr)?1:0);
+              var lsc=Math.abs(nd-3)*2+dirty*3+ld*0.5;
+              if(lsc<ls){ls=lsc;lure=lk;}
+            }
+            if(!lure||lure===start){setTimeout(tick,120);return;}
+            best=lure;
           }
-          if(pick&&pick.n){
-            step(pick.n,function(moved){
-              // Walled in: rock through depth so a corner cannot pin us.
-              if(!moved)step(vidDepth,function(m2){
-                if(!m2)vidDepth=(vidDepth==="up")?"down":"up";
-                tick();
-              }); else tick();
-            });
-            return;
+          // Back up the path to its first step, and say it in this view's words.
+          var at=best;
+          while(prev[at]&&prev[at]!==start)at=prev[at];
+          var xy=at.split(","), dx=+xy[0]-player.x, dz=+xy[1]-player.z;
+          function dirName(){
+            var r=AX[view].r, dp=AX[view].d;
+            if(dx===r[0]&&dz===r[2])return "right";
+            if(dx===-r[0]&&dz===-r[2])return "left";
+            if(dx===-dp[0]&&dz===-dp[2])return "up";
+            if(dx===dp[0]&&dz===dp[2])return "down";
+            return null;
           }
-          setTimeout(tick,90);
+          /* THE TURN COMES BEFORE THE STEP, NEVER AFTER. The hunter plants
+             the frame you step into its row, and on FAST its aim is under a
+             second; step-then-turn-then-fold ran past it often enough that
+             the first take of this chase lost a heart on film. So when the
+             next step IS the killing square and that square wants a turn,
+             the turn is taken here, out of every line, and the step and the
+             fold follow back to back. It is also how a good player does it. */
+          if(at===best){
+            var gp={x:+xy[0],y:player.y,z:+xy[1]}, gk=null;
+            for(var g=0;g<hunters.length&&gk===null;g++)gk=killTurn(gp,hunters[g],cr);
+            if(gk){
+              vidSay("turn "+gk+" before stepping in"); rotateView(gk); vidTurnDir=-vidTurnDir;
+              setTimeout(function(){
+                var n2=dirName();
+                if(n2)press(n2);
+                setTimeout(tick,60);
+              },340);
+              return;
+            }
+          }
+          var name=dirName();
+          if(!name){setTimeout(tick,120);return;}
+          vidSay(name+" toward "+best);
+          press(name);
+          setTimeout(tick,at===best?60:200);
         }
         tick();
       });
@@ -376,8 +473,14 @@ function pageHelpers(foldLevel){
           if(bossPhase!==ph){resolve("phase");return;}
           var busy=(typeof folding==="function"&&folding())||
                    (typeof bossPendingAdvance!=="undefined"&&bossPendingAdvance);
-          if(busy){setTimeout(again,300);return;}
-          if(flat){ doUnflatten(); setTimeout(again,900); return; }
+          /* STAND UP THE MOMENT THE GAME LETS YOU. Flat you are a whole
+             column and every hunter that walks into it has a line on you,
+             so the gap between a kill and the unfold is the most dangerous
+             time in the fight. This polled at 300ms and then waited 900
+             after the unfold, and a second hunter walked into the column in
+             that gap and took a heart on film. */
+          if(busy||bossHolding()){setTimeout(again,50);return;}
+          if(flat){ vidSay("stand up"); doUnflatten(); setTimeout(again,450); return; }
           vidHunt(Math.max(2500,ms-(Date.now()-t0))).then(function(){
             setTimeout(again,800);
           });
@@ -627,6 +730,8 @@ async function main(){
   const page=await ctx.newPage();
   const errors=[];
   page.on("pageerror",e=>errors.push(String(e)));
+  const LOG=args.includes("--log");
+  if(LOG) page.on("console",m=>{ const t=m.text(); if(t.startsWith("vid: "))console.log("\r  "+t.slice(5)); });
   /* Same guard tools/shot.js keeps: the game asks for nothing over the
      network and a request creeping back in should break loudly here. */
   await page.route(/^https?:/,r=>r.abort());
@@ -729,6 +834,7 @@ async function main(){
     await page.evaluate(()=>{ if(splashState!=="done"){splashState="running";splashEnd();} });
   await pump(400);
   await page.evaluate(pageHelpers(FOLD_LEVEL));
+  if(LOG) await page.evaluate(()=>{ window.vidLogOn=true; });
   await page.evaluate(()=>vidFade(true));
   /* SETTLE BEHIND THE BLACK. warmScenery() and warmStats() build the
      sprite set and every par right after boot; on the clock that is free,
@@ -782,7 +888,9 @@ async function main(){
     }
     await page.evaluate(()=>vidFade(true));
     await pump(520);
-    console.log("\r      "+((nFrames-fs0)/FPS).toFixed(1)+"s"+" ".repeat(40));
+    const hurt=await page.evaluate(()=>{ const n=window.vidHurt||0; window.vidHurt=0; return n; });
+    console.log("\r      "+((nFrames-fs0)/FPS).toFixed(1)+"s"
+      +(hurt?"   !! the player was hit "+hurt+"x on film - re-shoot":"")+" ".repeat(40));
   }
   filmTo=await page.evaluate(()=>__cap.now());
   rolling=false;
