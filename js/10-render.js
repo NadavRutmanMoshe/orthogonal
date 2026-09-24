@@ -4839,6 +4839,8 @@ function animate(now){
      trying to be a place. */
   goalMesh.visible=goalGhost.visible=
     !B&&!(typeof storyOn==="function"&&storyOn());
+  // Menu > Testing can take the see-through copy away (settings.goalXray).
+  if(settings.goalXray==="off")goalGhost.visible=false;
   var g=((typeof liveGoal==="function"&&L.goal)?liveGoal():L.goal)||[0,0,0];
   var gu=g[0]*rx+g[2]*rz, gd=g[0]*tdvx+g[2]*tdvz;
   var gx=gu*rx+gd*.012*tdvx, gz=gu*rz+gd*.012*tdvz;

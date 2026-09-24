@@ -132,7 +132,13 @@ var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false
                  one drawing of rule 5 there is, but a teaching aid nobody can
                  turn off is decoration - and a player who has learned the
                  rule is entitled to want their board back. */
-              foldmark:FOLDMARK_DEFAULT};
+              foldmark:FOLDMARK_DEFAULT,
+              /* THE GOAL THROUGH WALLS, on or off - Menu > Testing. The goal
+                 has a faint copy drawn over everything (goalGhost,
+                 js/10-render.js); "off" hides it, to try a level whose goal
+                 is meant to be found with the eye. On by default: it is how
+                 the game has always drawn. */
+              goalXray:"on"};
 /* How many times the landing rule is spelled out in words. The rings keep
    drawing forever - they are free and they answer the question faster than a
    sentence does - but a line of text on every fold would be nagging. */

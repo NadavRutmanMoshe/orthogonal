@@ -123,6 +123,7 @@ function loadSettings(){
            plain version on with nothing left to change it - exactly the trap
            `pace` is in below. A key whose feature is removed comes out of
            this whitelist with it. */
+        if(o.goalXray==="on"||o.goalXray==="off")settings.goalXray=o.goalXray;
         if(o.foldmark&&["on","off"].indexOf(o.foldmark)>=0)
           settings.foldmark=o.foldmark;
         /* `killsound` is deliberately NOT read any more. It was on this list

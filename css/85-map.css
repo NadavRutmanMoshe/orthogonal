@@ -545,6 +545,7 @@ L96 14 L0 14 Z' fill='%23fff'/></svg>");
   /* The wardrobe card's stand (shopNudge()): the wardrobe's own case, a
      little shorter so the card still fits a small phone without scrolling. */
   .panel.offer .onudge{margin:2px 0 10px}
+  .panel.offer .olead b.ogold{color:var(--star)}
   .panel.offer.nudge{top:50%;bottom:auto;transform:translate(-50%,-50%)}
   .panel.offer .okicon{width:15px;height:15px;margin:-3px 6px 0 0;
     vertical-align:middle;fill:currentColor}

@@ -2773,6 +2773,10 @@ function starsOffer(){
   if(!starsOfferDue())return;
   if(levelOver()||panelOpen()||screenUp())return;
   settings.starAsked=true;saveSettings();
+  starsCard();
+}
+// The drawing alone, so Menu > Testing can put it up on demand.
+function starsCard(){
   /* `.go`, not `.ad`. The blue is the ad button's colour and nothing else's -
      it is the one thing on a card that has to mean "this plays a video", and
      this button plays nothing. A plain confirm wears the goal's green, like
@@ -2820,14 +2824,19 @@ function shopNudge(){
   var it=shopNudgeItem();if(!it)return;
   if(levelOver()||panelOpen()||screenUp())return;
   settings.shopNudged=(settings.shopNudged||[]).concat([it.id]);saveSettings();
+  shopNudgeCard(it);
+}
+// The drawing alone: Menu > Testing calls it without marking anything seen.
+function shopNudgeCard(it){
   nudgeArmed=false;
   // Non-breaking, or the star wraps onto a line of its own on a narrow phone.
   var star=" <u class='st'>★</u>";
   offerShell(wardIcon()+"Wardrobe","The "+esc(it.name),
     "<div class='wglass onudge'><canvas id='nudgeCase' class='wcanvas'></canvas>"+
       "<i class='wfloor'></i><span class='wturn'>DRAG TO TURN</span></div>"+
-    "Your stars are spendable. You have <b>"+shards()+star+"</b>, and the "+
-      esc(it.name)+" is <b>"+it.cost+star+"</b>.",
+    // Gold, not the card's violet: a star count is always the star's colour.
+    "Your stars are spendable. You have <b class='ogold'>"+shards()+star+
+      "</b>, and the "+esc(it.name)+" is <b class='ogold'>"+it.cost+star+"</b>.",
     "<button class='go' id='nuBuy'>BUY · "+it.cost+star+"</button>"+
     "<button id='nuShop'>SEE THE WARDROBE</button>"+
     "<button class='qt' id='nuLater'>NOT NOW</button>"+

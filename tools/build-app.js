@@ -102,5 +102,7 @@ if(BUILD.indexOf("UNCOMMITTED")>=0)
   console.warn("!  built from a dirty tree - this APK cannot be re-derived");
 /* TEST ADS PAY NOTHING. Right while testing, and a release that ships with
    them earns zero without a single error anywhere, so every build says so. */
+if(/var TEST_CARD=true/.test(fs.readFileSync(path.join(ROOT,"js","16-panels.js"),"utf8")))
+  console.warn("!  TEST_CARD is true in js/16-panels.js - the Testing card is on the settings sheet");
 if(/var AD_TEST=true/.test(fs.readFileSync(path.join(ROOT,"js","24-ads.js"),"utf8")))
   console.warn("!  AD_TEST is true in js/24-ads.js - Google's test ads, no revenue");
