@@ -16,6 +16,8 @@
    screen beyond the one it is here for. */
 initGL();
 applyUI();applyText();
+// The computer's zoom and body class, now, so the first frame is the right size.
+deskBoot();
 /* Build and upload every world's scenery before anybody crosses into one.
    Off the critical path on purpose: idle if the browser offers it, otherwise
    a second in, which is after the sting has cleared. See warmScenery(). */
@@ -63,7 +65,13 @@ Promise.all([progLoad(),skipLoad(),failLoad(),hintLoad(),loadSettings(),
     // nothingBehind() is in 16-panels.js, beside the other progress helpers,
     // because the home screen asks it too - to choose between START and
     // CONTINUE. One answer, so the two screens cannot disagree.
+    /* And again, now the saved settings are in: a save may carry a layout
+       or an interface size, and a computer pins the layout to HIDDEN. */
+    deskBoot();
+    /* A first run on a computer is not asked its age: it is set up HARD
+       and goes straight to the opening (deskFirstRun(), js/26-desk.js). */
     if(!nothingBehind())homeShow();
+    else deskFirstRun();
   });
 libLoad().then(function(){
   if(library.length) flash(library.length+" saved level"+(library.length===1?"":"s")+" in your library");

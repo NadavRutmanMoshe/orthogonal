@@ -132,7 +132,15 @@ var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false
                  one drawing of rule 5 there is, but a teaching aid nobody can
                  turn off is decoration - and a player who has learned the
                  rule is entitled to want their board back. */
-              foldmark:FOLDMARK_DEFAULT};
+              foldmark:FOLDMARK_DEFAULT,
+              /* THE COMPUTER'S SETTINGS (js/26-desk.js), read by nothing on a
+                 phone. `keys` holds only the keys the player moved - a
+                 default is never copied in, so a later build can change one.
+                 `keyStrip` is the row of keys along the bottom; `uiScale`
+                 leans on the page zoom that fits the chrome to the screen. */
+              keys:{}, keyStrip:"on", uiScale:"auto",
+              // Render quality on a computer (applyQuality(), js/26-desk.js).
+              quality:"normal"};
 /* How many times the landing rule is spelled out in words. The rings keep
    drawing forever - they are free and they answer the question faster than a
    sentence does - but a line of text on every fold would be nagging. */

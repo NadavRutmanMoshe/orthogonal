@@ -254,5 +254,7 @@ function splashEnd(){
        with live transitions on them. */
     $("splashStage").innerHTML="";
     if(typeof applyBrightness==="function")applyBrightness();
+    // A computer's first run goes straight to the opening (js/26-desk.js).
+    if(typeof splashAfter==="function")splashAfter();
   },SPLASH_OUT);
 }

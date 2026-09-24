@@ -105,6 +105,7 @@ listed in `index.html`. `21-boot.js` is the only file that *runs* anything.
 | `js/23-guide.js` | the neighbour who stands on the I · NATURE levels and gives a tip written for the one he is standing on. **Pure decoration** - no rule, no solver, never solid. Also loaded after boot and `typeof`-guarded |
 | `js/24-ads.js` | rewarded video: `adChild()`, consent, preloading, `adWatch(done)`, and the per-unlock count `adToward()`. **Loaded BEFORE boot**, out of numeric order like 20, so boot starts it and nothing needs a typeof guard |
 | `js/25-shop.js` | the DEALS shelf charged for real: `shopBuy()`, `shopRestore()`, the launch sync from the store, store prices. Loaded before boot, like 24 |
+| `js/26-desk.js` | **the computer**: `deskMode()` (the DEVICE - a mouse and keyboard) and `steamBuild()` (what was PAID for), the page zoom (`applyZoom()`, `uiZoom()`), key bindings (`KEY_ACTS`, `keyOf()`, `keyAction()`), the key strip, Settings > Keys, menu navigation by keys or pad (`navRoot()`), the gamepad, and the no-age-card first run. Loaded before boot, like 24 |
 | `tools/storetest.js` | the ads and the shop driven through a FAKE Capacitor bridge, every path (a video closed early, a pending payment, the upgrade). Needs Playwright, like `shot.js` |
 | `tools/verify.js` | every level machine-checked: BFS, `trialSafety()`, `bossArena()`, `bosssim`, the `SECTIONS`/`LEVEL_RENAMES` invariants |
 | `tools/shot.js` | **headless screenshots of any screen** (`node tools/shot.js --list`). The eyes for UI work. A cutscene is seekable by beat (`story1:12`), and an explicit `--wait` now beats the screen's own default. |
@@ -858,6 +859,80 @@ is the rule.
   wrap on a 327px phone.
 - **The plugins are pinned at 7.x** (`app/package.json`, exact): their 8.x
   lines need Capacitor 8.
+
+**The computer** (`js/26-desk.js`, `SHIPPING.md`)
+- **`deskMode()` is the device, `steamBuild()` is the purchase**, and they
+  are kept apart: a laptop playing the free artifact gets the keys and the
+  zoom and is granted nothing. `?desk=1` / `?desk=0` / `?steam` override
+  either; the Electron preload is to set `window.STEAM`. `tools/shot.js`
+  sends `?desk=0` unless `--desk`, `--steam` or `--pc` - headless Chromium
+  has a mouse, and every phone shot would otherwise be a desktop one.
+- **The page is ZOOMED on a big screen, the canvas is not.** CSS `zoom` on
+  the root (height/720, never under 1, times Settings > Screen > Interface),
+  the inverse on the game's canvas. So **a rect is SCREEN pixels and a
+  style is PAGE pixels**: anything that measures one and writes the other
+  divides by `uiZoom()` - the neighbour's bubble, the star flight, the eye,
+  the two scroll-to-centre sums. A new one of those is the same bug.
+- **A computer is pinned to HIDDEN** and never has the bar, even in a
+  tutorial (`barIsUp()`); Settings' Controls row becomes Keys.
+- **The key strip is TWO groups, TURN and GO 2D/3D**, on the owner's call.
+- **There is no undo in play**, on any device (owner's call): no key, no
+  pad button, and the stuck hint says restart. `undoMove()` is reached by
+  nothing; the editor keeps its own undo (Z and its button).
+- **A replay is skipped by ANY key or pad button** on a computer, and its
+  line says so.
+- **Every level on a computer is framed by `deskFit()`**: each drawn cell
+  (and the neighbour where he really stands) projected through the camera's
+  real 27.8 degree pitch, in every view the level can be turned to, about
+  the board's middle, which the camera orbits. The general fit over-charges
+  height and was framing boards at about half size in landscape. Phones
+  keep the general fit.
+- **On a computer the neighbour stands BESIDE the board**, at mid height:
+  off the right edge of a locked board, and on a turning board out along
+  the current view's screen-right (`guideSide()`, applied per frame in
+  `guideFrame()`), so he walks round with a rotation. Behind-and-above cost
+  a landscape screen a third of its height. Phones keep him where he was.
+- **A computer held landscape gets its own layouts** (`css/96-desk.css`,
+  `#panel[data-kind]`): home menu-left/stand-right, wardrobe choosing-left/
+  case-right, Settings on one screen, worlds three across, the map and the
+  chooser wide, MY LEVELS medium, and the home screen dimmed behind any
+  panel. A narrow desktop window falls back to the phone layouts.
+- **Every button AND the wardrobe's `.item` tiles (divs, not buttons) grow
+  on hover and squash on press**, springing back on an overshooting curve.
+  The full-screen switch goes into `.phead` and `.mhead` headers alike, and
+  a MutationObserver on `#panel` puts it back when a panel redraws itself.
+- **The home menu on a computer is a RAMP built from CONTINUE's world
+  colour** (`--wsec`, set in `homeSync()`) to the wardrobe's violet, mixed
+  in OKLCH so it walks the colour wheel: NATURE runs green, teal, blue,
+  violet. MY LEVELS is ordered above WARDROBE so the ramp ends on violet.
+  A single accent was tried first and called boring. A Menu colour row
+  that pinned one world's ramp existed for one round, to compare them, and
+  came off with its setting. Hover grows a button
+  (`scale(1.06)`, wide ones 1.025) and `:active` puts it back on its lip.
+- **The full-screen switch is everywhere on a computer**: home (with quit,
+  Electron only, `deskApp()`), the play corner (`#bWinFull`), and every
+  panel header (`winPanel()`, called by `showPanel()`).
+- **Settings on a computer is CSS columns, not a grid**: a grid row is as
+  tall as its tallest card and left holes.
+- **Esc is the game's in full screen**: `navigator.keyboard.lock(["Escape"])`
+  on entering (hold Esc to leave). It only works for full screen the game
+  itself asked for - not the browser's F11, not the artifact's expand button.
+- **Settings > Screen > Quality** (`applyQuality()`): NORMAL/HIGH/ULTRA =
+  1/1.5/2x the screen's resolution, capped at 3; defaults NORMAL (ULTRA
+  lagged on the owner's laptop); phones
+  never read it.
+- **Full screen inside the artifact is the browser's**, not ours:
+  claude.ai's frame refuses the API (`fullAllowed()`), so the row points at
+  F11 / the page's own button. In Electron it works.
+- **An action, not a key.** `runAct()` (`js/19-bindings.js`) is where keys
+  and the pad both land, then the four verbs. `settings.keys` holds
+  overrides only; a taken key SWAPS; the arrows always walk unless bound.
+  Anything that names a control asks `keyOf()`/`capOf()`, so the tutorial
+  teaches the player's own key.
+- **First run on a computer: no age card.** `deskFirstRun()` writes the HARD
+  band and goes straight to the opening.
+- **The Steam build owns EVERYTHING by rule** (`hasPass()`), $6.99, pending
+  the owner's call on DLC (`SHIPPING.md`, "Steam and in-app purchases").
 
 **Rendering** (`look.md`, `controls.md`)
 - **`outlineFor()` reads the PIECE, not the background: white lines on
