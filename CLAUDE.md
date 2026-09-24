@@ -881,15 +881,17 @@ is the rule.
   nothing; the editor keeps its own undo (Z and its button).
 - **A replay is skipped by ANY key or pad button** on a computer, and its
   line says so.
-- **A locked level on a computer is framed by `deskFit()`**: every drawn
-  cell (and the neighbour where he really stands) projected through the
-  camera's real 27.8 degree pitch, and centred on that. The general fit
-  over-charges height and was framing boards at about half size in
-  landscape. Phones keep the general fit.
-- **On a computer the neighbour stands BESIDE a locked board** (right of
-  it, mid height and depth), and `deskFit()` centres the BOARD and widens
-  the frame to hold him. Behind-and-above cost a landscape screen a third of
-  its height. Phones keep him behind.
+- **Every level on a computer is framed by `deskFit()`**: each drawn cell
+  (and the neighbour where he really stands) projected through the camera's
+  real 27.8 degree pitch, in every view the level can be turned to, about
+  the board's middle, which the camera orbits. The general fit over-charges
+  height and was framing boards at about half size in landscape. Phones
+  keep the general fit.
+- **On a computer the neighbour stands BESIDE the board**, at mid height:
+  off the right edge of a locked board, and on a turning board out along
+  the current view's screen-right (`guideSide()`, applied per frame in
+  `guideFrame()`), so he walks round with a rotation. Behind-and-above cost
+  a landscape screen a third of its height. Phones keep him where he was.
 - **A computer held landscape gets its own layouts** (`css/96-desk.css`,
   `#panel[data-kind]`): home menu-left/stand-right, wardrobe choosing-left/
   case-right, Settings on one screen, hover on every button. A narrow
@@ -898,7 +900,8 @@ is the rule.
   colour** (`--wsec`, set in `homeSync()`) to the wardrobe's violet, mixed
   in OKLCH so it walks the colour wheel: NATURE runs green, teal, blue,
   violet. MY LEVELS is ordered above WARDROBE so the ramp ends on violet.
-  A single accent was tried first and called boring. Hover grows a button
+  A single accent was tried first and called boring. Settings > Screen >
+  Menu colour (`settings.menuHue`) pins one world's ramp; AUTO follows. Hover grows a button
   (`scale(1.06)`, wide ones 1.025) and `:active` puts it back on its lip.
 - **The full-screen switch is everywhere on a computer**: home (with quit,
   Electron only, `deskApp()`), the play corner (`#bWinFull`), and every
