@@ -2821,8 +2821,8 @@ function starsCard(){
   /* THE RULE AS A LEGEND, not as a paragraph, on the owner's call: four
      rows of stars, each with what it takes. STAR_2X and STAR_1X in
      js/07-difficulty.js are the numbers these words say. */
-  var rows=[[3,"shortest solve"],[2,"up to one and a half as many moves"],
-            [1,"up to twice as many moves"],[0,"more than twice as many moves"]];
+  var rows=[[3,"shortest solve"],[2,"up to 1.5x shortest"],
+            [1,"up to 2x shortest"],[0,"more than 2x shortest"]];
   offerShell("Scoring system","Getting three stars",
     "<div class='ostars'>"+rows.map(function(r){
       return "<div><span>"+starGlyphs(r[0])+"</span><i>-</i>"+r[1]+"</div>";

@@ -604,7 +604,7 @@ is the rule.
   middle of the screen (`eyeCue()`, `js/12-play.js`, the `translate`/`scale`
   properties so the press's `transform` is untouched) and `win()` flies it
   home behind the card. `02 - Behind the Wall` is the one level.
-- **`TEST_CARD` (`js/16-panels.js`) puts a Testing card on the settings
+- **`TEST_CARD` (`js/16-panels.js`, false) puts a Testing card on the settings
   sheet** (SHOW STARS CARD). It must be false to ship; `build-app.js` warns.
 - **Text in the skin's colour reads `--player-ink`, never `--player`.**
   `applySkin()` writes both; ink is lifted toward white when the skin is too
@@ -836,7 +836,7 @@ is the rule.
   `applyAgeBand()` for a first run - because the child flags go to Google once,
   at `initialize`. `adChild()` is true for everything but an adult band.
 - **BUMP `versionCode` BEFORE EVERY PLAY UPLOAD**
-  (`app/android/app/build.gradle`, now `2`/`"1.0.1"`). Play burns a version
+  (`app/android/app/build.gradle`, now `5`/`"1.0.4"`). Play burns a version
   code the moment it is uploaded - even if that build was never released,
   was rolled back or was deleted from a track - and refuses the next upload
   with "Version code 1 has already been used". It is the one number in this
