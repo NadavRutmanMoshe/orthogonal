@@ -56,8 +56,21 @@ function steamBuild(){
    layout looks like turned sideways: 1080p gets 1.5, 1440p 2, the Steam
    Deck's 800 about 1.1. Never under 1 on its own - a small window is not a
    reason to shrink type that was already tuned small - and the Interface
-   row in Settings leans on it either way. */
+   row in Settings leans on it either way.
+
+   A HANDHELD IS HELD CLOSER, BUT NOT CLOSE ENOUGH. Height over 720 is a
+   rule about monitors, and the Deck's 7 inches of 1280x800 came out at 1.11
+   - smaller type, in the eye, than the phone the layouts were tuned on, and
+   under what Valve asks of a Deck Verified game. So on a Deck AUTO carries
+   one more step of HANDHELD: 1.33, a 960x600 page, which every layout was
+   screenshotted at before this went in (`tools/shot.js --deck`). BIGGER
+   stacks on it and is capped at the same 600-pixel page, not left to
+   squeeze the panels past what they were checked at. */
 var UI_SCALE={small:.85,auto:1,large:1.2};
+var HANDHELD=1.2;
+function deskHandheld(){
+  return !!(window.steamBridge&&window.steamBridge.deck)||/[?&]deck\b/.test(location.search||"");
+}
 var uiZ=1;
 function uiZoom(){return uiZ;}
 function deskZoomWant(){
@@ -66,6 +79,7 @@ function deskZoomWant(){
   // the width term stops a tall narrow window zooming the chrome off its sides
   var z=Math.max(1,Math.min(2.4,h/720,w/960));
   z*=UI_SCALE[settings.uiScale]||1;
+  if(deskHandheld())z=Math.min(z*HANDHELD,Math.max(1,h/600,z));
   return Math.round(z*100)/100;
 }
 function applyZoom(){
@@ -282,7 +296,9 @@ function keysReset(){settings.keys={};saveSettings();kStripBuild();}
    WHICH HAND IS ON THE CONTROLS, keyboard or pad. The strip and the
    tutorial's key cap draw whichever was used last, so a player who picks up
    a pad sees A and LB rather than SPACE and Q. */
-var lastInput="keys";
+// A Deck has no keyboard, so it starts on the pad's glyphs rather than
+// teaching SPACE to somebody holding an A button.
+var lastInput=deskHandheld()?"pad":"keys";
 function inputIs(kind){
   if(lastInput===kind)return;
   lastInput=kind;

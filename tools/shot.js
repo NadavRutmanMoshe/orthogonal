@@ -13,6 +13,8 @@
  *   --desktop         1280x800 @1 (the Steam Deck's size; phone chrome unless --desk)
  *   --desk            the computer version: key strip, zoom, no bar (js/26-desk.js)
  *   --steam           --desk, and the Steam build's grant
+ *   --deck            --desktop --steam, AND told it is a Steam Deck (?deck):
+ *                     the handheld zoom (deskHandheld(), js/26-desk.js)
  *   --pc              1920x1080 @1 with --desk
  *   --w N --h N --dpr N   any viewport
  *   --ui full|compact|none   control layout (default: the game's default)
@@ -159,6 +161,7 @@ function parseArgs(argv){
        desktop one - the page is told `?desk=0` unless one of these asks. */
     else if(a==="--desk")o.desk=1;
     else if(a==="--steam")o.desk=2;
+    else if(a==="--deck"){o.w=1280;o.h=800;o.dpr=1;o.desk=3;}
     else if(a==="--pc"){o.w=1920;o.h=1080;o.dpr=1;o.desk=1;}
     else if(a==="--w")o.w=+next();
     else if(a==="--h")o.h=+next();
@@ -229,7 +232,7 @@ async function main(){
     "--autoplay-policy=no-user-gesture-required"]});
   fs.mkdirSync(path.join(ROOT,o.out),{recursive:true});
   const url="file://"+path.join(ROOT,"index.html")+
-    (o.desk===2?"?desk=1&steam":o.desk?"?desk=1":"?desk=0");
+    (o.desk===3?"?desk=1&steam&deck":o.desk===2?"?desk=1&steam":o.desk?"?desk=1":"?desk=0");
 
   for(const job of jobs){
     const saveKind=job.def.save||o.save;
