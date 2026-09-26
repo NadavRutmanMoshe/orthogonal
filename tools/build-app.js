@@ -2,6 +2,11 @@
 /* Copy the game into the Capacitor project's web root.
  *
  *   node tools/build-app.js          -> app/www/ AND the Android assets
+ *   node tools/build-app.js --desktop -> desktop/www/, for the Steam build
+ *
+ * --desktop is the same copy into the Electron shell (desktop/, see its
+ * README). One copier for both wrappers, so the two can never disagree about
+ * what "the game" is - which files, which order, which stamp.
  *
  * A COPY, NOT A BUNDLE, and that is the whole design. The game is classic
  * scripts loaded in the order index.html lists, with no build step; a WebView
@@ -25,7 +30,8 @@
  */
 const fs=require("fs"), path=require("path");
 const ROOT=path.join(__dirname,"..");
-const WWW=path.join(ROOT,"app","www");
+const DESKTOP=process.argv.includes("--desktop");
+const WWW=DESKTOP?path.join(ROOT,"desktop","www"):path.join(ROOT,"app","www");
 
 function stamp(){
   const git=a=>require("child_process")
@@ -89,20 +95,21 @@ const bytes=(function size(d){
    disappear from the app too, and a merge would leave it installed. */
 const ASSETS=path.join(ROOT,"app","android","app","src","main","assets","public");
 let synced=0;
-if(fs.existsSync(path.dirname(ASSETS))){
+if(!DESKTOP&&fs.existsSync(path.dirname(ASSETS))){
   fs.rmSync(ASSETS,{recursive:true,force:true});
   synced=copyDir(WWW,ASSETS);
 }
 
-console.log("app/www: "+files+" files, "+(bytes/1024).toFixed(0)+"KB");
+console.log(path.relative(ROOT,WWW).split(path.sep).join("/")+": "+files+" files, "+(bytes/1024).toFixed(0)+"KB");
 if(synced)console.log("android assets: "+synced+" files");
-else console.warn("!  no android project at app/android - www only");
+else if(!DESKTOP)console.warn("!  no android project at app/android - www only");
 console.log("build "+BUILD);
 if(BUILD.indexOf("UNCOMMITTED")>=0)
-  console.warn("!  built from a dirty tree - this APK cannot be re-derived");
+  console.warn("!  built from a dirty tree - "+(DESKTOP?"this Steam build":"this APK")+" cannot be re-derived");
 /* TEST ADS PAY NOTHING. Right while testing, and a release that ships with
    them earns zero without a single error anywhere, so every build says so. */
 if(/var TEST_CARD=true/.test(fs.readFileSync(path.join(ROOT,"js","16-panels.js"),"utf8")))
   console.warn("!  TEST_CARD is true in js/16-panels.js - the Testing card is on the settings sheet");
-if(/var AD_TEST=true/.test(fs.readFileSync(path.join(ROOT,"js","24-ads.js"),"utf8")))
+// The Steam build has no ads, so the ad switch is not its question.
+if(!DESKTOP&&/var AD_TEST=true/.test(fs.readFileSync(path.join(ROOT,"js","24-ads.js"),"utf8")))
   console.warn("!  AD_TEST is true in js/24-ads.js - Google's test ads, no revenue");

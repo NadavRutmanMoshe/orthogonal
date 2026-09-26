@@ -105,10 +105,13 @@ listed in `index.html`. `21-boot.js` is the only file that *runs* anything.
 | `js/23-guide.js` | the neighbour who stands on the I · NATURE levels and gives a tip written for the one he is standing on. **Pure decoration** - no rule, no solver, never solid. Also loaded after boot and `typeof`-guarded |
 | `js/24-ads.js` | rewarded video: `adChild()`, consent, preloading, `adWatch(done)`, and the per-unlock count `adToward()`. **Loaded BEFORE boot**, out of numeric order like 20, so boot starts it and nothing needs a typeof guard |
 | `js/25-shop.js` | the DEALS shelf charged for real: `shopBuy()`, `shopRestore()`, the launch sync from the store, store prices. Loaded before boot, like 24 |
-| `js/26-desk.js` | **the computer**: `deskMode()` (the DEVICE - a mouse and keyboard) and `steamBuild()` (what was PAID for), the page zoom (`applyZoom()`, `uiZoom()`), key bindings (`KEY_ACTS`, `keyOf()`, `keyAction()`), the key strip, Settings > Keys, menu navigation by keys or pad (`navRoot()`), the gamepad, and the no-age-card first run. Loaded before boot, like 24 |
+| `js/26-desk.js` | **the computer**: `deskMode()` (the DEVICE - a mouse and keyboard) and `steamBuild()` (what was PAID for), the page zoom (`applyZoom()`, `uiZoom()`), key bindings (`KEY_ACTS`, `keyOf()`, `keyAction()`), the key strip, Settings > Keys, menu navigation by keys or pad (`navRoot()`), the gamepad, the no-age-card first run, and `deskHandheld()` (a Steam Deck). Loaded before boot, like 24 |
+| `js/27-steam.js` | **Steam achievements, read off the save**: `STEAM_ACH` (13, API names that must match Steamworks), `steamAchSync()`, called from `progSave()`, `grantShape()` and boot. Does nothing without the Electron bridge. Loaded before boot |
+| `tools/steamtest.js` | **the Steam build driven for real**: `desktop/` launched as Electron by Playwright in a throwaway data folder (`IJAC_DATA`), two launches, 17 checks - the grant, the save file, achievements. `--packaged` runs the built exe. Needs no Steam |
 | `tools/storetest.js` | the ads and the shop driven through a FAKE Capacitor bridge, every path (a video closed early, a pending payment, the upgrade). Needs Playwright, like `shot.js` |
 | `tools/verify.js` | every level machine-checked: BFS, `trialSafety()`, `bossArena()`, `bosssim`, the `SECTIONS`/`LEVEL_RENAMES` invariants |
 | `tools/shot.js` | **headless screenshots of any screen** (`node tools/shot.js --list`). The eyes for UI work. A cutscene is seekable by beat (`story1:12`), and an explicit `--wait` now beats the screen's own default. |
+| `desktop/` | **the Electron shell - the Steam build**: `main.js` (steamworks.js, the save as a file per Steam account, the window), `preload.js` (`window.STEAM`, `window.storage`, `window.steamBridge`), `steam.json` (the App ID, ONE place), `check-ship.js`, `steampipe.js`, and `README.md`, which is the Steamworks setup the owner does by hand. `www/` and `dist/` are generated. `npm start`, `npm run dist` |
 | `app/` | **the Capacitor shell**: `capacitor.config.json`, the generated `android/` and `ios/` projects, and `README.md` for why each non-default setting is set. `app/www/` is generated and gitignored. **The iOS project was generated ON WINDOWS and is editable here** - `cap add ios` only needs a Mac for `pod install`, which it skips; it is iPhone AND iPad, portrait-locked (`UIRequiresFullScreen`, or Apple rejects it), iOS 15 because StoreKit 2 is, and `Info.plist` carries the AdMob keys the manifest carries on Android. Only BUILDING needs a Mac, and that is `codemagic.yaml`. |
 | `codemagic.yaml` | **the cloud Mac that builds iOS**, at the repository ROOT because that is where Codemagic looks. Rented per build: clone, `npm ci`, `build-app.js`, `cap sync ios`, `pod install`, sign from an App Store Connect API key, upload to TestFlight. **It takes the next build number FROM App Store Connect** rather than guessing, which is the trap `versionCode` is on Play. No automatic trigger: a build costs minutes. Its header is the owner's one-time setup list. |
 | `tools/build-single.js` | inlines everything into one file for itch.io / the artifact |
@@ -933,6 +936,23 @@ is the rule.
   band and goes straight to the opening.
 - **The Steam build owns EVERYTHING by rule** (`hasPass()`), $6.99, pending
   the owner's call on DLC (`SHIPPING.md`, "Steam and in-app purchases").
+- **In Steam, `window.storage` is the preload's, not localStorage.**
+  `js/00-storage.js` steps aside when the host supplies one, and
+  `desktop/preload.js` does, backed by
+  `%APPDATA%/ImJustACube/<SteamID64>/save.json` - which is what Steam's
+  Auto-Cloud syncs. Writes go to the main process SYNCHRONOUSLY so pagehide's
+  save lands. **That folder name is now every Steam player's cloud save**:
+  never rename it, like an `orthogonal:*` key.
+- **Achievements are DERIVED, never event-driven** (`js/27-steam.js`):
+  `steamAchSync()` reads `progress` and `wardrobe.owned` (never `owns()`,
+  which the Steam build answers yes to by rule) and reports the earned set,
+  so an old or cloud-restored save is paid on launch. A skip never earns one.
+- **A Steam Deck zooms one step more** (`deskHandheld()`, `HANDHELD` 1.2):
+  800/720 put a 7-inch screen's type under a phone's. AUTO is 1.33 there, a
+  960x600 page, every layout checked at it (`tools/shot.js --deck`); BIGGER
+  is capped at the same page. A Deck also starts on the pad's glyphs.
+- **Electron is pinned at 39** because this PC's Node is 20.13; 40+ and
+  electron-builder 26 need Node 22.12 (`desktop/README.md`).
 
 **Rendering** (`look.md`, `controls.md`)
 - **`outlineFor()` reads the PIECE, not the background: white lines on

@@ -427,6 +427,28 @@ that sells, and nothing in the save that could disagree with Steam.
 
 ### The other Steam tweaks
 
+**All six are built (26 Sep)**, in `desktop/` and `js/26-desk.js`/`27-steam.js`;
+`desktop/README.md` is how to run, build and upload it and the Steamworks
+forms only the owner can fill. What each became:
+
+- **Achievements**: 13, derived from the save rather than fired from events
+  (`js/27-steam.js`), so a save earned before them - or restored by Cloud - is
+  paid on launch. The four "every star" ones read the reward shape.
+- **Steam Cloud**: not over localStorage but over a FILE,
+  `%APPDATA%/ImJustACube/<SteamID64>/save.json`, which the preload's
+  `window.storage` writes and Auto-Cloud syncs. No cloud code at all; one
+  root path in Steamworks.
+- **Gamepad**: already in `js/26-desk.js`; the wrapper adds sound without a
+  click (`autoplayPolicy`), which a pad press cannot give a browser.
+- **Steam Deck**: checked at 1280x800. The zoom was 1.11, type smaller than
+  a phone's, so a Deck gets one more step (1.33); it starts on pad glyphs and
+  asks Steam for its on-screen keyboard over a text field. Not yet run on a
+  Deck: Proton's sandbox switch is a reasoned guess.
+- **Wrapper**: Electron 39 (pinned by this PC's Node 20) and steamworks.js
+  0.4, packaged by electron-builder 25 to a folder SteamPipe uploads.
+
+The plan as it was written, for the record:
+
 - **Achievements are already authored.** The five `reward:true` shapes, the
   Domino feat (two of the pack in one silhouette column), the four world
   clears and the four bosses are a 13-achievement list that needs mapping, not

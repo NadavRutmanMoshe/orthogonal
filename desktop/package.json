@@ -1,0 +1,54 @@
+{
+  "name": "imjustacube-desktop",
+  "productName": "I'm Just A Cube",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The Steam build of I'm Just A Cube: an Electron shell. The game itself is the repository root; tools/build-app.js --desktop copies it into www/.",
+  "author": "Nadaz Games",
+  "main": "main.js",
+  "scripts": {
+    "www": "node ../tools/build-app.js --desktop",
+    "start": "node ../tools/build-app.js --desktop && electron .",
+    "dist": "node ../tools/build-app.js --desktop && node check-ship.js && electron-builder --win dir && node steampipe.js",
+    "dist:test": "node ../tools/build-app.js --desktop && electron-builder --win dir"
+  },
+  "dependencies": {
+    "steamworks.js": "0.4.0"
+  },
+  "devDependencies": {
+    "electron": "39.8.10",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "com.nadazgames.ImJustACube",
+    "productName": "I'm Just A Cube",
+    "executableName": "ImJustACube",
+    "copyright": "Nadaz Games",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "steam.json",
+      "package.json",
+      "www/**/*",
+      "node_modules/steamworks.js/**/*",
+      "!node_modules/steamworks.js/dist/osx/**",
+      "!node_modules/steamworks.js/dist/linux64/**",
+      "!node_modules/steamworks.js/dist/win64/*.lib",
+      "!node_modules/steamworks.js/*.d.ts",
+      "!node_modules/steamworks.js/README.md"
+    ],
+    "asarUnpack": [
+      "node_modules/steamworks.js/dist/**"
+    ],
+    "electronLanguages": [
+      "en-US"
+    ],
+    "win": {
+      "target": "dir",
+      "icon": "../app/icon/icon-512.png"
+    }
+  }
+}
