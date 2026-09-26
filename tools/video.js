@@ -117,18 +117,30 @@ const SCENES={
         [4,1,0]. So the unfold does not win it; one step through depth does.
         The old scene stopped at the unfold and its comment claimed it was
         "on the goal", which was never true - it simply never checked, since
-        nothing waited for a win card. This one waits for it. */
+        nothing waited for a win card. This one waits for it.
+
+        IT FAILS FIRST, on the owner's call. The obvious move - keep walking
+        right - goes straight off the edge of the gap and falls, which is
+        rule 3 and the level's own hint ("The gap is not crossable") said by
+        the board instead of the text. The level resets, and the fold is the
+        answer to a problem the viewer has just watched. The win card is on
+        screen only long enough to read "Solved": it was four seconds, and
+        the owner called that too long. */
   fold:[
-    {do:`playVid(FOLD_LEVEL)`,            wait:2600},   // read the hint
-    {do:`press("right")`,                 wait:850},
-    {do:`press("right")`,                 wait:1500},   // at the brink
-    {do:`doFlatten()`,                    wait:2400},   // THE FOLD
-    {do:`press("right")`,                 wait:800},
-    {do:`press("right")`,                 wait:1400},   // across
-    {do:`doUnflatten()`,                  wait:2300},   // stood up, one short
-    {do:`press("up")`,                    wait:1100},   // onto the goal
-    {until:`typeof levelDone!=="undefined"&&levelDone`, wait:3200},  // stars
-    {hold:900}
+    {do:`playVid(FOLD_LEVEL)`,            wait:1800},   // read the hint
+    {do:`press("right")`,                 wait:600},
+    {do:`press("right")`,                 wait:600},
+    {do:`press("right")`,                 wait:300},    // off the edge
+    {until:`!dying&&player.x===0&&!flat`, wait:900},    // fell, reset
+    {do:`press("right")`,                 wait:600},
+    {do:`press("right")`,                 wait:1000},   // at the brink again
+    {do:`doFlatten()`,                    wait:2000},   // THE FOLD
+    {do:`press("right")`,                 wait:700},
+    {do:`press("right")`,                 wait:1200},   // across
+    {do:`doUnflatten()`,                  wait:1900},   // stood up, one short
+    {do:`press("up")`,                    wait:900},    // onto the goal
+    {until:`typeof levelDone!=="undefined"&&levelDone`, wait:1500},  // Solved
+    {hold:200}
   ],
   /* 3. THE FIGHT, FROM PHASE TWO. The owner films the back half: phase two
         killed, then phase three, which is the one that wins the level. An
@@ -290,6 +302,23 @@ function pageHelpers(foldLevel){
         +" me "+player.x+","+player.z+" pack "+hs+"  "+what);
     };
     var vidTurnDir=1;
+    /* THE BEAT BEFORE THE KILL. The owner watched turn-and-fold land inside
+       a third of a second and said it read as an insta-kill - the viewer
+       never saw WHY it worked. So after the move that sets a kill up (a turn
+       or the step into the lane) the chase holds VID_BEAT before folding,
+       and the red line on the floor grows for all of it.
+
+       This cannot lose the race, and the reason is exact: bossFoldCrush()
+       runs INSIDE doFlatten(), at commit, not when the fold is drawn - so a
+       fold pressed while the hunter still has any aim left kills it. The
+       hold is cut short when an aimed hunter's lock gets down to VID_SAFE
+       (game ms; FAST runs the lock 1.2x, so that is ~270ms of film). */
+    var VID_BEAT=750, VID_SAFE=320, vidLastAct=0, vidKillAt=0;
+    function vidMinLock(){
+      var m=Infinity;
+      for(var i=0;i<hunters.length;i++) if(hunters[i].lock>0)m=Math.min(m,hunters[i].lock);
+      return m;
+    }
     window.vidHunt=function(ms){
       return new Promise(function(resolve){
         var t0=Date.now();
@@ -341,12 +370,23 @@ function pageHelpers(foldLevel){
           // The kill, if it is there - turning first if that is what it takes.
           for(i=0;i<hunters.length;i++){
             var k=killTurn(player,hunters[i],cr);
-            if(k===0){ vidSay("fold"); doFlatten(); resolve("fold"); return; }
+            if(k===0){
+              /* The beat runs from whichever came last: our own move, or the
+                 moment the kill first appeared (a hunter walking straight
+                 into our column is a set-up too, and deserves the same). */
+              if(!vidKillAt)vidKillAt=Date.now();
+              if(Date.now()-Math.max(vidLastAct,vidKillAt)<VID_BEAT&&vidMinLock()>VID_SAFE){
+                setTimeout(tick,30); return; }
+              vidKillAt=0;
+              vidSay("fold"); doFlatten(); resolve("fold"); return;
+            }
           }
+          vidKillAt=0;
           for(i=0;i<hunters.length;i++){
             var k2=killTurn(player,hunters[i],cr);
             if(k2!==null){
               vidSay("turn "+k2+" (lined up)"); rotateView(k2); vidTurnDir=-vidTurnDir;
+              vidLastAct=Date.now();
               /* It walked into OUR lane, so it is already aiming: turn and
                  fold nearly together. The camera still visibly swings - the
                  fold starts while it is finishing - and the race stays ours. */
@@ -430,11 +470,13 @@ function pageHelpers(foldLevel){
             for(var g=0;g<hunters.length&&gk===null;g++)gk=killTurn(gp,hunters[g],cr);
             if(gk){
               vidSay("turn "+gk+" before stepping in"); rotateView(gk); vidTurnDir=-vidTurnDir;
+              // Long enough to SEE the turn land before the step; the beat
+              // before the fold starts again from the step.
               setTimeout(function(){
                 var n2=dirName();
-                if(n2)press(n2);
+                if(n2){ press(n2); vidLastAct=Date.now(); }
                 setTimeout(tick,60);
-              },340);
+              },480);
               return;
             }
           }
@@ -442,6 +484,7 @@ function pageHelpers(foldLevel){
           if(!name){setTimeout(tick,120);return;}
           vidSay(name+" toward "+best);
           press(name);
+          if(at===best)vidLastAct=Date.now();
           setTimeout(tick,at===best?60:200);
         }
         tick();
