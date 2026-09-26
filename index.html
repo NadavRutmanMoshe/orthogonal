@@ -40,6 +40,7 @@
 <link rel="stylesheet" href="css/85-map.css">
 <link rel="stylesheet" href="css/90-tutorial.css">
 <link rel="stylesheet" href="css/95-home.css">
+<link rel="stylesheet" href="css/96-desk.css">
 <link rel="stylesheet" href="css/97-textsize.css">
 <link rel="stylesheet" href="css/98-story.css">
 <link rel="stylesheet" href="css/99-guide.css">
@@ -216,6 +217,8 @@
        place a name cannot be missed is next to the thing it names. Written
        by tutGhost()/cueGhost() from GEST_SAY in js/15-tutorial.js. -->
   <div class="glabel" id="ghostSay"></div>
+  <!-- On a computer the hand is a key cap instead (body.desk, g-key). -->
+  <div class="gkey" id="ghostKey"></div>
 </div>
 <div class="phasenote" id="phaseNote"></div>
 <!-- WHAT KILLED YOU, said where you are already looking. One short line over
@@ -636,12 +639,15 @@
 <script src="js/18-ui.js"></script>
 <script src="js/19-bindings.js"></script>
 <!-- 20-splash.js is loaded at the top of this block, before three.js. -->
-<!-- 24, 25 and 26 are ALSO out of numeric order, and go before boot: they
+<!-- 24, 25, 26 and 27 are ALSO out of numeric order, and go before boot: they
      only declare, and boot is what starts them, so none of them needs the
      typeof guards 22 and 23 need. -->
 <script src="js/24-ads.js"></script>
 <script src="js/25-shop.js"></script>
-<script src="js/26-achievements.js"></script>
+<!-- 26 as well: the computer's keys, pad, zoom and key strip. The keydown
+     handler in 19 calls into it at event time, and boot calls deskBoot(). -->
+<script src="js/26-desk.js"></script>
+<script src="js/27-achievements.js"></script>
 <script src="js/21-boot.js"></script>
 <!-- AFTER BOOT, AND THAT IS DELIBERATE. 22-story.js only declares; every
      call into it - the render loop, the four verbs, syncHud, BEGIN, the win

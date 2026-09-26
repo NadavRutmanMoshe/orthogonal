@@ -244,7 +244,13 @@ var PASSES=[
 function isPass(it){return !!(it&&it.pass);}
 /* Which passes are in force. `pass_all` contains `pass_nolimits`, so it is
    asked here once rather than at each of the five places that read it. */
+/* THE STEAM BUILD OWNS EVERYTHING, by rule rather than by a write into the
+   save: it was bought once, on Steam, for the whole game, and there is no
+   shop there to buy the rest in (docs/SHIPPING.md, "The Steam grant").
+   Answered here so owns() below needs no case of its own. */
 function hasPass(id){
+  if((id==="pass_all"||id==="pass_nolimits")&&
+     typeof steamBuild==="function"&&steamBuild())return true;
   return wardrobe.owned.indexOf(id)>=0 ||
          (id==="pass_nolimits"&&wardrobe.owned.indexOf("pass_all")>=0);
 }
@@ -264,7 +270,7 @@ function findBy(list,id){for(var i=0;i<list.length;i++)if(list[i].id===id)return
    a pass bought before it existed. */
 function owns(id){
   if(wardrobe.owned.indexOf(id)>=0)return true;
-  if(wardrobe.owned.indexOf("pass_all")>=0){
+  if(hasPass("pass_all")){
     var it=null;
     for(var i=0;i<SKIN_SHAPES.length;i++)
       if(SKIN_SHAPES[i].id===id){it=SKIN_SHAPES[i];break;}
@@ -742,7 +748,11 @@ function previewStart(cv){
      throw, and that is the whole of what the owner asked the stage to be. */
   var r=new THREE.WebGLRenderer({antialias:true,canvas:cv,alpha:true});
   r.setClearColor(0x000000,0);
-  r.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  /* Times the page zoom: this canvas lives IN the zoomed page (uiZoom(),
+     js/26-desk.js), so it is drawn that much bigger and needs that many more
+     pixels to stay sharp. The game's own canvas is counter-zoomed instead. */
+  r.setPixelRatio(Math.min(window.devicePixelRatio*
+    (typeof uiZoom==="function"?uiZoom():1),3));
   var sc=new THREE.Scene();
   var cam=new THREE.PerspectiveCamera(34,1,.1,50);
   cam.position.set(0,.72,3.05);

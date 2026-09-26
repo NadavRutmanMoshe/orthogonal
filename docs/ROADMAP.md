@@ -116,13 +116,11 @@
   the question one move earlier. It must not replace `GO 2D`; it would be its
   own control, and on the default layout that means a gesture as well.
 - **Two-finger tap only rotates right.** There is no left-rotate gesture.
-- **The gesture tutorial has no keyboard half yet, and the default now walks
-  straight into that.** HIDDEN is the default layout, the lesson follows the
-  layout, so a desktop first run is shown a swiping hand by somebody holding
-  a mouse. The intended end state is one lesson that teaches whatever the
-  device actually has - gestures on glass, keys on a desktop. `TUT_SAY`
-  already has the shape for it: a third table of phrases and a third
-  demonstration (a key cap rather than a hand), keyed by the same cue ids.
+- ~~**The gesture tutorial has no keyboard half yet.**~~ **Built, 24 Sep**
+  (`js/26-desk.js`): on a computer the lesson's words come from `keyWords()`
+  - computed from the player's own bindings, not a fixed table - and the
+  hand is a key cap pressing itself, with the same key lit in the strip along
+  the bottom. Not played yet, only screenshotted.
 - **The ghost hand has never been played, only screenshotted.** The open
   questions are all feel: is a hand looping for the whole step help or noise,
   is .62 against 1.0 enough of a step up when the guided lock arms, and does
@@ -132,11 +130,11 @@
 
 ## Agreed next steps
 
-0. **Build the keyboard half of the lesson**: a `keys` table in `TUT_SAY`
-   and a key-cap demonstration beside the hand. **The bar is off by default
-   now** - `settings.ui` starts at `none` - and the lesson follows the
-   layout, so a desktop first run gets a swiping hand shown to somebody
-   holding a mouse. That is the gap this closes.
+0. **Play the computer version** (`desktop` branch): the zoom at the owner's
+   own screen size, the key strip, the key-cap lesson, rebinding, and a pad.
+   Then the Electron wrapper, which is still unbuilt - it must set
+   `window.STEAM` from its preload and `autoplayPolicy` to not need a
+   gesture, or a pad-only player hears nothing.
 1. **Playtest the three phased bosses.** They are real-time, which is the one
    thing no tool here can judge, and the ramp has still barely been felt. The
    questions: can a human read which axis to fold along while a line is lit,

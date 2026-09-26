@@ -1,5 +1,5 @@
 "use strict";
-/* I'm Just A Cube - 26-achievements.js
+/* I'm Just A Cube - 27-achievements.js
    The store's achievements: Google Play Games on Android, Game Center on
    iOS, and a slot for Steam. Loaded before 21-boot.js, like 24-ads.js and
    25-shop.js, so boot starts it and nothing needs a typeof guard.

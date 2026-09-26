@@ -143,7 +143,7 @@ the policy, this form and the manifest agree - which is what a reviewer checks.
 **Achievements (Play Games Services) - the reading taken, and one thing to
 check before submitting.** The game tells Play Games "achievement X is
 unlocked" for a player signed in to Play Games, and nothing else
-(`js/26-achievements.js`, `AchievementsPlugin.java`). The profile is Google's,
+(`js/27-achievements.js`, `AchievementsPlugin.java`). The profile is Google's,
 under the player's Google account, so the reading is the same as purchases:
 not the app collecting data. **Before the build carrying it is submitted**,
 compare this against Google's own Data safety guidance for the Play Games

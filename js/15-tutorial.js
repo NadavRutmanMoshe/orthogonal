@@ -36,7 +36,7 @@ var CUE_WORDS={
   bLeft:"go left",  bRight:"go right",
   bUp:"go up",      bDown:"go down",
   bRotL:"rotate counter-clockwise", bRotR:"rotate clockwise",
-  bUndo:"undo",     bLook:"peek"
+  bRestart:"restart", bLook:"peek"
 };
 function cueWord(id){
   if(id==="bFlat")return flat?"3D shift":"2D shift";
@@ -212,7 +212,7 @@ function ghostRestart(el){
   // The hand is in this list because it has a loop of its own on the double
   // tap, and a hand lifting off a beat the dot is not on is the drift this
   // function exists to stop.
-  var parts=el.querySelectorAll(".gfinger,.gdot,.gtap,.ghand"),i;
+  var parts=el.querySelectorAll(".gfinger,.gdot,.gtap,.ghand,.gkey kbd"),i;
   for(i=0;i<parts.length;i++)parts[i].style.animation="none";
   void el.offsetWidth;
   for(i=0;i<parts.length;i++)parts[i].style.animation="";
@@ -248,9 +248,25 @@ function ghostTo(id,held){
     if(!mine)return false;                       // not ours to take down
     clearTimeout(ghostTimer);ghostTimer=null;
     el.className="ghost";
+    if(typeof kStripAsk==="function")kStripAsk(null);
     return false;
   }
   var say=$("ghostSay");
+  /* ON A COMPUTER THE HAND IS A KEY. The same two owners and the same
+     timing; what is drawn is the key cap for the control being asked for,
+     pressing itself, and the same key lights in the strip along the bottom
+     (kStripAsk(), js/26-desk.js), which is where the player will look for it
+     next time. */
+  if(typeof deskMode==="function"&&deskMode()){
+    var act=KS_OF_BTN[id];
+    if(say)say.textContent=act?actSay(act):"";
+    var gk=$("ghostKey");
+    if(gk)gk.innerHTML=act?kbd(act):"";
+    kStripAsk(id);
+    var kcls="ghost on "+(held?"held":"once")+" g-key";
+    if(el.className!==kcls){el.className=kcls;ghostRestart(el);}
+    return true;
+  }
   if(say)say.textContent=GEST_SAY[id]||"";
   var cls="ghost on "+(held?"held":"once")+" g-"+g.k;
   if(g.k==="swipe"||g.k==="two"){
@@ -340,6 +356,13 @@ function tutWords(s){
   // Per token, not per line: on COMPACT one sentence can name a swipe and a
   // button (see tutGestFor).
   s=s.replace(/\{((?:do|it):([a-z0-9]+))\}/g,function(m,k,w){
+    /* A computer is the third table, and it is computed rather than written
+       out because the key is whatever the player bound (keyWords(),
+       js/26-desk.js). */
+    if(typeof deskMode==="function"&&deskMode()){
+      var kw=keyWords(k,w);
+      if(kw!==null)return kw;
+    }
     var tbl=TUT_SAY[tutGestFor(TUT_WORD_ID[w])?"gesture":"buttons"];
     return tbl[k]!==undefined?tbl[k]:m;
   });
@@ -880,8 +903,9 @@ function showHint(){
   if(res.status!=="solved"){
     // Cue first, flash second: there is one toast and the last write wins, so
     // the sentence that explains the situation has to be the one that lands.
-    cue("bUndo");
-    flash("no way to finish from here \u2014 undo or reset");
+    // Undo is gone from play, so restart is the way back.
+    cue("bRestart");
+    flash("no way to finish from here - restart");
     return;
   }
   if(!res.path.length){flash("you're standing on it");return;}

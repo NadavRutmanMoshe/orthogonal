@@ -124,7 +124,11 @@ function fakeNative(opts){
 }
 
 async function openGame(browser,{native,settings,progress,wardrobe,fake,tag}){
-  const ctx=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2});
+  /* A PHONE, not a desktop Chromium with a mouse: js/26-desk.js reads
+     (hover:hover) and (pointer:fine) as a computer and skips the age card,
+     and every first-run test here is about the age card. */
+  const ctx=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2,
+    isMobile:true,hasTouch:true});
   const page=await ctx.newPage();
   const errors=[];
   page.on("pageerror",e=>errors.push(String(e)));

@@ -2,7 +2,7 @@ import Capacitor
 import GameKit
 
 /* THE STORE'S ACHIEVEMENTS ON iOS: Game Center. Two calls, and
-   js/26-achievements.js is the only caller:
+   js/27-achievements.js is the only caller:
 
      signIn()        -> {signedIn}  sign the player in to Game Center
      unlock({id})    -> {ok}        report one achievement at 100%

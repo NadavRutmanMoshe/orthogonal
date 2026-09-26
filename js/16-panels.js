@@ -193,7 +193,9 @@ function wardrobeAt(id){
     var grid=$("wGrid"), el=grid&&grid.querySelector(".item.sel"),
         box=$("panel").querySelector(".wlist");
     if(!el||!box)return;
-    box.scrollTop+=el.getBoundingClientRect().top-box.getBoundingClientRect().top
+    // Screen pixels over the page's zoom, as the map does (uiZoom()).
+    var z=typeof uiZoom==="function"?uiZoom():1;
+    box.scrollTop+=(el.getBoundingClientRect().top-box.getBoundingClientRect().top)/z
                    -Math.max(0,(box.clientHeight-el.offsetHeight)/2);
   });
 }
@@ -675,6 +677,7 @@ function buyTestPanel(){
 var TEST_CARD=false;
 function menuPanel(){
   var vol=Math.round(settings.volume*100), bri=Math.round(settings.brightness*100);
+  var desk=deskMode();
   /* THE WAY BACK TO THE SHELF YOU ARE STANDING ON.
 
      This reverses "NO NAVIGATION ROW AT ALL" below, on the owner's call, and
@@ -762,10 +765,17 @@ function menuPanel(){
          the board size are two of the three things fitViewSize() reads, so
          all three handlers below end in the same onResize(). */
       "<div class='pcard'><h4>"+panelIcon("play")+"How it plays</h4>"+
-        "<div class='crow'><label>Controls</label><span class='seg'>"+
-          seg("mUi","full","FULL",settings.ui)+
-          seg("mUi","compact","COMPACT",settings.ui)+
-          seg("mUi","none","HIDDEN",settings.ui)+"</span></div>"+
+        /* ON A COMPUTER THE ROW IS KEYS. The three layouts are a phone's -
+           how much of a thumb's control to draw - and a computer is pinned
+           to HIDDEN (deskBoot(), js/26-desk.js), so the question here is
+           which key does what, and it opens its own sheet. */
+        (desk
+          ? "<div class='crow'><label>Keys</label><span class='seg'>"+
+              "<button id='mKeys' class='on'>CHANGE KEYS ›</button></span></div>"
+          : "<div class='crow'><label>Controls</label><span class='seg'>"+
+              seg("mUi","full","FULL",settings.ui)+
+              seg("mUi","compact","COMPACT",settings.ui)+
+              seg("mUi","none","HIDDEN",settings.ui)+"</span></div>")+
         /* Named for what it is measured against, not for the clock: the two
            real-time things in the game are the bosses and the trials, and a
            row called Speed on a settings sheet in a turn-based puzzle would
@@ -814,6 +824,27 @@ function menuPanel(){
         "<div class='crow bare'><label>Text size</label><span class='seg'>"+
           seg("mText","medium","MEDIUM",settings.text)+
           seg("mText","large","LARGE",settings.text)+"</span></div></div>"+
+      /* THE SCREEN, on a computer only. Full screen is the Fullscreen API
+         and asks nothing of the game; Interface leans on the page zoom that
+         fits the chrome to the window (applyZoom(), js/26-desk.js). */
+      (desk
+        ? "<div class='pcard'><h4>"+panelIcon("access")+"Screen</h4>"+
+          "<div class='crow'><label>Full screen</label>"+
+            (fullAllowed()
+              ? "<span class='seg'>"+
+                seg("mFull","on","ON",fullOn()?"on":"off")+
+                seg("mFull","off","OFF",fullOn()?"on":"off")+"</span>"
+              : "<span class='knote'>Your browser's own: F11, or the ⤢ "+
+                "button at the top right of this page.</span>")+"</div>"+
+          "<div class='crow'><label>Interface</label><span class='seg'>"+
+            seg("mZoom","small","SMALLER",settings.uiScale)+
+            seg("mZoom","auto","AUTO",settings.uiScale)+
+            seg("mZoom","large","BIGGER",settings.uiScale)+"</span></div>"+
+          "<div class='crow bare'><label>Quality</label><span class='seg'>"+
+            seg("mQual","normal","NORMAL",settings.quality)+
+            seg("mQual","high","HIGH",settings.quality)+
+            seg("mQual","ultra","ULTRA",settings.quality)+"</span></div></div>"
+        : "")+
       /* THE KILL CAM ROW IS GONE AND FULL WON. It was a genuine question -
          the snow and the camcorder are two extra seconds of ceremony on every
          death - and it was put on the sheet to be answered by playing both.
@@ -954,6 +985,21 @@ function menuPanel(){
       settings.foldmark=m;saveSettings();menuPanel();
     });
   });
+  bind("mKeys",keysPanel);
+  /* The change arrives by `fullscreenchange`, which redraws this sheet
+     (js/26-desk.js) - the request is a promise and can be refused. */
+  bind("mFull_on",function(){if(!fullOn())fullToggle();});
+  bind("mFull_off",function(){if(fullOn())fullToggle();});
+  ["small","auto","large"].forEach(function(m){
+    bind("mZoom_"+m,function(){
+      settings.uiScale=m;saveSettings();onResize();menuPanel();
+    });
+  });
+  ["normal","high","ultra"].forEach(function(m){
+    bind("mQual_"+m,function(){
+      settings.quality=m;saveSettings();applyQuality();menuPanel();
+    });
+  });
   bind("mTStars",function(){hidePanel();setTimeout(starsCard,60);});
   bind("mAdPriv",adPrivacyShow);
   bind("mTut",function(){
@@ -970,6 +1016,10 @@ function menuPanel(){
        is not a first run, and nothing in the menu opens that card any more. */
     settings.size=SIZE_DEFAULT;settings.speed=SPEED_DEFAULT;settings.ageBand="";
     settings.text=TEXT_DEFAULT;applyText();
+    /* The computer's own, except the keys: those have RESET KEYS on their
+       own sheet, and a player who rebound them did it on purpose. */
+    settings.keyStrip="on";settings.uiScale="auto";
+    if(deskMode()){settings.ui="none";settings.speed="fast";}
 
     settings.landHints=0;
     settings.starAsked=false;
@@ -1095,6 +1145,9 @@ function homeSync(){
      read as a tab on a dark panel, which is the same job a button has. */
   var sec=SECTIONS[mapSecOf(t.i)];
   b.style.setProperty("--sec",(sec&&sec.col)||"var(--goal)");
+  /* And on the whole screen, where the computer's menu builds its ramp of
+     colours from it (css/96-desk.css). */
+  $("home").style.setProperty("--wsec",(sec&&sec.col)||"#35c2a5");
   /* AND THE SECTION'S OWN EMBLEM, the same drawing its tile carries on the
      chooser. `--tabc` is what secEmblem()'s fill reads, so it is set to the
      same value `--sec` just took: one colour, one picture, on the button and
@@ -2408,8 +2461,11 @@ function mapFocus(){
      It never mattered enough to chase while the way out was a footer button;
      it matters now that the way back to the section chooser is up there. */
   if(el&&el.getBoundingClientRect){
+    /* Rects are SCREEN pixels and scrollTop is the page's, which a computer
+       zooms (uiZoom(), js/26-desk.js) - so the rects are brought over. */
+    var z=typeof uiZoom==="function"?uiZoom():1;
     var er=el.getBoundingClientRect(), br=body.getBoundingClientRect();
-    body.scrollTop+=(er.top-br.top)-(body.clientHeight-er.height)/2;
+    body.scrollTop+=(er.top-br.top)/z-(body.clientHeight-er.height/z)/2;
     return;
   }
   body.scrollTop=body.scrollHeight;

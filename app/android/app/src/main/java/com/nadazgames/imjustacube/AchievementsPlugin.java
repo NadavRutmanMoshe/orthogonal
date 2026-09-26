@@ -13,7 +13,7 @@ import com.google.android.gms.games.PlayGames;
 import com.google.android.gms.games.PlayGamesSdk;
 
 /* THE STORE'S ACHIEVEMENTS ON ANDROID: Google Play Games Services v2.
-   Two calls, and js/26-achievements.js is the only caller:
+   Two calls, and js/27-achievements.js is the only caller:
 
      signIn()        -> {signedIn}  is this player signed in to Play Games
      unlock({id})    -> {ok}        tell Play one achievement is unlocked
