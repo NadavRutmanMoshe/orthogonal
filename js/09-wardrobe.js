@@ -152,6 +152,7 @@ function grantShape(id){
   if(!id||owns(id))return null;
   wardrobe.owned.push(id);
   saveWardrobe();
+  steamAchSync();   // four of the rewards and the Domino are achievements
   return findBy(SKIN_SHAPES,id);
 }
 /* Every section that is finished on every star, granted. Run on boot as well

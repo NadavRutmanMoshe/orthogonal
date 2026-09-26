@@ -647,6 +647,9 @@
 <!-- 26 as well: the computer's keys, pad, zoom and key strip. The keydown
      handler in 19 calls into it at event time, and boot calls deskBoot(). -->
 <script src="js/26-desk.js"></script>
+<!-- 27 too: Steam's achievements, read off the save. Does nothing without
+     the Electron preload's bridge. -->
+<script src="js/27-steam.js"></script>
 <script src="js/21-boot.js"></script>
 <!-- AFTER BOOT, AND THAT IS DELIBERATE. 22-story.js only declares; every
      call into it - the render loop, the four verbs, syncHud, BEGIN, the win

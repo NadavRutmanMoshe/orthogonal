@@ -62,6 +62,9 @@ Promise.all([progLoad(),skipLoad(),failLoad(),hintLoad(),loadSettings(),
        here, after progress and the wardrobe are both in, which is the first
        moment the question can be answered. */
     if(typeof sweepSectionRewards==="function")sweepSectionRewards();
+    /* And Steam's achievements, for the same reason: a save (or one Steam
+       Cloud just restored) may already have earned them (js/27-steam.js). */
+    steamAchSync();
     // nothingBehind() is in 16-panels.js, beside the other progress helpers,
     // because the home screen asks it too - to choose between START and
     // CONTINUE. One answer, so the two screens cannot disagree.

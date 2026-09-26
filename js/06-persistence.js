@@ -294,6 +294,7 @@ function migrateNames(){
   if(moved)progSave();
 }
 function progSave(){
+  steamAchSync();   // a record may be an achievement (js/27-steam.js)
   if(!window.storage)return Promise.resolve();
   return window.storage.set(PROG_KEY,JSON.stringify(progress)).catch(function(){});
 }
