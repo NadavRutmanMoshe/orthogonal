@@ -70,26 +70,49 @@ const LAYOUTS={
   C:{align:"center", ink:false, scrim:.38, zoom:.66, dx:0}
 };
 
-function html(L,V){
+/* THE BANNER, AT ANY SIZE. Play's is one call of this; tools/steamart.js
+   makes Steam's eight shapes with the same function, so every store's art is
+   one drawing and cannot drift into two games.
+
+   L is a layout: align (left|right|center), ink (dark type on the page, or
+   cream over the dark), scrim (a veil over everything, 0 for none), zoom and
+   dx (the cast, shrunk and slid off the type - dx in pixels at THIS size),
+   and optionally:
+     size    the type's size in px (68 at Play's 1024x500)
+     lines   the title broken over several lines
+     valign  center (default) | top | bottom - where the type sits
+     veil    a dark fade behind top/bottom type, as a fraction of the height:
+             on a tall capsule the type crosses the seam and has to read on
+             both the page and the dark
+     title   false for art that must carry NO type (Steam's library hero)
+   The square scene is drawn at least as wide as the art plus the slide and at
+   least as tall as the art, then cropped to the middle: a wide banner keeps
+   a horizontal band of it and a tall capsule a vertical one. */
+function bannerHtml(L,V,W,H){
   const C=palette();
   const ink="#1a1c2b", cream="#f2ece0";
   const col=L.ink?ink:cream;
-  /* The square scene, pulled up so its middle band fills the strip, and slid
-     sideways so the cast clears the type. It is drawn WIDER than the strip
-     and offset by half the excess, so sliding it never uncovers an edge. */
-  const over=Math.abs(L.dx)*2;
-  /* Which slice of that square survives the crop, as fractions of it. The
-     scene puts its sky and page gradients over exactly this band, so the
-     strip shows the icon's whole ramp rather than the middle of it. */
-  const S=W+over, band=[((S-H)/2)/S, ((S+H)/2)/S];
+  const over=Math.abs(L.dx||0)*2;
+  // dy slides the cast DOWN (a tall capsule's type sits over it), and the
+  // square has to be tall enough that the slide never uncovers its top.
+  const S=Math.max(W+over,H+2*Math.abs(L.dy||0));
+  // Which slice of that square survives the crop, as fractions of it. The
+  // scene puts its sky and page gradients over exactly this band, so the art
+  // shows the icon's whole ramp rather than the middle of it.
+  const band=[((S-H)/2)/S, ((S+H)/2)/S];
   const art=`<div style="position:absolute;inset:0;overflow:hidden">
-      <div style="position:absolute;left:${L.dx-over/2}px;top:${-(S-H)/2}px;
+      <div style="position:absolute;left:${(W-S)/2+(L.dx||0)}px;top:${-(S-H)/2+(L.dy||0)}px;
                   width:${S}px;height:${S}px">
         ${scene({...V,zoom:L.zoom,band},S,"feat")}
       </div>
     </div>`;
   const scrim=L.scrim
     ? `<div style="position:absolute;inset:0;background:rgba(10,6,10,${L.scrim})"></div>`
+    : "";
+  const va=L.valign||"center";
+  const veil=L.veil
+    ? `<div style="position:absolute;left:0;right:0;${va==="bottom"?"bottom":"top"}:0;height:${Math.round(H*L.veil)}px;
+         background:linear-gradient(${va==="bottom"?"0deg":"180deg"},rgba(10,6,10,.72),rgba(10,6,10,.45) 55%,rgba(10,6,10,0))"></div>`
     : "";
   /* Type sits in from the edge by 7% - Play crops this graphic and anything
      closer to the edge is the first thing to go. */
@@ -99,25 +122,30 @@ function html(L,V){
     : L.align==="right"
       ? `right:${pad}px;text-align:right;align-items:flex-end`
       : `left:${pad}px;text-align:left;align-items:flex-start`;
+  const vbox=va==="top"?`top:${pad}px;justify-content:flex-start`
+    : va==="bottom"?`bottom:${pad}px;justify-content:flex-end`
+    : `top:0;bottom:0;justify-content:center`;
   const shadow=L.ink
     ? "0 1px 0 rgba(255,255,255,.35)"
-    : "0 2px 18px rgba(0,0,0,.55)";
+    : `0 ${Math.round((L.size||68)*.03)}px ${Math.round((L.size||68)*.26)}px rgba(0,0,0,.55)`;
+  const words=(L.lines||[TITLE]).join("<br>");
+  const type=L.title===false?"":`<div style="position:absolute;${vbox};${box};display:flex;
+                  flex-direction:column;gap:14px">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;
+                    font-size:${L.size||68}px;letter-spacing:-.035em;line-height:${L.lines?1.02:1};
+                    color:${col};text-shadow:${shadow}">${words}</div>
+      </div>`;
   return `<!doctype html><html><head><meta charset="utf-8"><style>
     ${fontCss()}
     *{margin:0;padding:0;box-sizing:border-box}
     body{width:${W}px;height:${H}px;overflow:hidden;background:${C.skyBot}}
   </style></head><body>
-    <div style="position:relative;width:${W}px;height:${H}px">
-      ${art}${scrim}
-      <div style="position:absolute;top:0;bottom:0;${box};display:flex;
-                  flex-direction:column;justify-content:center;gap:14px">
-        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;
-                    font-size:68px;letter-spacing:-.035em;line-height:1;
-                    color:${col};text-shadow:${shadow}">${TITLE}</div>
-      </div>
+    <div style="position:relative;width:${W}px;height:${H}px;overflow:hidden">
+      ${art}${scrim}${veil}${type}
     </div>
   </body></html>`;
 }
+function html(L,V){return bannerHtml(L,V,W,H);}
 
 async function main(){
   const args=process.argv.slice(2);
@@ -138,4 +166,5 @@ async function main(){
   }
   await browser.close();
 }
-main().catch(e=>{ console.error(e); process.exit(1); });
+if(require.main===module)main().catch(e=>{ console.error(e); process.exit(1); });
+module.exports={bannerHtml,fontCss,TITLE};

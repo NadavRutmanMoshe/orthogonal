@@ -6,6 +6,7 @@
  *     node tools/store.js --ipad       the iPad 13" size        (2064x2752)
  *     node tools/store.js --tablet     Play 7" tablet slot      (1200x1920)
  *     node tools/store.js --tab10      Play 10" tablet slot     (1600x2560)
+ *     node tools/store.js --steam      Steam, the computer version (1920x1080)
  *     node tools/store.js --only 02    just one shot, while tuning it
  *     node tools/store.js --all-spares including any held back
  *
@@ -71,7 +72,13 @@ const SIZES={
      A 7" tablet is about 600 CSS px across and a 10" about 800, so those are
      the viewports and dpr 2 carries them to Play's sizes. */
   tab7: {w:600, h:960,  dpr:2, out:"shots/tablet7"},  // 1200x1920
-  tab10:{w:800, h:1280, dpr:2, out:"shots/tablet10"}  // 1600x2560
+  tab10:{w:800, h:1280, dpr:2, out:"shots/tablet10"}, // 1600x2560
+  /* STEAM IS THE COMPUTER VERSION, not a big phone: the key strip, the zoom
+     (1.5 at 1080p), no on-screen bar, and the Steam grant - so the wardrobe
+     shows every shape owned, which on Steam is true. 1920x1080 at dpr 1 is
+     a real 1080p monitor, the size Valve recommends and most players have.
+     `flags` go to shot.js as they are. */
+  steam:{w:1920, h:1080, dpr:1, out:"shots/steam/screens", flags:["--steam"]}
 };
 
 /* Each shot: the file's number and name, the shot.js screen, and whatever it
@@ -133,7 +140,8 @@ function main(){
   const args=process.argv.slice(2);
   const only=(()=>{ const i=args.indexOf("--only"); return i>=0?args[i+1]:null; })();
   const size=SIZES[args.includes("--ios")?"ios":args.includes("--ipad")?"ipad":
-                   args.includes("--tab10")?"tab10":args.includes("--tablet")?"tab7":"play"];
+                   args.includes("--tab10")?"tab10":args.includes("--tablet")?"tab7":
+                   args.includes("--steam")?"steam":"play"];
   /* The two stores count differently, and the footer is the only place that
      says how many of these to actually upload. Apple takes up to TEN per
      display size and needs at least one; Play takes eight and needs two. */
@@ -145,6 +153,7 @@ function main(){
   for(const s of SHOTS){
     if(only ? !s.n.startsWith(only) : (s.spare&&!all)) continue;
     const a=[SHOT,s.screen,"--w",size.w,"--h",size.h,"--dpr",size.dpr,"--out",size.out];
+    if(size.flags) a.push(...size.flags);
     if(s.eval) a.push("--eval",s.eval);
     if(s.wait) a.push("--wait",s.wait);
     execFileSync(process.execPath,a.map(String),{cwd:ROOT,stdio:["ignore","pipe","inherit"]});
@@ -157,6 +166,8 @@ function main(){
   }
   console.log(`\n${size.w*size.dpr}x${size.h*size.dpr} - ` + (apple
     ? `App Store Connect takes up to 10 per display size, and this set is ${SHOTS.length}. Upload all of them.`
+    : size===SIZES.steam
+    ? `Steam needs at least 5 and shows them in upload order; this set is ${SHOTS.length}. Upload all of them.`
     : `Play takes at least 2 and at most 8 per slot, and this set is ${SHOTS.length}.`));
 }
 main();

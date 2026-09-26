@@ -139,6 +139,21 @@ Set the default controller configuration to the **gamepad** template. The
 game reads the pad through the browser's Gamepad API, which sees any
 controller Steam presents as an Xbox pad, the Deck's own controls included.
 
+## The store page's pictures
+
+```
+node tools/steamart.js         # capsules, hero, logo, icons -> shots/steam/art/
+node tools/store.js --steam    # the ten screenshots at 1920x1080 -> shots/steam/screens/
+```
+
+Where each goes in Steamworks: **Store Page > Graphical Assets** takes the
+header, small, main and vertical capsules and the screenshots; **Library
+Assets** takes the library capsule, the hero and the logo (then set where the
+logo sits on the hero - its lower left is the light page, where the cream
+type with its dark edge was checked); **Community > Icons** (under
+Edit Steamworks Settings) takes the 184 icon and the `.ico`. The screenshots
+upload in their numbered order: 01 and 02 are the fold, as a pair.
+
 ## Uploading a build
 
 With the Steamworks SDK's `steamcmd` (in `tools\ContentBuilder\builder\`):
