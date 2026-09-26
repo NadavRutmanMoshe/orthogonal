@@ -1405,6 +1405,8 @@ function bossFoldCrush(){
   if(n>=2&&typeof grantShape==="function"){
     var dom=grantShape("domino");
     if(dom){featNews=dom;featCard=dom;}
+    // And the store's achievement, which asks the same Domino.
+    achSweep();
   }
   /* THE EXTRA BEAT FOR A MULTI-KILL IS GONE, on the owner's call: the wait
      before the television has to be the same every time, and this was one of
@@ -2546,6 +2548,9 @@ function win(){
       setTimeout(function(){if(SFX.mastery)SFX.mastery();},520);
     }
   }
+  /* A STAR MAY HAVE FINISHED A WORLD, or all four, or all five: the store's
+     achievements ask the same sums (js/26-achievements.js). */
+  if(starsGained>0&&playSource==="builtin")achSweep();
   /* AND A FEAT EARNED BY THE WINNING FOLD IS NAMED ON THE CARD, because the
      toast at the foot of bossFoldCrush is never reached on the fold that
      clears the board - that one goes into the kill cam and out through

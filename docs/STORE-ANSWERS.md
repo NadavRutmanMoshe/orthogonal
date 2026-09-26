@@ -140,6 +140,17 @@ access; it is what brings progress back after a reinstall (proven on a device,
 app collecting data. `docs/privacy.html` section 1 says the backup exists, so
 the policy, this form and the manifest agree - which is what a reviewer checks.
 
+**Achievements (Play Games Services) - the reading taken, and one thing to
+check before submitting.** The game tells Play Games "achievement X is
+unlocked" for a player signed in to Play Games, and nothing else
+(`js/26-achievements.js`, `AchievementsPlugin.java`). The profile is Google's,
+under the player's Google account, so the reading is the same as purchases:
+not the app collecting data. **Before the build carrying it is submitted**,
+compare this against Google's own Data safety guidance for the Play Games
+Services SDK - if Google publishes a mapping for it, as it does for the ads
+SDK, that mapping is what a reviewer checks, and its rows go in the table
+above. `docs/privacy.html` section 6 says what is sent.
+
 | Security question | Answer |
 |---|---|
 | Is all user data encrypted in transit? | **Yes** - the ads SDK uses TLS, and the game itself sends nothing |
@@ -167,6 +178,12 @@ That is what makes the "used to track you" column honest below.
 
 Nothing else is collected. **Purchases → Purchase History is not declared**,
 for the same reason as on Play.
+
+**Game Center is not declared either - the reading taken, not yet checked
+against Apple's text.** It is Apple's own service, the player signs in to
+Apple, and the game only reports an achievement to it; nothing reaches us.
+Confirm that reading in App Store Connect's App Privacy help before the build
+carrying it is submitted.
 
 ### The rest of the Apple answers
 

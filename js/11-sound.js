@@ -294,6 +294,8 @@ function applyAgeBand(id){
   /* The ads wait for this answer on a first run: the child flags go to
      Google once, when they start (js/24-ads.js). */
   if(typeof adStart==="function")adStart();
+  // Game Center may put up a sign-in sheet, so it waits for this answer too.
+  if(typeof achStart==="function")achStart();
   return true;
 }
 
