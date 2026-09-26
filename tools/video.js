@@ -105,10 +105,10 @@ const SCENES={
        animation is SPLASH_FOLD 980 + SPLASH_HOLD 520 + SPLASH_OUT 420, so
        anything under about 2300 cuts the wordmark off mid-fold. The other
        three are as short as they read. */
-    {do:`vidSting()`,                     wait:1200},   // the wordmark
+    {do:`vidSting()`,                     wait:700},    // the wordmark
     {do:`splashPoke()`,                   wait:2300},   // tapped: the animation
-    {until:`typeof homeUp==="function"&&homeUp()`, wait:1600},   // home
-    {hold:300}
+    {until:`typeof homeUp==="function"&&homeUp()`, wait:1100},   // home
+    {hold:100}
   ],
   /* 2. THE VERB, START TO FINISH. Two right, fold, two right, stand up, one
         up - and THE LAST MOVE IS THE POINT, which the previous cut was
@@ -127,20 +127,20 @@ const SCENES={
         screen only long enough to read "Solved": it was four seconds, and
         the owner called that too long. */
   fold:[
-    {do:`playVid(FOLD_LEVEL)`,            wait:1800},   // read the hint
-    {do:`press("right")`,                 wait:600},
-    {do:`press("right")`,                 wait:600},
+    {do:`playVid(FOLD_LEVEL)`,            wait:1300},   // read the hint
+    {do:`press("right")`,                 wait:450},
+    {do:`press("right")`,                 wait:450},
     {do:`press("right")`,                 wait:300},    // off the edge
-    {until:`!dying&&player.x===0&&!flat`, wait:900},    // fell, reset
-    {do:`press("right")`,                 wait:600},
-    {do:`press("right")`,                 wait:1000},   // at the brink again
-    {do:`doFlatten()`,                    wait:2000},   // THE FOLD
-    {do:`press("right")`,                 wait:700},
-    {do:`press("right")`,                 wait:1200},   // across
-    {do:`doUnflatten()`,                  wait:1900},   // stood up, one short
-    {do:`press("up")`,                    wait:900},    // onto the goal
-    {until:`typeof levelDone!=="undefined"&&levelDone`, wait:1500},  // Solved
-    {hold:200}
+    {until:`!dying&&player.x===0&&!flat`, wait:600},    // fell, reset
+    {do:`press("right")`,                 wait:450},
+    {do:`press("right")`,                 wait:800},    // at the brink again
+    {do:`doFlatten()`,                    wait:1600},   // THE FOLD
+    {do:`press("right")`,                 wait:550},
+    {do:`press("right")`,                 wait:900},    // across
+    {do:`doUnflatten()`,                  wait:1500},   // stood up, one short
+    {do:`press("up")`,                    wait:700},    // onto the goal
+    {until:`typeof levelDone!=="undefined"&&levelDone`, wait:1300},  // Solved
+    {hold:100}
   ],
   /* 3. THE FIGHT, FROM PHASE TWO. The owner films the back half: phase two
         killed, then phase three, which is the one that wins the level. An
@@ -155,11 +155,21 @@ const SCENES={
         and killing phase 2 wins rather than reaching a bossPhase of 3 -
         which is why the last wait is on levelOver() and not on vidPhase(). */
   boss:[
-    {do:`lvVid("BOSS I - Catch Me If You Can!");vidBossPhase(1)`,  wait:2900},  // phase two, up
+    /* THESE TWO WAITS ARE PINNED - DO NOT TRIM THEM. They look like dead
+       air, and they were cut to 900 and 300 when the owner asked for the
+       pace to come up - and the fight came out different: the hunters walk
+       during them, so they decide where the pack stands when the chase
+       starts, and the take became a plain double crush with no turns. The
+       take the owner picked ("super boss like") is the one these produce:
+       3060 here plus the 100ms of black before the fade-up is the 3160 it
+       was filmed with, then 2600. The clock makes the fight repeat exactly,
+       so the same waits always give the same fight - and any change to
+       them, or to the chase, or to BOSS I, needs the log checked again. */
+    {do:`lvVid("BOSS I - Catch Me If You Can!");vidBossPhase(1)`,  wait:3060},  // phase two, up
     {do:`vidFight(30000)`,                wait:2600},   // phase two down
-    {do:`vidFight(30000)`,                wait:700},    // phase three down
-    {until:`typeof levelOver==="function"&&levelOver()`, wait:3200},  // stars
-    {hold:900}
+    {do:`vidFight(30000)`,                wait:300},    // phase three down
+    {until:`typeof levelOver==="function"&&levelOver()`, wait:1500},  // stars
+    {hold:100}
   ],
   /* 4. THE CLOCK, AND FINISHING UNDER IT. The owner films from the second
         core: reach it, reach the third, win. That is a change of kind from
@@ -169,10 +179,10 @@ const SCENES={
         for the route to the live core and only overrides it to dodge, so it
         is never taking a blind step, and the sweep still owns the timing. */
   trial:[
-    {do:`lvVid("TRIAL I - The Metronome");vidTrialCore(1)`, wait:2600},   // second core live
-    {do:`vidRun(30000)`,                  wait:600},
-    {until:`typeof levelOver==="function"&&levelOver()`, wait:3200},  // stars
-    {hold:900}
+    {do:`lvVid("TRIAL I - The Metronome");vidTrialCore(1)`, wait:1400},   // second core live
+    {do:`vidRun(30000)`,                  wait:300},
+    {until:`typeof levelOver==="function"&&levelOver()`, wait:1800},  // stars, the film's last frame
+    {hold:100}
   ]
 };
 const ORDER=["open","fold","boss","trial"];
@@ -719,11 +729,13 @@ function pageHelpers(foldLevel){
       });
     };
     /* The cut between scenes. A hard jump from a won puzzle to a boss arena
-       reads as a glitch; 420ms of black reads as an edit. It is a plain
-       overlay over everything, including the full-bleed cards. */
+       reads as a glitch; a short dip to black reads as an edit. It was
+       .42s each way with a hold on the black, and the owner asked for the
+       pace up: .25s each way now, and barely any black between. It is a
+       plain overlay over everything, including the full-bleed cards. */
     var f=document.createElement("div");
     f.style.cssText="position:fixed;inset:0;background:#000;z-index:9999;"
-      +"opacity:0;pointer-events:none;transition:opacity .42s linear";
+      +"opacity:0;pointer-events:none;transition:opacity .25s linear";
     document.body.appendChild(f);
     window.vidFade=function(on){ f.style.opacity=on?"1":"0"; };
   })()`;
@@ -910,7 +922,7 @@ async function main(){
     console.log("\rscene "+name+" ".repeat(40));
     // The scene is set up behind the black, then faded up.
     if(steps[0].do) await run(steps[0].do);
-    await pump(260);
+    await pump(100);
     await page.evaluate(()=>vidFade(false));
     await pump(steps[0].wait||900);
     grab(name+"-open");
@@ -930,7 +942,7 @@ async function main(){
       grab(name+"-"+(st.do||st.until||"hold").replace(/[^a-z0-9]+/gi,"").slice(0,16));
     }
     await page.evaluate(()=>vidFade(true));
-    await pump(520);
+    await pump(270);        // the .25s fade, and not a frame of black after it
     const hurt=await page.evaluate(()=>{ const n=window.vidHurt||0; window.vidHurt=0; return n; });
     console.log("\r      "+((nFrames-fs0)/FPS).toFixed(1)+"s"
       +(hurt?"   !! the player was hit "+hurt+"x on film - re-shoot":"")+" ".repeat(40));
