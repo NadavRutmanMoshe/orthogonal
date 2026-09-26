@@ -636,11 +636,12 @@
 <script src="js/18-ui.js"></script>
 <script src="js/19-bindings.js"></script>
 <!-- 20-splash.js is loaded at the top of this block, before three.js. -->
-<!-- 24 and 25 are ALSO out of numeric order, and go before boot: they only
-     declare, and boot is what starts them, so neither needs the typeof
-     guards 22 and 23 need. -->
+<!-- 24, 25 and 26 are ALSO out of numeric order, and go before boot: they
+     only declare, and boot is what starts them, so none of them needs the
+     typeof guards 22 and 23 need. -->
 <script src="js/24-ads.js"></script>
 <script src="js/25-shop.js"></script>
+<script src="js/26-achievements.js"></script>
 <script src="js/21-boot.js"></script>
 <!-- AFTER BOOT, AND THAT IS DELIBERATE. 22-story.js only declares; every
      call into it - the render loop, the four verbs, syncHud, BEGIN, the win

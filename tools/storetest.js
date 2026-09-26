@@ -90,6 +90,16 @@ function fakeNative(opts){
     restorePurchases(){L.push(["restore"]);return Promise.resolve();},
     acknowledgePurchase(o){L.push(["ack",o.purchaseToken]);return Promise.resolve();},
   };
+  /* THE ACHIEVEMENTS PLUGIN (AchievementsPlugin.java / .swift). `achMode`
+     "ok" signs in, "out" answers not signed in, "hang" never answers the
+     sign-in - the failure every plugin call in this app has to survive. */
+  const Ach={
+    signIn(){L.push(["achSignIn"]);
+      if(F.achMode==="hang")return new Promise(()=>{});
+      return new Promise(res=>later(40,()=>res({signedIn:F.achMode!=="out"})));},
+    unlock(o){L.push(["achUnlock",o.id]);
+      return new Promise(res=>later(20,()=>res({ok:true})));},
+  };
   window.__emitShop=(ev,d)=>(listeners["shop:"+ev]||[]).forEach(fn=>fn(d));
   /* SHAPED LIKE THE BRIDGE A DEVICE ACTUALLY INJECTS, which is the whole
      point of a fake. The native side writes a generated proxy per plugin
@@ -106,9 +116,9 @@ function fakeNative(opts){
     isPluginAvailable:n=>Object.prototype.hasOwnProperty.call(caps.Plugins,n)};
   if(F.bridge==="bundled"){
     caps.Plugins={};
-    caps.registerPlugin=n=>n==="AdMob"?AdMob:n==="NativePurchases"?Shop:null;
+    caps.registerPlugin=n=>n==="AdMob"?AdMob:n==="NativePurchases"?Shop:n==="Achievements"?Ach:null;
   }else{
-    caps.Plugins={AdMob:AdMob,NativePurchases:Shop};
+    caps.Plugins={AdMob:AdMob,NativePurchases:Shop,Achievements:Ach};
   }
   window.Capacitor=caps;
 }
@@ -485,6 +495,110 @@ const log=page=>page.evaluate(()=>window.__log||[]);
     await page.waitForTimeout(3200);
     const p2=(await log(page)).find(e=>e[0]==="prepare");
     ok(p2&&/1712485313/.test(p2[1].adId),"iOS uses the iOS test unit");
+    await ctx.close();
+  }
+
+  /* ACHIEVEMENTS. The ids are the owner's to paste in, so every test fills
+     ACH_IDS itself; with them empty nothing is ever sent, which is also
+     tested. `master` writes a three-star record on every scoreable level of
+     the named sections, finding the record that scores three by asking the
+     game. */
+  const master=(page,secs)=>page.evaluate(secs=>{
+    var sp=sectionSpans();
+    secs.forEach(function(n){
+      for(var j=sp[n].from;j<=sp[n].to;j++){
+        var L=LEVELS[j];if(L.tutorial)continue;
+        for(var v=0;v<=12;v++)if(starsForRecord(L,v)===3){progress[L.name]=v;break;}
+      }
+    });
+    return secs.map(function(n){var s=sectionSpans()[n];return s.got===s.max;});
+  },secs);
+  const fillIds=page=>page.evaluate(()=>{
+    for(const os of ["android","ios"])for(const k in ACH_IDS[os])ACH_IDS[os][k]=os+"."+k;});
+  const unlocks=async page=>(await log(page)).filter(e=>e[0]==="achUnlock").map(e=>e[1]).sort();
+
+  console.log("\n[web] no Capacitor: achievements are silent");
+  {
+    const {ctx,page}=await openGame(browser,{native:false,settings:{ageBand:"a26"},progress:midSave});
+    const r=await page.evaluate(()=>({store:achStore(),started:ACH.started}));
+    ok(r.store===null&&r.started===null,"no store and no sign-in in a browser");
+    await page.evaluate(()=>{achSweep();achieve("world1");});
+    ok(!page.errors.length,"no page errors "+page.errors.join(" | "));
+    await ctx.close();
+  }
+
+  console.log("\n[native] achievements: an old save is swept after sign-in");
+  {
+    const {ctx,page}=await openGame(browser,{native:true,settings:{ageBand:"a26"},progress:midSave,
+      wardrobe:{owned:["rose","cube","v_indigo","p_indigo","domino"],color:"rose",shape:"cube",
+                world3:"v_indigo",world2:"p_indigo",spent:0,ads:{}}});
+    await fillIds(page);
+    /* Waited on, not timed: a slow machine can take longer than the launch
+       delay to load the page, and then the launch sweep has already run. */
+    await page.waitForFunction(()=>ACH.signedIn,null,{timeout:8000});
+    ok((await log(page)).some(e=>e[0]==="achSignIn"),"signs in after the launch delay");
+    const done=await master(page,[1,3]);
+    ok(done.every(Boolean),"worlds I and III mastered in the test save");
+    await page.evaluate(()=>achSweep());
+    await page.waitForTimeout(200);
+    ok(JSON.stringify(await unlocks(page))===JSON.stringify(["android.double","android.world1","android.world3"]),
+       "reports exactly world1, world3 and the double kill: "+(await unlocks(page)).join(","));
+    await page.evaluate(()=>achSweep());
+    await page.waitForTimeout(100);
+    ok((await unlocks(page)).length===3,"a second sweep sends nothing already sent");
+    await master(page,[2,4]);
+    await page.evaluate(()=>achSweep());
+    await page.waitForTimeout(100);
+    const u=await unlocks(page);
+    ok(u.includes("android.worlds")&&!u.includes("android.everything"),"all four worlds -> worlds, not everything");
+    const locked=await page.evaluate(()=>sectionSpans()[5].locked);
+    await master(page,[5]);
+    await page.evaluate(()=>achSweep());
+    await page.waitForTimeout(100);
+    ok(locked===!(await unlocks(page)).includes("android.everything"),
+       "EXTRA counts only once it is open (locked here: "+locked+")");
+    ok(!page.errors.length,"no page errors "+page.errors.join(" | "));
+    await ctx.close();
+  }
+
+  console.log("\n[native] achievements: the double kill on iOS, and an id left empty");
+  {
+    const {ctx,page}=await openGame(browser,{native:true,settings:{ageBand:"a26"},progress:midSave,fake:{platform:"ios"}});
+    await page.waitForFunction(()=>ACH.signedIn,null,{timeout:8000});
+    await page.evaluate(()=>{wardrobe.owned.push("domino");achSweep();});
+    await page.waitForTimeout(100);
+    ok(JSON.stringify(await unlocks(page))===JSON.stringify(["imjustacube.double"]),"iOS reports the double kill under its Game Center id");
+    await page.evaluate(()=>{ACH_IDS.ios.world1="";});
+    await master(page,[1]);
+    await page.evaluate(()=>achSweep());
+    await page.waitForTimeout(100);
+    ok(!(await unlocks(page)).some(x=>/world1/.test(x)),"an achievement with no store id is never sent");
+    ok((await unlocks(page)).length===1,"the default Android ids are empty, and nothing else was sent");
+    await ctx.close();
+  }
+
+  console.log("\n[native] achievements: a first run waits for the age card; a hung sign-in costs nothing");
+  {
+    const {ctx,page}=await openGame(browser,{native:true,settings:{},fake:{achMode:"hang"}});
+    await page.waitForTimeout(2900);
+    ok(!(await log(page)).some(e=>e[0]==="achSignIn"),"no sign-in while the age card is up");
+    await page.evaluate(()=>applyAgeBand("a26"));
+    await page.waitForTimeout(100);
+    ok((await log(page)).some(e=>e[0]==="achSignIn"),"picking a band signs in");
+    await fillIds(page);
+    await page.evaluate(()=>{wardrobe.owned.push("domino");achSweep();achieve("double");});
+    ok(!(await log(page)).some(e=>e[0]==="achUnlock"),"nothing is sent before sign-in answers");
+    ok(!page.errors.length,"no page errors "+page.errors.join(" | "));
+    await ctx.close();
+  }
+  {
+    const {ctx,page}=await openGame(browser,{native:true,settings:{ageBand:"a26"},progress:midSave,fake:{achMode:"out"}});
+    await fillIds(page);
+    await page.waitForFunction(()=>ACH.started,null,{timeout:8000});
+    await page.evaluate(()=>ACH.started);
+    await page.evaluate(()=>{wardrobe.owned.push("domino");achSweep();});
+    await page.waitForTimeout(100);
+    ok(!(await log(page)).some(e=>e[0]==="achUnlock"),"a player not signed in to the store is sent nothing");
     await ctx.close();
   }
 

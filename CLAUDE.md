@@ -105,6 +105,7 @@ listed in `index.html`. `21-boot.js` is the only file that *runs* anything.
 | `js/23-guide.js` | the neighbour who stands on the I · NATURE levels and gives a tip written for the one he is standing on. **Pure decoration** - no rule, no solver, never solid. Also loaded after boot and `typeof`-guarded |
 | `js/24-ads.js` | rewarded video: `adChild()`, consent, preloading, `adWatch(done)`, and the per-unlock count `adToward()`. **Loaded BEFORE boot**, out of numeric order like 20, so boot starts it and nothing needs a typeof guard |
 | `js/25-shop.js` | the DEALS shelf charged for real: `shopBuy()`, `shopRestore()`, the launch sync from the store, store prices. Loaded before boot, like 24 |
+| `js/26-achievements.js` | the store's achievements: `ACHIEVEMENTS`, `ACH_IDS` per store, `achSweep()`. Game Center, Play Games, and a Steam slot. Loaded before boot like 24 and 25. The native halves are `AchievementsPlugin.java` / `.swift`, in the app, not npm |
 | `tools/storetest.js` | the ads and the shop driven through a FAKE Capacitor bridge, every path (a video closed early, a pending payment, the upgrade). Needs Playwright, like `shot.js` |
 | `tools/verify.js` | every level machine-checked: BFS, `trialSafety()`, `bossArena()`, `bosssim`, the `SECTIONS`/`LEVEL_RENAMES` invariants |
 | `tools/shot.js` | **headless screenshots of any screen** (`node tools/shot.js --list`). The eyes for UI work. A cutscene is seekable by beat (`story1:12`), and an explicit `--wait` now beats the screen's own default. |
@@ -856,6 +857,18 @@ is the rule.
   keyed `world:` or `level:` plus the level NAME. A counting label may not be
   longer than the one it replaces (`adsWatchSay()`): the map's buttons already
   wrap on a 327px phone.
+- **An achievement is a QUESTION THE SAVE ALREADY ANSWERS, never a
+  counter.** A world is `sectionSpans()` (not `sectionMastered()`, which a
+  preview could fake), the double kill is owning the Domino. `achSweep()`
+  asks all seven after sign-in, after any star and after the double kill,
+  and reports every yes - re-reporting is harmless, and it is what pays old
+  saves. An id left empty in `ACH_IDS` is never sent, so it ships half set up.
+- **Play Games' own start-up is REMOVED from the manifest**
+  (`PlayGamesInitProvider`, `tools:node="remove"`) and `AchievementsPlugin`
+  starts the SDK only when `game_services_project_id` holds a number. With no
+  id it crashes the app at launch. Play Games is pinned at **21.0.0**: 22.x
+  wants minSdk 24. The iOS half is hand-added to `project.pbxproj` and has
+  not been compiled yet (`SHIPPING.md`, "As built: achievements").
 - **The plugins are pinned at 7.x** (`app/package.json`, exact): their 8.x
   lines need Capacitor 8.
 

@@ -53,6 +53,10 @@ Promise.all([progLoad(),skipLoad(),failLoad(),hintLoad(),loadSettings(),
        Both return at once in a browser - see js/24-ads.js, js/25-shop.js. */
     shopBoot();
     adBoot();
+    /* The store's achievements, which sweep the save once signed in - so a
+       save that finished a world before they existed is reported too
+       (js/26-achievements.js). */
+    achBoot();
     /* A SAVE MAY ALREADY HAVE EARNED SOMETHING. The four section rewards
        were added after people had finished sections, and the payout in win()
        only fires on the star that completes one - so an existing save would
