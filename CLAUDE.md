@@ -54,7 +54,7 @@ read off the installed APK), plus achievements and the promo tools.
   made on one and cherry-picked to the other. Say which in the commit.
 - **Changes come over ONE AT A TIME, on the owner's pick, played on the
   phone before the next** (the debug build, `app/README.md`). The branch
-  `phone-port` holds three candidates built on the mixed tree: the
+  `phone-port` holds the other candidates, built on the mixed tree: the
   computer's framing as Level size LARGE, and the press spring. They do not
   cherry-pick (they lean on `pc`'s code) and are rewritten on `main` when
   picked. The home ramp was the first, and is in.
