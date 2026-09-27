@@ -140,3 +140,9 @@
      its own, so "this is the thing you are inside" reads the same on all of
      them. One property, and the fill, the rim and the lip follow. */
   button.rnd.on{--c:var(--player)}
+  /* THE SQUASH, held while the finger is down; the bounce back is
+     pressSpring()'s (js/18-ui.js), with the buttons up only. `scale`, so it
+     adds to the lip press's `transform` above instead of replacing it. A
+     wide row squashes less: seven percent of a full-width door is a lurch. */
+  .squash{scale:.93}
+  .squash.squash-wide{scale:.97}

@@ -54,10 +54,10 @@ read off the installed APK), plus achievements and the promo tools.
   made on one and cherry-picked to the other. Say which in the commit.
 - **Changes come over ONE AT A TIME, on the owner's pick, played on the
   phone before the next** (the debug build, `app/README.md`). The branch
-  `phone-port` holds the other candidates, built on the mixed tree: the
-  computer's framing as Level size LARGE, and the press spring. They do not
-  cherry-pick (they lean on `pc`'s code) and are rewritten on `main` when
-  picked. The home ramp was the first, and is in.
+  `phone-port` holds the one candidate still out, built on the mixed tree:
+  the computer's framing as Level size LARGE. It does not cherry-pick (it
+  leans on `pc`'s code) and is rewritten on `main` if picked. In so far: the
+  home ramp, the press spring, and the board kept clear of the bar.
 - **One chat, one folder, one branch, when two chats CHANGE files at the
   same time.** `orthogonal` stays on `main` and `orthogonal-pc` on `pc`; a
   parallel job gets its own git worktree named after the job, not a number:
@@ -451,6 +451,19 @@ is the rule.
   opened that map - the reward for three-starring a world was two seconds of
   nothing behind the celebration. Reported as the animation loading before
   the background, which is what it was.
+- **The press squashes and springs back, WITH THE BUTTONS UP ONLY**
+  (`pressSpring()`, `js/18-ui.js`; nothing under `ui-none`, on the owner's
+  call). `.squash` sets `scale` while the finger is down and a Web Animation
+  bounces it on the lift: `scale` because the lip press owns `transform`, an
+  animation because every button family writes its own `transition`.
+- **The board is kept clear of the control bar** (`fitBand()`,
+  `drawnSpan()`, the end of `fitViewSize()`), in COMPACT and FULL only and
+  portrait only. It CORRECTS rather than refits: the framing is untouched
+  unless the board's real extent reaches the bar's measured top edge, and
+  then it moves up (pulling back only if moving is not enough). The cell
+  margins could not do it - the bar is pixels - and 01, 04 and 08 had their
+  bottom rows under the d-pad. `fitSpan` is the drawn extent, measured once
+  per level in `recomputeBounds()`; `fitBaseY` the centre it moves from.
 - **The home doors are a RAMP OF COLOUR** (end of `css/95-home.css`), from
   the world CONTINUE opens (`--wsec`, written by `homeSync()` beside `--sec`)
   to the wardrobe's violet, mixed in OKLCH so it walks the colour wheel.

@@ -15,7 +15,7 @@
    they are still reading a wordmark, which is the one honest use for a splash
    screen beyond the one it is here for. */
 initGL();
-applyUI();applyText();
+applyUI();applyText();pressSpring();
 /* Build and upload every world's scenery before anybody crosses into one.
    Off the critical path on purpose: idle if the browser offers it, otherwise
    a second in, which is after the sting has cleared. See warmScenery(). */

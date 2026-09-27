@@ -699,3 +699,40 @@ function tap(el,fn){
   el.addEventListener("click",function(e){e.preventDefault();});
 }
 function bind(id,fn){tap($(id),fn);}
+
+/* THE PRESS SQUASHES AND SPRINGS BACK - taken from the computer version (the
+   `pc` branch) on the owner's call, and ONLY with the buttons up (Controls
+   COMPACT or FULL): a player who plays by swiping never sees it.
+
+   `.squash` sets `scale` while the finger is down (css/10-buttons.css), and
+   on the lift a Web Animation bounces it a little past full size and back.
+   `scale`, not `transform`, because the lip press already owns `transform`,
+   so the two add up; an animation, not a transition, because every family
+   of button writes its own `transition` list. Capture phase, because tap()
+   stops propagation. Anything already wearing a `scale` (the eye, flown out
+   by eyeCue()) is left alone. */
+function pressSpring(){
+  if(pressSpring.on||!Element.prototype.animate)return;
+  pressSpring.on=true;
+  var held=null;
+  function wide(el){return el.offsetWidth>200;}
+  function release(){
+    if(!held)return;
+    var el=held;held=null;
+    var w=wide(el);
+    el.classList.remove("squash");
+    el.animate([{scale:w?.97:.93},{scale:w?1.015:1.05,offset:.5},{scale:1}],
+      {duration:300,easing:"ease-out"});
+  }
+  document.addEventListener("pointerdown",function(e){
+    if(document.body.classList.contains("ui-none"))return;
+    var el=e.target&&e.target.closest&&e.target.closest("button,.item");
+    if(!el||el.disabled)return;
+    var sc=getComputedStyle(el).scale;
+    if(sc&&sc!=="none"&&sc!=="1")return;
+    held=el;el.classList.toggle("squash-wide",wide(el));
+    el.classList.add("squash");
+  },true);
+  window.addEventListener("pointerup",release,true);
+  window.addEventListener("pointercancel",release,true);
+}
