@@ -226,7 +226,11 @@ async function main(){
     const seed={
       "orthogonal:progress":JSON.stringify(fakeSave(saveKind,LEVELS,SECTIONS)),
       "orthogonal:settings":JSON.stringify(Object.assign(
-        {hintAsked:true,starAsked:true,noSlowOffer:true,volume:0,volTouched:true},
+        /* shopNudgeOff: the fake save can afford the Pyramid, so without it
+           the wardrobe card covered every level shot. `shopnudge` turns it
+           back on for itself. */
+        {hintAsked:true,starAsked:true,noSlowOffer:true,volume:0,volTouched:true,
+         shopNudgeOff:true},
         o.ui?{ui:o.ui}:{})),
     };
     const ctx=await browser.newContext({viewport:{width:o.w,height:o.h},deviceScaleFactor:o.dpr,
