@@ -1095,6 +1095,9 @@ function homeSync(){
      read as a tab on a dark panel, which is the same job a button has. */
   var sec=SECTIONS[mapSecOf(t.i)];
   b.style.setProperty("--sec",(sec&&sec.col)||"var(--goal)");
+  /* And on the whole screen, where the doors under it build their ramp of
+     colour from it (the end of css/95-home.css). */
+  $("home").style.setProperty("--wsec",(sec&&sec.col)||"#35c2a5");
   /* AND THE SECTION'S OWN EMBLEM, the same drawing its tile carries on the
      chooser. `--tabc` is what secEmblem()'s fill reads, so it is set to the
      same value `--sec` just took: one colour, one picture, on the button and

@@ -312,3 +312,21 @@ body.athome .startotal{display:none}
    say otherwise on both sides. */
 .home .tiny.hmulti .hlock{left:auto;right:14px;width:12px;height:12px;
   fill:#c6cddd;opacity:.85}
+
+/* THE DOORS ARE A RAMP OF COLOUR, top to bottom, from the world CONTINUE
+   opens to the wardrobe's violet. It was built for the computer first (the
+   `pc` branch) and the owner wanted it here too.
+
+   CONTINUE is that world's colour already (`--sec`, homeSync()), and
+   homeSync() writes the same value on the whole screen as `--wsec`. WARDROBE
+   keeps its violet, and the two doors between are mixed a third and two
+   thirds of the way - IN OKLCH, which walks round the colour wheel rather
+   than through grey: from NATURE's green it runs green, teal, blue, violet,
+   and every other world gets a ramp of its own for nothing. MY LEVELS goes
+   above WARDROBE so the ramp ends on violet. This replaces LEVELS' own cyan
+   and MY LEVELS' editor blue, above. */
+.home{--r4:#a274ff;
+  --r2:color-mix(in oklch,var(--wsec,#35c2a5) 64%,var(--r4));
+  --r3:color-mix(in oklch,var(--wsec,#35c2a5) 30%,var(--r4))}
+.home #hLevels{--c:var(--r2)}
+.home #hMine{--c:var(--r3);order:-1}

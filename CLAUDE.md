@@ -52,9 +52,24 @@ read off the installed APK), plus achievements and the promo tools.
   change at a time, and only what the owner picked.
 - **A fix that belongs to both** (a level, a rule, a bug in shared code) is
   made on one and cherry-picked to the other. Say which in the commit.
-- The branch `phone-port` (the computer's framing as Level size LARGE, the
-  press spring, the home ramp) was built on the mixed tree and is NOT on
-  `main`; it has to be rebased onto it before any of it comes in.
+- **Changes come over ONE AT A TIME, on the owner's pick, played on the
+  phone before the next** (the debug build, `app/README.md`). The branch
+  `phone-port` holds three candidates built on the mixed tree: the
+  computer's framing as Level size LARGE, and the press spring. They do not
+  cherry-pick (they lean on `pc`'s code) and are rewritten on `main` when
+  picked. The home ramp was the first, and is in.
+- **One chat, one folder, one branch, when two chats CHANGE files at the
+  same time.** `orthogonal` stays on `main` and `orthogonal-pc` on `pc`; a
+  parallel job gets its own git worktree named after the job, not a number:
+  `git worktree add ../orthogonal-<job> -b <job> main` (or `pc`), and
+  `git worktree remove` once it is in. Two chats in ONE folder is the thing
+  never to do - one switching branch changes the files under the other. A
+  chat that only reads or answers needs no folder of its own. A new
+  worktree cannot build an APK as it stands: `app/node_modules` and four
+  generated files (`capacitor-cordova-android-plugins/`,
+  `local.properties`, `res/xml/config.xml`, `assets/capacitor.*.json`)
+  are gitignored, so copy them from `orthogonal/app/android` and junction
+  the modules, or build from `orthogonal` once the job is in.
 - The artifact is built from `main`, so it is now the phone game, on a
   laptop too.
 
@@ -436,6 +451,11 @@ is the rule.
   opened that map - the reward for three-starring a world was two seconds of
   nothing behind the celebration. Reported as the animation loading before
   the background, which is what it was.
+- **The home doors are a RAMP OF COLOUR** (end of `css/95-home.css`), from
+  the world CONTINUE opens (`--wsec`, written by `homeSync()` beside `--sec`)
+  to the wardrobe's violet, mixed in OKLCH so it walks the colour wheel.
+  MY LEVELS is ordered above WARDROBE so it ends on violet. Taken from `pc`
+  on the owner's call.
 - `nothingBehind()` decides intro-card versus home screen and START versus
   CONTINUE; `NEXT LEVEL` is always the next level, except into a locked shelf
   where it becomes `WHAT'S LEFT` and opens the map.
