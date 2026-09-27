@@ -32,6 +32,25 @@ it will bite the next session, a line here.**
 
 ---
 
+## Two versions: `pc` is the computer, `main` is the phone
+
+**This branch, `pc`, is the computer version: Steam, `desktop/`,
+`js/26-desk.js`, `css/96-desk.css`. Android and iOS are built from `main`,
+which does not have any of it.** They were one tree until 27 Sep; the owner
+found the phone's display worse for it, so on the owner's call `main`
+restarted from `3302de1` (the Play build) plus achievements and the promo
+tools, and this branch kept everything as it stood (b379538).
+
+- **NEVER MERGE ONE INTO THE OTHER - cherry-pick.** `main` was split by a
+  commit that restores the old files ON TOP of the shared history, so
+  merging `main` into `pc` would replay that restore and DELETE the
+  computer version. Compare the two with `git diff main pc`, not `git log`.
+- **A fix that belongs to both** (a level, a rule, a bug in shared code) is
+  made on one and cherry-picked to the other. Say which in the commit.
+- `deskMode()` still switches the computer's layer on here, and a phone
+  playing a build from this branch gets the phone layout; but phones are
+  built from `main`, not from here.
+
 ## What the game is
 
 **The game is called `I'm Just A Cube`.** It was `Orthogonal`; the name is
