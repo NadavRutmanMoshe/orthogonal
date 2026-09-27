@@ -123,13 +123,27 @@ money plugins are pinned to an exact version.
 
 ### The five decisions in it
 
-**iOS 15.0, and it is not a preference.** Capacitor's template says 14.0 and
+**iOS 16.2, and it is not a preference - the GAME sets it, not a plugin.**
+The page is drawn by the system's WebKit, and the CSS leans on `color-mix()`
+177 times (every button family mixes its fill, rim and lip from one `--c`,
+and the home doors' ramp mixes in OKLCH). Safari has `color-mix()` from 16.2;
+below it every one of those declarations is thrown away, and the buttons
+lose their colours without an error anywhere. Fallbacks for 177 lines would
+be a second stylesheet to keep in step, so the floor went up instead.
+
+It was 15.0 before that, and that floor still holds underneath:
 `@capgo/native-purchases` declares 15.0 in its podspec, because StoreKit 2
-starts there. CocoaPods does not negotiate: it refuses the install outright
-with "The platform of the target `App` (iOS 14.0) is not compatible with
-CapgoNativePurchases". Both the `Podfile` and `IPHONEOS_DEPLOYMENT_TARGET` in
-`project.pbxproj` say 15.0, and they have to agree. AdMob is not the
+starts there, and CocoaPods refuses an app target below a pod's with "The
+platform of the target `App` (iOS 14.0) is not compatible with
+CapgoNativePurchases". Both the `Podfile` and `IPHONEOS_DEPLOYMENT_TARGET`
+in `project.pbxproj` say 16.2, and they have to agree. AdMob is not the
 constraint - `Google-Mobile-Ads-SDK` 12.12.0 asks only for iOS 12.
+
+Android has the same dependency, and on Android the WebView is Chrome
+(`color-mix()` from 111) and is updated through Play rather than with the
+system, so a phone that takes its updates has it. Not checked: how far the
+WebView still updates on the oldest Android `minSdk` 23 allows. Play
+Console's device catalogue is where that would show.
 
 **Portrait, locked, on iPhone and iPad - and `UIRequiresFullScreen` is what
 makes that legal.** The orientation call is the Android one for the same

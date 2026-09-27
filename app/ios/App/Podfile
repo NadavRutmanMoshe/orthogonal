@@ -1,12 +1,11 @@
 require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
 
-# iOS 15.0, AND IT IS NOT A PREFERENCE. Capacitor's template says 14.0;
-# @capgo/native-purchases declares `ios.deployment_target = '15.0'` in its
-# podspec because StoreKit 2 starts at iOS 15, and CocoaPods refuses outright:
-# "The platform of the target `App` (iOS 14.0) is not compatible with
-# CapgoNativePurchases". The App target in project.pbxproj carries the same
-# 15.0, or the two disagree. (Google-Mobile-Ads-SDK 12.12.0 asks only for
-# 12.0, so the purchases plugin is the whole of this floor.)
+# iOS 16.2, AND IT IS NOT A PREFERENCE. The game's CSS uses color-mix(),
+# which Safari has from 16.2; below it the buttons lose their colours
+# (app/README.md). Under that, @capgo/native-purchases declares
+# `ios.deployment_target = '15.0'` because StoreKit 2 starts at iOS 15, and
+# CocoaPods refuses a lower app target outright. The App target in
+# project.pbxproj carries the same 16.2, or the two disagree.
 #
 # `cap sync` rewrites the require_relative line above and the body of the pod
 # list below, and nothing else, so this comment and the platform line survive
@@ -15,7 +14,7 @@ require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
 # first and everything down to the real `end` is deleted. It happened once,
 # writing this very note. Do not name it; do not put anything you want kept
 # inside it.
-platform :ios, '15.0'
+platform :ios, '16.2'
 use_frameworks!
 
 # workaround to avoid Xcode caching of Pods that requires
