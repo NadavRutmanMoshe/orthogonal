@@ -125,22 +125,6 @@ function loadSettings(){
            this whitelist with it. */
         if(o.foldmark&&["on","off"].indexOf(o.foldmark)>=0)
           settings.foldmark=o.foldmark;
-        /* THE COMPUTER'S THREE (js/26-desk.js). The key overrides are
-           bounded to actions that exist and to one key name each, so a
-           renamed action cannot leave a save binding something that is not
-           there; the other two against their own words, like the rest. */
-        if(o.keys&&typeof o.keys==="object"){
-          var ks={};
-          KEY_ACTS.forEach(function(a){
-            var v=o.keys[a.id];
-            if(typeof v==="string"&&v.length>0&&v.length<=12)ks[a.id]=v;
-          });
-          settings.keys=ks;
-        }
-        if(o.keyStrip&&["on","off"].indexOf(o.keyStrip)>=0)
-          settings.keyStrip=o.keyStrip;
-        if(o.uiScale&&UI_SCALE[o.uiScale])settings.uiScale=o.uiScale;
-        if(o.quality&&QUALITY[o.quality])settings.quality=o.quality;
         /* `killsound` is deliberately NOT read any more. It was on this list
            for one round so the owner could compare thud/burst/chime across a
            reload; THUD won and is the body of SFX.strike() now, so a save
@@ -294,11 +278,6 @@ function migrateNames(){
   if(moved)progSave();
 }
 function progSave(){
-  /* A new record may finish a world or beat a boss, which on Steam are
-     achievements of their own and are not always a star gained - so the
-     sweep is asked here, where every record lands, as well as in win().
-     Before sign-in it returns at once (js/27-achievements.js). */
-  achSweep();
   if(!window.storage)return Promise.resolve();
   return window.storage.set(PROG_KEY,JSON.stringify(progress)).catch(function(){});
 }

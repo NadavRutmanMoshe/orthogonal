@@ -90,10 +90,7 @@ function syncMapChrome(){
      asked to make - and whose list has no length a 44vh sheet could hold. */
   $("panel").classList.toggle("tall",panelKind==="map"||panelKind==="secs"||
                                      panelKind==="menu"||panelKind==="wardrobe"||
-                                     panelKind==="mylevels"||panelKind==="keys");
-  /* Which screen this is, for CSS that lays one of them out differently on
-     a wide screen (css/96-desk.css) without a class per kind. */
-  $("panel").setAttribute("data-kind",panelKind||"");
+                                     panelKind==="mylevels");
   /* The running star total sits at z-index 30 so it can float over the win
      overlay, which also floats it over any open panel - and the menu, the
      wardrobe and the map all now carry a total of their own in their header.
@@ -105,8 +102,6 @@ function syncMapChrome(){
   if(typeof mapBgStart==="function"){
     if(panelKind==="map"||panelKind==="secs")mapBgStart(); else mapBgStop();
   }
-  // A computer's full-screen switch in the header (js/26-desk.js).
-  if(typeof winPanel==="function")winPanel();
 }
 function hidePanel(){
   previewStop();
@@ -286,7 +281,7 @@ function syncHud(){
      just below, and an inline style beats any stylesheet. So a cutscene is
      simply not "in play" as far as the chrome is concerned. */
   var inPlay=app==="play"&&!homeUp()&&!inStory;
-  ["bHint","bLook","bMenu","bWard","bRestart","bWinFull"].forEach(function(id){
+  ["bHint","bLook","bMenu","bWard","bRestart"].forEach(function(id){
     var el=$(id); if(el)el.style.display=inPlay?"flex":"none";
   });
   /* THE BANK IS NOT SHOWN INSIDE A LEVEL. How many stars you have collected
@@ -303,8 +298,6 @@ function syncHud(){
      decide where the lives row sits, and the primer is inside .hud. */
   syncPrimer();
   syncBossBar();
-  // The computer's key strip answers to everything above (js/26-desk.js).
-  if(typeof kStripSync==="function")kStripSync();
 
   if(app==="edit"){
     /* THE LEVEL'S NAME, not the word EDITOR. MY LEVELS can have several
@@ -584,15 +577,12 @@ function flyStars(srcEls,base,gained){
   var reduce=window.matchMedia&&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if(!tgt||!gained||reduce||!srcEls.length){syncStarTotal();return;}
-  /* Screen pixels in, page pixels out: on a computer the page is zoomed
-     (uiZoom(), js/26-desk.js) and a rect is measured on the screen. */
-  var z=typeof uiZoom==="function"?uiZoom():1;
   var tb=tgt.getBoundingClientRect();
-  var tx=(tb.left+tb.width/2)/z, ty=(tb.top+tb.height/2)/z;
+  var tx=tb.left+tb.width/2, ty=tb.top+tb.height/2;
   srcEls.forEach(function(src,i){
     setTimeout(function(){
       var r=src.getBoundingClientRect();
-      var sx=(r.left+r.width/2)/z, sy=(r.top+r.height/2)/z;
+      var sx=r.left+r.width/2, sy=r.top+r.height/2;
       src.classList.add("launch");
       setTimeout(function(){src.classList.remove("launch");},220);
 

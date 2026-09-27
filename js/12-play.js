@@ -1405,8 +1405,6 @@ function bossFoldCrush(){
   if(n>=2&&typeof grantShape==="function"){
     var dom=grantShape("domino");
     if(dom){featNews=dom;featCard=dom;}
-    // And the store's achievement, which asks the same Domino.
-    achSweep();
   }
   /* THE EXTRA BEAT FOR A MULTI-KILL IS GONE, on the owner's call: the wait
      before the television has to be the same every time, and this was one of
@@ -2338,8 +2336,7 @@ function hintRefillOffer(){
       if(!ok)return;
       var n=grantHints(HINT_AD);
       hidePanel();syncHud();
-      flash(n+" hint"+(n===1?"":"s")+" \u00b7 "+
-        (deskMode()?"press "+capOf("hint"):"tap the bulb"));
+      flash(n+" hint"+(n===1?"":"s")+" \u00b7 tap the bulb");
       setTimeout(function(){cue("bHint");},260);
     });
   });
@@ -2445,7 +2442,7 @@ function win(){
        the buttons ask the question. */
     $("wonTitle").textContent="That was the lesson";
     $("wonSub").textContent=moveCount+" moves  \u00b7  not scored"+
-      (lastTut?"  \u00b7  from here on, "+hintWord():"");
+      (lastTut?"  \u00b7  from here on, tap the bulb for a hint":"");
     /* A TEACHING LEVEL IS NOT SCORED, SO NEITHER BUTTON IS ABOUT SCORE.
        Everywhere else the pair is "you did it in N, do better" against "go
        on"; here there is no par to beat, so NEXT LEVEL was asking the player
@@ -2549,9 +2546,6 @@ function win(){
       setTimeout(function(){if(SFX.mastery)SFX.mastery();},520);
     }
   }
-  /* A STAR MAY HAVE FINISHED A WORLD, or all four, or all five: the store's
-     achievements ask the same sums (js/27-achievements.js). */
-  if(starsGained>0&&playSource==="builtin")achSweep();
   /* AND A FEAT EARNED BY THE WINNING FOLD IS NAMED ON THE CARD, because the
      toast at the foot of bossFoldCrush is never reached on the fold that
      clears the board - that one goes into the kill cam and out through
@@ -2789,13 +2783,11 @@ function resetLevel(){
 function eyeCue(on,instant){
   var el=$("bLook");if(!el||!el.parentNode)return;
   if(on){
-    // In page pixels, which a computer zooms (uiZoom(), js/26-desk.js).
-    var z=typeof uiZoom==="function"?uiZoom():1;
     var c=el.parentNode.getBoundingClientRect();
-    var hx=c.left/z+el.offsetLeft+el.offsetWidth/2,
-        hy=c.top/z+el.offsetTop+el.offsetHeight/2;
-    el.style.setProperty("--eyex",Math.round(innerWidth/z*.72-hx)+"px");
-    el.style.setProperty("--eyey",Math.round(innerHeight/z*.5-hy)+"px");
+    var hx=c.left+el.offsetLeft+el.offsetWidth/2,
+        hy=c.top+el.offsetTop+el.offsetHeight/2;
+    el.style.setProperty("--eyex",Math.round(innerWidth*.72-hx)+"px");
+    el.style.setProperty("--eyey",Math.round(innerHeight*.5-hy)+"px");
   }
   if(instant){
     el.classList.add("eyejump");

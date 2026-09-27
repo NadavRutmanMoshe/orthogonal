@@ -105,13 +105,9 @@ listed in `index.html`. `21-boot.js` is the only file that *runs* anything.
 | `js/23-guide.js` | the neighbour who stands on the I · NATURE levels and gives a tip written for the one he is standing on. **Pure decoration** - no rule, no solver, never solid. Also loaded after boot and `typeof`-guarded |
 | `js/24-ads.js` | rewarded video: `adChild()`, consent, preloading, `adWatch(done)`, and the per-unlock count `adToward()`. **Loaded BEFORE boot**, out of numeric order like 20, so boot starts it and nothing needs a typeof guard |
 | `js/25-shop.js` | the DEALS shelf charged for real: `shopBuy()`, `shopRestore()`, the launch sync from the store, store prices. Loaded before boot, like 24 |
-| `js/26-desk.js` | **the computer**: `deskMode()` (the DEVICE - a mouse and keyboard) and `steamBuild()` (what was PAID for), the page zoom (`applyZoom()`, `uiZoom()`), key bindings (`KEY_ACTS`, `keyOf()`, `keyAction()`), the key strip, Settings > Keys, menu navigation by keys or pad (`navRoot()`), the gamepad, the no-age-card first run, and `deskHandheld()` (a Steam Deck). Loaded before boot, like 24 |
-| `js/27-achievements.js` | the store's achievements: `ACHIEVEMENTS`, `ACH_IDS` per store, `achSweep()`. Game Center, Play Games and Steam - **one list for all three**. Steam has fifteen: the seven every store has plus eight with no phone id yet (`clear1..4`, a world finished; `boss1..4`), which an empty id keeps off the phones. Swept from `progSave()` as well as `win()`, because a world finished or a boss beaten is not always a star gained. Loaded before boot like 24 and 25. The native halves are `AchievementsPlugin.java` / `.swift`, in the app, not npm; Steam's is `window.cubeSteam` from `desktop/preload.js` |
-| `tools/steamtest.js` | **the Steam build driven for real**: `desktop/` launched as Electron by Playwright in a throwaway data folder (`IJAC_DATA`), two launches, 17 checks - the grant, the save file, achievements. `--packaged` runs the built exe. Needs no Steam |
 | `tools/storetest.js` | the ads and the shop driven through a FAKE Capacitor bridge, every path (a video closed early, a pending payment, the upgrade). Needs Playwright, like `shot.js` |
 | `tools/verify.js` | every level machine-checked: BFS, `trialSafety()`, `bossArena()`, `bosssim`, the `SECTIONS`/`LEVEL_RENAMES` invariants |
 | `tools/shot.js` | **headless screenshots of any screen** (`node tools/shot.js --list`). The eyes for UI work. A cutscene is seekable by beat (`story1:12`), and an explicit `--wait` now beats the screen's own default. |
-| `desktop/` | **the Electron shell - the Steam build**: `main.js` (steamworks.js, the save as a file per Steam account, the window), `preload.js` (`window.STEAM`, `window.storage`, `window.steamBridge`), `steam.json` (the App ID, ONE place), `check-ship.js`, `steampipe.js`, and `README.md`, which is the Steamworks setup the owner does by hand. `www/` and `dist/` are generated. `npm start`, `npm run dist` |
 | `app/` | **the Capacitor shell**: `capacitor.config.json`, the generated `android/` and `ios/` projects, and `README.md` for why each non-default setting is set. `app/www/` is generated and gitignored. **The iOS project was generated ON WINDOWS and is editable here** - `cap add ios` only needs a Mac for `pod install`, which it skips; it is iPhone AND iPad, portrait-locked (`UIRequiresFullScreen`, or Apple rejects it), iOS 15 because StoreKit 2 is, and `Info.plist` carries the AdMob keys the manifest carries on Android. Only BUILDING needs a Mac, and that is `codemagic.yaml`. |
 | `codemagic.yaml` | **the cloud Mac that builds iOS**, at the repository ROOT because that is where Codemagic looks. Rented per build: clone, `npm ci`, `build-app.js`, `cap sync ios`, `pod install`, sign from an App Store Connect API key, upload to TestFlight. **It takes the next build number FROM App Store Connect** rather than guessing, which is the trap `versionCode` is on Play. No automatic trigger: a build costs minutes. Its header is the owner's one-time setup list. |
 | `tools/build-single.js` | inlines everything into one file for itch.io / the artifact |
@@ -120,12 +116,10 @@ listed in `index.html`. `21-boot.js` is the only file that *runs* anything.
 | `tools/icon.js` | **the app icon, drawn**: a boss arena with a seam down it - folded to one strip on the page side, countably deep on the volume side, the cube on one and a hunter on the other. **Three fixed colours** (rose the cube, teal the fold, red the pack) over a WORLD, switched with `--world night|fire|water|desert` and shipping as `fire`. The page gradient is hand-picked per world, never the sky mixed toward white - that washes every hue to the same putty, which is where the grey came from. Writes `app/icon/` (1024, 512, a preview sheet) and, with `--android`, the launcher mipmaps; `--ios` writes the Xcode icon, which must have NO ALPHA (Apple rejects that at upload) and does not, because the render is opaque. One of the two places a PNG is checked in (`tools/logo.js` is the other), and both are store assets, not game assets. **`SHIP` names the variant that ships** (`E`): it is the default AND the one writing the unsuffixed files, so `icon-512.png` is always the store's picture |
 | `tools/logo.js` | **the studio wordmark as a picture** - `app/logo/logo-1024.png` plus a transparent one, for a Google/YouTube/Instagram/TikTok profile. **It is the sting photographed, not redrawn**: it loads the real page, forces `#splash` to its `fold` class and shoots `.sstage`, so there can never be a second `nadaz` that drifts from the one in `js/20-splash.js`. `--word` reshapes it from `SPLASH_GLYPHS` (n, a, d, z only). `FILL` is .86 because every one of those platforms crops the square to a CIRCLE |
 | `tools/feature.js` | **Play's 1024x500 feature graphic**, mandatory and the one asset a screenshot cannot be. The icon's scene drawn wide with **the name and nothing else** - the tagline under it came off with the game's own copy of it. Three layouts (`feature-A|B|C.png`); `zoom` and `dx` per layout are what keep the type off the cast, and **`band` is what keeps its colour**: the scene is a square cropped to a strip, so the gradients are told which slice survives and spend their whole ramp there. Without it the page was the middle third of the ramp - one flat salmon, and not the icon's picture |
-| `tools/store.js` | **the store screenshot set**, ten shots numbered in upload order over `shot.js` (`--ios`, **`--steam`** 1920x1080 as the computer version with the Steam grant into `shots/steam/screens`, **`--ipad`** the 13" iPad at 2064x2752, which App Store Connect REQUIRES because the device family includes iPad, `--tablet` 7", `--tab10` 10", `--only NN`). **A tablet size is a CSS WIDTH, not a pixel count** - 1200x1920 as 400px at dpr 3 is a wide phone and would hide every tablet bug. The list is the memory: which screen, which `--eval`, and how long a moment has to settle before it has actually happened. **01 and 02 are a pair** - `firefold` and `fireflat`, the same board with the same two steps walked, in the volume and in the plane - and changing one means changing the other. **Play takes eight and the list is ten** on the owner's call: all ten are generated, nothing is marked `spare`, and the eight are picked in the Console. Writes `shots/play` (and `shots/ios`, `shots/tablet7`, `shots/tablet10`), beside everything else `shot.js` writes; `store/` is for moving pictures now. Output is gitignored; `docs/STORE-LISTING.md` says what each shot is for |
-| `tools/steamart.js` | **Steam's store and library art**, every size Steamworks asks for: header 920x430, main 1232x706, small 462x174, vertical 748x896, library 600x900, the hero 3840x1240 (NO type, by Valve's rule), the logo on transparency, the 184 community icon and the client `.ico`. All drawn by `bannerHtml()` in `tools/feature.js`, which Play's banner goes through too - one picture, so the stores cannot drift into two games. `dy` slides the cast down under a tall capsule's title, and the square grows to cover it. Writes `shots/steam/art/` |
+| `tools/store.js` | **the store screenshot set**, ten shots numbered in upload order over `shot.js` (`--ios`, **`--ipad`** the 13" iPad at 2064x2752, which App Store Connect REQUIRES because the device family includes iPad, `--tablet` 7", `--tab10` 10", `--only NN`). **A tablet size is a CSS WIDTH, not a pixel count** - 1200x1920 as 400px at dpr 3 is a wide phone and would hide every tablet bug. The list is the memory: which screen, which `--eval`, and how long a moment has to settle before it has actually happened. **01 and 02 are a pair** - `firefold` and `fireflat`, the same board with the same two steps walked, in the volume and in the plane - and changing one means changing the other. **Play takes eight and the list is ten** on the owner's call: all ten are generated, nothing is marked `spare`, and the eight are picked in the Console. Writes `shots/play` (and `shots/ios`, `shots/tablet7`, `shots/tablet10`), beside everything else `shot.js` writes; `store/` is for moving pictures now. Output is gitignored; `docs/STORE-LISTING.md` says what each shot is for |
 | `tools/foldlevel.js` | **the fold tutorial re-skinned as FIRE, in one place**: the board `tools/video.js` opens its promo on and the board the store set's 01/02 pair is taken from. It moved out of `video.js` the moment a second tool wanted it, which is `tools/playwright.js`'s rule. **It only wears its `theme` if it plays as a custom level** - `enterPlay()` ignores a builtin's own theme and reads the INDEX, and index -1 is PROLOGUE's slate, the exact palette this was re-skinned to escape - so both callers set `playSource="library"` first |
 | `tools/promo-join.js` | **the owner's four phone takes, joined**: `shots/play/vid_N.mp4` in NUMERIC order into `promo.mp4`. **It re-encodes rather than stream-copying**, because a phone screen recorder writes variable frame rate (the four takes are 49, 57, 59 and 58fps) and copying hands the joins four timebases, which is how the audio drifts off the picture. One x264 pass at CRF 18 pins it to constant 60fps. **The only tool here that needs ffmpeg** (`winget install Gyan.FFmpeg`); it looks in PATH and then in winget's package directory, because a fresh install does not reach a shell that is already running. Not a replacement for `tools/video.js` - that one is scripted, landscape and regenerates itself; this one is four real takes and can only be re-joined |
-| `tools/video.js` | **the promo video, played by a script** - the four scenes (sting, fold, BOSS I from phase two, TRIAL I from the second core) cut to `store/video/promo.mp4` at 1920x1080 60fps with the game's own sound. **Filmed one frame at a time, not in real time**: `tools/clock.js` takes every clock away from the page (timers, rAF, `performance.now`, `Date`, CSS animations, and the AudioContext, which becomes an `OfflineAudioContext` rendered a frame at a time), so the film is a flawless 60 however slowly this laptop draws. Every real-time capture before it (Playwright's recorder, tab capture, gdigrab) could only film the frames the page managed, and that was the lag. The cost is the wait, about 12x real time on the GPU (`--soft` for SwiftShader, twice that). A step that returns a promise is started and ticked until it settles, never awaited, or both sides wait for each other. The fold tutorial re-skinned as FIRE (now `tools/foldlevel.js`, shared with the store set), BOSS I killed twice, TRIAL I. **Nothing is faked**: both kills wait on `doomedCell()`, the predicate `bossFoldCrush()` itself uses, and `vidHunt()` plays the fight the way a person does, **with the turn**: a hunter in your row across the view is a quarter turn from dead, so it walks (a BFS round the pillars) to a clean lane, prefers the one that needs the turn, and **turns BEFORE stepping in, never after** - step-then-turn-then-fold ran past a FAST hunter's aim and lost a heart on film. A lane with a pillar in it is cover, not a kill lane (the fold crushes you). With no kill on offer it lures rather than standing still, and after a kill it stands up the moment the kill cam lets go, because flat you are a whole column. The kill's replay plays out (the owner wants the death on film). Every hit on the player is counted and flagged per scene; `--log` prints each move and turn. `--frames` writes a still per step and is the only way to check the cut, since a video cannot be read back |
-| `tools/clock.js` | **the page's clock, held by the driver**: `clockScript()` is an init script that makes the game move only on `__cap.step()`, one frame at a time, sound included. `video.js` is its one user; any tool that needs a smooth capture of a real-time moment can use it the same way |
+| `tools/video.js` | **the promo video, played by a script** - a 56s cut to `store/video/promo.webm` at 1920x1080 (Play takes a YouTube URL, and YouTube accepts webm, so no ffmpeg). The fold tutorial re-skinned as FIRE (now `tools/foldlevel.js`, shared with the store set), BOSS I killed twice, TRIAL I. **Nothing is faked**: both kills wait on `doomedCell()`, the predicate `bossFoldCrush()` itself uses, and `vidHunt()` plays the fight the way a person does - waiting to be lined up dies, because `foldKills()` wants the silhouette COLUMN while `bossLine()` charges down any shared ROW. `--frames` writes a PNG per step and is the only way to check the cut, since a webm cannot be read back |
 | `tools/playwright.js` | `loadPlaywright()`, **one copy for all four drawing tools**. A global install lives under `<prefix>/lib/node_modules` on POSIX and straight under `<prefix>` on Windows, and `npm root -g` is the last resort that is right everywhere. The three inlined copies were POSIX-only |
 | `tools/curve.js`, `tools/legible.js` | the difficulty curve; squares that draw where ground is not |
 
@@ -862,113 +856,8 @@ is the rule.
   keyed `world:` or `level:` plus the level NAME. A counting label may not be
   longer than the one it replaces (`adsWatchSay()`): the map's buttons already
   wrap on a 327px phone.
-- **An achievement is a QUESTION THE SAVE ALREADY ANSWERS, never a
-  counter.** A world is `sectionSpans()` (not `sectionMastered()`, which a
-  preview could fake), the double kill is owning the Domino. `achSweep()`
-  asks all seven after sign-in, after any star and after the double kill,
-  and reports every yes - re-reporting is harmless, and it is what pays old
-  saves. An id left empty in `ACH_IDS` is never sent, so it ships half set up.
-- **Play Games' own start-up is REMOVED from the manifest**
-  (`PlayGamesInitProvider`, `tools:node="remove"`) and `AchievementsPlugin`
-  starts the SDK only when `game_services_project_id` holds a number. With no
-  id it crashes the app at launch. Play Games is pinned at **21.0.0**: 22.x
-  wants minSdk 24. The iOS half is hand-added to `project.pbxproj` and has
-  not been compiled yet (`SHIPPING.md`, "As built: achievements").
 - **The plugins are pinned at 7.x** (`app/package.json`, exact): their 8.x
   lines need Capacitor 8.
-
-**The computer** (`js/26-desk.js`, `SHIPPING.md`)
-- **`deskMode()` is the device, `steamBuild()` is the purchase**, and they
-  are kept apart: a laptop playing the free artifact gets the keys and the
-  zoom and is granted nothing. `?desk=1` / `?desk=0` / `?steam` override
-  either; the Electron preload is to set `window.STEAM`. `tools/shot.js`
-  sends `?desk=0` unless `--desk`, `--steam` or `--pc` - headless Chromium
-  has a mouse, and every phone shot would otherwise be a desktop one.
-- **The page is ZOOMED on a big screen, the canvas is not.** CSS `zoom` on
-  the root (height/720, never under 1, times Settings > Screen > Interface),
-  the inverse on the game's canvas. So **a rect is SCREEN pixels and a
-  style is PAGE pixels**: anything that measures one and writes the other
-  divides by `uiZoom()` - the neighbour's bubble, the star flight, the eye,
-  the two scroll-to-centre sums. A new one of those is the same bug.
-- **A computer is pinned to HIDDEN** and never has the bar, even in a
-  tutorial (`barIsUp()`); Settings' Controls row becomes Keys.
-- **The key strip is TWO groups, TURN and GO 2D/3D**, on the owner's call.
-- **There is no undo in play**, on any device (owner's call): no key, no
-  pad button, and the stuck hint says restart. `undoMove()` is reached by
-  nothing; the editor keeps its own undo (Z and its button).
-- **A replay is skipped by ANY key or pad button** on a computer, and its
-  line says so.
-- **Every level on a computer is framed by `deskFit()`**: each drawn cell
-  (and the neighbour where he really stands) projected through the camera's
-  real 27.8 degree pitch, in every view the level can be turned to, about
-  the board's middle, which the camera orbits. The general fit over-charges
-  height and was framing boards at about half size in landscape. Phones
-  keep the general fit.
-- **On a computer the neighbour stands BESIDE the board**, at mid height:
-  off the right edge of a locked board, and on a turning board out along
-  the current view's screen-right (`guideSide()`, applied per frame in
-  `guideFrame()`), so he walks round with a rotation. Behind-and-above cost
-  a landscape screen a third of its height. Phones keep him where he was.
-- **A computer held landscape gets its own layouts** (`css/96-desk.css`,
-  `#panel[data-kind]`): home menu-left/stand-right, wardrobe choosing-left/
-  case-right, Settings on one screen, worlds three across, the map and the
-  chooser wide, MY LEVELS medium, and the home screen dimmed behind any
-  panel. A narrow desktop window falls back to the phone layouts.
-- **Every button AND the wardrobe's `.item` tiles (divs, not buttons) grow
-  on hover and squash on press**, springing back on an overshooting curve.
-  The full-screen switch goes into `.phead` and `.mhead` headers alike, and
-  a MutationObserver on `#panel` puts it back when a panel redraws itself.
-- **The home menu on a computer is a RAMP built from CONTINUE's world
-  colour** (`--wsec`, set in `homeSync()`) to the wardrobe's violet, mixed
-  in OKLCH so it walks the colour wheel: NATURE runs green, teal, blue,
-  violet. MY LEVELS is ordered above WARDROBE so the ramp ends on violet.
-  A single accent was tried first and called boring. A Menu colour row
-  that pinned one world's ramp existed for one round, to compare them, and
-  came off with its setting. Hover grows a button
-  (`scale(1.06)`, wide ones 1.025) and `:active` puts it back on its lip.
-- **The full-screen switch is everywhere on a computer**: home (with quit,
-  Electron only, `deskApp()`), the play corner (`#bWinFull`), and every
-  panel header (`winPanel()`, called by `showPanel()`).
-- **Settings on a computer is CSS columns, not a grid**: a grid row is as
-  tall as its tallest card and left holes.
-- **Esc is the game's in full screen**: `navigator.keyboard.lock(["Escape"])`
-  on entering (hold Esc to leave). It only works for full screen the game
-  itself asked for - not the browser's F11, not the artifact's expand button.
-- **Settings > Screen > Quality** (`applyQuality()`): NORMAL/HIGH/ULTRA =
-  1/1.5/2x the screen's resolution, capped at 3; defaults NORMAL (ULTRA
-  lagged on the owner's laptop); phones
-  never read it.
-- **Full screen inside the artifact is the browser's**, not ours:
-  claude.ai's frame refuses the API (`fullAllowed()`), so the row points at
-  F11 / the page's own button. In Electron it works.
-- **An action, not a key.** `runAct()` (`js/19-bindings.js`) is where keys
-  and the pad both land, then the four verbs. `settings.keys` holds
-  overrides only; a taken key SWAPS; the arrows always walk unless bound.
-  Anything that names a control asks `keyOf()`/`capOf()`, so the tutorial
-  teaches the player's own key.
-- **First run on a computer: no age card.** `deskFirstRun()` writes the HARD
-  band and goes straight to the opening.
-- **The Steam build owns EVERYTHING by rule** (`hasPass()`), $6.99, pending
-  the owner's call on DLC (`SHIPPING.md`, "Steam and in-app purchases").
-- **In Steam, `window.storage` is the preload's, not localStorage.**
-  `js/00-storage.js` steps aside when the host supplies one, and
-  `desktop/preload.js` does, backed by
-  `%APPDATA%/ImJustACube/<SteamID64>/save.json` - which is what Steam's
-  Auto-Cloud syncs. Writes go to the main process SYNCHRONOUSLY so pagehide's
-  save lands. **That folder name is now every Steam player's cloud save**:
-  never rename it, like an `orthogonal:*` key.
-- **Steam's achievements are `js/27-achievements.js`'s, not a second list.**
-  The Steam-only eight (`clear`, `boss`) live beside the shared seven with
-  empty phone ids; `achMet()` reads `progress` and `wardrobe.owned` (never
-  `owns()`, which the Steam build answers yes to by rule). A skip never
-  earns one. `cubeSteam.activate()` answers whether Steam took it, and a no
-  is retried on the next sweep.
-- **A Steam Deck zooms one step more** (`deskHandheld()`, `HANDHELD` 1.2):
-  800/720 put a 7-inch screen's type under a phone's. AUTO is 1.33 there, a
-  960x600 page, every layout checked at it (`tools/shot.js --deck`); BIGGER
-  is capped at the same page. A Deck also starts on the pad's glyphs.
-- **Electron is pinned at 39** because this PC's Node is 20.13; 40+ and
-  electron-builder 26 need Node 22.12 (`desktop/README.md`).
 
 **Rendering** (`look.md`, `controls.md`)
 - **`outlineFor()` reads the PIECE, not the background: white lines on
