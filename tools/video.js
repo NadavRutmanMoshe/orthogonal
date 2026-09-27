@@ -329,7 +329,7 @@ function pageHelpers(foldLevel){
        machine's pace - the owner watched the chase between the two
        phase-three kills and called it "lots of inputs in small duration".
        These are a quick human's. */
-    var VID_STEP=420, VID_TURN=800;
+    var VID_STEP=420, VID_TURN=800, vidLastStep=0;
     function vidMinLock(){
       var m=Infinity;
       for(var i=0;i<hunters.length;i++) if(hunters[i].lock>0)m=Math.min(m,hunters[i].lock);
@@ -490,7 +490,7 @@ function pageHelpers(foldLevel){
               // before the fold starts again from the step.
               setTimeout(function(){
                 var n2=dirName();
-                if(n2){ press(n2); vidLastAct=Date.now(); }
+                if(n2){ press(n2); vidLastAct=vidLastStep=Date.now(); }
                 setTimeout(tick,60);
               },VID_TURN);
               return;
@@ -498,6 +498,16 @@ function pageHelpers(foldLevel){
           }
           var name=dirName();
           if(!name){setTimeout(tick,120);return;}
+          /* NO TWO STEPS CLOSER THAN VID_STEP, whatever woke this tick. The
+             step into a lane re-ticks after 60ms so the kill is checked at
+             once - and when the hunter had moved and there was no kill, that
+             same quick tick took the NEXT step too: two lefts 60ms apart,
+             which the owner spotted straight after the first phase-three
+             kill. The kill check above still runs on the quick tick; only
+             walking waits. */
+          var gap=Date.now()-vidLastStep;
+          if(gap<VID_STEP){ setTimeout(tick,VID_STEP-gap); return; }
+          vidLastStep=Date.now();
           vidSay(name+" toward "+best);
           press(name);
           if(at===best)vidLastAct=Date.now();
