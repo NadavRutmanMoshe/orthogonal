@@ -2694,7 +2694,68 @@ function recomputeBounds(){
   arenaSW=Math.max(b[0]-a[0],b[2]-a[2])+1;      // +1: blocks are a cell wide
   arenaSH=(b[1]-a[1])+1+CAM_TILT*arenaSW;
   arenaLo=a.slice();arenaHi=b.slice();
+  fitBaseY=centerT.y;
+  fitSpan=(typeof storyFrameBox==="function"&&storyFrameBox())?null:drawnSpan();
   viewSizeT=fitViewSize();
+}
+/* WHERE THE BOARD REALLY DRAWS, up and down the screen, about centerT.
+
+   The fit above charges a cell of height 1 and a cell of depth CAM_TILT,
+   which is generous on purpose; this is the exact answer, through the
+   camera's real pitch (a cell of height draws at cos, a cell of depth at
+   sin), in every view the level can be turned to, and flat as well, where
+   screen-up is plain height. The neighbour counts where he really stands,
+   about two cells tall. [lo, hi] in world units, which is screen units: the
+   camera is orthographic. Only fitViewSize()'s bar check reads it. */
+var fitBaseY=0, fitSpan=null;
+function drawnSpan(){
+  var pit=Math.atan2(CAM_TILT*34,40), C=Math.cos(pit), S=Math.sin(pit);
+  var h3=(C+S)/2, cx=centerT.x, cy=centerT.y, cz=centerT.z;
+  var cells=L.blocks.concat(L.keys||[]), i, vi, v, p;
+  if(L.start)cells=cells.concat([L.start]);
+  if(L.goal)cells=cells.concat([L.goal]);
+  var views=(L.rotate===false)?[AX[0]]:AX, lo=1e9, hi=-1e9;
+  function put(px,y0,y1,pz){
+    var dd=(px-cx)*v.d[0]+(pz-cz)*v.d[2];
+    hi=Math.max(hi,C*(y1-cy)-S*dd+h3); lo=Math.min(lo,C*(y0-cy)-S*dd-h3);
+  }
+  var g=typeof guideSpot==="function"?guideSpot():null;
+  for(vi=0;vi<views.length;vi++){
+    v=views[vi];
+    for(i=0;i<cells.length;i++){p=cells[i];put(p[0],p[1],p[1],p[2]);}
+    if(g)put(g[0],g[1],g[1]+1.2,g[2]);
+  }
+  for(i=0;i<cells.length;i++){
+    hi=Math.max(hi,cells[i][1]+.5-cy); lo=Math.min(lo,cells[i][1]-.5-cy);
+  }
+  if(g){hi=Math.max(hi,g[3]+1.7-cy); lo=Math.min(lo,g[3]-.5-cy);}
+  return [lo,hi];
+}
+/* THE BOARD NEVER DRAWS UNDER THE CONTROL BAR. With the buttons up (COMPACT
+   or FULL) the fit charges the bar as three cells of margin, top and bottom
+   alike - but the bar is a fixed height in PIXELS, so a board whose cells are
+   big enough ran its bottom row under the arrows (04 on LARGE was the one
+   reported). This measures the bar's top edge, and the bottom of the level's
+   own text (the name, the hint, a fight's hearts), and returns the two as
+   shares of the screen height: [top, bottom]. [0,0] leaves the fit alone.
+
+   It only ever CORRECTS: fitViewSize() keeps the framing it had unless the
+   board would reach into the bar, and then moves it up, or pulls back just
+   enough if moving is not enough. Never with the buttons HIDDEN, including a
+   tutorial that puts the bar up on its own - on the owner's call, it is for
+   the two layouts that choose the buttons. */
+function fitBand(){
+  if(typeof settings==="undefined"||settings.ui==="none"||!barIsUp())return [0,0];
+  var h=window.innerHeight||760, bar=document.querySelector(".bar.on");
+  if(!bar)return [0,0];
+  var r=bar.getBoundingClientRect();
+  if(!(r.height>0&&r.top>0))return [0,0];
+  var bot=(h-r.top)/h, top=0;
+  ["#lvName","#lvHint","#bossBar"].forEach(function(q){
+    var e=document.querySelector(q), b=e&&e.getBoundingClientRect();
+    if(b&&b.height>0)top=Math.max(top,b.bottom/h);
+  });
+  return [Math.min(.45,top),Math.min(.45,bot)];
 }
 /* Both axes have to fit, so take whichever demands more room. The vertical
    requirement is multiplied by the aspect because in portrait the frustum's
@@ -2758,7 +2819,27 @@ function fitViewSize(){
      stop LARGE doing anything at all on the small boards, which are the ones
      a player who asked for LARGE is most likely to be standing on. */
   var want=Math.max(3.2,needW,needH)*k;
-  return Math.max(want,tightW,needH);
+  var vs=Math.max(want,tightW,needH);
+  /* CLEAR OF THE BAR (fitBand() says why). Portrait, playing, no cutscene.
+     `T` and `B` are the band's top and bottom edges in screen units about
+     the middle of the screen, BAND_GAP inside each; the board is moved up
+     into it if its bottom is below `B`, and the view pulls back first if the
+     board is taller than the band. The camera moves the opposite way to the
+     board, and a world unit of height draws at cos of the pitch. */
+  var dy=0;
+  if(a<1&&fitSpan&&app==="play"&&!(typeof storyOn==="function"&&storyOn())){
+    var band=fitBand(), tf=band[0], bf=band[1];
+    if(bf>0&&tf+bf<.9){
+      var BAND_GAP=.3, lo=fitSpan[0], hi=fitSpan[1], hh=vs/a;
+      var fits=(hi-lo+2*BAND_GAP)/(2*(1-tf-bf));
+      if(hh<fits){hh=fits;vs=hh*a;}
+      var T=hh*(1-2*tf)-BAND_GAP, B=-hh*(1-2*bf)+BAND_GAP;
+      if(lo<B)dy=B-lo;
+      if(hi+dy>T)dy=T-hi;
+    }
+  }
+  if(fitSpan)centerT.y=fitBaseY-dy/Math.cos(Math.atan2(CAM_TILT*34,40));
+  return vs;
 }
 /* The pack.
 
