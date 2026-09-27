@@ -324,6 +324,12 @@ function pageHelpers(foldLevel){
        hold is cut short when an aimed hunter's lock gets down to VID_SAFE
        (game ms; FAST runs the lock 1.2x, so that is ~270ms of film). */
     var VID_BEAT=750, VID_SAFE=320, vidLastAct=0, vidKillAt=0;
+    /* THE CHASE'S OWN PACE: a step every VID_STEP, and VID_TURN between a
+       turn and the step it sets up. They were 200 and 480, which is a
+       machine's pace - the owner watched the chase between the two
+       phase-three kills and called it "lots of inputs in small duration".
+       These are a quick human's. */
+    var VID_STEP=420, VID_TURN=800;
     function vidMinLock(){
       var m=Infinity;
       for(var i=0;i<hunters.length;i++) if(hunters[i].lock>0)m=Math.min(m,hunters[i].lock);
@@ -486,7 +492,7 @@ function pageHelpers(foldLevel){
                 var n2=dirName();
                 if(n2){ press(n2); vidLastAct=Date.now(); }
                 setTimeout(tick,60);
-              },480);
+              },VID_TURN);
               return;
             }
           }
@@ -495,7 +501,7 @@ function pageHelpers(foldLevel){
           vidSay(name+" toward "+best);
           press(name);
           if(at===best)vidLastAct=Date.now();
-          setTimeout(tick,at===best?60:200);
+          setTimeout(tick,at===best?60:VID_STEP);
         }
         tick();
       });
