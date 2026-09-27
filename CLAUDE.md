@@ -47,6 +47,13 @@ tools, and this branch kept everything as it stood (b379538).
   computer version. Compare the two with `git diff main pc`, not `git log`.
 - **A fix that belongs to both** (a level, a rule, a bug in shared code) is
   made on one and cherry-picked to the other. Say which in the commit.
+- **One chat, one folder, one branch, when two chats CHANGE files at the
+  same time.** `orthogonal` stays on `main` and `orthogonal-pc` on `pc`; a
+  parallel job gets its own git worktree named after the job, not a number:
+  `git worktree add ../orthogonal-<job> -b <job> pc` (or `main`), and
+  `git worktree remove` once it is in. Two chats in ONE folder is the thing
+  never to do - one switching branch changes the files under the other. A
+  chat that only reads or answers needs no folder of its own.
 - `deskMode()` still switches the computer's layer on here, and a phone
   playing a build from this branch gets the phone layout; but phones are
   built from `main`, not from here.
