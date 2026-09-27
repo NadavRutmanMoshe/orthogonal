@@ -83,6 +83,9 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+    // Play Games v2, for the achievements (AchievementsPlugin.java). 21.0.0
+    // and not newer: 22.x declares minSdk 24 and this app is 23.
+    implementation "com.google.android.gms:play-services-games-v2:21.0.0"
 }
 
 apply from: 'capacitor.build.gradle'

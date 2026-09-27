@@ -340,7 +340,7 @@ Beat all four and a fifth world opens, with sixty more levels in it.
 [*]A level editor with the game's own solver in it. Build a level, press VERIFY, and it tells you whether it can be finished and in how few moves. Share it with anyone as a single line of text.
 [*]A story in three scenes, told in the same blocks you play in. Nothing is a video. Everything folds.
 [*]A par and three stars on every level. Five shapes for your cube can only be earned: four for three-starring a world, and one for a trick in the fights.
-[*]13 Steam achievements, and your progress follows you through Steam Cloud.
+[*]15 Steam achievements, and your progress follows you through Steam Cloud.
 [/list]
 
 [h2]Everything is included[/h2]
@@ -397,7 +397,7 @@ Platformer (there is no jumping - a step up is the whole of it), Relaxing
 | Genre | **Indie** and **Casual**. Steam has no Puzzle genre; Casual is where puzzle games are filed, and the tags carry the rest |
 | Developer / Publisher | Nadaz Games (free text, needs no company - `SHIPPING.md`) |
 | Single-player | yes |
-| Steam Achievements | yes (13, `desktop/README.md`) |
+| Steam Achievements | yes (15, `desktop/README.md`) |
 | Steam Cloud | yes |
 | Includes level editor | yes |
 | Controller support | **Partial**, not Full. Every level, fight, menu and the wardrobe work on a pad, but the level editor places blocks with the mouse, and Full means everything. Making the editor pad-driven is what would earn Full |
@@ -429,8 +429,8 @@ target - it runs in software rendering in `tools/shot.js`.
 | no ads, no purchases | `steamBuild()` makes `hasPass()` true for both passes (`js/09-wardrobe.js`), so every ad button renders as a plain one and the DEALS shelf has nothing to sell |
 | the whole wardrobe open | NO LIMITS sends `shards()` to 9999 and EVERYTHING owns every paid shape. **The five `reward:true` shapes are not in it** - hence "five can only be earned" |
 | hints never run out | `hintsUnlimited()` is `noLimits()` (`js/06-persistence.js`) |
-| a skip never clears or earns | skips live in `skips`, never `progress`, and `js/27-steam.js` reads only `progress` and reward shapes |
-| 13 achievements, Steam Cloud | `STEAM_ACH`; `desktop/main.js`, "THE SAVE" |
+| a skip never clears or earns | skips live in `skips`, never `progress`, and `achMet()` in `js/27-achievements.js` reads only `progress`, the star sums and reward shapes |
+| 15 achievements, Steam Cloud | `ACH_IDS.steam` in `js/27-achievements.js`; `desktop/main.js`, "THE SAVE" |
 | the keys, and rebinding | `KEY_ACTS` in `js/26-desk.js` (W A S D, Space, Q, E, Shift), arrows always walk; Settings > Keys; the tutorial asks `keyOf()` |
 | the pad | `padAct()`: stick or D-pad, A fold, LB/RB turn, either trigger peeks |
 | the settings rows | Level size, Text size, Interface, Fights speed (`menuPanel()`) |

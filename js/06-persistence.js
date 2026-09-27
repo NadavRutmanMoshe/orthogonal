@@ -294,7 +294,11 @@ function migrateNames(){
   if(moved)progSave();
 }
 function progSave(){
-  steamAchSync();   // a record may be an achievement (js/27-steam.js)
+  /* A new record may finish a world or beat a boss, which on Steam are
+     achievements of their own and are not always a star gained - so the
+     sweep is asked here, where every record lands, as well as in win().
+     Before sign-in it returns at once (js/27-achievements.js). */
+  achSweep();
   if(!window.storage)return Promise.resolve();
   return window.storage.set(PROG_KEY,JSON.stringify(progress)).catch(function(){});
 }

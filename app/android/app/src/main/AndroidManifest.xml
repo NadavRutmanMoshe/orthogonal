@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- allowBackup="true" IS THE PROGRESS BACKUP. Android copies the app's
          data - the WebView's localStorage, which holds every orthogonal:*
@@ -40,6 +41,24 @@
         <meta-data
             android:name="com.google.android.gms.ads.DELAY_APP_MEASUREMENT_INIT"
             android:value="true"/>
+
+        <!-- PLAY GAMES, for the achievements (AchievementsPlugin.java). The
+             id is the number Play Console shows for the Games Services
+             project, and it lives in res/values/strings.xml; while that is
+             empty the plugin never starts the SDK and every achievement
+             call answers "no".
+
+             THE SDK'S OWN START-UP IS REMOVED. PlayGamesInitProvider starts
+             Play Games at launch whether or not there is an id, and with no
+             id that is the "fatal developer error" crash. The plugin starts
+             it by hand instead, and only when the id is there. -->
+        <meta-data
+            android:name="com.google.android.gms.games.APP_ID"
+            android:value="@string/game_services_project_id"/>
+        <provider
+            android:name="com.google.android.gms.games.provider.PlayGamesInitProvider"
+            android:authorities="${applicationId}.playgamesinitprovider"
+            tools:node="remove"/>
 
         <!-- PORTRAIT, LOCKED, on the owner's call after looking at it on a real
              phone. Landscape was never designed: the level, the home screen and

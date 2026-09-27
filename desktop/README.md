@@ -11,7 +11,7 @@ What the shell adds, and nothing else:
 |---|---|
 | `window.STEAM`, so `steamBuild()` grants everything | `preload.js` |
 | The save as a **file per Steam account**, for Steam Cloud | `main.js`, "THE SAVE" |
-| Achievements reported to Steam | `main.js` (the reporting), `js/27-steam.js` (which ones, read off the save) |
+| Achievements reported to Steam | `main.js` (the reporting, `window.cubeSteam`), `js/27-achievements.js` (which ones - the list every store shares) |
 | The overlay, `restartAppIfNecessary`, the Deck's on-screen keyboard | `main.js`, `preload.js` |
 | No menu bar, full screen remembered, sound without a click (for a pad) | `main.js`, "THE WINDOW" |
 
@@ -91,30 +91,36 @@ public test app (Spacewar) and what makes a development run work at all.
 
 ### 3. Achievements (Stats & Achievements > Achievements)
 
-Thirteen. The **API name must match exactly**, or Steam refuses the unlock in
-silence (a development run prints `achievement refused` when it does). The
-names and descriptions are only a suggestion: Steam shows what is typed here,
-not what is in `js/27-steam.js`. Each needs **two icons**, the unlocked one and
-the locked one - that artwork does not exist yet.
+Fifteen. The **API name must match exactly** (they are `ACH_IDS.steam` in
+`js/27-achievements.js`, the one list every store reads), or Steam refuses
+the unlock in silence - a development run prints `achievement refused` when
+it does. The names and descriptions are only a suggestion: Steam shows what
+is typed here. Each needs **two icons**, the unlocked one and the locked
+one - that artwork does not exist yet.
+
+The first seven are the ones Game Center and Play Games have too; the last
+eight are Steam's own for now (no phone id yet).
 
 | API name | Name | Description |
 |---|---|---|
-| `WORLD_1` | Nature Walk | Finish every level in I · NATURE. |
-| `WORLD_2` | Through the Fire | Finish every level in II · FIRE. |
-| `WORLD_3` | Deep Water | Finish every level in III · WATER. |
-| `WORLD_4` | Desert Crossing | Finish every level in IV · DESERT. |
-| `BOSS_1` | Can't Catch Me | Beat BOSS I. |
-| `BOSS_2` | Off the Record | Beat BOSS II. |
-| `BOSS_3` | Search Called Off | Beat BOSS III. |
-| `BOSS_4` | Out of Their Jurisdiction | Beat BOSS IV. |
-| `STARS_1` | Green Thumb | Every star in I · NATURE. Earns the Sapling. |
-| `STARS_2` | Eruption | Every star in II · FIRE. Earns the Volcano. |
-| `STARS_3` | Big Fish | Every star in III · WATER. Earns the Minnow. |
-| `STARS_4` | Prickly | Every star in IV · DESERT. Earns the Cactus. |
-| `DOMINO` | Domino | Crush two of the pack with a single fold. |
+| `ACH_WORLD1` | Green Thumb | Every star in I · NATURE. Earns the Sapling. |
+| `ACH_WORLD2` | Eruption | Every star in II · FIRE. Earns the Volcano. |
+| `ACH_WORLD3` | Big Fish | Every star in III · WATER. Earns the Minnow. |
+| `ACH_WORLD4` | Prickly | Every star in IV · DESERT. Earns the Cactus. |
+| `ACH_WORLDS` | Four Worlds, Every Star | Every star in all four worlds. |
+| `ACH_EVERYTHING` | Nothing Left to Fold | Every star in all five worlds, EXTRA included. |
+| `ACH_DOUBLE` | Domino | Crush two of the pack with a single fold. |
+| `ACH_CLEAR1` | Nature Walk | Finish every level in I · NATURE. |
+| `ACH_CLEAR2` | Through the Fire | Finish every level in II · FIRE. |
+| `ACH_CLEAR3` | Deep Water | Finish every level in III · WATER. |
+| `ACH_CLEAR4` | Desert Crossing | Finish every level in IV · DESERT. |
+| `ACH_BOSS1` | Can't Catch Me | Beat BOSS I. |
+| `ACH_BOSS2` | Off the Record | Beat BOSS II. |
+| `ACH_BOSS3` | Search Called Off | Beat BOSS III. |
+| `ACH_BOSS4` | Out of Their Jurisdiction | Beat BOSS IV. |
 
 A skip never earns one: skips are kept apart from `progress`, and every
-achievement is read from `progress` or from a reward shape.
+achievement is read from `progress`, the star sums or a reward shape.
 
 ### 4. Steam Cloud (Steam Cloud > Settings)
 

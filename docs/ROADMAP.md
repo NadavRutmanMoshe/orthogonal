@@ -133,7 +133,7 @@
 0. **Play the computer version** (`desktop` branch): the zoom at the owner's
    own screen size, the key strip, the key-cap lesson, rebinding, and a pad.
    The Electron wrapper is built (`desktop/`, 26 Sep): the grant, the save
-   file for Steam Cloud, the 13 achievements, the Deck's zoom and glyphs.
+   file for Steam Cloud, 15 achievements (one list with the phones), the Deck's zoom and glyphs.
    What is left needs Steam itself - see the end of `desktop/README.md`.
 1. **Playtest the three phased bosses.** They are real-time, which is the one
    thing no tool here can judge, and the ramp has still barely been felt. The

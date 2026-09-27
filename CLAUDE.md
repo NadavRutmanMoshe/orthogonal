@@ -106,7 +106,7 @@ listed in `index.html`. `21-boot.js` is the only file that *runs* anything.
 | `js/24-ads.js` | rewarded video: `adChild()`, consent, preloading, `adWatch(done)`, and the per-unlock count `adToward()`. **Loaded BEFORE boot**, out of numeric order like 20, so boot starts it and nothing needs a typeof guard |
 | `js/25-shop.js` | the DEALS shelf charged for real: `shopBuy()`, `shopRestore()`, the launch sync from the store, store prices. Loaded before boot, like 24 |
 | `js/26-desk.js` | **the computer**: `deskMode()` (the DEVICE - a mouse and keyboard) and `steamBuild()` (what was PAID for), the page zoom (`applyZoom()`, `uiZoom()`), key bindings (`KEY_ACTS`, `keyOf()`, `keyAction()`), the key strip, Settings > Keys, menu navigation by keys or pad (`navRoot()`), the gamepad, the no-age-card first run, and `deskHandheld()` (a Steam Deck). Loaded before boot, like 24 |
-| `js/27-steam.js` | **Steam achievements, read off the save**: `STEAM_ACH` (13, API names that must match Steamworks), `steamAchSync()`, called from `progSave()`, `grantShape()` and boot. Does nothing without the Electron bridge. Loaded before boot |
+| `js/27-achievements.js` | the store's achievements: `ACHIEVEMENTS`, `ACH_IDS` per store, `achSweep()`. Game Center, Play Games and Steam - **one list for all three**. Steam has fifteen: the seven every store has plus eight with no phone id yet (`clear1..4`, a world finished; `boss1..4`), which an empty id keeps off the phones. Swept from `progSave()` as well as `win()`, because a world finished or a boss beaten is not always a star gained. Loaded before boot like 24 and 25. The native halves are `AchievementsPlugin.java` / `.swift`, in the app, not npm; Steam's is `window.cubeSteam` from `desktop/preload.js` |
 | `tools/steamtest.js` | **the Steam build driven for real**: `desktop/` launched as Electron by Playwright in a throwaway data folder (`IJAC_DATA`), two launches, 17 checks - the grant, the save file, achievements. `--packaged` runs the built exe. Needs no Steam |
 | `tools/storetest.js` | the ads and the shop driven through a FAKE Capacitor bridge, every path (a video closed early, a pending payment, the upgrade). Needs Playwright, like `shot.js` |
 | `tools/verify.js` | every level machine-checked: BFS, `trialSafety()`, `bossArena()`, `bosssim`, the `SECTIONS`/`LEVEL_RENAMES` invariants |
@@ -861,6 +861,18 @@ is the rule.
   keyed `world:` or `level:` plus the level NAME. A counting label may not be
   longer than the one it replaces (`adsWatchSay()`): the map's buttons already
   wrap on a 327px phone.
+- **An achievement is a QUESTION THE SAVE ALREADY ANSWERS, never a
+  counter.** A world is `sectionSpans()` (not `sectionMastered()`, which a
+  preview could fake), the double kill is owning the Domino. `achSweep()`
+  asks all seven after sign-in, after any star and after the double kill,
+  and reports every yes - re-reporting is harmless, and it is what pays old
+  saves. An id left empty in `ACH_IDS` is never sent, so it ships half set up.
+- **Play Games' own start-up is REMOVED from the manifest**
+  (`PlayGamesInitProvider`, `tools:node="remove"`) and `AchievementsPlugin`
+  starts the SDK only when `game_services_project_id` holds a number. With no
+  id it crashes the app at launch. Play Games is pinned at **21.0.0**: 22.x
+  wants minSdk 24. The iOS half is hand-added to `project.pbxproj` and has
+  not been compiled yet (`SHIPPING.md`, "As built: achievements").
 - **The plugins are pinned at 7.x** (`app/package.json`, exact): their 8.x
   lines need Capacitor 8.
 
@@ -944,10 +956,12 @@ is the rule.
   Auto-Cloud syncs. Writes go to the main process SYNCHRONOUSLY so pagehide's
   save lands. **That folder name is now every Steam player's cloud save**:
   never rename it, like an `orthogonal:*` key.
-- **Achievements are DERIVED, never event-driven** (`js/27-steam.js`):
-  `steamAchSync()` reads `progress` and `wardrobe.owned` (never `owns()`,
-  which the Steam build answers yes to by rule) and reports the earned set,
-  so an old or cloud-restored save is paid on launch. A skip never earns one.
+- **Steam's achievements are `js/27-achievements.js`'s, not a second list.**
+  The Steam-only eight (`clear`, `boss`) live beside the shared seven with
+  empty phone ids; `achMet()` reads `progress` and `wardrobe.owned` (never
+  `owns()`, which the Steam build answers yes to by rule). A skip never
+  earns one. `cubeSteam.activate()` answers whether Steam took it, and a no
+  is retried on the next sweep.
 - **A Steam Deck zooms one step more** (`deskHandheld()`, `HANDHELD` 1.2):
   800/720 put a 7-inch screen's type under a phone's. AUTO is 1.33 there, a
   960x600 page, every layout checked at it (`tools/shot.js --deck`); BIGGER

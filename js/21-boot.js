@@ -55,6 +55,10 @@ Promise.all([progLoad(),skipLoad(),failLoad(),hintLoad(),loadSettings(),
        Both return at once in a browser - see js/24-ads.js, js/25-shop.js. */
     shopBoot();
     adBoot();
+    /* The store's achievements, which sweep the save once signed in - so a
+       save that finished a world before they existed is reported too
+       (js/27-achievements.js). */
+    achBoot();
     /* A SAVE MAY ALREADY HAVE EARNED SOMETHING. The four section rewards
        were added after people had finished sections, and the payout in win()
        only fires on the star that completes one - so an existing save would
@@ -62,9 +66,6 @@ Promise.all([progLoad(),skipLoad(),failLoad(),hintLoad(),loadSettings(),
        here, after progress and the wardrobe are both in, which is the first
        moment the question can be answered. */
     if(typeof sweepSectionRewards==="function")sweepSectionRewards();
-    /* And Steam's achievements, for the same reason: a save (or one Steam
-       Cloud just restored) may already have earned them (js/27-steam.js). */
-    steamAchSync();
     // nothingBehind() is in 16-panels.js, beside the other progress helpers,
     // because the home screen asks it too - to choose between START and
     // CONTINUE. One answer, so the two screens cannot disagree.

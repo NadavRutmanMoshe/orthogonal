@@ -9,10 +9,12 @@
                          keeps (see THE SAVE there). js/00-storage.js only
                          defines its localStorage shim when window.storage is
                          missing, so it steps aside without a line changing.
-   window.steamBridge    achievements out (js/27-steam.js) and a little
-                         about where we are running.
+   window.cubeSteam      activate(apiName), the Steam slot
+                         js/27-achievements.js was written against.
+   window.steamBridge    a little about where we are running: Steam or not,
+                         and why not, and whether this is a Deck.
 
-   contextIsolation is on and this runs sandboxed: the page gets these three
+   contextIsolation is on and this runs sandboxed: the page gets these four
    names and no Node at all. */
 const {contextBridge,ipcRenderer}=require("electron");
 
@@ -49,8 +51,10 @@ contextBridge.exposeInMainWorld("storage",{
 contextBridge.exposeInMainWorld("steamBridge",{
   online:!!info.steam,   // Steam answered; false in a development run without it
   why:info.why||"",      // and if it did not, what steamworks.js said
-  deck:!!info.deck,
-  achieve(ids){ipcRenderer.send("steam:achieve",[].concat(ids).map(String));}
+  deck:!!info.deck
+});
+contextBridge.exposeInMainWorld("cubeSteam",{
+  activate(name){return ipcRenderer.invoke("steam:activate",String(name));}
 });
 
 /* THE DECK'S KEYBOARD. A Deck has no keys, so focusing a text field asks

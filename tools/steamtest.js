@@ -36,6 +36,10 @@ const PACKAGED=process.argv.includes("--packaged");
 const EXE=path.join(DESK,"dist","win-unpacked","ImJustACube.exe");
 
 let pass=0, fail=0;
+// The Steam API names main.js was asked to unlock, from its offline log.
+const WANT="ACH_BOSS1,ACH_CLEAR1,ACH_DOUBLE";
+const said=l=>[...new Set((l.join("").match(/would unlock: \S+/g)||[])
+  .map(x=>x.replace("would unlock: ","")))].sort().join(",");
 function check(what,ok,extra){
   if(ok){pass++;console.log("  ok   "+what);}
   else{fail++;console.log("  FAIL "+what+(extra!==undefined?"  ("+extra+")":""));}
@@ -51,7 +55,7 @@ async function launch(){
   app.process().stdout.on("data",d=>log.push(String(d)));
   app.process().stderr.on("data",d=>log.push(String(d)));
   const page=await app.firstWindow();
-  await page.waitForFunction(()=>typeof progress!=="undefined"&&typeof steamAchSync==="function"&&
+  await page.waitForFunction(()=>typeof progress!=="undefined"&&typeof achSweep==="function"&&
     document.getElementById("splash")!==null,null,{timeout:30000});
   await page.waitForTimeout(1500);   // the boot promise, the sweeps
   return {app,page,log};
@@ -69,14 +73,14 @@ async function launch(){
 
   const s=await page.evaluate(()=>({
     STEAM:window.STEAM, steam:steamBuild(), desk:deskMode(),
-    bridge:!!(window.steamBridge&&window.steamBridge.achieve),
+    bridge:!!(window.cubeSteam&&window.cubeSteam.activate)&&achStore()==="steam",
     rook:owns("rook"), pass:noLimits(),
     ageCard:document.getElementById("intro").classList.contains("gone")?"gone":"up",
     full:!!document.fullscreenElement
   }));
   check("window.STEAM is set",s.STEAM===true);
   check("steamBuild() and deskMode()",s.steam&&s.desk);
-  check("the achievement bridge is there",s.bridge);
+  check("js/27-achievements.js sees the Steam slot",s.bridge);
   check("every paid shape owned, and NO LIMITS",s.rook&&s.pass);
   check("no age card on a first run",s.ageCard==="gone");
   check("the page went full screen",s.full);
@@ -88,20 +92,22 @@ async function launch(){
     !/cannot find module|specified module could not be found|\.node/i.test(why),why);
   if(why)console.log("       steamworks.js says: "+why);
 
-  // A record in every scoreable level of I · NATURE, BOSS I among them.
+  /* A record in every scoreable level of I · NATURE, BOSS I among them,
+     and the Domino. That earns the Steam-only CLEAR1 and BOSS1 and the
+     shared DOUBLE, and NOT WORLD1, which is every STAR - 99 moves is none. */
+  await page.waitForFunction(()=>ACH.signedIn,null,{timeout:10000});
   const earned=await page.evaluate(()=>{
     var n=SECTIONS[1], to=SECTIONS[2].at;
     for(var i=n.at;i<to;i++)if(!LEVELS[i].tutorial)progress[LEVELS[i].name]=99;
     progSave();
-    grantShape("domino");
-    return STEAM_ACH.filter(steamAchEarned).map(a=>a.id);
+    grantShape("domino");achSweep();
+    var sp=sectionSpans();
+    return ACHIEVEMENTS.filter(a=>achMet(a,sp)).map(a=>ACH_IDS.steam[a.id]);
   });
-  check("world I + boss I + the Domino are earned",
-    earned.join(",")==="WORLD_1,BOSS_1,DOMINO",earned.join(","));
-  await page.waitForTimeout(400);
-  const sent=log.join("").match(/would unlock: ([^\n]*)/g)||[];
-  const ids=sent.join(" ").replace(/would unlock: /g,"").trim().split(/\s+/).filter(Boolean).sort();
-  check("main.js was told, each once",ids.join(",")==="BOSS_1,DOMINO,WORLD_1",ids.join(","));
+  check("world I finished + boss I + the Domino, and not world I's stars",
+    earned.slice().sort().join(",")===WANT,earned.join(","));
+  await page.waitForTimeout(600);
+  check("main.js was asked for exactly those",said(log)===WANT,said(log));
 
   const ls=await page.evaluate(()=>{
     var n=0;for(var i=0;i<localStorage.length;i++)if(/^orthogonal:/.test(localStorage.key(i)))n++;return n;
@@ -129,9 +135,10 @@ async function launch(){
   check("progress came back from the file",back.rec===99,back.rec);
   check("the Domino came back",back.dom);
   check("still windowed, as left",!back.full);
-  const again=(log.join("").match(/would unlock: ([^\n]*)/)||[])[1]||"";
+  // achBoot() waits 2.5s after boot, off the launch path.
+  await page.waitForTimeout(3500);
   check("the boot sweep re-reports the earned set (Steam dedupes)",
-    again.split(/\s+/).sort().join(",")==="BOSS_1,DOMINO,WORLD_1",again);
+    said(log)===WANT,said(log));
   await app.close();
 
   fs.rmSync(TMP,{recursive:true,force:true});

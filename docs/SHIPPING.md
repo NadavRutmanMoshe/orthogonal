@@ -380,6 +380,72 @@ bridge.
 
 ---
 
+## As built: achievements
+
+Seven, on the owner's list: every star in world I, II, III and IV (one
+each), every star in all four, every star in all four and EXTRA, and the
+double kill. **Nothing new decides any of them**: a world is
+`sectionSpans()`, the sum the map paints and `win()` pays the world's shape
+out on, and the double kill is owning the Domino, which only that fold can
+grant. So there is no save key and no counter, and a save that earned one
+before this existed is reported on its next launch - `achSweep()` asks every
+question after sign-in, after any star and after the double kill, and
+reporting a yes twice is harmless on every store.
+
+**`js/27-achievements.js`** holds the list, the store ids per platform
+(`ACH_IDS`) and the sweep. In a browser it does nothing. It waits for the age
+card like the ads, because Game Center may put up its own sign-in sheet.
+
+**The native side is in the app, not an npm plugin**, because none fits
+Capacitor 7: `@openforge/capacitor-game-connect` stops at Capacitor 5 and the
+new ones (Sep 2026) are 0.x and need 8. Two calls each side, `signIn()` and
+`unlock({id})`, found through `capPlugin("Achievements")` like everything
+else:
+- **Android**: `AchievementsPlugin.java`, registered in `MainActivity`.
+  Play Games v2 **21.0.0**, not 22.x, which declares minSdk 24 against this
+  app's 23. **Its automatic start-up (`PlayGamesInitProvider`) is removed in
+  the manifest** and the plugin starts the SDK by hand, only when
+  `game_services_project_id` in `res/values/strings.xml` holds a number:
+  started with no id, Play Games is the "fatal developer error" crash. So the
+  build ships safely before Play Console is set up, and was launched on an
+  emulator that way (26 Sep): the plugin is on the bridge, and both calls
+  answer "no" rather than hanging. It never shows a sign-in screen; Play Games
+  v2 signs in on its own and this only asks.
+- **iOS**: `AchievementsPlugin.swift`, registered by `AppViewController.swift`
+  (a `CAPBridgeViewController` that `Main.storyboard` now names instead of
+  Capacitor's own), plus `App.entitlements` for Game Center, all hand-added to
+  `project.pbxproj`. **None of it has been compiled** - that needs the Mac,
+  so the first Codemagic build is its test. If signing fails over the Game
+  Center entitlement, the App Store profile was made before the capability
+  was on the App ID: tick Game Center on the App ID and fetch the profile
+  again (`codemagic.yaml` setup step 7).
+- **Steam**: `achSteam()` finds `window.cubeSteam.activate(name)`, which
+  `desktop/preload.js` exposes over `steamworks.js` (27 Sep). **Steam has
+  fifteen, not seven**: these seven plus the eight the Steam plan promised -
+  each world finished (`clear1..4`) and each boss beaten (`boss1..4`) - which
+  sit in the same list with empty Android and iOS ids and so are never sent
+  on a phone. Adding them there is two ids each. `desktop/README.md` has the
+  API names, names and descriptions to type into Steamworks.
+
+**What is left is the owner's hands on two dashboards:**
+1. **Play Console > Play Games Services > Setup**: create the project
+   (linked to this app), add the OAuth credential it asks for (the SHA-1 of
+   the Play **app signing** key, from Setup > App integrity), then create the
+   seven achievements. Paste the project id into `strings.xml` and the seven
+   generated ids (`CgkI...`) into `ACH_IDS.android`. Play Games needs at least
+   five achievements to publish, and it is published separately from the app.
+   **Testers must be added under Play Games Services > Testers** or they see
+   nothing while the achievements are unpublished.
+2. **App Store Connect > the app > Services > Game Center**: turn it on, create
+   the seven with exactly the ids in `ACH_IDS.ios` (`imjustacube.world1` and
+   so on), and add Game Center to the version being submitted.
+3. **Both stores want art and text per achievement**: a name, a locked and an
+   unlocked description, and an icon (512x512 on Play; 512 or 1024 on Apple).
+4. **The declarations**: `docs/STORE-ANSWERS.md` has the reading taken for
+   both, and one check each that must happen before submitting.
+
+---
+
 ## The Steam grant
 
 **$6.99, and it grants `pass_all`** - by rule inside `hasPass()` when
@@ -427,13 +493,18 @@ that sells, and nothing in the save that could disagree with Steam.
 
 ### The other Steam tweaks
 
-**All six are built (26 Sep)**, in `desktop/` and `js/26-desk.js`/`27-steam.js`;
+**All six are built (26 Sep)**, in `desktop/` and `js/26-desk.js`;
 `desktop/README.md` is how to run, build and upload it and the Steamworks
 forms only the owner can fill. What each became:
 
-- **Achievements**: 13, derived from the save rather than fired from events
-  (`js/27-steam.js`), so a save earned before them - or restored by Cloud - is
-  paid on launch. The four "every star" ones read the reward shape.
+- **Achievements**: built in `js/27-achievements.js` (above, "As built:
+  achievements"), the one list every store reads. The Steam build exposes
+  `window.cubeSteam.activate(name)` from `desktop/preload.js`, and Steam has
+  **fifteen**: the seven every store has plus eight Steam-only ones - each
+  world finished and each boss beaten - that the Steam plan promised and
+  that have no phone id yet. Derived from the save, so an old or
+  cloud-restored save is paid on launch. The API names are in
+  `ACH_IDS.steam` and `desktop/README.md`.
 - **Steam Cloud**: not over localStorage but over a FILE,
   `%APPDATA%/ImJustACube/<SteamID64>/save.json`, which the preload's
   `window.storage` writes and Auto-Cloud syncs. No cloud code at all; one
@@ -449,10 +520,6 @@ forms only the owner can fill. What each became:
 
 The plan as it was written, for the record:
 
-- **Achievements are already authored.** The five `reward:true` shapes, the
-  Domino feat (two of the pack in one silhouette column), the four world
-  clears and the four bosses are a 13-achievement list that needs mapping, not
-  designing.
 - **Steam Cloud** over the `orthogonal:*` keys. Those key names are every
   player's save and are never renamed, which makes them a stable sync target.
 - **Gamepad.** The game has four verbs and they all funnel through `press`,

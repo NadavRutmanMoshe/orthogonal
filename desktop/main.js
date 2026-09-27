@@ -135,24 +135,28 @@ ipcMain.on("save:set",(e,k,v)=>{save[String(k)]=String(v);saveSoon();e.returnVal
 ipcMain.on("save:del",(e,k)=>{delete save[String(k)];saveSoon();e.returnValue=true;});
 
 /* ============================================================
-   ACHIEVEMENTS. The page decides WHICH (js/27-steam.js reads them off the
-   save); this only reports them. isActivated() first, so a sweep at every
-   launch costs nothing and pops nothing twice. One store() per batch. */
-ipcMain.on("steam:achieve",(e,ids)=>{
-  if(!Array.isArray(ids))return;
+   ACHIEVEMENTS. The page decides WHICH (js/27-achievements.js asks the save
+   and calls window.cubeSteam.activate(apiName) for every yes); this only
+   reports them. isActivated() first, so the sweep at every launch pops
+   nothing twice, and the answer goes back to the page: false means "try
+   again on the next sweep". store() is batched, because a sweep on an old
+   save reports a dozen at once. */
+let storeTimer=null;
+ipcMain.handle("steam:activate",(e,name)=>{
+  name=String(name);
   // Without Steam it says what it WOULD unlock: the one way to see this
   // path work on a machine with no Steam on it (tools/steamtest.js reads it).
-  if(!steam){console.log("[steam] offline, would unlock: "+ids.join(" "));return;}
-  let any=false;
-  for(const id of ids){
-    try{
-      if(!steam.achievement.isActivated(String(id))){
-        if(steam.achievement.activate(String(id)))any=true;
-        else console.warn("[steam] achievement refused: "+id+" (is it defined in Steamworks?)");
-      }
-    }catch(err){console.warn("[steam] achievement "+id+": "+err.message);}
-  }
-  if(any)try{steam.stats.store();}catch(err){}
+  if(!steam){console.log("[steam] offline, would unlock: "+name);return false;}
+  try{
+    if(steam.achievement.isActivated(name))return true;
+    if(!steam.achievement.activate(name)){
+      console.warn("[steam] achievement refused: "+name+" (is it defined in Steamworks?)");
+      return false;
+    }
+    clearTimeout(storeTimer);
+    storeTimer=setTimeout(()=>{try{steam.stats.store();}catch(err){}},500);
+    return true;
+  }catch(err){console.warn("[steam] achievement "+name+": "+err.message);return false;}
 });
 ipcMain.on("steam:info",e=>{
   e.returnValue={steam:!!steam,why:steamWhy,deck:onDeck(),test:TEST_APP};

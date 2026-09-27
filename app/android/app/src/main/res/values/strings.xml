@@ -4,4 +4,7 @@
     <string name="title_activity_main">I\'m Just A Cube</string>
     <string name="package_name">com.nadazgames.ImJustACube</string>
     <string name="custom_url_scheme">com.nadazgames.imjustacube</string>
+    <!-- Play Games Services project id, from Play Console > Play Games
+         Services > Configuration (a number). Empty = achievements off. -->
+    <string name="game_services_project_id" translatable="false"></string>
 </resources>
