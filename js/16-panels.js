@@ -931,7 +931,12 @@ function menuPanel(){
      age sheet or drag the other two settings along with it. */
   ["medium","large"].forEach(function(m){
     bind("mSize_"+m,function(){
-      settings.size=m;saveSettings();onResize();menuPanel();
+      /* recomputeBounds() as well: LARGE also changes WHICH fit frames the
+         level (largeFit(), js/10-render.js), and that is chosen there, not in
+         fitViewSize(), which onResize() re-runs. */
+      settings.size=m;saveSettings();
+      if(L&&L.blocks&&L.blocks.length)recomputeBounds();
+      onResize();menuPanel();
     });
   });
   /* applyText() writes the body class; onResize() because the chrome it

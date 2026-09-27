@@ -2693,10 +2693,71 @@ function recomputeBounds(){
      about. */
   arenaSW=Math.max(b[0]-a[0],b[2]-a[2])+1;      // +1: blocks are a cell wide
   arenaSH=(b[1]-a[1])+1+CAM_TILT*arenaSW;
+  if(largeFitOn()&&!(typeof storyFrameBox==="function"&&storyFrameBox()))
+    largeFit();
   arenaLo=a.slice();arenaHi=b.slice();
   fitBaseY=centerT.y;
   fitSpan=(typeof storyFrameBox==="function"&&storyFrameBox())?null:drawnSpan();
   viewSizeT=fitViewSize();
+}
+/* LEVEL SIZE > LARGE FRAMES WHAT DRAWS, taken from the computer version (the
+   `pc` branch's deskFit()) on the owner's call.
+
+   The general fit above charges a cell of height 1 and a cell of depth
+   CAM_TILT in every view, and centres on the middle of the world box.
+   Through the real camera - at (0, CAM_TILT*34, 40), a 27.8 degree pitch - a
+   cell of height draws at cos (.885) and a cell of depth at sin (.466), so
+   the general fit frames a board that cannot turn well under the size it
+   fits at. This projects every cell that draws (the blocks, the start, the
+   goal, and the neighbour where he really stands, about two cells tall) in
+   every view the level can be turned to, about the board's middle, which
+   the camera orbits, and centres on the middle of that. Folded, the camera
+   is level and screen-up is plain height; the half-height is whichever of
+   the two needs more.
+
+   Only under LARGE (largeFitOn()), stacked under LARGE's own push-in, and
+   never on a boss or a trial: MEDIUM keeps the framing the owner liked, and
+   a fight's arena is framed as it always was. */
+function largeFit(){
+  var pit=Math.atan2(CAM_TILT*34,40), C=Math.cos(pit), S=Math.sin(pit);
+  var h3=(C+S)/2, locked=(L.rotate===false), views=locked?[AX[0]]:AX;
+  var cells=L.blocks.concat(L.keys||[]), i, v, p;
+  if(L.start)cells=cells.concat([L.start]);
+  if(L.goal)cells=cells.concat([L.goal]);
+  var xlo=1e9,xhi=-1e9,zlo=1e9,zhi=-1e9,loF=1e9,hiF=-1e9;
+  for(i=0;i<cells.length;i++){
+    p=cells[i];
+    xlo=Math.min(xlo,p[0]);xhi=Math.max(xhi,p[0]);
+    zlo=Math.min(zlo,p[2]);zhi=Math.max(zhi,p[2]);
+    loF=Math.min(loF,p[1]-.5);hiF=Math.max(hiF,p[1]+.5);
+  }
+  /* The camera orbits the board's middle, so every view is measured about
+     it: screen-up is C*y less S times the depth toward the camera, and
+     screen-right is the offset along r. */
+  var cx=(xlo+xhi)/2, cz=(zlo+zhi)/2;
+  var g=typeof guideSpot==="function"?guideSpot():null;
+  if(g){loF=Math.min(loF,g[3]-.5);hiF=Math.max(hiF,g[3]+1.7);}
+  var hi=-1e9, lo=1e9, halfW=0;
+  function put(px,y0,y1,pz,w){
+    var dd=(px-cx)*v.d[0]+(pz-cz)*v.d[2], u=(px-cx)*v.r[0]+(pz-cz)*v.r[2];
+    hi=Math.max(hi,C*y1-S*dd+h3); lo=Math.min(lo,C*y0-S*dd-h3);
+    halfW=Math.max(halfW,Math.abs(u)+w);
+  }
+  for(var vi=0;vi<views.length;vi++){
+    v=views[vi];
+    for(i=0;i<cells.length;i++){p=cells[i];put(p[0],p[1],p[1],p[2],.5);}
+    // He and his pedestal are about two cells tall, from his spot upward.
+    if(g)put(g[0],g[1],g[1]+1.2,g[2],.9);
+  }
+  var cy=(hi+lo)/2/C;
+  var half=Math.max((hi-lo)/2,cy-loF,hiF-cy);
+  centerT.set(cx,cy,cz);
+  arenaSW=halfW*2;
+  arenaSH=half*2;
+}
+function largeFitOn(){
+  return typeof settings!=="undefined"&&settings.size==="large"&&
+    !!L&&!L.boss&&!L.trial;
 }
 /* WHERE THE BOARD REALLY DRAWS, up and down the screen, about centerT.
 

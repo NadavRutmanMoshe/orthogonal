@@ -54,10 +54,9 @@ read off the installed APK), plus achievements and the promo tools.
   made on one and cherry-picked to the other. Say which in the commit.
 - **Changes come over ONE AT A TIME, on the owner's pick, played on the
   phone before the next** (the debug build, `app/README.md`). The branch
-  `phone-port` holds the one candidate still out, built on the mixed tree:
-  the computer's framing as Level size LARGE. It does not cherry-pick (it
-  leans on `pc`'s code) and is rewritten on `main` if picked. In so far: the
-  home ramp, the press spring, and the board kept clear of the bar.
+  `phone-port` was where the candidates were tried on the mixed tree; all
+  of them are now rewritten on `main` (the home ramp, the press spring, the
+  board kept clear of the bar, LARGE's framing) and it can be deleted.
 - **One chat, one folder, one branch, when two chats CHANGE files at the
   same time.** `orthogonal` stays on `main` and `orthogonal-pc` on `pc`; a
   parallel job gets its own git worktree named after the job, not a number:
@@ -464,6 +463,14 @@ is the rule.
   margins could not do it - the bar is pixels - and 01, 04 and 08 had their
   bottom rows under the d-pad. `fitSpan` is the drawn extent, measured once
   per level in `recomputeBounds()`; `fitBaseY` the centre it moves from.
+- **Level size > LARGE frames what DRAWS** (`largeFit()`, the computer's
+  `deskFit()` without its sideways neighbour, chosen in `recomputeBounds()`
+  by `largeFitOn()`), under LARGE's own `.82`. Never on a boss or a trial,
+  and MEDIUM is untouched, on the owner's call: as every phone's fit it was
+  too big at MEDIUM and changed how the arenas looked. World I's locked
+  boards gain the most (01, 04, 08); a board that can turn barely moves.
+  Changing Level size calls `recomputeBounds()`, because that is where the
+  fit is chosen.
 - **The home doors are a RAMP OF COLOUR** (end of `css/95-home.css`), from
   the world CONTINUE opens (`--wsec`, written by `homeSync()` beside `--sec`)
   to the wardrobe's violet, mixed in OKLCH so it walks the colour wheel.
