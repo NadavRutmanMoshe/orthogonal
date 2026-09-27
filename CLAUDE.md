@@ -32,6 +32,32 @@ it will bite the next session, a line here.**
 
 ---
 
+## Two versions: `main` is the phone, `pc` is the computer
+
+**`main` is Android and iOS. The computer version (Steam, `desktop/`,
+`js/26-desk.js`, `css/96-desk.css`) lives on the branch `pc` and is not in
+this tree.** They were one tree from the desktop merge until 27 Sep; the
+owner found the phone's display worse for it, so they were split on the
+owner's call. `main` restarted from `3302de1`, the build on the Play Store (1.0.4,
+read off the installed APK), plus achievements and the promo tools.
+
+- **NEVER MERGE ONE INTO THE OTHER - cherry-pick.** `main` was split by a
+  commit that restores the old files ON TOP of the mixed history, so git
+  believes `main` already contains every computer commit. Merging `main`
+  into `pc` would replay that restore and DELETE the computer version;
+  merging `pc` into `main` does nothing and says so. For the same reason
+  `git log main..pc` is empty - what `pc` has that `main` does not is
+  `git diff main pc`.
+- **Nothing reaches the phone without being asked for.** Add to `main` one
+  change at a time, and only what the owner picked.
+- **A fix that belongs to both** (a level, a rule, a bug in shared code) is
+  made on one and cherry-picked to the other. Say which in the commit.
+- The branch `phone-port` (the computer's framing as Level size LARGE, the
+  press spring, the home ramp) was built on the mixed tree and is NOT on
+  `main`; it has to be rebased onto it before any of it comes in.
+- The artifact is built from `main`, so it is now the phone game, on a
+  laptop too.
+
 ## What the game is
 
 **The game is called `I'm Just A Cube`.** It was `Orthogonal`; the name is
@@ -120,7 +146,8 @@ listed in `index.html`. `21-boot.js` is the only file that *runs* anything.
 | `tools/store.js` | **the store screenshot set**, ten shots numbered in upload order over `shot.js` (`--ios`, **`--ipad`** the 13" iPad at 2064x2752, which App Store Connect REQUIRES because the device family includes iPad, `--tablet` 7", `--tab10` 10", `--only NN`). **A tablet size is a CSS WIDTH, not a pixel count** - 1200x1920 as 400px at dpr 3 is a wide phone and would hide every tablet bug. The list is the memory: which screen, which `--eval`, and how long a moment has to settle before it has actually happened. **01 and 02 are a pair** - `firefold` and `fireflat`, the same board with the same two steps walked, in the volume and in the plane - and changing one means changing the other. **Play takes eight and the list is ten** on the owner's call: all ten are generated, nothing is marked `spare`, and the eight are picked in the Console. Writes `shots/play` (and `shots/ios`, `shots/tablet7`, `shots/tablet10`), beside everything else `shot.js` writes; `store/` is for moving pictures now. Output is gitignored; `docs/STORE-LISTING.md` says what each shot is for |
 | `tools/foldlevel.js` | **the fold tutorial re-skinned as FIRE, in one place**: the board `tools/video.js` opens its promo on and the board the store set's 01/02 pair is taken from. It moved out of `video.js` the moment a second tool wanted it, which is `tools/playwright.js`'s rule. **It only wears its `theme` if it plays as a custom level** - `enterPlay()` ignores a builtin's own theme and reads the INDEX, and index -1 is PROLOGUE's slate, the exact palette this was re-skinned to escape - so both callers set `playSource="library"` first |
 | `tools/promo-join.js` | **the owner's four phone takes, joined**: `shots/play/vid_N.mp4` in NUMERIC order into `promo.mp4`. **It re-encodes rather than stream-copying**, because a phone screen recorder writes variable frame rate (the four takes are 49, 57, 59 and 58fps) and copying hands the joins four timebases, which is how the audio drifts off the picture. One x264 pass at CRF 18 pins it to constant 60fps. **The only tool here that needs ffmpeg** (`winget install Gyan.FFmpeg`); it looks in PATH and then in winget's package directory, because a fresh install does not reach a shell that is already running. Not a replacement for `tools/video.js` - that one is scripted, landscape and regenerates itself; this one is four real takes and can only be re-joined |
-| `tools/video.js` | **the promo video, played by a script** - a 56s cut to `store/video/promo.webm` at 1920x1080 (Play takes a YouTube URL, and YouTube accepts webm, so no ffmpeg). The fold tutorial re-skinned as FIRE (now `tools/foldlevel.js`, shared with the store set), BOSS I killed twice, TRIAL I. **Nothing is faked**: both kills wait on `doomedCell()`, the predicate `bossFoldCrush()` itself uses, and `vidHunt()` plays the fight the way a person does - waiting to be lined up dies, because `foldKills()` wants the silhouette COLUMN while `bossLine()` charges down any shared ROW. `--frames` writes a PNG per step and is the only way to check the cut, since a webm cannot be read back |
+| `tools/video.js` | **the promo video, played by a script** - the four scenes (sting, fold, BOSS I from phase two, TRIAL I from the second core) cut to `store/video/promo.mp4` at 1920x1080 60fps with the game's own sound. **Filmed one frame at a time, not in real time**: `tools/clock.js` takes every clock away from the page (timers, rAF, `performance.now`, `Date`, CSS animations, and the AudioContext, which becomes an `OfflineAudioContext` rendered a frame at a time), so the film is a flawless 60 however slowly this laptop draws. Every real-time capture before it (Playwright's recorder, tab capture, gdigrab) could only film the frames the page managed, and that was the lag. The cost is the wait, about 12x real time on the GPU (`--soft` for SwiftShader, twice that). A step that returns a promise is started and ticked until it settles, never awaited, or both sides wait for each other. The fold tutorial re-skinned as FIRE (now `tools/foldlevel.js`, shared with the store set), BOSS I killed twice, TRIAL I. **Nothing is faked**: both kills wait on `doomedCell()`, the predicate `bossFoldCrush()` itself uses, and `vidHunt()` plays the fight the way a person does, **with the turn**: a hunter in your row across the view is a quarter turn from dead, so it walks (a BFS round the pillars) to a clean lane, prefers the one that needs the turn, and **turns BEFORE stepping in, never after** - step-then-turn-then-fold ran past a FAST hunter's aim and lost a heart on film. A lane with a pillar in it is cover, not a kill lane (the fold crushes you). With no kill on offer it lures rather than standing still, and after a kill it stands up the moment the kill cam lets go, because flat you are a whole column. The kill's replay plays out (the owner wants the death on film). Every hit on the player is counted and flagged per scene; `--log` prints each move and turn. `--frames` writes a still per step and is the only way to check the cut, since a video cannot be read back |
+| `tools/clock.js` | **the page's clock, held by the driver**: `clockScript()` is an init script that makes the game move only on `__cap.step()`, one frame at a time, sound included. `video.js` is its one user; any tool that needs a smooth capture of a real-time moment can use it the same way |
 | `tools/playwright.js` | `loadPlaywright()`, **one copy for all four drawing tools**. A global install lives under `<prefix>/lib/node_modules` on POSIX and straight under `<prefix>` on Windows, and `npm root -g` is the last resort that is right everywhere. The three inlined copies were POSIX-only |
 | `tools/curve.js`, `tools/legible.js` | the difficulty curve; squares that draw where ground is not |
 

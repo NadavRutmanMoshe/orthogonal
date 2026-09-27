@@ -2192,3 +2192,21 @@ card for one build; the owner played HIDE and kept it for the whole game, and
 the switch (`settings.goalXray`) came out with the mesh. If a level ever
 needs the goal findable behind something, that is a level problem to design
 round, not a render flag.
+
+## The phone and the computer, split (27 Sep)
+
+From the desktop merge (841e969) to b379538 the computer version and the
+phone version were one tree: `deskMode()` switched the computer's layouts,
+zoom, keys and framing on, and was meant to leave a phone exactly as it was.
+The owner played a phone build from that tree and found the display worse
+than the one on the Play Store, and asked for the two to be separated rather
+than for the difference to be hunted down.
+
+So `main` was reset, by a commit rather than a rewrite, to the tree of
+3302de1 - the Play build, confirmed by reading `BUILD` out of the APK
+installed on the owner's phone - and achievements (5efac19) and the promo
+tools (`tools/video.js`, `tools/clock.js`) were put back on top of it. The
+mixed tree is the branch `pc`, unchanged, and is the computer version from
+here. A side effect worth knowing is in CLAUDE.md: because the restore sits
+on top of the shared history, the two lines must never be merged into each
+other, only cherry-picked.
