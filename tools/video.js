@@ -1,21 +1,29 @@
 #!/usr/bin/env node
 /* The store's promo video, played by a script.
  *
- *     node tools/video.js                writes store/video/promo.webm
+ *     node tools/video.js                writes store/video/promo.mp4
  *     node tools/video.js --scene fold   just one scene, while tuning it
  *     node tools/video.js --portrait     1080x1920 instead of 1920x1080
- *     node tools/video.js --frames       also a PNG after every step
+ *     node tools/video.js --frames       also a still after every step
+ *     node tools/video.js --soft         SwiftShader instead of the GPU
  *
  * `--frames` is how this gets tuned, and it is not a debugging leftover: a
- * .webm cannot be read back by whoever is editing this file, so without it
+ * video cannot be read back by whoever is editing this file, so without it
  * the only way to know whether the fold landed, the theme applied or the
  * hunter actually died is to open the video and watch. The frames are the
  * same beats as stills, numbered in order, and they are what every timing
  * in SCENES was set against.
  *
- * PLAY TAKES A YOUTUBE URL, NOT A FILE. So this writes a .webm, which
- * YouTube accepts as an upload with no conversion, and the link off that
- * upload is what goes in the Console. Nothing here needs ffmpeg.
+ * IT IS FILMED ONE FRAME AT A TIME, NOT IN REAL TIME. tools/clock.js takes
+ * every clock away from the page, so the game only moves when this script
+ * steps it by exactly 1/60s; each frame is photographed and piped to x264,
+ * and the sound is rendered on the same clock. So the film is a flawless 60
+ * however slowly the machine draws - the old real-time capture could only
+ * film the frames the laptop managed, and that was the lag. The cost is
+ * the wait: the 18s fold scene takes three and a half minutes on the
+ * owner's GPU, six on SwiftShader. Needs ffmpeg.
+ *
+ * PLAY TAKES A YOUTUBE URL, NOT A FILE, and YouTube takes this mp4 as it is.
  *
  * WHY IT IS RECORDED AND NOT FILMED. The Android app is a WebView of this
  * same page, so the headless browser draws the same pixels a phone does -
@@ -40,22 +48,12 @@ const path=require("path"), fs=require("fs");
 const ROOT=path.join(__dirname,"..");
 const {loadPlaywright}=require("./playwright.js");
 const {findFfmpeg}=require("./ffmpeg.js");
+const {clockScript}=require("./clock.js");
 const {spawn}=require("child_process");
 
-/* THE VIEWPORT IS THE RECORDING, AND dpr MUST BE 1. This was
-   {vw:960, vh:540, dpr:2} with the recorder asked for vw*dpr - and the
-   result was the game in the TOP-LEFT QUARTER of a 1080p frame with the rest
-   empty, which is what "the promo looks weird" was.
-
-   Playwright's `recordVideo.size` does NOT respect `deviceScaleFactor`. It
-   captures the page at its CSS size and places that picture into a canvas of
-   the size asked for, scaling DOWN to fit if it has to and never UP. So a
-   960x540 CSS page handed a 1920x1080 recorder is a 960x540 picture in the
-   corner of a 1920x1080 file. The dpr was buying nothing but the mismatch,
-   and driving a 1080p recorder over a dpr-2 WebGL page for no picture is
-   also where the judder came from.
-
-   So the viewport IS the output size and dpr is 1. The game draws to canvas
+/* THE VIEWPORT IS THE FILM, at dpr 1. (It once had to be, because
+   Playwright's recorder ignored deviceScaleFactor; a screenshot does not,
+   but the reason below still holds.) The game draws to canvas
    and lays out in CSS pixels, so 1920 wide is simply the desktop layout at
    full size - the same case tools/shot.js --desktop already covers. */
 const SIZES={
@@ -107,10 +105,10 @@ const SCENES={
        animation is SPLASH_FOLD 980 + SPLASH_HOLD 520 + SPLASH_OUT 420, so
        anything under about 2300 cuts the wordmark off mid-fold. The other
        three are as short as they read. */
-    {do:`vidSting()`,                     wait:1200},   // the wordmark
+    {do:`vidSting()`,                     wait:700},    // the wordmark
     {do:`splashPoke()`,                   wait:2300},   // tapped: the animation
-    {until:`typeof homeUp==="function"&&homeUp()`, wait:1600},   // home
-    {hold:300}
+    {until:`typeof homeUp==="function"&&homeUp()`, wait:1100},   // home
+    {hold:100}
   ],
   /* 2. THE VERB, START TO FINISH. Two right, fold, two right, stand up, one
         up - and THE LAST MOVE IS THE POINT, which the previous cut was
@@ -119,38 +117,59 @@ const SCENES={
         [4,1,0]. So the unfold does not win it; one step through depth does.
         The old scene stopped at the unfold and its comment claimed it was
         "on the goal", which was never true - it simply never checked, since
-        nothing waited for a win card. This one waits for it. */
+        nothing waited for a win card. This one waits for it.
+
+        IT FAILS FIRST, on the owner's call. The obvious move - keep walking
+        right - goes straight off the edge of the gap and falls, which is
+        rule 3 and the level's own hint ("The gap is not crossable") said by
+        the board instead of the text. The level resets, and the fold is the
+        answer to a problem the viewer has just watched. The win card is on
+        screen only long enough to read "Solved": it was four seconds, and
+        the owner called that too long. */
   fold:[
-    {do:`playVid(FOLD_LEVEL)`,            wait:2600},   // read the hint
-    {do:`press("right")`,                 wait:850},
-    {do:`press("right")`,                 wait:1500},   // at the brink
-    {do:`doFlatten()`,                    wait:2400},   // THE FOLD
-    {do:`press("right")`,                 wait:800},
-    {do:`press("right")`,                 wait:1400},   // across
-    {do:`doUnflatten()`,                  wait:2300},   // stood up, one short
-    {do:`press("up")`,                    wait:1100},   // onto the goal
-    {until:`typeof levelDone!=="undefined"&&levelDone`, wait:3200},  // stars
-    {hold:900}
+    {do:`playVid(FOLD_LEVEL)`,            wait:1300},   // read the hint
+    {do:`press("right")`,                 wait:450},
+    {do:`press("right")`,                 wait:450},
+    {do:`press("right")`,                 wait:300},    // off the edge
+    {until:`!dying&&player.x===0&&!flat`, wait:600},    // fell, reset
+    {do:`press("right")`,                 wait:450},
+    {do:`press("right")`,                 wait:800},    // at the brink again
+    {do:`doFlatten()`,                    wait:1600},   // THE FOLD
+    {do:`press("right")`,                 wait:550},
+    {do:`press("right")`,                 wait:900},    // across
+    {do:`doUnflatten()`,                  wait:1500},   // stood up, one short
+    {do:`press("up")`,                    wait:700},    // onto the goal
+    {until:`typeof levelDone!=="undefined"&&levelDone`, wait:1300},  // Solved
+    {hold:100}
   ],
   /* 3. THE FIGHT, FROM PHASE TWO. The owner films the back half: phase two
         killed, then phase three, which is the one that wins the level. An
         opening phase is the tutorial of a fight and he skips it.
 
-        THE REPLAY IS SKIPPED, on his call, and by the button a player
-        presses - vidNoRep() calls replaySkip(), the same function bound to
-        #repSkip in js/19-bindings.js. It is a real skip, not a suppressed
-        film: bossPendingAdvance still waits for replayEnd() and still gets
-        its phase card, just without the second and a half of snow.
+        THE KILL PLAYS OUT. It was skipped once (vidNoRep(), which presses
+        #repSkip the moment a replay starts), and the owner's verdict on that
+        film was that the death is the part worth seeing. vidNoRep() is
+        still here for a cut that wants it.
 
         bossPhase is ZERO-INDEXED, so phase two is 1 and phase three is 2,
         and killing phase 2 wins rather than reaching a bossPhase of 3 -
         which is why the last wait is on levelOver() and not on vidPhase(). */
   boss:[
-    {do:`vidNoRep();lvVid(18);vidBossPhase(1)`,  wait:2900},  // phase two, up
+    /* THESE TWO WAITS ARE PINNED - DO NOT TRIM THEM. They look like dead
+       air, and they were cut to 900 and 300 when the owner asked for the
+       pace to come up - and the fight came out different: the hunters walk
+       during them, so they decide where the pack stands when the chase
+       starts, and the take became a plain double crush with no turns. The
+       take the owner picked ("super boss like") is the one these produce:
+       3060 here plus the 100ms of black before the fade-up is the 3160 it
+       was filmed with, then 2600. The clock makes the fight repeat exactly,
+       so the same waits always give the same fight - and any change to
+       them, or to the chase, or to BOSS I, needs the log checked again. */
+    {do:`lvVid("BOSS I - Catch Me If You Can!");vidBossPhase(1)`,  wait:3060},  // phase two, up
     {do:`vidFight(30000)`,                wait:2600},   // phase two down
-    {do:`vidFight(30000)`,                wait:700},    // phase three down
-    {until:`typeof levelOver==="function"&&levelOver()`, wait:3200},  // stars
-    {hold:900}
+    {do:`vidFight(30000)`,                wait:300},    // phase three down
+    {until:`typeof levelOver==="function"&&levelOver()`, wait:1500},  // stars
+    {hold:100}
   ],
   /* 4. THE CLOCK, AND FINISHING UNDER IT. The owner films from the second
         core: reach it, reach the third, win. That is a change of kind from
@@ -160,10 +179,10 @@ const SCENES={
         for the route to the live core and only overrides it to dodge, so it
         is never taking a blind step, and the sweep still owns the timing. */
   trial:[
-    {do:`lvVid(10);vidTrialCore(1)`,      wait:2600},   // second core live
-    {do:`vidRun(30000)`,                  wait:600},
-    {until:`typeof levelOver==="function"&&levelOver()`, wait:3200},  // stars
-    {hold:900}
+    {do:`lvVid("TRIAL I - The Metronome");vidTrialCore(1)`, wait:1400},   // second core live
+    {do:`vidRun(30000)`,                  wait:300},
+    {until:`typeof levelOver==="function"&&levelOver()`, wait:1800},  // stars, the film's last frame
+    {hold:100}
   ]
 };
 const ORDER=["open","fold","boss","trial"];
@@ -174,7 +193,16 @@ function pageHelpers(foldLevel){
   return `(() => {
     window.FOLD_LEVEL=${JSON.stringify(foldLevel)};
     /* enterPlay() from outside the menus, the way tools/shot.js does it. */
-    window.lvVid=function(i){ vidClear(); playSource="builtin"; enterPlay(LEVELS[i],i,false); };
+    /* BY NAME, NOT BY INDEX. This took 18 and 10 until 02 - Behind the Wall
+       went in and moved every later level up one: 18 became SPARRING, which
+       has no phase two to enter, and the boss scene died on it. A name is
+       what progress, the renames and the neighbour's lines are keyed by for
+       the same reason. */
+    window.lvVid=function(name){
+      var i=LEVELS.findIndex(function(l){ return l.name===name; });
+      if(i<0)throw new Error("no level called "+name);
+      vidClear(); playSource="builtin"; enterPlay(LEVELS[i],i,false);
+    };
     /* playSource MUST NOT be "builtin" here, and this lives inside a
        template literal so it carries no backticks. enterPlay() picks the
        world with applyTheme(playSource==="builtin" ? themeForLevel(lvIndex)
@@ -241,104 +269,249 @@ function pageHelpers(foldLevel){
       trialCore=Math.max(0,Math.min(TR.cores.length-1,n|0));
       buildGrid();syncHud();
     };
-    /* THE FIGHT, PLAYED. Standing still and waiting to be lined up does not
-       work and the reason is in the rules: foldKills() wants the hunter in
-       your silhouette COLUMN (same u, same y), while bossLine() gives it a
-       charge down any shared ROW - same z, or same x. Wait passively and it
-       reaches a row line long before it wanders into your column, and it
-       kills you. Three times, which is out of lives.
+    /* THE FIGHT, PLAYED WITH THE TURN. foldKills() wants the hunter in your
+       silhouette COLUMN - same height, and differing from you only along the
+       view's DEPTH. bossLine() gives a hunter a charge down any shared ROW,
+       x or z. Those are the same relation seen along two axes, and that is
+       the whole fight: a hunter lined up with you along the depth dies to
+       the fold, and one lined up across it is a quarter turn away from the
+       same thing.
 
-       So this plays the fight the way a person does. Every tick: kill if
-       the kill is there; otherwise, if it already has a row line, step
-       through depth to break it; otherwise close the gap in u. Aligning u
-       hands it a column line at the same instant it hands us the crush, and
-       that race we win - it needs bossAim() milliseconds to fire and we
-       fold on the next 90ms tick.
+       The first version of this never turned. It slid sideways, closing u
+       in the one view it had, and waited for the hunter to wander into the
+       column - which works, and which the owner watched and called out:
+       rotating is the fun part of the game, and the film did not show it.
+
+       So now it plays the way the fight is meant to be played. It WALKS to
+       a square in the hunter's row - through depth, round the pillars, by a
+       breadth-first search of the floor - and prefers the row it would have
+       to TURN to use. Standing there hands the hunter a line and hands us
+       the kill in the same instant; the ray goes down on the floor, the
+       camera turns, the world folds. That race we win: bossAim() is well
+       over a second, and a step, a turn and a fold are about half that.
 
        It resolves when the fold is away, so the caller can simply wait on
        it rather than guess how long a chase takes. */
-    var vidDepth="up";
+    /* EVERY HIT ON US, COUNTED. A promo that shows the player losing a heart
+       is a promo to re-shoot, and the first turning chase did exactly that
+       while still printing "won". The driver prints this after each scene.
+       bossHurt is a global function declaration, so wrapping it on window
+       wraps every call the game makes to it. */
+    window.vidHurt=0;
+    if(typeof bossHurt==="function"){
+      var realHurt=bossHurt;
+      window.bossHurt=function(){ window.vidHurt++; return realHurt.apply(this,arguments); };
+    }
+    /* What the chase decided and why, with --log. The film shows the result;
+       this says whether a turn happened, which on a symmetric arena a still
+       frame cannot. */
+    window.vidSay=function(what){
+      if(!window.vidLogOn)return;
+      var hs=hunters.map(function(h){return h.x+","+h.z+(h.lock>0?"*":"");}).join(" ");
+      console.log("vid: "+(performance.now()/1000).toFixed(2)+"s view "+view
+        +" me "+player.x+","+player.z+" pack "+hs+"  "+what);
+    };
+    var vidTurnDir=1;
+    /* THE BEAT BEFORE THE KILL. The owner watched turn-and-fold land inside
+       a third of a second and said it read as an insta-kill - the viewer
+       never saw WHY it worked. So after the move that sets a kill up (a turn
+       or the step into the lane) the chase holds VID_BEAT before folding,
+       and the red line on the floor grows for all of it.
+
+       This cannot lose the race, and the reason is exact: bossFoldCrush()
+       runs INSIDE doFlatten(), at commit, not when the fold is drawn - so a
+       fold pressed while the hunter still has any aim left kills it. The
+       hold is cut short when an aimed hunter's lock gets down to VID_SAFE
+       (game ms; FAST runs the lock 1.2x, so that is ~270ms of film). */
+    var VID_BEAT=750, VID_SAFE=320, vidLastAct=0, vidKillAt=0;
+    /* THE CHASE'S OWN PACE: a step every VID_STEP, and VID_TURN between a
+       turn and the step it sets up. They were 200 and 480, which is a
+       machine's pace - the owner watched the chase between the two
+       phase-three kills and called it "lots of inputs in small duration".
+       These are a quick human's. */
+    var VID_STEP=420, VID_TURN=800, vidLastStep=0;
+    function vidMinLock(){
+      var m=Infinity;
+      for(var i=0;i<hunters.length;i++) if(hunters[i].lock>0)m=Math.min(m,hunters[i].lock);
+      return m;
+    }
     window.vidHunt=function(ms){
       return new Promise(function(resolve){
         var t0=Date.now();
-        function step(dir,then){
-          var x0=player.x, z0=player.z;
-          press(dir);
-          setTimeout(function(){
-            if(player.x===x0&&player.z===z0)then(false); else then(true);
-          },240);
+        function crates(){ return (typeof liveCrates==="function")?liveCrates():[]; }
+        /* Which way to turn so that folding kills h: 0 for "fold now", +1 or
+           -1 for a quarter turn, null for no kill from here. A half turn
+           looks down the same axis as no turn, so these three cover all four
+           views. */
+        function killTurn(p,h,cr){
+          if(foldKills(R,view,p,h,cr))return 0;
+          var a=vidTurnDir, b=-vidTurnDir;
+          if(foldKills(R,(view+a+4)%4,p,h,cr))return a;
+          if(foldKills(R,(view+b+4)%4,p,h,cr))return b;
+          return null;
+        }
+        function hunterAt(x,z){
+          for(var i=0;i<hunters.length;i++)
+            if(hunters[i].x===x&&hunters[i].z===z&&hunters[i].y===player.y)return true;
+          return false;
+        }
+        function near(x,z){
+          for(var i=0;i<hunters.length;i++){
+            var h=hunters[i];
+            if(h.y===player.y&&Math.abs(h.x-x)+Math.abs(h.z-z)<=1)return true;
+          }
+          return false;
+        }
+        // Level ground only: floor under it, nothing in it, nobody on it.
+        function walkable(x,z,cr){
+          return R.solid(x,player.y-1,z,cr)&&!R.solid(x,player.y,z,cr)&&!hunterAt(x,z);
+        }
+        /* A charge from anybody but the one we are hunting. Its own line is
+           the race we mean to win; anyone else's is just a way to die. */
+        function threat(x,z,target,cr){
+          var n=0, p={x:x,y:player.y,z:z};
+          for(var i=0;i<hunters.length;i++){
+            var h=hunters[i];
+            if(h!==target&&bossLine(R,h,p,cr))n++;
+          }
+          return n;
         }
         function tick(){
           if(Date.now()-t0>ms){resolve("timeout");return;}
           if(typeof B==="undefined"||!B||!hunters||!hunters.length){resolve("clear");return;}
           if(bossPendingAdvance||bossPendingDeath){resolve("pending");return;}
-          if(flat||(typeof folding==="function"&&folding())){setTimeout(tick,90);return;}
-          var cr=(typeof liveCrates==="function")?liveCrates():[];
-          for(var i=0;i<hunters.length;i++){
-            var h=hunters[i];
-            if(doomedCell(h.x,h.y,h.z,cr)){ doFlatten(); resolve("fold"); return; }
-          }
-          var best=null,bd=1e9;
-          for(var j=0;j<hunters.length;j++){
-            var g=hunters[j], d=Math.abs(g.x-player.x)+Math.abs(g.z-player.z);
-            if(d<bd){bd=d;best=g;}
-          }
-          if(!best){setTimeout(tick,90);return;}
-          /* THE REST OF THE PACK IS THE DIFFERENCE BETWEEN A PHASE ONE AND A
-             PHASE THREE, and the first version of this chase did not look at
-             it. It tracked the nearest hunter and stepped out of THAT one's
-             row - which is correct on an arena with one hunter on it, and is
-             how you walk into the second one's row on an arena with three.
-             The owner films phases two and three, so the pack is what the
-             board is.
-
-             So every square we could be standing on next is scored against
-             every hunter EXCEPT the one we are hunting: a shared row with
-             any of them is a charge waiting to happen (bossLine() fires down
-             a shared x or z, js/03-rules.js), and those are worth a hundred
-             of anything else. The target's own row is deliberately NOT a
-             threat - closing u is exactly the race the comment above is
-             about, and it is the race we win.
-
-             Staying put is in the list on purpose. It is scored the same way
-             and sometimes wins, which is how the chase waits out a bad beat
-             instead of shuffling into something worse. */
-          var tu=R.uOf(view,best.x,best.z);
-          function threat(x,z){
-            var n=0;
-            for(var k=0;k<hunters.length;k++){
-              var h2=hunters[k];
-              if(h2===best)continue;
-              if(h2.y===player.y&&(h2.x===x||h2.z===z))n++;
+          if(flat||bossHolding()||(typeof folding==="function"&&folding())){
+            setTimeout(tick,90);return;}
+          var cr=crates(), i;
+          // The kill, if it is there - turning first if that is what it takes.
+          for(i=0;i<hunters.length;i++){
+            var k=killTurn(player,hunters[i],cr);
+            if(k===0){
+              /* The beat runs from whichever came last: our own move, or the
+                 moment the kill first appeared (a hunter walking straight
+                 into our column is a set-up too, and deserves the same). */
+              if(!vidKillAt)vidKillAt=Date.now();
+              if(Date.now()-Math.max(vidLastAct,vidKillAt)<VID_BEAT&&vidMinLock()>VID_SAFE){
+                setTimeout(tick,30); return; }
+              vidKillAt=0;
+              vidSay("fold"); doFlatten(); resolve("fold"); return;
             }
-            return n;
           }
-          var r=AX[view].r, dp=AX[view].d;
-          var ds=[{n:"right",dx:r[0],dz:r[2]},{n:"left",dx:-r[0],dz:-r[2]},
-                  {n:"up",dx:-dp[0],dz:-dp[2]},{n:"down",dx:dp[0],dz:dp[2]}];
-          var opts=[{n:null,x:player.x,z:player.z}];
-          for(var m=0;m<ds.length;m++){
-            var o=ds[m], nx=player.x+o.dx, nz=player.z+o.dz;
-            if(!(R.solid(nx,player.y-1,nz,cr)||R.solid(nx,player.y,nz,cr)))continue;
-            opts.push({n:o.n,x:nx,z:nz});
+          vidKillAt=0;
+          for(i=0;i<hunters.length;i++){
+            var k2=killTurn(player,hunters[i],cr);
+            if(k2!==null){
+              vidSay("turn "+k2+" (lined up)"); rotateView(k2); vidTurnDir=-vidTurnDir;
+              vidLastAct=Date.now();
+              /* It walked into OUR lane, so it is already aiming: turn and
+                 fold nearly together. The camera still visibly swings - the
+                 fold starts while it is finishing - and the race stays ours. */
+              setTimeout(tick,160); return;
+            }
           }
-          var pick=null, ps=1e9;
-          for(var q=0;q<opts.length;q++){
-            var c=opts[q];
-            var sc=threat(c.x,c.z)*100+Math.abs(R.uOf(view,c.x,c.z)-tu);
-            if(sc<ps){ps=sc;pick=c;}
+          /* Otherwise walk. Breadth-first over the floor from where we stand;
+             every square that would offer a kill on some hunter is a goal,
+             scored by distance, by whether it needs the turn (it should - that
+             is what the owner wants to see), and heavily by any OTHER
+             hunter's line on it. Squares next to a hunter are out: its step
+             onto you kills. */
+          var start=player.x+","+player.z, prev={}, dist={}, q=[[player.x,player.z]];
+          prev[start]=null; dist[start]=0;
+          var best=null, bs=1e9;
+          while(q.length){
+            var c=q.shift(), key=c[0]+","+c[1], d=dist[key];
+            if(d>0&&!near(c[0],c[1])){
+              var p={x:c[0],y:player.y,z:c[1]};
+              for(var j=0;j<hunters.length;j++){
+                var h=hunters[j], kt=killTurn(p,h,cr);
+                if(kt===null)continue;
+                var sc=d+(kt===0?8:0)+100*threat(c[0],c[1],h,cr);
+                if(sc<bs){bs=sc;best=key;}
+              }
+            }
+            var steps=[[1,0],[-1,0],[0,1],[0,-1]];
+            for(var s=0;s<4;s++){
+              var nx=c[0]+steps[s][0], nz=c[1]+steps[s][1], nk=nx+","+nz;
+              // Passing next to a hunter is allowed - it moves - stopping is not.
+              if(nk in dist||!walkable(nx,nz,cr))continue;
+              dist[nk]=d+1; prev[nk]=key; q.push([nx,nz]);
+            }
           }
-          if(pick&&pick.n){
-            step(pick.n,function(moved){
-              // Walled in: rock through depth so a corner cannot pin us.
-              if(!moved)step(vidDepth,function(m2){
-                if(!m2)vidDepth=(vidDepth==="up")?"down":"up";
-                tick();
-              }); else tick();
-            });
-            return;
+          /* NO KILL ON OFFER, SO SET ONE UP rather than stand still - the
+             first log of this chase was a player frozen for a second at a
+             time saying "no square to go to". BOSS I's pillars stand in rows
+             1, 3 and 5 and columns 2, 4 and 6, and a fold from a lane with a
+             pillar in it crushes you, so most lanes are cover and only the
+             clean ones are kill lanes. So: go and stand where BOTH of your
+             lanes are clean, two or three squares off the nearest hunter,
+             out of everybody's line, and let it walk into one of them. */
+          if(!best){
+            var lure=null, ls=1e9;
+            for(var lk in dist){
+              var ld=dist[lk]; if(ld>5)continue;
+              var lxy=lk.split(","), lx=+lxy[0], lz=+lxy[1];
+              if(near(lx,lz)||threat(lx,lz,null,cr))continue;
+              var nd=1e9;
+              for(var m=0;m<hunters.length;m++)
+                nd=Math.min(nd,Math.abs(hunters[m].x-lx)+Math.abs(hunters[m].z-lz));
+              var dirty=(crushedBy(R,view,lx,player.y,lz,cr)?1:0)+
+                        (crushedBy(R,(view+1)%4,lx,player.y,lz,cr)?1:0);
+              var lsc=Math.abs(nd-3)*2+dirty*3+ld*0.5;
+              if(lsc<ls){ls=lsc;lure=lk;}
+            }
+            if(!lure||lure===start){setTimeout(tick,120);return;}
+            best=lure;
           }
-          setTimeout(tick,90);
+          // Back up the path to its first step, and say it in this view's words.
+          var at=best;
+          while(prev[at]&&prev[at]!==start)at=prev[at];
+          var xy=at.split(","), dx=+xy[0]-player.x, dz=+xy[1]-player.z;
+          function dirName(){
+            var r=AX[view].r, dp=AX[view].d;
+            if(dx===r[0]&&dz===r[2])return "right";
+            if(dx===-r[0]&&dz===-r[2])return "left";
+            if(dx===-dp[0]&&dz===-dp[2])return "up";
+            if(dx===dp[0]&&dz===dp[2])return "down";
+            return null;
+          }
+          /* THE TURN COMES BEFORE THE STEP, NEVER AFTER. The hunter plants
+             the frame you step into its row, and on FAST its aim is under a
+             second; step-then-turn-then-fold ran past it often enough that
+             the first take of this chase lost a heart on film. So when the
+             next step IS the killing square and that square wants a turn,
+             the turn is taken here, out of every line, and the step and the
+             fold follow back to back. It is also how a good player does it. */
+          if(at===best){
+            var gp={x:+xy[0],y:player.y,z:+xy[1]}, gk=null;
+            for(var g=0;g<hunters.length&&gk===null;g++)gk=killTurn(gp,hunters[g],cr);
+            if(gk){
+              vidSay("turn "+gk+" before stepping in"); rotateView(gk); vidTurnDir=-vidTurnDir;
+              // Long enough to SEE the turn land before the step; the beat
+              // before the fold starts again from the step.
+              setTimeout(function(){
+                var n2=dirName();
+                if(n2){ press(n2); vidLastAct=vidLastStep=Date.now(); }
+                setTimeout(tick,60);
+              },VID_TURN);
+              return;
+            }
+          }
+          var name=dirName();
+          if(!name){setTimeout(tick,120);return;}
+          /* NO TWO STEPS CLOSER THAN VID_STEP, whatever woke this tick. The
+             step into a lane re-ticks after 60ms so the kill is checked at
+             once - and when the hunter had moved and there was no kill, that
+             same quick tick took the NEXT step too: two lefts 60ms apart,
+             which the owner spotted straight after the first phase-three
+             kill. The kill check above still runs on the quick tick; only
+             walking waits. */
+          var gap=Date.now()-vidLastStep;
+          if(gap<VID_STEP){ setTimeout(tick,VID_STEP-gap); return; }
+          vidLastStep=Date.now();
+          vidSay(name+" toward "+best);
+          press(name);
+          if(at===best)vidLastAct=Date.now();
+          setTimeout(tick,at===best?60:VID_STEP);
         }
         tick();
       });
@@ -369,8 +542,14 @@ function pageHelpers(foldLevel){
           if(bossPhase!==ph){resolve("phase");return;}
           var busy=(typeof folding==="function"&&folding())||
                    (typeof bossPendingAdvance!=="undefined"&&bossPendingAdvance);
-          if(busy){setTimeout(again,300);return;}
-          if(flat){ doUnflatten(); setTimeout(again,900); return; }
+          /* STAND UP THE MOMENT THE GAME LETS YOU. Flat you are a whole
+             column and every hunter that walks into it has a line on you,
+             so the gap between a kill and the unfold is the most dangerous
+             time in the fight. This polled at 300ms and then waited 900
+             after the unfold, and a second hunter walked into the column in
+             that gap and took a heart on film. */
+          if(busy||bossHolding()){setTimeout(again,50);return;}
+          if(flat){ vidSay("stand up"); doUnflatten(); setTimeout(again,450); return; }
           vidHunt(Math.max(2500,ms-(Date.now()-t0))).then(function(){
             setTimeout(again,800);
           });
@@ -566,65 +745,15 @@ function pageHelpers(foldLevel){
       });
     };
     /* The cut between scenes. A hard jump from a won puzzle to a boss arena
-       reads as a glitch; 420ms of black reads as an edit. It is a plain
-       overlay over everything, including the full-bleed cards. */
+       reads as a glitch; a short dip to black reads as an edit. It was
+       .42s each way with a hold on the black, and the owner asked for the
+       pace up: .25s each way now, and barely any black between. It is a
+       plain overlay over everything, including the full-bleed cards. */
     var f=document.createElement("div");
     f.style.cssText="position:fixed;inset:0;background:#000;z-index:9999;"
-      +"opacity:0;pointer-events:none;transition:opacity .42s linear";
+      +"opacity:0;pointer-events:none;transition:opacity .25s linear";
     document.body.appendChild(f);
     window.vidFade=function(on){ f.style.opacity=on?"1":"0"; };
-    /* THE RECORDER. One stream carrying both tracks, so there is no sync
-       step and nothing to drift. It is started before the first scene and
-       while the black is still up, so the film opens on black exactly as it
-       did when Playwright was doing the recording.
-
-       start(1000) asks for a chunk a second rather than one blob at the end:
-       a seventy-second 1080p take is large enough that collecting it in one
-       piece is a memory spike for no reason. */
-    window.vidRecStart=function(audioOnly){
-      return navigator.mediaDevices.getDisplayMedia({
-        video:{frameRate:60}, audio:true, preferCurrentTab:true
-      }).then(function(s){
-        window.vidStream=s; window.vidChunks=[];
-        /* THE VIDEO TRACK IS KEPT BUT NOT RECORDED. Tab audio only flows
-           while the tab capture is live, so stopping the video track to
-           save the readback would take the sound with it. It simply is not
-           handed to the recorder: a MediaStream of the audio tracks alone
-           costs nothing to encode, which is the whole point - VP8 in
-           software at 1080p is what held the picture to two frames a
-           second, and ffmpeg is taking the picture now. */
-        var st=audioOnly?new MediaStream(s.getAudioTracks()):s;
-        var mr=new MediaRecorder(st,audioOnly
-          ?{mimeType:"audio/webm;codecs=opus", audioBitsPerSecond:128000}
-          :{mimeType:"video/webm;codecs=vp8,opus",
-            videoBitsPerSecond:9000000, audioBitsPerSecond:128000});
-        mr.ondataavailable=function(e){
-          if(e.data&&e.data.size)window.vidChunks.push(e.data); };
-        window.vidRec=mr; mr.start(1000);
-        return s.getAudioTracks().length;
-      });
-    };
-    /* THE TRACKS ARE STOPPED AFTER onstop, NOT BEFORE. Killing the stream
-       first cuts the recorder off mid-flush and the last chunk never
-       arrives, which costs the end of the film - the one part that is a win
-       card. The blob leaves as a download for the same reason it is chunked:
-       it is too big to hand back through an evaluate. */
-    window.vidRecStop=function(){
-      return new Promise(function(res){
-        var mr=window.vidRec;
-        if(!mr){res(0);return;}
-        mr.onstop=function(){
-          var b=new Blob(window.vidChunks,{type:mr.mimeType||"video/webm"});
-          if(window.vidStream)
-            window.vidStream.getTracks().forEach(function(t){t.stop();});
-          var a=document.createElement("a");
-          a.href=URL.createObjectURL(b); a.download="promo.webm";
-          document.body.appendChild(a); a.click();
-          res(b.size);
-        };
-        mr.stop();
-      });
-    };
   })()`;
 }
 
@@ -637,399 +766,232 @@ async function main(){
      manoeuvres, and vidHunt() takes the shortest line. If the fight is being
      lost rather than won, this is the dial to check before rewriting the
      chase - see the note on SPEED_SCALE in js/11-sound.js. */
-  /* HEADED AND ffmpeg ARE THE DEFAULT, because they are the only combination
-     that produces a watchable film. Measured on this machine, per capture
-     path, same scenes:
-
-       Playwright recordVideo      25fps hard, NO audio track at all
-       tab capture, headless       ~2fps at 1080p, ~12fps at 720p, audio ok
-       tab capture, headed kiosk   ~2fps - so it was never the compositor
-       ffmpeg gdigrab, headed      the display's own rate
-
-     The first three all fail on the same thing: the picture has to be read
-     back out of a software-rendered WebGL surface and then encoded to VP8 in
-     software, per frame, inside the browser. gdigrab takes the pixels the
-     desktop has already composited and x264 ultrafast encodes an order of
-     magnitude faster than Chrome's VP8 does, so neither cost is paid.
-
-     --headless still works and is left in for a quick check of a scene's
-     TIMING, where the frame rate does not matter; it warns, because a film
-     made that way is not one to upload. */
-  const HEADED=!args.includes("--headless");
   const SPEED=arg("--speed")||"fast";
   if(["slow","regular","fast"].indexOf(SPEED)<0){
     console.error("--speed is slow, regular or fast"); process.exit(1); }
+  const FPS=+(arg("--fps")||60);
   const S=SIZES[args.includes("--portrait")?"port":
                 args.includes("--720")?"hd":"land"];
   const out=path.join(ROOT,S.out);
   fs.rmSync(out,{recursive:true,force:true});
   fs.mkdirSync(out,{recursive:true});
+  const FF=findFfmpeg();
 
   const pw=loadPlaywright();
-  /* SWIFTSHADER IS THE DEFAULT ON PURPOSE - software GL draws the same
-     picture on any machine, which is what makes a re-record comparable to
-     the one before it. --gpu asks for the real one instead, and is a
-     measuring tool rather than a shipping mode: it says whether the page is
-     being held back by the rasteriser. It usually is not the thing worth
-     fixing, because Playwright's recorder writes 25fps whatever the page
-     manages - see the note on the frame rate below. */
-  const gl=args.includes("--gpu")
-    ? ["--ignore-gpu-blocklist","--enable-gpu-rasterization"]
-    : ["--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader"];
-  /* THE PAGE RECORDS ITSELF, and these four flags are what let it. Chromium
-     can capture its own tab through getDisplayMedia({preferCurrentTab}),
-     picture AND sound, and MediaRecorder writes the pair into one webm - so
-     the audio cannot drift from the video, because they were never two
-     files. Headless supports it; measured 1920x1080 at 60 with a video and
-     an audio track before this was written.
-
-     THIS REPLACES PLAYWRIGHT'S OWN RECORDER, which could not do the job:
-     recordVideo writes a hard 25fps (r_frame_rate=25/1 on every file it
-     made) and captures NO AUDIO AT ALL - not a silent track, no stream.
-     Those are properties of that recorder, not of the game, which is why no
-     amount of tuning the scenes fixed either one.
-
-     --use-fake-ui-for-media-stream answers the permission prompt and
-     --auto-accept-this-tab-capture answers the picker, neither of which a
-     headless run has anybody to click. */
+  /* HEADLESS, AND IT NO LONGER MATTERS HOW FAST THE PAGE IS. The frame rate
+     of the film is set by the clock in tools/clock.js, not by the machine,
+     so SwiftShader's slowness costs minutes of waiting and not a single
+     dropped frame - and software GL draws the same picture everywhere, which
+     would make one take comparable with the next. So the real GPU is the
+     default, because it only changes how long the wait is - measured on the
+     owner's MX230, 6.6 frames of work a second against SwiftShader's 3.1 -
+     and --soft is there for a take that has to match another machine's. */
+  const gl=args.includes("--soft")
+    ? ["--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader"]
+    : ["--ignore-gpu-blocklist","--enable-gpu-rasterization"];
   const browser=await pw.chromium.launch({args:gl.concat([
-    "--autoplay-policy=no-user-gesture-required",
-    "--use-fake-ui-for-media-stream",
-    "--auto-accept-this-tab-capture",
-    "--enable-usermedia-screen-capturing",
-    /* A HEADLESS TAB IS CAPTURED ON COMPOSITOR COMMITS, not at the rate the
-       page draws, and with nothing to present to there is nothing asking it
-       to commit. Without these a seventy-second film came back with a few
-       hundred frames - the page was measured at 48fps and the capture got
-       about three. These take the vsync and the cap off the compositor so a
-       commit follows each frame. */
-    "--disable-frame-rate-limit",
-    "--disable-gpu-vsync",
-    "--run-all-compositor-stages-before-draw"])
-    /* HEADED IS THE ONLY WAY TO A REAL FRAME RATE, and the flags above are
-       why: headless has no display to present to, so the compositor commits
-       a few times a second and the capture gets what it commits - measured
-       74 frames for a 31-second scene, about three a second, against a page
-       drawing at 48. Nothing turns that on from the outside.
-
-       A presented window commits at the display's refresh rate, so the same
-       capture gets 60. KIOSK is what makes it usable: the screen here is
-       exactly 1920x1080, so a window with a tab strip and a toolbar on it
-       has nowhere to put a 1080p viewport. Fullscreen hands the page the
-       whole panel, and viewport:null below lets the window decide the size
-       rather than fighting it.
-
-       NONE OF THE BROWSER IS IN THE FILM even so. getDisplayMedia with
-       preferCurrentTab captures the TAB, not the window - no toolbar, no
-       tab strip, and nothing that happens to be on the desktop. */
-    /* --kiosk DOES NOT WORK HERE and the film that proved it was a
-       recording of the whole desktop: the browser's own toolbar, a Chrome
-       translate popup, the editor behind it and the taskbar, with the game
-       in a window in the corner. Playwright launches the browser and THEN
-       opens its own window through newContext(), and that window inherits
-       none of the launch flags about window state. F11 after the page is up
-       is what actually makes it fullscreen - see goFull() below, which also
-       refuses to record if it did not take.
-
-       Translate is off because that popup appeared over the game in the
-       same take, and a promo cannot have Chrome's UI in it. */
-    .concat(HEADED?["--disable-features=Translate,TranslateUI",
-                    "--disable-infobars","--no-first-run"]:[]),
-    headless:!HEADED});
+    "--autoplay-policy=no-user-gesture-required"]), headless:true});
+  /* THE VIEWPORT IS THE FILM. Nothing but the page is in the frame - no
+     window, no taskbar, no cursor - because the picture is a screenshot of
+     the page, not of the screen. dpr is 1: the game lays out in CSS pixels,
+     so 1920 wide is simply the desktop layout at full size. */
   const ctx=await browser.newContext({
-    /* Fullscreen: the window is the viewport, and overriding it here would
-       leave the page rendering one size and the panel showing another. */
-    viewport:HEADED?null:{width:S.vw,height:S.vh},
-    deviceScaleFactor:HEADED?undefined:S.dpr,
-    reducedMotion:"no-preference",
-    /* The blob the page records comes back as a DOWNLOAD, which is how a
-       file of this size crosses out of the page without being base64'd
-       through the debugging protocol. */
-    acceptDownloads:true});
+    viewport:{width:S.vw,height:S.vh}, deviceScaleFactor:S.dpr,
+    reducedMotion:"no-preference"});
   const page=await ctx.newPage();
   const errors=[];
   page.on("pageerror",e=>errors.push(String(e)));
+  const LOG=args.includes("--log");
+  if(LOG) page.on("console",m=>{ const t=m.text(); if(t.startsWith("vid: "))console.log("\r  "+t.slice(5)); });
   /* Same guard tools/shot.js keeps: the game asks for nothing over the
      network and a request creeping back in should break loudly here. */
   await page.route(/^https?:/,r=>r.abort());
-  /* A save with the campaign part-finished, so the HUD has a star total on
-     it and the hint bulb is full - an empty save films like a demo. */
+  // The clock goes in FIRST, before any of the game can read the real one.
+  await page.addInitScript(clockScript({fps:FPS}));
   await page.addInitScript((opt)=>{ try{
     /* THE OWNER'S OWN SETTINGS, because they are part of the take: hidden
        buttons, medium board, FAST fights, landing mark on. `ui` is "none"
        rather than "hidden" - the three values loadSettings() accepts are
-       full / compact / none (js/06-persistence.js) - and the mark only ever
-       shows in the fold scene, which is the only one that stands back up.
-       seenStory1/2/3 keep the opening cutscene from playing over scene one;
-       they are in loadSettings()'s whitelist for exactly this reason.
+       full / compact / none (js/06-persistence.js). seenStory1/2/3 keep the
+       opening cutscene from playing over scene one.
 
        TEXT IS LARGE, and that one is the film's rather than the owner's. The
-       game is phone-first and its type is set in fixed pixels, so at 1920
-       CSS px the HUD is the same 12px it is on a 360px phone - which is a
-       third of the apparent size and genuinely unreadable in a listing
-       thumbnail. Menu > Text size is the game's own answer to that, one body
-       class (css/97-textsize.css), and it deliberately leaves the d-pad, the
-       turn buttons and GO 2D alone - which costs nothing here, because the
-       owner films with the buttons hidden anyway. */
-    /* VOLUME IS UP NOW, and it has to be: the film records the tab's audio,
-       so a muted save is a silent promo. It was 0 back when Playwright was
-       recording and captured no sound whatever the game did, which made
-       muting it free. volTouched is what makes a stored volume win at all
-       (loadSettings, js/06-persistence.js). */
+       game's type is set in fixed pixels, so at 1920 CSS px the HUD is the
+       same 12px it is on a 360px phone - unreadable in a listing thumbnail.
+
+       VOLUME IS UP because the soundtrack is rendered from the game's own
+       audio; a muted save is a silent promo. volTouched is what makes a
+       stored volume win at all (loadSettings, js/06-persistence.js). */
     localStorage.setItem("orthogonal:settings",JSON.stringify(
       {hintAsked:true,starAsked:true,volume:0.8,volTouched:true,
        ui:"none",size:"medium",speed:opt.speed,foldmark:"on",text:"large",
        seenStory1:true,seenStory2:true,seenStory3:true}));
-    /* A SAVE WITH THE CAMPAIGN PART-FINISHED, which this comment has always
-       promised and the code did not deliver - it wrote `{}` and the film
-       opened on an empty save. Two things needed it. The HUD's star total is
-       one, as the old comment said. The other is scene one: nothingBehind()
-       decides intro card versus HOME SCREEN, and on an empty save the sting
-       hands over to the age question, not to the home screen the owner
-       films. Progress is keyed by level NAME and an ordinary level's value
-       is a move count, so these are nine cleared boards. */
+    /* A SAVE WITH THE CAMPAIGN PART-FINISHED: the HUD has a star total on
+       it, and nothingBehind() sends the sting to the HOME SCREEN rather than
+       the age question. Progress is keyed by level NAME and an ordinary
+       level's value is a move count, so these are nine cleared boards. */
     var p={"00 - First Steps":4,"00 - First Fold":7,"01 - On Your Own":9,
            "03 - Beware of Walls":11,"04 - A Real Challenge":13,
            "05 - The Shortcut":10,"06 - The Only Way":12,
            "07 - The Illusion":14,"08 - The Block":12};
     localStorage.setItem("orthogonal:progress",JSON.stringify(p));
-  }catch(e){}
-    /* THE FILM OPENS BLACK, and it has to be done here rather than with the
-       fade overlay, because the recording starts when the CONTEXT is made -
-       which is before the page has loaded. Without it the first seconds are
-       whatever the page does while the script is still setting up.
+  }catch(e){} },{speed:SPEED});
 
-       IT USED TO BE HERE TO HIDE THE STING, and that is no longer the
-       reason - the sting is scene one now, on the owner's call. What it
-       still hides is the setup: the helpers going in, the save being read
-       and the first scene being staged all happen before any fade, and none
-       of that is anything a viewer should see. An init script runs before
-       the page's own scripts, so the black is up before anything draws. */
-    try{
-      var st=document.createElement("style");
-      st.id="vidblack";
-      st.textContent="html{background:#000!important}body{opacity:0!important}";
-      document.documentElement.appendChild(st);
-    }catch(e){}
-  },{speed:SPEED});
+  const cdp=await ctx.newCDPSession(page);
+  const DT=1000/FPS;
+
+  /* ---- the camera --------------------------------------------------------
+     tick() is one frame: step the page's clock, and if the film is rolling,
+     photograph it and hand the JPEG to ffmpeg. JPEG at 95 rather than PNG
+     because it is the one lossy step before x264's own and costs a tenth of
+     the time to encode at 1080p; nobody can see q95 under a CRF 17 encode. */
+  let ff=null, rolling=false, shot=null, nFrames=0, filmFrom=0, filmTo=0;
+  const tStart=Date.now();
+  async function tick(){
+    await page.evaluate(()=>__cap.step());
+    if(!rolling)return;
+    const r=await cdp.send("Page.captureScreenshot",
+      {format:"jpeg",quality:95,optimizeForSpeed:true});
+    shot=Buffer.from(r.data,"base64");
+    if(!ff.stdin.write(shot)) await new Promise(res=>ff.stdin.once("drain",res));
+    nFrames++;
+    if(nFrames%FPS===0){
+      const film=nFrames/FPS, real=(Date.now()-tStart)/1000;
+      process.stdout.write("\r       "+film.toFixed(0)+"s filmed  ·  "
+        +(nFrames/Math.max(1,real-rollAt)).toFixed(1)+" frames/s of work   ");
+    }
+  }
+  let rollAt=0;
+  const pump=async ms=>{ for(let i=Math.round(ms/DT);i>0;i--) await tick(); };
+  /* A WAIT ON THE GAME, in film time. The predicate is asked between frames,
+     so it is true on the first frame it can be - and "timed out" means 25
+     seconds of FILM passed, however long those took to draw. */
+  async function until(expr,ms){
+    for(let i=Math.round(ms/DT);i>0;i--){
+      if(await page.evaluate(expr))return true;
+      await tick();
+    }
+    return false;
+  }
+  /* A STEP THAT RETURNS A PROMISE cannot simply be awaited any more:
+     vidFight() resolves when a hunter dies, a hunter dies on the page's
+     clock, and the page's clock only moves when this side ticks it. Awaiting
+     it would be both sides waiting for the other. So the step is started,
+     its answer parked on window, and the frames run until it arrives. */
+  async function run(src){
+    await page.evaluate(s=>{
+      window.__said=undefined; window.__done=false;
+      Promise.resolve((0,eval)(s)).then(
+        v=>{window.__said=v; window.__done=true;},
+        e=>{window.__said="error: "+e; window.__done=true;});
+    },src);
+    // Nearly every step is synchronous and is done after one microtask.
+    if(!(await page.evaluate(()=>window.__done)))
+      await until("window.__done",60000);
+    return page.evaluate(()=>window.__said);
+  }
 
   await page.goto("file://"+path.join(ROOT,"index.html"));
-  await page.waitForFunction(()=>typeof splashState!=="undefined"&&typeof renderer!=="undefined");
-  await page.waitForTimeout(400);
-  /* THE STING IS ONLY SKIPPED WHEN IT IS NOT IN THE CUT. It is scene one
-     now, so the film that runs the whole ORDER wants it left alone and
-     ARMED, waiting to be tapped. Anything that does not open on it - a
-     single `--scene boss` while tuning, say - still gets it ended here,
-     because otherwise the wordmark is sitting over the first frame. */
+  if(!(await until("typeof splashState!=='undefined'&&typeof renderer!=='undefined'",15000))){
+    console.error("the game never booted"); await browser.close(); process.exit(1); }
+  await pump(400);
+  /* THE STING IS ONLY SKIPPED WHEN IT IS NOT IN THE CUT. It is scene one,
+     so the full film wants it left ARMED, waiting to be tapped; a single
+     `--scene boss` while tuning gets it ended here. */
   const scenes=only?[only]:ORDER;
+  for(const n of scenes) if(!SCENES[n]){
+    console.error("scenes: "+ORDER.join(", ")); await browser.close(); process.exit(1); }
   if(scenes[0]!=="open")
     await page.evaluate(()=>{ if(splashState!=="done"){splashState="running";splashEnd();} });
-  await page.waitForTimeout(400);
+  await pump(400);
   await page.evaluate(pageHelpers(FOLD_LEVEL));
-  // The fade overlay is up and black, so the opening style can come off
-  // without anything showing through.
-  await page.evaluate(()=>{ vidFade(true);
-    var st=document.getElementById("vidblack"); if(st)st.remove(); });
-  await page.waitForTimeout(300);
+  if(LOG) await page.evaluate(()=>{ window.vidLogOn=true; });
+  await page.evaluate(()=>vidFade(true));
+  /* SETTLE BEHIND THE BLACK. warmScenery() and warmStats() build the
+     sprite set and every par right after boot; on the clock that is free,
+     but it still has to have HAPPENED before the first frame is filmed. */
+  await pump(1500);
 
   const frames=args.includes("--frames");
   const fdir=path.join(ROOT,"store","frames");
   if(frames){ fs.rmSync(fdir,{recursive:true,force:true}); fs.mkdirSync(fdir,{recursive:true}); }
   let fn=0;
-  const grab=async(tag)=>{ if(!frames)return;
-    await page.screenshot({path:path.join(fdir,String(++fn).padStart(2,"0")+"-"+tag+".png")}); };
+  const grab=tag=>{ if(frames&&shot)
+    fs.writeFileSync(path.join(fdir,String(++fn).padStart(2,"0")+"-"+tag+".jpg"),shot); };
 
-  /* HOW LONG THE FILM IS, measured rather than added up from the waits.
-     The recording runs for the whole life of the context, so every second
-     spent chasing a hunter is a second of video - and the chase is the one
-     part whose length the script does not choose. Printing it per scene is
-     what keeps the cut honest: a promo that drifts past a minute is a promo
-     nobody watches to the end. */
-  /* WHAT FRAME RATE THE PAGE IS ACTUALLY DRAWING AT, measured once before
-     the film starts. The browser is on SwiftShader (software GL, for a
-     deterministic picture on any machine), and software-rasterising a 3D
-     scene at 1920x1080 is four times the work it was at 960x540. If this
-     prints something in the teens the video will judder no matter how the
-     scenes are timed, and the answer is a smaller frame - not a shorter cut.
-     It is also the first thing to check when a fight is lost: vidHunt()
-     reacts on a 90ms tick, and a starved page cannot honour that.
+  /* ROLLING. The picture goes straight into x264 at a fixed 60 - there is
+     no variable frame rate anywhere, because there was never a real-time
+     recorder. The sound joins it afterwards. */
+  const vtmp=path.join(out,"_picture.mp4"), atmp=path.join(out,"_sound.wav");
+  ff=spawn(FF,["-y","-f","image2pipe","-framerate",String(FPS),"-c:v","mjpeg",
+    "-i","-","-c:v","libx264","-preset","slow","-crf","17",
+    "-pix_fmt","yuv420p","-movflags","+faststart",vtmp],
+    {stdio:["pipe","ignore","ignore"]});
+  const ffDone=new Promise(r=>ff.on("close",r));
+  rolling=true; rollAt=(Date.now()-tStart)/1000;
+  filmFrom=await page.evaluate(()=>__cap.now());
 
-     IT SETTLES FIRST, and that is not politeness. Measured the instant the
-     helpers went in it read anywhere between 8 and 34 on the same machine,
-     because warmScenery() is building and uploading the whole sprite set on
-     an idle callback at exactly that moment (js/10-render.js). A number that
-     swings four-fold is worse than no number - it invites tuning against the
-     boot, which is the one part of the run no scene is filmed during. */
-  await page.waitForTimeout(1500);
-  const fps=await page.evaluate(()=>new Promise(res=>{
-    let n=0; const t=performance.now();
-    (function f(){ n++; if(performance.now()-t<2000)requestAnimationFrame(f);
-      else res(Math.round(n/((performance.now()-t)/1000))); })();
-  }));
-  console.log("draw   "+fps+" fps at "+S.vw+"x"+S.vh+"  ·  fights "+SPEED);
-
-  /* Rolling before the first scene is staged, and while the black is up.
-     The audio recorder goes first and ffmpeg second, and BOTH START TIMES
-     ARE KEPT: they are two recorders, so the only way the sound sits on the
-     right frame is to measure the gap between them and hand it to the mux as
-     an offset. Guessing zero put the fold's slam about a third of a second
-     early. */
-  /* FULLSCREEN, AND CHECKED. gdigrab takes the whole desktop, so the page
-     had better BE the whole desktop - and the first cut of this recorded
-     the editor, the taskbar and a translate popup because nothing asked.
-     F11 is the only thing that reliably fullscreens a Playwright-opened
-     window; the check is what turns a ruined 90-second take into an error
-     before the take. */
-  /* THE WINDOW IS PUT WHERE IT CAN BE FILMED, but nothing downstream trusts
-     that it stayed there - see the measurement before ffmpeg starts. */
-  let cdp=null, windowId=null;
-  if(HEADED){
-    cdp=await ctx.newCDPSession(page);
-    ({windowId}=await cdp.send("Browser.getWindowForTarget"));
-    await cdp.send("Browser.setWindowBounds",
-      {windowId,bounds:{windowState:"fullscreen"}});
-    await page.waitForTimeout(1200);
-  }
-  const FF=HEADED?findFfmpeg():null;
-  const vtmp=path.join(out,"_picture.mkv");
-  const atmp=path.join(out,"_sound.webm");
-  const atrk=await page.evaluate(a=>vidRecStart(a),HEADED);
-  if(!atrk) console.error("!! no audio track - the film will be silent");
-  const aAt=Date.now();
-  let ff=null, vAt=0;
-  if(HEADED){
-    /* THE FRAME IS MEASURED HERE, AFTER THE CAPTURE HAS BEEN ACCEPTED, AND
-       THAT ORDER IS THE WHOLE FIX. Going fullscreen earlier and trusting it
-       produced a film of the desktop - the browser's toolbar, the editor,
-       the Play Console and the taskbar - because accepting the tab-capture
-       prompt DROPS THE WINDOW OUT OF FULLSCREEN, after the check had already
-       passed. The check was not wrong; it was early.
-
-       So fullscreen is re-asserted once the capture is live, and then the
-       page is asked where it actually is. gdigrab films THAT RECTANGLE
-       rather than the desktop, which means the worst a restored window can
-       now cost is a smaller picture - never somebody's screen in the promo.
-       screenX/screenY are the CONTENT corner in Chrome, so no browser chrome
-       is inside it either way.
-
-       Even sizes: yuv420p halves both dimensions, and an odd one is a
-       hard encoder error rather than a rounded picture. */
-    await cdp.send("Browser.setWindowBounds",
-      {windowId,bounds:{windowState:"fullscreen"}});
-    await page.waitForTimeout(1200);
-    const r=await page.evaluate(()=>({x:screenX,y:screenY,
-      w:innerWidth,h:innerHeight,sw:screen.width,sh:screen.height}));
-    const cw=r.w-(r.w%2), ch=r.h-(r.h%2);
-    if(cw<640||ch<360){
-      console.error("!! the page is only "+cw+"x"+ch+" - nothing worth "
-        +"filming. Is another window stealing fullscreen?");
-      await browser.close(); process.exit(1);
-    }
-    if(cw!==r.sw||ch!==r.sh)
-      console.log("note   filming "+cw+"x"+ch+" at "+r.x+","+r.y
-        +" (the page), not the full "+r.sw+"x"+r.sh+" screen");
-    S.vw=cw; S.vh=ch;
-    /* -draw_mouse 0, because gdigrab paints the cursor into the picture and
-       the pointer is not part of the game. The script drives with keys and
-       the mouse never moves, so it sat in one corner of every frame. */
-    ff=spawn(FF,["-y","-f","gdigrab","-framerate","60","-draw_mouse","0",
-      "-offset_x",String(r.x),"-offset_y",String(r.y),
-      "-video_size",cw+"x"+ch,"-i","desktop",
-      "-c:v","libx264","-preset","ultrafast","-crf","16",
-      "-pix_fmt","yuv420p",vtmp],{stdio:["pipe","ignore","ignore"]});
-    vAt=Date.now();
-    await page.waitForTimeout(700);        // let it actually open the device
-  }
-
-  const t0=Date.now();
+  const t0=nFrames;
   for(const name of scenes){
     const steps=SCENES[name];
-    if(!steps){ console.error("scenes: "+ORDER.join(", ")); process.exit(1); }
-    const ts=Date.now();
-    console.log("scene "+name);
+    const fs0=nFrames;
+    console.log("\rscene "+name+" ".repeat(40));
     // The scene is set up behind the black, then faded up.
-    if(steps[0].do) await page.evaluate(steps[0].do);
-    await page.waitForTimeout(260);
+    if(steps[0].do) await run(steps[0].do);
+    await pump(100);
     await page.evaluate(()=>vidFade(false));
-    await page.waitForTimeout(steps[0].wait||900);
-    await grab(name+"-open");
+    await pump(steps[0].wait||900);
+    grab(name+"-open");
     for(const st of steps.slice(1)){
       if(st.until){
-        try{ await page.waitForFunction(st.until,null,{timeout:25000,polling:60}); }
-        catch(e){ console.error("  !! timed out waiting for "+st.until); }
+        if(!(await until(st.until,25000)))
+          console.error("\r  !! timed out waiting for "+st.until);
       }else if(st.do){
         /* WHAT THE STEP ANSWERED. vidHunt() and vidRun() both resolve with a
            word saying how they ended - "fold" is a kill, "pending" is a
-           death waiting on a film, "timeout" is neither - and the driver
-           used to drop it on the floor. That is most of why a lost fight
-           was hard to read: the scene simply took longer and nothing said
-           why. Anything that answers gets printed. */
-        const said=await page.evaluate(st.do);
+           death waiting on a film, "timeout" is neither. */
+        const said=await run(st.do);
         if(said!==undefined&&said!==null)
-          console.log("       "+String(st.do).slice(0,22)+" -> "+said);
+          console.log("\r       "+String(st.do).slice(0,22)+" -> "+said+" ".repeat(20));
       }
-      await page.waitForTimeout(st.wait||st.hold||600);
-      await grab(name+"-"+(st.do||st.until||"hold").replace(/[^a-z0-9]+/gi,"").slice(0,16));
+      await pump(st.wait||st.hold||600);
+      grab(name+"-"+(st.do||st.until||"hold").replace(/[^a-z0-9]+/gi,"").slice(0,16));
     }
     await page.evaluate(()=>vidFade(true));
-    await page.waitForTimeout(520);
-    console.log("      "+((Date.now()-ts)/1000).toFixed(1)+"s");
+    await pump(270);        // the .25s fade, and not a frame of black after it
+    const hurt=await page.evaluate(()=>{ const n=window.vidHurt||0; window.vidHurt=0; return n; });
+    console.log("\r      "+((nFrames-fs0)/FPS).toFixed(1)+"s"
+      +(hurt?"   !! the player was hit "+hurt+"x on film - re-shoot":"")+" ".repeat(40));
   }
-  console.log("film   "+((Date.now()-t0)/1000).toFixed(1)+"s of scenes");
+  filmTo=await page.evaluate(()=>__cap.now());
+  rolling=false;
+  ff.stdin.end();
+  await ffDone;
+  console.log("film   "+((nFrames-t0)/FPS).toFixed(1)+"s  ·  "+nFrames+" frames in "
+    +((Date.now()-tStart)/1000).toFixed(0)+"s of work");
 
-  /* The page is asked to stop and hand the blob over as a download. The
-     wait for the event is armed BEFORE the stop, or a fast flush fires it
-     while nothing is listening. */
-  const to=path.join(out,HEADED?"promo.mp4":"promo.webm");
-  const dl=page.waitForEvent("download",{timeout:60000});
-  await page.evaluate(()=>vidRecStop());
-  const got=await dl;
-  await got.saveAs(HEADED?atmp:to);
-  if(ff){
-    /* "q" on stdin is ffmpeg's own clean stop - it finalises the container.
-       Killing it leaves an mkv with no index, which is why the picture goes
-       to mkv rather than mp4 in the first place: mkv survives a bad ending,
-       mp4 does not. */
-    try{ ff.stdin.write("q"); }catch(e){}
-    await new Promise(r=>{ ff.on("close",r); setTimeout(r,8000); });
-  }
-  await page.waitForTimeout(200);
+  /* THE SOUNDTRACK, cut to exactly the frames that were filmed and handed
+     over a megabyte at a time. */
+  const snd=await page.evaluate(([a,b])=>__cap.soundtrack(a,b),[filmFrom,filmTo]);
+  if(!snd.heard) console.error("!! the game never made a sound - the film is silent");
+  if(snd.clipped) console.error("!! the film outran the sound buffer - raise audioSeconds in tools/clock.js");
+  const parts=[];
+  for(let at=0;at<snd.bytes;at+=1<<20)
+    parts.push(Buffer.from(await page.evaluate(([a,l])=>__cap.wavChunk(a,l),[at,1<<20]),"base64"));
+  fs.writeFileSync(atmp,Buffer.concat(parts));
   await ctx.close();
   await browser.close();
 
-  if(HEADED){
-    if(!fs.existsSync(vtmp)){ console.error("no picture recorded"); process.exit(1); }
-    /* THE OFFSET IS MEASURED, NOT ASSUMED. -itsoffset shifts the SOUND by
-       however much later ffmpeg started than the page's recorder did, so
-       the two line up wherever the machine happened to put them. */
-    /* NEGATIVE, AND THE SIGN IS THE WHOLE POINT. The sound recorder starts
-       first - it has to, because accepting its capture prompt is what drops
-       the window out of fullscreen, so the frame can only be measured
-       afterwards - and ffmpeg starts a couple of seconds later. A sample
-       taken at wall-clock T therefore sits at (T - aAt) in the sound and
-       (T - vAt) in the picture, so lining them up wants
-       S = aAt - vAt, which is NEGATIVE.
+  const to=path.join(out,"promo.mp4");
+  const mux=spawn(FF,["-y","-i",vtmp,"-i",atmp,"-map","0:v:0","-map","1:a:0",
+    "-c:v","copy","-c:a","aac","-b:a","192k","-shortest",
+    "-movflags","+faststart",to],{stdio:["ignore","ignore","ignore"]});
+  const code=await new Promise(r=>mux.on("close",r));
+  if(code!==0){ console.error("mux failed ("+code+")"); process.exit(1); }
+  fs.rmSync(vtmp,{force:true}); fs.rmSync(atmp,{force:true});
 
-       It was written positive and went unnoticed because the gap was 19ms
-       either way. Measuring the frame after the prompt pushed the gap to
-       4.6 SECONDS, where the wrong sign does not misalign the film by a
-       little - it misaligns it by nine seconds, twice the real error. */
-    const skew=(-(vAt-aAt)/1000).toFixed(3);
-    const mux=spawn(FF,["-y","-i",vtmp,"-itsoffset",skew,"-i",atmp,
-      "-map","0:v:0","-map","1:a:0","-c:v","libx264","-preset","medium",
-      "-crf","18","-pix_fmt","yuv420p","-r","60",
-      "-c:a","aac","-b:a","160k","-shortest",to],
-      {stdio:["ignore","ignore","ignore"]});
-    const code=await new Promise(r=>mux.on("close",r));
-    if(code!==0){ console.error("mux failed ("+code+")"); process.exit(1); }
-    fs.rmSync(vtmp,{force:true}); fs.rmSync(atmp,{force:true});
-    console.log("sound offset "+skew+"s");
-  }
-
-  if(!fs.existsSync(to)){ console.error("no video written"); process.exit(1); }
   const kb=Math.round(fs.statSync(to).size/1024);
-  console.log(path.relative(ROOT,to)+"  "+kb+" KB  "+S.vw+"x"+S.vh
-    +(HEADED?"":"   !! --headless: frame rate is not usable for upload"));
+  console.log(path.relative(ROOT,to)+"  "+kb+" KB  "+S.vw*S.dpr+"x"+S.vh*S.dpr+" at "+FPS+"fps");
   const bad=errors.filter(e=>!/ERR_FAILED|ERR_CONNECTION|net::/.test(e));
   if(bad.length) console.error("page errors: "+bad.join(" | "));
 }
