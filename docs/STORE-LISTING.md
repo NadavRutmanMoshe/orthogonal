@@ -124,13 +124,13 @@ the bank, and they come back on their own.
 
 OFFLINE, AND QUIET
 
-The game makes no network request of its own. No account, no sign-in, no
+The game needs no account and makes no network request of its own. No
 analytics, no chat. No banners and nothing between levels. Your progress
 lives on your device.
 
-Two things can go online, and only when you press them: a rewarded video
-you chose to watch, and a purchase you chose to make. A player who presses
-neither is never online.
+Three things can go online: a rewarded video you chose to watch, a
+purchase you chose to make, and your achievements, which go to Game Center
+(Google Play Games on Android) if you are signed in to it on this device.
 ```
 
 ### Where each claim comes from
