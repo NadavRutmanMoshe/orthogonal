@@ -3,6 +3,7 @@
  *
  *     node tools/store.js              writes shots/play/*.png   (1080x1920)
  *     node tools/store.js --ios        the iPhone size          (1290x2796)
+ *     node tools/store.js --ios65      the 6.5" iPhone slot     (1284x2778)
  *     node tools/store.js --ipad       the iPad 13" size        (2064x2752)
  *     node tools/store.js --tablet     Play 7" tablet slot      (1200x1920)
  *     node tools/store.js --tab10      Play 10" tablet slot     (1600x2560)
@@ -53,6 +54,9 @@ const SIZES={
   play:{w:360, h:640, dpr:3, out:"shots/play"},      // 1080x1920
   /* iPhone 6.7": 1290x2796 is 430 at dpr 3. */
   ios: {w:430, h:932, dpr:3, out:"shots/ios"},       // 1290x2796
+  /* iPhone 6.5": App Store Connect can show THIS slot alone, and it takes
+     1284x2778 or 1242x2688 only. 428 at dpr 3. */
+  ios65:{w:428, h:926, dpr:3, out:"shots/ios65"},     // 1284x2778
   /* THE IPAD SLOT IS NOT OPTIONAL FOR THIS APP. App Store Connect asks for
      13-inch iPad shots from anything whose device family includes iPad, and
      ours does (TARGETED_DEVICE_FAMILY = "1,2", app/README.md) - so this is a
@@ -132,12 +136,12 @@ const SHOTS=[
 function main(){
   const args=process.argv.slice(2);
   const only=(()=>{ const i=args.indexOf("--only"); return i>=0?args[i+1]:null; })();
-  const size=SIZES[args.includes("--ios")?"ios":args.includes("--ipad")?"ipad":
+  const size=SIZES[args.includes("--ios65")?"ios65":args.includes("--ios")?"ios":args.includes("--ipad")?"ipad":
                    args.includes("--tab10")?"tab10":args.includes("--tablet")?"tab7":"play"];
   /* The two stores count differently, and the footer is the only place that
      says how many of these to actually upload. Apple takes up to TEN per
      display size and needs at least one; Play takes eight and needs two. */
-  const apple=size===SIZES.ios||size===SIZES.ipad;
+  const apple=size===SIZES.ios||size===SIZES.ios65||size===SIZES.ipad;
   const all=args.includes("--all-spares");
   const out=path.join(ROOT,size.out);
   fs.mkdirSync(out,{recursive:true});
