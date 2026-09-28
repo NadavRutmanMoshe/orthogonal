@@ -87,9 +87,19 @@ workflows:
         # into index.html, so an installed build says which commit it is.
         script: node tools/build-app.js
       - name: Sync the web root into the Xcode project
+        # THREE TRIES. `cap sync` runs pod install, which downloads the pods'
+        # binaries (the ads SDK is 11MB) - and one build died here on a
+        # download that stalled at 240KB and was dropped by the server
+        # ("curl: (92) HTTP/2 stream 1 was not closed cleanly"). A network
+        # hiccup, not the project; trying again is the whole fix.
         script: |
           cd app
-          npx cap sync ios
+          for i in 1 2 3; do
+            npx cap sync ios && exit 0
+            echo "cap sync failed (try $i of 3), retrying in 20s"
+            sleep 20
+          done
+          exit 1
       - name: pod install
         # Podfile.lock is NOT checked in - it cannot be generated on Windows,
         # where this project is developed - so the pods resolve here, per
