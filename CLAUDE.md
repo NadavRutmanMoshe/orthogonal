@@ -920,7 +920,7 @@ is the rule.
   `applyAgeBand()` for a first run - because the child flags go to Google once,
   at `initialize`. `adChild()` is true for everything but an adult band.
 - **BUMP `versionCode` BEFORE EVERY PLAY UPLOAD**
-  (`app/android/app/build.gradle`, now `5`/`"1.0.4"`). Play burns a version
+  (`app/android/app/build.gradle`, now `7`/`"1.0.5"`). Play burns a version
   code the moment it is uploaded - even if that build was never released,
   was rolled back or was deleted from a track - and refuses the next upload
   with "Version code 1 has already been used". It is the one number in this
@@ -928,10 +928,11 @@ is the rule.
   the END of the upload, after the bundle has transferred. `versionName` is
   cosmetic and may repeat; neither is `BUILD`, the commit stamp
   (`SHIPPING.md`).
-- **`AD_TEST` is `true` until the AdMob account exists**, with Google's test
-  ids; `tools/build-app.js` warns on every build. Going live is the real ids
-  in `AD_UNITS`, the app id in `AndroidManifest.xml` and Info.plist, and the
-  switch - together.
+- **`AD_TEST` is `false` - the ads are LIVE since 29 Sep** (1.0.5, versionCode
+  7). The real ids are in `AD_UNITS`, `AndroidManifest.xml` and Info.plist.
+  **Never tap your own live ads** - that is how AdMob accounts get banned; the
+  owner's phones go in AdMob > Settings > Test devices. `true` brings Google's
+  test units back and `tools/build-app.js` warns while it is.
 - **Store product ids ARE the game's ids**, plus `pass_all_upgrade`, which
   `shopUnlocks()` turns into `pass_all`: the upgrade id never enters
   `wardrobe.owned`, so `owns()` and `hasPass()` know nothing about it.

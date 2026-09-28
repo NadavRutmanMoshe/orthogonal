@@ -22,15 +22,16 @@
 /* ============================================================
    THE AD UNITS
 
-   AD_TEST IS TRUE UNTIL THE ADMOB ACCOUNT EXISTS, and the ids below are
-   Google's own public test units: they always fill, they always pay out, and
+   AD_TEST IS FALSE SINCE 29 SEP (build 1.0.5 / versionCode 7): the AdMob
+   account exists and the live ids below are its own. Set it true to get
+   Google's own public test units back: they always fill, they always pay out, and
    nobody is paid for them. Tapping your OWN live ads is how AdMob accounts
    get banned, which is why the switch to real ids is a deliberate edit and
    not something that happens on its own. Going live is three lines here and
    one in AndroidManifest.xml (the app id); tools/build-app.js warns on every
    build while this is still true, so it cannot ship by accident unnoticed.
    ============================================================ */
-var AD_TEST=true;
+var AD_TEST=false;
 var AD_UNITS={
   android:{test:"ca-app-pub-3940256099942544/5224354917",
            live:"ca-app-pub-6542623981022877/8535090358"},
