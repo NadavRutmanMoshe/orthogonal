@@ -122,6 +122,13 @@ body.flat .deathsay{color:#8a5a12;
 body.bosshold::before{content:"";position:fixed;inset:0;z-index:6;
   background:rgba(4,7,16,.5);pointer-events:none;animation:tutdim .4s ease both}
 body.flat.bosshold::before{background:rgba(90,84,68,.34)}
+/* NOT OVER A PANEL OR THE HOME SCREEN. The card's clock (bossPause) only runs
+   in bossFrame, which stops for exactly those, so leaving mid-card left it up
+   on top of the menu and the home screen with nothing to take it down. The
+   pause itself is kept: close the panel and the card is back for the time it
+   had left. Leaving the level for good goes through bossReset(). */
+body.athome .phasenote,body.mapopen .phasenote,
+body.athome.bosshold::before,body.mapopen.bosshold::before{display:none}
 
 /* ============================================================
    THE GHOST HAND - the gesture tutorial's only affordance
