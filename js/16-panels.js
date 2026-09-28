@@ -193,7 +193,9 @@ function wardrobeAt(id){
     var grid=$("wGrid"), el=grid&&grid.querySelector(".item.sel"),
         box=$("panel").querySelector(".wlist");
     if(!el||!box)return;
-    box.scrollTop+=el.getBoundingClientRect().top-box.getBoundingClientRect().top
+    // Screen pixels over the page's zoom, as the map does (uiZoom()).
+    var z=typeof uiZoom==="function"?uiZoom():1;
+    box.scrollTop+=(el.getBoundingClientRect().top-box.getBoundingClientRect().top)/z
                    -Math.max(0,(box.clientHeight-el.offsetHeight)/2);
   });
 }
@@ -1656,7 +1658,9 @@ function mapBgStart(){
   var reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches;
   var W=0,H=0,DPR=1;
   function fit(){
-    DPR=Math.min(2,window.devicePixelRatio||1);
+    // Times the tablet zoom, as the display case does (uiZoom()).
+    DPR=Math.min(3,Math.min(2,window.devicePixelRatio||1)*
+      (typeof uiZoom==="function"?uiZoom():1));
     W=c.clientWidth||1;H=c.clientHeight||1;
     c.width=Math.max(1,Math.round(W*DPR));c.height=Math.max(1,Math.round(H*DPR));
     x.setTransform(DPR,0,0,DPR,0,0);
@@ -2416,8 +2420,11 @@ function mapFocus(){
      It never mattered enough to chase while the way out was a footer button;
      it matters now that the way back to the section chooser is up there. */
   if(el&&el.getBoundingClientRect){
+    /* Rects are SCREEN pixels and scrollTop is the page's, which a tablet
+       zooms (uiZoom(), js/18-ui.js) - so the rects are brought over. */
+    var z=typeof uiZoom==="function"?uiZoom():1;
     var er=el.getBoundingClientRect(), br=body.getBoundingClientRect();
-    body.scrollTop+=(er.top-br.top)-(body.clientHeight-er.height)/2;
+    body.scrollTop+=(er.top-br.top)/z-(body.clientHeight-er.height/z)/2;
     return;
   }
   body.scrollTop=body.scrollHeight;

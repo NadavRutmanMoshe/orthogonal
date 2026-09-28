@@ -3770,6 +3770,8 @@ function updateFrustum(){
   camera.updateProjectionMatrix();
 }
 function onResize(){
+  // The tablet zoom first: the canvas's counter-zoom answers to it.
+  if(typeof applyZoom==="function")applyZoom();
   renderer.setSize(window.innerWidth,window.innerHeight);
   updateFrustum();
   previewSize();   // the display case is sized in % and needs to be re-measured

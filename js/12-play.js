@@ -2788,11 +2788,13 @@ function resetLevel(){
 function eyeCue(on,instant){
   var el=$("bLook");if(!el||!el.parentNode)return;
   if(on){
+    // In page pixels, which a tablet zooms (uiZoom(), js/18-ui.js).
+    var z=typeof uiZoom==="function"?uiZoom():1;
     var c=el.parentNode.getBoundingClientRect();
-    var hx=c.left+el.offsetLeft+el.offsetWidth/2,
-        hy=c.top+el.offsetTop+el.offsetHeight/2;
-    el.style.setProperty("--eyex",Math.round(innerWidth*.72-hx)+"px");
-    el.style.setProperty("--eyey",Math.round(innerHeight*.5-hy)+"px");
+    var hx=c.left/z+el.offsetLeft+el.offsetWidth/2,
+        hy=c.top/z+el.offsetTop+el.offsetHeight/2;
+    el.style.setProperty("--eyex",Math.round(innerWidth/z*.72-hx)+"px");
+    el.style.setProperty("--eyey",Math.round(innerHeight/z*.5-hy)+"px");
   }
   if(instant){
     el.classList.add("eyejump");

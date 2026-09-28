@@ -577,12 +577,15 @@ function flyStars(srcEls,base,gained){
   var reduce=window.matchMedia&&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if(!tgt||!gained||reduce||!srcEls.length){syncStarTotal();return;}
+  /* Screen pixels in, page pixels out: on a tablet the page is zoomed
+     (uiZoom()) and a rect is measured on the screen. */
+  var z=typeof uiZoom==="function"?uiZoom():1;
   var tb=tgt.getBoundingClientRect();
-  var tx=tb.left+tb.width/2, ty=tb.top+tb.height/2;
+  var tx=(tb.left+tb.width/2)/z, ty=(tb.top+tb.height/2)/z;
   srcEls.forEach(function(src,i){
     setTimeout(function(){
       var r=src.getBoundingClientRect();
-      var sx=r.left+r.width/2, sy=r.top+r.height/2;
+      var sx=(r.left+r.width/2)/z, sy=(r.top+r.height/2)/z;
       src.classList.add("launch");
       setTimeout(function(){src.classList.remove("launch");},220);
 
@@ -699,6 +702,50 @@ function tap(el,fn){
   el.addEventListener("click",function(e){e.preventDefault();});
 }
 function bind(id,fn){tap($(id),fn);}
+
+/* ============================================================
+   THE TABLET ZOOM - the phone's layout, grown to a tablet.
+
+   Every size in css/ is a pixel tuned on a phone, and on an iPad that is a
+   phone-sized island of 12px type in the middle of the glass. So on a
+   tablet the whole page is zoomed the way the computer version (the `pc`
+   branch) zooms it - CSS `zoom` on the root - and the game's canvas gets the
+   inverse, so the world is still drawn one CSS pixel to one screen pixel
+   and fitViewSize() still frames it against the real window. The chrome
+   grows; the board is framed exactly as before.
+
+   THE NUMBER: as much as the phone layout's own box fits. A phone is about
+   390x844 CSS pixels, and the zoom is whichever of width/390 and height/844
+   is smaller, so the layout fills the tablet's height without running off
+   its sides: 1.63 on a 13" iPad, 1.52 on a 10" Android tablet, 1.14 on a 7".
+   ONLY FROM 600 WIDE: the biggest iPhones are 430x932 and would otherwise
+   be zoomed by a tenth, and a phone is exactly what the layout was tuned on.
+
+   A RECT IS SCREEN PIXELS AND A STYLE IS PAGE PIXELS. Chrome and WebKit
+   agree on that (checked in both, with a zoomed page: getBoundingClientRect,
+   innerWidth and a touch's clientX all come back in screen pixels), so
+   swipes, taps and the editor's raycast need nothing - they compare screen
+   with screen. Anything that MEASURES the screen and WRITES a style divides
+   by uiZoom() on the way: the eye's flight, the star flight, the
+   neighbour's bubble, and the wardrobe's and the map's scroll-to-centre.
+   A new one of those is the same bug. And a canvas that lives IN the page
+   (the display case, the map's weather) is drawn that much bigger, so it
+   asks for that many more pixels to stay sharp. */
+var uiZ=1;
+function uiZoom(){return uiZ;}
+function tabletZoom(){
+  var w=window.innerWidth||390, h=window.innerHeight||844;
+  if(w<600)return 1;
+  return Math.round(Math.max(1,Math.min(2.2,w/390,h/844))*100)/100;
+}
+function applyZoom(){
+  var z=tabletZoom();
+  if(z===uiZ&&(z===1||document.documentElement.style.zoom))return;
+  uiZ=z;
+  document.documentElement.style.zoom=z===1?"":String(z);
+  var c=(typeof renderer!=="undefined"&&renderer)?renderer.domElement:null;
+  if(c)c.style.zoom=z===1?"":String(1/z);
+}
 
 /* THE PRESS SQUASHES AND SPRINGS BACK - taken from the computer version (the
    `pc` branch) on the owner's call, and ONLY with the buttons up (Controls

@@ -148,7 +148,7 @@ listed in `index.html`. `21-boot.js` is the only file that *runs* anything.
 | `js/26-achievements.js` | the store's achievements: `ACHIEVEMENTS`, `ACH_IDS` per store, `achSweep()`. Game Center, Play Games, and a Steam slot. Loaded before boot like 24 and 25. The native halves are `AchievementsPlugin.java` / `.swift`, in the app, not npm |
 | `tools/storetest.js` | the ads and the shop driven through a FAKE Capacitor bridge, every path (a video closed early, a pending payment, the upgrade). Needs Playwright, like `shot.js` |
 | `tools/verify.js` | every level machine-checked: BFS, `trialSafety()`, `bossArena()`, `bosssim`, the `SECTIONS`/`LEVEL_RENAMES` invariants |
-| `tools/shot.js` | **headless screenshots of any screen** (`node tools/shot.js --list`). The eyes for UI work. A cutscene is seekable by beat (`story1:12`), and an explicit `--wait` now beats the screen's own default. |
+| `tools/shot.js` | **headless screenshots of any screen** (`node tools/shot.js --list`). The eyes for UI work. A cutscene is seekable by beat (`story1:12`), and an explicit `--wait` now beats the screen's own default. **`--webkit` draws with Safari's engine** (Playwright's WebKit, installed once): an iPhone and an iPad draw with it. Its Windows build has NO backdrop blur at all, so a missing blur there proves nothing. |
 | `app/` | **the Capacitor shell**: `capacitor.config.json`, the generated `android/` and `ios/` projects, and `README.md` for why each non-default setting is set. `app/www/` is generated and gitignored. **The iOS project was generated ON WINDOWS and is editable here** - `cap add ios` only needs a Mac for `pod install`, which it skips; it is iPhone AND iPad, portrait-locked (`UIRequiresFullScreen`, or Apple rejects it), **iOS 16.2 because the CSS's `color-mix()` is** (StoreKit 2 alone would allow 15; `app/README.md`), and `Info.plist` carries the AdMob keys the manifest carries on Android. Only BUILDING needs a Mac, and that is `codemagic.yaml`. |
 | `codemagic.yaml` | **the cloud Mac that builds iOS**, at the repository ROOT because that is where Codemagic looks. Rented per build: clone, `npm ci`, `build-app.js`, `cap sync ios`, `pod install`, sign from an App Store Connect API key, upload to TestFlight. **It takes the next build number FROM App Store Connect** rather than guessing, which is the trap `versionCode` is on Play. No automatic trigger: a build costs minutes. Its header is the owner's one-time setup list. |
 | `tools/build-single.js` | inlines everything into one file for itch.io / the artifact |
@@ -426,6 +426,22 @@ is the rule.
   (361ms measured) and put the fade after the reveal. Measured on the real
   boot path - built 394-541ms before the screen is uncovered.
 - Panels are phone-width and centred, capped at 560px. Type starts at 12px.
+- **A TABLET ZOOMS THE WHOLE PAGE** (`applyZoom()`, `uiZoom()`,
+  `js/18-ui.js`): CSS `zoom` on the root, the inverse on the game's canvas,
+  `min(width/390, height/844)` - 1.63 on a 13" iPad, 1.14 on a 7" - and ONLY
+  from 600 wide, so every phone, the biggest iPhones included, is exactly 1.
+  The computer version's approach. **A rect is SCREEN pixels and a style is
+  PAGE pixels**, in Chrome and in WebKit alike (checked in both), and so are
+  a touch's `clientX` and `innerWidth`: swipes, taps and the editor compare
+  screen with screen and need nothing, but anything that MEASURES and then
+  WRITES a position divides by `uiZoom()` - the eye's flight, the star
+  flight, the neighbour's bubble, the wardrobe's and the map's scroll. A
+  canvas inside the page (the display case, the map's weather) asks for
+  `uiZoom()` times its pixels, over the phone's own cap, so a phone is
+  unchanged. A new one of those is the same bug.
+- **Every `backdrop-filter` carries `-webkit-backdrop-filter` beside it.**
+  Safari takes the plain one only from iOS 18; on 16.2-17 the frosted
+  buttons, panels, boss bar and map sheet would lose the blur.
 - **The five full-height panels wear one page shape**: header is title ·
   `?` · star total · `✕`; footer (`.pfoot`) is up-one-level · `CLOSE`. Adding
   a control to one of them means adding it to all five or to none. MY LEVELS

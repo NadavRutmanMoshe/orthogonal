@@ -742,7 +742,12 @@ function previewStart(cv){
      throw, and that is the whole of what the owner asked the stage to be. */
   var r=new THREE.WebGLRenderer({antialias:true,canvas:cv,alpha:true});
   r.setClearColor(0x000000,0);
-  r.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  /* Times the tablet zoom: this canvas lives IN the zoomed page (uiZoom(),
+     js/18-ui.js), so it is drawn that much bigger and needs that many more
+     pixels to stay sharp. The game's own canvas is counter-zoomed instead.
+     The phone's own cap of 2 is kept, so a phone (zoom 1) is unchanged. */
+  r.setPixelRatio(Math.min(Math.min(window.devicePixelRatio,2)*
+    (typeof uiZoom==="function"?uiZoom():1),3));
   var sc=new THREE.Scene();
   var cam=new THREE.PerspectiveCamera(34,1,.1,50);
   cam.position.set(0,.72,3.05);

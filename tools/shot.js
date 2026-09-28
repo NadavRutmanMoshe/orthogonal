@@ -21,6 +21,10 @@
  *                     names below do not reach (e.g. --eval "press('R');press('R')")
  *   --tag NAME        suffix for the file names (shots/map.NAME.png), for a
  *                     before/after pair
+ *   --webkit          Safari's engine instead of Chromium: an iPhone or an
+ *                     iPad draws the game with WebKit, and a zoomed page or
+ *                     a CSS feature can differ there. Needs Playwright's
+ *                     WebKit once: `npx playwright install webkit`
  *
  * WHY THIS EXISTS. A UI change made blind is a UI change made twice: once
  * to write it and once to fix what it looked like. This is the eyes. It
@@ -159,6 +163,7 @@ function parseArgs(argv){
     else if(a==="--ui")o.ui=next();
     else if(a==="--eval")o.evalJs=next();
     else if(a==="--tag")o.tag=next();
+    else if(a==="--webkit")o.webkit=true;
     else if(a.startsWith("--")){console.error("unknown option "+a);process.exit(2);}
     else o.screens.push(a);
   }
@@ -215,9 +220,10 @@ async function main(){
 
   const {LEVELS,SECTIONS}=levelsFromSource();
   const pw=loadPlaywright();
-  const browser=await pw.chromium.launch({args:[
-    "--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader",
-    "--autoplay-policy=no-user-gesture-required"]});
+  const browser=o.webkit?await pw.webkit.launch():
+    await pw.chromium.launch({args:[
+      "--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader",
+      "--autoplay-policy=no-user-gesture-required"]});
   fs.mkdirSync(path.join(ROOT,o.out),{recursive:true});
   const url="file://"+path.join(ROOT,"index.html");
 
