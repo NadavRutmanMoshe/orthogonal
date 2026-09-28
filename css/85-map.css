@@ -475,7 +475,7 @@ L96 14 L0 14 Z' fill='%23fff'/></svg>");
   .msheet{position:absolute;left:0;right:0;bottom:0;z-index:3;
     background:var(--panel);border-top:1px solid var(--rule);
     padding:15px 14px 16px;transform:translateY(112%);
-    transition:transform .26s cubic-bezier(.22,.72,.28,1);backdrop-filter:blur(9px)}
+    transition:transform .26s cubic-bezier(.22,.72,.28,1);-webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px)}
   .msheet.on{transform:translateY(0)}
   .msheet .mk{font-size:11px;letter-spacing:.17em;color:var(--fg-dim)}
   .msheet .mk.b{color:var(--vio)} .msheet .mk.t{color:var(--amb)}

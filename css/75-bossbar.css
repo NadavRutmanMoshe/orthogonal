@@ -97,7 +97,7 @@
         color-mix(in srgb,var(--star) 20%,transparent), transparent 72%),
       var(--panel);
     box-shadow:0 3px 0 color-mix(in srgb,var(--star) 26%,#04070d);
-    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
     font-family:'IBM Plex Mono',ui-monospace,monospace;
     color:var(--fg);transition:color .35s ease,transform .18s ease,
       border-color .35s ease}
