@@ -423,8 +423,20 @@ else:
   which the Electron preload will expose over `steamworks.js`; the API names
   are already in `ACH_IDS.steam`.
 
+**Six of the seven are INCREMENTAL on Play** (every one but the double
+kill): a progress bar on the player's profile. The step count is **100, a
+percentage of the stars**, not the star count, because Play fixes it for good
+at publishing and a new level changes a world's total. The JS sends
+`steps({id,n})` (`setSteps`, which only raises) and never `unlock()` on
+those - Play refuses that on an incremental one. iOS still takes the plain
+unlock; Game Center's `percentComplete` is the same idea, not built.
+
 **What is left is the owner's hands on two dashboards:**
-1. **Play Console > Play Games Services > Setup**: create the project
+1. **DONE 28 Sep (drafts, not published)**: project `788288092227`, OAuth
+   client, the seven created and their ids pasted in. Still to do: test on
+   the internal track as a tester, THEN publish - publishing locks the
+   type and the step count.
+   **Play Console > Play Games Services > Setup**: create the project
    (linked to this app), add the OAuth credential it asks for (the SHA-1 of
    the Play **app signing** key, from Setup > App integrity), then create the
    seven achievements. Paste the project id into `strings.xml` and the seven

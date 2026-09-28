@@ -26,14 +26,20 @@
    `secs` are SECTIONS indices, like a reward shape's `sec`: 1 NATURE,
    2 FIRE, 3 WATER, 4 DESERT, 5 EXTRA. PROLOGUE awards no stars and cannot
    be mastered. `shape` is a wardrobe id whose only way in is the feat.
+
+   `steps` marks an INCREMENTAL achievement on Play: a progress bar on the
+   player's profile instead of locked/unlocked. It is 100, a PERCENTAGE of
+   the stars, never the star count - Play fixes the step count for good the
+   moment the achievements are published, and adding a level changes a
+   world's total. A percentage survives that. Play Console must say 100 too.
    ============================================================ */
 var ACHIEVEMENTS=[
-  {id:"world1",     secs:[1]},
-  {id:"world2",     secs:[2]},
-  {id:"world3",     secs:[3]},
-  {id:"world4",     secs:[4]},
-  {id:"worlds",     secs:[1,2,3,4]},
-  {id:"everything", secs:[1,2,3,4,5]},
+  {id:"world1",     secs:[1],         steps:100},
+  {id:"world2",     secs:[2],         steps:100},
+  {id:"world3",     secs:[3],         steps:100},
+  {id:"world4",     secs:[4],         steps:100},
+  {id:"worlds",     secs:[1,2,3,4],   steps:100},
+  {id:"everything", secs:[1,2,3,4,5], steps:100},
   {id:"double",     shape:"domino"}
 ];
 
@@ -48,8 +54,10 @@ var ACHIEVEMENTS=[
    Connect > Game Center. Type exactly what is below.
    STEAM: the API names typed into Steamworks > Achievements. */
 var ACH_IDS={
-  android:{world1:"", world2:"", world3:"", world4:"",
-           worlds:"", everything:"", double:""},
+  android:{world1:"CgkIw_CGzfgWEAIQAQ", world2:"CgkIw_CGzfgWEAIQAg",
+           world3:"CgkIw_CGzfgWEAIQAw", world4:"CgkIw_CGzfgWEAIQBA",
+           worlds:"CgkIw_CGzfgWEAIQBQ", everything:"CgkIw_CGzfgWEAIQBg",
+           double:"CgkIw_CGzfgWEAIQBw"},
   ios:    {world1:"imjustacube.world1", world2:"imjustacube.world2",
            world3:"imjustacube.world3", world4:"imjustacube.world4",
            worlds:"imjustacube.worlds", everything:"imjustacube.everything",
@@ -121,6 +129,22 @@ function achMet(a,spans){
     if(!achWorldDone(spans,a.secs[i]))return false;
   return true;
 }
+/* How far along, 0..steps: the stars got over the stars there are, across
+   every section the achievement counts, rounded DOWN so it only reads full
+   when achMet() would say yes. A locked section's stars count in the total
+   and cannot be in the sum, so EXTRA holds "everything" under 100 until it
+   opens. */
+function achSteps(a,spans){
+  var got=0,max=0;
+  for(var i=0;i<a.secs.length;i++){
+    var sp=spans[a.secs[i]];
+    if(!sp)return 0;
+    max+=sp.max;
+    if(!sp.locked)got+=sp.got;
+  }
+  if(max<=0)return 0;
+  return got>=max?a.steps:Math.floor(a.steps*got/max);
+}
 
 /* ============================================================
    STARTING - after the age card, off the launch path
@@ -157,9 +181,31 @@ function achStart(){
    sectionSpans(), and a report only for what is met and not yet sent. */
 function achSweep(){
   if(!ACH.signedIn||typeof sectionSpans!=="function")return;
-  var spans=sectionSpans();
-  for(var i=0;i<ACHIEVEMENTS.length;i++)
-    if(achMet(ACHIEVEMENTS[i],spans))achieve(ACHIEVEMENTS[i].id);
+  var spans=sectionSpans(), store=achStore();
+  for(var i=0;i<ACHIEVEMENTS.length;i++){
+    var a=ACHIEVEMENTS[i];
+    /* Only Play has the incremental kind set up. Game Center takes the plain
+       unlock until its half is built. */
+    if(a.steps&&store==="android")achProgress(a.id,achSteps(a,spans));
+    else if(achMet(a,spans))achieve(a.id);
+  }
+}
+/* Tell Play how far along an incremental achievement is. setSteps only ever
+   RAISES the count and unlocks at the top, so re-sending is harmless; this
+   remembers the last number Play took this launch so a sweep after every
+   star does not re-send six unchanged numbers. unlock() is not used on
+   these - on an incremental achievement Play refuses it. */
+function achProgress(key,n){
+  if(!ACH.signedIn||n<=0)return;
+  var last=ACH.sent[key];
+  if(last==="going"||(typeof last==="number"&&last>=n))return;
+  var name=ACH_IDS.android[key];
+  if(!name||typeof achPlugin().steps!=="function")return;
+  ACH.sent[key]="going";
+  achSoon(achPlugin().steps({id:name,n:n}),ACH_CALL_MS,{ok:false}).then(function(r){
+    if(r&&r.ok)ACH.sent[key]=n;
+    else ACH.sent[key]=typeof last==="number"?last:undefined;
+  });
 }
 /* Tell the store one achievement is unlocked. Before sign-in it does
    nothing, and loses nothing: the sweep after sign-in asks again. A report

@@ -13,10 +13,11 @@ import com.google.android.gms.games.PlayGames;
 import com.google.android.gms.games.PlayGamesSdk;
 
 /* THE STORE'S ACHIEVEMENTS ON ANDROID: Google Play Games Services v2.
-   Two calls, and js/26-achievements.js is the only caller:
+   Three calls, and js/26-achievements.js is the only caller:
 
      signIn()        -> {signedIn}  is this player signed in to Play Games
      unlock({id})    -> {ok}        tell Play one achievement is unlocked
+     steps({id,n})   -> {ok}        an incremental one is n steps along
 
    It lives in the app rather than in an npm package because no maintained
    plugin fits Capacitor 7 (the ones that exist are 0.x and need 8), and what
@@ -95,6 +96,30 @@ public class AchievementsPlugin extends Plugin {
         }
         try {
             PlayGames.getAchievementsClient(getActivity()).unlock(id);
+            r.put("ok", true);
+        } catch (Exception e) {
+            r.put("ok", false);
+        }
+        call.resolve(r);
+    }
+
+    /* setSteps() rather than increment(): the game knows the TOTAL (a
+       percentage of the stars), not what changed, and setSteps only ever
+       raises the count, so sending the same number twice does nothing.
+       Queued like unlock(), and it unlocks by itself at the top. */
+    @PluginMethod
+    public void steps(PluginCall call) {
+        String id = call.getString("id");
+        Integer n = call.getInt("n");
+        JSObject r = new JSObject();
+        if (!ready || getActivity() == null || id == null || id.isEmpty()
+                || n == null || n <= 0) {
+            r.put("ok", false);
+            call.resolve(r);
+            return;
+        }
+        try {
+            PlayGames.getAchievementsClient(getActivity()).setSteps(id, n);
             r.put("ok", true);
         } catch (Exception e) {
             r.put("ok", false);

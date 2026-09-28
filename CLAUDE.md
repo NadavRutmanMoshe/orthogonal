@@ -946,6 +946,8 @@ is the rule.
   asks all seven after sign-in, after any star and after the double kill,
   and reports every yes - re-reporting is harmless, and it is what pays old
   saves. An id left empty in `ACH_IDS` is never sent, so it ships half set up.
+  **The six star ones are incremental on Play, 100 steps = a PERCENTAGE**
+  (`achSteps()`, the plugin's `steps()`), never unlocked directly.
 - **Play Games' own start-up is REMOVED from the manifest**
   (`PlayGamesInitProvider`, `tools:node="remove"`) and `AchievementsPlugin`
   starts the SDK only when `game_services_project_id` holds a number. With no
