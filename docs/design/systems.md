@@ -651,6 +651,72 @@
   - **`audio()` refuses everything while muted**, so ambience simply does not
     start; `ambSync()` is what puts it back on an unmute, and it is called
     from both the `m` key and the volume row.
+- **THE MUSIC IS ITS OWN FILE AND ITS OWN BUS** (`js/27-music.js`), and it is
+  a different thing from the ambience above: that was the world heard, this is
+  something to think to. Synthesised like everything else - there is still no
+  audio file in the project. Three instruments: a **pad** (a chord every 12 or
+  16 seconds, two detuned sawtooths a note under a low-pass that opens and
+  closes once per chord, the changes overlapping so nothing ever stops), a
+  **bass** on the root, and sparse **bells** (FM at 1:1, the electric piano
+  rather than the church bell).
+  - **No melody, no beat, no loop, on purpose.** The brief was music that does
+    not distract somebody thinking, and what pulls attention is anything the
+    ear can follow. The chords walk a weighted Markov chain over seven
+    white-key chords (`to` in `MUSIC_PIECES`), so it never settles into a
+    four-chord song you learn by the third time round. The bells are Eno's
+    Music for Airports trick: each has ONE note and its own loop length
+    (19.3s, 23.7s, 28.9s...), lengths that share no beat, so the same seven
+    notes keep meeting in combinations that do not come round again for
+    hours. It never repeats and never wanders.
+  - **IT IS IN C BECAUSE THE GAME ALREADY IS.** The footsteps are D E F G A,
+    the win chord is C E G C, the sting lands on C. White keys only, so a
+    footstep can never be a wrong note against it. The bells are the C
+    pentatonic and the two rubs left (C over a chord with B in it, E over one
+    with F) are dodged a note at a time (`musBellNote()`): a minor ninth in a
+    pad this soft reads as out of tune, not as tension. The bells also stay
+    out of D4-A4, the footsteps' own register, so a bell is never mistaken for
+    something you did.
+  - **IT JOINS THE CHAIN AFTER THE LIMITER, at the soft clipper (`shaper`).**
+    The limiter is -18 dB at a ratio of 20 behind a x16 drive, there to make
+    blips loud; a pad fed into it would be squashed, and every footstep would
+    duck the music - the limiter would pump it in time with your feet. After
+    it, the volume slider still turns the music down, and the clipper still
+    rounds off the rare footstep that lands on a swell. MUSIC_LEVEL is set
+    against that point and nowhere else.
+  - **WHEN IT PLAYS is one predicate, `musicWanted()`, asked four times a
+    second** rather than wired into every way in and out of a fight. Puzzles,
+    home, map, editor: yes. A fight (a boss or a trial, `onTheClock()`, until
+    `levelDone`), a cutscene (`storyOn()`), the sting, mute, Music at 0, a
+    hidden page: no. A fight is real time and its sounds are telegraphs; a
+    scene has its own timing and a calm bed under the abduction is the wrong
+    music. Coming back it always opens on the home chord.
+  - **THE FIRST MIX WAS 97% BASS, AND A FULL-RANGE METER SAID IT WAS FINE.**
+    It measured a sensible -26 dBFS, and through a 400Hz high-pass - what a
+    phone speaker actually plays - it was -46: near silent on the phone,
+    boomy on headphones. `tools/music.js` reports both levels for that
+    reason, and `--stems` measures each instrument alone. As tuned, at volume
+    1.0: music -28.7 dBFS RMS full range and -35 above 400Hz, loudest 0.4s at
+    -24 against a footstep's -18. No clicks, nothing past the clipper's knee
+    except a fold landing on a swell. **Balance by the phone band, not the
+    full-range number.**
+  - **THE BUDGET IS A CONVOLVER.** Measured offline on the laptop, on a blank
+    page: the first version cost 8.1% of a core, and a 3.4s stereo hall was
+    half of it. The hall is mono and 2.8s now (`musVerbBuf()`; the input is
+    folded to one channel so it is one convolution, not two) and the two saws
+    of each pad note go to opposite speakers, which is two panners a chord
+    instead of four and wider besides. 5.3% now: hall 1.7, pads 1.4, the
+    clipper (which now runs all the time, because the music goes through it)
+    about 1, bells .4, bass .3. **A phone is slower than the laptop; listen
+    for crackle there before adding a voice.**
+  - **IT STOPS WHEN THE APP DOES.** A blip ends in a tenth of a second, so the
+    game never had to care about being backgrounded; a pad does not end, and
+    an Android WebView keeps Web Audio running behind a paused app. `musAway()`
+    suspends the whole context on `visibilitychange` and on Capacitor's
+    `pause`, and resumes it on the way back unless an ad holds it
+    (`AD.busy` - `adQuiet()` owns that resume).
+  - **A second piece is a second object in `MUSIC_PIECES`**, not a second
+    engine: key, chords, bells, every level and time. That is what a piece per
+    world would be.
 - **Sound goes through a mastering chain** (`js/11-sound.js`): blips →
   `masterGain` (a fixed `MIX` drive) → limiter → `POST` → soft clipper →
   **`outGain`, the volume setting** → destination.

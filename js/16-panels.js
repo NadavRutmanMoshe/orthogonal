@@ -676,7 +676,8 @@ function buyTestPanel(){
    switch for trying things on the phone; false to ship. */
 var TEST_CARD=false;
 function menuPanel(){
-  var vol=Math.round(settings.volume*100), bri=Math.round(settings.brightness*100);
+  var vol=Math.round(settings.volume*100), bri=Math.round(settings.brightness*100),
+      mus=Math.round(settings.music*100);
   /* THE WAY BACK TO THE SHELF YOU ARE STANDING ON.
 
      This reverses "NO NAVIGATION ROW AT ALL" below, on the owner's call, and
@@ -741,6 +742,11 @@ function menuPanel(){
         "<div class='srow'><label>Volume</label>"+
           "<input type='range' id='mVol' min='0' max='100' value='"+vol+"'>"+
           "<span id='mVolV'>"+vol+"%</span></div>"+
+        /* Under Volume because it is a share of it: Volume turns everything
+           down, this turns the music down inside that. 0 is off. */
+        "<div class='srow'><label>Music</label>"+
+          "<input type='range' id='mMus' min='0' max='100' value='"+mus+"'>"+
+          "<span id='mMusV'>"+mus+"%</span></div>"+
         "<div class='srow'><label>Brightness</label>"+
           "<input type='range' id='mBri' min='60' max='140' value='"+bri+"'>"+
           "<span id='mBriV'>"+bri+"%</span></div></div>"+
@@ -911,6 +917,15 @@ function menuPanel(){
     saveSettings();
   });
   v.addEventListener("change",function(){if(!muted)SFX.turn();});
+  /* No sound on release, unlike Volume: the music itself is the preview.
+     Starting and stopping is musTick()'s, which asks the level four times a
+     second; this only moves a playing bus to the new level at once. */
+  var mu=$("mMus");
+  mu.addEventListener("input",function(){
+    settings.music=mu.value/100;
+    $("mMusV").textContent=mu.value+"%";
+    musApplyLevel();saveSettings();
+  });
   b.addEventListener("input",function(){
     settings.brightness=b.value/100;
     $("mBriV").textContent=b.value+"%";
@@ -968,6 +983,7 @@ function menuPanel(){
   });
   bind("mReset",function(){
     settings.volume=defaultVolume();settings.volTouched=false;
+    settings.music=MUSIC_DEFAULT;musApplyLevel();
     settings.brightness=1;settings.ui=UI_DEFAULT;
     settings.foldmark=FOLDMARK_DEFAULT;
     /* The other two thirds of the age card go back to a fresh install too,

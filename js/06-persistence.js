@@ -93,6 +93,9 @@ function loadSettings(){
           settings.volume=o.volume;settings.volTouched=true;
         }
         if(typeof o.brightness==="number")settings.brightness=o.brightness;
+        // The Music slider. Bounded, so a bad save cannot ask for x40.
+        if(typeof o.music==="number"&&o.music>=0&&o.music<=1)
+          settings.music=o.music;
         if(o.ui&&["full","compact","none"].indexOf(o.ui)>=0)settings.ui=o.ui;
         /* THE OTHER TWO THIRDS OF THE AGE CARD. Bounded against their own
            tables rather than trusted, exactly like `ui` above: a value that

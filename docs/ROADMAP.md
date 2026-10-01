@@ -207,11 +207,29 @@
    score.** A skip awards no stars and leaves the level playable, so nothing
    bought can ever appear in `starsEarned()`.
 
+10. **Music - one piece, on the `music` branch, waiting for the owner's ear**
+   (`js/27-music.js`, `docs/design/systems.md`). If it is kept, the agreed
+   next step is **a piece per world**: a second object in `MUSIC_PIECES`
+   per section, chosen where `ambTo()` is (`applyTheme`), crossfaded on the
+   way into a world. Open questions only a person can answer: is it under
+   the footsteps or beside them on the phone (one number, `MUSIC_LEVEL`);
+   should fights get music of their own rather than silence; and would
+   **gaps** help - Minecraft plays a few minutes and then nothing for a
+   minute or two, which is the most thinking-friendly music there is and
+   reads as broken the first time.
+
 ### Before mobile
 
 The plan for all three stores is `docs/SHIPPING.md`, and its "device
 gauntlet" section is the live version of this list. What is left here is what
 only a real device can answer.
+
+- **The music on a phone.** Measured at 5.3% of a laptop core; a phone is
+  slower. Listen for crackle in a busy level and in the editor, and check it
+  stops when the app goes to the background and comes back after an ad. On
+  iOS the WebView's audio session decides whether starting our sound stops
+  the player's own podcast; the SFX already do whatever it does, but music
+  makes it matter.
 
 - ~~Safe-area insets~~ **done.** Four tokens in `css/00-base.css`
   (`--sat`/`--sar`/`--sab`/`--sal`), `viewport-fit=cover` in the viewport

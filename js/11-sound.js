@@ -85,7 +85,15 @@ var SPEED_DEFAULT="regular";
 /* And the fourth, for the same reason. Medium is what the screen was tuned
    at; large is the accessibility step. */
 var TEXT_DEFAULT="medium";
+/* The Music slider's default, here beside the others so RESET SETTINGS and a
+   fresh install cannot drift apart. Half way, which is MUSIC_LEVEL - the mix
+   tools/music.js measured - and leaves the slider room to go up as well as
+   down (js/27-music.js). */
+var MUSIC_DEFAULT=.5;
 var settings={volume:defaultVolume(),brightness:1,ui:UI_DEFAULT,volTouched:false,
+              /* HOW LOUD THE MUSIC IS, 0..1, on top of the volume - which
+                 still turns everything down, music included. 0 is off. */
+              music:MUSIC_DEFAULT,
               /* HOW BIG THE BOARD IS DRAWN - small, medium, large. A camera
                  setting and nothing else: boardScale() multiplies the arena
                  term in fitViewSize(), so the whole level still fits on the

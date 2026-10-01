@@ -57,6 +57,10 @@ Promise.all([progLoad(),skipLoad(),failLoad(),hintLoad(),loadSettings(),
        save that finished a world before they existed is reported too
        (js/26-achievements.js). */
     achBoot();
+    /* The music's clock. After the settings are in, so a save that turned
+       the music off is never heard for a quarter of a second; it waits for
+       the sting's tap to have made an audio context anyway (js/27-music.js). */
+    musBoot();
     /* A SAVE MAY ALREADY HAVE EARNED SOMETHING. The four section rewards
        were added after people had finished sections, and the payout in win()
        only fires on the star that completes one - so an existing save would

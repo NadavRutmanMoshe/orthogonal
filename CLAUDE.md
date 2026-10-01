@@ -146,6 +146,8 @@ listed in `index.html`. `21-boot.js` is the only file that *runs* anything.
 | `js/24-ads.js` | rewarded video: `adChild()`, consent, preloading, `adWatch(done)`, and the per-unlock count `adToward()`. **Loaded BEFORE boot**, out of numeric order like 20, so boot starts it and nothing needs a typeof guard |
 | `js/25-shop.js` | the DEALS shelf charged for real: `shopBuy()`, `shopRestore()`, the launch sync from the store, store prices. Loaded before boot, like 24 |
 | `js/26-achievements.js` | the store's achievements: `ACHIEVEMENTS`, `ACH_IDS` per store, `achSweep()`. Game Center, Play Games, and a Steam slot. Loaded before boot like 24 and 25. The native halves are `AchievementsPlugin.java` / `.swift`, in the app, not npm |
+| `js/27-music.js` | **the music**: `MUSIC_PIECES` (one, `still`), the scheduler, `musicWanted()`, `musAway()`. A pad, a bass and Eno-style bells, all synthesised. Loaded before boot like 24-26; `musBoot()` starts its 250ms clock |
+| `tools/music.js` | **the music rendered to WAV and measured**: `shots/music/music.wav` and `mix.wav` (with a minute of play over it), levels full-range AND above 400Hz (a phone speaker) against a footstep's, `--stems` for each instrument alone, `--level` to try a mix without editing |
 | `tools/storetest.js` | the ads and the shop driven through a FAKE Capacitor bridge, every path (a video closed early, a pending payment, the upgrade). Needs Playwright, like `shot.js` |
 | `tools/verify.js` | every level machine-checked: BFS, `trialSafety()`, `bossArena()`, `bosssim`, the `SECTIONS`/`LEVEL_RENAMES` invariants |
 | `tools/shot.js` | **headless screenshots of any screen** (`node tools/shot.js --list`). The eyes for UI work. A cutscene is seekable by beat (`story1:12`), and an explicit `--wait` now beats the screen's own default. **`--webkit` draws with Safari's engine** (Playwright's WebKit, installed once): an iPhone and an iPad draw with it. Its Windows build has NO backdrop blur at all, so a missing blur there proves nothing. |
@@ -1101,6 +1103,18 @@ is the rule.
   running source at creation.
 - Sound waits for a gesture; the sting listens on `pointerup`/`click`, never
   `pointerdown`.
+- **The music joins AFTER the limiter, at `shaper`**, never at `out(c)`: fed
+  through the limiter it would be squashed and every footstep would duck it.
+  It plays when `musicWanted()` says so - not in a fight, a cutscene, the
+  sting or a hidden page - and that one predicate is the rule; nothing else
+  starts or stops it. **Balance it by the level above 400Hz**
+  (`tools/music.js`): the first mix was 97% bass and read fine on a
+  full-range meter. `settings.music` (the Music row) is whitelisted and
+  reset with the rest; MUSIC_DEFAULT sits beside UI_DEFAULT
+  (`docs/design/systems.md`).
+- **The audio context is suspended when the app is hidden** (`musAway()`):
+  an Android WebView keeps Web Audio running behind a paused app, which a
+  blip never exposed and a pad does.
 
 **Controls** (`controls.md`)
 - The four verbs are `press`, `rotateView`, `doFlatten`, `doUnflatten`;
